@@ -380,7 +380,7 @@ function nodeDistName(version: string, target: string): string {
 }
 
 /** The `node` binary of `version` for `target`: downloaded once, checked, and cached under `cacheDir`. */
-async function nodeBinary(
+export async function nodeBinary(
   version: string,
   target: string,
   options: { cacheDir: string; hostNode: boolean; log: (line: string) => void },
@@ -423,7 +423,10 @@ async function nodeBinary(
       `${archive} does not match its SHA-256 (expected ${expected}, got ${actual}).`,
       { code: 'NODE_DOWNLOAD_FAILED' },
     );
-  const work = await mkdtemp(path.join(os.tmpdir(), 'nocobase-node-'));
+  // Extract inside the cache rather than os.tmpdir(): the binary is renamed into place, and a rename cannot cross
+  // filesystems (EXDEV), as it would where /tmp is a tmpfs of its own, such as on GitHub's ubuntu-26.04 runners.
+  await mkdir(options.cacheDir, { recursive: true });
+  const work = await mkdtemp(path.join(options.cacheDir, '.download-'));
   try {
     await writeFile(path.join(work, archive), bytes);
     await runCommand('tar', ['-xzf', archive, `${name}/bin/node`], {
@@ -659,10 +662,12 @@ export async function packCli(options: CliPackOptions): Promise<CliPackResult> {
       await chmod(path.join(top, 'bin', bin), 0o755);
       const name = `${bin}-v${version}-${target}.tar.gz`;
       const file = path.join(versionDir, name);
-      await runCommand('tar', ['-czf', file, '-C', tree, bin], {
-        cwd: tree,
-        log,
-      });
+      // macOS tar writes LIBARCHIVE.xattr headers that GNU tar warns about for every file. These packages need
+      // contents, executable modes and links, not the build machine's extended attributes or ownership.
+      const { create } = await import('tar');
+      create({ cwd: tree, file, gzip: true, portable: true, sync: true }, [
+        bin,
+      ]);
       targets[target] = {
         file: `${version}/${name}`,
         sha256: await sha256Of(file),

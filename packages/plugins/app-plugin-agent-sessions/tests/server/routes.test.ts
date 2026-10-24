@@ -1,4 +1,5 @@
 import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
+import { randomUUID } from 'node:crypto';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import {
   findApiDocumentSchemaProblems,
@@ -30,32 +31,43 @@ async function mount(
   database: DatabaseManager,
   options: { readonly images?: ImageStorage } = {},
 ): Promise<Hono> {
-  const required = (): MiddlewareHandler => async (context, next) => {
-    const id = context.req.header('x-user');
-    if (!id)
-      return context.json(
-        { error: { reason: 'AUTHENTICATION_REQUIRED' } },
-        401,
+  const required =
+    (options?: { readonly scopedKeys?: boolean }): MiddlewareHandler =>
+    async (context, next) => {
+      const id = context.req.header('x-user');
+      if (!id)
+        return context.json(
+          { error: { reason: 'AUTHENTICATION_REQUIRED' } },
+          401,
+        );
+      const computer = context.req.header('x-computer');
+      if (
+        computer &&
+        !options?.scopedKeys &&
+        !context.req.path.includes('/agentSessions/bridge/')
+      )
+        return context.json(
+          { error: { reason: 'SCOPED_CREDENTIAL_FORBIDDEN' } },
+          403,
+        );
+      context.set(
+        'auth' as never,
+        {
+          user: { id },
+          ...(computer
+            ? {
+                credential: {
+                  type: COMPUTER_CREDENTIAL,
+                  id: computer,
+                  userId: id,
+                  scheme: COMPUTER_KEY_SCHEME,
+                },
+              }
+            : {}),
+        } as never,
       );
-    const computer = context.req.header('x-computer');
-    context.set(
-      'auth' as never,
-      {
-        user: { id },
-        ...(computer
-          ? {
-              credential: {
-                type: COMPUTER_CREDENTIAL,
-                id: computer,
-                userId: id,
-                scheme: COMPUTER_KEY_SCHEME,
-              },
-            }
-          : {}),
-      } as never,
-    );
-    await next();
-  };
+      await next();
+    };
   const container = new ServiceContainer();
   container.instance(authenticationToken, { required } as never);
   container.instance(
@@ -96,6 +108,173 @@ const computer = {
 };
 
 describe('the agent sessions routes', () => {
+  test('protects withdrawal, claim and removal acknowledgement with ownership and computer identity', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const generation = {
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      bridgeStartedAt: 'withdrawal',
+    };
+    const {
+      data: { computerId },
+    } = await (
+      await call(router, 'POST', '/bridge/register', 'u1', {
+        ...generation,
+        computerId: null,
+        computer,
+      })
+    ).json();
+    const { data: session } = await (
+      await call(router, 'POST', '/sessions', 'u1', {
+        computerId,
+        agentId: 'codex',
+        cwd: '/home/zhou',
+        content: [{ type: 'text', text: 'Queued' }],
+      })
+    ).json();
+    const { data: transcript } = await (
+      await call(router, 'GET', `/sessions/${session.id}/events`, 'u1')
+    ).json();
+    const prompt = transcript[0];
+    const route = `/sessions/${session.id}/withdraw`;
+    expect(
+      (await call(router, 'POST', route, undefined, { seq: prompt.seq }))
+        .status,
+    ).toBe(401);
+    expect(
+      (await call(router, 'POST', route, 'u2', { seq: prompt.seq })).status,
+    ).toBe(404);
+    expect((await call(router, 'POST', route, 'u1', { seq: 0 })).status).toBe(
+      400,
+    );
+    expect(
+      (await call(router, 'POST', route, 'u1', { seq: prompt.seq }, computerId))
+        .status,
+    ).toBe(403);
+    const request = {
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      seq: prompt.seq,
+      promptId: prompt.promptId,
+    };
+    expect(
+      (await call(router, 'POST', '/bridge/claim', undefined, request)).status,
+    ).toBe(401);
+    expect(
+      (await call(router, 'POST', '/bridge/claim', 'u2', request)).status,
+    ).toBe(404);
+    expect(
+      (
+        await call(
+          router,
+          'POST',
+          '/bridge/withdrawn',
+          'u1',
+          request,
+          'another',
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (await call(router, 'POST', route, 'u1', { seq: prompt.seq })).status,
+    ).toBe(204);
+    expect(
+      await (
+        await call(router, 'POST', '/bridge/claim', 'u1', request, computerId)
+      ).json(),
+    ).toEqual({ data: { execute: false } });
+    expect(
+      (
+        await call(
+          router,
+          'POST',
+          '/bridge/withdrawn',
+          'u1',
+          request,
+          computerId,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await call(
+          router,
+          'POST',
+          '/bridge/withdrawn',
+          'u1',
+          request,
+          computerId,
+        )
+      ).status,
+    ).toBe(200);
+  });
+  test('validates submission IDs, protects confirmation ownership and hides internal metadata', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const registered = await call(router, 'POST', '/bridge/register', 'u1', {
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      computerId: null,
+      bridgeStartedAt: 'one',
+      computer,
+    });
+    const {
+      data: { computerId },
+    } = await registered.json();
+    const input = {
+      computerId,
+      agentId: 'codex',
+      cwd: '/home/zhou',
+      content: [{ type: 'text', text: 'Hello' }],
+      submissionId: randomUUID(),
+    };
+    expect(
+      (await call(router, 'POST', '/sessions', undefined, input)).status,
+    ).toBe(401);
+    expect(
+      (
+        await call(router, 'POST', '/sessions', 'u1', {
+          ...input,
+          submissionId: 'invalid',
+        })
+      ).status,
+    ).toBe(400);
+    const first = await call(router, 'POST', '/sessions', 'u1', input);
+    expect(first.status).toBe(201);
+    const { data: session } = await first.json();
+    const repeated = await call(router, 'POST', '/sessions', 'u1', input);
+    expect((await repeated.json()).data.id).toBe(session.id);
+    const stranger = await call(router, 'POST', '/sessions', 'u2', input);
+    expect(stranger.status).toBe(409);
+    expect(JSON.stringify(await stranger.json())).not.toContain(session.id);
+    const prompt = { content: input.content, submissionId: randomUUID() };
+    const route = `/sessions/${session.id}/prompt`;
+    const sent = await call(router, 'POST', route, 'u1', prompt);
+    const confirmation = await sent.json();
+    expect(sent.status).toBe(200);
+    expect(
+      await (await call(router, 'POST', route, 'u1', prompt)).json(),
+    ).toEqual(confirmation);
+    const conflict = await call(router, 'POST', route, 'u1', {
+      ...prompt,
+      content: [{ type: 'text', text: 'Changed' }],
+    });
+    expect(conflict.status).toBe(409);
+    expect((await conflict.json()).error.reason).toBe(
+      'AGENT_SESSIONS_SUBMISSION_CONFLICT',
+    );
+    const transcript = await call(
+      router,
+      'GET',
+      `/sessions/${session.id}/events`,
+      'u1',
+    );
+    expect(JSON.stringify(await transcript.json())).not.toContain(
+      '_submission',
+    );
+  });
   test('discovers through authenticated owned routes with validated input and a correlated bridge reply', async ({
     database,
   }) => {
@@ -129,7 +308,12 @@ describe('the agent sessions routes', () => {
           'POST',
           '/bridge/poll',
           'u1',
-          { computerId, wait: false },
+          {
+            computerId,
+            wait: false,
+            protocol: BRIDGE_PROTOCOL_VERSION,
+            bridgeStartedAt: 'bridge-1',
+          },
           computerId,
         )
       ).json()) as {
@@ -353,7 +537,12 @@ describe('the agent sessions routes', () => {
         'POST',
         '/bridge/poll',
         'u1',
-        { computerId, wait: false },
+        {
+          computerId,
+          wait: false,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          bridgeStartedAt: 'bridge-1',
+        },
         mine.computerId,
       );
     expect((await poll(mine.computerId)).status).toBe(200);
@@ -418,4 +607,82 @@ describe('the agent sessions routes', () => {
       'content-disposition': 'attachment',
     });
   });
+});
+
+test('session work authenticates its owner and returns an empty session without writes', async ({
+  database,
+}) => {
+  const router = await mount(database);
+  const service = new AgentSessionsService({ database });
+  const { computerId } = await service.register('u1', {
+    protocol: BRIDGE_PROTOCOL_VERSION,
+    computerId: null,
+    computer: {
+      name: 'Laptop',
+      platform: 'linux',
+      arch: 'x64',
+      host: 'test',
+      roots: ['/workspace'],
+      agents: [{ id: 'codex', name: 'Codex', version: 'test' }],
+    },
+  });
+  const session = await service.createSession(
+    { userId: 'u1' },
+    {
+      computerId,
+      agentId: 'codex',
+      cwd: '/workspace',
+      content: [{ type: 'text', text: 'Plan' }],
+    },
+  );
+  const path = `/sessions/${session.id}/work`;
+  expect((await call(router, 'GET', path)).status).toBe(401);
+  expect((await call(router, 'GET', path, 'u2')).status).toBe(404);
+  const own = await call(router, 'GET', path, 'u1');
+  expect(own.status).toBe(200);
+  expect(await own.json()).toEqual({ data: [] });
+});
+
+test('lists the sessions tied to one record, the viewer’s own only, and refuses a malformed record', async ({
+  database,
+}) => {
+  const router = await mount(database);
+  const service = new AgentSessionsService({ database });
+  const { computerId } = await service.register('u1', {
+    protocol: BRIDGE_PROTOCOL_VERSION,
+    computerId: null,
+    computer: {
+      name: 'Laptop',
+      platform: 'linux',
+      arch: 'x64',
+      host: 'test',
+      roots: ['/workspace'],
+      agents: [{ id: 'codex', name: 'Codex', version: 'test' }],
+    },
+  });
+  await service.createSession(
+    { userId: 'u1' },
+    {
+      computerId,
+      agentId: 'codex',
+      cwd: '/workspace',
+      content: [{ type: 'text', text: 'Plan' }],
+    },
+  );
+  const path = '/sessions?linked=issue:7';
+  expect((await call(router, 'GET', path)).status).toBe(401);
+  for (const linked of ['issue', ':7', 'issue:', 'issue:7 8', '1issue:7'])
+    expect(
+      (
+        await call(
+          router,
+          'GET',
+          `/sessions?linked=${encodeURIComponent(linked)}`,
+          'u1',
+        )
+      ).status,
+    ).toBe(400);
+  const none = await call(router, 'GET', path, 'u1');
+  expect(none.status).toBe(200);
+  expect((await none.json()).data).toEqual([]);
 });

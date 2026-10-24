@@ -38,7 +38,12 @@ export function agentSessionsRoute(
         import('./query.js'),
         import('./config.js'),
       ]);
-      const value = { cli: options.cli, install: options.install ?? null };
+      const value = {
+        cli: options.cli,
+        connectPrompt: options.connectPrompt ?? null,
+        linkPanels: options.linkPanels ?? {},
+        ...(options.sessionMarks ? { sessionMarks: options.sessionMarks } : {}),
+      };
       const Configured = (): ReactElement =>
         createElement(
           AgentSessionsConfigContext.Provider,

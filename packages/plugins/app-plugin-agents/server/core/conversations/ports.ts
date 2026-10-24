@@ -24,11 +24,16 @@ import type {
   SendMessageRequest,
   SendMessageResult,
   StartConversationRequest,
+  ResolvedPageContext,
 } from '../../../shared/conversations.js';
 import type { Run } from '../../../shared/runs.js';
 import type { Tx } from '../../kernel/tx.js';
 import type { NewInput, SubjectBinding } from '../runs/index.js';
 import type { PageContextKinds } from './page-context.js';
+import type {
+  OnlineAgentConfig,
+  OnlineAgentJson,
+} from '../../online/agent/types.js';
 
 /** A conversation as the application sees the one a run works on. */
 export interface ConversationRef {
@@ -108,6 +113,7 @@ export interface ConversationService {
   create(
     userId: string,
     request: CreateConversationRequest,
+    runnerConfig?: OnlineAgentConfig,
   ): Promise<ConversationDetail>;
   get(userId: string, id: string): Promise<ConversationDetail>;
   /** Rename (the title becomes the owner's) and archive or unarchive. */
@@ -127,6 +133,18 @@ export interface ConversationService {
     id: string,
     request: SendMessageRequest,
   ): Promise<SendMessageResult>;
+  /** Strict admission receipt after commit; it does not project conversation detail after acceptance. */
+  sendRealtime(
+    userId: string,
+    id: string,
+    request: SendMessageRequest,
+    input: {
+      config: OnlineAgentConfig;
+      expectedConfig: OnlineAgentConfig;
+      workContext?: ResolvedPageContext;
+      business?: OnlineAgentJson;
+    },
+  ): Promise<{ readonly seq: number; readonly run: SendMessageResult['run'] }>;
   /** A new conversation and its first message (`StartConversationRequest`): the application pages' buttons. */
   start(
     userId: string,
@@ -166,7 +184,8 @@ export interface ConversationService {
   /**
    * In the caller's transaction: writes `news.notice` to the conversation and hands `news.input` to its agent (a new
    * run, or the open one), as a message would. Answers the run, or null when the agent was not woken (no input, or
-   * the agent can no longer be woken) or the conversation is gone.
+   * the agent can no longer be woken) or the conversation is gone. Native and Runner OnlineAgent bindings save
+   * the notice but ignore input for wake-up and return null; null can therefore mean a notice was saved.
    */
   deliver(
     outer: Tx,
@@ -183,7 +202,7 @@ export interface ConversationService {
     provide(source: ConversationRules): () => void;
   };
   /** Turns the run's new text events into assistant messages; nothing for runs on other subjects. */
-  syncRun(runId: string): Promise<void>;
+  syncRun(runId: string): Promise<Run>;
 
   /** The enabled agents the person may chat with, with whether each can answer now. */
   chatAgents(userId: string): Promise<ChatAgent[]>;

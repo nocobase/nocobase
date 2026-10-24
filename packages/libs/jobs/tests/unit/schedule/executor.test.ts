@@ -292,6 +292,40 @@ describe('BackendScheduleExecutor', () => {
     unsubscribe();
   });
 
+  it('waits for queued delivery after backend close fails and retains the error', async () => {
+    const { backend, executor: subject } = executor();
+    const gate = Promise.withResolvers<void>();
+    const entered = Promise.withResolvers<void>();
+    const error = new Error('state write failed');
+    const seen: string[] = [];
+    subject.subscribe(async () => {
+      entered.resolve();
+      await gate.promise;
+    });
+    subject.subscribe(async (event) => {
+      seen.push(event.name);
+    });
+    await subject.setup();
+    backend.close.mockRejectedValue(error);
+    backend.runner!.emit({ name: 'ScheduleEnd', ...run('job-1') });
+    await entered.promise;
+    const shutdown = subject.shutdown();
+    let settled = false;
+    const outcome = shutdown.catch((cause) => {
+      settled = true;
+      return cause;
+    });
+    expect(subject.shutdown()).toBe(shutdown);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+    expect(seen).toEqual([]);
+    gate.resolve();
+    expect(await outcome).toBe(error);
+    expect(seen).toEqual(['ScheduleEnd']);
+    expect(subject.shutdown()).toBe(shutdown);
+    expect(backend.close).toHaveBeenCalledOnce();
+  });
+
   it('shuts down once, closes the backend and refuses further use', async () => {
     const { backend, executor: subject } = executor();
     await subject.setup();

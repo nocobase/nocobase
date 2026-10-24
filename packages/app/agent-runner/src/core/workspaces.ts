@@ -1,9 +1,14 @@
-// Disk-pressure cleanup removes regenerable artifacts first, then clean pushed idle workspaces, then disposable
-// read-only copies, stopping as soon as free space recovers. Directory locks and a fresh Git check protect running
-// and unpushed work. Routine retention and application decisions never waive that protection.
+import { invalidatePreparation } from './preparation.ts';
+import { workspaceInUse } from './workspace-use.ts';
+// Once the application says a directory's work is over (`ended`), routine collection removes it, with its session
+// directories, whatever it holds: untracked files, uncommitted changes and commits never pushed go with it. Only a run
+// holding its lock, or using it since it was reported, keeps it. Directories whose work goes on, or whose status is
+// unknown, keep their unpushed work unless a person forces it (`nocobase-runner gc --force`). Disk-pressure cleanup then
+// removes regenerable artifacts, clean pushed idle workspaces and disposable read-only copies, stopping as soon as free
+// space recovers.
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { readdir, readFile, stat, statfs } from 'node:fs/promises';
+import { readdir, readFile, rm, stat, statfs } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { RunnerPaths } from '../lib/home.ts';
@@ -16,14 +21,20 @@ import {
   type WorkspacesRequest,
   type WorkspacesResponse,
 } from '../protocol/index.ts';
+import { isInside } from '../lib/paths.ts';
 import {
   acquireLock,
+  git,
+  gitOk,
+  lockCache,
   isDisposableWorkspace,
   isReadOnlyWorkspace,
   checkWorkspaceGit,
   hasUnpushedWork,
   readWorkspaceMeta,
   removeWorkspace,
+  removeOwnedSessions,
+  workspaceRecordPath,
   writeWorkspaceMeta,
   type Lock,
   type WorkspaceMeta,
@@ -32,7 +43,9 @@ import { cleanArtifacts, type ArtifactOptions } from './artifacts.ts';
 import { isAlive } from './supervisor.ts';
 import {
   canRetryWorkspaceRemoval,
+  clearContinuations,
   retryWorkspaceRemoval,
+  runBranch,
 } from './run-worktrees.ts';
 
 export { hasUnpushedWork } from './checkout.ts';
@@ -118,7 +131,8 @@ export async function inspectWorkspace(
   options: { now?: number; force?: boolean; log?: (message: string) => void },
 ): Promise<WorkspaceEntry> {
   const now = options.now ?? Date.now();
-  const inUse = await isLocked(workDir);
+  const inUse =
+    (await workspaceInUse(paths, workDir)) || (await isLocked(workDir));
   const checkedAt =
     meta.measuredAt === undefined ? Number.NaN : Date.parse(meta.measuredAt);
   const stale =
@@ -314,7 +328,7 @@ export function applyStatuses(
 
 /**
  * New decisions are tied to this request, directory, last run and last use. A directory used since it was reported is
- * not taken as ended. Local unpushed-work protection always applies.
+ * not taken as ended; one whose work is over goes whatever it holds.
  */
 export async function applyDecisions(
   paths: RunnerPaths,
@@ -358,11 +372,10 @@ export async function applyDecisions(
       };
       continue;
     }
-    // Settlement allows cleanup only when the local workspace is clean and pushed.
     entry.cleanup = {
       reportId: decision.reportId,
-      reason: entry.inUse ? 'inUse' : entry.unpushed ? 'unpushed' : 'allowed',
-      discardsUntracked: false,
+      reason: entry.inUse ? 'inUse' : 'allowed',
+      discardsUntracked: !entry.inUse && entry.unpushed,
     };
   }
 }
@@ -425,7 +438,7 @@ export interface PlanOptions {
   readonly now?: number;
   /** Pick by these instead of the default rules. */
   readonly filters?: WorkspaceFilters;
-  /** Remove picked directories with unpushed work too. */
+  /** Remove picked directories with unpushed work whose work is not over too. */
   readonly force?: boolean;
 }
 
@@ -449,9 +462,9 @@ const filtered = (filters: WorkspaceFilters | undefined): boolean =>
     filters.subject !== undefined);
 
 /**
- * Which directories go. By default: those whose work is over, least recently used first. With filters: the directories
- * every filter matches. A directory a run holds is never removed, nor one with unpushed work unless a directory
- * removal is explicitly forced.
+ * Which directories go. By default: those whose work is over, least recently used first; under pressure, then every
+ * other one. With filters: the directories every filter matches. A directory a run holds is never removed, nor one
+ * with unpushed work whose work is not over, unless forced.
  */
 export function planRemovals(
   entries: readonly WorkspaceEntry[],
@@ -465,11 +478,19 @@ export function planRemovals(
     if (taken.has(entry.workDir)) return;
     taken.add(entry.workDir);
     if (entry.inUse) kept.push({ entry, reason: 'inUse' });
-    else if (entry.unpushed && options.force !== true)
+    else if (
+      entry.unpushed &&
+      entry.status !== 'ended' &&
+      options.force !== true
+    )
       kept.push({ entry, reason: 'unpushed' });
     else remove.push({ entry, reason });
   };
   const filters = options.filters;
+  const ended = entries
+    .filter((entry) => entry.status === 'ended')
+    .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt));
+  if (!filtered(filters)) for (const entry of ended) pick(entry, 'ended');
   if (options.pressure || filtered(filters)) {
     for (const entry of entries) {
       if (filters?.ended === true && entry.status !== 'ended') continue;
@@ -487,10 +508,6 @@ export function planRemovals(
     }
     return { remove, kept };
   }
-  const ended = entries
-    .filter((entry) => entry.status === 'ended')
-    .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt));
-  for (const entry of ended) pick(entry, 'ended');
   for (const entry of entries)
     if (entry.disposable === true) pick(entry, 'readOnly');
     else if (entry.removing === true) pick(entry, 'selected');
@@ -498,8 +515,8 @@ export function planRemovals(
 }
 
 /**
- * Removes a planned directory, under its lock: unless a run took it, or used it since it was checked, or (not forced,
- * and it has unpushed work now). Returns why it was kept, or undefined when it was removed.
+ * Removes a planned directory, under its lock: unless a run took it, or used it since it was checked, or its work is
+ * not over and (not forced) it has unpushed work now. Returns why it was kept, or undefined when it was removed.
  */
 export async function removePlanned(
   paths: RunnerPaths,
@@ -513,6 +530,7 @@ export async function removePlanned(
     return 'inUse';
   }
   try {
+    if (await workspaceInUse(paths, entry.workDir)) return 'inUse';
     const meta = await readWorkspaceMeta(paths, entry.workDir);
     if (
       meta !== undefined &&
@@ -520,6 +538,8 @@ export async function removePlanned(
         meta.lastRunId !== entry.lastRunId)
     )
       return 'changed';
+    if (entry.status === 'ended')
+      return await discardEnded(paths, entry.workDir, meta);
     if (
       meta !== undefined &&
       (await canRetryWorkspaceRemoval(paths, entry.workDir, meta))
@@ -540,7 +560,9 @@ export async function removePlanned(
       )
         return 'changed';
 
-      await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] });
+      await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] }, {
+        cleanupHeld: true,
+      });
       return undefined;
     }
     if (meta === undefined) return 'changed';
@@ -571,11 +593,84 @@ export async function removePlanned(
       );
       return 'unpushed';
     }
-    await removeWorkspace(paths, entry.workDir, meta);
+    await removeWorkspace(paths, entry.workDir, meta, { cleanupHeld: true });
     return undefined;
   } finally {
     await lock.release();
   }
+}
+
+/**
+ * Removes a directory whose work is over, whatever it holds, the caller holding its lock. A subject's continuation state
+ * takes its attempt directories, saved and resume refs and session directories with it, unless a run holds an attempt.
+ */
+async function discardEnded(
+  paths: RunnerPaths,
+  workDir: string,
+  meta: WorkspaceMeta | undefined,
+): Promise<'inUse' | undefined> {
+  if (meta?.continuationOnly !== true) {
+    await discardDirectory(paths, workDir, meta);
+    return undefined;
+  }
+  for (const dir of meta.activeWorkDirs ?? []) {
+    if (!existsSync(dir) || !isInside(paths.workRoot, dir)) continue;
+    let lock: Lock;
+    try {
+      lock = await acquireLock(`${dir}.lock`, { timeoutMs: 0 });
+    } catch {
+      return 'inUse';
+    }
+    try {
+      if (await workspaceInUse(paths, dir)) return 'inUse';
+      await discardDirectory(paths, dir, await readWorkspaceMeta(paths, dir));
+    } finally {
+      await lock.release();
+    }
+  }
+  await clearContinuations(paths, workDir, meta);
+  return undefined;
+}
+
+/** Unregisters a directory's checkouts and its run branches from their caches, then deletes it and its record. */
+async function discardDirectory(
+  paths: RunnerPaths,
+  workDir: string,
+  meta: WorkspaceMeta | undefined,
+): Promise<void> {
+  if (await workspaceInUse(paths, workDir))
+    throw new Error('The workspace is in use.');
+  for (const repo of meta?.repos ?? []) {
+    await invalidatePreparation(paths, path.join(workDir, repo.path));
+    const dir = path.join(workDir, repo.path);
+    if (!isInside(workDir, dir) || dir === path.resolve(workDir)) continue;
+    if (!existsSync(repo.cache)) continue;
+    const lock = await lockCache(repo.cache);
+    try {
+      if (await workspaceInUse(paths, workDir))
+        throw new Error('The workspace is in use.');
+      await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+      if (await workspaceInUse(paths, workDir))
+        throw new Error('The workspace is in use.');
+      await rm(dir, { recursive: true, force: true });
+      await gitOk(['worktree', 'prune'], repo.cache);
+      if (
+        meta?.runWorktrees === true &&
+        repo.localBranch === runBranch(workDir, repo.path)
+      )
+        await git(
+          ['update-ref', '-d', `refs/heads/${repo.localBranch}`],
+          repo.cache,
+        ).catch(() => '');
+    } finally {
+      await lock.release();
+    }
+  }
+  if (await workspaceInUse(paths, workDir))
+    throw new Error('The workspace is in use.');
+  await rm(workDir, { recursive: true, force: true });
+  await rm(workspaceRecordPath(paths, workDir), { force: true });
+  await removeOwnedSessions(paths, workDir, meta ?? {});
 }
 
 /**
@@ -695,9 +790,11 @@ export async function collectWorkspaces(
           ...(pressure ? { pressure: true, shouldStop: recovered } : {}),
         });
   const plan = planRemovals(entries, { pressure });
-  // Always reclaim ordinary workspaces before disposable read-only copies, oldest first within each phase.
+  // Ended directories go first and all of them; then ordinary workspaces before disposable read-only copies, oldest
+  // first within each phase.
   plan.remove.sort(
     (a, b) =>
+      Number(a.reason !== 'ended') - Number(b.reason !== 'ended') ||
       Number(a.entry.disposable === true) -
         Number(b.entry.disposable === true) ||
       Date.parse(a.entry.lastUsedAt) - Date.parse(b.entry.lastUsedAt),
@@ -708,7 +805,7 @@ export async function collectWorkspaces(
     reason,
   }));
   for (const { entry, reason } of plan.remove) {
-    if (pressure && (await recovered())) break;
+    if (pressure && reason !== 'ended' && (await recovered())) break;
     const why = await removePlanned(
       paths,
       entry,
@@ -722,7 +819,7 @@ export async function collectWorkspaces(
     if (why === undefined) {
       removed.push({ workDir: entry.workDir, reason });
       log?.(
-        `workspaces: removed ${entry.workDir} (${pressure ? 'disk pressure' : 'its work is over'})`,
+        `workspaces: removed ${entry.workDir} (${reason === 'ended' ? `its work is over${entry.unpushed ? '; it held work that was never pushed' : ''}` : 'disk pressure'})`,
       );
     } else kept.push({ workDir: entry.workDir, reason: why });
   }

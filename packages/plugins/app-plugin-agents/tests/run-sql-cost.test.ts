@@ -40,6 +40,10 @@ it('measures the existing lifecycle SQL on a warm migrated database', async () =
             writes: queries.filter((q) => /^\s*(insert|update|delete)/i.test(q))
               .length,
             transactions: queries.filter((q) => /^begin/i.test(q)).length,
+            commits: queries.filter((q) => /^commit/i.test(q)).length,
+            rollbacks: queries.filter((q) => /^rollback/i.test(q)).length,
+            locks: queries.filter((q) => /for update|for share/i.test(q))
+              .length,
             sql: queries,
           }) + '\n',
         );
@@ -50,6 +54,20 @@ it('measures the existing lifecycle SQL on a warm migrated database', async () =
     h.services.reports.start({ id: runner.runnerId }, runId, {
       workDir: '/work',
       acceptsInput: true,
+    }),
+  );
+  await h.database
+    .connection()
+    .query.updateTable('agRunInputs')
+    .set({ handledAt: h.clock.now().toISOString() })
+    .where('runId', '=', runId)
+    .execute();
+  await measure('status-empty', () =>
+    h.services.reports.status({ id: runner.runnerId }, runId),
+  );
+  await measure('http-status-empty', () =>
+    h.request('GET', `/agents/runners/runs/${runId}/status`, {
+      runnerKey: runner.key,
     }),
   );
   const appended = await measure('ordinary-append', () =>
@@ -78,6 +96,9 @@ it('measures the existing lifecycle SQL on a warm migrated database', async () =
     }),
   );
   await measure('status', () =>
+    h.services.reports.status({ id: runner.runnerId }, runId),
+  );
+  await measure('status-redelivery', () =>
     h.services.reports.status({ id: runner.runnerId }, runId),
   );
   await measure('lease', () =>

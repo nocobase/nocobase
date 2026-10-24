@@ -3,6 +3,7 @@
  * (`ConnectSteps`, also what a person with no computer sees first). These computers run only their owner's sessions;
  * machines that run the team's background work are managed elsewhere in the application.
  */
+import { copyText } from '@nocobase/app-client';
 import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
@@ -14,7 +15,7 @@ import {
   PlusIcon,
   XIcon,
 } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { createElement, useState, type ReactElement } from 'react';
 
 import {
   Dialog,
@@ -73,8 +74,13 @@ export function ComputersDialog({
 
 /** What connects a computer: an agent signed in there, the command line signed in, and the bridge kept running. */
 export function ConnectSteps(): ReactElement {
+  const { connectPrompt } = useAgentSessionsConfig();
+  return connectPrompt ? createElement(connectPrompt) : <DefaultConnectSteps />;
+}
+
+function DefaultConnectSteps(): ReactElement {
   const { t } = useTranslation();
-  const { cli, install } = useAgentSessionsConfig();
+  const { cli } = useAgentSessionsConfig();
   const server = useServerUrl();
   return (
     <ol className='flex list-decimal flex-col gap-3 pl-5 text-[13px]'>
@@ -84,12 +90,6 @@ export function ConnectSteps(): ReactElement {
           {t('computers.steps.agentHint')}
         </p>
       </li>
-      {install && (
-        <li>
-          {t('computers.steps.install')}
-          <Command text={install} />
-        </li>
-      )}
       <li>
         {t('computers.steps.login')}
         <Command text={`${cli} login --server ${server}`} />
@@ -106,7 +106,9 @@ export function ConnectSteps(): ReactElement {
 }
 
 /** The command that keeps a computer connected from every login, and the one that connects it for a while. */
-export function KeepConnected(): ReactElement {
+export function KeepConnected({
+  temporary = true,
+}: { readonly temporary?: boolean } = {}): ReactElement {
   const { t } = useTranslation();
   const { cli } = useAgentSessionsConfig();
   return (
@@ -115,10 +117,14 @@ export function KeepConnected(): ReactElement {
       <p className='text-muted-foreground mt-1.5 text-xs'>
         {t('computers.steps.startHint')}
       </p>
-      <p className='text-muted-foreground mt-2 text-xs'>
-        {t('computers.steps.foreground')}
-      </p>
-      <Command text={`${cli} acp start`} />
+      {temporary ? (
+        <>
+          <p className='text-muted-foreground mt-2 text-xs'>
+            {t('computers.steps.foreground')}
+          </p>
+          <Command text={`${cli} acp start`} />
+        </>
+      ) : null}
     </>
   );
 }
@@ -170,17 +176,23 @@ function ComputerCard({
   const [confirming, setConfirming] = useState(false);
   return (
     <div className='flex min-w-0 flex-col gap-2.5 rounded-[10px] border p-3.5'>
-      <div className='flex items-center gap-3'>
+      <div className='flex flex-wrap items-center gap-2 sm:gap-3'>
         <LaptopIcon className='text-muted-foreground size-5 shrink-0' />
         <div className='min-w-0 flex-1'>
-          <div className='truncate text-[13px] font-semibold'>
+          <div
+            className='truncate text-[13px] font-semibold'
+            title={computer.name}
+          >
             {computer.name}
           </div>
-          <div className='text-muted-foreground truncate text-xs'>
+          <div
+            className='text-muted-foreground truncate text-xs'
+            title={`${systemName(computer)} · ${computer.host}`}
+          >
             {systemName(computer)} · {computer.host}
           </div>
         </div>
-        <span className='text-muted-foreground inline-flex shrink-0 items-center gap-1.5 text-[11px]'>
+        <span className='text-muted-foreground inline-flex shrink-0 items-center gap-1.5 text-[11px] whitespace-nowrap max-sm:order-last max-sm:w-full max-sm:pl-7'>
           <span
             className={cn(
               'size-2 rounded-full',
@@ -203,7 +215,7 @@ function ComputerCard({
           }
           onBlur={() => setConfirming(false)}
           className={cn(
-            'text-destructive inline-flex h-8 shrink-0 items-center rounded-md px-2 text-xs transition-colors disabled:opacity-50',
+            'text-destructive inline-flex h-8 shrink-0 items-center rounded-md px-2 text-xs whitespace-nowrap transition-colors disabled:opacity-50',
             confirming ? 'bg-destructive/10' : 'hover:bg-destructive/10',
           )}
         >
@@ -215,12 +227,15 @@ function ComputerCard({
         {installedAgents(computer).map((agent) => (
           <span
             key={agent.id}
-            title={agent.detail}
-            className='bg-card inline-flex h-7.5 items-center gap-1.5 rounded-full border px-2.5 text-xs'
+            title={
+              agent.detail ??
+              `${agent.name} · ${agent.problem ? t(`computers.problems.${agent.problem}`) : (agent.version ?? '')}`
+            }
+            className='bg-card inline-flex h-7.5 max-w-full min-w-0 items-center gap-1.5 rounded-full border px-2.5 text-xs whitespace-nowrap'
           >
             <AgentBadge agentId={agent.id} name={agent.name} />
-            {agent.name}
-            <span className='text-muted-foreground'>
+            <span className='truncate'>{agent.name}</span>
+            <span className='text-muted-foreground max-w-40 truncate'>
               {agent.problem
                 ? t(`computers.problems.${agent.problem}`)
                 : (agent.version ?? '')}
@@ -228,6 +243,26 @@ function ComputerCard({
           </span>
         ))}
       </div>
+      {installedAgents(computer)
+        .filter((agent) => agent.problem)
+        .map((agent) => (
+          <div
+            key={agent.id}
+            className='bg-muted flex min-w-0 flex-col gap-1 rounded-md p-2.5 text-xs'
+          >
+            <p className='font-medium'>
+              {agent.name} · {t(`computers.problems.${agent.problem}`)}
+            </p>
+            {agent.detail && (
+              <p className='text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere]'>
+                {agent.detail}
+              </p>
+            )}
+          </div>
+        ))}
+      <p className='text-muted-foreground text-xs'>
+        {t('computers.recheckHint')}
+      </p>
       {others && (
         <p className='text-muted-foreground text-xs'>
           {t('newSession.alsoSupported', { names: others })}
@@ -261,12 +296,12 @@ function AllowedFolders({
     });
   return (
     <div className='flex flex-col gap-1.5 border-t pt-2.5'>
-      <div className='flex items-center gap-2'>
-        <span className='text-xs font-medium'>
+      <div className='flex flex-wrap items-center gap-2'>
+        <span className='text-xs font-medium whitespace-nowrap'>
           {t('computers.allowedFolders')}
         </span>
         {computer.defaultFolders && (
-          <span className='text-muted-foreground text-[11px]'>
+          <span className='text-muted-foreground text-[11px] max-sm:order-last max-sm:w-full'>
             {wholeHome(computer)
               ? t('computers.defaultFolders')
               : t('computers.defaultRoots')}
@@ -277,7 +312,7 @@ function AllowedFolders({
           disabled={!computer.online || update.isPending}
           title={computer.online ? undefined : t('computers.browseOffline')}
           onClick={() => setBrowsing(true)}
-          className='text-primary hover:bg-accent ml-auto inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs disabled:opacity-50'
+          className='text-primary hover:bg-accent ml-auto inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs whitespace-nowrap disabled:opacity-50'
         >
           <PlusIcon className='size-3.5' />
           {t('computers.addFolder')}
@@ -290,7 +325,7 @@ function AllowedFolders({
             className='bg-muted flex min-w-0 items-center gap-2 rounded-md px-2.5 py-1.5'
           >
             <FolderIcon className='text-muted-foreground size-4 shrink-0' />
-            <code className='min-w-0 flex-1 truncate text-xs'>
+            <code className='min-w-0 flex-1 truncate text-xs' title={folder}>
               {displayPath(folder, computer.home)}
             </code>
             {!computer.defaultFolders && (
@@ -360,10 +395,11 @@ function Command({ text }: { readonly text: string }): ReactElement {
         aria-label={t('actions.copy')}
         className='shrink-0 text-[oklch(0.68_0.02_264)] hover:text-[oklch(0.9_0.01_264)]'
         onClick={() =>
-          void navigator.clipboard.writeText(text).then(
-            () => setCopied(true),
-            () => toaster.show({ type: 'error', title: t('errors.copy') }),
-          )
+          void copyText(text).then((copied) => {
+            setCopied(copied);
+            if (!copied)
+              toaster.show({ type: 'error', title: t('errors.copy') });
+          })
         }
       >
         {copied ? (

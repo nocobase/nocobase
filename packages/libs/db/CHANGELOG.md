@@ -1,5 +1,23 @@
 # @nocobase/db
 
+## 1.0.0-beta.22
+
+### Minor Changes
+
+- 9eea184: Add `connection.restrict(policies, principal)` for restricted repository access with an explicit collection allowlist, narrowing-only repositories, and policy-preserving transactions. Export `RestrictedDatabase` and `DatabasePolicyMap`, and keep policy explanations detached from mutable defaults.
+
+  Keep `withPolicies()` and `ScopedDatabaseConnection` supported for policy binding with full connection capabilities. Adopting `restrict()` requires policies for every directly accessed collection and keeping raw database operations on the trusted connection. Custom implementations and complete mocks of `DatabaseConnection` must implement the new `restrict()` method.
+
+## 1.0.0-beta.21
+
+### Patch Changes
+
+- 98b3862: Identify Dameng, KingbaseES and OceanBase as NocoBase Pro commercial drivers when selecting or initializing a database. Report commercial license and private registry requirements before configuration, including JSON warnings and missing-driver errors.
+- b22d999: Reduce query result mapping and timestamp decoding overhead, batch PostgreSQL schema inspection into one statement, and read SQLite index metadata without per-index queries while preserving transaction-local schema inspection.
+- 0037dd2: Preserve primary-key deferrability, index validity, partial-index restrictions, and index comparison compatibility during schema inspection and resolution. Keep optimistic single-row updates on the cardinality-checking path for generated or cascading locating keys, deferred or invalid constraints, unsafe partial or invalid indexes, and incompatible or unknown index equality semantics, including operator classes. Exclude PostgreSQL traditional inheritance parents whose unique keys do not cover child rows, while retaining eligible declaratively partitioned tables. Keep the preferred record identity instead of substituting a secondary unique key that a trigger could reassign, and diagnose unsuccessful writes using current rows even inside repeatable-read transactions. Roll back unsuccessful conditional writes, including statement-trigger effects from zero-row updates, before reporting the original missing-record or version-conflict error. Preserve earlier caller work and roll back writes that unexpectedly affect multiple rows or cannot reload their result. Keep Oracle character identities with session-dependent or unknown comparison semantics on the cardinality-checking path, without caching NLS settings or changing session behavior; numeric and explicitly binary character keys remain eligible. Associate constraints with their named backing indexes so comparison and validity metadata survive reordered or additional index keys, with order-independent column matching for unnamed references. Preserve all constraint references and deduplicate index keys when Oracle constraints share a backing index, so each constraint inherits its comparison and validity restrictions. Preserve usable Oracle local, global and composite partitioned unique indexes by checking partition and subpartition usability instead of treating their aggregate N/A status as invalid. Preserve SQL Server nullable unique identities whose index predicates only exclude null keys, and keep restricted unique indexes droppable through the Builder.
+- 14b7aec: Let a test suite migrate its databases once: `createTestDatabase({ template: true })` migrates and seeds once per process into a template and gives each call a copy of it, where the dialect's test provisioner can copy a database. `TestDatabaseProvisioner` gains an optional `clone({ source, name, env })`, which the SQLite provisioner implements by copying the file; other dialects keep migrating each database as before.
+- 0037dd2: Use one conditional UPDATE for unobserved scalar updateOne calls with a safe numeric version and the unchanged preferred record identity, combining field changes with the version increment without a preceding row-locking SELECT. Preserve scoped conflict diagnostics and the existing paths for complex or observed writes.
+
 ## 1.0.0-beta.20
 
 ### Patch Changes

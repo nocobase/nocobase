@@ -9,7 +9,7 @@
  *
  * A run's variables go to whichever runner takes it, including a personal runner of whoever may use the agent: sharing
  * an agent shares the tokens it works with. A variable marked `teamRunnersOnly` keeps a run that gets it off personal
- * runners: only a team runner takes such a run.
+ * runners: only a shared runner takes such a run.
  *
  * A variable taken from the runner (`fromRunner`) is a name only: the runner that takes the run provides its value from
  * its own configuration, and the value never reaches the application. It merges with the others by name, a later
@@ -24,7 +24,7 @@ export type VariableScope = string;
 
 export interface Variable {
   readonly name: string;
-  /** Only team runners receive it: a run that gets it waits for one (`secretsNotAllowed`); absent means false. */
+  /** Only shared runners receive it: a run that gets it waits for one (`secretsNotAllowed`); absent means false. */
   readonly teamRunnersOnly?: boolean;
   /**
    * Taken from the runner: the variable has no value here, and the runner that takes the run provides it from its own
@@ -37,7 +37,7 @@ export interface Variable {
   readonly updatedByName: string | null;
 }
 
-/** A variable named by where it is kept, such as one that asks for a team runner. */
+/** A variable named by where it is kept, such as one that asks for a shared runner. */
 export interface VariableRef {
   readonly scope: VariableScope;
   readonly scopeId: string;

@@ -1,13 +1,18 @@
 /**
- * Agents: one for each coding tool and model the runners report (`syncRunner`), and the application's own
- * (`ensureSystem`). Nobody creates or deletes an agent. Someone who manages agents writes what an agent discovered from
- * runners is good at, chooses its default reasoning effort and enables or disables it (`update`); everything else about
- * it is the application's, the same for each (`setDefaults`: its instructions and business actions). Who may change an
- * agent is the route's concern; the service checks the values and the revision an edit was made against, and keeps
- * the history of every change (`agent.history.ts`).
+ * Agents: one for each coding tool and model someone enabled, and the application's own (`ensureSystem`). A runner's
+ * report (`syncRunner`) only auto-creates, already enabled, the combinations the application recommends
+ * (`AgentDefaults.recommendedModels`); every other tool and model a runner reports only joins the available models
+ * list (`GET /api/agents/availableModels`) until someone who manages agents creates one from it
+ * (`createFromAvailable`) — this is deliberately narrower than "a tool reports it, an agent exists": one ACP tool
+ * reporting hundreds of models once created hundreds of pending agents nobody wanted. Someone who manages agents
+ * writes what an agent discovered from runners is good at, chooses its default reasoning effort and enables or
+ * disables it (`update`); everything else about it is the application's, the same for each (`setDefaults`: its
+ * instructions and business actions). Who may change an agent is the route's concern; the service checks the values
+ * and the revision an edit was made against, and keeps the history of every change (`agent.history.ts`).
  *
  * Disabling an agent withdraws its queued runs and announces `agent.removed`, so the application lets go of the work
- * it gave the agent.
+ * it gave the agent. A pending agent nobody enabled and that never ran may be removed outright (`cleanupCandidates`,
+ * `cleanup`): it kept no history worth preserving.
  */
 import { createHash } from 'node:crypto';
 
@@ -22,16 +27,27 @@ import {
   type AgentChange,
   type AgentName,
   type AgentPatch,
+  type CleanupCandidate,
+  type CleanupGroup,
+  type RunnerAgentCreateInput,
   type RunnerModelEntry,
   type SystemAgentInput,
 } from '../../../shared/agents.js';
-import { agentNameOf, discoveryKey } from '../../../shared/model-catalog.js';
+import {
+  agentNameOf,
+  TOOL_LABELS,
+  catalogEntry,
+  discoveryKey,
+  normalizeModel,
+  type CatalogModel,
+} from '../../../shared/model-catalog.js';
 import {
   lockDiscovery,
   preferences,
   type DiscoveryPreference,
 } from './discovery.js';
 import { reportedModels, type Runner } from '../../../shared/runners.js';
+import { runsRepo } from '../runs/run.store.js';
 import type { Clock } from '../../kernel/clock.js';
 import { invalid, notFound, ProtocolError } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
@@ -39,6 +55,7 @@ import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { cleanList } from '../../kernel/values.js';
 import {
+  deleteHistory,
   diffAgents,
   listChanges,
   recordChange,
@@ -48,6 +65,7 @@ import {
   agentDirectory,
   agentNamesOf,
   agentsRepo,
+  deleteAgent,
   findAgent,
   insertAgent,
   isRemoved,
@@ -71,16 +89,46 @@ export const AgentPatchSchema: z.ZodType<AgentPatch> = z.strictObject({
     .boolean()
     .optional()
     .meta({ description: 'Offer it work, or stop offering it.' }),
-  expectedRevision: z.number().int().min(1),
+  expectedRevision: z
+    .number()
+    .int()
+    .min(1)
+    .describe('The revision last read; reject if the record has changed.'),
 });
 
 /** What every agent discovered from runners is: the application's instructions and business actions. */
 export interface AgentDefaults {
   readonly instructions: string | null;
   readonly actions: readonly string[];
+  /** Suggested descriptions by tool and normalized model id; never written by applyDefaults. */
+  readonly modelDescriptions?: Readonly<
+    Partial<Record<AgentTool, Readonly<Record<string, CatalogModel['goodAt']>>>>
+  >;
+  /**
+   * Tool and model combinations the application wants enabled as soon as a runner reports them signed in, instead of
+   * only listed for someone to create from (`AgentService.createFromAvailable`). A combination already kept as an
+   * agent, enabled or not, is left exactly as it is: the list only ever creates, never re-enables or reconfigures.
+   */
+  readonly recommendedModels?: readonly {
+    readonly tool: AgentTool;
+    readonly model: string;
+  }[];
 }
 
 const NO_DEFAULTS: AgentDefaults = { instructions: null, actions: [] };
+
+/** The suggested description for a tool and model: the application's own list, else the model catalog's. */
+function suggestionOf(
+  defaults: AgentDefaults,
+  tool: AgentTool,
+  model: string,
+): CatalogModel['goodAt'] | null {
+  return (
+    defaults.modelDescriptions?.[tool]?.[normalizeModel(tool, model)] ??
+    catalogEntry(tool, model)?.goodAt ??
+    null
+  );
+}
 
 /** How often a runner's report refreshes when its tools and models were last seen. */
 const REPORT_REFRESH_MS = 10 * 60_000;
@@ -94,6 +142,23 @@ const AGENT_ATTEMPTS = 3;
 /** The effort a discovered agent starts with: `medium` when its tool takes it, else the tool's default. */
 function initialEffort(tool: AgentTool): string | null {
   return effortsFor({ tool }).includes('medium') ? 'medium' : null;
+}
+
+/** Of `ids`, the ones with at least one run against them: never safe to delete outright. */
+async function agentIdsWithRuns(
+  conn: DatabaseConnection,
+  ids: readonly string[],
+): Promise<Set<string>> {
+  const withRuns = new Set<string>();
+  for (let offset = 0; offset < ids.length; offset += 200) {
+    const batch = ids.slice(offset, offset + 200);
+    if (batch.length === 0) continue;
+    const rows = await runsRepo(conn).findMany({
+      filter: (f) => f.or(batch.map((id) => f.string('agentId').eq(id))),
+    });
+    for (const row of rows) withRuns.add(row.agentId);
+  }
+  return withRuns;
 }
 
 /** The fixed id of the agent of a tool and model, so two runners reporting it at once create one. */
@@ -153,8 +218,53 @@ export interface AgentService {
   syncRunner(unit: Tx, runner: Runner): Promise<void>;
   /** Where every discovered agent's instructions and business actions come from; returns what removes it. */
   setDefaults(provider: () => AgentDefaults): () => void;
+  /** The application's suggested description, falling back to the model catalog. */
+  suggestion(
+    this: void,
+    tool: AgentTool,
+    model: string,
+  ): CatalogModel['goodAt'] | null;
+  /** The tool and model combinations the application auto-enables when a runner reports them (`AgentDefaults.recommendedModels`). */
+  recommended(): readonly {
+    readonly tool: AgentTool;
+    readonly model: string;
+  }[];
   /** Writes the current defaults to every discovered agent that differs; answers how many changed. */
   applyDefaults(options?: { preserveInstructions?: boolean }): Promise<number>;
+  /**
+   * Creates and enables an agent for a tool and model nobody has kept one for yet, from the available models list
+   * (`GET /api/agents/availableModels`): 400 `AGENT_EXISTS` when one already exists (enabled, disabled or pending),
+   * `GOOD_AT_REQUIRED` without a description, `EFFORT_UNSUPPORTED` for an effort its tool does not take.
+   */
+  createFromAvailable(
+    input: RunnerAgentCreateInput,
+    byUserId: string | null,
+  ): Promise<Agent>;
+  /**
+   * Runner-discovered agents nobody enabled and that never ran: safe to remove outright. Left over from before the
+   * application stopped creating one pending agent per model a runner reports (`syncRunner` now only creates an
+   * agent for a recommended combination), or from igniting a tool that reports far more models than anyone enables.
+   * `filter.tool` scopes to one tool's candidates (for the cleanup drawer's rows, paged by the route); omitted, every
+   * candidate (for `cleanupGroups` and the CLI, which has no drawer to page through).
+   */
+  cleanupCandidates(filter?: {
+    readonly tool?: AgentTool;
+    readonly q?: string;
+  }): Promise<CleanupCandidate[]>;
+  /** One row per tool with candidates, for the cleanup drawer's group headers, matching `q` against the agent name. */
+  cleanupGroups(q?: string): Promise<CleanupGroup[]>;
+  /**
+   * Removes the named agents outright, each re-checked against `cleanupCandidates`' own rule first: anything no
+   * longer pending, now enabled, disabled, or with a run against it (another request may have changed it since it was
+   * listed) is left alone and reported back, never removed. Answers what was actually removed and what was skipped.
+   */
+  cleanup(
+    ids: readonly string[],
+    byUserId: string | null,
+  ): Promise<{
+    readonly removed: readonly string[];
+    readonly skipped: readonly string[];
+  }>;
   /** The agent's history, newest first; with `afterRevision`, the changes made after that revision. 404 when absent. */
   history(id: string, options?: HistoryOptions): Promise<AgentChange[]>;
   /** Records in the agent's history, on `conn`, that one of its variables was added, changed or removed. */
@@ -248,30 +358,57 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     };
   };
 
+  /** The name `base`, or `base #2`, `base #3`… the first not already held by a non-removed agent. */
+  async function uniqueAgentName(
+    conn: DatabaseConnection,
+    base: string,
+  ): Promise<string> {
+    const clashes = await agentsRepo(conn).findMany({
+      filter: (f) =>
+        f.and([f.string('name').startsWith(base), f.date('deletedAt').empty()]),
+    });
+    const taken = new Set(clashes.map((record) => record.name));
+    if (!taken.has(base)) return base;
+    let suffix = 2;
+    while (taken.has(`${base} #${suffix}`)) suffix += 1;
+    return `${base} #${suffix}`;
+  }
+
   async function createRunnerAgent(
     unit: Tx,
     tool: AgentTool,
     model: string,
     now: string,
+    displayModel: string | undefined,
+    enable: boolean,
   ): Promise<boolean> {
     const id = runnerAgentId(tool, model);
     const { instructions, actions } = currentDefaults();
+    const description = enable
+      ? (suggestionOf(defaults(), tool, model)?.en ?? null)
+      : null;
+    const name = await uniqueAgentName(
+      unit.conn,
+      agentNameOf(tool, model, displayModel),
+    );
     try {
       // A savepoint: another runner's report creating the same agent at once leaves this transaction usable.
       await unit.conn.transaction((conn) =>
         insertAgent(conn, {
           id,
-          name: agentNameOf(tool, model),
-          description: null,
+          name,
+          description,
           nameText: null,
           descriptionText: null,
           avatar: null,
           type: 'runner',
           source: 'runner',
-          status: 'pending',
+          status: enable ? 'enabled' : 'pending',
           tool,
-          model,
-          modelEntries: [{ tool, model, effort: initialEffort(tool) }],
+          model: model || null,
+          modelEntries: [
+            { tool, model: model || null, effort: initialEffort(tool) },
+          ],
           instructions,
           runnerIds: [],
           actions: [...actions],
@@ -300,6 +437,32 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       createdAt: now,
     });
     return true;
+  }
+
+  async function candidatesMatching(filter: {
+    readonly tool?: AgentTool;
+    readonly q?: string;
+  }): Promise<CleanupCandidate[]> {
+    const conn = tx.read();
+    const pending = (await listAgents(conn)).filter(
+      (agent) => agent.source === 'runner' && agent.status === 'pending',
+    );
+    const withRuns = await agentIdsWithRuns(
+      conn,
+      pending.map((agent) => agent.id),
+    );
+    const needle = filter.q?.trim().toLowerCase();
+    return pending
+      .filter((agent) => !withRuns.has(agent.id))
+      .filter((agent) => !filter.tool || agent.tool === filter.tool)
+      .filter((agent) => !needle || agent.name.toLowerCase().includes(needle))
+      .map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        tool: agent.tool,
+        model: agent.model,
+        createdAt: agent.createdAt,
+      }));
   }
 
   return {
@@ -550,17 +713,24 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       if (combos.length === 0) return;
       const now = clock.now();
       const nowText = now.toISOString();
-      const known = new Map<string, AgentRecord>(
-        (
-          await agentsRepo(unit.conn).findMany({
-            filter: (f) =>
-              f.or(
-                combos.map((combo) =>
-                  f.string('id').eq(runnerAgentId(combo.tool, combo.model)),
-                ),
+      const known = new Map<string, AgentRecord>();
+      // Several selected ACP tools can each report 256 models. Bound SQL parameters and OR depth on every dialect.
+      for (let offset = 0; offset < combos.length; offset += 200) {
+        const batch = combos.slice(offset, offset + 200);
+        const records = await agentsRepo(unit.conn).findMany({
+          filter: (f) =>
+            f.or(
+              batch.map((combo) =>
+                f.string('id').eq(runnerAgentId(combo.tool, combo.model)),
               ),
-          })
-        ).map((record) => [record.id, record]),
+            ),
+        });
+        for (const record of records) known.set(record.id, record);
+      }
+      const recommended = new Set(
+        (defaults().recommendedModels ?? []).map(
+          (item) => `${item.tool}\u0000${item.model}`,
+        ),
       );
       const created: string[] = [];
       const stale: string[] = [];
@@ -568,7 +738,21 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         const id = runnerAgentId(combo.tool, combo.model);
         const record = known.get(id);
         if (!record) {
-          if (await createRunnerAgent(unit, combo.tool, combo.model, nowText))
+          // Everything else a runner signs in to only joins the available models list (`AgentService.createFromAvailable`
+          // builds its rows); creating one per reported model is how one ACP tool once produced hundreds of pending agents.
+          if (!recommended.has(`${combo.tool}\u0000${combo.model}`)) continue;
+          if (
+            await createRunnerAgent(
+              unit,
+              combo.tool,
+              combo.model,
+              nowText,
+              runner.tools
+                .find((tool) => tool.kind === combo.tool)
+                ?.models?.find((model) => model.id === combo.model)?.name,
+              true,
+            )
+          )
             created.push(id);
           continue;
         }
@@ -576,7 +760,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         if (
           record.status === 'pending' &&
           record.name ===
-            `${{ claude: 'Claude', codex: 'Codex', pi: 'Pi', opencode: 'OpenCode' }[combo.tool]} · ${combo.model.split('/').at(-1)}` &&
+            `${TOOL_LABELS[combo.tool]} · ${combo.model.split('/').at(-1)}` &&
           record.name !== generated
         )
           await updateAgent(unit.conn, id, { name: generated });
@@ -586,11 +770,13 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         )
           stale.push(id);
       }
-      if (stale.length > 0)
+      for (let offset = 0; offset < stale.length; offset += 200) {
+        const batch = stale.slice(offset, offset + 200);
         await agentsRepo(unit.conn).updateMany({
-          filter: (f) => f.or(stale.map((id) => f.string('id').eq(id))),
+          filter: (f) => f.or(batch.map((id) => f.string('id').eq(id))),
           values: { lastReportedAt: nowText },
         });
+      }
       for (const id of created)
         unit.emit({ type: 'agent.changed', agentId: id });
     },
@@ -599,6 +785,128 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       return () => {
         if (defaults === provider) defaults = () => NO_DEFAULTS;
       };
+    },
+    suggestion(tool, model) {
+      return suggestionOf(defaults(), tool, model);
+    },
+    recommended() {
+      return defaults().recommendedModels ?? [];
+    },
+    async createFromAvailable(input, byUserId) {
+      const tool = input.tool;
+      const model = input.model;
+      const description = input.description.trim();
+      if (!description)
+        throw invalid(
+          'Write what the agent is good at before enabling it: the project manager hands it work by this.',
+          { reason: 'GOOD_AT_REQUIRED' },
+        );
+      const efforts = effortsFor({ tool });
+      const effort =
+        input.effort === undefined
+          ? initialEffort(tool)
+          : input.effort
+            ? input.effort
+            : null;
+      if (effort && !efforts.includes(effort))
+        throw invalid(
+          `${tool} takes no reasoning effort ${effort}: use one of ${efforts.join(', ')}.`,
+          { reason: 'EFFORT_UNSUPPORTED' },
+        );
+      return tx.run(async (unit) => {
+        const { conn, emit } = unit;
+        const id = runnerAgentId(tool, model);
+        if (await agentsRepo(conn).findOne({ filter: { id } }))
+          throw invalid(
+            'An agent for this tool and model already exists: enable it from the agent list instead.',
+            { reason: 'AGENT_EXISTS' },
+          );
+        const now = clock.now().toISOString();
+        const name = await uniqueAgentName(
+          conn,
+          agentNameOf(tool, model, input.displayModel),
+        );
+        const { instructions, actions } = currentDefaults();
+        await insertAgent(conn, {
+          id,
+          name,
+          description,
+          nameText: null,
+          descriptionText: null,
+          avatar: null,
+          type: 'runner',
+          source: 'runner',
+          status: 'enabled',
+          tool,
+          model: model || null,
+          modelEntries: [{ tool, model: model || null, effort }],
+          instructions,
+          runnerIds: [],
+          actions: [...actions],
+          confirmChanges: 'larger',
+          access: 'everyone',
+          ownerUserId: 'system',
+          maxConcurrentRuns: RUNNER_AGENT_CONCURRENCY,
+          maxAttempts: AGENT_ATTEMPTS,
+          toolPolicy: null,
+          // It came from the available models list, built from current reports: treat creation itself as a report.
+          lastReportedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        });
+        await recordChange(conn, {
+          id: ids.next(),
+          agentId: id,
+          revision: 1,
+          action: 'created',
+          actorUserId: byUserId,
+          changes: [],
+          createdAt: now,
+        });
+        emit({ type: 'agent.changed', agentId: id });
+        return (await findAgent(conn, id))!;
+      });
+    },
+    cleanupCandidates: (filter = {}) => candidatesMatching(filter),
+    async cleanupGroups(q) {
+      const candidates = await candidatesMatching({ q });
+      const counts = new Map<AgentTool | null, number>();
+      for (const candidate of candidates)
+        counts.set(candidate.tool, (counts.get(candidate.tool) ?? 0) + 1);
+      return [...counts.entries()]
+        .map(([tool, count]): CleanupGroup => ({ tool, count }))
+        .sort((a, b) => (a.tool ?? '').localeCompare(b.tool ?? ''));
+    },
+    async cleanup(requested, byUserId) {
+      const unique = [...new Set(requested)];
+      return tx.run(async ({ conn, emit }) => {
+        const withRuns = await agentIdsWithRuns(conn, unique);
+        const removed: string[] = [];
+        const skipped: string[] = [];
+        for (const id of unique) {
+          const agent = await findAgent(conn, id);
+          if (
+            !agent ||
+            agent.source !== 'runner' ||
+            agent.status !== 'pending' ||
+            withRuns.has(id)
+          ) {
+            skipped.push(id);
+            continue;
+          }
+          await deleteHistory(conn, id);
+          await deleteAgent(conn, id);
+          emit({
+            type: 'agent.removed',
+            agentId: id,
+            name: agent.name,
+            reason: 'deleted',
+            byUserId,
+          });
+          removed.push(id);
+        }
+        return { removed, skipped };
+      });
     },
     async applyDefaults(options = {}) {
       const { instructions, actions } = currentDefaults();

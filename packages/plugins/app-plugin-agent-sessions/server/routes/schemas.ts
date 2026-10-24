@@ -3,6 +3,7 @@ import {
   DiscoveredChoicesSchema,
   type DiscoveredChoices,
   PromptContentSchema,
+  SessionStartupSchema,
   type PromptContent,
 } from '@nocobase/acp-bridge/protocol';
 import { z } from 'zod';
@@ -13,6 +14,7 @@ export const DiscoverChoicesInput: z.ZodType<{
   agentId: string;
   cwd: string;
   settings: Record<string, string>;
+  sessionId?: string | undefined;
 }> = z.strictObject({
   agentId: z.string().min(1).max(40).meta({
     description: 'The installed agent to initialize without a prompt.',
@@ -28,22 +30,35 @@ export const DiscoverChoicesInput: z.ZodType<{
     .meta({
       description: 'Selected overrides, applied to discover dependent choices.',
     }),
+  sessionId: z.uuid().optional().meta({
+    description:
+      'The `submissionId` the new session will be created with. The bridge keeps the agent it starts for that session, so its first message does not start another.',
+  }),
 });
 
-import type {
-  Computer,
-  FolderListing,
-  Reference,
-  Session,
-  SessionLink,
-  SessionProject,
+import {
+  SESSION_LINK_ICONS,
+  type Computer,
+  type FolderListing,
+  type Reference,
+  type Session,
+  type SessionLink,
+  type SessionProject,
 } from '../../shared/api.js';
 
 export const ComputerParams: z.ZodType<{ computerId: string }> = z.object({
   computerId: z.string().min(1),
 });
 export const SessionParams: z.ZodType<{ sessionId: string }> = z.object({
-  sessionId: z.string().min(1),
+  sessionId: z.string().min(1).describe('The agent session identifier.'),
+});
+
+export const WithdrawInput: z.ZodType<{ seq: number }> = z.object({
+  seq: z
+    .number()
+    .int()
+    .positive()
+    .meta({ description: 'The original prompt event sequence.' }),
 });
 
 export const ImageParams: z.ZodType<{ sessionId: string; file: string }> =
@@ -129,18 +144,28 @@ export const ComputerSchema: z.ZodType<Computer> = z
   })
   .meta({ ref: 'AgentSessionsComputer' });
 
+const LinkStatusSchema = z
+  .object({
+    label: z.string(),
+    tone: z.enum(['idle', 'active', 'attention', 'done']),
+    icon: z.enum(SESSION_LINK_ICONS).optional().meta({
+      description:
+        "The status's shape and colour; links without one are drawn by `tone`.",
+    }),
+    needsYou: z.string().nullable().optional().meta({
+      description:
+        'What it waits on the viewer for, such as "Waiting for you to accept".',
+    }),
+  })
+  .nullable();
+
 const LinkSchema: z.ZodType<SessionLink> = z.object({
   kind: z.string(),
   refId: z.string(),
   key: z.string().nullable(),
   title: z.string(),
   group: z.string().nullable(),
-  status: z
-    .object({
-      label: z.string(),
-      tone: z.enum(['idle', 'active', 'attention', 'done']),
-    })
-    .nullable(),
+  status: LinkStatusSchema,
   href: z.string().nullable(),
   startable: z.boolean(),
   decidedAt: z.string().nullable(),
@@ -184,12 +209,17 @@ export const SessionSchema: z.ZodType<Session> = z
     settings: z
       .record(z.string(), z.string())
       .meta({ description: 'The choices its owner made, by choice id.' }),
+    startup: SessionStartupSchema.nullable().meta({
+      description:
+        'What the bridge is doing to open its agent: starting it, opening its session or applying its choices; null once it is open.',
+    }),
     running: z.boolean(),
     waiting: z
       .boolean()
       .meta({ description: 'A permission request waits for its owner.' }),
     computerOnline: z.boolean(),
     lastSeq: z.number().int(),
+    seenSeq: z.number().int(),
     project: ProjectFields.nullable().meta({
       description: 'The project it works for, when its owner chose one.',
     }),
@@ -224,10 +254,19 @@ export const ListSessionsQuery: z.ZodType<{
   archived?: 'true' | 'false' | undefined;
   pageSize: number;
   pageToken?: string | undefined;
+  linked?: string | undefined;
 }> = z.object({
   archived: z.enum(['true', 'false']).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   pageToken: z.string().optional(),
+  linked: z
+    .string()
+    .regex(/^[a-zA-Z][\w-]{0,63}:[^:\s][^\s]{0,199}$/u)
+    .optional()
+    .meta({
+      description:
+        'Only the sessions tied to one record, as `<kind>:<refId>`, such as `issue:42`: those that created or mentioned it.',
+    }),
 });
 
 export const ListEventsQuery: z.ZodType<{ after: number; pageSize: number }> =
@@ -243,6 +282,7 @@ export const ListEventsQuery: z.ZodType<{ after: number; pageSize: number }> =
   });
 
 export const CreateSessionInput: z.ZodType<{
+  submissionId?: string | undefined;
   computerId: string;
   agentId: string;
   cwd: string;
@@ -251,6 +291,10 @@ export const CreateSessionInput: z.ZodType<{
   projectId?: string | null | undefined;
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  submissionId: z.uuid().optional().meta({
+    description:
+      'A client UUID retained with immutable input for safe explicit retries.',
+  }),
   computerId: z.string().min(1),
   agentId: z.string().min(1),
   cwd: z
@@ -287,9 +331,14 @@ export const UpdateSessionInput: z.ZodType<{
 });
 
 export const PromptInput: z.ZodType<{
+  submissionId?: string | undefined;
   content: PromptContent[];
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  submissionId: z.uuid().optional().meta({
+    description:
+      'A client UUID retained with immutable input for safe explicit retries.',
+  }),
   content,
   mentions,
 });
@@ -346,12 +395,7 @@ export const ReferenceSchema: z.ZodType<Reference> = z
     key: z.string().nullable(),
     title: z.string(),
     group: z.string().nullable(),
-    status: z
-      .object({
-        label: z.string(),
-        tone: z.enum(['idle', 'active', 'attention', 'done']),
-      })
-      .nullable(),
+    status: LinkStatusSchema,
   })
   .meta({ ref: 'AgentSessionsReference' });
 
@@ -395,3 +439,16 @@ export const UpdateComputerInput: z.ZodType<{ folders: string[] | null }> =
         'The directories sessions may work in, each under what the bridge allows; null for all it allows.',
     }),
   });
+
+/** Work visible to the session owner; progress is supplied by the application's link resolver. */
+export const SessionWorkSchema: z.ZodType<
+  import('../work.js').WorkItem & { readonly progress: unknown }
+> = z.object({
+  kind: z.string(),
+  refId: z.string(),
+  key: z.string().nullable(),
+  title: z.string(),
+  status: z.string().nullable(),
+  group: z.string().nullable(),
+  progress: z.unknown().nullable(),
+});

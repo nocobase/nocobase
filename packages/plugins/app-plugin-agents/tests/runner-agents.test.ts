@@ -1,13 +1,19 @@
 /**
- * Agents discovered from runners: one agent per coding tool and normalized model whatever reports it, pending until
- * someone enables it; where each can run for whom (team runners, personal runners only, others' personal runners);
- * hidden from the roster once no runner reported it for 14 days and back on the next report; and a model a run found
- * unavailable on a runner kept off that runner until it reports the tool's models differently.
+ * Agents built from what runners report. A runner reporting a tool and model signed in no longer creates an agent by
+ * itself: only a combination in the application's recommended list does, already enabled (`syncRunner`); every other
+ * one only joins the available models list (`availableModelGroups`, `availableModelRows`) until someone creates one from it
+ * (`createFromAvailable`). Once an agent exists, visibility (shared runners, personal runners, 14-day unreported) and
+ * stale refresh behave as before.
  */
 import type { ToolInfo } from '@nocobase/agent-protocol';
+import type { MigrationContext } from '@nocobase/db';
+import type { Knex } from 'knex';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { availableModelRows } from '../server/core/agents/available-models.js';
+import { catalogEntry } from '../shared/model-catalog.js';
 import { runnerAgentId } from '../server/core/agents/index.js';
+import runnerAgentRecoveryMigration from '../database/migrations/202610290001_ag_repair_runner_agents.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const DAY = 24 * 60 * 60_000;
@@ -19,7 +25,16 @@ const claude = (...models: string[]): ToolInfo => ({
   modelsDetectionStatus: 'detected',
 });
 
-describe('agents discovered from runners', () => {
+async function applyRunnerAgentRecoveryMigration(
+  target: Harness,
+): Promise<void> {
+  const query = target.database.connection().query;
+  await runnerAgentRecoveryMigration.up({
+    query,
+  } as unknown as MigrationContext);
+}
+
+describe('agents built from runner reports', () => {
   let h: Harness;
   afterEach(async () => {
     await h?.close();
@@ -37,58 +52,328 @@ describe('agents discovered from runners', () => {
       },
     });
 
-  const enable = async (id: string, description = 'Reviews code') => {
-    const agent = await h.services.agents.get(id);
-    return h.services.agents.update(id, 'alice', {
-      description,
-      enabled: true,
-      expectedRevision: agent.revision,
-    });
-  };
-
-  it('keeps one pending agent per tool and model, whatever reports it under whichever spelling', async () => {
+  it('creates no agent for a reported tool and model outside the recommended list, only lists it as available', async () => {
     h = await createHarness();
     await h.registerRunner({
-      name: 'dev-1',
       tools: [claude('claude-haiku-4-5-20251001', 'claude-sonnet-5')],
+    });
+    expect(await h.services.agents.list()).toEqual([]);
+    const conn = h.services.tx.read();
+    const models = availableModelRows(
+      await h.services.runners.all(conn),
+      await h.services.agents.list(),
+      {
+        recommendedModels: h.services.agents.recommended(),
+        suggestion: h.services.agents.suggestion,
+      },
+      'claude',
+    );
+    expect(
+      models.map((model) => [
+        model.tool,
+        model.model,
+        model.agentId,
+        model.status,
+      ]),
+    ).toEqual([
+      ['claude', 'claude-haiku-4-5', null, null],
+      ['claude', 'claude-sonnet-5', null, null],
+    ]);
+  });
+
+  it('auto-creates and enables a recommended combination as soon as a runner reports it signed in, once', async () => {
+    h = await createHarness();
+    h.services.agents.setDefaults(() => ({
+      instructions: null,
+      actions: [],
+      modelDescriptions: {
+        claude: {
+          'claude-sonnet-5': { en: 'Routine work', zh: '常规工作' },
+        },
+      },
+      recommendedModels: [{ tool: 'claude', model: 'claude-sonnet-5' }],
+    }));
+    const runner = await h.registerRunner({
+      tools: [claude('claude-haiku-4-5', 'claude-sonnet-5')],
+    });
+    const agents = await h.services.agents.list();
+    expect(agents).toHaveLength(1);
+    const [agent] = agents;
+    expect(agent).toMatchObject({
+      name: 'Claude · Sonnet 5',
+      tool: 'claude',
+      model: 'claude-sonnet-5',
+      status: 'enabled',
+      description: 'Routine work',
+      source: 'runner',
+    });
+    expect(agent!.id).toBe(runnerAgentId('claude', 'claude-sonnet-5'));
+    // Not pending: already in the roster.
+    expect(await h.services.roster(h.services.tx.read(), 'alice')).toHaveLength(
+      1,
+    );
+    // A later report of the same combination never creates a second one.
+    await heartbeat(runner.key, [claude('claude-sonnet-5')]);
+    expect(await h.services.agents.list()).toHaveLength(1);
+  });
+
+  it('never re-enables or recreates a recommended combination someone disabled or that already exists', async () => {
+    h = await createHarness();
+    h.services.agents.setDefaults(() => ({
+      instructions: null,
+      actions: [],
+      recommendedModels: [{ tool: 'claude', model: 'claude-sonnet-5' }],
+    }));
+    await h.registerRunner({ tools: [claude('claude-sonnet-5')] });
+    const [agent] = await h.services.agents.list();
+    await h.services.agents.update(agent!.id, 'alice', {
+      enabled: false,
+      expectedRevision: agent!.revision,
     });
     await h.registerRunner({
       name: 'dev-2',
-      tools: [
-        claude('claude-haiku-4-5'),
-        {
-          kind: 'codex',
-          authenticated: false,
-          models: [{ id: 'gpt-6-astra' }],
-        },
-      ],
+      tools: [claude('claude-sonnet-5')],
     });
-    const agents = await h.services.agents.list();
-    expect(
-      agents.map((agent) => [
-        agent.name,
-        agent.tool,
-        agent.model,
-        agent.status,
-        agent.source,
-      ]),
-    ).toEqual([
-      ['Claude · Haiku 4.5', 'claude', 'claude-haiku-4-5', 'pending', 'runner'],
-      ['Claude · Sonnet 5', 'claude', 'claude-sonnet-5', 'pending', 'runner'],
-    ]);
-    expect(agents[0]!.id).toBe(runnerAgentId('claude', 'claude-haiku-4-5'));
-    expect(agents[0]!.modelEntries).toEqual([
-      { tool: 'claude', model: 'claude-haiku-4-5', effort: 'medium' },
-    ]);
-    // Pending: not offered work, and not in anyone's roster.
-    expect(await h.services.roster(h.services.tx.read(), 'alice')).toEqual([]);
+    expect(await h.services.agents.list()).toHaveLength(1);
+    expect((await h.services.agents.get(agent!.id)).status).toBe('disabled');
   });
 
-  it('gives each discovered agent the application’s instructions and actions', async () => {
+  const damagedAgents = [
+    { name: 'deleted marker', deleted: true, status: 'enabled' },
+    { name: 'archive marker', archived: true, status: 'disabled' },
+    { name: 'empty model entries', empty: true, status: 'pending' },
+    {
+      name: 'all three corruptions',
+      deleted: true,
+      archived: true,
+      empty: true,
+      status: 'disabled',
+    },
+  ] as const;
+
+  for (const runMigration of [false, true]) {
+    for (const corruption of damagedAgents) {
+      it(`${corruption.name} stays visible and can take work ${runMigration ? 'after migration' : 'without migration'}`, async () => {
+        h = await createHarness();
+        const tool = 'claude';
+        const model = 'claude-sonnet-5';
+        const runner = await h.registerRunner({ tools: [claude(model)] });
+        const created = await h.services.agents.createFromAvailable(
+          { tool, model, description: 'Retained expertise', effort: 'high' },
+          'alice',
+        );
+        const at = h.clock.now().toISOString();
+        await h.database
+          .connection()
+          .query.updateTable('agAgents')
+          .set({
+            status: corruption.status,
+            ...(corruption.deleted ? { deletedAt: at } : {}),
+            ...(corruption.archived ? { archivedAt: at } : {}),
+            ...(corruption.empty ? { modelEntries: [] } : {}),
+          })
+          .where('id', '=', created.id)
+          .execute();
+
+        if (runMigration) await applyRunnerAgentRecoveryMigration(h);
+
+        const agent = await h.services.agents.get(created.id);
+        expect(agent).toMatchObject({
+          id: created.id,
+          status: corruption.status,
+          description: 'Retained expertise',
+          modelEntries: [
+            expect.objectContaining({
+              tool,
+              model,
+              effort: corruption.empty ? 'medium' : 'high',
+            }),
+          ],
+        });
+        expect((await h.services.agents.list()).map(({ id }) => id)).toContain(
+          created.id,
+        );
+
+        const stored = await h.database
+          .connection()
+          .repository('agAgents')
+          .findOne({ filter: { id: created.id } });
+        if (runMigration) {
+          expect(stored).toMatchObject({
+            status: corruption.status,
+            archivedAt: null,
+            deletedAt: null,
+            modelEntries: [
+              expect.objectContaining({
+                tool,
+                model,
+                effort: corruption.empty ? 'medium' : 'high',
+              }),
+            ],
+          });
+        } else {
+          expect(stored).toMatchObject({
+            status: corruption.status,
+            ...(corruption.deleted ? { deletedAt: at } : {}),
+            ...(corruption.archived ? { archivedAt: at } : {}),
+            ...(corruption.empty ? { modelEntries: [] } : {}),
+          });
+        }
+
+        const enabled =
+          agent.status === 'enabled'
+            ? agent
+            : await h.services.agents.update(created.id, 'alice', {
+                enabled: true,
+                expectedRevision: agent.revision,
+              });
+        const runId = await h.enqueue(created.id, corruption.name);
+        const [payload] = await claim(h, runner);
+        expect(enabled.status).toBe('enabled');
+        expect(payload.run.id).toBe(runId);
+        expect(payload.tool.model).toBe(model);
+      });
+    }
+  }
+
+  it('does not restore a marked existing agent when adding its model again', async () => {
+    h = await createHarness();
+    const tool = 'claude';
+    const model = 'claude-sonnet-5';
+    const created = await h.services.agents.createFromAvailable(
+      { tool, model, description: 'Keep this description' },
+      'alice',
+    );
+    const at = h.clock.now().toISOString();
+    await h.database
+      .connection()
+      .query.updateTable('agAgents')
+      .set({
+        status: 'disabled',
+        deletedAt: at,
+        archivedAt: at,
+        modelEntries: [],
+      })
+      .where('id', '=', created.id)
+      .execute();
+
+    const response = await h.request('POST', '/agents/runnerAgents', {
+      user: 'alice',
+      can: ['agents.agents/manage'],
+      body: { tool, model, description: 'Do not replace it' },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.metadata).toMatchObject({
+      reason: 'AGENT_EXISTS',
+    });
+    expect(
+      await h.database
+        .connection()
+        .repository('agAgents')
+        .findOne({ filter: { id: created.id } }),
+    ).toMatchObject({
+      status: 'disabled',
+      description: 'Keep this description',
+      deletedAt: at,
+      archivedAt: at,
+      modelEntries: [],
+    });
+  });
+
+  it('does not add an agents-table write to an ordinary fresh runner report', async () => {
+    h = await createHarness();
+    const model = 'claude-sonnet-5';
+    h.services.agents.setDefaults(() => ({
+      instructions: null,
+      actions: [],
+      recommendedModels: [{ tool: 'claude', model }],
+    }));
+    const registered = await h.registerRunner({ tools: [claude(model)] });
+    const runner = await h.services.runners.get(registered.runnerId);
+    const client = await h.database.connection().client<Knex>();
+    const queries: string[] = [];
+    const listener = (query: { sql: string }) => queries.push(query.sql);
+    client.on('query', listener);
+    try {
+      await h.services.tx.run((unit) =>
+        h.services.agents.syncRunner(unit, runner),
+      );
+    } finally {
+      client.off('query', listener);
+    }
+
+    const agentQueries = queries.filter((query) => /ag_?agents/iu.test(query));
+    expect(agentQueries).toHaveLength(1);
+    expect(agentQueries[0]).toMatch(/^\s*select\b/iu);
+  });
+
+  it('creates and enables an agent from the available models list, naming it uniquely and failing on a duplicate', async () => {
+    h = await createHarness();
+    await h.registerRunner({ tools: [claude('claude-haiku-4-5')] });
+    const agent = await h.services.agents.createFromAvailable(
+      { tool: 'claude', model: 'claude-haiku-4-5', description: 'Small fixes' },
+      'alice',
+    );
+    expect(agent).toMatchObject({
+      name: 'Claude · Haiku 4.5',
+      status: 'enabled',
+      description: 'Small fixes',
+      tool: 'claude',
+      model: 'claude-haiku-4-5',
+    });
+    await expect(
+      h.services.agents.createFromAvailable(
+        { tool: 'claude', model: 'claude-haiku-4-5', description: 'Again' },
+        'alice',
+      ),
+    ).rejects.toMatchObject({ details: { reason: 'AGENT_EXISTS' } });
+    await expect(
+      h.services.agents.createFromAvailable(
+        { tool: 'claude', model: 'claude-opus-5-5', description: '   ' },
+        'alice',
+      ),
+    ).rejects.toMatchObject({ details: { reason: 'GOOD_AT_REQUIRED' } });
+    await expect(
+      h.services.agents.createFromAvailable(
+        {
+          tool: 'claude',
+          model: 'claude-opus-5-5',
+          description: 'Reviews',
+          effort: 'not-a-real-effort',
+        },
+        'alice',
+      ),
+    ).rejects.toMatchObject({ details: { reason: 'EFFORT_UNSUPPORTED' } });
+  });
+
+  it('prefers application suggestions over the model catalog, for a model reported but not yet created too', async () => {
+    h = await createHarness();
+    const suggestion = { en: 'Application suggestion', zh: '应用建议' };
+    const remove = h.services.agents.setDefaults(() => ({
+      instructions: null,
+      actions: [],
+      modelDescriptions: { claude: { 'claude-sonnet-5': suggestion } },
+    }));
+    expect(h.services.agents.suggestion('claude', 'claude-sonnet-5')).toEqual(
+      suggestion,
+    );
+    expect(h.services.agents.suggestion('claude', 'claude-haiku-4-5')).toEqual(
+      catalogEntry('claude', 'claude-haiku-4-5')!.goodAt,
+    );
+    remove();
+    expect(h.services.agents.suggestion('claude', 'claude-sonnet-5')).toEqual(
+      catalogEntry('claude', 'claude-sonnet-5')!.goodAt,
+    );
+    expect(h.services.agents.suggestion('claude', 'unknown')).toBeNull();
+  });
+
+  it('gives each discovered agent the application’s instructions and actions, applying later changes without touching an edited description', async () => {
     h = await createHarness();
     h.services.agents.setDefaults(() => ({
       instructions: 'Do the one step you are given.',
       actions: ['crm.deals/view', 'crm.deals/view'],
+      recommendedModels: [{ tool: 'claude', model: 'claude-sonnet-5' }],
     }));
     await h.registerRunner({ tools: [claude('claude-sonnet-5')] });
     const [agent] = await h.services.agents.list();
@@ -96,14 +381,20 @@ describe('agents discovered from runners', () => {
       instructions: 'Do the one step you are given.',
       actions: ['crm.deals/view'],
     });
+    await h.services.agents.update(agent!.id, 'alice', {
+      description: 'My own words',
+      expectedRevision: agent!.revision,
+    });
     h.services.agents.setDefaults(() => ({
       instructions: 'Reply once.',
       actions: [],
     }));
     expect(await h.services.agents.applyDefaults()).toBe(1);
-    expect(await h.services.agents.get(agent!.id)).toMatchObject({
+    const after = await h.services.agents.get(agent!.id);
+    expect(after).toMatchObject({
       instructions: 'Reply once.',
       actions: [],
+      description: 'My own words',
     });
     expect(await h.services.agents.applyDefaults()).toBe(0);
   });
@@ -116,8 +407,14 @@ describe('agents discovered from runners', () => {
       ownerUserId: 'alice',
       tools: [claude('claude-sonnet-5')],
     });
-    const id = runnerAgentId('claude', 'claude-sonnet-5');
-    await enable(id, 'Small changes');
+    const { id } = await h.services.agents.createFromAvailable(
+      {
+        tool: 'claude',
+        model: 'claude-sonnet-5',
+        description: 'Small changes',
+      },
+      'alice',
+    );
     const conn = h.services.tx.read();
     const [asAlice] = await h.services.views(conn, 'alice', { canEdit: true });
     expect(asAlice).toMatchObject({
@@ -136,7 +433,7 @@ describe('agents discovered from runners', () => {
     expect(await h.services.roster(conn, 'bob')).toEqual([
       expect.objectContaining({ id, online: false, personalOnly: true }),
     ]);
-    // A team runner takes everyone's work.
+    // A shared runner takes everyone's work.
     await h.registerRunner({
       name: 'dev-2',
       tools: [claude('claude-sonnet-5')],
@@ -170,7 +467,10 @@ describe('agents discovered from runners', () => {
     const runner = await h.registerRunner({
       tools: [claude('claude-sonnet-5')],
     });
-    const id = runnerAgentId('claude', 'claude-sonnet-5');
+    const { id } = await h.services.agents.createFromAvailable(
+      { tool: 'claude', model: 'claude-sonnet-5', description: 'Reviews' },
+      'alice',
+    );
     const first = (await h.services.agents.get(id)).lastReportedAt;
     h.clock.advance(60_000);
     await heartbeat(runner.key, [claude('claude-sonnet-5')]);
@@ -188,8 +488,10 @@ describe('agents discovered from runners', () => {
       name: 'dev-1',
       tools: [claude('claude-opus-5-5')],
     });
-    const id = runnerAgentId('claude', 'claude-opus-5-5');
-    await enable(id);
+    const { id } = await h.services.agents.createFromAvailable(
+      { tool: 'claude', model: 'claude-opus-5-5', description: 'Design' },
+      'alice',
+    );
     const runId = await h.enqueue(id, '1');
     expect(await claim(h, dev1)).toHaveLength(1);
     await h.services.reports.fail({ id: dev1.runnerId }, runId, {

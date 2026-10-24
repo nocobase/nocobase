@@ -1,9 +1,272 @@
+import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
+import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  aiFormFill: {
+    title: 'AI form assistance',
+    description: 'Describe your request and let AI help fill the form.',
+    draftTitle: 'Purchase request',
+    formDescription: 'Tell us what you need to purchase and why.',
+    draftOnly: 'Filling demo only. Nothing is submitted or saved.',
+    name: 'Purchase item',
+    namePlaceholder: 'For example: designer laptops',
+    department: 'Requesting department',
+    departmentPlaceholder: 'Select a department',
+    departments: {
+      design: 'Product Design',
+      engineering: 'Engineering',
+      marketing: 'Marketing',
+      admin: 'Administration',
+    },
+    quantity: 'Quantity',
+    quantityPlaceholder: 'Enter quantity',
+    budget: 'Estimated total',
+    budgetPlaceholder: 'Enter the estimated total',
+    currency: 'CNY',
+    arrival: 'Expected delivery date',
+    arrivalPlaceholder: 'Select a date',
+    purpose: 'Purchase purpose',
+    purposePlaceholder: 'Describe the use or reason for this purchase',
+    openChat: 'AI fill',
+    chatHint: 'Describe what to fill in AI chat.',
+    unavailable:
+      'AI assistance is unavailable. Check the chat and model configuration.',
+    hint: 'Try “AI fill” above, or enter the details manually.',
+    clear: 'Clear form',
+    undo: 'Undo this fill',
+    completed: 'Filled {{count}} fields. You can keep editing.',
+    retry: 'Retry',
+    prompt:
+      'Please purchase 3 designer laptops for the Product Design department, with an estimated total of CNY 36,000 and delivery by November 6, 2026. They will be used by new designers for daily design work and prototyping. Fill only the current form; do not submit or save it.',
+    askFailed: 'Could not open chat. Check your connection and try again.',
+    proposalTitle: 'Form values',
+    applying: 'Updating the draft…',
+    apply: 'Apply to draft',
+    dismiss: 'Dismiss',
+    proposalPending: 'Preparing form values…',
+    proposalFailed: 'The proposal could not be completed. Send a new request.',
+    invalidProposal: 'The proposal is invalid. Request a new proposal.',
+    invalidName: 'Enter a name between 1 and 120 characters.',
+    invalidBudget: 'Enter a total from 0 to 1,000,000.',
+    invalidDraft:
+      'Check the quantity (1–10,000), total (0–1,000,000) and other form values before sending.',
+    applied: 'Applied to the browser draft. Nothing was saved.',
+    dismissed: 'Dismissed. The draft was not changed.',
+    stale:
+      'The form or draft has changed. Include the current form and generate a new proposal.',
+    missingSource:
+      'The selected source form is missing or does not match this proposal. Open the source history or generate a new proposal.',
+    failed:
+      'The draft update could not be confirmed. Review the draft before trying again.',
+    partial:
+      'Only part of the draft may have changed. Review the draft and generate a new proposal.',
+    priority: 'Priority',
+    subscribe: 'Receive updates',
+    low: 'Low',
+    normal: 'Normal',
+    high: 'High',
+    yes: 'Yes',
+    no: 'No',
+  },
+  structuredExtraction: {
+    title: 'AI structured extraction',
+    description:
+      'Extract key information from text and organize it into an editable form.',
+    contactTitle: 'Contact profile',
+    contactDescription:
+      'Extract contact details, a nested address and a list of skills.',
+    orderTitle: 'Purchase order',
+    orderDescription:
+      'Extract a supplier, contact and up to five purchase items.',
+    contactSample:
+      'Alex Chen is a product manager at Example Studio in Shanghai, China. Email: alex@example.test; phone: +86 138 0000 0000. Skills: product design, TypeScript, data analysis.',
+    orderSample:
+      'Please order from Example Supplies. Contact: Morgan Lee, morgan@example.test. Currency: USD. We need 3 keyboards at 49.50 each and 2 monitors at 220 each. Please use recyclable packaging.',
+    model: 'Language model',
+    selectModel: 'Select a model',
+    source: 'Source text',
+    result: 'Extracted information',
+    extracted: 'Extracted',
+    scenarios: 'Extraction examples',
+    extract: 'Extract',
+    extracting: 'Extracting…',
+    localOnly: 'Edit the result directly. Nothing is saved.',
+    success: 'Extracted information filled into the form',
+    noModels: 'No chat models are available.',
+    missingInput: 'Select a model and enter source text.',
+    textTooLong: 'Enter no more than 20,000 characters.',
+    invalidText: 'Enter between 1 and 20,000 characters.',
+    invalidModel: 'This model is unavailable. Select an available model.',
+    errorTitle: 'Could not extract information',
+    requestFailed:
+      'Extraction failed. Check the model configuration and retry manually.',
+    timeout:
+      'Extraction timed out; the result is unknown. Do not immediately resubmit.',
+    forbidden:
+      'You do not have permission to use this feature. Contact an administrator.',
+    sessionExpired: 'Your session expired. Sign in again.',
+    invalidSchema:
+      "This demo's output schema is invalid. Check its definition.",
+    catalogFailed: 'Could not load models.',
+    retry: 'Retry',
+    signIn: 'Sign in again',
+    emptyItems: 'No items yet. Extract text to fill them in.',
+    itemNumber: 'Item {{number}}',
+    fields: {
+      name: 'Name',
+      company: 'Company',
+      jobTitle: 'Job title',
+      email: 'Email',
+      phone: 'Phone',
+      address: 'Address',
+      city: 'City',
+      country: 'Country',
+      skills: 'Skills (comma-separated)',
+      supplier: 'Supplier',
+      contact: 'Contact',
+      currency: 'Currency',
+      notes: 'Notes',
+      items: 'Items',
+      product: 'Product',
+      quantity: 'Quantity',
+      unitPrice: 'Unit price',
+    },
+  },
   workflows: {
+    operation: 'Operation',
+    resultingState: 'Resulting state',
+    initialState: 'Initial',
+    finalState: 'Final',
+    processDescription: 'Workflow description',
+    processSummary:
+      '{{title}} has {{states}} states and {{transitions}} transitions. The diagram shows how records move between states.',
+    initialStates: 'Initial states',
+    finalStates: 'Final states',
+    stateTransitions: 'State transitions',
+    manualTransition: 'User action',
+    automaticTransition: 'Automatic',
+    noTransitions: 'No state transitions are defined.',
+    processDiagram: 'Workflow diagram',
+
+    dragCategory: 'Drag to reorder {{title}}',
+    categoryMenu: 'Category menu: {{title}}',
+    moveCategoryUp: 'Move up',
+    moveCategoryDown: 'Move down',
+    savingCategories: 'Saving category changes',
+    editCategoryTitle: 'Edit category',
+    categoryDialogHelp: 'Choose a name for this workflow category.',
+    changeCategory: 'Change category: {{title}}',
+
+    readOnlyParameters:
+      'This workflow has configurable parameters. Your access is read-only.',
+    unsavedParameters: 'Your parameter changes have not been saved.',
+    keepParameterEditing: 'Keep editing',
+    discardParameterChanges: 'Discard changes',
+    reloadParameterRevision: 'Load latest revision and keep draft',
+    nodeParametersDescription:
+      'Only parameters associated with this node or transition are shown. Other workflow parameters remain unchanged.',
+    workflowParameters: 'Workflow parameters',
+    parameterRevision: 'Workflow parameter version {{revision}}',
+    parametersTitle: '{{name}} parameters',
+    parametersDescription:
+      'These settings apply only to this workflow. Existing snapshots remain unchanged.',
+    discardParameters: 'Discard unsaved parameter changes?',
+    noParameters: 'This workflow has no configurable parameters.',
+    addParameterEntry: 'Add entry',
+    removeParameterEntry: 'Remove entry',
+    saveParameters: 'Save parameters',
+    parametersSaved: 'Parameters saved.',
+    parametersFailed: 'Could not save parameters.',
+    officeRules: {
+      removeTitle: 'Remove department “{{name}}”?',
+      removeAction: 'Remove department',
+      reloadTitle: 'Discard edits and reload?',
+      reloadAction: 'Discard and reload',
+
+      invalidDepartmentName:
+        'Use a unique department name of 1–100 characters.',
+      clerksRequired: 'Select at least one clerk for this department.',
+      removeSelectedDepartment:
+        'Clear this department from Allowed departments before removing it. Other workflows may also reference it.',
+
+      removeDepartment:
+        'Remove shared department “{{name}}”? This affects new dispatch rows in all office workflows. Existing task participants are retained.',
+      reloadConfirm:
+        'Reload the latest configuration and discard your unsaved workflow and shared department changes?',
+
+      title: 'Dispatch rules',
+      help: 'Resolve participants from the shared organization when adding a dispatch row. Existing rows keep their participants.',
+      departments: 'Allowed departments',
+      allDepartments:
+        'No selection allows all shared departments. Selecting departments restricts distribution to those departments.',
+      ownDepartment: 'Only allow the department of the current task',
+      assigneeRole: 'Default executor role',
+      ccHeads: 'Copy department heads by default',
+      ccLeaders: 'Copy leaders by default',
+      sharedOrganization: 'Shared departments and role members',
+      sharedHelp:
+        'Shared by incoming documents, clerk tasks and team tasks. Changes apply to new dispatch rows in all three workflows. Maintain role membership here; workflow rules select who receives each task.',
+      legacyHelp:
+        'Legacy workflow departments are combined here. For duplicate names, incoming settings take precedence, then clerk and team settings. Saving shared departments replaces the legacy sources for future rows.',
+      searchPeople: 'Search people for {{role}}',
+      noPeople:
+        'No additional matching people. Clear the search to show selected members only.',
+      invalidOrganization: 'Check department names and clerk membership below.',
+      departmentInUse:
+        'This department is selected by another workflow. Update that workflow before renaming or removing it.',
+    },
+    parameterFields: {
+      departments: 'Departments',
+      managementGroups: 'Management groups',
+      holidays: 'Work calendar',
+      name: 'Name',
+      clerks: 'Clerks',
+      heads: 'Department heads',
+      leaders: 'Leaders',
+      members: 'Members',
+      date: 'Date',
+      workday: 'Working day (otherwise a holiday)',
+    },
+    parameterSettings: 'Parameter settings',
+    back: 'Back',
+    systemManagement: 'System management',
+    allCategories: 'All categories',
+    uncategorized: 'Uncategorized',
+    manageCategories: 'Manage categories',
+    categoryHelp:
+      'Organize workflows without changing their definitions. Lower sort orders appear first.',
+    discardChanges: 'Discard unsaved category changes?',
+    editCategory: 'Edit',
+    deleteCategory: 'Delete',
+    deleteCategoryConfirm:
+      'Delete “{{title}}”? Its workflows will become uncategorized.',
+    confirmDelete: 'Confirm deletion',
+    cancel: 'Cancel',
+    addCategory: 'New category',
+    categoryColor: 'Color',
+    categoryColors: {
+      gray: 'Gray',
+      red: 'Red',
+      orange: 'Orange',
+      amber: 'Amber',
+      green: 'Green',
+      teal: 'Teal',
+      blue: 'Blue',
+      indigo: 'Indigo',
+      purple: 'Purple',
+      pink: 'Pink',
+    },
+    categoryName: 'Category name',
+    categoryOrder: 'Sort order',
+    save: 'Save',
+    saveFailed:
+      'Could not save. Check your access and refresh the list before retrying.',
+    category: 'Category',
+    categoryFilter: 'Filter by category',
+
     group: 'Workflow',
     businessGroup: 'Business workflows',
     managementGroup: 'Workflow management',
@@ -15,6 +278,9 @@ const enUS = {
     definition: 'Workflow definition',
     execution: 'Workflow execution',
     executionCount: 'Executions',
+    executionActivity: 'Executions',
+    lastExecutedAt: 'Last {{date}}',
+    neverExecuted: 'Not executed yet',
     workflow: 'Workflow',
     source: 'Source',
     states: 'States',
@@ -26,6 +292,7 @@ const enUS = {
     all: 'All workflows',
     filter: 'Filter by workflow',
     clear: 'Clear filter',
+    filterByName: 'Filter by name',
     refresh: 'Refresh',
     previous: 'Previous',
     next: 'Next',
@@ -39,11 +306,10 @@ const enUS = {
     notFound: 'This workflow or execution no longer exists.',
     signIn: 'Sign in to view workflows.',
     retry: 'Retry',
+    executionCountLink: 'Executions: {{count}}',
     viewExecutions: 'View executions',
     parameterHint:
       'Click a configured node or transition to adjust its runtime parameters. Other nodes show their definition details. Changes apply according to each workflow’s snapshot or live mode.',
-    noParameters:
-      'This workflow has no configurable node parameters. Click a node or transition to inspect its definition.',
     currentState: 'Displayed state',
     latest: 'Latest progress',
     historyHint:
@@ -72,24 +338,7 @@ const enUS = {
       lifecycle: 'Lifecycle examples',
       office: 'Office workflows',
     },
-    names: {
-      tickets: 'Help desk',
-      expenses: 'Expense approval',
-      reviewerDemo: 'Reviewer approval (snapshot)',
-      reviewerLiveDemo: 'Reviewer approval (live)',
-      orders: 'Order payment',
-      invoices: 'E-invoicing',
-      exports: 'Data exports',
-      purchases: 'Flash sale',
-      fulfilments: 'Shipping',
-      subscriptions: 'Subscriptions',
-      dataRequests: 'Data usage requests',
-      extractions: 'Data extraction tasks',
-      incoming: 'Incoming documents',
-      clerkTasks: 'Clerk tasks',
-      teamTasks: 'Team tasks',
-      executorTasks: 'Executor tasks',
-    },
+    names: workflowNamesEnUS,
     runStates: {
       queued: 'Queued',
       running: 'Running',
@@ -102,6 +351,87 @@ const enUS = {
   // The template's own copy: the shell, the sign-in pages and shared components. Keep it in `./system/` so a
   // template upgrade can replace it without touching the application's copy below.
   ...systemEnUS,
+  ...agentChatEnUS,
+  onlineAgent: {
+    group: 'Agents',
+    agents: 'Agents',
+    runtimes: 'Runtimes',
+    skills: 'Skills',
+    newSkill: 'New skill',
+    skillDetail: 'Skill details',
+    connectRuntime: 'Connect runtime',
+    models: 'Models',
+    openModels: 'Open models',
+    checkingModels: 'Checking chat models…',
+    catalogFailed: 'Could not load chat models.',
+    noModels: {
+      title: 'No chat model configured',
+      description:
+        'Add a model service and enable a chat model to start chatting.',
+      readOnly: 'Ask an administrator to configure a chat model.',
+    },
+  },
+  aiTranslation: {
+    title: 'AI Translation',
+    description: 'Translate naturally. Keep the meaning.',
+    model: 'Language model',
+    selectModel: 'Select a model',
+    translate: 'Translate',
+    translating: 'Translating…',
+    original: 'Original',
+    translation: 'Translation',
+    sourceLanguage: 'Source language',
+    targetLanguage: 'Target language',
+    sourcePlaceholder: 'Enter text to translate',
+    resultPlaceholder: 'Your translation will appear here',
+    limit: 'Use up to 10,000 characters',
+    required: 'Enter text to translate',
+    noModels:
+      'No chat model is available. Configure one or ask an administrator.',
+    catalogFailed: 'Could not load models. Please try again.',
+    unavailable:
+      'The model catalog is unavailable. Reload or contact an administrator.',
+    failed: 'Translation failed. Check the model and try again.',
+    timeout: 'Translation timed out. Please try again later.',
+    unknownOutcome:
+      'The connection was interrupted; the result is unknown. Translating again may call the model twice.',
+    forbidden: 'You do not have access. Ask an administrator.',
+    sessionExpired: 'Your session expired. Sign in again.',
+    signIn: 'Sign in again',
+    retry: 'Retry',
+    success: 'Translation complete',
+    workspace: 'Translation workspace',
+    swap: 'Swap languages',
+    clear: 'Clear',
+    copy: 'Copy',
+    copied: 'Translation copied',
+    copyFailed: 'Could not copy. Select the translation and copy it manually.',
+    tryExample: 'Try an example',
+    examples: {
+      product: {
+        title: 'Product introduction',
+        text: 'NocoBase is an extensible application development platform that helps teams build and deliver business applications faster.',
+      },
+      email: {
+        title: 'Business email',
+        text: 'Hello, thank you for your interest in our product. We would like to invite you to an online demo next Wednesday to explore how it can help your team work more efficiently. We look forward to hearing from you.',
+      },
+      notice: {
+        title: 'Event announcement',
+        text: 'Join us this Friday at 3 p.m. for a product discussion. Bring your ideas and explore new possibilities with the team.',
+      },
+    },
+    languages: {
+      auto: 'Detect language',
+      'zh-CN': 'Simplified Chinese',
+      en: 'English',
+      ja: 'Japanese',
+      ko: 'Korean',
+      fr: 'French',
+      de: 'German',
+      es: 'Spanish',
+    },
+  },
   i18nExamples: {
     title: 'Internationalization',
     description:
@@ -268,6 +598,17 @@ const enUS = {
     },
   },
   examples: {
+    aiFormFill: {
+      title: 'AI form assistance',
+      description:
+        'Review an application-owned tool proposal and explicitly fill a local draft without saving records.',
+    },
+    onlineAgent: {
+      title: 'Online Agent',
+      description:
+        'Configure a chat model and talk to Online Agent from any page.',
+      open: 'Open Agent chat',
+    },
     i18n: {
       title: 'Internationalization',
       description:

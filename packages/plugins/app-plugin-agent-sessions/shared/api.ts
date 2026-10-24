@@ -6,6 +6,7 @@ import type {
   AgentInfo,
   SessionChoice,
   SessionEvent,
+  SessionStartup,
   SessionState,
 } from '@nocobase/acp-bridge/protocol';
 
@@ -17,6 +18,7 @@ export type {
   PromptPart,
   SessionChoice,
   SessionEvent,
+  SessionStartup,
   SessionState,
 } from '@nocobase/acp-bridge/protocol';
 
@@ -63,6 +65,20 @@ export interface OutdatedBridge {
   readonly refusedAt: string;
 }
 
+/**
+ * A status's shape: not started (a dashed ring), started (half filled), blocked (a pause), in review (three quarters),
+ * done (a check) and closed without being done (a cross).
+ */
+export const SESSION_LINK_ICONS = [
+  'backlog',
+  'started',
+  'blocked',
+  'review',
+  'done',
+  'closed',
+] as const;
+export type SessionLinkIcon = (typeof SESSION_LINK_ICONS)[number];
+
 /** How something tied to a session stands, as the application that owns it says. */
 export interface SessionLink {
   readonly kind: string;
@@ -74,8 +90,15 @@ export interface SessionLink {
   readonly group: string | null;
   readonly status: {
     readonly label: string;
-    /** `attention` when it waits for the viewer, `active` while work goes on, `done` once finished. */
+    /**
+     * `attention` when it waits for the viewer, `active` while work goes on, `done` once finished. Drawn only for a
+     * link without `icon`, as older applications and stored data give it.
+     */
     readonly tone: 'idle' | 'active' | 'attention' | 'done';
+    /** The shape and colour of its status (`SessionLinkIcon`), the same wherever the application draws it. */
+    readonly icon?: SessionLinkIcon;
+    /** What it waits on the viewer for, such as "Waiting for you to accept"; null or absent when it waits for nothing. */
+    readonly needsYou?: string | null;
   } | null;
   /** Where the application shows it, relative to the application's routes. */
   readonly href: string | null;
@@ -110,6 +133,8 @@ export interface Session {
   readonly title: string;
   readonly titleSource: 'owner' | 'agent' | 'message';
   readonly state: SessionState | null;
+  /** What the bridge is doing to open its agent, null once it is open. */
+  readonly startup: SessionStartup | null;
   /** The choices its owner made, by `SessionChoice` id. */
   readonly settings: Readonly<Record<string, string>>;
   /** A turn is running. */
@@ -119,6 +144,8 @@ export interface Session {
   /** Whether its computer is connected; false once the computer is removed. */
   readonly computerOnline: boolean;
   readonly lastSeq: number;
+  /** Committed read position; permissions are independent of reading. */
+  readonly seenSeq: number;
   /** The project it works for, when its owner chose one. */
   readonly project: SessionProject | null;
   readonly links: readonly SessionLink[];

@@ -3,6 +3,35 @@ import { describeIntegrationDatabases } from '../helpers.js';
 import { createQueryOrdersCollection, seedQueryOrders } from './helpers.js';
 
 describeIntegrationDatabases('query select', (context) => {
+  it('maps aliases, nulls and timestamps across rows and first-row reads', async () => {
+    await createQueryOrdersCollection(context);
+    await seedQueryOrders(context, 'queryOrders');
+    const query = context.database
+      .query()
+      .selectFrom('queryOrders')
+      .select([
+        'status as status_alias',
+        'orderNo as orderNumber',
+        'paidAt as payment_time',
+      ])
+      .orderBy('sort');
+    const rows = await query.execute();
+    expect(rows).toEqual([
+      { status_alias: 'draft', orderNumber: 'SO-001', payment_time: null },
+      {
+        status_alias: 'paid',
+        orderNumber: 'SO-002',
+        payment_time: '2026-08-14T10:00:00.000',
+      },
+      {
+        status_alias: 'paid',
+        orderNumber: 'SO-003',
+        payment_time: '2026-08-14T11:00:00.000',
+      },
+    ]);
+    expect(await query.executeTakeFirst()).toEqual(rows[0]);
+  });
+
   it('selects rows and uses Kysely-style terminal methods', async () => {
     const ordersTable = 'queryOrders';
 

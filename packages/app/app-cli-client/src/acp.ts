@@ -29,6 +29,13 @@ import {
 import type { AppCliConfig } from './config.ts';
 import { currentSession, type Session } from './dynamic/session.ts';
 import { detectInstallation } from './install.ts';
+import { readUserConfig } from './lib/credentials.ts';
+import {
+  hasStudioSkill,
+  prepareSessionSkill,
+  sessionSkillInstructions,
+  skillsEnvironment,
+} from './skills.ts';
 import { AppCommand, UsageError } from './lib/command.ts';
 import { globalFlags } from './lib/globals.ts';
 import {
@@ -131,6 +138,12 @@ export function acpCommands(app: AppCliConfig): Record<string, Command.Class> {
       async run(): Promise<void> {
         const { flags } = await this.parse(AcpStart);
         const session = await signedIn();
+        const profile = session.profile;
+        if (!profile)
+          throw new UsageError(
+            `Agent sessions require a signed-in profile. Run \`${app.bin} login\` first.`,
+            EXIT_CODES.auth,
+          );
         const stateFile = stateFileOf(this.paths.home, session);
         const release = await holdLock(`${stateFile}.lock`, app.bin);
         const stop = new AbortController();
@@ -141,6 +154,29 @@ export function acpCommands(app: AppCliConfig): Record<string, Command.Class> {
           this.log(flags.service ? `${timestamp()} ${message}` : message);
         try {
           await runBridge({
+            sessionInstructions: (agentId) =>
+              sessionSkillInstructions(skillsEnvironment(app), agentId),
+            prepareSession: async (agentId, sessionId) => {
+              if (!hasStudioSkill(app) || !app.envPrefix)
+                throw new Error(
+                  'This CLI does not ship the nb-studio-cli Skill required by agent sessions. Update the CLI.',
+                );
+              const user = await readUserConfig({
+                paths: this.paths,
+                config: app,
+                profile,
+                profileOnly: true,
+              });
+              if (!user || user.server !== session.server)
+                throw new Error(
+                  'The bridge-selected profile is no longer available for this server. Sign in and restart the bridge.',
+                );
+              await prepareSessionSkill(skillsEnvironment(app), agentId);
+              return {
+                [`${app.envPrefix}_PROFILE`]: profile,
+                [`${app.envPrefix}_AGENT_SESSION`]: sessionId,
+              };
+            },
             server: session.server,
             headers: session.headers,
             client: { name: app.bin, version: this.config.version },

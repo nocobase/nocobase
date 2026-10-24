@@ -18,6 +18,7 @@ await import('./reset-managed-schema.test.js');
 await import('./test-provisioner.test.js');
 await import('./transaction-isolation.test.js');
 await import('./column-defaults.test.js');
+await import('./conditional-update.test.js');
 process.chdir(new URL('../../../db-testkit/', import.meta.url).pathname);
 
 const loadTests = import.meta.glob(

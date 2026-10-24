@@ -2,10 +2,12 @@
 // launcher a packaged CLI starts with, and the local link. Packing itself installs from a registry and downloads Node.js,
 // so it is checked by hand (`pnpm nocobase cli build --targets <this platform> --host-node`), not here.
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   chmod,
   mkdir,
   mkdtemp,
+  readdir,
   readFile,
   readlink,
   realpath,
@@ -16,7 +18,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CommandError } from '../src/command/errors.ts';
 import {
@@ -31,12 +33,25 @@ import {
   checkPackOptions,
   copySkills,
   launcherScript,
+  nodeBinary,
 } from '../src/lib/cli-pack.ts';
 
 const execFileAsync = promisify(execFile);
+
+const { renameAcross, actualRename } = await vi.hoisted(async () => {
+  const fs = await import('node:fs/promises');
+  return { renameAcross: vi.fn(fs.rename), actualRename: fs.rename };
+});
+vi.mock('node:fs/promises', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('node:fs/promises')>()),
+  rename: renameAcross,
+}));
 const created: string[] = [];
 
 afterEach(async () => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  renameAcross.mockImplementation(actualRename);
   await Promise.all(
     created.splice(0).map((dir) => rm(dir, { force: true, recursive: true })),
   );
@@ -261,5 +276,64 @@ describe('nocobase cli link', () => {
     await expect(
       linkCli(application, requireCliBrand(application), other),
     ).rejects.toMatchObject({ errorCode: 'CLI_LINK_EXISTS' });
+  });
+});
+
+describe('the Node.js a package carries', () => {
+  /** A nodejs.org-shaped archive of `name`, holding only `bin/node`, with the SHASUMS256.txt that lists it. */
+  async function nodeRelease(
+    name: string,
+  ): Promise<Record<string, Uint8Array | string>> {
+    const dir = await tempDir();
+    await mkdir(path.join(dir, name, 'bin'), { recursive: true });
+    await writeFile(path.join(dir, name, 'bin', 'node'), '#!/bin/sh\n');
+    await execFileAsync('tar', ['-czf', `${name}.tar.gz`, name], { cwd: dir });
+    const archive = new Uint8Array(
+      await readFile(path.join(dir, `${name}.tar.gz`)),
+    );
+    const sum = createHash('sha256').update(archive).digest('hex');
+    return {
+      [`${name}.tar.gz`]: archive,
+      'SHASUMS256.txt': `${sum}  ${name}.tar.gz\n`,
+    };
+  }
+
+  it('extracts the download beside its cache, so a separate temporary filesystem cannot break the rename', async () => {
+    const name = 'node-v24.0.0-linux-x64';
+    const files = await nodeRelease(name);
+    vi.stubGlobal('fetch', (url: string) => {
+      const body = files[url.slice(url.lastIndexOf('/') + 1)];
+      return Promise.resolve(
+        new Response(body ?? null, { status: body === undefined ? 404 : 200 }),
+      );
+    });
+    const cacheDir = path.join(await tempDir(), 'node');
+    // os.tmpdir() as its own filesystem: a rename out of it into the cache fails as it does on such a machine.
+    const separate = await tempDir();
+    vi.stubEnv('TMPDIR', separate);
+    renameAcross.mockImplementation((from: string, to: string) => {
+      if (from.startsWith(separate) && !to.startsWith(separate)) {
+        return Promise.reject(
+          Object.assign(
+            new Error(
+              `EXDEV: cross-device link not permitted, rename '${from}'`,
+            ),
+            { code: 'EXDEV' },
+          ),
+        );
+      }
+      return actualRename(from, to);
+    });
+
+    const binary = await nodeBinary('24.0.0', 'linux-x64', {
+      cacheDir,
+      hostNode: false,
+      log: () => undefined,
+    });
+
+    expect(binary).toBe(path.join(cacheDir, name, 'node'));
+    expect(await readFile(binary, 'utf8')).toBe('#!/bin/sh\n');
+    // The download directory is removed once the binary is in place.
+    expect(await readdir(cacheDir)).toEqual([name]);
   });
 });

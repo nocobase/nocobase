@@ -156,6 +156,50 @@ describe('datetime values carrying a zone offset', () => {
 });
 
 describe('temporal result values', () => {
+  it.each([
+    ['1000-01-01 00:00:00', '1000-01-01T00:00:00.000'],
+    ['2000-02-29T23:59:59.123456', '2000-02-29T23:59:59.123'],
+    ['2024-02-29 01:02:03.1Z', '2024-02-29T01:02:03.100'],
+    ['9999-12-31T23:59:59.999+00:00', '9999-12-31T23:59:59.999'],
+  ])('reads an offset-free or UTC timestamp %s', (input, local) => {
+    expect(
+      normalizeTemporalResultValue({ name: 'value', type: 'datetime' }, input),
+    ).toBe(local);
+    expect(
+      normalizeTemporalResultValue(
+        { name: 'value', type: 'datetimeTz' },
+        input,
+      ),
+    ).toBe(`${local}Z`);
+  });
+
+  it.each([
+    '0999-12-31T23:59:59Z',
+    '1900-02-29T00:00:00',
+    '2100-02-29T00:00:00',
+    '2026-04-31T00:00:00',
+    '2026-00-01T00:00:00',
+    '2026-13-01T00:00:00',
+    '2026-01-00T00:00:00',
+    '2026-01-32T00:00:00',
+    '2026-01-01T24:00:00',
+    '2026-01-01T00:60:00',
+    '2026-01-01T00:00:60',
+    '2026-01-01T00:00:00-00:00',
+    '2026-01-01T00:00:00.1234567',
+  ])('rejects invalid stored timestamps %s', (input) => {
+    for (const type of ['datetime', 'datetimeTz']) {
+      expect(() =>
+        normalizeTemporalResultValue({ name: 'value', type }, input),
+      ).toThrow(
+        expect.objectContaining({
+          code: 'FIELD_CAPABILITY_NOT_SUPPORTED',
+          field: 'value',
+        }),
+      );
+    }
+  });
+
   // What knex stored on SQLite for `new Date('2026-09-20T12:52:16.452Z')` before temporal Fields were normalized:
   // the REAL `getTime()`, or the same number as text once a TEXT column applied its affinity.
   const epochMilliseconds = 1789908736452;

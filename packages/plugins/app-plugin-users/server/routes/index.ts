@@ -24,6 +24,7 @@ import {
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
+import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
@@ -341,9 +342,48 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       },
     );
 
+    routes.get(
+      '/:userId',
+      allowed('read'),
+      describeRoute({
+        tags,
+        summary: 'Get a user',
+        operationId: 'usersGetUser',
+        responses: {
+          200: dataResponse(ManagedUserSchema),
+          ...apiErrorResponses,
+          404: apiErrorResponse(
+            404,
+            'The user does not exist (`USER_NOT_FOUND`).',
+          ),
+        },
+      }),
+      apiValidator('param', UserParams),
+      async (context) =>
+        context.json({
+          data: await users.get(context.req.valid('param').userId),
+        }),
+    );
+
     routes.patch(
       '/:userId',
-      allowed('update'),
+      createMiddleware<AuthorizationEnv>(async (context, next) => {
+        try {
+          await requireUserAction(
+            context,
+            context.req.param('userId') ?? '',
+            'update',
+          );
+        } catch (error) {
+          if (!(error instanceof AuthorizationDeniedError)) throw error;
+          await requireUserAction(
+            context,
+            context.req.param('userId') ?? '',
+            'assign-role',
+          );
+        }
+        await next();
+      }),
       describeRoute({
         tags,
         summary: 'Update a user',
@@ -353,10 +393,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           flags: { userId: { name: 'user' } },
         }),
         description:
-          'Changes name, username or email. `username: null` removes the username.',
+          'Changes name, username or email with `update` permission. `username: null` removes the username. Optional `roleScopes` requires `assign-role`; all submitted profile fields and role scopes commit or roll back together, and omitted scopes stay unchanged.',
         responses: {
           200: dataResponse(ManagedUserSchema),
           ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'A role scope refuses the caller acting on this account (`FAILED_PRECONDITION`, the reason the scope chose).',
+          ),
           404: apiErrorResponse(404),
           409: apiErrorResponse(
             409,
@@ -368,8 +412,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', UpdateUserInput),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.update(userId, context.req.valid('json'));
+        const input = context.req.valid('json');
+        if (
+          input.roleScopes === undefined ||
+          Object.keys(input).some((key) => key !== 'roleScopes')
+        )
+          await requireUserAction(context, userId, 'update');
+        if (input.roleScopes !== undefined)
+          await requireUserAction(context, userId, 'assign-role');
+        const user = await users.update(userId, input, actorOf(context));
         logSecurityEvent(securityLogger, context, 'user.update', userId);
+        for (const [roleScope, value] of Object.entries(input.roleScopes ?? {}))
+          logSecurityEvent(
+            securityLogger,
+            context,
+            'user.role.update',
+            userId,
+            {
+              roleScope,
+              roles: typeof value === 'string' ? [value] : [...value],
+            },
+          );
         return context.json({ data: user });
       },
     );
@@ -436,7 +499,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('param', UserParams),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.disable(userId);
+        const user = await users.disable(userId, actorOf(context));
         logSecurityEvent(securityLogger, context, 'user.disable', userId);
         return context.json({ data: user });
       },
@@ -456,13 +519,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         responses: {
           200: dataResponse(ManagedUserSchema),
           ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'A role scope refuses the caller acting on this account (`FAILED_PRECONDITION`, the reason the scope chose).',
+          ),
           404: apiErrorResponse(404),
         },
       }),
       apiValidator('param', UserParams),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.enable(userId);
+        const user = await users.enable(userId, actorOf(context));
         logSecurityEvent(securityLogger, context, 'user.enable', userId);
         return context.json({ data: user });
       },
@@ -489,7 +556,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...apiErrorResponses,
           400: apiErrorResponse(
             400,
-            'The value does not fit the scope or names an unknown role (`INVALID_ROLE_SCOPE_VALUE`), or a protected role cannot be assigned or removed here (`PROTECTED_ROLE_ASSIGNMENT`).',
+            'The value does not fit the scope or names an unknown role (`INVALID_ROLE_SCOPE_VALUE`), a protected role cannot be assigned or removed here (`PROTECTED_ROLE_ASSIGNMENT`), or a role scope refuses the caller acting on this account (`FAILED_PRECONDITION`).',
           ),
           404: apiErrorResponse(
             404,
@@ -502,7 +569,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       async (context) => {
         const { userId, scope } = context.req.valid('param');
         const { value } = context.req.valid('json');
-        const user = await users.replaceRoleScope(userId, scope, value);
+        const user = await users.replaceRoleScope(
+          userId,
+          scope,
+          value,
+          actorOf(context),
+        );
         logSecurityEvent(securityLogger, context, 'user.role.update', userId, {
           roleScope: scope,
           roles: typeof value === 'string' ? [value] : [...value],
@@ -527,7 +599,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...apiErrorResponses,
           400: apiErrorResponse(
             400,
-            'The password is too short or too long (`PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`).',
+            'The password is too short or too long (`PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`), or a role scope refuses the caller acting on this account (`FAILED_PRECONDITION`).',
           ),
           404: apiErrorResponse(404),
         },
@@ -536,7 +608,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('json', ResetUserPasswordInput),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.resetPassword(userId, context.req.valid('json').password);
+        await users.resetPassword(
+          userId,
+          context.req.valid('json').password,
+          actorOf(context),
+        );
         logSecurityEvent(
           securityLogger,
           context,
@@ -562,13 +638,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         responses: {
           204: emptyResponse('Every session of the user was revoked.'),
           ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'A role scope refuses the caller acting on this account (`FAILED_PRECONDITION`, the reason the scope chose).',
+          ),
           404: apiErrorResponse(404),
         },
       }),
       apiValidator('param', UserParams),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.revokeSessions(userId);
+        await users.revokeSessions(userId, actorOf(context));
         logSecurityEvent(
           securityLogger,
           context,
@@ -909,6 +989,13 @@ function allowed(
     );
     await next();
   });
+}
+
+/** The authenticated principal acting on an account, for the role scopes' target checks. */
+function actorOf(context: {
+  get(key: 'authz'): AuthorizationEnv['Variables']['authz'];
+}): string {
+  return context.get('authz').identity.principal.id;
 }
 
 async function requireUserAction(

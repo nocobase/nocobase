@@ -57,9 +57,7 @@ describe('local provider authentication', () => {
     const fakeCli = writeFakeCli(home);
     for (const server of servers)
       await registerRunner(server.url, env, ['--cli', `appcli=${fakeCli}`]);
-    expect(first.runners.values().next().value?.register.tools).toContainEqual(
-      expect.objectContaining({ kind: 'pi', authenticated: false }),
-    );
+    expect(first.runners.values().next().value?.register.tools).toEqual([]);
     const tool = {
       kind: 'pi' as const,
       model: 'custom/demo',
@@ -83,7 +81,19 @@ describe('local provider authentication', () => {
     const isolated = second.enqueue({ tool, workspace });
     const daemon = startDaemon(env);
     daemons.push(daemon);
-    await waitFor(() => first.lastHeartbeat(), 10_000, 'initial detection');
+    await waitFor(
+      () =>
+        first
+          .lastHeartbeat()
+          ?.tools.some(
+            (entry) =>
+              entry.kind === 'pi' &&
+              !entry.authenticated &&
+              entry.status === 'needsLogin',
+          ),
+      10_000,
+      'initial detection',
+    );
     expect(run.status).toBe('queued');
 
     const set = await cli(
@@ -135,7 +145,7 @@ describe('local provider authentication', () => {
       'LOCAL_PROVIDER_KEY',
     );
 
-    // Re-registration must detect the stored key before the first heartbeat as well.
+    // Re-registration still waits for the server selection before detecting the stored key.
     expect(
       (
         await cli(
@@ -151,8 +161,18 @@ describe('local provider authentication', () => {
       '--cli',
       `appcli=${fakeCli}`,
     ]);
-    expect([...first.runners.values()].at(-1)?.register.tools).toContainEqual(
-      expect.objectContaining({ kind: 'pi', authenticated: true }),
+    expect([...first.runners.values()].at(-1)?.register.tools).toEqual([]);
+    await stopDaemon(daemons.pop()!);
+    const restarted = startDaemon(env);
+    daemons.push(restarted);
+    await waitFor(
+      () =>
+        [...first.runners.values()]
+          .at(-1)
+          ?.heartbeats.at(-1)
+          ?.tools.some((entry) => entry.kind === 'pi' && entry.authenticated),
+      30_000,
+      'stored authentication after re-registration',
     );
   }, 120_000);
 

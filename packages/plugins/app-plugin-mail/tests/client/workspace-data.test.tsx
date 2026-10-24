@@ -18,14 +18,18 @@ const transport = vi.hoisted(() => ({
 }));
 vi.mock('@nocobase/app-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/app-client')>();
-  const realtime: Pick<RealtimeClient, 'subscribe' | 'onOpen'> = {
-    subscribe: (_topic, listener) => {
-      transport.listener = listener;
-      return () => {
-        transport.listener = undefined;
+  const realtime: Pick<RealtimeClient, 'watch'> = {
+    watch: (_topic, options) => {
+      transport.listener = options?.onEvent as RealtimeListener<unknown>;
+      return {
+        state: 'subscribed',
+        error: undefined,
+        retry: () => {},
+        close: () => {
+          transport.listener = undefined;
+        },
       };
     },
-    onOpen: () => () => undefined,
   };
   return { ...actual, useService: () => realtime };
 });

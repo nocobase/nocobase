@@ -3,6 +3,9 @@
  * unwrapped from `{ data }`. Failures throw `ApiClientError` (`status`, `reason`, `domain`). Runners and registration
  * tokens go through the runners' API (`RunnersApi`, `/api/agents/runners`).
  */
+import type { QuotaMarkTarget } from '../../shared/quota.js';
+import type { RunnerWorkspacePage } from '../../shared/runners.js';
+
 import type { ApiClient } from '@nocobase/app-client';
 import type { RunStatus } from '@nocobase/agent-protocol';
 
@@ -13,8 +16,15 @@ import type {
   AgentName,
   AgentPatch,
   AgentView,
+  AvailableModelGroupsPage,
+  AvailableModelsPage,
+  CleanupCandidatesPage,
+  CleanupGroupsPage,
+  ModelAvailabilityStatus,
+  RunnerAgentCreateInput,
   UserRef,
 } from '../../shared/agents.js';
+import type { AgentTool } from '@nocobase/agent-protocol';
 import type { BriefPreview, RunBrief } from '../../shared/briefs.js';
 import type { PricesAnswer, PricesInput } from '../../shared/reports.js';
 import type {
@@ -36,6 +46,7 @@ import type {
   RunnerPatch,
   RunnerRecentRun,
   RunnerSummary,
+  RunnerListItem,
 } from '../../shared/runners.js';
 import type { Run, RunDetail, RunEventPage } from '../../shared/runs.js';
 import type {
@@ -69,6 +80,15 @@ type Query = Readonly<Record<string, string | number | boolean | undefined>>;
 const BASE = 'agents';
 const id = (value: string): string => encodeURIComponent(value);
 const pathOf = (path: string): string => (path ? `${BASE}/${path}` : BASE);
+
+/** Drops `undefined` and empty-string entries, so an omitted filter never reaches the query string as `?q=`. */
+function cleanQuery(query: Query): Query {
+  return Object.fromEntries(
+    Object.entries(query).filter(
+      ([, value]) => value !== undefined && value !== '',
+    ),
+  );
+}
 
 /** A list's answer: its items and what it says about itself. */
 interface ListAnswer<T> {
@@ -182,6 +202,71 @@ export class AgentsApi {
     return this.list('');
   }
 
+  /** One row per tool a runner has selected, with its model count and aggregated availability. */
+  public availableModelGroups(
+    filter: {
+      readonly q?: string;
+      readonly status?: ModelAvailabilityStatus;
+    } = {},
+  ): Promise<AvailableModelGroupsPage> {
+    return this.api.request<AvailableModelGroupsPage>({
+      path: pathOf('availableModels'),
+      query: cleanQuery(filter),
+    });
+  }
+
+  /** One tool's models, a page at a time, whether or not an agent exists for each yet. */
+  public availableModelRows(
+    tool: AgentTool,
+    filter: {
+      readonly q?: string;
+      readonly status?: ModelAvailabilityStatus;
+      readonly page?: number;
+      readonly pageSize?: number;
+    } = {},
+  ): Promise<AvailableModelsPage> {
+    return this.api.request<AvailableModelsPage>({
+      path: pathOf('availableModels'),
+      query: cleanQuery({ tool, ...filter }),
+    });
+  }
+
+  /** Creates and enables an agent for a tool and model from the available models list. */
+  public createRunnerAgent(input: RunnerAgentCreateInput): Promise<Agent> {
+    return this.send('runnerAgents', 'POST', input);
+  }
+
+  /** One row per tool with cleanup candidates: agents nobody enabled and that never ran. */
+  public cleanupGroups(q?: string): Promise<CleanupGroupsPage> {
+    return this.api.request<CleanupGroupsPage>({
+      path: pathOf('cleanupCandidates'),
+      query: cleanQuery({ q }),
+    });
+  }
+
+  /** One tool's cleanup candidates, a page at a time. */
+  public cleanupRows(
+    tool: AgentTool,
+    filter: {
+      readonly q?: string;
+      readonly page?: number;
+      readonly pageSize?: number;
+    } = {},
+  ): Promise<CleanupCandidatesPage> {
+    return this.api.request<CleanupCandidatesPage>({
+      path: pathOf('cleanupCandidates'),
+      query: cleanQuery({ tool, ...filter }),
+    });
+  }
+
+  /** Removes the named cleanup candidates; anything no longer eligible is reported back skipped, not removed. */
+  public cleanup(agentIds: readonly string[]): Promise<{
+    readonly removed: readonly string[];
+    readonly skipped: readonly string[];
+  }> {
+    return this.send('cleanup', 'POST', { agentIds });
+  }
+
   public agent(agentId: string): Promise<AgentView> {
     return this.get(id(agentId));
   }
@@ -223,8 +308,22 @@ export class AgentsApi {
 
   // Runners
 
-  public runners(): Promise<RunnerSummary[]> {
+  public runners(): Promise<RunnerListItem[]> {
     return this.runnersApi.runners();
+  }
+
+  public clearQuota(runnerId: string, target: QuotaMarkTarget): Promise<void> {
+    return this.runnersApi.clearQuota(runnerId, target);
+  }
+  public runnerWorkspaces(
+    runnerId: string,
+    status = 'all',
+    page = 1,
+  ): Promise<RunnerWorkspacePage> {
+    return this.runnersApi.runnerWorkspaces(runnerId, status, page);
+  }
+  public runner(runnerId: string): Promise<RunnerSummary> {
+    return this.runnersApi.runner(runnerId);
   }
 
   /** A runner's latest runs, newest first. */
@@ -238,11 +337,16 @@ export class AgentsApi {
     return this.runnersApi.createRegistrationToken(input);
   }
 
-  public updateRunner(runnerId: string, patch: RunnerPatch): Promise<Runner> {
+  public updateRunner(
+    runnerId: string,
+    patch: RunnerPatch,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.runnersApi.updateRunner(runnerId, patch);
   }
 
-  public revokeRunner(runnerId: string): Promise<Runner> {
+  public revokeRunner(
+    runnerId: string,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
     return this.runnersApi.revokeRunner(runnerId);
   }
 

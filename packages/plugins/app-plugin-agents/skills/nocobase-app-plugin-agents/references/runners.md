@@ -12,13 +12,23 @@ A runner (shown as a runtime) is `nocobase-runner` from `@nocobase/agent-runner`
 
 A runner registers once per App with a one-time registration token (10 minutes):
 
-- On the web: Runtimes page, "Add runtime". It asks who the runner works for (personal, or team for who manages `agents.runners`), which coding tools it may run and its maximum concurrent runs, then shows the one-line install and the register command with a fresh token, and waits for the runner to connect.
+- On the web: Runtimes page, "Add runtime". It asks the usage scope (personal, or shared for someone who manages `agents.runners`), which coding tools it may run and its maximum concurrent runs, then offers Prompt and Manual installation for macOS, Linux and Windows (WSL Ubuntu), with a fresh one-time registration token, and waits for the runner to connect.
 - Through the API: `POST /api/agents/runners/registrationTokens` (CLI: `runtime token create`).
 - From the App's checkout or deployment: `pnpm nocobase agents runner-token --trust team` or `--trust ownerOnly --owner <user id>`, optionally `--tools claude,codex`. It prints the token (`--json` for the envelope).
 
 Then on the runner's machine: `nocobase-runner register --server <App URL> --token <token>`, and `nocobase-runner start` or `nocobase-runner service install` (launchd on macOS, a systemd user unit on Linux). The install script does all of this in one line; see [Distribution](distribution.md).
 
-A runner authenticates afterwards with its own key. Personal runners (`ownerOnly`) run only work their owner started, and receive its variables like any runner, except those marked "Team runtimes only" (`teamRunnersOnly`): a run that gets one goes to a team runner. Their owner may share them with the team. `nocobase-runner unregister --server <url>` or "Revoke" on the Runtimes page ends a registration.
+Registering again with the same owner, name and hostname revokes previous registrations and their keys atomically. Old runtimes take no more work, and the sweeper requeues what they held; historical records retain their ids. Hostnames are self-reported, so another owner's matching runtime is preserved. Agent configurations limited to a previous runtime id need to select the new runtime.
+
+`runtime token list` (`GET /api/agents/runners/registrationTokens`, paged with `page` and `pageSize`) lists unused, unexpired token metadata. Signed-in callers see their own tokens; managers of runners see all. Tokens and hashes are never returned: create a fresh token if the original secret is lost. To delete a runtime, run `runtime revoke <runtime>` and then `runtime delete <runtime>`; deleting a live runtime returns `RUNNER_NOT_REVOKED` with those steps.
+
+The install script requires an explicit `--server <App URL>` with `--runner` and rejects a missing or empty value before downloading or installing anything. CLI-only installation still defaults to the application that served the script.
+
+A runner authenticates afterwards with its own key. Personal runners (`ownerOnly`) run only work their owner started, and receive its variables like any runner, except those marked "Shared runtimes only" (`teamRunnersOnly`): a run that gets one goes to a shared runner. Their owner may share them with all users. `nocobase-runner unregister --server <url>` or "Revoke" on the Runtimes page ends a registration.
+
+The Prompt option asks the host’s agent to check Node.js 24 and signed-in coding tools, use the one-time command to register and install the background service, resolve service PATH, proxy and npm global-permission issues without snap packages, and confirm the connection with `nocobase-runner status`. The Windows prompt first asks the agent to check that it is inside WSL Ubuntu. Otherwise it must stop and tell the user to run `wsl --install` in PowerShell, restart Windows, reopen the agent inside WSL Ubuntu and run the prompt again; only inside WSL may it continue. Install Node.js and the coding tools there too, and enable mirrored networking if WSL cannot reach the internet. Manual installation shows one command on macOS/Linux, or the PowerShell step followed by that same Linux command in Ubuntu on Windows.
+
+Personal (`ownerOnly`) and shared (`team`) both need a VM or isolated environment: agents have full access and the runner is not a sandbox. If no coding tools are found, run `nocobase-runner service install` again from a terminal where `which codex` / `which claude` works, then restart the service (or rerun `nocobase-runner start`) to capture PATH.
 
 ## How work reaches a runner
 
@@ -44,3 +54,13 @@ Run lists and details expose `executions`, one claim snapshot per attempt, with 
 `effort` is requested; `actualEffort` is only a tool report, with `actualEffortSource`, `actualEffortAt` and per-attempt `effortReports`. Show unreported actual values explicitly, never infer from requests or token counts. Import `runForViewer`/`executionForViewer` from `@nocobase/app-plugin-agents/server/tokens` and apply them to custom user-facing run/workload/CLI outputs, using the runner machine rights; `machineHidden` means a generic runtime label, not a fallback to the hostname/id. A projects viewer may provide `seesExecutionMachine` from those same rights. See `docs/execution-history.md` for the report and projection contracts.
 
 The runner finds each coding tool on its PATH and reports whether it is signed in. A tool not found, or not signed in, is offered no runs: sign in on the runner's machine as the runner's user (for example `claude` and its login), then wait for the next heartbeat. Which tools a runner is offered work for is chosen on the Runtimes page (`enabledTools`). A model the tool's account cannot use fails the run `modelUnavailable`.
+
+## Quota recovery
+
+Quota exhaustion is scoped to the runtime and a tool, provider prefix or model. Known resets restore claim eligibility automatically; unknown resets require the runtime owner or an administrator to clear the selected mark after restoring quota. This never restarts failed, withdrawn or expired work. Runtime Overview, Workspaces and Runs load separately; the list contains summaries. Use runtime workspaces for directories and runtime quota clear with structured tool/scope/target/window fields for unknown-reset marks (no client revision); known resets clear automatically. Upgrade runners for usage/reset reporting; old runners only report the failure. See the package README for fields, endpoint contracts and read/write costs.
+
+For application-owned system agents, `useAgentOption(id)` in the client kit reads the same viewer-scoped agent detail endpoint and includes quota; `useAgentOptions()` lists discovered runner agents only. A final failure reuses accepted event metadata for quota deduplication, while new event sequences remain new observations. The failure snapshot is retained even when its windows were already applied.
+
+## Online capacity
+
+Each application's heartbeat supplies complete total and tool slots; updated runners count only that application's tasks and build jobs. Change capacity on the Runtimes page or the application's online CLI, never with local register/start flags. New registrations default to three slots. Old servers without this heartbeat field use legacy local values temporarily; status labels that source. No local values are uploaded. A configuration change wakes waiting claims and adds one confirmation heartbeat; shrinking never kills existing leases. Custom application projections and installed page copies must forward reportedSlots, capacitySource, capacityReportedAt and toolLoad, and show pending sync or last-report time. See the package README's effective runner slots section.

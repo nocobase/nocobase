@@ -189,7 +189,11 @@ export interface ChatAttachmentService {
   /** Deletes the person's own upload not sent yet; 404 for anything else. */
   remove(userId: string, id: string): Promise<void>;
   /** A file's bytes; 404 unless the reader may read it. */
-  content(reader: AttachmentReader, id: string): Promise<ChatAttachmentContent>;
+  content(
+    reader: AttachmentReader,
+    id: string,
+    conn?: DatabaseConnection,
+  ): Promise<ChatAttachmentContent>;
   /** The images of `ids` sent in `conversationId`, at most `maxBytes` each, for an online agent's model. */
   images(
     conversationId: string,
@@ -395,6 +399,13 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
   const links: ChatAttachmentLinks = {
     async attach(conn, userId, target, ids) {
       if (ids.length === 0) return [];
+      if (
+        ids.length > CHAT_ATTACHMENTS_PER_MESSAGE_MAX ||
+        new Set(ids).size !== ids.length
+      )
+        throw invalid(
+          'Send at most the allowed number of distinct attachments.',
+        );
       const rows = await findFiles(conn, ids);
       const ordered = ids.map((id) => {
         const row = rows.find((candidate) => candidate.id === id);
@@ -405,7 +416,7 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
           });
         return row;
       });
-      await files(conn).updateMany({
+      const bound = await files(conn).updateMany({
         filter: (f) =>
           f.and([
             f.or(ids.map((id) => f.string('id').eq(id))),
@@ -413,6 +424,8 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
           ]),
         values: { ...target, updatedAt: now() },
       });
+      if (bound.updatedCount !== ids.length)
+        throw invalid('An upload was already attached to another message.');
       return ordered.map(stored);
     },
   };
@@ -435,8 +448,8 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
         await deps.storage.remove(row);
     },
 
-    async content(reader, id) {
-      const row = await readable(deps.tx.read(), reader, id);
+    async content(reader, id, conn) {
+      const row = await readable(conn ?? deps.tx.read(), reader, id);
       return { attachment: view(row), body: await deps.storage.stream(row) };
     },
 

@@ -25,6 +25,7 @@ export const useExampleLifecycle: UseRecordLifecycle = createLifecycleHook({
   basePath: LIFECYCLE_ROUTES,
   // No polling: the pages reload a record when the server says it changed.
   refreshMs: 0,
+  loadOnMount: false,
 });
 
 /** The page's locale as `errorMessage()` reads it. */

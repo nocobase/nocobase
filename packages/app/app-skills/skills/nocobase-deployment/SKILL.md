@@ -1,11 +1,11 @@
 ---
 name: nocobase-deployment
-description: Plan, build, deploy, verify, upgrade, and troubleshoot NocoBase 3 applications in production, including standalone Node.js and Docker deployments. Use when an application must move from source to a production environment or when a deployment failure needs diagnosis.
+description: Plan, build, deploy, verify, upgrade, and troubleshoot NocoBase 3 applications on an existing Studio or a standalone Node.js or Docker server. Use when an application must move from source to a deployment environment or when a deployment failure needs diagnosis.
 ---
 
 # NocoBase production deployment
 
-Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md`, the `.agents/rules/` files it indexes for building and deployment, and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout and configuration variables. The Deployment section of the NocoBase 3 documentation is the reference for command details and platform-specific examples; in the nocobase3 source repository it is `docs/docs/<lang>/deployment/`.
+Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md`, the `.agents/rules/` files it indexes for building and deployment, and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout and configuration variables.
 
 Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, and persistence checks below have evidence.
 
@@ -13,13 +13,21 @@ Do not treat a process being healthy as proof that the application is usable. A 
 
 Before building or changing a server, record:
 
-- The deployment mode: standalone Node.js managed by app-installer, standalone Node.js by hand, or standalone Docker.
+- The deployment mode: an App managed by an existing Studio, standalone Node.js managed by app-installer, standalone Node.js by hand, or standalone Docker.
 - The source revision, application version, Node.js and pnpm versions, target CPU/OS/libc, and the destination host.
 - Whether the destination uses the existing database and storage, a new database, or a restore. Business data is not included in `dist`, `dist.tar.gz`, or a Docker image.
 - The application base path, public origin, database type, external services, reverse proxy, persistent directories, and service identity.
 - Whether the requested action is a first install, an update, a migration, a restart, a rollback, or a recovery.
 
 Do not run production writes, migrations, seeds, uploads, deployments, or destructive removal until the target and the user's authorization are explicit. If the target or data plan is unresolved, stop and ask for it.
+
+## Deploy to an existing Studio
+
+When the user asks to deploy this application to an existing NocoBase Studio, read [Deploy to Studio](references/deploy-to-studio.md) before building. It covers installing and signing in with the target Studio's `nb-studio` CLI, choosing an upload route, deploying and verifying the application. The application being deployed does not need its own business CLI.
+
+Confirm the source application, target Studio, App ID and environment. A source directory, deployment directory and App ID can have different names; do not infer application identity from one of them. Follow the reference for Studio-managed configuration, storage and deployment; use the shared artifact and verification guidance below where applicable, not the standalone installation commands.
+
+Deploying Studio itself to a server follows the standalone deployment workflow below.
 
 ## Prepare the source and artifact
 
@@ -99,7 +107,7 @@ npx --registry=https://registry.npmjs.org @nocobase/app-installer@beta install /
 npx --registry=https://registry.npmjs.org @nocobase/app-installer@beta upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
 ```
 
-Published product applications can also be deployed with an app-installer version whose `--help` offers `--app`: `install /srv/nocobase/studio --app @nocobase/studio@beta` explicitly selects the beta channel. This route needs pnpm 11+ and builds the published package on the server without a repository checkout, preserving its identity and version. An npm installation upgrades the same package with `upgrade --dir <root> --to beta`, an explicitly requested `--to <version or tag>`, or `--rebuild` (installed version). Read `source.kind` in `status` before choosing the upgrade command; an archive installation still needs `--archive`. The same persistent configuration, backup and rollback rules apply.
+Published product applications can also be deployed with an app-installer version whose `--help` offers `--app`: `install /srv/nocobase/crm --app @acme/crm@beta` explicitly selects the beta channel. This route needs pnpm 11+ and builds the published package on the server without a repository checkout, preserving its identity and version. An npm installation upgrades the same package with `upgrade --dir <root> --to beta`, an explicitly requested `--to <version or tag>`, or `--rebuild` (installed version). Read `source.kind` in `status` before choosing the upgrade command; an archive installation still needs `--archive`. The same persistent configuration, backup and rollback rules apply.
 
 `install --base-path /crm` chooses the mount path and writes it to `app.env` as `APP_BASE_PATH`; without it the server default `/main` applies. Upgrades keep the path `app.env` names, and editing it there moves the application on its next start. The installer refuses an archive for another application, an older version or another machine. The same version built again deploys as a new release, so the version need not be bumped for each deployment. An archive from an `@nocobase/app-cli` that predates relocatable builds has its mount path compiled in and runs only at that path, so a mismatch is refused with `BASE_PATH_MISMATCH`; one older still, which records no build time, or a release whose `@nocobase/app-server` predates `APP_STORAGE_DIR`, is refused: upgrade the project's NocoBase packages and build again. Each application on the server gets its own directory, port and pm2 process.
 
@@ -110,6 +118,10 @@ Build the image from the application root with its own `Dockerfile`: `docker bui
 Bind-mount the complete runtime configuration read-only at `/app/config.yml` and the persistent storage at `/app/storage`, writable by the image's `node` user (UID 1000), and run the container with `init: true`. The image has no pnpm: run application commands as `node dist/cli/index.js <command>`, for example `docker run --rm -v ./config.yml:/app/config.yml:ro <image> node dist/cli/index.js config check` before the first start. Validate the Compose file before starting. For a configuration file replacement, recreate the container so the process reads the new file. Keep the image, config, storage, and proxy changes separately identifiable.
 
 ## Verify the deployed application
+
+Use the intended public origin for browser checks, including its scheme, host and base path. Follow [browser API compatibility](../nocobase-app-development/references/frontend/frontend-dev.md#browser-api-compatibility): UUID generation and copying text must work on ordinary HTTP, while other HTTPS-only capabilities must explain their requirements to users when unavailable. Verify those HTTP-compatible actions and unavailable-feature messages on an origin where `window.isSecureContext` is `false`; localhost and HTTPS can mask incompatibilities. Exercise actions through completion and inspect browser errors; a loaded page or healthy server is insufficient.
+
+When the application offers copy buttons, include [copy and clipboard verification](../nocobase-app-development/references/frontend/frontend-dev.md#copy-and-clipboard-actions): copy from a representative page or dialog and paste into a normal input on HTTP. A success toast alone is not evidence that the clipboard changed.
 
 Collect evidence for each item:
 

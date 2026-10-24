@@ -1,5 +1,215 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.17
+
+### Minor Changes
+
+- e98d0f7: Let hosts inspect session context tags and transfer draft text, selected references and context through the existing memory cache. Let hosts supply consistent panel header controls while retaining session commands, and show history beside mounted panel drafts with host-owned labels and actions. Align the standalone My Agent history with panel history, including a neutral new-session icon, search and status filters, plain empty rows and footer archive access. Allow applications to retain manual issue forms without AI intake tabs.
+
+### Patch Changes
+
+- 5d4d4a1: Show detailed start failure messages and app-relative configuration actions supplied by the host application.
+- 5875cb9: Expose cancellation actors and a transactional stop request callback, and allow status events to refresh issue progress even when the issue already has the target status.
+- Updated dependencies [0c5c4ff]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [0c5c4ff]
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/app-client@4.0.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- f8f64ad: Recognize both `type` and legacy `provider` discriminators when selecting the in-app notification channel for project notices.
+- f8f64ad: Remove the Notification TestAdapter protocol, built-in form descriptors, generic test-send routes and permission, and test client methods. Channel classes now implement only their delivery lifecycle. Existing send/sendTransient contracts, retries, logs, and inbox records remain unchanged.
+
+  Applications should remove test buttons and test API clients, then verify delivery through their business flows or a server-side send() call. Log pages must read provider identities from recorded deliveries rather than test target metadata. Update the notification Skill and example guidance to match, and republish consumers against the new notification package line.
+
+  Explicitly include Node.js types in both application templates' client typechecks, whose shared contracts reference server package sources in the workspace, so compilation no longer depends on the removed notification test imports to load those types.
+
+- Updated dependencies [d3d4c5d]
+- Updated dependencies [f8f64ad]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-plugin-users@2.0.0-beta.9
+  - @nocobase/app-plugin-notification@2.0.0-beta.0
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- a0ec885: Compare computer discovery data independently of JSON key order, keep runner event text within MySQL storage limits, and make issue searches case-insensitive across database dialects.
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+  - @nocobase/app-plugin-users@2.0.0-beta.7
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.0
+
+## 0.1.0-beta.14
+
+### Minor Changes
+
+- 2c2b137: Remove the issue start option from services, plans, HTTP input and generated commands. Work handlers can observe changes regardless of executor kind, and issue responses and events include the final state after transactional work routing.
+
+### Patch Changes
+
+- baf80fe: Add the OnlineAgent server service foundation with versioned conversation configuration, complete SDK message persistence, injectable business tools, shared execution control, and first-subscription stream caching. Preserve ordinary conversation and message identifiers without persistent request deduplication. Connect the original chat HTTP resources and first-subscription events to one shared browser submission and stream controller for application and Registry chat views. Preserve uploaded attachments, per-view drafts and unknown-outcome feedback without hidden retries or Runner fallback.
+
+  Recognize no-content streaming responses by HTTP status even when a browser exposes an empty body, so completed chats read saved history without a false disconnect warning.
+
+  Resolve Scope/Provider model changes consistently through the configuration API. Let users explicitly permit a new input after an unknown send result, and preserve Registry drafts and files when the shared client refuses a submission.
+
+  Let application-provided Organize entries own their availability feedback while retaining default Runner availability hints.
+
+  Bind the authoritative execution session ID to each business tool context so applications can associate business proposals with the current chat without trusting model-supplied identifiers.
+
+- @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+
+## 0.1.0-beta.13
+
+### Patch Changes
+
+- 5bb9203: Expose the history-aware query client so applications can preserve in-flight pagination in their own caches.
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 1952789: Make mail synchronization and office workflow views refresh from committed state notifications, including empty sync results, failures, cancellation and lifecycle transitions. Add optional periodic reconciliation to the shared refresh scheduler, pause hidden views, and retain one-minute reconciliation for transient announcements and out-of-band changes. Reduce existing task, run, session and chat fallback reads to one minute while retaining time-based computer status checks, external indexing status reads, deployment health probes and bounded initialization waits.
+
+  Announce knowledge rechunking start and completion even when no chunks change, and support optional committed status notifications from external indexers. Continue tracking pending index work when some sections have already failed.
+
+  Preserve application providers when `renderWithApp` rerenders its page. Exercise mail refresh through real application services and fix the mail account navigation translation key exposed by those checks.
+
+- 1952789: Retain full snapshot recovery after a failed Projects refresh so later events from another domain cannot discard the failed batch. Cover both targeted notifications and subscription readiness recovery.
+- 1952789: Add `refreshRealtimeQueries` to refresh active TanStack Query snapshots after pre-event requests settle, including initial loads, prefixes and predicates. Keep inactive snapshots invalid, expose refresh failures, and stop queued follow-ups when their owner is disposed. The application client now declares its TanStack Query peer contract.
+
+  Use the shared catch-up behavior in Projects, Knowledge, Agents, Agent Sessions and the inbox. Refresh additional inbox topics after subscription readiness and preserve refresh promises so concurrent events coalesce correctly. Update application guidance to avoid reusing stale in-flight responses.
+
+- 1952789: Retry transient subscription failures independently with bounded exponential backoff and jitter. Preserve permanent authorization refusals and correlation checks, cancel retries on disposal, and probe healthy foreground connections instead of rebuilding them.
+
+  Retain stale snapshot state after failed reads and retry transient refresh failures without another realtime event. Expose refresh status, last successful synchronization, manual retry and separate subscription error callbacks. Clear previously authorized query data after an HTTP 401 or 403. Reuse the scheduler for Agent Sessions and subject run discovery while preserving slow reads and stream coalescing.
+
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-client@4.0.0-beta.0
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.29
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+  - @nocobase/app-plugin-notification@1.0.0-beta.28
+  - @nocobase/app-plugin-users@2.0.0-beta.6
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/i18n@2.0.0-beta.0
+  - @nocobase/authorization@1.0.0-beta.14
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 0.1.0-beta.12
+
+### Patch Changes
+
+- e897e4f: Preserve pending history pages and coalesce refreshes when realtime changes arrive during pagination.
+- e897e4f: Keep loaded issue history complete across live updates and scroll to a linked comment only once.
+- 32ed5e2: Report coding account quota windows, filter scoped exhausted tools before claims, and restore eligibility at known reset times or after an authorized manual clear. Show quota status and usage in runtime tabs and agent availability, and batch page reads independently of the catalog size.
+
+  Runtime API and CLI: runtime get returns directory totals without directory rows; runtime list omits models, policy, variables, quota details and load, and caps takes at three with takesCount. Use the paginated runtime workspaces command for directory rows. Runtime quota clear takes structured tool/scope/target/window fields and no client revision; only unknown-reset marks may be cleared.
+
+  Classify quota revision races as retryable REVISION_CONFLICT while known-reset clears fail with QUOTA_RESET_KNOWN / FAILED_PRECONDITION.
+
+  Batch related-task visibility and missing blocker reads with the existing issue visibility filter, preserving per-request permissions and hidden blocker counts as task and project counts grow.
+
+- Updated dependencies [22717d7]
+  - @nocobase/app-server@2.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.10
+
+## 0.1.0-beta.11
+
+### Minor Changes
+
+- 8286a8a: Add a bounded screenshot endpoint for live Agent comments with stable comment provenance and existing issue visibility checks.
+
+### Patch Changes
+
+- 44bc7a7: Cancel invitation link copy feedback timers when the component unmounts, preventing stale updates after the dialog closes.
+
+## 0.1.0-beta.10
+
+### Minor Changes
+
+- 55fcee1: Replace the built-in agent session MCP endpoint and tool registration API with the Studio CLI and shared Skill. Bridge protocol 3 requires a matching CLI upgrade. Session agents use the bridge-selected login profile, validate session ownership before creating linked tasks, default to the session project and Backlog, and read linked work and issue progress through CLI routes. Prepare the shared Skill before starting or restoring sessions and explain unsupported agents or installation failures. Teach both bundled Skill copies to discuss and search before recording work and combine related requirements into as few tasks as practical.
+
+### Patch Changes
+
+- 56251bc: Reuse issue context, previous summaries, comment deltas and initialization reads for matching parameters within a transaction, reducing repeated work during runner claims.
+- d34b6eb: Reject explicit issue start requests that would save into Backlog before allocating an issue number or writing the issue. Keep the validation message client-neutral and explain the required In progress flags in command help and recovery suggestions. Preserve validated application suggestions from API error metadata in CLI errors without changing the JSON envelope shape.
+- f1f3bd7: Read the dashboard, usage and metrics reports with a fixed number of queries whatever the number of issues, runs and usage records: runs, usage and issues are read in one query each with only the columns the figures use, model usage outside runs is summed in the database, and issue facts are read in three queries instead of two per 200 issues. The Studio dashboard now loads each panel from its own route, `GET /api/reports/delivery`, `GET /api/reports/agents` and `GET /api/reports/projects` (CLI `report delivery`, `report agents`, `report projects`), each loading, failing and refreshing on its own; `GET /api/reports/dashboard` and `report dashboard` are removed.
+- f963c9b: Merge owned and executed tasks, preserve split list placement after status changes, unify agent working marks, and open embedded task run transcripts without leaving the current page.
+
+  Keep the selected split-view task and its updated status visible after cancellation or when its new group lies beyond the loaded page, until another task or query scope is selected.
+
+- bc1facd: The issue board reads a fixed number of queries whatever the number of issues: each column's ids are read in its order, then every column's rows and what they show beside them at once (16 queries instead of about 54). `GET /api/projects/issues` takes `issueIds` (comma-separated, at most 100) to read only some issues within the other filters. On Studio's issue pages the board and the trash now stay current through the app-wide refresh: a change naming issues reads only the rows shown, and the list is read again when one of them left it or changed column, or for a change naming no issues.
+- c28f719: Read the authorized issue hierarchy in a fixed number of queries whatever the number of issues: which issues wait for unfinished ones takes two queries instead of several per hundred issues, exact list filters are matched on the issues already read, and `hierarchyItems` hydrates up to 500 issues at once and accepts the readable ids its caller has already read. A change of an issue's project, parent or executor is now announced as one that moves lists, and the projects list is refreshed only for announcements that name no issues, the only ones that can change its counts. Saving an issue no longer refreshes its detail twice when the page reads it by id.
+- 89d5165: Issues gain `acceptance`, the issue's Markdown delivery report ending with the acceptance criteria the owner checks, written with the move to In review (`nb-studio issue update <issue> --status in_review --acceptance-file report.md`), kept across status changes — including Done, Cancelled and a move back to In progress — until the next delivery replaces it, at most 20,000 characters. The blocked status is named 阻塞中 in Chinese, replacing 待确定; threads have the wording to fold earlier replies; New issue shows its plus alone on a phone.
+- de0861a: Add permission-safe issue hierarchy reads (`issueQueries.hierarchy` and `hierarchyItems`) so an application can show an issue's ancestors and page through its children.
+- ab5c0fc: Support pasting protected images into new issue descriptions and retain them when editing. Bind uploaded attachments before starting work so agents can read them from their first run.
+- 7abd72b: Allow administrators to configure global and new-project skill defaults in the attachment section, and show visible attachment targets by name with project settings links. Align new-project defaults CLI access with the existing settings permissions.
+- e94b470: Send selected PNG and JPEG images through the existing conversation attachment flow when organizing requirements. Keep the source requirements and files in memory across navigation, with a manual return to edit or choose another agent after a reading failure.
+- 49f61b9: Show optional settings permissions separately from business actions in CLI identity output, and explain run-token-only permissions. Add available-command typo suggestions, a hint for truncated text, and clean shutdown when a pipe closes early. Describe route schema inputs so generated CLI help and reference tables explain their parameters. The manifest identity and whoami JSON result gain an optional settings list; command admission and authorization are unchanged.
+- 2972218: Align intake project and agent controls, and keep long plan confirmations scrollable with visible action buttons.
+- Updated dependencies [98b3862]
+- Updated dependencies [1cdbaf4]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [00c5970]
+- Updated dependencies [0037dd2]
+- Updated dependencies [c0b7537]
+- Updated dependencies [eb4b081]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-client@3.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/app-plugin-file@1.0.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.10
+  - @nocobase/app-plugin-users@2.0.0-beta.5
+  - @nocobase/app-plugin-authorization@1.0.0-beta.28
+  - @nocobase/authorization@1.0.0-beta.14
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+
 ## 0.1.0-beta.9
 
 ### Minor Changes

@@ -18,6 +18,7 @@
  *   so a runner without a recent enough `claude` reports Claude Code
  *   unavailable and is offered no Claude runs.
  */
+import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access, realpath, stat } from 'node:fs/promises';
@@ -35,6 +36,7 @@ import type {
 } from '@anthropic-ai/claude-agent-sdk';
 
 import { classifyClaudeFailure } from './classify.ts';
+import { claudeQuota } from './quota.ts';
 import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
@@ -232,6 +234,14 @@ export class ClaudeAdapter implements AgentAdapter {
     };
   }
 
+  private program(): Promise<string | undefined> {
+    return findOnPath('claude', this.options.searchPath);
+  }
+
+  async fingerprint(): Promise<string> {
+    return programFingerprint(await this.program());
+  }
+
   features(): RunnerFeature[] {
     return ['steer'];
   }
@@ -329,8 +339,8 @@ export class ClaudeAdapter implements AgentAdapter {
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
   }> {
-    const { exec, minVersion, searchPath } = this.options;
-    const found = await findOnPath('claude', searchPath);
+    const { exec, minVersion } = this.options;
+    const found = await this.program();
     if (!found)
       return {
         detection: { installed: false, authenticated: false },
@@ -367,6 +377,7 @@ export class ClaudeAdapter implements AgentAdapter {
 }
 
 class ClaudeRun {
+  private quotaRejected = false;
   private readonly events = new Channel<AdapterEvent>();
   private input = new Channel<SDKUserMessage>();
   private recovered = false;
@@ -646,7 +657,13 @@ class ClaudeRun {
     } else {
       return { ...base, exit: 'completed', summary: r.result };
     }
-    return { ...base, exit: 'error', error: classifyClaudeFailure(signal) };
+    return {
+      ...base,
+      exit: 'error',
+      error: this.quotaRejected
+        ? { reason: 'toolQuota', message: 'Claude account quota exhausted.' }
+        : classifyClaudeFailure(signal),
+    };
   }
 
   /**
@@ -782,15 +799,21 @@ class ClaudeRun {
             meta: { message: message.error },
           });
         return;
-      case 'rate_limit_event':
-        if (message.rate_limit_info.status !== 'allowed') {
-          this.emit({
-            type: 'status',
-            content: 'rateLimit',
-            meta: { ...message.rate_limit_info },
-          });
-        }
+      case 'rate_limit_event': {
+        const quota = claudeQuota(
+          message.rate_limit_info,
+          this.model ?? this.session.model,
+        );
+        this.emit({ type: 'status', content: 'quota', meta: { quota } });
+        if (
+          message.rate_limit_info.status === 'rejected' &&
+          !['allowed', 'allowed_warning'].includes(
+            message.rate_limit_info.overageStatus ?? '',
+          )
+        )
+          this.quotaRejected = true;
         return;
+      }
       default:
         return;
     }

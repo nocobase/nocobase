@@ -74,7 +74,7 @@ export default class ConfigSet extends RunnerCommand {
     'PATH, so a run does not depend on what the machine has installed; or `system`, whatever the machine has on its ' +
     'PATH. Runs started afterwards use it.\n\n' +
     '`artifact-ttl` is how long a working directory stays unused before its regenerable build artifacts are removed ' +
-    '(2h by default; 30m, 2d, or off); the checkout itself stays. `artifact-patterns` names those directories, ' +
+    '(24h by default; 30m, 2d, or off); the checkout itself stays. `artifact-patterns` names those directories, ' +
     'comma-separated (node_modules,.next,.turbo by default, or default); every directory with such a name inside the ' +
     'checkout goes, without following symbolic links. A running runner reads them at its next collection.';
   static override examples: string[] = [

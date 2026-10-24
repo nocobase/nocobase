@@ -30,7 +30,7 @@ An entry of a tree is a `folder` (a name and a place, no versions; renamed in pl
 
 - **Storage.** The bytes go through the file plugin's server repository (`@nocobase/app-plugin-file`, collection `kbFiles`) onto a Drive disk, and are only ever served by the plugin's own routes after its access check, never at the file plugin's public path. The application configures `knowledge.disk` (the Drive default, else `local`) and `knowledge.maxFileSize` (bytes, 100 MiB by default). Without the file plugin and Drive, uploads answer 400 `FILES_UNAVAILABLE`.
 - **Cleanup.** A sweep deletes upload tickets past their expiry and stored files that no version and no pending or accepted proposal names, once they are older than a grace period: what a crash, a failed deletion or an abandoned upload left (`cleanup`, `server/services/cleanup.ts`). The provider runs it on a timer from boot to shutdown, every `knowledge.cleanup.intervalMinutes` (60) for files older than `knowledge.cleanup.graceHours` (24); `knowledge.cleanup: false` turns it off. It is safe on several instances at once.
-- **Parsing.** After an upload commits, the file's text is extracted in a worker thread, one file at a time (`server/parsing`): PDF (pdf-parse's pdf.js, a section per page), DOCX (mammoth), DOC (word-extractor), XLSX, XLS, XLSM and CSV (SheetJS, a section per sheet, rows as tables), PPTX (officeparser, a section per slide), and TXT, MD and JSON as they are. No OCR. Anything else, images included, is stored only. A version's `parseStatus` is `parsing`, `ready`, `failed` (with the reason) or `unsupported`; `files.reparse` tries a failed one again, and the provider picks up at start what a stopped server left `parsing`.
+- **Parsing.** After an upload commits, the file's text is extracted in a worker thread, through `@nocobase/document-extractor` (`server/parsing` retains its public compatibility re-exports): PDF (pdf-parse's pdf.js, a section per page), DOCX (mammoth), DOC (word-extractor), XLSX, XLS, XLSM and CSV (SheetJS, a section per sheet, rows as tables), PPTX (officeparser, a section per slide), and TXT, MD and JSON as they are. No OCR. Anything else, images included, is stored only. A version's `parseStatus` is `parsing`, `ready`, `failed` (with the reason) or `unsupported`; `files.reparse` tries a failed one again, and the provider picks up at start what a stopped server left `parsing`.
 - **Chunks.** Articles and extracted text are cut into the same sections (`kbChunks`), at headings down to a depth and with sizes the application sets and a space may override (`chunking`), rewritten with new ids with each version and again in the background when the chunking changes. `chunks.changed` fires whenever an entry's sections change: a new version, a file's text extracted, or the entry archived (its sections leave search) or restored. An index of the application's own re-reads them then with `chunksOf`, which answers none for an archived entry, and can skip unchanged sections by their `hash`.
 
 ## Server
@@ -74,6 +74,31 @@ Search asks every registered `KnowledgeSearchProvider` — `search(spaces, query
 - `client/routes`: `createKnowledgeRoutes({ path, space })` registers the page behind the `knowledge` page grant; `knowledge({ routes: false })` leaves routing to the application.
 
 The file previews are the file plugin's preview components (its Registry item `component-ui`), installed under `client/extensions/file-preview` as this plugin's own source; DOCX, XLSX and PPTX render in the browser through `@silurus/ooxml`.
+
+## Index notifications and refresh
+
+An indexer may declare `notifications: 'complete'`, `'partial'` or `'none'` alongside `onChange(listener)`. `complete` is an application-owned promise that **every** queue, progress, success, failure, cancellation and reindex change is announced after it is durably visible to `states()` and `unfinished()`, including empty/error outcomes and changes made by other workers. An `onChange` implementation without an explicit declaration is partial; without `onChange`, coverage is always none. Use the application's Realtime broker across processes when workers and browsers are served by different instances. Do not declare complete coverage solely because a WebSocket connects.
+
+```ts
+const unregister = knowledge.registerIndexer({
+  notifications: 'complete',
+  onChange: (listener) => committedIndexChanges.onDocument(listener),
+  states: (sections) => index.states(sections),
+  unfinished: (spaceId, limit) => index.unfinished(spaceId, limit),
+  reindex: (docId) => index.reindex(docId),
+});
+// Call unregister when the owning integration stops.
+```
+
+Registration, replacement and removal announce `indexer.changed` so open pages reload the capabilities. Old listeners and unregister callbacks cannot affect a newer registration, even when it uses the same indexer object. Reindexing also announces the queued change after the indexer's operation resolves. The adapter remains responsible for subsequent progress and terminal outcomes.
+
+Index responses add optional `meta.notifications`; `GET /docs/{docId}/index`, `POST /docs/{docId}/reindex` and `GET /indexing` retain their existing `data` fields and the list's `meta.enabled`. `KnowledgeApi.docIndex()` and `unindexed()` keep their return shapes; `docIndexSnapshot()` and `unindexedSnapshot()` additionally expose metadata. Older servers without metadata take the conservative fallback.
+
+The document and space index hooks share one refresh scheduler per cached query. Complete coverage plus an acknowledged subscription uses events and 60-second reconciliation while the page is visible. Otherwise, pending work is checked after 5, 10, 20 and at most 30 seconds without progress. Progress, events and a local reindex reset the fallback; completion or disabled indexing stops fast polling. `useKnowledgeDocIndex(id, { maxPollMs: 15_000 })` and `useKnowledgeUnindexed(space, { maxPollMs: 15_000 })` can adjust the ceiling, within a five-to-sixty-second range. When several observers share a query, the shortest requested ceiling wins.
+
+Events, acknowledgement and fallback timers schedule serialized reads, with one trailing read when a change arrives during an older request. General Knowledge refreshes exclude these managed queries, whose own scheduler also handles ancestor permission changes. Transient failures retry up to three times without another event; 401/403 and inaccessible-document 404 responses clear the protected snapshot and stop automatic reads until explicit recovery. Hidden pages pause reads. Removing the cached query or releasing its last observer closes the subscription and timers immediately. Indexer completeness is not automatically verified by the plugin: an adapter that misses events must declare partial coverage and retain polling.
+
+The document badge, sections panel and space home show a status-refresh failure and a **Retry refresh** action when an index read fails, instead of presenting the cached pending state as current. This action only refetches the authorized snapshot and is available to readers; it does not reindex content. A successful refetch resumes the shared scheduler. Applications rendering the public hooks themselves should also display `error` and expose `refetch()`; new events alone do not reset exhausted retries.
 
 ## Verification
 

@@ -28,6 +28,19 @@ const sharedFiles = new Set([
 // matrix above runs the dialect packages' own suites; these run a package's named tests on that dialect through
 // `pnpm test:db`, in the Database tests workflow, when a path they guard changes.
 export const packageSuites = [
+  ...['postgres', 'mysql'].map((dialect) => ({
+    // Execution and withdrawal must observe the winner after waiting on the same session row.
+    paths: [
+      'packages/plugins/app-plugin-agent-sessions/server/service.ts',
+      'packages/plugins/app-plugin-agent-sessions/server/store.ts',
+      'packages/plugins/app-plugin-agent-sessions/tests/server/withdrawals.test.ts',
+      'packages/plugins/app-plugin-agent-sessions/database/migrations/202610180001_agent_sessions_bridge_protocol.ts',
+      'packages/libs/acp-bridge/src/protocol.ts',
+    ],
+    dialect,
+    filter: '@nocobase/app-plugin-agent-sessions',
+    tests: ['tests/server/withdrawals.test.ts'],
+  })),
   {
     // Claims, consent decisions and the sweeper must not lock or write per queued candidate; see the test's header.
     paths: [
@@ -36,7 +49,6 @@ export const packageSuites = [
       'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
       'packages/plugins/app-plugin-agents/tests/active-input.test.ts',
       'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
-      'packages/apps/studio/server/agents/work.ts',
       'packages/plugins/app-plugin-agents/tests/harness.ts',
     ],
     dialect: 'postgres',

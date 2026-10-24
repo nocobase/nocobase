@@ -44,6 +44,10 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
   ],
   ['@nocobase/i18n', 'exports React contexts for the i18n runtime'],
   [
+    '@tanstack/react-query',
+    'the application query cache reaches pages and plugins through its React context, which a second copy does not read',
+  ],
+  [
     '@nocobase/queue',
     'types the host-owned QueueService that plugins resolve from queueServiceToken',
   ],

@@ -14,7 +14,7 @@ import {
   TerminalIcon,
   Trash2Icon,
 } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import type { SkillDetail } from '../../../../shared/skills.js';
@@ -44,6 +44,8 @@ import {
   useVocabulary,
 } from '../../../hooks/use-vocabulary.js';
 import { useAgentsApi } from '../../../hooks/use-agents-api.js';
+import { SkillSettingsContext } from '../../../lib/skill-settings-context.js';
+import { SkillMountToggle } from '../../../lib/skill-settings.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { saveBlob } from '../../../lib/download.js';
 import { ImportSkillButton } from '../import-button.js';
@@ -205,7 +207,7 @@ function SkillBody({
       ) : (
         <SkillFiles skill={skill} />
       )}
-      <SkillAttachments skill={skill} />
+      <SkillAttachments skill={skill} canManage={canDelete} />
       <SkillVersions skill={skill} canEdit={canEdit} />
       <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
         <AlertDialogContent>
@@ -263,32 +265,64 @@ function SkillFacts({
   );
 }
 
-/** How many places of each supported scope take the skill by default. */
+/** Every target, with application-provided names and links respecting visibility. */
 function SkillAttachments({
   skill,
+  canManage,
 }: {
   readonly skill: SkillDetail;
+  readonly canManage: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const text = useText();
   const vocabulary = useVocabulary();
-  const defaults = new Map<string, number>();
-  for (const item of skill.attachments)
-    defaults.set(item.scope, (defaults.get(item.scope) ?? 0) + 1);
+  const api = useAgentsApi();
+  const extra = useContext(SkillSettingsContext);
   return (
     <AgSection id='ag-skill-attachments' title={t('skills.attachments')}>
-      {defaults.size > 0 ? (
-        <p className='text-sm text-muted-foreground'>
-          {t('skills.defaults', {
-            places: [...defaults]
-              .map(
-                ([scope, count]) =>
-                  `${text(scopeOf(vocabulary, scope)?.title, scope)} × ${count}`,
-              )
-              .join(t('skills.defaultsSeparator')),
-          })}
-        </p>
+      {canManage ? (
+        <div className='mb-4 flex flex-col gap-4 rounded-lg border p-4'>
+          <SkillMountToggle
+            skillId={skill.id}
+            queryKey={agentsKeys.scopeSkills('global', 'default')}
+            load={() => api.scopeSkills('global', 'default')}
+            save={(ids) => api.setScopeSkills('global', 'default', ids)}
+            title={t('skills.globalMount')}
+            description={t('skills.globalMountDescription')}
+          />
+          {extra ? <extra.Settings skillId={skill.id} /> : null}
+        </div>
       ) : null}
+      {skill.attachments.length > 0 ? (
+        <ul className='flex flex-col gap-2 text-sm'>
+          {skill.attachments.map((item) => (
+            <li
+              key={`${item.scope}:${item.scopeId}`}
+              className='flex flex-wrap gap-2'
+            >
+              <span className='text-muted-foreground'>
+                {item.scope === 'global'
+                  ? t('skills.globalMount')
+                  : text(scopeOf(vocabulary, item.scope)?.title, item.scope)}
+              </span>
+              {item.scope === 'global' ? null : item.href && item.name ? (
+                <Link
+                  className='text-primary underline underline-offset-4'
+                  to={item.href}
+                >
+                  {item.name}
+                </Link>
+              ) : (
+                <span>{item.name ?? t('skills.unavailableTarget')}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className='text-sm text-muted-foreground'>
+          {t('skills.noAttachments')}
+        </p>
+      )}
     </AgSection>
   );
 }

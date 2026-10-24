@@ -25,15 +25,17 @@ export function fakeFiles(database?: DatabaseManager): {
         const id = randomUUID();
         const key = `objects/${id}.png`;
         objects.set(key, new Uint8Array(await file.arrayBuffer()));
+        options.transaction?.afterRollback(() => {
+          objects.delete(key);
+        });
         uploads.push({
           collection,
           file,
           defaults: options.policy.create.defaults,
         });
         const now = new Date().toISOString();
-        await database
-          ?.connection()
-          .repository(collection)
+        await (options.transaction ?? database?.connection())
+          ?.repository(collection)
           .createOne({
             values: {
               id,

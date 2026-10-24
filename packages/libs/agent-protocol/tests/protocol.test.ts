@@ -116,8 +116,8 @@ const payload: RunPayload = {
 };
 
 describe('agent protocol', () => {
-  it('is version 11 and still serves versions 3 to 10', () => {
-    expect(PROTOCOL_VERSION).toBe(11);
+  it('is version 13 and still serves versions 3 to 12', () => {
+    expect(PROTOCOL_VERSION).toBe(13);
     expect(MIN_PROTOCOL_VERSION).toBe(3);
     expect(isProtocolSupported(3)).toBe(true);
     expect(isProtocolSupported(4)).toBe(true);
@@ -129,8 +129,58 @@ describe('agent protocol', () => {
     expect(isProtocolSupported(9)).toBe(true);
     expect(isProtocolSupported(10)).toBe(true);
     expect(isProtocolSupported(11)).toBe(true);
-    expect(isProtocolSupported(12)).toBe(false);
+    expect(isProtocolSupported(12)).toBe(true);
+    expect(isProtocolSupported(13)).toBe(true);
+    expect(isProtocolSupported(14)).toBe(false);
     expect(isProtocolSupported(3.5)).toBe(false);
+  });
+
+  it('names code host CLIs to wrap with a repository credential', () => {
+    const git = {
+      onDemand: ['http://gitlab.local:8929/group/sub/app.git'],
+      tools: [
+        {
+          bin: 'glab',
+          url: 'http://gitlab.local:8929/group/sub/app.git',
+          env: {
+            GITLAB_TOKEN: { credential: 'password' },
+            GITLAB_HOST: 'gitlab.local:8929',
+            API_PROTOCOL: 'http',
+          },
+        },
+        {
+          bin: 'gh',
+          url: 'http://gitlab.local:8929/group/sub/app.git',
+          env: { GH_TOKEN: { credential: 'password' } },
+        },
+      ],
+    };
+    expect(RunGitSchema.parse(git)).toEqual(git);
+    expect(RunnerFeatureSchema.parse('gitTools')).toBe('gitTools');
+    const tool = (bin: string, env: Record<string, unknown>) => ({
+      tools: [{ bin, url: 'https://x/y.git', env }],
+    });
+    expect(RunGitSchema.safeParse(tool('Gh', {})).success).toBe(false);
+    expect(RunGitSchema.safeParse(tool('../gh', {})).success).toBe(false);
+    for (const name of [
+      'PATH',
+      'GIT_ASKPASS',
+      'LD_PRELOAD',
+      'gh_token',
+      'NOCOBASE_RUNNER_X',
+    ])
+      expect(RunGitSchema.safeParse(tool('gh', { [name]: 'x' })).success).toBe(
+        false,
+      );
+    expect(
+      RunGitSchema.safeParse(tool('gh', { GH_TOKEN: { credential: 'token' } }))
+        .success,
+    ).toBe(false);
+    expect(
+      RunGitSchema.safeParse({
+        tools: [tool('gh', {}).tools[0], tool('gh', {}).tools[0]],
+      }).success,
+    ).toBe(false);
   });
 
   it('lists repositories whose credential is asked for on demand, and reads a payload without them', () => {

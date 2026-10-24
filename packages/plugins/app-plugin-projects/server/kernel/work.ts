@@ -99,6 +99,8 @@ export interface WorkWithdrawal {
 export interface IssueWorkHandler {
   /** Receives comments even when the executor was cleared, for issue-wide pause policies. */
   readonly observesComments?: boolean;
+  /** Receives creations and updates even when another kind or nobody executes the issue. */
+  readonly observesIssueChanges?: boolean;
   /** Receives trusted owner claims even when the executor is cleared. */
   readonly observesOwnerClaims?: boolean;
   /** A new issue, or an update (including a status moved by a status event). */
@@ -268,6 +270,10 @@ export function kindTriggers(
             }),
           );
       for (const [, work] of handlersOf(kinds, [
+        ...kinds
+          .list()
+          .filter((kind) => kind.work?.observesIssueChanges)
+          .map((kind) => kind.key),
         before?.executor?.type,
         after.executor?.type,
         ...(change.ownerClaimed

@@ -4,6 +4,7 @@
  */
 import {
   AGENT_TOOLS,
+  NATIVE_AGENT_TOOLS,
   WorkspaceDecisionSchema,
   WorkspaceCleanupResultSchema,
   RunnerPolicySchema,
@@ -54,6 +55,8 @@ export interface RunnerRecord {
   readonly variables?: unknown;
   readonly workspaceUsage?: unknown;
   readonly unavailableModels?: unknown;
+  readonly quotaUsage?: unknown;
+  readonly quotaRevision?: number;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -111,15 +114,15 @@ function toolList(value: unknown): ToolInfo[] {
 
 /** A stored tool choice: null (every tool) stays null; otherwise the known tools in their canonical order. */
 export function enabledToolList(value: unknown): AgentTool[] | null {
-  if (value === null || value === undefined) return null;
+  if (value === null || value === undefined) return [...NATIVE_AGENT_TOOLS];
   const list = Array.isArray(value) ? (value as unknown[]) : [];
   return AGENT_TOOLS.filter((tool) => list.includes(tool));
 }
 
-/** A tool choice as stored: every tool collapses to null, so a tool added to the protocol later is offered too. */
+/** A tool choice is always explicit; selecting all tools never opts in to later catalog additions. */
 export function storedToolChoice(value: unknown): AgentTool[] | null {
   const list = enabledToolList(value);
-  return list && list.length === AGENT_TOOLS.length ? null : list;
+  return list;
 }
 
 /**
@@ -246,6 +249,20 @@ export function storedUnavailableModels(value: unknown): UnavailableModel[] {
         model: item.model,
         at: item.at,
         reported: stringArray(item.reported),
+        ...(item.reason === 'toolQuota'
+          ? {
+              reason: 'toolQuota' as const,
+              scope:
+                item.scope === 'provider'
+                  ? ('provider' as const)
+                  : item.scope === 'model'
+                    ? ('model' as const)
+                    : ('tool' as const),
+              window: typeof item.window === 'string' ? item.window : 'account',
+              resetsAt:
+                typeof item.resetsAt === 'string' ? item.resetsAt : null,
+            }
+          : {}),
       },
     ];
   });
@@ -254,12 +271,19 @@ export function storedUnavailableModels(value: unknown): UnavailableModel[] {
 /** A runner's last workspace report as stored: null when it never reported one. */
 export function storedWorkspaceUsage(
   value: unknown,
+  details = true,
 ): RunnerWorkspaceUsage | null {
   if (value === null || value === undefined) return null;
   const usage = jsonObject(value);
   if (typeof usage.measuredAt !== 'string' && usage.measuredAt !== null)
     return null;
-  const workspaces = (Array.isArray(usage.workspaces) ? usage.workspaces : [])
+  const needsDirectories =
+    details ||
+    !isFiniteNumber(usage.count) ||
+    !isFiniteNumber(usage.unpushedCount);
+  const workspaces = (
+    needsDirectories && Array.isArray(usage.workspaces) ? usage.workspaces : []
+  )
     .map(storedWorkspace)
     .filter((item): item is RunnerWorkspace => item !== null);
   const count = (field: unknown, fallback: number): number =>
@@ -278,13 +302,14 @@ export function storedWorkspaceUsage(
     ...(isFiniteNumber(usage.intervalMs)
       ? { intervalMs: usage.intervalMs }
       : {}),
-    workspaces,
+    workspaces: details ? workspaces : [],
   };
 }
 
 export function toRunner(
   record: RunnerRecord,
   ownerName: string | null = null,
+  workspaceDetails = true,
 ): Runner {
   return {
     id: record.id,
@@ -305,6 +330,20 @@ export function toRunner(
     slots: Number(record.slots),
     toolSlots: storedToolSlots(record.toolSlots),
     toolLoad: storedToolLoad(record.load),
+    capacityReportedAt:
+      typeof jsonObject(record.load).reportedAt === 'string'
+        ? String(jsonObject(record.load).reportedAt)
+        : undefined,
+    reportedSlots:
+      typeof jsonObject(record.load).slots === 'number'
+        ? Number(jsonObject(record.load).slots)
+        : undefined,
+    capacitySource:
+      jsonObject(record.load).capacitySource === 'online'
+        ? 'online'
+        : jsonObject(record.load).capacitySource === 'legacyLocal'
+          ? 'legacyLocal'
+          : undefined,
     globalFree:
       typeof jsonObject(record.load).free === 'number'
         ? Number(jsonObject(record.load).free)
@@ -314,12 +353,21 @@ export function toRunner(
         ? 'updatePending'
         : jsonObject(record.load).draining === 'pruning'
           ? 'pruning'
-          : undefined,
+          : jsonObject(record.load).draining === 'diskLow'
+            ? 'diskLow'
+            : undefined,
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),
-    workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
+    workspaceUsage: storedWorkspaceUsage(
+      record.workspaceUsage,
+      workspaceDetails,
+    ),
     unavailableModels: storedUnavailableModels(record.unavailableModels),
+    quotaRevision: Number(record.quotaRevision ?? 0),
+    quotaUsage: (Array.isArray(record.quotaUsage)
+      ? record.quotaUsage
+      : []) as Runner['quotaUsage'],
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

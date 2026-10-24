@@ -40,6 +40,26 @@
       ]
     },
     {
+      "name": "record-link",
+      "type": "registry:component",
+      "title": "Record Link",
+      "description": "A native router link for record names and identifiers in tables and lists: foreground text at rest, underline on hover and visible keyboard focus. Preinstalled in both application templates.",
+      "categories": ["data-display"],
+      "meta": {
+        "group": "Data display",
+        "iframeHeight": 300
+      },
+      "dependencies": ["react-router@^7.0.2", "cn@^0.4.0"],
+      "docs": "Render inside a React Router and pass the record route through to. Carry the current list query in to.search when opening a child route. Supports native Link props and refs; use action buttons and menu items separately.",
+      "files": [
+        {
+          "path": "record-link.tsx",
+          "type": "registry:component",
+          "target": "client/components/record-link.tsx"
+        }
+      ]
+    },
+    {
       "name": "settings-dialog",
       "type": "registry:component",
       "title": "Settings Dialog",
@@ -78,7 +98,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": ["button", "dialog"],
-      "docs": "Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.",
+      "docs": "Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, \u5173\u95ed), or it reads Close in every language.",
       "files": [
         {
           "path": "route-dialog.tsx",
@@ -115,7 +135,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": ["button", "dialog"],
-      "docs": "Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.",
+      "docs": "Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, \u5173\u95ed), or it reads Close in every language.",
       "files": [
         {
           "path": "route-drawer.tsx",
@@ -189,7 +209,12 @@
         "group": "Data entry",
         "iframeHeight": 680
       },
-      "dependencies": ["cn@^0.4.0", "date-fns@^4.4.0", "lucide-react@^0.487.0"],
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.2",
+        "cn@^0.4.0",
+        "date-fns@^4.4.0",
+        "lucide-react@^0.487.0"
+      ],
       "registryDependencies": [
         "avatar",
         "button",
@@ -375,9 +400,10 @@
         "@xyflow/react@^12.11.5",
         "elkjs@^0.10.2",
         "@nocobase/i18n@^1.0.0-beta.4",
-        "cn@^0.4.0"
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
       ],
-      "docs": "Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 200×64 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.",
+      "docs": "Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232\u00d7104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.",
       "files": [
         {
           "path": "flow-diagram.tsx",
@@ -393,6 +419,74 @@
           "path": "flow-diagram-css.d.ts",
           "type": "registry:component",
           "target": "client/components/flow-diagram-css.d.ts"
+        }
+      ],
+      "registryDependencies": ["button", "tooltip"]
+    },
+    {
+      "name": "data-table",
+      "type": "registry:component",
+      "title": "Data Table",
+      "description": "Standard TanStack Table v8 table with controlled server pagination and sorting, selection and column visibility.",
+      "categories": ["data-display"],
+      "dependencies": [
+        "@tanstack/react-table@^8.21.3",
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["table", "button", "select", "dropdown-menu"],
+      "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.",
+      "files": [
+        {
+          "path": "data-table/column-header.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/column-header.tsx"
+        },
+        {
+          "path": "data-table/data-table.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/data-table.tsx"
+        },
+        {
+          "path": "data-table/index.ts",
+          "type": "registry:component",
+          "target": "client/components/data-table/index.ts"
+        },
+        {
+          "path": "data-table/pagination.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/pagination.tsx"
+        },
+        {
+          "path": "data-table/view-options.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/view-options.tsx"
+        }
+      ]
+    },
+    {
+      "name": "setup-readiness",
+      "type": "registry:component",
+      "title": "Setup Readiness",
+      "description": "Contextual prerequisite checks for a feature, with missing, ready and unavailable states. Connect real authorized business reads; never infer readiness from installed plugins. Preinstalled in application templates.",
+      "categories": ["page-layout"],
+      "meta": {
+        "group": "Page layout",
+        "iframeHeight": 420
+      },
+      "registryDependencies": ["button"],
+      "docs": "Memoize SetupCheck descriptors and the async inspect callback; wire useSetupReadiness to the feature\u2019s authorized aggregate read and pass its state to SetupReadiness. Supply translated labels, stable ids and authorized configuration links. No checks or disabled inspection causes no reads. Refresh on the host route key and after configuration saves; focus rechecks mounted checks. Unknown reason is unavailable, signIn, forbidden or invalid. Only missing checks render configuration links; denied/invalid reads are not missing. Initial all-ready hides; explicit refresh keeps a compact confirmation and the refresh control. This is informational; execution still validates prerequisites server-side. Templates also include RequiredRoleSetup for explicitly declared business roles.",
+      "files": [
+        {
+          "path": "setup-readiness.tsx",
+          "type": "registry:component",
+          "target": "client/components/setup-readiness.tsx"
+        },
+        {
+          "path": "setup-readiness-state.ts",
+          "type": "registry:component",
+          "target": "client/components/setup-readiness-state.ts"
         }
       ]
     }

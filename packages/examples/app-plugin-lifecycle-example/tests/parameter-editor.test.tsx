@@ -11,6 +11,7 @@ import { boundParameterGroups } from '../client/components/parameter-binding-edi
 import { describeLifecycle } from '@nocobase/lifecycle';
 import { expenseLifecycle } from '../server/lifecycles/expense.js';
 import enUS from '../client/locales/en-US.js';
+import zhCN from '../client/locales/zh-CN.js';
 import { NAMESPACE } from '../client/lib/format.js';
 
 const group: ParameterGroupView = {
@@ -38,10 +39,16 @@ async function editor(
   value: ParameterGroupView,
   save: ParameterApi['save'],
   read: ParameterApi['read'] = async () => value,
+  locale: 'en-US' | 'zh-CN' = 'en-US',
 ) {
   const runtime = await createTestI18nRuntime({
-    locale: 'en-US',
-    namespaces: { [NAMESPACE]: { 'en-US': async () => ({ default: enUS }) } },
+    locale,
+    namespaces: {
+      [NAMESPACE]: {
+        'en-US': async () => ({ default: enUS }),
+        'zh-CN': async () => ({ default: zhCN }),
+      },
+    },
   });
   const api: ParameterApi = {
     save,
@@ -67,6 +74,50 @@ async function editor(
   );
 }
 describe('shared parameter editor', () => {
+  it('sends a UUID request identifier without randomUUID on HTTP', async () => {
+    vi.stubGlobal('crypto', {
+      getRandomValues: crypto.getRandomValues.bind(crypto),
+    });
+    try {
+      const save = vi.fn<ParameterApi['save']>().mockResolvedValue(group);
+      await editor(group, save);
+      fireEvent.change(screen.getByLabelText('Finance limit'), {
+        target: { value: '1500' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Save values' }));
+      await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+      expect(save.mock.calls[0]?.[3]).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each(['en-US', 'zh-CN'] as const)(
+    'explains timing parameters in business terms in %s',
+    async (locale) => {
+      const fields = Object.fromEntries(
+        Object.keys(enUS.parameters.fields).map((key) => [
+          key,
+          { type: 'number' as const, title: key },
+        ]),
+      );
+      const value = {
+        ...group,
+        fields,
+        values: Object.fromEntries(Object.keys(fields).map((key) => [key, 3])),
+        uses: [],
+      };
+      await editor(value, async () => value, undefined, locale);
+      const copy = locale === 'zh-CN' ? zhCN : enUS;
+      for (const field of Object.values(copy.parameters.fields)) {
+        expect(screen.getByLabelText(field.title)).toHaveValue(3);
+        expect(screen.getByText(field.description)).toBeInTheDocument();
+      }
+    },
+  );
+
   it('preserves draft inputs on a CAS conflict and explicitly retries against the reviewed revision', async () => {
     const save = vi
       .fn<ParameterApi['save']>()
@@ -119,7 +170,7 @@ describe('shared parameter editor', () => {
     const description = describeLifecycle(expenseLifecycle);
     expect(
       boundParameterGroups(description, 'state', 'awaitingManager'),
-    ).toEqual(['expenseThresholds']);
+    ).toEqual(['expenseThresholds', 'expenseTiming']);
     expect(boundParameterGroups(description, 'transition', 'submit')).toEqual([
       'expenseThresholds',
     ]);

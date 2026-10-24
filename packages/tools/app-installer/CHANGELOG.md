@@ -1,5 +1,11 @@
 # @nocobase/app-installer
 
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 164abe7: Describe `--app` with a generic published application (`@acme/crm`) instead of NocoBase Studio in the installer's help, flag description, usage error and README, and in the deployment Skill. The option itself is unchanged and installs any published npm application.
+
 ## 0.1.0-beta.8
 
 ### Minor Changes

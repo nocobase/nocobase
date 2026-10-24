@@ -1,9 +1,12 @@
+import { compactDateTime } from '../../lib/format.js';
 import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { WORKSPACE_REPORT_INTERVAL_MS } from '@nocobase/agent-protocol';
 import {
   runnerLowOnDisk,
+  workspaceCategory,
   type RunnerSummary,
+  type RunnerListItem,
 } from '../../../shared/runners.js';
 import { AgSection } from '../../components/ag-section.js';
 import { AgTag } from '../../components/ag-tag.js';
@@ -13,14 +16,17 @@ import {
   AlertTitle,
 } from '../../components/ui/alert.js';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '../../components/ui/collapsible.js';
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from '../../components/ui/table.js';
 import { useFormatters } from '../../lib/format.js';
 
 function workspaceDiskState(
-  runner: Pick<RunnerSummary, 'workspaceUsage' | 'status'>,
+  runner: Pick<RunnerListItem, 'workspaceUsage' | 'status'>,
   now: number = Date.now(),
 ): { low: boolean; stale: boolean } {
   const usage = runner.workspaceUsage;
@@ -40,7 +46,7 @@ function workspaceDiskState(
 export function WorkspaceDiskTag({
   runner,
 }: {
-  readonly runner: RunnerSummary;
+  readonly runner: RunnerListItem;
 }): ReactElement | null {
   const { t } = useTranslation();
   const { low, stale } = workspaceDiskState(runner);
@@ -52,20 +58,35 @@ export function WorkspaceDiskTag({
 }
 
 function bytes(value: number): string {
-  return `${(value / 1024 ** 3).toFixed(2)} GiB`;
+  const power =
+    value >= 1024 ** 3 ? 3 : value >= 1024 ** 2 ? 2 : value >= 1024 ? 1 : 0;
+  return `${(value / 1024 ** power).toFixed(2)} ${['B', 'KiB', 'MiB', 'GiB'][power]}`;
 }
 
 export function WorkspaceDiagnostics({
   runner,
+  filters,
+  rowsPending = false,
 }: {
   readonly runner: RunnerSummary;
+  readonly filters?: ReactNode;
+  readonly rowsPending?: boolean;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const format = useFormatters();
   const usage = runner.workspaceUsage;
   const { low, stale } = workspaceDiskState(runner);
   const summary = (
-    <div className='flex flex-col gap-1 text-sm [overflow-wrap:anywhere]'>
+    <div
+      className={`grid min-w-0 gap-2 text-sm sm:grid-cols-2 [overflow-wrap:anywhere] ${low ? '' : 'rounded-lg border p-3'}`}
+    >
+      {usage?.totalBytes !== undefined ? (
+        <p>
+          {t('runtimes.quota.workspaceSize', {
+            value: `${usage.sizeUnknownCount ? '≥ ' : ''}${bytes(usage.totalBytes)}`,
+          })}
+        </p>
+      ) : null}
       {!usage ? (
         <p>{t('runtimes.workspaces.notReported')}</p>
       ) : (
@@ -86,11 +107,37 @@ export function WorkspaceDiagnostics({
                       value: bytes(usage.disk.minFreeBytes),
                     })}
               </p>
+              <div
+                className='relative h-1.5 rounded-full bg-muted sm:col-span-2'
+                aria-hidden='true'
+              >
+                <div
+                  className='h-full bg-primary'
+                  style={{
+                    width: `${Math.max(0, Math.min(100, (1 - usage.disk.freeBytes / Math.max(1, usage.disk.totalBytes)) * 100))}%`,
+                  }}
+                />
+                {usage.disk.minFreeBytes !== null ? (
+                  <span
+                    data-testid='minimum-free-marker'
+                    className='absolute -top-1 h-3.5 w-0.5 bg-amber-600'
+                    style={{
+                      left: `${Math.max(0, Math.min(100, (1 - usage.disk.minFreeBytes / Math.max(1, usage.disk.totalBytes)) * 100))}%`,
+                    }}
+                  />
+                ) : null}
+              </div>
             </>
           )}
-          <p>
+          <p className='text-xs text-muted-foreground sm:col-span-2'>
             {t('runtimes.workspaces.reportedAt', {
-              time: format.dateTime(usage.diskMeasuredAt ?? usage.measuredAt),
+              time:
+                usage.diskMeasuredAt || usage.measuredAt
+                  ? compactDateTime(
+                      (usage.diskMeasuredAt ?? usage.measuredAt)!,
+                      i18n.language,
+                    )
+                  : '—',
             })}
           </p>
           {low && !stale ? <p>{t('runtimes.workspaces.paused')}</p> : null}
@@ -102,15 +149,17 @@ export function WorkspaceDiagnostics({
   return (
     <>
       {low ? (
-        <Alert>
+        <Alert className='border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200'>
           <AlertTitle>{t('runtimes.workspaces.low')}</AlertTitle>
           <AlertDescription>{summary}</AlertDescription>
         </Alert>
       ) : (
         summary
       )}
-      {runner.canSeeMachine === true ? (
+      {filters}
+      {runner.canSeeMachine === true && !rowsPending ? (
         <AgSection
+          className='max-w-none min-w-0'
           id='workspace-diagnostics'
           title={t('runtimes.workspaces.title')}
         >
@@ -123,78 +172,125 @@ export function WorkspaceDiagnostics({
               {t('runtimes.workspaces.empty')}
             </p>
           ) : (
-            usage.workspaces.map((workspace) => (
-              <Collapsible
-                key={workspace.workDir}
-                className='min-w-0 rounded-lg border p-2'
-              >
-                <CollapsibleTrigger className='w-full text-left text-sm whitespace-normal [overflow-wrap:anywhere] focus-visible:outline-2'>
-                  {workspace.subjectKey?.split('.readonly-')[0] ??
-                    workspace.subjectId ??
-                    workspace.workDir.split('/').pop()}{' '}
-                  ·{' '}
-                  {t(
-                    workspace.settled === true
-                      ? 'runtimes.workspaces.ended'
-                      : workspace.settled === false
-                        ? 'runtimes.workspaces.active'
-                        : 'runtimes.workspaces.unknown',
-                  )}
-                </CollapsibleTrigger>
-                <CollapsibleContent className='space-y-2 pt-2 text-sm text-muted-foreground [overflow-wrap:anywhere]'>
-                  <p>{workspace.workDir}</p>
-                  <p>
-                    {t(
-                      workspace.workDir.includes('.readonly-')
-                        ? 'runtimes.workspaces.readOnly'
-                        : 'runtimes.workspaces.working',
-                    )}
-                  </p>
-                  {workspace.sizeBytes === undefined ? null : (
-                    <p>
-                      {t('runtimes.workspaces.size', {
-                        value: bytes(workspace.sizeBytes),
-                      })}
-                    </p>
-                  )}
-                  <p>
-                    {t(
-                      workspace.workDir.includes('.readonly-')
-                        ? 'runtimes.workspaces.notApplicable'
-                        : workspace.unpushed
-                          ? 'runtimes.workspaces.unpushed'
-                          : 'runtimes.workspaces.pushed',
-                    )}
-                  </p>
-                  <p>
-                    {workspace.decision
-                      ? t(
-                          `runtimes.workspaces.decision.${workspace.decision.reason}`,
-                        )
-                      : t('runtimes.workspaces.oldRunner')}
-                  </p>
-                  <p>
-                    {workspace.cleanup
-                      ? t(
-                          `runtimes.workspaces.cleanup.${workspace.cleanup.reason}`,
-                        )
-                      : t('runtimes.workspaces.noCleanup')}
-                  </p>
-                  {workspace.cleanup?.reason === 'allowed' &&
-                  workspace.cleanup.discardsUntracked ? (
-                    <p>{t('runtimes.workspaces.discardsUntracked')}</p>
-                  ) : null}
-                  <p>
-                    {t('runtimes.workspaces.reportedAt', {
-                      time: format.dateTime(usage.measuredAt),
-                    })}
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
-            ))
+            <Table className='table-fixed min-w-[740px] sm:min-w-0'>
+              <colgroup>
+                <col className='w-[24%]' />
+                <col className='w-[12%]' />
+                <col className='w-[12%]' />
+                <col className='w-[14%]' />
+                <col className='w-[24%]' />
+                <col className='w-[14%]' />
+              </colgroup>
+              <TableHeader>
+                <TableRow>
+                  {[
+                    'directory',
+                    'type',
+                    'size',
+                    'push',
+                    'status',
+                    'lastUsed',
+                  ].map((key) => (
+                    <TableHead key={key}>
+                      {t(`runtimes.quota.columns.${key}`)}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usage.workspaces.map((workspace) => (
+                  <TableRow key={workspace.workDir}>
+                    <TableCell className='min-w-0 overflow-hidden'>
+                      <div className='truncate'>
+                        {workspace.subjectKey ??
+                          workspace.subjectId ??
+                          workspace.workDir.split('/').pop()}
+                      </div>
+                      <div
+                        title={workspace.workDir}
+                        className='truncate font-mono text-xs text-muted-foreground'
+                      >
+                        {workspace.workDir}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {t(
+                        workspace.workDir.includes('.readonly-')
+                          ? 'runtimes.quota.readOnly'
+                          : 'runtimes.quota.working',
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {workspace.sizeBytes === undefined
+                        ? '—'
+                        : bytes(workspace.sizeBytes)}
+                    </TableCell>
+                    <TableCell>
+                      <AgTag
+                        title={
+                          workspace.unpushed
+                            ? t('runtimes.workspaces.unpushed')
+                            : undefined
+                        }
+                        tone={workspace.unpushed ? 'amber' : 'green'}
+                      >
+                        {t(
+                          workspace.unpushed
+                            ? 'runtimes.quota.unpushed'
+                            : 'runtimes.quota.clean',
+                        )}
+                      </AgTag>
+                    </TableCell>
+                    <TableCell className='min-w-0 overflow-hidden'>
+                      <WorkspaceStatus workspace={workspace} />
+                    </TableCell>
+                    <TableCell
+                      className='whitespace-nowrap text-xs text-muted-foreground'
+                      title={format.dateTime(workspace.lastUsedAt)}
+                    >
+                      {format.relative(workspace.lastUsedAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </AgSection>
       ) : null}
     </>
+  );
+}
+
+function WorkspaceStatus({
+  workspace,
+}: {
+  readonly workspace: NonNullable<
+    RunnerSummary['workspaceUsage']
+  >['workspaces'][number];
+}): ReactElement {
+  const { t } = useTranslation();
+  const category = workspaceCategory(workspace);
+  const reason =
+    workspace.cleanup?.reason ??
+    workspace.decision?.reason ??
+    (workspace.unpushed ? 'unpushed' : 'unknown');
+  const key =
+    category === 'active'
+      ? 'active'
+      : category === 'ended'
+        ? workspace.cleanup?.reason === 'allowed'
+          ? 'ended'
+          : 'checks'
+        : reason;
+  const text = t(`runtimes.quota.workspaceStatus.${key}`, {
+    defaultValue: t('runtimes.quota.workspaceStatus.unknown'),
+  });
+  return (
+    <span
+      className={`block truncate text-xs ${category === 'active' ? 'text-blue-700 dark:text-blue-300' : category === 'ended' ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'}`}
+      title={text}
+    >
+      {text}
+    </span>
   );
 }

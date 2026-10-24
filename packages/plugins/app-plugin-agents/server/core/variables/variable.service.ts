@@ -93,6 +93,23 @@ export interface VariableTarget {
 }
 
 export interface VariableService {
+  admissionMetadata(
+    conn: DatabaseConnection,
+    targets: readonly VariableTarget[],
+  ): Promise<
+    readonly {
+      scope: string;
+      scopeId: string;
+      name: string;
+      teamRunnersOnly: boolean;
+      kind: 'value' | 'runner';
+    }[]
+  >;
+  /** A claim-local sealed snapshot. Delivery opens values and audits only after admission. */
+  prepareRun(
+    conn: DatabaseConnection,
+    targets: readonly VariableTarget[],
+  ): Promise<RunVariables>;
   list(target: VariableTarget): Promise<Variable[]>;
   /**
    * Creates or replaces a variable. `value` may be left out to change only `teamRunnersOnly` of one that exists;
@@ -134,7 +151,7 @@ export interface VariableService {
     targets: readonly VariableTarget[],
   ): Promise<string[]>;
   /**
-   * The variables of `targets`, merged in order as a run gets them, that only team runners may receive: by the scope
+   * The variables of `targets`, merged in order as a run gets them, that only shared runners may receive: by the scope
    * whose value the run would get.
    */
   teamOnly(
@@ -166,13 +183,23 @@ export interface VariableService {
   /**
    * For a job's claim: the values of the named variables, by `scope`, `scopeId` and `name` joined with NUL, recorded
    * as delivered for the job. A variable that is not set is left out. Throws `JobSecretsNotAllowed` before opening
-   * any value if a referenced variable is for team runners only and the stored runner is not a team runner.
+   * any value if a referenced variable is for shared runners only and the stored runner is not a shared runner.
    */
   forJob(
     conn: DatabaseConnection,
     refs: readonly (VariableTarget & { readonly name: string })[],
     delivery: { readonly jobId: string; readonly runnerId: string },
   ): Promise<Map<string, string>>;
+}
+
+export interface RunVariables {
+  readonly names: readonly string[];
+  readonly teamOnly: readonly VariableRef[];
+  readonly passthrough: readonly string[];
+  deliver(delivery: {
+    readonly runId: string;
+    readonly runnerId: string;
+  }): Promise<EnvVar[]>;
 }
 
 export interface VariableServiceDeps {
@@ -301,10 +328,45 @@ export function createVariableService(
     });
 
   /** The names of `targets` merged in order, each with the kind of its last entry. */
-  const merge = async (
+  const load = async (
     conn: DatabaseConnection,
     targets: readonly VariableTarget[],
   ) => {
+    const valued =
+      targets.length === 0
+        ? []
+        : await secrets(conn).findMany({
+            filter: (f) =>
+              f.or(
+                targets.map((target) =>
+                  f.and([
+                    f.string('scope').eq(target.scope),
+                    f.string('scopeId').eq(target.scopeId),
+                  ]),
+                ),
+              ),
+            sort: (sort) => sort.field('name').asc(),
+          });
+    const taken =
+      targets.length === 0
+        ? []
+        : await runnerVariables(conn).findMany({
+            filter: (f) =>
+              f.or(
+                targets.map((target) =>
+                  f.and([
+                    f.string('scope').eq(target.scope),
+                    f.string('scopeId').eq(target.scopeId),
+                  ]),
+                ),
+              ),
+            sort: (sort) => sort.field('name').asc(),
+          });
+    const recordsOf = (target: VariableTarget) =>
+      valued.filter(
+        (record) =>
+          record.scope === target.scope && record.scopeId === target.scopeId,
+      );
     const merged = new Map<
       string,
       | {
@@ -315,12 +377,58 @@ export function createVariableService(
       | { readonly kind: 'runner'; readonly target: VariableTarget }
     >();
     for (const target of targets) {
-      for (const record of await of(conn, target))
+      for (const record of recordsOf(target))
         merged.set(record.name, { kind: 'value', target, record });
-      for (const record of await fromRunnerOf(conn, target))
+      for (const record of taken.filter(
+        (record) =>
+          record.scope === target.scope && record.scopeId === target.scopeId,
+      ))
         merged.set(record.name, { kind: 'runner', target });
     }
-    return merged;
+    return { merged, recordsOf };
+  };
+
+  const merge = async (
+    conn: DatabaseConnection,
+    targets: readonly VariableTarget[],
+  ) => (await load(conn, targets)).merged;
+
+  const prepareRun: VariableService['prepareRun'] = async (conn, targets) => {
+    const { merged, recordsOf } = await load(conn, targets);
+    const passthrough = [...merged]
+      .filter(([, entry]) => entry.kind === 'runner')
+      .map(([name]) => name)
+      .sort();
+    const teamOnly: VariableRef[] = [];
+    for (const [name, entry] of merged)
+      if (entry.kind === 'value' && entry.record.teamRunnersOnly)
+        teamOnly.push({ ...entry.target, name });
+    return {
+      names: [...merged]
+        .filter(([, entry]) => entry.kind === 'value')
+        .map(([name]) => name)
+        .sort(),
+      passthrough,
+      teamOnly,
+      async deliver(delivery) {
+        const fromRunner = new Set(passthrough);
+        const values = new Map<string, string>();
+        for (const target of targets) {
+          const records = recordsOf(target).filter(
+            (record) => !fromRunner.has(record.name),
+          );
+          if (records.length === 0) continue;
+          for (const record of records) values.set(record.name, open(record));
+          await audit(conn, target, {
+            action: 'deliver',
+            names: records.map((record) => record.name),
+            runId: delivery.runId,
+            runnerId: delivery.runnerId,
+          });
+        }
+        return [...values].map(([name, value]) => ({ name, value }));
+      },
+    };
   };
 
   const passthroughOf = async (
@@ -370,6 +478,7 @@ export function createVariableService(
   };
 
   return {
+    prepareRun,
     async list(target) {
       const conn = tx.read();
       const records = await of(conn, target);
@@ -407,7 +516,7 @@ export function createVariableService(
             );
           if (options.teamRunnersOnly === true)
             throw invalid(
-              'A variable taken from the runner never leaves the runner; it cannot be for team runners only.',
+              'A variable taken from the runner never leaves the runner; it cannot be for shared runners only.',
               { reason: 'teamRunnersOnlyNotAllowed' },
             );
           const change = await setFromRunner(conn, target, name, userId);
@@ -549,6 +658,43 @@ export function createVariableService(
         .sort();
     },
 
+    async admissionMetadata(conn, targets) {
+      if (!targets.length) return [];
+      const filter = (f: import('@nocobase/db').FilterBuilder) =>
+        f.or(
+          targets.map((target) =>
+            f.and([
+              f.string('scope').eq(target.scope),
+              f.string('scopeId').eq(target.scopeId),
+            ]),
+          ),
+        );
+      const valued = await secrets(conn).findMany({
+        filter,
+        select: (s) => s.fields('scope', 'scopeId', 'name', 'teamRunnersOnly'),
+      });
+      const taken = await runnerVariables(conn).findMany({
+        filter,
+        select: (s) => s.fields('scope', 'scopeId', 'name'),
+      });
+      return [
+        ...valued.map((record) => ({
+          scope: record.scope,
+          scopeId: record.scopeId,
+          name: record.name,
+          teamRunnersOnly: Boolean(record.teamRunnersOnly),
+          kind: 'value' as const,
+        })),
+        ...taken.map((record) => ({
+          scope: record.scope,
+          scopeId: record.scopeId,
+          name: record.name,
+          teamRunnersOnly: false,
+          kind: 'runner' as const,
+        })),
+      ];
+    },
+
     async teamOnly(conn, targets) {
       const refs: VariableRef[] = [];
       for (const [name, entry] of await merge(conn, targets))
@@ -576,22 +722,7 @@ export function createVariableService(
     },
 
     async forRun(conn, targets, delivery) {
-      const fromRunner = new Set(await passthroughOf(conn, targets));
-      const merged = new Map<string, string>();
-      for (const target of targets) {
-        const records = (await of(conn, target)).filter(
-          (record) => !fromRunner.has(record.name),
-        );
-        if (records.length === 0) continue;
-        for (const record of records) merged.set(record.name, open(record));
-        await audit(conn, target, {
-          action: 'deliver',
-          names: records.map((record) => record.name),
-          runId: delivery.runId,
-          runnerId: delivery.runnerId,
-        });
-      }
-      return [...merged].map(([name, value]) => ({ name, value }));
+      return (await prepareRun(conn, targets)).deliver(delivery);
     },
 
     async forJob(conn, refs, delivery) {

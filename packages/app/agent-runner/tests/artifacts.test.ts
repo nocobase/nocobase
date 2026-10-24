@@ -140,10 +140,10 @@ describe('regenerable build artifacts', () => {
 });
 
 describe('artifact settings', () => {
-  it('defaults to 2 hours and node_modules, .next and .turbo, and keeps what the owner sets', async () => {
+  it('defaults to 24 hours and node_modules, .next and .turbo, and keeps what the owner sets', async () => {
     const settings = await readSettings(paths);
     expect(artifactTtlMs(settings)).toBe(DEFAULT_ARTIFACT_TTL_MS);
-    expect(DEFAULT_ARTIFACT_TTL_MS).toBe(2 * HOUR);
+    expect(DEFAULT_ARTIFACT_TTL_MS).toBe(24 * HOUR);
     expect(artifactPatterns(settings)).toEqual([
       'node_modules',
       '.next',

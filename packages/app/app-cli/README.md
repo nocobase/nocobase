@@ -80,7 +80,7 @@ Every command — built-in, an application's, or a plugin's — extends `AppComm
 | `CommandError`                        | What `run()` throws on failure: `new CommandError(message, { code, suggestions, details, exit })`                                                                                                                                                                          |
 | `appPath({ description, default })`   | A path flag whose value arrives absolute: a typed value from the current directory, the default from the application root                                                                                                                                                  |
 | `defineCliPlugin`, `defineCliPlugins` | A plugin's `cli/index.ts`, and an application's `cli/plugins.ts`                                                                                                                                                                                                           |
-| `bindAppCommand` from `./testing`     | A command pinned to a fixture application, for tests; `configPath` points it at a configuration file of the test's own                                                                                                                                                     |
+| `bindAppCommand` from `./testing`     | A command pinned to a fixture application, for tests; `configPath` points it at a configuration file of the test's own; `storageDir` overrides storage for the conventional runtime without changing `process.env`                                                         |
 
 `run()` returns the result and throws `CommandError` on failure. `AppCommand` provides `--json` and prints one document either way:
 
@@ -155,12 +155,11 @@ These are optional peers: a deployment does not need them, and every template de
 
 | Package                | Used by                                                                             |
 | ---------------------- | ----------------------------------------------------------------------------------- |
-| `vite`                 | `dev`, and `build` through it                                                       |
+| `vite`                 | `dev`, and `build` for the client                                                   |
 | `tsx`                  | loading the application's TypeScript, and `dev` to run the server                   |
 | `typescript`           | `build` through `pnpm exec tsc`, and parsing `server/plugins.ts` without running it |
 | `prettier`             | formatting the composition roots `plugin register` edits                            |
 | `tar`                  | `build --tar`                                                                       |
-| `@refinedev/cli`       | `build`, which runs `refine build` for the client                                   |
 | `tsc-alias`            | `build`, which rewrites server path aliases                                         |
 | `@nocobase/dev-config` | `build`, for the database manifests                                                 |
 
@@ -170,7 +169,7 @@ When a script starts spawning something new, add it here and declare it. Nothing
 
 ### The application's own CLI: `cli build` and `cli link`
 
-An application may have a command line of its own for people and agents, besides this one: `@nocobase/app-cli-client` branded with the application's name, which signs in to its server and runs the business commands the server's command manifest publishes. Templates declare none. An application opts in under `nocobase.cli` in its own `package.json` and adds `@nocobase/app-cli-client` to its `devDependencies` (and `@nocobase/agent-runner` to pack the runner). This is not the `nocobase.cli.entry` of a dependency described under "Packages that contribute commands by being a dependency": that names commands of this CLI, read from a dependency, while an application's `nocobase.cli` names a CLI of its own.
+An application may have a command line of its own for people and agents, besides this one: `@nocobase/app-cli-client` branded with the application's name, which signs in to its server and runs the business commands the server's command manifest publishes. Examples declares `nocobase-examples` for its Runner chat demonstration; Default leaves this optional. An application opts in under `nocobase.cli` in its own `package.json` and adds `@nocobase/app-cli-client` to its `devDependencies` (and `@nocobase/agent-runner` to pack the runner). This is not the `nocobase.cli.entry` of a dependency described under "Packages that contribute commands by being a dependency": that names commands of this CLI, read from a dependency, while an application's `nocobase.cli` names a CLI of its own.
 
 ```json
 "nocobase": {

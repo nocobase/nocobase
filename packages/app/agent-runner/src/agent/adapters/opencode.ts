@@ -19,6 +19,7 @@
  * - The run ends when the session's execution settles and no steered input
  *   is still waiting.
  */
+import { programFingerprint } from './program-fingerprint.ts';
 import { existsSync, constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
@@ -211,6 +212,20 @@ export class OpencodeAdapter implements AgentAdapter {
     this.fallbackPaths = options.fallbackPaths;
   }
 
+  private program(): Promise<string | undefined> {
+    return findOpencode(
+      this.searchPath,
+      this.fallbackPaths ??
+        (this.home
+          ? [path.join(this.home, '.opencode', 'bin', 'opencode')]
+          : []),
+    );
+  }
+
+  async fingerprint(): Promise<string> {
+    return programFingerprint(await this.program());
+  }
+
   features(): RunnerFeature[] {
     return ['steer'];
   }
@@ -273,11 +288,7 @@ export class OpencodeAdapter implements AgentAdapter {
   }
 
   private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
-    const { searchPath, home } = this;
-    const fallbacks =
-      this.fallbackPaths ??
-      (home ? [path.join(home, '.opencode', 'bin', 'opencode')] : []);
-    const found = await findOpencode(searchPath, fallbacks);
+    const found = await this.program();
     if (!found) return { installed: false, authenticated: false };
     const v = await this.exec(found, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;

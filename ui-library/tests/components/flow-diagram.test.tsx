@@ -6,14 +6,22 @@ import {
   act,
   fireEvent,
   render,
+  renderHook,
   screen,
   waitFor,
 } from '@testing-library/react';
+import * as reactFlow from '@xyflow/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { FlowDiagram } from '../../registry/components/flow-diagram.js';
+import { FlowDiagramDemo } from '../../website/demo/components/flow-diagram.js';
 import * as layoutModule from '../../registry/components/flow-layout.js';
 import type { FlowDiagramLayout } from '../../registry/components/flow-layout.js';
 import { readmeTranslations } from '../readme-translations.js';
+
+vi.mock('@xyflow/react', async (original) => {
+  const module = await original<typeof import('@xyflow/react')>();
+  return { ...module, useReactFlow: vi.fn(module.useReactFlow) };
+});
 
 const resources = readmeTranslations('components');
 const graph = {
@@ -128,32 +136,127 @@ describe('FlowDiagram', () => {
     observer.disconnect();
   });
 
-  it('sizes the full graph including outer routes to the container width', async () => {
-    const layout = vi
-      .spyOn(layoutModule, 'layoutFlowDiagram')
-      .mockResolvedValue({
-        width: 400,
-        height: 1200,
-        nodes: [{ id: 'a', label: '', x: 20, y: 20, width: 200, height: 64 }],
-        edges: [],
-      });
+  it('identifies transition-bound parameters while preserving the clicked business edge', async () => {
+    const edge = { ...graph.edges[0]!, configurable: true };
+    const onEdgeClick = vi.fn();
     render(
       <TestI18nProvider runtime={runtime}>
         <FlowDiagram
-          nodes={[graph.nodes[0]!]}
-          edges={[]}
-          autoHeight
-          ariaLabel='Tall process'
+          nodes={graph.nodes}
+          edges={[edge]}
+          ariaLabel='Configurable process'
+          onEdgeClick={onEdgeClick}
         />
       </TestI18nProvider>,
     );
-    await screen.findByTestId('rf__node-a');
-    // 24 canvas pixels of padding on each side; height includes all layout routes, not just nodes.
-    expect(screen.getByLabelText('Tall process')).toHaveStyle({
-      height: '804px',
-    });
-    layout.mockRestore();
+    const element = await screen.findByTestId('rf__edge-submit');
+    expect(element).toHaveTextContent('Submit · Parameters');
+    fireEvent.click(element);
+    expect(onEdgeClick).toHaveBeenCalledWith(edge);
   });
+
+  it('keeps viewport controls disabled until the viewport is initialized', async () => {
+    const state = renderHook(() => reactFlow.useReactFlow(), {
+      wrapper: reactFlow.ReactFlowProvider,
+    });
+    const hook = vi
+      .spyOn(reactFlow, 'useReactFlow')
+      .mockReturnValue({ ...state.result.current, viewportInitialized: false });
+    const view = () => (
+      <TestI18nProvider runtime={runtime}>
+        <FlowDiagram {...graph} ariaLabel='Initializing viewport' />
+      </TestI18nProvider>
+    );
+    try {
+      const { rerender } = render(view());
+      await screen.findByTestId('rf__node-a');
+      for (const name of ['Zoom out', 'Zoom in', 'Fit to view', 'Actual size'])
+        expect(screen.getByRole('button', { name })).toBeDisabled();
+      hook.mockReturnValue({
+        ...state.result.current,
+        viewportInitialized: true,
+      });
+      rerender(view());
+      for (const name of ['Zoom out', 'Zoom in', 'Fit to view', 'Actual size'])
+        await waitFor(() =>
+          expect(screen.getByRole('button', { name })).toBeEnabled(),
+        );
+    } finally {
+      hook.mockRestore();
+      state.unmount();
+    }
+  });
+
+  it.each([false, true])(
+    'restores a readable actual-size viewport after zooming out (autoHeight: %s)',
+    async (autoHeight) => {
+      render(
+        <TestI18nProvider runtime={runtime}>
+          <FlowDiagram
+            {...graph}
+            autoHeight={autoHeight}
+            ariaLabel='Zoomable process'
+          />
+        </TestI18nProvider>,
+      );
+      await screen.findByTestId('rf__node-a');
+      const actualSize = screen.getByRole('button', { name: 'Actual size' });
+      const zoomOut = screen.getByRole('button', { name: 'Zoom out' });
+      await waitFor(() => expect(zoomOut).toBeEnabled());
+      const initialZoom = Number.parseFloat(actualSize.textContent!);
+      const viewport = screen
+        .getByLabelText('Zoomable process')
+        .querySelector('.react-flow__viewport')!;
+      const initialTransform = (viewport as HTMLElement).style.transform;
+      fireEvent.click(zoomOut);
+      await waitFor(() =>
+        expect(Number.parseFloat(actualSize.textContent!)).toBeLessThan(
+          initialZoom,
+        ),
+      );
+      expect(Number.parseFloat(actualSize.textContent!)).toBeGreaterThan(0);
+      expect((viewport as HTMLElement).style.transform).not.toBe(
+        initialTransform,
+      );
+      fireEvent.click(actualSize);
+      await waitFor(() => expect(actualSize).toHaveTextContent('100%'));
+      expect((viewport as HTMLElement).style.transform).toContain('scale(1)');
+    },
+  );
+
+  it.each([
+    { minZoom: 0.1, expected: '900px' },
+    { minZoom: 0.8, expected: '1104px' },
+  ])(
+    'sizes the full routed graph at minimum zoom $minZoom',
+    async ({ minZoom, expected }) => {
+      const layout = vi
+        .spyOn(layoutModule, 'layoutFlowDiagram')
+        .mockResolvedValue({
+          width: 400,
+          height: 1200,
+          nodes: [{ id: 'a', label: '', x: 20, y: 20, width: 200, height: 64 }],
+          edges: [],
+        });
+      render(
+        <TestI18nProvider runtime={runtime}>
+          <FlowDiagram
+            nodes={[graph.nodes[0]!]}
+            edges={[]}
+            autoHeight
+            ariaLabel='Tall process'
+            initialMinZoom={minZoom}
+          />
+        </TestI18nProvider>,
+      );
+      await screen.findByTestId('rf__node-a');
+      // Width has 24 canvas pixels of padding per side; height reserves 144 pixels for canvas controls and includes outer routes.
+      expect(screen.getByLabelText('Tall process')).toHaveStyle({
+        height: expected,
+      });
+      layout.mockRestore();
+    },
+  );
 
   it('shows a translated layout failure and reports its cause', async () => {
     const onLayoutError = vi.fn();
@@ -218,4 +321,127 @@ describe('FlowDiagram', () => {
     expect(screen.getByTestId('rf__node-new')).toHaveTextContent('New state');
     layout.mockRestore();
   });
+});
+
+it('composes policy descriptions and explicit node actions without changing execution status', async () => {
+  const configure = vi.fn();
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <FlowDiagram
+        {...graph}
+        nodes={graph.nodes.map((node) => ({
+          ...node,
+          width: 264,
+          height: 144,
+        }))}
+        ariaLabel='Configurable definition'
+        initialMinZoom={0.8}
+        showMiniMap
+        nodeDescription={(node) =>
+          node.id === 'b' ? 'Direct supervisor' : null
+        }
+        nodeActions={(node) =>
+          node.id === 'b' ? (
+            <button onClick={configure}>Configure supervisor</button>
+          ) : null
+        }
+      />
+    </TestI18nProvider>,
+  );
+  expect(await screen.findByText('Direct supervisor')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Configure supervisor' }));
+  expect(configure).toHaveBeenCalledOnce();
+  expect(
+    screen.getByTestId('rf__node-b').querySelector('[data-execution-state]'),
+  ).toHaveAttribute('data-execution-state', 'pending');
+  expect(screen.getByTestId('rf__edge-submit')).not.toHaveClass('animated');
+  expect(screen.getByLabelText('Diagram overview')).toBeInTheDocument();
+});
+
+it('reveals auxiliary routes for keyboard focus inside a custom node without relayout', async () => {
+  const layout = vi.spyOn(layoutModule, 'layoutFlowDiagram');
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <FlowDiagram
+        {...graph}
+        ariaLabel='Compact process'
+        compact
+        nodes={graph.nodes.map((node) => ({ ...node, bare: true }))}
+        revealEdges={[
+          { id: 'return', source: 'b', target: 'a', label: 'Return' },
+        ]}
+        renderNode={(node, { active }) => (
+          <button>
+            {node.label}
+            {active ? ' active' : ''}
+          </button>
+        )}
+      />
+    </TestI18nProvider>,
+  );
+  const review = await screen.findByRole('button', { name: 'Review' });
+  expect(
+    screen.queryByTestId('rf__edge-reveal:return'),
+  ).not.toBeInTheDocument();
+  fireEvent.focus(review);
+  expect(
+    await screen.findByTestId('rf__edge-reveal:return'),
+  ).toBeInTheDocument();
+  expect(review).toHaveTextContent('Review active');
+  expect(layout).toHaveBeenCalledTimes(1);
+  fireEvent.blur(review);
+  await waitFor(() =>
+    expect(
+      screen.queryByTestId('rf__edge-reveal:return'),
+    ).not.toBeInTheDocument(),
+  );
+  layout.mockRestore();
+});
+
+it('opens the fullscreen canvas and exits with Escape', async () => {
+  const { container } = render(
+    <TestI18nProvider runtime={runtime}>
+      <FlowDiagram {...graph} controls compact ariaLabel='Fullscreen process' />
+    </TestI18nProvider>,
+  );
+  await screen.findByTestId('rf__node-a');
+  fireEvent.click(screen.getByRole('button', { name: 'Fullscreen' }));
+  expect(container).not.toContainElement(
+    screen.getByLabelText('Fullscreen process'),
+  );
+  expect(screen.getByLabelText('Diagram overview')).toBeInTheDocument();
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(container).toContainElement(
+    screen.getByLabelText('Fullscreen process'),
+  );
+  expect(screen.queryByLabelText('Diagram overview')).not.toBeInTheDocument();
+});
+
+it('shows return and reassignment capsules in the demo without drawing their routes on hover', async () => {
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <FlowDiagramDemo />
+    </TestI18nProvider>,
+  );
+  const review = await screen.findByTestId('rf__node-review');
+  expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  fireEvent.mouseEnter(review);
+  expect(
+    await screen.findByRole('note', { name: 'In review · Withdraw → Draft' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('note', { name: 'In review · Reassign → In review' }),
+  ).toBeInTheDocument();
+  for (const id of ['withdraw', 'assign', 'reveal:withdraw', 'reveal:assign']) {
+    expect(screen.queryByTestId(`rf__edge-${id}`)).not.toBeInTheDocument();
+  }
+  fireEvent.mouseLeave(review);
+  expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  fireEvent.focus(review);
+  expect(
+    await screen.findByRole('note', { name: 'In review · Withdraw → Draft' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTestId('rf__edge-reveal:withdraw'),
+  ).not.toBeInTheDocument();
 });

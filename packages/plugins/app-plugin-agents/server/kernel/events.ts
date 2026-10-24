@@ -31,6 +31,7 @@ export interface AgentsNotice {
   readonly type:
     | 'runner_upgrade_required'
     | 'run_secrets_not_allowed'
+    | 'runner_quota'
     | 'runner_revoked'
     | 'run_request_expired';
   readonly userIds: readonly string[];
@@ -101,6 +102,18 @@ export type AgentsEvent =
       readonly conversationId: string;
       readonly userId: string;
       readonly lastSeq?: number;
+      readonly messageId?: string;
+      readonly revision?: number;
+    }
+  | {
+      readonly type: 'conversation.historyReplaced';
+      readonly conversationId: string;
+      readonly userId: string;
+      readonly messageId: string;
+      readonly seq: number;
+      readonly revision: number;
+      readonly lastSeq: number;
+      readonly executionId: string;
     }
   | { readonly type: 'agent.changed'; readonly agentId: string }
   /**
@@ -141,7 +154,9 @@ export type AgentsEvent =
    */
   | {
       readonly type: 'notice.cleared';
-      readonly notice: Pick<AgentsNotice, 'type' | 'subject'>;
+      readonly notice: Pick<AgentsNotice, 'type' | 'subject'> & {
+        readonly key?: string;
+      };
     };
 
 export type AgentsEventType = AgentsEvent['type'];

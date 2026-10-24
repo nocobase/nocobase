@@ -29,18 +29,14 @@ export class AuthorizationServiceProvider extends ServiceProvider<ClientApplicat
   public override boot(): Promise<void> {
     const authz = this.app.container.resolve(authorizationClientToken);
     const realtime = this.app.container.resolve(realtimeClientToken);
-    this.unsubscribePermissionsChanged = realtime.subscribe(
+    this.unsubscribePermissionsChanged = realtime.watch(
       AUTHORIZATION_PERMISSIONS_CHANGED_TOPIC,
-      () => {
-        authz.invalidate();
-      },
-    );
-    this.unsubscribeGlobalPermissionsChanged = realtime.subscribe(
+      { onEvent: () => authz.invalidate(), onReady: () => authz.invalidate() },
+    ).close;
+    this.unsubscribeGlobalPermissionsChanged = realtime.watch(
       AUTHORIZATION_GLOBAL_PERMISSIONS_CHANGED_TOPIC,
-      () => {
-        authz.invalidate();
-      },
-    );
+      { onEvent: () => authz.invalidate(), onReady: () => authz.invalidate() },
+    ).close;
     this.unsubscribeRealtimeOpen = realtime.onOpen(() => {
       authz.invalidate();
     });

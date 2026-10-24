@@ -1,7 +1,13 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircleIcon, ScissorsIcon } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import { useSearchParams } from 'react-router';
 
 import {
@@ -39,7 +45,9 @@ import { Spinner } from '../../components/ui/spinner.js';
 import { Textarea } from '../../components/ui/textarea.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { usePmApi } from '../../hooks/use-pm-api.js';
+import { emptyIntakeDraft, useIntakeDraft } from '../../kit/intake-draft.js';
 import { IntakeAgentSlot } from '../../kit/page-slots.js';
+import { IntakeAgentSlotContext } from '../../kit/page-context.js';
 import { planKeys, usePlanApi } from '../../kit/plans/api.js';
 import {
   PlanEditor,
@@ -112,9 +120,15 @@ export function IntakePanel({
   const queryClient = useQueryClient();
   const mutations = usePlanMutations();
   const [params, setParams] = useSearchParams();
-  const [text, setText] = useState('');
+  const [input, setInput] = useIntakeDraft();
+  const text = input.text;
+  const setText = (text: string) =>
+    setInput((current) => ({ ...current, text }));
   const presetProjectId = usePresetProjectId();
-  const [projectId, setProjectId] = useState<string | null>(presetProjectId);
+  const projectId =
+    input.projectId === undefined ? presetProjectId : input.projectId;
+  const setProjectId = (projectId: string | null) =>
+    setInput((current) => ({ ...current, projectId }));
   const uploads = useIntakeUploads();
   const [split, setSplit] = useState<IntakeSplitResult | null>(null);
   const [splitting, setSplitting] = useState(false);
@@ -130,6 +144,7 @@ export function IntakePanel({
   const plan = usePlanQuery(draftId);
   const job = useIntakeJob(jobId);
   const availability = useIntakeAiAvailability();
+  const ownOrganizer = useContext(IntakeAgentSlotContext);
   const projects = useQuery({
     queryKey: pmKeys.projects,
     queryFn: () => api.projects(),
@@ -327,6 +342,8 @@ export function IntakePanel({
 
   const executed = (next: Plan) => {
     if (next.status !== 'executed') return;
+    setInput(emptyIntakeDraft());
+    uploads.clear();
     onCreated(next);
   };
 
@@ -414,8 +431,8 @@ export function IntakePanel({
             ) : null}
           </Field>
           <IntakeFiles uploads={uploads} reads={split?.files ?? []} />
-          <div className='flex flex-wrap items-end gap-3'>
-            <Field className='w-full sm:max-w-xs'>
+          <div className='grid items-start gap-3 sm:grid-cols-2'>
+            <Field className='min-w-0'>
               <FieldLabel htmlFor='pm-intake-project'>
                 {t('intake.project')}
               </FieldLabel>
@@ -431,7 +448,7 @@ export function IntakePanel({
                 onChange={setProjectId}
               />
             </Field>
-            <div className='ml-auto flex flex-wrap items-center gap-2'>
+            <div className='flex min-w-0 flex-col items-stretch gap-2'>
               <IntakeAgentSlot
                 text={text}
                 fileIds={fileIds}
@@ -475,11 +492,11 @@ export function IntakePanel({
               </Button>
             </div>
           </div>
-          {availability?.reason === 'noAgent' ? (
+          {!ownOrganizer && availability?.reason === 'noAgent' ? (
             <p className='text-xs text-muted-foreground'>
               {t('intakeAi.unavailable.noAgent')}
             </p>
-          ) : aiReady && availability.waits ? (
+          ) : !ownOrganizer && aiReady && availability.waits ? (
             <p className='text-xs text-muted-foreground'>
               {t('intakeAi.waitsHint')}
             </p>

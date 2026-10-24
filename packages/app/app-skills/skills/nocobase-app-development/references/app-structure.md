@@ -43,11 +43,15 @@ A feature with a page and an API touches five places: a migration for the table,
 
 Editable module defaults live in `server/config/` and are collected by `defaultAppConfigs` in its `index.ts`; `server/config.ts` loads the configuration file. Each section declares the environment variables that set it in `env` of its `defineAppConfig`, with a `description` and, where it applies, `secret`, `required`, `generate` or `firstStartOnly` in the helper's second argument; `pnpm nocobase config env` lists them all, `pnpm nocobase config variables` describes each, and `pnpm build` writes that description to `dist/variables.json` for whoever deploys the build. `server/config/database.ts` maps `DB_*` onto the main connection and `server/config/users.ts` maps `INITIAL_ADMIN_*` onto the initial administrator. `config.yml` is read as written: a `${NAME}` in it is not expanded. [Services and jobs](services-and-jobs.md#application-code-configuration) shows how a module declares and reads its configuration.
 
+### File storage
+
+Configure storage in `server/config/drive.ts`, with serializable overrides in `config.yml`. Keep the default `DriveProvider` and resolve `driveManagerToken` from `@nocobase/app-server/drive`; File Repository uses the same manager. Read `.agents/skills/nocobase-drive/SKILL.md` for the `fs`, `s3`, and `oss` configuration guides, custom driver factories, URL behavior, and release artifact limitations. That Skill ships with `@nocobase/drive` and is synchronized from the installed package.
+
 ## The rest is framework structure
 
 `client/routing/`, `client/layouts/`, `client/theme/`, the server entry points, the `package.json` scripts that call `nocobase`, and the tsconfigs are the scaffolding the template provides. It is still this application's own source — it shipped to the user and they may change it — but it is the part the template evolves, so an edit there is what a future upgrade has to reconcile. [Customizing the shell](frontend/references/shell.md) lists the shell behaviors to keep.
 
-Prefer the mechanism the system already provides. Declare a page in `client/routes.ts` and add `navigation` when it needs a menu entry. Refine resources add no menu entries and, with no data provider registered, load nothing; pages load data through `useApiClient`. A page uses `authz` to restrict access; a plugin page is customized through an option or an override. Before editing the shell to add a menu, check the route and its `navigation` declaration.
+Prefer the mechanism the system already provides. Declare a page in `client/routes.ts` and add `navigation` when it needs a menu entry; pages load data through `useApiClient`. A page uses `authz` to restrict access; a plugin page is customized through an option or an override. Before editing the shell to add a menu, check the route and its `navigation` declaration.
 
 When the built-in mechanism genuinely cannot express what is being asked, changing this structure is a legitimate answer — not a last resort to apologize for. Do it deliberately, and leave the next agent enough to work with:
 

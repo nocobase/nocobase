@@ -1,0 +1,233 @@
+{
+  "title": "NocoBase Studio user guide",
+  "description": "Learn how to deploy Studio, configure Runner Agent and Git, set up projects and CI, create and follow issues, and use Studio CLI.",
+  "eyebrow": "STUDIO / GETTING STARTED",
+  "heading": "Lead your agents.",
+  "headingAccent": "Deliver your project.",
+  "intro": "Install NocoBase Studio, connect your Coding Agent and code repository, and review the first task completed by your agent in a preview environment.",
+  "imageHint": "Click any screenshot to enlarge",
+  "flowLabel": "Setup and usage at a glance",
+  "flowTitle": "Setup and usage at a glance",
+  "flow": [
+    {
+      "title": "Deploy Studio",
+      "description": "Prepare a server, install Studio, and verify the deployment",
+      "chapterId": "deployment"
+    },
+    {
+      "title": "Configure Runner Agent",
+      "description": "Connect a runtime, enable agents, and configure the project manager",
+      "chapterId": "runtimes"
+    },
+    {
+      "title": "Configure Git",
+      "description": "Connect the Git service and your personal account",
+      "chapterId": "git"
+    },
+    {
+      "title": "Set up a project and CI",
+      "description": "Create a repository, then configure the workflow and deployment key",
+      "chapterId": "projects"
+    },
+    {
+      "title": "Create and review issues",
+      "description": "Use Runner or My agents to create issues, follow progress, and review previews",
+      "chapterId": "issues"
+    },
+    {
+      "title": "Use Studio CLI (optional)",
+      "description": "Let your local agent manage Studio and investigate issues",
+      "chapterId": "cli"
+    }
+  ],
+  "toc": "CONTENTS",
+  "tocToggle": "Browse chapters",
+  "tocTip": "Configure the environment, Git, and project before starting work. Expand a chapter to jump to an individual step.",
+  "chapters": [
+    {
+      "id": "deployment",
+      "title": "NocoBase Studio",
+      "summary": "Install and start NocoBase Studio to prepare a collaboration environment for your agents.",
+      "sections": [
+        {
+          "id": "deployment-prepare",
+          "title": "Prepare the server",
+          "html": "<p>Prepare a server that can access npm, Docker registries, and Git services.</p>",
+          "topics": []
+        },
+        {
+          "id": "deployment-setup",
+          "title": "Install and deploy",
+          "html": "<p>This example uses a placeholder domain and deployment path. Replace the server IP, directory, and domain before running it.</p><div class=\"code-block prompt-card\"><div class=\"code-heading\"><span class=\"code-title\"><svg class=\"\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/><path d=\"M7 7h10M7 11h7\"/></svg>Deployment prompt</span><button type=\"button\" class=\"copy-button\" data-copy=\"deployment-prompt\" data-copy-status=\"Copied. You can paste it into your agent.\"><svg class=\"copy-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\"/><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"/></svg><svg class=\"copy-check\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><path d=\"m5 12 4 4L19 6\"/></svg><span data-copy-label>Copy prompt</span></button></div><pre id=\"deployment-prompt\"><code>Connect over SSH to root@YOUR_SERVER_IP and install and deploy NocoBase Studio.\n\nDeployment configuration:\n- Docker image: pkg-v3.nocobase.com/nocobase/studio:latest\n- Registry token: provided privately\n- Deployment directory: /root/deploy/apps/studio\n- Public URL: https://studio.example.com/main/\n- Studio base path: /main\n- Existing Caddy Compose file: /root/deploy/docker-compose.yml\n\nRequirements:\n1. Inspect existing deployments, Docker networks, and Caddy configuration first, without disrupting other services.\n2. For an existing Studio instance, preserve the database, uploads, and administrator account. For a new installation, use nocobase as the administrator, generate a random password, and save it in a server configuration file with mode 600.\n3. Configure persistent storage, automatic container restarts, and Caddy reverse proxying with HTTPS.\n4. Use unique container names and network aliases to avoid conflicts with other Studio instances.\n5. Use the same /main site URL for Studio, the CLI, agents, and repository CI. Update Git callbacks and webhook URLs accordingly.\n6. Verify container health, HTTPS access, administrator sign-in, and data persistence after a restart.\n7. Report the deployed version, URL, configuration file locations, how to retrieve the password, and verification results.</code></pre></div><aside class=\"note\"><strong>Use the complete site URL everywhere</strong><p>The Studio entry point in this example is <a href=\"https://studio.example.com/main/\" target=\"_blank\" rel=\"noopener noreferrer\">https://studio.example.com/main/</a>. Use this address for the CLI, computer connections, runtimes, and CI, including <code>/main</code>.</p></aside><p class=\"done\"><strong>Ready when</strong>HTTPS works, the administrator can sign in, and data survives a container restart.</p>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "runtimes",
+      "title": "Runner Agent",
+      "summary": "Add a runtime, set its concurrency, enable the agents used by the Runner, and select an execution agent for the project manager.",
+      "sections": [
+        {
+          "id": "runtime-connect",
+          "title": "Configure a runtime",
+          "html": "<p>Open <strong>Agent management → Runtimes</strong> and click <strong>Add runtime</strong>. A runtime can run on your computer or a server; an isolated virtual machine is recommended.</p><figure><a class=\"screenshot\" href=\"./assets/runtime-list.png\" aria-label=\"Enlarge: Add a runtime from the Runtimes page.\"><img src=\"./assets/runtime-list.png\" width=\"1440\" height=\"1050\" alt=\"Add a runtime from the Runtimes page.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 01</span>Add a runtime from the Runtimes page.</figcaption></figure><ol class=\"steps\"><li>Choose <strong>Personal</strong> or <strong>Shared</strong> and select the coding tools available on the host.</li><li>New runtimes default to <strong>3</strong> concurrent runs. Set <strong>Max concurrent runs</strong> to match the host resources and model limits. For example, enter <code>10</code> to allow up to ten simultaneous runs.</li><li>Click <strong>Generate install command</strong> and copy the command generated by your current Studio instance.</li></ol><figure><a class=\"screenshot\" href=\"./assets/runtime-setup.png\" aria-label=\"Enlarge: Adjust Max concurrent runs for your host before generating the install command.\"><img src=\"./assets/runtime-setup.png\" width=\"1440\" height=\"1400\" alt=\"Adjust Max concurrent runs for your host before generating the install command.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 02</span>Adjust Max concurrent runs for your host before generating the install command.</figcaption></figure><p>Each system offers Prompt and Manual installation. Copy the prompt to an agent on the target host, or run the one-time registration command yourself. The full Windows prompt first requires the agent to check that it is inside WSL Ubuntu. Otherwise it must stop and ask the user to run wsl --install in PowerShell, restart Windows, then reopen the agent in WSL Ubuntu and run the prompt again. Only inside WSL Ubuntu may it continue; install Node.js 24 and coding tools inside WSL, enabling mirrored networking if internet access fails. Personal runtimes execute only their owner’s tasks; shared runtimes execute any user’s tasks with their variables and secrets. Use an isolated environment for either scope: agents have full access and the runner is not a sandbox. Confirm the connection with nocobase-runner status. If no tools are detected, run nocobase-runner service install again in a terminal where which codex / which claude works, then restart the service to capture PATH. The prompt also covers proxies, npm global permissions and avoiding snap packages.</p><figure><a class=\"screenshot\" href=\"./assets/runtime-install.png\" aria-label=\"Enlarge: Select the operating system and run the newly generated command on the runtime host.\"><img src=\"./assets/runtime-install.png\" width=\"1440\" height=\"1400\" alt=\"Select the operating system and run the newly generated command on the runtime host.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 03</span>Select the operating system and run the newly generated command on the runtime host.</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "agents-enable",
+          "title": "Enable agents",
+          "html": "<p>Once the runtime is online, open <strong>Agent management → Agents</strong>. Click <strong>Fill in and enable</strong> for a discovered agent, complete its configuration, and enable it for the Runner to use when executing tasks.</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"Enlarge: Configure and enable the agents provided by the runtime.\"><img src=\"./assets/enable-agents.png\" width=\"1440\" height=\"1050\" alt=\"Configure and enable the agents provided by the runtime.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 04</span>Configure and enable the agents provided by the runtime.</figcaption></figure><p>Also configure the execution agent for <strong>Project manager</strong>: select an available agent under <strong>The agent it runs with → First choice</strong>, optionally choose a fallback, and save.</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"Enlarge: Select and save the execution agent for the project manager.\"><img src=\"./assets/project-manager.png\" width=\"1440\" height=\"1050\" alt=\"Select and save the execution agent for the project manager.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 05</span>Select and save the execution agent for the project manager.</figcaption></figure>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "git",
+      "title": "Git",
+      "summary": "Configure repository access and your personal Git account for projects and code contributions.",
+      "sections": [
+        {
+          "id": "git-global",
+          "title": "Configure a global Git connection",
+          "html": "<p>Location: <strong>Settings → Integrations → Git</strong>. A global Git connection lets Studio access GitHub or GitLab and work with code repositories.</p><p>Click <strong>Add connection</strong>, choose GitHub or GitLab, and follow the authorization steps. Select this connection when creating a project; creating a new repository also requires repository creation permission.</p><figure><a class=\"screenshot\" href=\"./assets/git-connection.png\" aria-label=\"Enlarge: Add a global GitHub or GitLab connection.\"><img src=\"./assets/git-connection.png\" width=\"3456\" height=\"1992\" alt=\"Add a global GitHub or GitLab connection.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 06</span>Add a global GitHub or GitLab connection.</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "git-personal",
+          "title": "Configure your personal Git account",
+          "html": "<p>Location: <strong>Account settings → Integrations → Git</strong>. Connect your own Git account to associate code contributions with your identity.</p><figure><a class=\"screenshot\" href=\"./assets/personal-git.png\" aria-label=\"Enlarge: Connect your own Git account in account settings.\"><img src=\"./assets/personal-git.png\" width=\"3444\" height=\"1992\" alt=\"Connect your own Git account in account settings.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 07</span>Connect your own Git account in account settings.</figcaption></figure>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "summary": "Create a project connected to a repository, then configure its CI workflow and deployment credentials.",
+      "sections": [
+        {
+          "id": "project-create",
+          "title": "Create a project",
+          "html": "<p>Configure the global Git connection first. Open <strong>Projects → New project</strong> and enter a project name. This guide uses <strong>New repository</strong>.</p><figure><a class=\"screenshot\" href=\"./assets/project-repository.png\" aria-label=\"Enlarge: Click New project from the Projects page.\"><img src=\"./assets/project-repository.png\" width=\"3456\" height=\"1992\" alt=\"Click New project from the Projects page.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 08</span>Click New project from the Projects page.</figcaption></figure><p>Choose the repository account or organization, enter its name and visibility, and select an initialization template and execution agent as needed. Review the configuration and create the project.</p><figure><a class=\"screenshot\" href=\"./assets/new-project.png\" aria-label=\"Enlarge: Review the repository and initialization settings, then create the project.\"><img src=\"./assets/new-project.png\" width=\"3456\" height=\"1992\" alt=\"Review the repository and initialization settings, then create the project.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 09</span>Review the repository and initialization settings, then create the project.</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "ci",
+          "title": "Configure CI",
+          "html": "<p>If you did not configure CI when creating the project, open its <strong>Settings → Deployment</strong>, click <strong>Set up CI</strong>, and follow the guide.</p><figure><a class=\"screenshot\" href=\"./assets/deployment-settings.png\" aria-label=\"Enlarge: Open the CI setup guide from the project Deployment settings.\"><img src=\"./assets/deployment-settings.png\" width=\"3456\" height=\"1992\" alt=\"Open the CI setup guide from the project Deployment settings.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 10</span>Open the CI setup guide from the project Deployment settings.</figcaption></figure><p>Select the trigger, target environment, application directory, and App ID. For PR previews, choose <strong>Pull request</strong> and <strong>Preview</strong>; use <code>.</code> for Directory when the application is at the repository root.</p><figure><a class=\"screenshot\" href=\"./assets/ci-setup.png\" aria-label=\"Enlarge: Set the trigger and application details, then use the workflow provided by the interface.\"><img src=\"./assets/ci-setup.png\" width=\"3456\" height=\"1992\" alt=\"Set the trigger and application details, then use the workflow provided by the interface.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 11</span>Set the trigger and application details, then use the workflow provided by the interface.</figcaption></figure><ol class=\"steps\"><li>Add the workflow supplied by the guide to your Git repository, for example <code>.github/workflows/nb-studio-test-preview.yml</code>. Use the content generated by your current interface.</li><li>Click <strong>Generate key and show it once</strong> and copy the CI deployment key for this repository.</li><li>In the GitHub repository, open <strong>Settings → Secrets and variables → Actions</strong> and add a <strong>Repository secret</strong>: set Name to <code>NB_STUDIO_API_KEY</code> and Secret to the key you just copied.</li><li>Commit the workflow and trigger or rerun CI. Confirm that the build and deployment succeed, then return to Studio to check the reported result and open the preview.</li></ol><aside class=\"note\"><strong>Configure the credential once</strong><p>Subsequent CI runs read the stored secret automatically. Update it when the key is rotated, revoked, or expires; generating a replacement requires updating the repository secret too. This manual browser setup does not require Studio CLI on your computer.</p></aside>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "issues",
+      "title": "Issues",
+      "summary": "Create issues through Runner Agent or My agents, follow their progress, and review the delivery and preview in issue details.",
+      "sections": [
+        {
+          "id": "issue-create",
+          "title": "Create an issue",
+          "html": "",
+          "topics": [
+            {
+              "id": "issue-create-runner",
+              "title": "Through Runner Agent",
+              "html": "<p>If My agents is not configured, ask a Runner Agent to organize the requirements. Click <strong>New issue</strong> in the project and describe the goal and work to complete.</p><figure><a class=\"screenshot\" href=\"./assets/runner-new-issue.png\" aria-label=\"Enlarge: Open New issue from the project to start organizing the work.\"><img src=\"./assets/runner-new-issue.png\" width=\"3456\" height=\"1992\" alt=\"Open New issue from the project to start organizing the work.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 12</span>Open New issue from the project to start organizing the work.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/runner-issue-details.png\" aria-label=\"Enlarge: Describe the requirements and confirm the resulting issue details.\"><img src=\"./assets/runner-issue-details.png\" width=\"3456\" height=\"1992\" alt=\"Describe the requirements and confirm the resulting issue details.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 13</span>Describe the requirements and confirm the resulting issue details.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/runner-issue-created.png\" aria-label=\"Enlarge: Review the prepared issue draft and confirm its creation.\"><img src=\"./assets/runner-issue-created.png\" width=\"3456\" height=\"1992\" alt=\"Review the prepared issue draft and confirm its creation.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 14</span>Review the prepared issue draft and confirm its creation.</figcaption></figure>"
+            },
+            {
+              "id": "my-agents",
+              "title": "Through My agents",
+              "html": "<p>Connect your computer first. In <strong>My agents</strong> or the new issue conversation panel, click <strong>Connect your computer</strong>, copy the instructions, and let a Coding Agent on that computer complete installation and browser authorization.</p><figure><a class=\"screenshot\" href=\"./assets/my-agents.png\" aria-label=\"Enlarge: Connect your computer from the conversation entry when no computer is connected.\"><img src=\"./assets/my-agents.png\" width=\"3456\" height=\"1992\" alt=\"Connect your computer from the conversation entry when no computer is connected.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 15</span>Connect your computer from the conversation entry when no computer is connected.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/computer-setup.png\" aria-label=\"Enlarge: Give the connection instructions generated by the current page to your local Coding Agent.\"><img src=\"./assets/computer-setup.png\" width=\"3456\" height=\"1992\" alt=\"Give the connection instructions generated by the current page to your local Coding Agent.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 16</span>Give the connection instructions generated by the current page to your local Coding Agent.</figcaption></figure><p>Once the computer is online, click <strong>New issue</strong> to open a My agent conversation. Discuss the requirements, agree on the scope, and create the issue in that conversation.</p><figure><a class=\"screenshot\" href=\"./assets/issue-conversation.png\" aria-label=\"Enlarge: Discuss requirements in a My agent conversation.\"><img src=\"./assets/issue-conversation.png\" width=\"3456\" height=\"1992\" alt=\"Discuss requirements in a My agent conversation.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 17</span>Discuss requirements in a My agent conversation.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/issue-created.png\" aria-label=\"Enlarge: Confirm and create the issue in the conversation.\"><img src=\"./assets/issue-created.png\" width=\"3456\" height=\"1992\" alt=\"Confirm and create the issue in the conversation.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 18</span>Confirm and create the issue in the conversation.</figcaption></figure>"
+            }
+          ]
+        },
+        {
+          "id": "issue-follow",
+          "title": "Follow an issue",
+          "html": "",
+          "topics": [
+            {
+              "id": "issue-follow-my-issues",
+              "title": "My issues",
+              "html": "<p>Use <strong>My issues</strong> to find work you own or need to follow up on, then open an issue to continue.</p><figure><a class=\"screenshot\" href=\"./assets/my-issues.png\" aria-label=\"Enlarge: View your work in My issues.\"><img src=\"./assets/my-issues.png\" width=\"3456\" height=\"1992\" alt=\"View your work in My issues.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 19</span>View your work in My issues.</figcaption></figure>"
+            },
+            {
+              "id": "issue-follow-my-agents",
+              "title": "My agents",
+              "html": "<p>Return to an existing conversation in <strong>My agents</strong> to continue discussing an issue and view the work associated with the conversation.</p><figure><a class=\"screenshot\" href=\"./assets/my-agent-sessions.png\" aria-label=\"Enlarge: Continue an existing conversation in My agents.\"><img src=\"./assets/my-agent-sessions.png\" width=\"3456\" height=\"1992\" alt=\"Continue an existing conversation in My agents.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 20</span>Continue an existing conversation in My agents.</figcaption></figure>"
+            },
+            {
+              "id": "issue-follow-issues",
+              "title": "Issues",
+              "html": "<p>Use <strong>Issues</strong> to browse the issue list, find work by project or status, and open its details.</p><figure><a class=\"screenshot\" href=\"./assets/issues-list.png\" aria-label=\"Enlarge: Check issue status in the Issues list and open an issue.\"><img src=\"./assets/issues-list.png\" width=\"3456\" height=\"1992\" alt=\"Check issue status in the Issues list and open an issue.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 21</span>Check issue status in the Issues list and open an issue.</figcaption></figure>"
+            }
+          ]
+        },
+        {
+          "id": "issue-details",
+          "title": "Issue details",
+          "html": "<p>Once work starts, the issue moves through its execution flow. Use its details to inspect the current stage, execution history, and delivery.</p>",
+          "topics": [
+            {
+              "id": "issue-in-progress",
+              "title": "In progress",
+              "html": "<p>Check the current execution stage and agent activity to see what is being worked on.</p><figure><a class=\"screenshot\" href=\"./assets/issue-in-progress.png\" aria-label=\"Enlarge: Follow execution progress in an issue that is in progress.\"><img src=\"./assets/issue-in-progress.png\" width=\"3456\" height=\"1992\" alt=\"Follow execution progress in an issue that is in progress.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 22</span>Follow execution progress in an issue that is in progress.</figcaption></figure>"
+            },
+            {
+              "id": "issue-review",
+              "title": "In review",
+              "html": "<p>When an issue reaches review, read the delivery report and verification results and check the acceptance requirements. Add specific feedback to the issue if changes are needed.</p><figure><a class=\"screenshot\" href=\"./assets/issue-in-review.png\" aria-label=\"Enlarge: Review the delivery and acceptance notes.\"><img src=\"./assets/issue-in-review.png\" width=\"3456\" height=\"1992\" alt=\"Review the delivery and acceptance notes.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 23</span>Review the delivery and acceptance notes.</figcaption></figure>"
+            },
+            {
+              "id": "issue-preview",
+              "title": "Preview environment",
+              "html": "<p>After the project CI deployment succeeds, open the application from the preview linked to the issue and check its pages and behavior.</p><figure><a class=\"screenshot\" href=\"./assets/issue-preview.png\" aria-label=\"Enlarge: Open the issue preview environment to check the result.\"><img src=\"./assets/issue-preview.png\" width=\"3456\" height=\"1992\" alt=\"Open the issue preview environment to check the result.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 24</span>Open the issue preview environment to check the result.</figcaption></figure>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cli",
+      "title": "Studio CLI",
+      "summary": "Manage Studio projects and issues from a local Coding Agent and investigate more complex problems.",
+      "sections": [
+        {
+          "id": "cli-install",
+          "title": "Install and connect",
+          "html": "<p>Install Studio CLI if you want to manage Studio from a local agent. Click your avatar in the upper-right corner, select <strong>Use Studio in your agent</strong>, and copy the setup instructions generated by your current Studio instance.</p><figure><a class=\"screenshot\" href=\"./assets/cli-entry.png\" aria-label=\"Enlarge: Open the entry for connecting a local Coding Agent.\"><img src=\"./assets/cli-entry.png\" width=\"3456\" height=\"1992\" alt=\"Open the entry for connecting a local Coding Agent.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 25</span>Open the entry for connecting a local Coding Agent.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/cli-setup.png\" aria-label=\"Enlarge: Copy the current Studio CLI installation and sign-in instructions.\"><img src=\"./assets/cli-setup.png\" width=\"3456\" height=\"1992\" alt=\"Copy the current Studio CLI installation and sign-in instructions.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Figure 26</span>Copy the current Studio CLI installation and sign-in instructions.</figcaption></figure><ol class=\"steps\"><li>Your computer needs <strong>Node.js 24 or newer</strong> and npm. Give the setup instructions to your local Coding Agent.</li><li>Follow the terminal instructions to approve sign-in in your browser and confirm the target Studio instance.</li><li>After signing in, check your identity and permissions, read the command documentation, and install the CLI skill.</li></ol><div class=\"code-block\"><div class=\"code-heading\"><span>Checks after sign-in</span><button type=\"button\" class=\"copy-button\" data-copy=\"cli-checks\">Copy</button></div><pre id=\"cli-checks\"><code>nb-studio whoami\nnb-studio docs\nnb-studio skills install</code></pre></div><aside class=\"note\"><strong>Use instructions from your current site</strong><p>The screenshots show where to find the controls. Installation links and temporary credentials can expire, so copy fresh instructions from your current page.</p></aside>",
+          "topics": []
+        },
+        {
+          "id": "cli-analyze",
+          "title": "Analyze an issue with a local agent",
+          "html": "<p>Once connected, ask your local agent to help with complex problems. Provide the issue link and the question you want investigated, for example:</p><div class=\"code-block\"><div class=\"code-heading\"><span>Issue analysis prompt</span><button type=\"button\" class=\"copy-button\" data-copy=\"issue-analysis-prompt\">Copy</button></div><pre id=\"issue-analysis-prompt\"><code>https://studio.example.com/main/issues/YOUR_ISSUE_ID\nAnalyze what is wrong with this issue and how to address it. Analysis only; do not make changes.</code></pre></div>",
+          "topics": []
+        }
+      ]
+    }
+  ],
+  "finishTitle": "Before collaborating, check each item",
+  "finishDescription": "Once these checks pass, your team is ready to collaborate in Studio.",
+  "checklist": [
+    "Studio is accessible, sign-in works, and data persists",
+    "The runtime is online with suitable concurrency",
+    "The agents used by the Runner and the project manager are configured",
+    "Global Git access and your personal Git account are configured",
+    "The project is linked to the correct repository",
+    "The CI workflow and deployment secret are configured and previews are accessible",
+    "You can create issues, follow their status, and review delivery",
+    "My agents or Studio CLI is connected when needed"
+  ],
+  "footerNote": "Screenshots illustrate the workflow; credentials are redacted. Refer to your current interface for details.",
+  "backTop": "Back to top",
+  "originalImage": "Open original image",
+  "close": "Close",
+  "skip": "Skip to content",
+  "copied": "Copied",
+  "copyStatus": "Copied to clipboard",
+  "copyFallback": "Text selected. Press Ctrl+C or ⌘C to copy.",
+  "progress": "Reading progress",
+  "subsectionsLabel": "Expand or collapse sections"
+}

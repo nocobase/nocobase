@@ -1,3 +1,5 @@
+import { legacyPrepareDirs as prepareDirs } from './legacy-workspace-fixture.ts';
+import { deliverFixtureRepos as reportRepos } from './delivery-fixture.ts';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -9,12 +11,9 @@ import { collectWorkspaces } from '../src/core/workspaces.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
-  prepareDirs,
   readWorkspaceMeta,
   checkout,
   acquireLock,
-  markDirsPrepared,
-  reportRepos,
   markWorkspaceEnded,
   writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
@@ -24,8 +23,10 @@ import {
   clearContinuations,
   continuationWorkDir,
   retryWorkspaceRemoval,
+  updateContinuationState,
+  readContinuationState,
 } from '../src/core/run-worktrees.ts';
-import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();
@@ -130,6 +131,117 @@ describe('per-attempt worktrees', () => {
     });
     return { workDir, repo: prepared.dirs[0]!.repo!, prepared };
   }
+  function commitFile(dir: string, name = 'work.txt') {
+    writeFileSync(path.join(dir, name), name);
+    git(['add', name], dir);
+    git([...COMMIT, 'commit', '-q', '-m', name], dir);
+    return git(['rev-parse', 'HEAD'], dir);
+  }
+  const remoteBranch = 'refs/heads/agent/PM-300';
+  const resumeRef = (repo: { continuation?: string }) =>
+    `refs/runner/resume/${repo.continuation}`;
+  const remoteHead = () =>
+    git(['ls-remote', remote, remoteBranch], root).split(/\s/)[0];
+  async function finish(a: Awaited<ReturnType<typeof start>>, push = true) {
+    const reports = await reportRepos([a.repo], { push });
+    await markWorkspaceEnded(paths, a.workDir, reports);
+    expect(
+      (
+        await finalizeRunWorktrees(paths, a.workDir, () => {}, {
+          repos: [a.repo],
+        })
+      )[0].saved,
+    ).toBe(true);
+    return reports[0];
+  }
+  it('keeps new commits beyond a delivered head when the remote branch is deleted', async () => {
+    const a = await start('first-delivery');
+    commitFile(a.repo.dir);
+    await finish(a);
+    const b = await start('pending');
+    const pending = commitFile(b.repo.dir, 'pending.txt');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    git(['update-ref', '-d', remoteBranch], path.join(root, 'origin-repo.git'));
+    const c = await start('deliver-pending');
+    expect(git(['rev-parse', 'HEAD'], c.repo.dir)).toBe(pending);
+    expect((await finish(c)).pushed).toBe(true);
+    expect(remoteHead()).toBe(pending);
+  });
+  it('retains continuation evidence when the remote query fails', async () => {
+    const a = await start('before-offline');
+    const head = commitFile(a.repo.dir);
+    await finish(a);
+    const b = await start('offline');
+    const bare = path.join(root, 'origin-repo.git');
+    await fsPromises.rename(bare, `${bare}.offline`);
+    const report = await finish(b);
+    expect(report.failure).toBeDefined();
+    expect(b.repo.remoteMissing).toBeUndefined();
+    expect(git(['rev-parse', resumeRef(b.repo)], b.repo.cache)).toBe(head);
+    expect(
+      (await readContinuationState(paths, 'app', 'PM-300'))?.repos[0].pushedSha,
+    ).toBe(head);
+    await fsPromises.rename(`${bare}.offline`, bare);
+  });
+  it('preserves unknown historical continuations without republishing until new work is added', async () => {
+    const a = await start('historical');
+    const old = commitFile(a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    await updateContinuationState(paths, 'app', 'PM-300', (state) => ({
+      ...state,
+      repos: state.repos.map((repo) => {
+        const identity = { ...repo };
+        delete identity.startSha;
+        delete identity.pushedSha;
+        return identity;
+      }),
+    }));
+    const b = await start('unknown-no-edit');
+    expect((await finish(b)).pushed).toBe(false);
+    expect(remoteHead()).toBe('');
+    expect(git(['rev-parse', resumeRef(b.repo)], b.repo.cache)).toBe(old);
+    const c = await start('unknown-new-work');
+    const head = commitFile(c.repo.dir, 'new.txt');
+    expect((await finish(c)).pushed).toBe(true);
+    expect(remoteHead()).toBe(head);
+  });
+  it.each(['dev', 'v3-develop'])(
+    'delivers first and subsequent real commits for %s repositories',
+    async (defaultBranch) => {
+      const bare = path.join(root, 'origin-repo.git');
+      git(['branch', '-m', 'main', defaultBranch], bare);
+      const open = async (id: string) => {
+        const workDir = runWorkDir(paths, 'app', 'normal', id, 1);
+        const prepared = await prepareDirs({
+          paths,
+          workDir,
+          appKey: 'app',
+          subjectKey: 'normal',
+          runId: id,
+          perRun: true,
+          dirs: [
+            {
+              kind: 'repo',
+              url: remote,
+              path: 'repo',
+              branch: 'agent/PM-300',
+              defaultBranch,
+            },
+          ],
+        });
+        return { workDir, prepared, repo: prepared.dirs[0].repo! };
+      };
+      const a = await open('first');
+      const first = commitFile(a.repo.dir);
+      expect((await finish(a)).pushed).toBe(true);
+      expect(remoteHead()).toBe(first);
+      const b = await open('second');
+      const second = commitFile(b.repo.dir, 'second.txt');
+      expect((await finish(b)).pushed).toBe(true);
+      expect(remoteHead()).toBe(second);
+    },
+  );
+
   async function pushedRemoval(id: string) {
     const a = await start(id);
     git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
@@ -484,7 +596,86 @@ describe('per-attempt worktrees', () => {
     },
   );
 
-  it('starts two unmarked writers and keeps divergent heads visible without merging', async () => {
+  it('removes the recovery attempt, continuation state and sessions of an ended task whatever they hold', async () => {
+    const a = await start('ended-recovery');
+    writeFileSync(path.join(a.repo.dir, 'proposal.md'), 'scratch');
+    git(['add', 'proposal.md'], a.repo.dir);
+    git([...COMMIT, 'commit', '-m', 'unpublished'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'progress.md'), 'scratch');
+    const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...meta,
+      recoveryRequired: true,
+      recoveryReason: 'Saving failed; retain the original worktree.',
+    });
+    const session = path.join(paths.workRoot, '.sessions', 'a'.repeat(64));
+    await fsPromises.mkdir(path.join(session, 'codex-home'), {
+      recursive: true,
+    });
+    await updateContinuationState(paths, 'app', 'PM-300', (state) => ({
+      ...state,
+      sessionKeys: ['a'.repeat(64)],
+    }));
+    const state = continuationWorkDir(paths, 'app', 'PM-300');
+    const reporters = new Map([
+      [
+        'app',
+        (request: { workspaces: readonly { runId: string }[] }) =>
+          Promise.resolve({
+            remove: request.workspaces.map((item) => item.runId),
+            keep: [],
+          }),
+      ],
+    ]);
+    const result = await collectWorkspaces({ paths, reporters });
+    expect(result.removed.map((item) => item.workDir).sort()).toEqual(
+      [a.workDir, state].sort(),
+    );
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(existsSync(state)).toBe(false);
+    expect(existsSync(session)).toBe(false);
+    expect(await readWorkspaceMeta(paths, a.workDir)).toBeUndefined();
+    expect(
+      git(['for-each-ref', '--format=%(refname)'], a.repo.cache),
+    ).not.toMatch(/runner-run-|refs\/runner\//u);
+  });
+
+  it('keeps an attempt and its sessions while a run holds the attempt, even when the task ended', async () => {
+    const a = await start('ended-busy');
+    writeFileSync(path.join(a.repo.dir, 'proposal.md'), 'scratch');
+    const session = path.join(paths.workRoot, '.sessions', 'a'.repeat(64));
+    await fsPromises.mkdir(session, { recursive: true });
+    await updateContinuationState(paths, 'app', 'PM-300', (state) => ({
+      ...state,
+      sessionKeys: ['a'.repeat(64)],
+    }));
+    const reporters = new Map([
+      [
+        'app',
+        (request: { workspaces: readonly { runId: string }[] }) =>
+          Promise.resolve({
+            remove: request.workspaces.map((item) => item.runId),
+            keep: [],
+          }),
+      ],
+    ]);
+    const lock = await acquireLock(`${a.workDir}.lock`);
+    try {
+      const result = await collectWorkspaces({ paths, reporters });
+      expect(result.removed).toEqual([]);
+      expect(result.kept.map((item) => item.reason).sort()).toEqual([
+        'inUse',
+        'inUse',
+      ]);
+    } finally {
+      await lock.release();
+    }
+    expect(existsSync(path.join(a.repo.dir, 'proposal.md'))).toBe(true);
+    expect(existsSync(session)).toBe(true);
+  });
+
+  it('retains divergent legacy heads for manual integration', async () => {
+    await checkoutModule.updateCache(paths, remote);
     const [a, b] = await Promise.all([start('a'), start('b')]);
     expect(a.workDir).not.toBe(b.workDir);
     expect(a.repo.localBranch).not.toBe(b.repo.localBranch);
@@ -527,6 +718,168 @@ describe('per-attempt worktrees', () => {
     ).toHaveLength(2);
     await finalizeRunWorktrees(paths, c.workDir, () => {});
   });
+  function seedSubmodule() {
+    const child = makeRemote(root, 'child');
+    const seed = path.join(root, 'origin-repo-seed');
+    git(
+      [
+        '-c',
+        'protocol.file.allow=always',
+        'submodule',
+        'add',
+        child,
+        'vendor/core',
+      ],
+      seed,
+    );
+    git([...COMMIT, 'commit', '-am', 'Add submodule fixture'], seed);
+    publishSeed(root);
+  }
+  const oldSubmoduleReason =
+    'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit';
+  async function oldSubmoduleRecovery(a: Awaited<ReturnType<typeof start>>) {
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...(await readWorkspaceMeta(paths, a.workDir))!,
+      recoveryRequired: true,
+      recoveryReason: oldSubmoduleReason,
+    });
+  }
+  it('saves parent changes with uninitialized submodules and resumes without a recovery warning', async () => {
+    seedSubmodule();
+    const a = await start('uninitialized');
+    expect(git(['submodule', 'status', '--recursive'], a.repo.dir)).toMatch(
+      /^-/,
+    );
+    expect(git(['status', '--porcelain'], a.repo.dir)).toBe('');
+    writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'parent work');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0].saved).toBe(true);
+    const b = await start('uninitialized-resume');
+    expect(readFileSync(path.join(b.repo.dir, 'pending.txt'), 'utf8')).toBe(
+      'parent work',
+    );
+    expect(b.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    expect(
+      (await finalizeRunWorktrees(paths, b.workDir, () => {}))[0].saved,
+    ).toBe(true);
+  });
+  it('still retains initialized submodules and their uncommitted contents', async () => {
+    seedSubmodule();
+    const a = await start('initialized');
+    git(
+      ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+      a.repo.dir,
+    );
+    const pending = path.join(a.repo.dir, 'vendor/core/pending.txt');
+    writeFileSync(pending, 'submodule work');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0]).toMatchObject({
+      saved: false,
+      reason: oldSubmoduleReason,
+    });
+    expect(readFileSync(pending, 'utf8')).toBe('submodule work');
+    const b = await start('initialized-next');
+    expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    expect(readFileSync(pending, 'utf8')).toBe('submodule work');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('retains a deinitialized submodule object store with unpublished commits', async () => {
+    seedSubmodule();
+    const a = await start('deinitialized');
+    git(
+      ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+      a.repo.dir,
+    );
+    const child = path.join(a.repo.dir, 'vendor/core');
+    const head = commitFile(child, 'unpublished.txt');
+    const childGitDir = git(['rev-parse', '--absolute-git-dir'], child);
+    git(['submodule', 'deinit', '--force', '--', 'vendor/core'], a.repo.dir);
+    expect(git(['submodule', 'status', '--recursive'], a.repo.dir)).toMatch(
+      /^-/,
+    );
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0]).toMatchObject({
+      saved: false,
+      reason: oldSubmoduleReason,
+    });
+    const b = await start('deinitialized-next');
+    expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    expect(
+      git(['--git-dir', childGitDir, 'show', `${head}:unpublished.txt`], root),
+    ).toBe('unpublished.txt');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('rechecks an inactive clean legacy submodule false alarm and preserves unpublished commits', async () => {
+    seedSubmodule();
+    const a = await start('legacy-submodule');
+    commitFile(a.repo.dir, 'unpublished.txt');
+    await oldSubmoduleRecovery(a);
+    const b = await start('legacy-resume');
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(b.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    expect(readFileSync(path.join(b.repo.dir, 'unpublished.txt'), 'utf8')).toBe(
+      'unpublished.txt',
+    );
+    expect(
+      (await readContinuationState(paths, 'app', 'PM-300'))?.activeWorkDirs,
+    ).not.toContain(a.workDir);
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('defers a legacy submodule false alarm while its original attempt is locked', async () => {
+    seedSubmodule();
+    const a = await start('locked-legacy');
+    await oldSubmoduleRecovery(a);
+    const lock = await acquireLock(`${a.workDir}.lock`, { timeoutMs: 0 });
+    let b: Awaited<ReturnType<typeof start>>;
+    try {
+      b = await start('locked-next');
+      expect(existsSync(a.workDir)).toBe(true);
+      expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    } finally {
+      await lock.release();
+    }
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    const c = await start('unlocked-next');
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(c.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    await finalizeRunWorktrees(paths, c.workDir, () => {});
+  });
+  it.each(['dirty', 'initialized', 'otherReason', 'otherSubject', 'otherApp'])(
+    'does not auto-finalize an unsafe or unrelated legacy recovery: %s',
+    async (condition) => {
+      seedSubmodule();
+      const a = await start('retained-legacy');
+      await oldSubmoduleRecovery(a);
+      if (condition === 'dirty')
+        writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'retain');
+      if (condition === 'initialized')
+        git(
+          ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+          a.repo.dir,
+        );
+      if (['otherReason', 'otherSubject', 'otherApp'].includes(condition)) {
+        await writeWorkspaceMeta(paths, a.workDir, {
+          ...(await readWorkspaceMeta(paths, a.workDir))!,
+          ...(condition === 'otherReason'
+            ? { recoveryReason: 'Unresolved Git operation' }
+            : {}),
+          ...(condition === 'otherSubject' ? { subjectKey: 'OTHER' } : {}),
+          ...(condition === 'otherApp' ? { appKey: 'other-app' } : {}),
+        });
+      }
+      const b = await start('retained-next');
+      expect(existsSync(a.workDir)).toBe(true);
+      expect(
+        (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+      ).toBe(true);
+      expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+      if (condition === 'dirty')
+        expect(readFileSync(path.join(a.repo.dir, 'pending.txt'), 'utf8')).toBe(
+          'retain',
+        );
+      await finalizeRunWorktrees(paths, b.workDir, () => {});
+    },
+  );
   it('keeps an unresolved user merge instead of committing or deleting it', async () => {
     const a = await start('a');
     git(['checkout', '-b', 'other'], a.repo.dir);
@@ -810,16 +1163,6 @@ describe('per-attempt worktrees', () => {
     expect(existsSync(legacy.repos[0].dir)).toBe(true);
     await finalizeRunWorktrees(paths, next.workDir, () => {});
   });
-  it('keeps initialization state across disposable worktrees', async () => {
-    const a = await start('a');
-    expect(a.prepared.dirs[0]!.fresh).toBe(true);
-    await markDirsPrepared(paths, a.workDir, a.prepared.dirs);
-    await finalizeRunWorktrees(paths, a.workDir, () => {});
-    const b = await start('b');
-    expect(b.prepared.dirs[0]!.fresh).toBe(false);
-    await finalizeRunWorktrees(paths, b.workDir, () => {});
-  });
-
   it('refuses continuation cleanup during a run and removes only this task refs after finalization', async () => {
     const a = await start('a');
     const stateDir = continuationWorkDir(paths, 'app', 'PM-300');

@@ -10,10 +10,11 @@ import {
   findIssues,
   isTerminal,
   liveChildren,
+  unfinishedStagedChildren,
   type StatusCatalog,
   type StatusService,
 } from '../issues/index.js';
-import { outgoing } from './subtask.store.js';
+import { outgoing, unfinishedBlockedBy } from './subtask.store.js';
 
 /** The status catalog, as one call reads it. */
 export interface Catalogs {
@@ -143,6 +144,7 @@ export async function blockedCounts(
   conn: DatabaseConnection,
   catalogs: Catalogs,
   issues: readonly Issue[],
+  readableIds?: ReadonlySet<string>,
 ): Promise<Map<string, number>> {
   const counts = new Map<string, number>(issues.map((issue) => [issue.id, 0]));
   if (issues.length === 0) return counts;
@@ -170,7 +172,12 @@ export async function blockedCounts(
   };
   for (const edge of edges) {
     const target = targets.get(edge.dependsOnIssueId);
-    if (target && target.id !== edge.issueId && (await isOpen(target)))
+    if (
+      target &&
+      (!readableIds || readableIds.has(target.id)) &&
+      target.id !== edge.issueId &&
+      (await isOpen(target))
+    )
       counts.set(edge.issueId, (counts.get(edge.issueId) ?? 0) + 1);
   }
   const staged = issues.filter(
@@ -183,8 +190,40 @@ export async function blockedCounts(
     );
     for (const issue of staged)
       for (const sibling of earlierSiblings(issue, siblings))
-        if (await isOpen(sibling))
+        if (
+          (!readableIds || readableIds.has(sibling.id)) &&
+          (await isOpen(sibling))
+        )
           counts.set(issue.id, (counts.get(issue.id) ?? 0) + 1);
   }
   return counts;
+}
+
+/**
+ * Of `issues`, those held by at least one unfinished issue (`blockersOf`'s rules, whoever may read the blocker), in two
+ * queries whatever their count: the unfinished targets of every `blockedBy` link, and every unfinished staged sub-issue.
+ */
+export async function blockedAmong(
+  conn: DatabaseConnection,
+  catalog: StatusCatalog,
+  issues: readonly Issue[],
+): Promise<Set<string>> {
+  const blocked = new Set<string>();
+  if (issues.length === 0) return blocked;
+  const ids = new Set(issues.map((issue) => issue.id));
+  const finished = catalog.statuses
+    .filter((status) => isTerminal(catalog, status.key))
+    .map((status) => status.key);
+  for (const edge of await unfinishedBlockedBy(conn, finished))
+    if (ids.has(edge.issueId) && edge.dependsOnIssueId !== edge.issueId)
+      blocked.add(edge.issueId);
+  const staged = issues.filter(
+    (issue) =>
+      issue.parentIssueId && issue.stage !== null && !blocked.has(issue.id),
+  );
+  if (staged.length === 0) return blocked;
+  const open = await unfinishedStagedChildren(conn, finished);
+  for (const issue of staged)
+    if (earlierSiblings(issue, open).length > 0) blocked.add(issue.id);
+  return blocked;
 }

@@ -1,3 +1,5 @@
+import { cn } from 'cn';
+import { Settings } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import type { LifecycleDescription } from '@nocobase/lifecycle';
 import { NamespaceScope, useTranslation } from '@nocobase/i18n/client';
@@ -5,15 +7,19 @@ import { NamespaceScope, useTranslation } from '@nocobase/i18n/client';
 import { NAMESPACE } from '../lib/format.js';
 import type { LifecycleDiagramHistoryEntry } from './lifecycle-diagram-model.js';
 import { LifecycleDiagram } from './lifecycle-diagram.js';
+import { boundParameterGroups } from './parameter-binding-editor.js';
 
 /** The example's translated lifecycle view with inspection and history from the record log. */
 export function ProcessDiagram({
   description,
   current,
   visited = [],
-  history = [],
+  history,
   availableTransitions = [],
   className,
+  containerClassName,
+  autoHeight = true,
+  showDetails = true,
   onParameterBinding,
   labelNamespace = NAMESPACE,
 }: {
@@ -24,6 +30,11 @@ export function ProcessDiagram({
   readonly history?: readonly LifecycleDiagramHistoryEntry[];
   readonly availableTransitions?: readonly string[];
   readonly className?: string;
+  readonly containerClassName?: string;
+  /** Fit the diagram inside a bounded canvas when false. */
+  readonly autoHeight?: boolean;
+  /** Show an inspection card when selecting a state or transition. */
+  readonly showDetails?: boolean;
   readonly onParameterBinding?: (
     kind: 'state' | 'transition',
     name: string,
@@ -68,8 +79,8 @@ export function ProcessDiagram({
     ].join(' · ');
   };
   return (
-    <div className='space-y-3'>
-      {current || history.length || visited.length ? (
+    <div className={cn('space-y-3', containerClassName)}>
+      {current || (history?.length ?? 0) || visited.length ? (
         <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground'>
           <span className='flex items-center gap-1.5'>
             <span
@@ -88,7 +99,7 @@ export function ProcessDiagram({
             />
             ✓ {t('diagramStatus.visited')}
           </span>
-          {history.length > 0 && (
+          {(history?.length ?? 0) > 0 && (
             <span className='flex items-center gap-1.5'>
               <span className='h-0.5 w-4 rounded-full bg-primary' />
               {t('diagramStatus.traversed')}
@@ -109,36 +120,87 @@ export function ProcessDiagram({
       <NamespaceScope ns={NAMESPACE}>
         <LifecycleDiagram
           description={description}
-          endLabel={t('diagramStatus.end')}
+          presentation='process'
+          stateKind={(state) => {
+            if (description.initialStates.includes(state.name)) return 'start';
+            if (
+              [
+                'rejected',
+                'cancelled',
+                'voided',
+                'exited',
+                'objected',
+              ].includes(state.name)
+            )
+              return 'negative';
+            if (
+              [
+                'needsInfo',
+                'exception',
+                'failed',
+                'blocked',
+                'timedOut',
+                'compensationNeedsAttention',
+              ].includes(state.name) ||
+              state.name.endsWith('Failed')
+            )
+              return 'exception';
+            if (state.final) return 'success';
+            if (
+              [
+                'awaitingManager',
+                'awaitingFinance',
+                'review',
+                'reviewing',
+                'approval',
+                'headReview',
+                'leaderReview',
+                'level1Review',
+                'level2Review',
+                'level3Review',
+              ].includes(state.name)
+            )
+              return 'approval';
+            return 'work';
+          }}
           currentState={current}
           history={history}
-          visitedStates={visited}
+          visitedStates={visited.length ? visited : undefined}
           availableTransitions={availableTransitions}
           ariaLabel={t('lifecycle.diagram')}
           direction='DOWN'
-          autoHeight
+          autoHeight={autoHeight}
           className={className}
+          nodeActions={(node) =>
+            onParameterBinding &&
+            boundParameterGroups(description, 'state', node.id).length > 0 ? (
+              <button
+                type='button'
+                aria-label={t('parameters.editCurrent')}
+                className='inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-card-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring'
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onParameterBinding('state', node.id);
+                }}
+              >
+                <Settings className='size-3' aria-hidden />
+                {t('parameters.editCurrent')}
+              </button>
+            ) : undefined
+          }
           stateLabel={(item) => stateLabel(item.name)}
           transitionLabel={transitionLabel}
-          renderState={(item) => (
-            <span className='flex flex-col items-center gap-0.5'>
-              <span>{stateLabel(item.name)}</span>
-              {item.name === current ? (
-                <span className='text-xs'>{t('diagramStatus.current')}</span>
-              ) : null}
-            </span>
-          )}
           onStateClick={(item) => {
-            if (!onParameterBinding?.('state', item.name))
+            if (!onParameterBinding?.('state', item.name) && showDetails)
               setSelected({ kind: 'state', name: item.name });
           }}
           onTransitionClick={(item) => {
-            if (!onParameterBinding?.('transition', item.name))
+            if (!onParameterBinding?.('transition', item.name) && showDetails)
               setSelected({ kind: 'transition', name: item.name });
           }}
         />
       </NamespaceScope>
-      {state || transition ? (
+      {showDetails && (state || transition) ? (
         <div
           role='status'
           className='space-y-1 rounded-lg border bg-muted/30 p-3 text-sm'

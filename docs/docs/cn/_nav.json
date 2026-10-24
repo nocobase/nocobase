@@ -1,11 +1,15 @@
 [
   {
-    "text": "开始",
-    "link": "/get-started/"
+    "text": "快速启动",
+    "link": "/capabilities/quick-start"
   },
   {
     "text": "能力",
     "link": "/capabilities/"
+  },
+  {
+    "text": "部署",
+    "link": "/deployment"
   },
   {
     "text": "首页",

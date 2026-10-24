@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
+import { modelSuggestion } from '../../model-suggestion.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -46,14 +47,6 @@ export interface AgentDialogProps {
   readonly candidates?: readonly AgentView[];
 }
 
-/** The catalog's suggestion in the viewer's language: Chinese for a `zh` locale, English otherwise. */
-function suggestionFor(agent: AgentView, language: string): string {
-  if (!agent.suggestion) return '';
-  return language.toLowerCase().startsWith('zh')
-    ? agent.suggestion.zh
-    : agent.suggestion.en;
-}
-
 export function AgentDialog({
   agent,
   onClose,
@@ -67,6 +60,7 @@ export function AgentDialog({
       }}
     >
       <DialogContent
+        className='flex max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] flex-col sm:max-w-xl'
         data-testid='agent-dialog'
         finalFocus={() =>
           document.querySelector<HTMLButtonElement>(
@@ -160,7 +154,7 @@ function AgentForm({
   const queryClient = useQueryClient();
   const enabling = agent.status === 'pending';
   const [goodAt, setGoodAt] = useState(
-    () => agent.description ?? suggestionFor(agent, i18n.language),
+    () => agent.description ?? modelSuggestion(agent, i18n.language, t),
   );
   const [effort, setEffort] = useState<string>(agent.effort ?? DEFAULT_EFFORT);
   const [enabled, setEnabled] = useState(agent.status !== 'disabled');
@@ -197,7 +191,7 @@ function AgentForm({
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader className='shrink-0'>
         <DialogTitle>
           {t(enabling ? 'agents.enable.title' : 'agents.edit.title', {
             name: agent.name,
@@ -211,6 +205,7 @@ function AgentForm({
       </DialogHeader>
       <form
         id='agent-dialog-form'
+        className='-mx-4 min-h-0 flex-1 overflow-y-auto px-4 pb-1'
         onSubmit={(event) => {
           event.preventDefault();
           setSubmitted(true);
@@ -297,7 +292,7 @@ function AgentForm({
           ) : null}
         </FieldGroup>
       </form>
-      <DialogFooter>
+      <DialogFooter className='shrink-0'>
         <Button variant='outline' type='button' onClick={onClose}>
           {t('actions.cancel')}
         </Button>

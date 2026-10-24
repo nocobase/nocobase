@@ -1,3 +1,4 @@
+import { takeToolDetection } from '../../runners/tool-detection.js';
 /**
  * The runner endpoints (`RUNNER_ROUTES` of `@nocobase/agent-protocol`), mounted at `/api/agents/runners` beside the
  * people's runners API (`admin.ts`), so every route names its own authentication: every path but `register` the
@@ -270,6 +271,7 @@ export function createRunnerRoutes(
           ok: true,
           serverTime: services.clock.now().toISOString(),
           protocolVersion: PROTOCOL_VERSION,
+          capacity: { slots: runner.slots, toolSlots: runner.toolSlots ?? {} },
           ...upgradeFields(upgrade),
           compatibility: upgradeRequiredOf(runner.protocolVersion),
           cancelRequested: [],
@@ -302,6 +304,9 @@ export function createRunnerRoutes(
         ok: true,
         serverTime: services.clock.now().toISOString(),
         protocolVersion: PROTOCOL_VERSION,
+        enabledTools: runner.enabledTools ?? [],
+        detectTools: takeToolDetection(runner.id),
+        capacity: { slots: runner.slots, toolSlots: runner.toolSlots ?? {} },
         ...upgradeFields(upgrade),
         cancelRequested,
         release,

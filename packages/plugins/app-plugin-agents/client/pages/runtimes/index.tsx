@@ -1,7 +1,7 @@
 /**
  * Route `/runtimes`: the runtimes that run agents (a runner on a server, a VM or someone's own device). The list is an
  * overview, one row per runtime: its name with its system, its state with the slots it uses, its coding tools by
- * whether each is signed in, whether it is personal or shared with the team, its runner version (marked when a newer
+ * whether each is signed in, whether it is personal or shared with all users, its runner version (marked when a newer
  * one is served) and when it was last seen. Clicking a row, or "Edit" in its menu, opens the runtime's sheet
  * (`runner-sheet.tsx`), which holds every setting; the menu also revokes it, or deletes it once revoked. Revoked
  * runtimes sit folded below until deleted.
@@ -21,7 +21,7 @@ import { useState, type ReactElement } from 'react';
 import { Link, Outlet } from 'react-router';
 
 import { WorkspaceDiskTag } from './workspace-diagnostics.js';
-import type { RunnerSummary } from '../../../shared/runners.js';
+import type { RunnerListItem } from '../../../shared/runners.js';
 import { agentsKeys } from '../../api/keys.js';
 import {
   AgEmpty,
@@ -74,7 +74,7 @@ import { RunnerSheet } from './runner-sheet.js';
 
 interface Confirming {
   readonly kind: 'revoke' | 'delete';
-  readonly runner: RunnerSummary;
+  readonly runner: RunnerListItem;
 }
 
 export default function RuntimesPage(): ReactElement {
@@ -82,7 +82,9 @@ export default function RuntimesPage(): ReactElement {
   const api = useAgentsApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get('runtime'),
+  );
   const [confirming, setConfirming] = useState<Confirming | null>(null);
 
   const runners = useQuery({
@@ -94,14 +96,14 @@ export default function RuntimesPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
   };
   const revoke = useMutation({
-    mutationFn: (runner: RunnerSummary) => api.revokeRunner(runner.id),
+    mutationFn: (runner: RunnerListItem) => api.revokeRunner(runner.id),
     onSuccess: (runner) =>
       notify.success(t('runtimes.revoke.done', { name: runner.name })),
     onError: (error) => notify.error(error),
     onSettled: settled,
   });
   const remove = useMutation({
-    mutationFn: async (runner: RunnerSummary) => {
+    mutationFn: async (runner: RunnerListItem) => {
       await api.deleteRunner(runner.id);
       return runner;
     },
@@ -144,7 +146,7 @@ export default function RuntimesPage(): ReactElement {
     const revoked = runners.data.filter(
       (runner) => runner.status === 'revoked',
     );
-    const table = (list: readonly RunnerSummary[]) => (
+    const table = (list: readonly RunnerListItem[]) => (
       <RunnerTable
         runners={list}
         onOpen={(runner) => setOpenId(runner.id)}
@@ -247,10 +249,10 @@ function RunnerTable({
   onRevoke,
   onDelete,
 }: {
-  readonly runners: readonly RunnerSummary[];
-  readonly onOpen: (runner: RunnerSummary) => void;
-  readonly onRevoke: (runner: RunnerSummary) => void;
-  readonly onDelete: (runner: RunnerSummary) => void;
+  readonly runners: readonly RunnerListItem[];
+  readonly onOpen: (runner: RunnerListItem) => void;
+  readonly onRevoke: (runner: RunnerListItem) => void;
+  readonly onDelete: (runner: RunnerListItem) => void;
 }): ReactElement {
   const { t } = useTranslation();
   const format = useFormatters();
@@ -338,7 +340,7 @@ function RunnerActions({
   onRevoke,
   onDelete,
 }: {
-  readonly runner: RunnerSummary;
+  readonly runner: RunnerListItem;
   readonly onEdit: () => void;
   readonly onRevoke: () => void;
   readonly onDelete: () => void;
@@ -359,7 +361,7 @@ function RunnerActions({
         <MoreHorizontalIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-auto min-w-40'>
-        {revoked || !runner.canManage ? null : (
+        {revoked || (!runner.canManage && !runner.canManageTools) ? null : (
           <>
             <DropdownMenuItem onClick={onEdit}>
               {t('runtimes.edit.button')}

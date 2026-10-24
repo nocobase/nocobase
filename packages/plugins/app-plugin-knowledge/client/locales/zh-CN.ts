@@ -87,6 +87,8 @@ const zhCN: KnowledgeClientResource = {
       failedHint: '有段落多次生成向量都失败了。',
       reason: '原因：{{reason}}',
       retry: '重新索引',
+      refreshFailed: '无法刷新索引状态',
+      retryRefresh: '重试刷新',
       queued: '已重新提交索引',
     },
     chunks: {
@@ -279,6 +281,7 @@ const zhCN: KnowledgeClientResource = {
       reload: '重新加载',
     },
     history: {
+      by: '由 {{name}}',
       title: '历史',
       current: '当前',
       fromProposal: '来自提议',

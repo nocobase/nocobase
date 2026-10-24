@@ -31,9 +31,11 @@ export interface AgentProcessOptions {
   readonly client: acp.Implementation;
   readonly handlers: AgentClientHandlers;
   readonly initializeTimeoutMs?: number;
+  /** False for an inspection that must not grant full-access environment defaults. */
+  readonly permissionDefaults?: boolean;
 }
 
-/** Long enough for an adapter that npx fetches on first use. */
+/** Long enough for an adapter that npx fetches on first use, when no managed one can run. */
 const INITIALIZE_TIMEOUT_MS = 120_000;
 const STOP_GRACE_MS = 3_000;
 const STDERR_TAIL = 4_000;
@@ -43,18 +45,21 @@ export class AgentProcess {
   readonly #child: ChildProcess;
   readonly #connection: acp.ClientConnection;
   readonly #stderr: { text: string };
+  readonly #handlers: { current: AgentClientHandlers };
   readonly #removeAbort: () => void;
 
   private constructor(
     child: ChildProcess,
     connection: acp.ClientConnection,
     stderr: { text: string },
+    handlers: { current: AgentClientHandlers },
     initialize: acp.InitializeResponse,
     removeAbort: () => void,
   ) {
     this.#child = child;
     this.#connection = connection;
     this.#stderr = stderr;
+    this.#handlers = handlers;
     this.initialize = initialize;
     this.#removeAbort = removeAbort;
   }
@@ -79,13 +84,15 @@ export class AgentProcess {
       Writable.toWeb(child.stdin),
       Readable.toWeb(child.stdout),
     );
+    // Read on every message, so a process handed to another owner (`handOver`) answers to it from then on.
+    const handlers = { current: options.handlers };
     const connection = acp
       .client({ name: options.client.name })
       .onNotification(acp.methods.client.session.update, (context) =>
-        options.handlers.update(context.params),
+        handlers.current.update(context.params),
       )
       .onRequest(acp.methods.client.session.requestPermission, (context) =>
-        options.handlers.permission(context.params, context.signal),
+        handlers.current.permission(context.params, context.signal),
       )
       .connect(stream);
     const abort = (): void => {
@@ -135,10 +142,15 @@ export class AgentProcess {
             .finally(cleanup);
         },
       ).finally(() => cleanup());
+      if (initialize.protocolVersion !== acp.PROTOCOL_VERSION)
+        throw new Error(
+          `ACP protocol incompatibility: the agent selected ${initialize.protocolVersion}; this host supports ACP ${acp.PROTOCOL_VERSION}. Reported tool release: ${initialize.agentInfo?.version ?? 'unknown'}. Minimum supported tool release: unknown. Upgrade the tool and its ACP adapter to their latest releases, then refresh detection; consult their compatibility documentation if the mismatch persists.`,
+        );
       return new AgentProcess(
         child,
         connection,
         stderr,
+        handlers,
         initialize,
         removeAbort,
       );
@@ -176,6 +188,15 @@ export class AgentProcess {
     return withOutput(errorMessage(error), this.alive ? '' : this.#stderr.text);
   }
 
+  /**
+   * Gives the running process to another owner: its session updates and permission requests go to `handlers` from now
+   * on, and the signal it was started with no longer stops it.
+   */
+  handOver(handlers: AgentClientHandlers): void {
+    this.#removeAbort();
+    this.#handlers.current = handlers;
+  }
+
   async stop(): Promise<void> {
     this.#removeAbort();
     this.#connection.close();
@@ -205,7 +226,13 @@ export function errorMessage(error: unknown): string {
 
 /** Whether `error` is ACP's "authentication required". */
 export function isAuthRequired(error: unknown): boolean {
-  return error instanceof acp.RequestError && error.code === -32000;
+  return (
+    (error instanceof acp.RequestError && error.code === -32000) ||
+    (error instanceof Error &&
+      error.cause !== undefined &&
+      error.cause !== error &&
+      isAuthRequired(error.cause))
+  );
 }
 
 function withOutput(message: string, output: string): string {
@@ -223,7 +250,12 @@ function startProgram(
 ): ChildProcessByStdio<Writable, Readable, Readable> {
   const common = {
     cwd: options.cwd,
-    env: { ...options.env, ...agent.spec.env },
+    env: {
+      ...options.env,
+      ...agent.spec.env,
+      ...(options.permissionDefaults === false ? {} : agent.spec.permissionEnv),
+      ...agent.env,
+    },
     stdio: ['pipe', 'pipe', 'pipe'] as ['pipe', 'pipe', 'pipe'],
   };
   if (!windows)

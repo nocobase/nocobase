@@ -21,6 +21,9 @@ import { createSubjects, type KnowledgeSubjects } from './subjects.js';
 import { DEFAULT_SETTINGS, type KnowledgeSettingsSource } from './tuning.js';
 
 export type KnowledgeEvent =
+  | { readonly type: 'space.changed'; readonly spaceId: string }
+  | { readonly type: 'index.changed'; readonly docId: string }
+  | { readonly type: 'indexer.changed' }
   /** A document has a new version (created, edited, or a proposal accepted). */
   | {
       readonly type: 'doc.versioned';
@@ -86,7 +89,7 @@ export interface KnowledgeTx {
    */
   readonly defaultChunking: KnowledgeChunking;
   emit(event: KnowledgeEvent): void;
-  /** Runs `fn` once the transaction commits; a failure is reported, never thrown. */
+  /** Runs and awaits `fn` once the transaction commits; a failure is reported, never thrown. */
   afterCommit(fn: () => void | Promise<void>): void;
 }
 
@@ -101,6 +104,8 @@ export interface KnowledgeContext {
   transaction<T>(fn: (tx: KnowledgeTx) => Promise<T>): Promise<T>;
   read(): DatabaseConnection;
   readonly events: KnowledgeEvents;
+  /** Announce an external index change only after its state has committed. */
+  announce(event: KnowledgeEvent): void;
   /** Where stored files' bytes are read. */
   readonly urls: FileUrls;
   /** Asks for a file version's text to be extracted; bound by the file service. */
@@ -143,6 +148,7 @@ export function createKnowledgeContext(
   let parse: (versionId: string) => void = () => undefined;
   let settings: KnowledgeSettingsSource = DEFAULT_SETTINGS;
   return {
+    announce: publish,
     settings: () => settings,
     bindSettings(source) {
       settings = source;
@@ -178,9 +184,7 @@ export function createKnowledgeContext(
       for (const event of pending) publish(event);
       for (const task of after)
         try {
-          void Promise.resolve(task()).catch((error: unknown) =>
-            onError('Knowledge work after a commit failed.', error),
-          );
+          await task();
         } catch (error) {
           onError('Knowledge work after a commit failed.', error);
         }

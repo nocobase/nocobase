@@ -1,5 +1,117 @@
 # @nocobase/app-server
 
+## 3.0.0-beta.3
+
+### Patch Changes
+
+- 0c5c4ff: Isolate language sessions and all default authentication cookies by the complete public application mount path, including root and nested applications. Preserve port isolation and explicit cookie configuration. Fix template root-path configuration and share a cookie-name-safe path encoder.
+
+  Visitors using default authentication cookie names must sign in again after upgrading. Old cookies and server records are neither migrated nor deleted; records expire normally, and rolling back can recognize old logins again. Explicit names and prefixes remain unchanged and must be unique across applications with overlapping paths.
+
+  Existing applications must merge the updated `server/config/session.ts` and root-path handling in `server/config/app.ts` into their own source as well as upgrade dependencies; dependency updates alone do not replace copied template configuration. See the application cookie isolation guide in the upgrade Skill for the exact edits and verification steps.
+
+## 3.0.0-beta.2
+
+### Minor Changes
+
+- f8f64ad: Add class-based notification channel registration with `registerChannelType`, per-channel lifecycle management, and container access. Accept `type` in channel configuration while preserving the `provider` alias and legacy extension factories. Keep the provider-based `NotificationChannelConfig` and legacy callback types compatible, and expose `NotificationChannelConfigInput` for configuration accepting either discriminator. Mark legacy registration methods and definition types as deprecated with migration guidance. Keep send contracts and persisted delivery identities compatible, including custom type names matching JavaScript prototype properties, and drain active requests before closing channels. Support the same configuration aliases in the host mailer.
+
+  Normalize notification channel aliases in application configuration snapshots, including defaults, environment overlays, and reloads. Preserve legacy `config.provider` reads and their required-string type, mark the field deprecated in favor of `type`, and expose `NotificationConfigInput` for unnormalized configuration. Keep source layers and conflict validation unchanged.
+
+## 3.0.0-beta.1
+
+### Minor Changes
+
+- 62da032: Add App Foundation for administrators with unrestricted access: a dynamic capability overview, live statistics, business-module associations, qualitative value explanations, and resolved provider package versions. Collect evidence read-only inside the plugin, include recognized installed capabilities and registered extensions, and distinguish installation, registration, configuration and use. Support all ten Client locales and responsive layouts.
+
+  Derive module associations from registered navigation, authentication and authorization declarations, bounded value-reachable source references, and explicitly matched API handlers. Ignore unused imports, type-only references and unrelated handlers. Keep unsupported or unreadable evidence undetermined rather than guessing usage; report incomplete counts and refresh failures. Cache successful overviews for 30 seconds with a manual refresh action.
+
+  Expose optional immutable Client and Server registration snapshots so the plugin can discover provider-only and locales-only registrations without reloading contributions. Keep collection, classification, authorization and presentation in the Foundation plugin.
+
+  Show deduplicated related package names and versions once within capability details, keeping technical discovery counts and diagnostic evidence internal. Export a permission-preserving helper for placing the Foundation link last in an existing settings navigation group.
+
+## 3.0.0-beta.0
+
+### Minor Changes
+
+- 1952789: Isolate delivery queues by subscription, bound global authorization work and expose delivery, authorization and broker diagnostics. Publish receipts now describe broker admission; `flush()` observes current local queues without claiming remote delivery. Add optional latest-snapshot coalescing, bounded event deduplication and event IDs for tracing.
+
+  Add an optional Redis Pub/Sub broker with namespace isolation, distributed user/session revocation and resubscription recovery. Broker recovery requests fresh client subscriptions and authoritative snapshots. Redis publication is never retried automatically after an ambiguous result; applications remain responsible for durable state, cursors and outbox retry.
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-websocket@0.1.0-beta.1
+  - @nocobase/realtime@0.1.0-beta.3
+  - @nocobase/i18n@2.0.0-beta.0
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 3.0.0-beta
+
+### Major Changes
+
+- Require declared realtime topics and asynchronous publication, subscription authorization and shutdown. Extract the core into `@nocobase/realtime/server`; retain the application service tokens and adapter entry points. Publication receipts contain an event ID instead of a local subscriber count.
+
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- 22717d7: Support synchronous custom driver factories alongside existing configuration objects in `drive.disks`. Create drivers lazily through the shared application Drive provider, preserve Flydrive caching and fakes, and reject factory references where release artifacts require serializable Host configuration. Ship the `nocobase-drive` Skill with filesystem, S3, native Aliyun OSS, and custom driver guides, and direct application guidance to that shared documentation. Consumers reading disk configuration fields must narrow out factory functions first.
+- Updated dependencies [22717d7]
+  - @nocobase/drive@0.1.0-beta.7
+
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- 5fe8773: Reject empty or whitespace-only Git credential files before sending a request, and preserve saved credentials when validation fails. Support explicit credential removal through a JSON update file with null values, returning the incomplete connection state when required credentials are cleared.
+- 49f61b9: Show optional settings permissions separately from business actions in CLI identity output, and explain run-token-only permissions. Add available-command typo suggestions, a hint for truncated text, and clean shutdown when a pipe closes early. Describe route schema inputs so generated CLI help and reference tables explain their parameters. The manifest identity and whoami JSON result gain an optional settings list; command admission and authorization are unchanged.
+- Updated dependencies [98b3862]
+- Updated dependencies [89648ee]
+- Updated dependencies [fe81e4b]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [c0b7537]
+- Updated dependencies [14b7aec]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/drive@0.1.0-beta.6
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/realtime@0.1.0-beta.2
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 2.0.0-beta.7
 
 ### Minor Changes

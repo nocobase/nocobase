@@ -249,6 +249,8 @@ Resolve the manager once — in a route factory, or as a constructor dependency 
 
 The methods are `findOne`, `findMany`, `count`, `exists`, `aggregate`, `groupBy`, `createOne`, `createMany`, `updateOne`, `updateMany`, `upsertOne`, `deleteOne` and `deleteMany`; `describeMutation` and `validateMutation` report capabilities and pre-validate input, and `withPolicy` returns a scoped Repository.
 
+For restricted access across several Collections, use `connection.restrict(policies, principal)`. It returns a `RestrictedDatabase` exposing only `repository`, `transaction`, `afterCommit`, `afterRollback`, and `explainPolicies`; unlisted direct Collection access throws `POLICY_REQUIRED`. Policy factories run once at binding, and transaction callbacks receive the same restricted database bound to their transaction. Its repositories expose `narrow()` but no `withPolicy()`, and return `Partial<TRecord>` because policies can omit fields. Relation access still follows the originating policy; `ref()` explicitly reuses another entry's read rules. Keep the trusted connection for raw queries, schema operations and event subscriptions. Use `connection.withPolicies()` when binding policies while retaining full connection capabilities and unbound access to unlisted Collections. `withPolicies()` and `ScopedDatabaseConnection` remain supported without deprecation; adopting `restrict()` requires an explicit policy for each Collection the service accesses directly.
+
 Boundaries that are easy to get wrong:
 
 - `findOne` takes the first match; `updateOne` and `deleteOne` require exactly one; `upsertOne` requires a unique equality condition.
@@ -414,4 +416,4 @@ Cover the empty result, the partial match and the absent relation, not only the 
 
 When reporting the work, say which layer you chose and why, which tests you added, which commands you actually ran, which dialects you actually exercised, and what you did not verify.
 
-KingbaseES, Dameng and OceanBase drivers are maintained in `nocobase/nocobase3-pro` and distributed through the Pro registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.
+KingbaseES, Dameng and OceanBase drivers are NocoBase Pro commercial packages requiring the appropriate commercial license and authenticated access to the private package registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

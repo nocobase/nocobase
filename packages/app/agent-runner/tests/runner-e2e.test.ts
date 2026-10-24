@@ -98,7 +98,7 @@ describe('runner end to end', () => {
         'steer',
       ]),
     );
-    expect(runner?.register.tools.map((tool) => tool.kind)).toContain('claude');
+    expect(runner?.register.tools).toEqual([]);
     // The key is in the runner's own directory, private, and apart from the registration.
     const keyFile = path.join(home, 'credentials', 'test-app.json');
     expect(statSync(keyFile).mode & 0o777).toBe(0o600);
@@ -110,7 +110,16 @@ describe('runner end to end', () => {
     ).not.toContain('runner-key');
     daemon();
     await waitFor(() => server.lastHeartbeat(), 10_000, 'a heartbeat');
-    expect(server.lastHeartbeat()?.load).toEqual({ slots: 1, free: 1 });
+    await waitFor(
+      () => server.lastHeartbeat()?.load.capacitySource === 'online',
+      10_000,
+      'capacity confirmation',
+    );
+    expect(server.lastHeartbeat()?.load).toEqual({
+      slots: 1,
+      free: 1,
+      capacitySource: 'online',
+    });
   });
 
   it('reports the installed Pi model table on a later heartbeat while continuing to claim', async () => {
@@ -151,7 +160,7 @@ describe('runner end to end', () => {
     );
   });
 
-  it('runs a read-only step in a work directory of its own while the subject is held, pushes nothing and removes it', async () => {
+  it('runs a read-only step in the fixed directory without publishing or discarding its state', async () => {
     const remote = makeRemote(scratch);
     // The run writing the subject's code holds its work directory.
     const held = `${workDirOf('PM-8')}.lock`;
@@ -190,14 +199,8 @@ describe('runner end to end', () => {
     );
     expect(run.fail).toBeUndefined();
     expect(run.status).toBe('completed');
-    expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.readonly-`);
-    // It pushes nothing, so its directory goes as soon as the run ends; the next read-only run checks it out again.
-    const readOnlyDir = String(run.start?.workDir);
-    await waitFor(
-      () => !existsSync(readOnlyDir) && !existsSync(`${readOnlyDir}.lock`),
-      10_000,
-      'the read-only directory to be removed',
-    );
+    expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.task`);
+    expect(existsSync(String(run.start?.workDir))).toBe(true);
     expect(run.complete?.repos?.[0]).toMatchObject({
       branch: 'agent/PM-8',
       pushed: false,
@@ -208,8 +211,23 @@ describe('runner end to end', () => {
     ).toThrow();
   });
 
-  it('claims, checks out, starts, streams events, pushes and completes', async () => {
+  it('claims, streams events and observes an explicit agent push', async () => {
     const remote = makeRemote(scratch);
+    daemon();
+    // The production server dispatches only after the runner reports an authenticated tool.
+    await waitFor(
+      () =>
+        server
+          .lastHeartbeat()
+          ?.tools.some(
+            (tool) =>
+              tool.kind === 'claude' &&
+              tool.authenticated &&
+              tool.version === 'echo',
+          ),
+      10_000,
+      'cached Claude capabilities',
+    );
     const run = server.enqueue({
       subject: { key: 'PM-7', url: 'http://app.test/PM-7' },
       workspace: {
@@ -234,12 +252,11 @@ describe('runner end to end', () => {
           'bash ls /',
           'read /etc/hosts',
           'write notes.txt hello from the agent',
-          `bash ${COMMIT} add notes.txt && ${COMMIT} commit -q -m agent-work`,
+          `bash ${COMMIT} add notes.txt && ${COMMIT} commit -q -m agent-work && git push origin agent/PM-7`,
           'say all done',
         ].join('\n'),
       },
     });
-    daemon();
     await waitFor(
       () => run.status === 'completed' || run.status === 'failed',
       20_000,
@@ -284,10 +301,7 @@ describe('runner end to end', () => {
     // The real home of the user the runner runs as, not one inside the work directory.
     expect(envOutput).toMatch(/^HOME=/m);
     expect(envOutput).not.toContain(`HOME=${workDir}`);
-    const tmpDir = path.join(
-      await runTempRoot(runnerPaths(home)),
-      runTempName(workDir),
-    );
+    const tmpDir = /^TMPDIR=(.+)$/m.exec(envOutput)![1]!;
     for (const name of ['TMPDIR', 'TMP', 'TEMP'])
       expect(envOutput).toContain(`${name}=${tmpDir}`);
     await waitFor(
@@ -296,9 +310,13 @@ describe('runner end to end', () => {
       'temporary directory cleanup',
     );
     expect(envOutput).toContain('GIT_CONFIG_KEY_0=core.hooksPath');
-    expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
+    expect(envOutput).toMatch(
+      /PATH=.*\/runs\/private\/[^/]+\/\.nocobase-runner\/bin:/,
+    );
     // The runner's own Node.js and pnpm are first on PATH, and pnpm keeps to its version.
-    expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
+    expect(envOutput).toMatch(
+      /PATH=.*\/runs\/private\/[^/]+\/\.nocobase-runner\/bin:/,
+    );
     expect(envOutput).toContain('pnpm_config_pm_on_fail=ignore');
 
     // The application's CLI is on the PATH and finds the run's credential, with the server filled in; the run token
@@ -345,7 +363,7 @@ describe('runner end to end', () => {
     expect(git(['show', 'refs/heads/agent/PM-7:notes.txt'], bare)).toBe(
       'hello from the agent',
     );
-    await waitFor(() => !existsSync(workDir), 5_000, 'worktree removal');
+    expect(existsSync(workDir)).toBe(true);
     await waitFor(
       () => !existsSync(path.join(home, 'runs', `${run.payload.run.id}.json`)),
       5_000,
@@ -362,14 +380,6 @@ describe('runner end to end', () => {
     });
     daemon();
     await waitFor(() => run.status === 'completed', 20_000, 'the run to end');
-    const bin = path.join(
-      workDirOf(run.payload.subject.key),
-      '.nocobase-runner',
-      'bin',
-    );
-    expect(existsSync(path.join(bin, 'appcli'))).toBe(true);
-    expect(existsSync(path.join(bin, 'node'))).toBe(false);
-    expect(existsSync(path.join(bin, 'pnpm'))).toBe(false);
     const envOutput = server
       .events(run.payload.run.id)
       .find(
@@ -377,6 +387,7 @@ describe('runner end to end', () => {
           event.type === 'toolResult' && event.output?.includes('PATH='),
       )?.output;
     expect(envOutput).not.toContain('pnpm_config_pm_on_fail');
+    expect(envOutput).toMatch(/PATH=.*\/runs\/private\//);
   });
 
   it("writes a 0600 credentials file for the application's CLI and removes it on cancel", async () => {
@@ -385,7 +396,9 @@ describe('runner end to end', () => {
     });
     daemon();
     await waitFor(() => run.status === 'running', 15_000, 'the run to start');
-    const workDir = workDirOf(run.payload.subject.key);
+    const workDir = (await readRecords(runnerPaths(home))).find(
+      (record) => record.runId === run.payload.run.id,
+    )!.privateDir!;
     const file = path.join(workDir, '.app', 'run.json');
     await waitFor(
       () => run.status === 'running' && existsSync(file),
@@ -501,7 +514,7 @@ describe('runner end to end', () => {
   });
 
   it.each(['normal', 'forced'] as const)(
-    'stops the process group within 15 s and saves before the %s cancel acknowledgement',
+    'stops the process group within 15 s and retains shared work before the %s cancel acknowledgement',
     async (mode) => {
       const remote = makeRemote(scratch);
       const run = server.enqueue({
@@ -541,6 +554,9 @@ describe('runner end to end', () => {
       const repo = path.join(workDir, 'repo');
       const cache = git(['rev-parse', '--git-common-dir'], repo);
       const paths = runnerPaths(home, workRootOf(home));
+      const privateDir = (await readRecords(paths)).find(
+        (record) => record.runId === id,
+      )!.privateDir!;
       const directoriesAtAck: boolean[] = [];
       server.onCancelAck = (acknowledged) => {
         if (acknowledged.payload.run.id === id)
@@ -582,14 +598,14 @@ describe('runner end to end', () => {
         expect(run.cancelAck).toBeDefined();
         expect(run.cancelAck?.sessionId).toBeUndefined();
         expect(run.fail).toBeUndefined();
-        expect(directoriesAtAck).toEqual([false]);
-        expect(existsSync(workDir)).toBe(false);
+        expect(directoriesAtAck).toEqual([true]);
+        expect(existsSync(workDir)).toBe(true);
         const resume = git(
           ['for-each-ref', '--format=%(refname)', 'refs/runner/resume/'],
           cache,
         );
-        expect(resume).not.toBe('');
-        expect(git(['show', `${resume}:cancelled.txt`], cache)).toBe(
+        expect(resume).toBe('');
+        expect(readFileSync(path.join(repo, 'cancelled.txt'), 'utf8')).toBe(
           'preserved',
         );
         expect(
@@ -610,10 +626,6 @@ describe('runner end to end', () => {
           expect(
             statuses.filter((event) => event.meta?.status === 'cancelled'),
           ).toHaveLength(1);
-          expect(
-            statuses.filter((event) => event.meta?.phase === 'localSave')[0]
-              ?.content,
-          ).toContain(`Local continuation saved: ${repo}`);
         } else {
           expect(started.output()).toContain(
             'worker did not stop within 3000 ms',
@@ -634,7 +646,9 @@ describe('runner end to end', () => {
           'record removal',
         );
         expect(
-          existsSync(path.join(await runTempRoot(paths), runTempName(workDir))),
+          existsSync(
+            path.join(await runTempRoot(paths), runTempName(privateDir)),
+          ),
         ).toBe(false);
       } finally {
         if (mode === 'normal') started.child.kill('SIGCONT');
@@ -821,7 +835,7 @@ describe('runner end to end', () => {
       await new Promise((resolve) => setTimeout(resolve, 1_500));
       expect(runner.protocolHeader).toBe(String(PROTOCOL_VERSION));
       expect(runner.register.features).toEqual(
-        expect.arrayContaining(['npm', 'gitCredentials']),
+        expect.arrayContaining(['npm', 'gitCredentials', 'gitTools']),
       );
       expect(runner.heartbeatsSent).toBeGreaterThan(beats);
       expect(runner.claims).toBe(claims);
@@ -862,6 +876,9 @@ describe('runner end to end', () => {
         ? server.workerPid(run.payload.run.id)
         : undefined,
     );
+    const privateDir = (await readRecords(runnerPaths(home))).find(
+      (record) => record.runId === run.payload.run.id,
+    )!.privateDir!;
     await stopDaemon(started);
     expect(run.fail?.reason).toBe('runnerOffline');
     expect(groupAlive(pid)).toBe(false);
@@ -869,7 +886,7 @@ describe('runner end to end', () => {
       existsSync(
         path.join(
           await runTempRoot(runnerPaths(home)),
-          runTempName(workDirOf(run.payload.subject.key)),
+          runTempName(privateDir),
         ),
       ),
     ).toBe(false);
@@ -932,7 +949,7 @@ describe('runner end to end', () => {
         turn: [
           'system',
           'write app.txt initialized',
-          `bash ${COMMIT} add app.txt && ${COMMIT} commit -q -m Initialize`,
+          `bash ${COMMIT} add app.txt && ${COMMIT} commit -q -m Initialize && git push origin main`,
           'say done',
         ].join('\n'),
       },
@@ -1077,13 +1094,16 @@ describe('working directories, initialization prompts and skills', () => {
             'skills',
             'write made-by-agent.txt hi',
             'bash appcli whoami',
+            ...(id === 'd-1'
+              ? ['say inspect-private-skills', 'wait-input']
+              : []),
             'say done',
           ].join('\n'),
         },
       });
 
     const first = enqueue('d-1');
-    await ended(first);
+    await waitFor(() => texts('d-1').includes('inspect-private-skills'), 20000);
     expect(first.fail).toBeUndefined();
     const [system, skills] = texts('d-1');
     expect(system).toContain(
@@ -1092,7 +1112,9 @@ describe('working directories, initialization prompts and skills', () => {
     expect(system).toContain('copy .env.example to .env');
     expect(system).toContain(`You start in ${own}.`);
     expect(system).not.toContain('{{runner.');
-    const workDir = String(first.start?.workDir);
+    const workDir = (await readRecords(runnerPaths(home))).find(
+      (record) => record.runId === 'd-1',
+    )!.privateDir!;
     const skillsDir = path.join(
       workDir,
       '.nocobase-runner',
@@ -1143,6 +1165,8 @@ describe('working directories, initialization prompts and skills', () => {
         ),
     ).toMatchObject({ meta: { dirs: [own] } });
 
+    server.addInput('d-1', 'finish');
+    await ended(first);
     const second = enqueue('d-2');
     await ended(second);
     expect(texts('d-2')[0]).not.toContain('just prepared');
@@ -1150,11 +1174,11 @@ describe('working directories, initialization prompts and skills', () => {
 
     const third = enqueue('d-3', true);
     await ended(third);
-    expect(texts('d-3')[0]).toContain('just prepared');
+    expect(texts('d-3')[0]).not.toContain('just prepared');
     expect(readFileSync(path.join(own, 'existing.txt'), 'utf8')).toBe('mine');
   });
 
-  it('places mounts in the work directory, names them in the notes, and caches them by hash', async () => {
+  it('places mounts in private attempt directories, names them in the notes, and caches them by hash', async () => {
     server.mountBundles.set('knowledge', {
       name: 'knowledge',
       hash: 'k1',
@@ -1182,14 +1206,16 @@ describe('working directories, initialization prompts and skills', () => {
         prompt: {
           system: 'Notes:\n{{runner.workspaceNotes}}',
           session: 'fresh',
-          turn: 'system\nsay done',
+          turn: 'system\nwait-input\nsay done',
         },
       });
 
     const first = enqueue('m-1');
-    await ended(first);
+    await waitFor(() => texts('m-1').length > 0, 20000);
     expect(first.fail).toBeUndefined();
-    const workDir = String(first.start?.workDir);
+    const workDir = (await readRecords(runnerPaths(home))).find(
+      (record) => record.runId === 'm-1',
+    )!.privateDir!;
     const target = path.join(workDir, '.nocobase-runner', 'knowledge');
     expect(readFileSync(path.join(target, 'INDEX.md'), 'utf8')).toContain(
       'project/setup.md',
@@ -1205,12 +1231,18 @@ describe('working directories, initialization prompts and skills', () => {
     // What the agent changed there is replaced on the next run, from the cache.
     writeFileSync(path.join(target, 'project', 'setup.md'), 'draft');
     writeFileSync(path.join(target, 'scratch.md'), 'mine');
+    server.addInput('m-1', 'finish');
+    await ended(first);
     const second = enqueue('m-2');
-    await ended(second);
+    await waitFor(() => texts('m-2').length > 0, 20000);
+    const secondPrivate = (await readRecords(runnerPaths(home))).find(
+      (record) => record.runId === 'm-2',
+    )!.privateDir!;
+    expect(secondPrivate).not.toBe(workDir);
     expect(
       readFileSync(
         path.join(
-          String(second.start?.workDir),
+          secondPrivate,
           '.nocobase-runner',
           'knowledge',
           'project',
@@ -1221,15 +1253,12 @@ describe('working directories, initialization prompts and skills', () => {
     ).toContain('# Setup');
     expect(
       existsSync(
-        path.join(
-          String(second.start?.workDir),
-          '.nocobase-runner',
-          'knowledge',
-          'scratch.md',
-        ),
+        path.join(secondPrivate, '.nocobase-runner', 'knowledge', 'scratch.md'),
       ),
     ).toBe(false);
     expect(server.mountFetches.get('knowledge')).toBe(1);
+    server.addInput('m-2', 'finish');
+    await ended(second);
   });
 
   it('starts in an empty directory of its own when the run names none', async () => {
@@ -1262,7 +1291,7 @@ describe('working directories, initialization prompts and skills', () => {
 });
 
 describe('one runner, several applications', () => {
-  it('claims from each application, sharing its slots, and reports each run to its own', async () => {
+  it('claims with independent application slots and reports each run to its own', async () => {
     const first = new FakeServer();
     const second = new FakeServer({ app: { id: 'crm', name: 'CRM' } });
     await first.listen();
@@ -1325,22 +1354,13 @@ describe('limits per coding tool', () => {
     const env = cliEnv(home);
     const started: Daemon[] = [];
     try {
+      server.capacity = { slots: 2, toolSlots: { claude: 1 } };
       await registerRunner(server.url, env, [
-        '--slots',
-        '2,claude=1',
         '--cli',
         `appcli=${writeFakeCli(scratch)}`,
       ]);
       const registered = [...server.runners.values()][0];
-      expect(registered?.register).toMatchObject({
-        slots: 2,
-        toolSlots: { claude: 1 },
-      });
-      const status = await cli(['status', '--json'], env);
-      expect(JSON.parse(status.stdout).result).toMatchObject({
-        slots: 2,
-        toolSlots: { claude: 1 },
-      });
+      expect(registered?.register.slots).toBeUndefined();
       started.push(startDaemon(env));
       await waitFor(
         () => (registered?.claimBodies.length ?? 0) > 0,
@@ -1351,8 +1371,13 @@ describe('limits per coding tool', () => {
         free: 2,
         tools: { claude: 1 },
       });
-      await waitFor(() => server.lastHeartbeat(), 10_000, 'a heartbeat');
+      await waitFor(
+        () => server.lastHeartbeat()?.load.capacitySource === 'online',
+        10_000,
+        'capacity confirmation',
+      );
       expect(server.lastHeartbeat()?.load).toEqual({
+        capacitySource: 'online',
         slots: 2,
         free: 2,
         tools: { claude: { slots: 1, free: 1 } },

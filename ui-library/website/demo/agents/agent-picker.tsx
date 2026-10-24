@@ -1,4 +1,8 @@
 import type { ChatAgent } from '@nocobase/app-plugin-agents/shared/conversations';
+import type {
+  ModelRef,
+  ModelService,
+} from '@nocobase/app-plugin-agents/shared/models';
 import { useState, type ReactElement } from 'react';
 
 import {
@@ -20,6 +24,7 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: false,
     isMyDefault: true,
+    runnerNames: ['Demo runtime'],
     availability: online,
     personalOnly: false,
   },
@@ -32,6 +37,7 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: false,
     isMyDefault: false,
+    runnerNames: [],
     availability: {
       online: false,
       reason: 'othersPersonal',
@@ -48,6 +54,7 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: true,
     isMyDefault: false,
+    runnerNames: ['Demo runtime'],
     availability: online,
     personalOnly: false,
   },
@@ -60,8 +67,40 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: false,
     isMyDefault: false,
+    runnerNames: [],
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
     personalOnly: false,
+  },
+];
+
+const SERVICES: readonly ModelService[] = [
+  {
+    name: 'team-gateway',
+    title: 'Team gateway',
+    provider: 'openai-compatible',
+    models: [
+      {
+        value: 'sonnet',
+        label: 'Claude Sonnet 4.5',
+        kind: 'chat',
+        dimensions: null,
+      },
+      { value: 'gpt-5', label: 'GPT-5', kind: 'chat', dimensions: null },
+    ],
+  },
+  {
+    name: 'personal-service',
+    title: 'Personal service',
+    provider: 'openai-compatible',
+    models: [
+      { value: 'gpt-5', label: 'GPT-5', kind: 'chat', dimensions: null },
+      {
+        value: 'deepseek',
+        label: 'DeepSeek V3.2',
+        kind: 'chat',
+        dimensions: null,
+      },
+    ],
   },
 ];
 
@@ -92,6 +131,15 @@ function Section({
  */
 export function AgentPickerDemo(): ReactElement {
   const [chosen, setChosen] = useState<string | null>('assistant');
+  const [mixedAgent, setMixedAgent] = useState<string | null>(null);
+  const [mixedModel, setMixedModel] = useState<ModelRef | null>({
+    modelService: 'team-gateway',
+    model: 'sonnet',
+  });
+  const [modelOnly, setModelOnly] = useState<ModelRef | null>({
+    modelService: 'personal-service',
+    model: 'gpt-5',
+  });
   const [started, setStarted] = useState<string | null>(null);
   const [fallback, setFallback] = useState<string | null>(null);
   const [runner, setRunner] = useState<string | null>(null);
@@ -147,6 +195,48 @@ export function AgentPickerDemo(): ReactElement {
                 </div>
               </div>
             ))}
+          </div>
+        </Section>
+        <Section
+          title='Models and Agents'
+          description='Chat models are grouped by their actual service titles. Agents keep their full description, tags and availability.'
+        >
+          <div className='@container flex items-center rounded-xl border bg-card p-2'>
+            <AgentPicker
+              agents={AGENTS}
+              value={mixedAgent}
+              onSelect={(agentId) => {
+                setMixedAgent(agentId);
+                setMixedModel(null);
+              }}
+              models={{
+                services: SERVICES,
+                value: mixedModel,
+                onSelect: (model) => {
+                  setMixedModel(model);
+                  setMixedAgent(null);
+                },
+              }}
+              appearance='toolbar'
+            />
+          </div>
+        </Section>
+        <Section
+          title='Models only'
+          description='Without Agents, the Models heading is hidden while service groups remain. The same model can be offered by two independent services.'
+        >
+          <div className='@container flex items-center rounded-xl border bg-card p-2'>
+            <AgentPicker
+              agents={[]}
+              value={null}
+              onSelect={() => undefined}
+              models={{
+                services: SERVICES,
+                value: modelOnly,
+                onSelect: setModelOnly,
+              }}
+              appearance='toolbar'
+            />
           </div>
         </Section>
         <Section

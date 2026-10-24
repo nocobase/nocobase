@@ -5,6 +5,8 @@
  */
 import {
   realtimeClientToken,
+  createRealtimeRefresh,
+  refreshRealtimeQueries,
   useApiClient,
   useService,
 } from '@nocobase/app-client';
@@ -212,15 +214,20 @@ export function useInboxRefresh(extraTopics: readonly string[] = []): void {
   const queryClient = useQueryClient();
   const topics = extraTopics.join('\n');
   useEffect(() => {
-    const refresh = (): void =>
-      void queryClient.invalidateQueries({ queryKey: inboxKeys.all });
+    const refresh = (signal: AbortSignal): Promise<void> =>
+      refreshRealtimeQueries(queryClient, { queryKey: inboxKeys.all }, signal);
+    const scheduled = createRealtimeRefresh(refresh);
     const stops = [subscribeToInboxInvalidations(realtime, window, refresh)];
     for (const topic of topics ? topics.split('\n') : []) {
-      const stop = realtime.subscribe<unknown>(topic, refresh);
-      if (stop) stops.push(stop);
+      const subscription = realtime.watch<unknown>(topic, {
+        onReady: scheduled.retry,
+        onEvent: scheduled.request,
+      });
+      stops.push(subscription.close);
     }
     return () => {
       for (const stop of stops) stop();
+      scheduled.close();
     };
   }, [realtime, queryClient, topics]);
 }

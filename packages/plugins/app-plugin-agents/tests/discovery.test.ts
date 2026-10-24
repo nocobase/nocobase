@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { discoveryKey } from '../shared/model-catalog.js';
-import { createAgentService } from '../server/core/agents/agent.service.js';
+import type { AgentTool } from '@nocobase/agent-protocol';
+import { recordChange } from '../server/core/agents/agent.history.js';
+import { insertAgent } from '../server/core/agents/agent.store.js';
+import {
+  createAgentService,
+  runnerAgentId,
+} from '../server/core/agents/agent.service.js';
+import { agentNameOf, discoveryKey } from '../shared/model-catalog.js';
 import { createHarness, claim, type Harness } from './harness.js';
 
 let h: Harness;
@@ -17,12 +23,65 @@ const tool = (...models: string[]) => [
 const views = () =>
   h.services.views(h.services.tx.read(), 'alice', { canEdit: true });
 
+/**
+ * A pending agent, as one existed before the application stopped creating one per model a runner reports: the
+ * discovery/ignore preferences this suite covers now only ever act on agents left from that time, since every
+ * supported way to create one today enables it directly.
+ */
+async function seedPendingAgent(
+  target: Harness,
+  tool: AgentTool,
+  model: string,
+): Promise<string> {
+  const id = runnerAgentId(tool, model);
+  const now = target.clock.now().toISOString();
+  await target.services.tx.run(({ conn }) =>
+    insertAgent(conn, {
+      id,
+      name: agentNameOf(tool, model),
+      description: null,
+      nameText: null,
+      descriptionText: null,
+      avatar: null,
+      type: 'runner',
+      source: 'runner',
+      status: 'pending',
+      tool,
+      model,
+      modelEntries: [{ tool, model, effort: null }],
+      instructions: null,
+      runnerIds: [],
+      actions: [],
+      confirmChanges: 'larger',
+      access: 'everyone',
+      ownerUserId: 'system',
+      maxConcurrentRuns: 100,
+      maxAttempts: 3,
+      toolPolicy: null,
+      lastReportedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    }),
+  );
+  await target.services.tx.run(({ conn }) =>
+    recordChange(conn, {
+      id: crypto.randomUUID(),
+      agentId: id,
+      revision: 1,
+      action: 'created',
+      actorUserId: null,
+      changes: [],
+      createdAt: now,
+    }),
+  );
+  return id;
+}
+
 describe('persistent discovery groups', () => {
   it('ignores and restores multiple groups atomically without changing agent records', async () => {
     h = await createHarness();
-    await h.registerRunner({
-      tools: tool('openai/gpt-6-astra', 'openai/gpt-6-luna'),
-    });
+    await seedPendingAgent(h, 'pi', 'openai/gpt-6-astra');
+    await seedPendingAgent(h, 'pi', 'openai/gpt-6-luna');
     const before = await h.services.agents.list();
     const groups = (await views()).map((agent) => ({
       key: agent.discoveryKey!,
@@ -43,7 +102,7 @@ describe('persistent discovery groups', () => {
   });
   it('serializes concurrent enable and ignore through the group revision', async () => {
     h = await createHarness();
-    await h.registerRunner({ tools: tool('openai/gpt-6-astra') });
+    await seedPendingAgent(h, 'pi', 'openai/gpt-6-astra');
     const [agent] = await views();
     const results = await Promise.allSettled([
       h.services.agents.update(agent!.id, 'alice', {
@@ -64,7 +123,7 @@ describe('persistent discovery groups', () => {
   });
   it('preserves ignore through refreshed reads, a new service instance and another provider report; restores only to pending', async () => {
     h = await createHarness();
-    await h.registerRunner({ tools: tool('openai/gpt-6-astra') });
+    await seedPendingAgent(h, 'pi', 'openai/gpt-6-astra');
     const key = discoveryKey('pi', 'openai/gpt-6-astra');
     await h.services.agents.setIgnored([{ key, expectedRevision: 0 }], true);
     expect((await views())[0]).toMatchObject({
@@ -82,6 +141,8 @@ describe('persistent discovery groups', () => {
     const providerRunner = await h.registerRunner({
       tools: tool('rightapi/gpt-6-astra', 'openai/gpt-6-astra'),
     });
+    // Another provider's spelling of the same model joins the same discovery group once it exists, already ignored.
+    await seedPendingAgent(h, 'pi', 'rightapi/gpt-6-astra');
     expect(
       (await views()).map((agent) => [agent.discoveryKey, agent.ignored]),
     ).toEqual([
@@ -123,9 +184,8 @@ describe('persistent discovery groups', () => {
 
   it('rejects stale ignore after enable and enable after ignore; an invalid batch rolls back', async () => {
     h = await createHarness();
-    await h.registerRunner({
-      tools: tool('openai/gpt-6-astra', 'openai/gpt-6-luna'),
-    });
+    await seedPendingAgent(h, 'pi', 'openai/gpt-6-astra');
+    await seedPendingAgent(h, 'pi', 'openai/gpt-6-luna');
     const [a, b] = await views();
     await h.services.agents.update(a!.id, 'alice', {
       description: 'Reviews',
@@ -165,7 +225,7 @@ describe('persistent discovery groups', () => {
 
   it('checks authentication, manager permission and revisions on the documented HTTP operation', async () => {
     h = await createHarness();
-    await h.registerRunner({ tools: tool('openai/gpt-6-astra') });
+    await seedPendingAgent(h, 'pi', 'openai/gpt-6-astra');
     const body = {
       groups: [
         { key: discoveryKey('pi', 'openai/gpt-6-astra'), expectedRevision: 0 },

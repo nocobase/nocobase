@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-default",
   "displayName": "Default Template",
-  "version": "1.0.0-beta.68",
+  "version": "1.0.0-beta.77",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,13 +10,12 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.68"
+    "defaultTemplateVersion": "1.0.0-beta.77"
   },
   "devDependencies": {
-    "@ai-sdk/react": "2.0.0",
+    "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@dicebear/core": "^9.4.3",
-    "@gchust/agent-annotations": "0.1.9",
     "@hookform/resolvers": "^5.0.1",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-template-print": "workspace:*",
@@ -28,15 +27,11 @@
     "@nocobase/logging": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@playwright/test": "catalog:",
-    "@refinedev/cli": "^2.16.48",
-    "@refinedev/core": "catalog:",
-    "@refinedev/react-hook-form": "^5.0.0",
-    "@refinedev/react-router": "^2.0.0",
-    "@refinedev/react-table": "^6.0.0",
     "@silurus/ooxml": "0.85.1",
     "@tailwindcss/postcss": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
@@ -52,7 +47,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "ai": "5.0.0",
+    "ai": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "dayjs": "^1.10.7",
@@ -84,7 +79,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "tar": "catalog:"
+    "tar": "catalog:",
+    "@xyflow/react": "^12.11.5",
+    "elkjs": "^0.10.2"
   },
   "files": [
     ".prettierignore",
@@ -157,12 +154,15 @@
   },
   "dependencies": {
     "zod": "catalog:",
+    "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-plugin-database-explorer": "workspace:^",
     "@nocobase/app-plugin-file": "workspace:^",
+    "@nocobase/app-plugin-foundation": "workspace:^",
     "@nocobase/app-plugin-i18n": "workspace:^",
+    "@nocobase/app-plugin-knowledge": "workspace:^",
     "@nocobase/app-plugin-mail": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
@@ -188,7 +188,8 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
     "@nocobase/repository-input": "workspace:^",
-    "@nocobase/app-cli": "workspace:^"
+    "@nocobase/app-cli": "workspace:^",
+    "@nocobase/realtime": "workspace:^"
   },
   "description": "NocoBase 3 application template with the standard product capabilities.",
   "imports": {
@@ -196,6 +197,7 @@
     "#hooks/*": "./client/hooks/*.js",
     "#lib/*": "./client/lib/*.js",
     "#extensions/*": "./client/extensions/*.js",
-    "#pages/*": "./client/pages/*.js"
+    "#pages/*": "./client/pages/*.js",
+    "#components/data-table": "./client/components/data-table/index.js"
   }
 }

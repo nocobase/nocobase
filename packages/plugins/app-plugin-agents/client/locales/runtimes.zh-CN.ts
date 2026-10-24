@@ -2,6 +2,88 @@ import type { RuntimesLocale } from './runtimes.en-US.js';
 
 const runtimesZhCN: RuntimesLocale = {
   runtimes: {
+    capacity: {
+      actual: '最后生效槽位：{{slots}}',
+      online: '实际生效槽位 · 线上设置',
+      pending: '等待执行机同步线上设置',
+      legacy: '旧版兼容本地槽位 · 请升级应用服务端',
+      upgrade: '未报告同步状态 · 请升级执行机',
+      lastReported: '最后上报：{{time}}',
+    },
+    quota: {
+      workspaceStatus: {
+        active: '工作进行中',
+        ended: '已结束 · 可清理',
+        checks: '已结束 · 待检查',
+        inUse: '保留：使用中',
+        changed: '保留：目录已复用',
+        trackedChanges: '保留：文件未提交',
+        unpushed: '保留：工作未推送',
+        missingEvidence: '保留：待验证',
+        gitFailed: '保留：Git 检查失败',
+        runNotFound: '保留：运行不存在',
+        ownershipUnknown: '保留：归属待验证',
+        ambiguousSubject: '保留：任务不明确',
+        bindingUnavailable: '保留：绑定不可用',
+        subjectUnknown: '保留：任务未知',
+        unknown: '保留：未验证',
+      },
+      usageLimit: '额度限制',
+      shortReset: '{{time}} 恢复',
+      shortUnknown: '恢复时间未知',
+      automatic: '到恢复时间自动解除。',
+      since: '始于 {{time}}',
+      marks_one: '{{count}} 个额度标记',
+      marks_other: '{{count}} 个额度标记',
+      queueHint: '额度用完的 Agent 仍可选择，工作会按现有等待期限排队。',
+      partial: '可在 {{available}} 运行 · {{blocked}} 额度用完',
+
+      workspaceSize: '工作目录总占用：{{value}}',
+      providers_one: '{{count}} 个服务商额度用完',
+      providers_other: '{{count}} 个服务商额度用完',
+      runColumns: {
+        issue: '任务 / 对话',
+        agent: 'Agent',
+        status: '状态',
+        started: '开始时间',
+        duration: '时长',
+      },
+      filter: {
+        all: '全部',
+        active: '进行中',
+        retained: '保留',
+        ended: '已结束',
+      },
+      columns: {
+        directory: '目录 / 任务',
+        type: '类型',
+        size: '大小',
+        push: '推送状态',
+        status: '状态',
+        lastUsed: '最后使用',
+      },
+      previous: '上一页',
+      next: '下一页',
+      working: '工作目录',
+      readOnly: '只读副本',
+      clean: '已推送',
+      unpushed: '待核实',
+      overview: '概览',
+      workspaces: '工作目录',
+      runs: '运行记录',
+      title: '额度',
+      reached: '额度用完',
+      unknown: '恢复时间未知',
+      resets: '{{time}} 恢复',
+      near: '接近上限',
+      clear: '清除',
+      clearMark: '清除标记',
+      confirm: '清除此标记？{{target}} 将可继续领取工作。',
+      observed: '上次报告 {{time}}',
+      usedPercent: '已用 {{percent}}%',
+      ok: '正常',
+      hint: '已知恢复时间到点后自动恢复领取资格；未知时请在额度恢复后手动清除。只有执行机主人和管理员可以清除。',
+    },
     workspaces: {
       paused: '空间恢复前暂停领取新任务，现有运行继续。',
       working: '类型：工作目录',
@@ -108,6 +190,8 @@ const runtimesZhCN: RuntimesLocale = {
       hint: '本应用配置的构建等步骤，不调用模型。这个运行环境支持：{{kinds}}。',
       unsupported: '这个运行环境的 runner 不支持作业，更新后才能打开。',
     },
+    pathHint:
+      '执行机按它自己的 PATH 查找编码工具。请在能执行 which codex / which claude 的终端里重新执行 nocobase-runner service install 并重启服务（或重新执行 nocobase-runner start），让服务带上正确的 PATH。',
     noTools: '没有发现编码工具',
     actionsFor: '{{name}} 的操作',
     columns: {
@@ -123,7 +207,7 @@ const runtimesZhCN: RuntimesLocale = {
       general: '常规',
       tools: '工具',
       toolsDescription:
-        '它上报的编码工具。关闭的工具的工作不会派到这里。开关和上限点「保存」后一起生效。',
+        '只检测勾选的工具，并接收这些工具的任务。开关和上限点「保存」后一起生效。',
       version: 'runner {{version}}',
       runs: '最近的运行',
       runsEmpty: '还没有运行。',
@@ -153,8 +237,12 @@ const runtimesZhCN: RuntimesLocale = {
         '它的 runner 没有说明安装方式。请在它所在的主机上用“添加运行环境”中的命令重新安装。',
     },
     tool: {
+      checking: '等待检测',
+      failed: '检测失败',
+      redetect: '重新检测',
+      notProvided: '未提供',
       signedIn: '已登录',
-      signedOut: '未登录',
+      signedOut: '需要登录',
       notInstalled: '未安装',
       off: '已关闭',
       offHint: '已关闭：这个工具的工作不会派到这个运行环境。',
@@ -162,20 +250,22 @@ const runtimesZhCN: RuntimesLocale = {
       version: '版本 {{version}}',
     },
     trust: {
-      label: '为谁工作',
-      team: '团队',
-      teamHint:
-        '运行团队中任何人发起的工作，并接收他们的变量和密钥。适合团队共用的服务器或虚拟机。',
+      isolationHint:
+        '无论个人还是共享，都建议在虚拟机或隔离环境中运行执行机：Agent 拥有完全权限，执行机不是沙箱。',
+      label: '使用范围',
+      team: '共享',
+      teamHint: '可执行所有用户发起的任务，并会收到发起人的变量和密钥。',
       ownerOnly: '个人',
-      ownerOnlyHint: '只运行你发起的工作。你自己添加的运行环境默认如此。',
+      ownerOnlyHint:
+        '仅执行所属用户发起的任务。你自己添加的运行环境默认是个人。',
       personalOnly:
-        '这个运行环境将是个人的：只运行你发起的工作。之后可以再共享给团队。',
+        '这个运行环境将是个人的：仅执行所属用户发起的任务。之后可以再共享给所有用户。',
     },
     share: {
-      title: '把 {{name}} 共享给团队？',
+      title: '把 {{name}} 共享给所有用户？',
       description:
         '其他人的运行会在这个运行环境中执行，并带上他们的变量和密钥，也能读取其中的内容。确认没有问题再共享。',
-      confirm: '共享给团队',
+      confirm: '共享给所有用户',
     },
     edit: {
       button: '编辑',
@@ -210,15 +300,25 @@ const runtimesZhCN: RuntimesLocale = {
   },
   connect: {
     title: '添加运行环境',
-    description:
-      '在装有编码工具的主机（服务器、虚拟机或个人设备）上运行下面的命令。Agent 在那里以运行执行机的用户身份完全放开地运行，能读写该用户能访问的一切，包括 SSH 密钥和其他凭证。执行机不是安全边界：请用专用系统用户、容器或虚拟机来运行它。',
+    description: '选择编码工具和使用范围，然后在目标机器上安装执行机。',
     createCredential: '生成安装命令',
     advanced: '高级：按编码工具限制',
     run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI，注册 runner 并设置为登录后自动启动：',
     nodeRequired:
       '主机需要安装 Node.js 24 或更高版本（可用 node --version 查看）。未安装时命令会停止并说明如何安装。',
     installed: '已经装好 nocobase-runner？改为注册它：',
-    unsupported: 'runner 暂不支持 Windows，请使用 macOS、Linux 或 WSL。',
+    prompt: '提示词',
+    manual: '手动安装',
+    promptHint:
+      '把下面的完整提示词复制给目标机器上的 Agent（Claude Code、Codex 等）。窄屏可滚动弹窗阅读全部步骤。其中包含一次性凭证，请只交给该 Agent。',
+    windowsPowerShell: '1. 安装 WSL：在 PowerShell 执行，然后重启 Windows：',
+    windowsUbuntu:
+      '2. 打开 Ubuntu，执行下面的 Linux 命令。Node.js 和编码工具都安装在 WSL Ubuntu 里。',
+    windowsNetwork: '如果 WSL 无法访问外网，请开启 WSL 镜像网络。',
+    promptWindows:
+      '首先判断你自己是否运行在 WSL Ubuntu 中。如果不在 WSL Ubuntu 中，立即停止，不要执行任何安装或注册命令；请告诉用户先到 PowerShell 执行 wsl --install、重启 Windows，再到 WSL Ubuntu 中打开 Agent，重新执行这段提示词。只有确认在 WSL Ubuntu 中，才能继续以下步骤。Node.js 和编码工具都必须安装在 WSL 中。如果 WSL 无法访问外网，请开启镜像网络。\n\n',
+    promptBody:
+      '请将这台机器配置为 NocoBase 执行机。建议使用虚拟机或隔离环境：Agent 拥有完全权限，执行机不是沙箱。\n\n检查 Node.js 24 或更高版本，以及这些编码工具是否已安装并登录：{{tools}}。使用工具的官方安装方式，不要使用 snap 版工具。\n\n运行以下含一次性凭证的注册命令，安装执行机和应用 CLI，注册执行机并安装为后台服务：\n{{command}}\n\n处理常见问题：确保服务的 PATH 包含编码工具（在安装终端确认 which codex / which claude，然后重新执行 nocobase-runner service install 并重启服务）；按需为下载和后台服务配置代理；npm 全局安装权限不足时使用当前用户拥有的安装目录或 Node 版本管理器，不要使用 sudo npm install。\n\n最后执行 nocobase-runner status，确认已连上并检测到编码工具。告诉我还需要亲自完成哪些登录或网络步骤。注册凭证属于密钥，请勿写入结果报告。',
     tokenOnce:
       '命令中带有一次性凭证，用于添加一个「{{trust}}」运行环境。只能使用一次，有效期至 {{time}}。',
     after: '几秒钟后，运行环境会出现在列表中，并列出它发现的每个编码工具…',

@@ -21,8 +21,11 @@ export interface IssueChangeSet {
 
 declare module '../../kernel/events.js' {
   interface DomainEventMap {
-    /** Anything about the issue changed; the browser refetches it. */
-    'issue.changed': { readonly issueId: string };
+    /**
+     * Anything about the issue changed; the browser refetches it. `moved`: it changed project, parent or executor, so
+     * lists filtered or grouped by those may gain or lose it.
+     */
+    'issue.changed': { readonly issueId: string; readonly moved?: boolean };
     'issue.created': {
       readonly issueId: string;
       readonly actor: EventActor;

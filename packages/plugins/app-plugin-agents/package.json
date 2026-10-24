@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-agents",
   "displayName": "Agents",
   "description": "Agents for NocoBase applications: agents, the model services online agents call, their runs and conversations, and the runners people connect to run them (registration, the long-poll claim, slots, the sweeper, build jobs, and the runner and CLI tarballs the application serves).",
-  "version": "0.1.0-beta.11",
+  "version": "1.0.0-beta.22",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -62,6 +62,10 @@
       "types": "./shared/reports.ts",
       "import": "./shared/reports.ts"
     },
+    "./shared/online-agent": {
+      "types": "./shared/online-agent.ts",
+      "import": "./shared/online-agent.ts"
+    },
     "./shared/conversations": {
       "types": "./shared/conversations.ts",
       "import": "./shared/conversations.ts"
@@ -73,6 +77,14 @@
     "./shared/models": {
       "types": "./shared/models.ts",
       "import": "./shared/models.ts"
+    },
+    "./shared/web-search": {
+      "types": "./shared/web-search.ts",
+      "import": "./shared/web-search.ts"
+    },
+    "./shared/web-search-results": {
+      "types": "./shared/web-search-results.ts",
+      "import": "./shared/web-search-results.ts"
     },
     "./shared/i18n": {
       "types": "./shared/i18n.ts",
@@ -114,12 +126,17 @@
       "types": "./cli/index.ts",
       "import": "./cli/index.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./server/online-agent": {
+      "types": "./server/online/agent/index.ts",
+      "import": "./server/online/agent/index.ts"
+    }
   },
   "files": [
     "dist",
     "README.md",
     "CHANGELOG.md",
+    "docs",
     "skills"
   ],
   "publishConfig": {
@@ -177,6 +194,10 @@
         "types": "./dist/shared/reports.d.ts",
         "import": "./dist/shared/reports.js"
       },
+      "./shared/online-agent": {
+        "types": "./dist/shared/online-agent.d.ts",
+        "import": "./dist/shared/online-agent.js"
+      },
       "./shared/conversations": {
         "types": "./dist/shared/conversations.d.ts",
         "import": "./dist/shared/conversations.js"
@@ -188,6 +209,14 @@
       "./shared/models": {
         "types": "./dist/shared/models.d.ts",
         "import": "./dist/shared/models.js"
+      },
+      "./shared/web-search": {
+        "types": "./dist/shared/web-search.d.ts",
+        "import": "./dist/shared/web-search.js"
+      },
+      "./shared/web-search-results": {
+        "types": "./dist/shared/web-search-results.d.ts",
+        "import": "./dist/shared/web-search-results.js"
       },
       "./shared/i18n": {
         "types": "./dist/shared/i18n.d.ts",
@@ -229,11 +258,15 @@
         "types": "./dist/cli/index.d.ts",
         "import": "./dist/cli/index.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./server/online-agent": {
+        "types": "./dist/server/online/agent/index.d.ts",
+        "import": "./dist/server/online/agent/index.js"
+      }
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
+    "build": "tsc -p tsconfig.json && node ./scripts/bundle-just-bash.mjs && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
@@ -244,6 +277,7 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
+    "@nocobase/document-extractor": "workspace:^",
     "@ai-sdk/alibaba": "catalog:",
     "@ai-sdk/anthropic": "catalog:",
     "@ai-sdk/cohere": "catalog:",
@@ -252,20 +286,28 @@
     "@ai-sdk/moonshotai": "catalog:",
     "@ai-sdk/openai": "catalog:",
     "@ai-sdk/openai-compatible": "catalog:",
+    "@ai-sdk/provider-utils": "5.0.54",
     "@nocobase/agent-protocol": "workspace:^",
     "@nocobase/app-cli-client": "workspace:^",
     "@nocobase/cli-envelope": "workspace:^",
     "ai": "catalog:",
+    "ajv": "catalog:",
+    "ajv-formats": "^3.0.1",
     "better-sqlite3": "catalog:",
     "hono": "catalog:",
+    "ioredis": "catalog:",
     "knex": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
     "pg": "^8.23.0",
+    "re2js": "^2.8.6",
+    "resumable-stream": "2.2.13",
     "sqlite-vec": "^0.1.9",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@nocobase/acp-bridge": "workspace:^"
   },
   "peerDependencies": {
+    "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",
@@ -287,10 +329,12 @@
     "react-day-picker": "catalog:",
     "react-markdown": "catalog:",
     "react-router": "catalog:",
+    "react-virtuoso": "catalog:",
     "recharts": "^3.8.0",
     "remark-gfm": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/agent-runner": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/db-postgres": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
@@ -300,8 +344,10 @@
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "esbuild": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
+    "just-bash": "3.6.0",
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

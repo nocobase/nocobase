@@ -1,17 +1,225 @@
-# Channel and Provider Extensions
+# Channel Type Extensions
 
-A message handler implements `NotificationChannelDefinition` with `type`, `createChannel`, and optional safe test-field metadata. Its runtime `validateMessage(unknown)` returns a validated complete message and native recipient snapshots before any persistence. `prepare` builds the Provider payload for one Delivery and honors its abort signal. Resolve no application-user contact fields here.
+Implement `ChannelInstance` in a class, and register the class once with `registerChannelType`. The class's static `type` is the configuration discriminator. A configured name selects an independent instance; `system-email` and `marketing-email` may both use `smtp`. Extension authors need no separate message-family or Provider registration and no abstract base class.
 
-A Provider implements `NotificationProviderDefinition` with globally unique `type`, `messageType`, optional `validateConfig`, and `createProvider(context, config)`. Configuration has a `provider` discriminator and flat transport options. The runtime exposes the same `type`, `send`, optional capabilities, and optional `close`. There is no Provider instance name.
+## Contract
+
+`registerChannelType(ChannelClass)` checks the constructor and static members against `ChannelTypeClass<TConfig, TMessage, TRecipient, TPrepared>`. `implements ChannelInstance` checks instance methods; it does not check statics by itself. Duplicate identifiers, including collisions with legacy Provider definitions, fail registration.
+
+| Member                          | Responsibility                                                                                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static `type`                   | Required, globally unique, non-empty trimmed identifier.                                                                                        |
+| Static `label`                  | Optional safe display label or translation descriptor.                                                                                          |
+| Static `validateConfig(config)` | Optional synchronous configuration validation, before constructing instances.                                                                   |
+| Constructor `(context, config)` | Receive this named channel's context and normalized configuration. Avoid allocating resources that cannot be cleaned up if construction throws. |
+| `initialize()`                  | Optional asynchronous resource initialization.                                                                                                  |
+| `validateMessage(unknown)`      | Validate and normalize the complete message; expand native recipient snapshots before persistence.                                              |
+| `prepare(input)`                | Build one delivery's payload without external delivery side effects; honor `signal`.                                                            |
+| `send(input)`                   | Submit once and classify the outcome. Includes prepared `message`, `notificationId`, `deliveryId`, `attemptId`, `deadline` and `signal`.        |
+| `capabilities`                  | Optional instance metadata about transport idempotency.                                                                                         |
+| `close()`                       | Optional cleanup of resources owned by this instance. Never close services owned by the host container.                                         |
+
+The context has exactly these members:
 
 ```ts
-const registry = app.container.resolve(notificationExtensionRegistryToken);
-registry
-  .registerChannel(createSmsChannelDefinition())
-  .registerProvider(createExampleSmsProviderDefinition());
+interface ChannelContext {
+  readonly channelName: string;
+  readonly container: ServiceContainer;
+}
 ```
 
-Provider definitions reference their reusable message handler through `messageType`. Extend `NotificationChannelSchemas` with the Provider identifier and its recipient/message schema so configured Channel names infer the correct `messages` values. Extension plugins register through `notificationExtensionRegistryToken` before activation; consumers send through `notificationServiceToken`.
+Use `context.container.resolve(serviceToken)` for application services. There is no `logger`, `now()` or `resolve()` wrapper on the context. A constructor receives a configuration with `type`; the compatibility `provider` property has been removed. Configuration validation should be synchronous and side-effect free.
+
+The runtime caches one instance per configured name, coalesces concurrent initialization, and closes a partially initialized instance if `initialize()` rejects. A later request can initialize a fresh instance. During shutdown the runtime stops accepting new sends, drains active requests and jobs, then closes instances in reverse creation order. Classes must respect cancellation and own any initialization timeouts they need. Register all types before activation.
+
+## Complete custom class example
+
+This example assumes a team webhook contract where HTTP 2xx confirms acceptance, 4xx confirms rejection, and 5xx or a lost response leaves submission uncertain. Replace the allowlisted hostname and result classification with the actual service contract. It does not claim server-side idempotency just because it sends a delivery ID.
+
+```ts
+import {
+  notificationExtensionRegistryToken,
+  type ChannelConfig,
+  type ChannelContext,
+  type ChannelInstance,
+  type ChannelPreparationInput,
+  type ChannelSendInput,
+  type ChannelSendResult,
+  type ValidatedChannelMessage,
+} from '@nocobase/app-plugin-notification';
+import { ServiceProvider } from '@nocobase/service-provider';
+import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+
+interface TeamWebhookConfig extends ChannelConfig {
+  readonly type: 'team-webhook';
+  readonly endpoint: string;
+  readonly apiKey: string;
+}
+interface TeamMessage {
+  readonly text: string;
+}
+interface TeamRecipient {
+  readonly webhook: true;
+}
+
+export class TeamWebhookChannel implements ChannelInstance<
+  TeamMessage,
+  TeamRecipient,
+  TeamMessage
+> {
+  static readonly type = 'team-webhook';
+  static readonly label = 'Team webhook';
+  static validateConfig(config: TeamWebhookConfig): void {
+    if (typeof config.endpoint !== 'string' || !URL.canParse(config.endpoint))
+      throw new Error('A valid team webhook endpoint is required.');
+    const url = new URL(config.endpoint);
+    if (
+      url.protocol !== 'https:' ||
+      url.hostname !== 'hooks.example.com' ||
+      url.port ||
+      url.username ||
+      url.password
+    )
+      throw new Error(
+        'The team webhook endpoint must use the approved HTTPS host.',
+      );
+    if (typeof config.apiKey !== 'string' || !config.apiKey.trim())
+      throw new Error('A team webhook API key is required.');
+  }
+
+  constructor(
+    private readonly context: ChannelContext,
+    private readonly config: TeamWebhookConfig,
+  ) {}
+
+  validateMessage(
+    input: unknown,
+  ): ValidatedChannelMessage<TeamMessage, TeamRecipient> {
+    if (!input || typeof input !== 'object' || Array.isArray(input))
+      throw new Error('A team webhook message is required.');
+    const text: unknown = Reflect.get(input, 'text');
+    if (
+      Object.keys(input).some((key) => key !== 'text') ||
+      typeof text !== 'string' ||
+      !text.trim() ||
+      text.length > 2000
+    )
+      throw new Error(
+        'The message must contain only text, between 1 and 2000 characters.',
+      );
+    return { message: { text: text.trim() }, recipients: [{ webhook: true }] };
+  }
+
+  async prepare({
+    message,
+  }: ChannelPreparationInput<
+    TeamMessage,
+    TeamRecipient
+  >): Promise<TeamMessage> {
+    return message;
+  }
+
+  async send({
+    message,
+    deliveryId,
+    signal,
+  }: ChannelSendInput<TeamMessage>): Promise<ChannelSendResult> {
+    try {
+      const response = await fetch(this.config.endpoint, {
+        method: 'POST',
+        redirect: 'error',
+        signal,
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${this.config.apiKey}`,
+          'x-notification-channel': encodeURIComponent(
+            this.context.channelName,
+          ),
+          'x-notification-delivery-id': deliveryId,
+        },
+        body: JSON.stringify(message),
+      });
+      await response.body?.cancel();
+      if (response.ok) return { status: 'accepted' };
+      if (response.status >= 400 && response.status < 500)
+        return {
+          status: 'failed',
+          disposition: response.status === 429 ? 'same_provider' : 'never',
+          error: {
+            category: response.status === 429 ? 'rate_limit' : 'provider',
+            message: 'Team webhook rejected the message.',
+          },
+        };
+      return {
+        status: 'submission_unknown',
+        error: {
+          category: 'provider',
+          message: 'Team webhook acceptance was not confirmed.',
+        },
+      };
+    } catch {
+      return {
+        status: 'submission_unknown',
+        error: {
+          category: 'network',
+          message: 'Team webhook acceptance was not confirmed.',
+        },
+      };
+    }
+  }
+}
+
+export class TeamNotificationsProvider extends ServiceProvider<AppPluginApplication> {
+  readonly name = 'app/team-notifications';
+  override async boot(): Promise<void> {
+    this.app.container
+      .resolve(notificationExtensionRegistryToken)
+      .registerChannelType(TeamWebhookChannel);
+  }
+}
+
+declare module '@nocobase/app-plugin-notification' {
+  interface NotificationChannelSchemas {
+    'team-webhook': {
+      readonly message: TeamMessage;
+      readonly recipient: TeamRecipient;
+    };
+  }
+}
+```
+
+Register `TeamNotificationsProvider` after the notification core in the application's provider list, or contribute it through an extension plugin's `serviceProviders`. Then configure a named channel:
+
+```yaml
+notification:
+  channels:
+    team-alerts:
+      type: team-webhook
+      endpoint: https://hooks.example.com/notify
+      apiKey: replace-with-the-api-key
+```
+
+Map the key to `channels.team-alerts.apiKey` using the host configuration's environment mappings. Configuration stays on the server. Consumers keep the existing send input:
+
+```ts
+const notification = app.container.resolve(notificationServiceToken);
+await notification.send({
+  idempotencyKey: 'approval-123:team-alerts',
+  messages: { 'team-alerts': { text: 'Approval 123 is complete.' } },
+});
+```
+
+`NotificationChannelSchemas` maps concrete type identifiers to message/recipient schemas. `ConfiguredNotificationChannels<typeof channels>` infers message types from either `type` or the legacy `provider` discriminator; when a configuration uses both, `type` drives inference and runtime validation requires equality. Keep literal discriminator types with `as const` in typed custom hosts.
+
+## Compatibility
+
+`provider`-only config continues to work; both keys are accepted when equal and rejected when different. The host mailer uses the same rule. Old `registerChannel` and `registerProvider` APIs and built-in factory exports remain available, and legacy factories receive normalized `provider` config even when the user supplied `type`. Legacy registration methods, definition types and factory functions carry `@deprecated` annotations identifying their replacements. Official channel implementations, examples and ordinary runtime tests use `registerChannelType()` exclusively. Deprecated registration calls belong only in compatibility modules and tests of legacy behavior; do not introduce them into new extensions.
+
+`NotificationChannelConfig` and the default legacy factory callback types keep their required `provider` field. Use `NotificationChannelConfigInput` for unnormalized configuration accepting either discriminator, and `ChannelConfig` for a class constructor's normalized `type` config. Dedicated compatibility modules in the built-in server plugins install the legacy `email`, `im`, `in-app` and `web-push` handlers so third-party Providers can reuse them through `messageType` alongside the built-in channel classes. Keep this setup separate from normal class registration and preserve lazy resolution of application-owned services. Registering a class directly does not install these legacy handlers.
+
+Built-in class registration preserves historical `channelType` (`email` for SMTP/Resend, `im` for the two webhooks) and `providerType`, so pending deliveries, retries, status results retain their identities. These storage and response fields are compatibility details, not additional registration concepts. Custom legacy extensions can keep their existing factories to retain their historical message-family identity; migrating a custom type with a different historical message family requires an explicit history migration or draining that work first.
+
+`send()` and `sendTransient()` inputs, outputs, message maps, recipient rules, queue behavior and retry classification are unchanged. There is no new `submit()` API. SMTP and Resend still share email helpers; Feishu and DingTalk share IM helpers. No new SMS transport is bundled.
 
 ## Result classification
 

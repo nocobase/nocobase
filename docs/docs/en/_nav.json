@@ -1,11 +1,15 @@
 [
   {
-    "text": "Get Started",
-    "link": "/get-started/"
+    "text": "Quick start",
+    "link": "/capabilities/quick-start"
   },
   {
     "text": "Capabilities",
     "link": "/capabilities/"
+  },
+  {
+    "text": "Deployment",
+    "link": "/deployment"
   },
   {
     "text": "Home",

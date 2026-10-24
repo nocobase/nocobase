@@ -1,4 +1,11 @@
-import { mkdir, mkdtemp, readlink, rm, writeFile } from 'node:fs/promises';
+import {
+  lstat,
+  mkdir,
+  mkdtemp,
+  readlink,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -34,6 +41,10 @@ describe("Codex's home", () => {
       expect(await readlink(path.join(dir, 'config.toml'))).toBe(
         path.join(real, 'config.toml'),
       );
+      for (const shared of ['plugins', 'cache'])
+        expect(await readlink(path.join(dir, shared))).toBe(
+          path.join(real, shared),
+        );
       // Sessions and history stay with the workspace.
       expect(existsSync(path.join(dir, 'history.jsonl'))).toBe(false);
     }
@@ -41,6 +52,25 @@ describe("Codex's home", () => {
     await expect(
       prepareCodexHome(path.join(root, 'a', 'codex-home'), real),
     ).resolves.toBe(a);
+  });
+
+  it('shares the plugin caches, creating them in the real home, unless the workspace has its own', async () => {
+    const real = path.join(root, 'real-codex');
+    const fresh = await prepareCodexHome(path.join(root, 'fresh'), real);
+    expect(existsSync(path.join(real, 'plugins'))).toBe(true);
+    expect(existsSync(path.join(real, 'cache'))).toBe(true);
+    await writeFile(path.join(fresh, 'plugins', 'bundle'), 'shared');
+    expect(existsSync(path.join(real, 'plugins', 'bundle'))).toBe(true);
+
+    const existing = path.join(root, 'existing');
+    await mkdir(path.join(existing, 'plugins'), { recursive: true });
+    await prepareCodexHome(existing, real);
+    expect((await lstat(path.join(existing, 'plugins'))).isDirectory()).toBe(
+      true,
+    );
+    expect(await readlink(path.join(existing, 'cache'))).toBe(
+      path.join(real, 'cache'),
+    );
   });
 
   it("is set for the agent, which keeps the runner user's real HOME", () => {

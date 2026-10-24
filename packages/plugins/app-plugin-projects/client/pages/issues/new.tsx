@@ -1,5 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, useRef, useState } from 'react';
+import { type ReactElement, useContext, useRef, useState } from 'react';
+import { IssueCreationModeContext } from '../../kit/issue-creation.js';
 import {
   useLocation,
   useNavigate,
@@ -55,6 +56,7 @@ function storeTab(tab: NewIssueTab): void {
  * from the issue list and the dialog closes over a project page; a breakdown's sub-issues return to their issue.
  */
 export default function NewIssuePage(): ReactElement {
+  const manualOnly = useContext(IssueCreationModeContext) === 'manual';
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,15 +64,18 @@ export default function NewIssuePage(): ReactElement {
   // Over a project's page the dialog stays there: created, it closes instead of opening the issue.
   const overProject = useParams().projectId !== undefined;
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [startNow, setStartNow] = useState(true);
   const submittingRef = useRef(false);
   const unsaved = useUnsavedChangesGuard();
   const asked = params.get('tab');
-  const tab: NewIssueTab = (TABS as readonly string[]).includes(asked ?? '')
-    ? (asked as NewIssueTab)
-    : params.get(INTAKE_DRAFT_PARAM) || params.get(INTAKE_JOB_PARAM)
-      ? 'ai'
-      : (storedTab() ?? 'ai');
+  const tab: NewIssueTab = manualOnly
+    ? 'manual'
+    : (TABS as readonly string[]).includes(asked ?? '')
+      ? (asked as NewIssueTab)
+      : params.get(INTAKE_DRAFT_PARAM) || params.get(INTAKE_JOB_PARAM)
+        ? 'ai'
+        : (storedTab() ?? 'ai');
   const [wide, setWide] = useState(Boolean(params.get(INTAKE_DRAFT_PARAM)));
   const onSubmittingChange = (value: boolean): void => {
     submittingRef.current = value;
@@ -91,6 +96,24 @@ export default function NewIssuePage(): ReactElement {
     next.set('tab', value);
     setParams(next, { replace: true });
   };
+  const manual = (
+    <UnsavedChangesBoundary guard={unsaved}>
+      <NewIssueForm
+        onSubmittingChange={onSubmittingChange}
+        onUploadingChange={setUploading}
+        onStartChange={setStartNow}
+        {...(overProject
+          ? {
+              onCreated: () =>
+                void navigate(
+                  { pathname: '..', search: listSearch },
+                  { replace: true },
+                ),
+            }
+          : {})}
+      />
+    </UnsavedChangesBoundary>
+  );
   return (
     <RouteDialog
       title={t('newIssue.title')}
@@ -105,55 +128,49 @@ export default function NewIssuePage(): ReactElement {
       beforeClose={() => !submittingRef.current && unsaved.confirmDiscard()}
       footer={
         tab === 'manual' ? (
-          <NewIssueFooter submitting={submitting} startNow={startNow} />
+          <NewIssueFooter
+            submitting={submitting}
+            uploading={uploading}
+            startNow={startNow}
+          />
         ) : null
       }
     >
-      <Tabs
-        value={tab}
-        onValueChange={(value: NewIssueTab) => choose(value)}
-        className='gap-4'
-      >
-        <TabsList variant='line' aria-label={t('newIssue.tabsLabel')}>
-          {TABS.map((value) => (
-            <TabsTrigger key={value} value={value}>
-              {t(`newIssue.tabs.${value}`)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value='manual' keepMounted>
-          <UnsavedChangesBoundary guard={unsaved}>
-            <NewIssueForm
-              onSubmittingChange={onSubmittingChange}
-              onStartChange={setStartNow}
-              {...(overProject
-                ? {
-                    onCreated: () =>
-                      void navigate(
-                        { pathname: '..', search: listSearch },
-                        { replace: true },
-                      ),
-                  }
-                : {})}
+      {manualOnly ? (
+        manual
+      ) : (
+        <Tabs
+          value={tab}
+          onValueChange={(value: NewIssueTab) => choose(value)}
+          className='gap-4'
+        >
+          <TabsList variant='line' aria-label={t('newIssue.tabsLabel')}>
+            {TABS.map((value) => (
+              <TabsTrigger key={value} value={value}>
+                {t(`newIssue.tabs.${value}`)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value='manual' keepMounted>
+            {manual}
+          </TabsContent>
+          <TabsContent value='ai' keepMounted>
+            <IntakePanel
+              onDraftChange={setWide}
+              onCreated={(plan) => {
+                const issue = (
+                  plan.source.data as Partial<IntakeAiSourceData> | null
+                )?.issue;
+                void navigate(
+                  issue
+                    ? `/issues/${encodeURIComponent(issue.identifier)}`
+                    : { pathname: '..', search: listSearch },
+                );
+              }}
             />
-          </UnsavedChangesBoundary>
-        </TabsContent>
-        <TabsContent value='ai' keepMounted>
-          <IntakePanel
-            onDraftChange={setWide}
-            onCreated={(plan) => {
-              const issue = (
-                plan.source.data as Partial<IntakeAiSourceData> | null
-              )?.issue;
-              void navigate(
-                issue
-                  ? `/issues/${encodeURIComponent(issue.identifier)}`
-                  : { pathname: '..', search: listSearch },
-              );
-            }}
-          />
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      )}
     </RouteDialog>
   );
 }

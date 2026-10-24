@@ -7,7 +7,18 @@ import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import { CalendarIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { enUS, zhCN } from 'react-day-picker/locale';
+import {
+  enUS,
+  zhCN,
+  zhTW,
+  ja,
+  es,
+  ptBR,
+  fr,
+  de,
+  vi,
+  id,
+} from 'react-day-picker/locale';
 
 import { useMediaQuery } from '../../hooks/use-media-query.js';
 import { Button } from '../../components/ui/button.js';
@@ -24,6 +35,19 @@ import {
   presetRange,
   toDay,
 } from './model.js';
+
+const calendarLocales: Readonly<Record<string, typeof enUS>> = {
+  'en-US': enUS,
+  'zh-CN': zhCN,
+  'zh-TW': zhTW,
+  'ja-JP': ja,
+  'es-ES': es,
+  'pt-BR': ptBR,
+  'fr-FR': fr,
+  'de-DE': de,
+  'vi-VN': vi,
+  'id-ID': id,
+};
 
 export function DateRangePicker({
   from,
@@ -102,7 +126,7 @@ export function DateRangePicker({
         </div>
         <Calendar
           mode='range'
-          locale={locale.startsWith('zh') ? zhCN : enUS}
+          locale={calendarLocales[locale] ?? enUS}
           numberOfMonths={wide ? 2 : 1}
           defaultMonth={fromDay(wide ? from : to) ?? fromDay(to) ?? today}
           selected={selected}

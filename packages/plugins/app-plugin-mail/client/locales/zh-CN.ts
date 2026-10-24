@@ -554,6 +554,7 @@ const zhCN: MailResource = {
     },
   },
   errors: {
+    messageNotFound: '未找到邮件。',
     requestFailed: '邮件请求失败。',
     authorizationFailed: '无法发起邮件授权。',
     syncFailed: '无法开始邮箱同步。',

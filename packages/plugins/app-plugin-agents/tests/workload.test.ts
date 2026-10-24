@@ -42,8 +42,10 @@ describe('the workload', () => {
     });
     const diagnostic = await h.services.claims.selectionWait(run);
     expect(diagnostic?.entries[0]?.reason).toBe('incompatible');
-    const wait = (await byId(h)).get(run)?.wait;
+    const wait = await h.services.runs.queueWait(run);
     expect(wait?.reason).toBe('incompatible');
+    // The list explains it by the claim's rules alone, without the diagnosis.
+    expect((await byId(h)).get(run)?.wait?.reason).toBe('noSharedRunner');
     expect(JSON.stringify(wait)).not.toContain('private-secret-name');
     expect(JSON.stringify(diagnostic)).not.toContain('private-secret-name');
   });
@@ -328,7 +330,7 @@ describe('explainWait', () => {
       explainWait({ ...run, requires: ['checkout', 'secrets'] }, context),
     ).toMatchObject({ reason: 'missingFeatures', missing: ['secrets'] });
     const teamOnlyVariables = [{ scope: 'agent', scopeId: 'a1', name: 'KEY' }];
-    // Only personal runners fit a run with a team-only variable; a team runner would take it.
+    // Only personal runners fit a run with a team-only variable; a shared runner would take it.
     expect(
       explainWait(
         { ...run, teamOnlyVariables },

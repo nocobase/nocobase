@@ -30,7 +30,12 @@ import {
 } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
-import { resolveAppUrl } from '@nocobase/app-client';
+import {
+  resolveAppUrl,
+  useRealtimeRefresh,
+  ApiClientError,
+} from '@nocobase/app-client';
+import { MAIL_REALTIME_TOPIC } from '../../shared/realtime.js';
 import type { MailComposerRequest } from '../contracts/composer.js';
 import { MailWorkspaceComposer } from '../components/mail-workspace-composer.js';
 
@@ -367,17 +372,28 @@ export default function MailWorkspacePage({
     void Promise.resolve().then(() => loadAccounts());
   }, [loadAccounts]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
+  const syncRefresh = useRealtimeRefresh(
+    MAIL_REALTIME_TOPIC,
+    async (signal) => {
       if (syncPollInFlightRef.current) return;
       const activeRuns = Object.values(syncRunsRef.current).filter(
         isActiveSyncRun,
       );
       if (activeRuns.length === 0) return;
       syncPollInFlightRef.current = true;
-      void Promise.all(
+      await Promise.all(
         activeRuns.map((run) =>
           mail.getSyncRun(run.id).catch((cause: unknown) => {
+            if (signal.aborted) return undefined;
+            if (
+              !(cause instanceof ApiClientError) ||
+              cause.status >= 500 ||
+              cause.status === 408 ||
+              cause.status === 429
+            ) {
+              requestError(cause);
+              throw cause;
+            }
             if (syncRunsRef.current[run.accountId]?.id === run.id) {
               setSyncRuns((current) => {
                 if (current[run.accountId]?.id !== run.id) return current;
@@ -392,6 +408,7 @@ export default function MailWorkspacePage({
         ),
       )
         .then((nextRuns) => {
+          if (signal.aborted) return;
           const resolvedRuns = nextRuns.filter((run): run is MailSyncRunView =>
             Boolean(run),
           );
@@ -443,9 +460,12 @@ export default function MailWorkspacePage({
         .finally(() => {
           syncPollInFlightRef.current = false;
         });
-    }, 1500);
-    return () => window.clearInterval(timer);
-  }, [loadAccounts, mail, requestError, t]);
+    },
+    {
+      enabled: Object.values(syncRuns).some(isActiveSyncRun),
+      refreshIntervalMs: 60_000,
+    },
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
@@ -875,7 +895,7 @@ export default function MailWorkspacePage({
                 role='link'
                 variant='outline'
               >
-                {t('navigation.accounts', { defaultValue: 'Mail accounts' })}
+                {t('nav.devAccounts', { defaultValue: 'Mail accounts' })}
               </Button>
             ) : null}
             {headerActions}
@@ -973,6 +993,7 @@ export default function MailWorkspacePage({
               onClick={() => {
                 loadAccounts();
                 setReloadVersion((version) => version + 1);
+                syncRefresh.retry();
               }}
               variant='ghost'
             >

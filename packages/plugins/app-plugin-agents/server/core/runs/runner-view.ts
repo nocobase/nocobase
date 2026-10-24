@@ -4,6 +4,8 @@
  * subject's link of a private kind's run the viewer is not part of. `runnerForViewer` leaves out what identifies a
  * runner's machine for those who may not see it.
  */
+import type { Clock } from '../../kernel/clock.js';
+
 import type { AgentTool } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -49,6 +51,14 @@ export async function runsHeldByTool(
   conn: DatabaseConnection,
   runnerId: string,
 ): Promise<Partial<Record<AgentTool, number>>> {
+  return (await runsHeldSnapshot(conn, runnerId)).byTool;
+}
+
+/** Total occupancy includes runs whose tool has not been recorded. */
+export async function runsHeldSnapshot(
+  conn: DatabaseConnection,
+  runnerId: string,
+): Promise<{ runs: number; byTool: Partial<Record<AgentTool, number>> }> {
   const held = await runsRepo(conn).findMany({
     filter: (f) =>
       f.and([
@@ -61,7 +71,7 @@ export async function runsHeldByTool(
     const tool = run.tool as AgentTool | null;
     if (tool) counts[tool] = (counts[tool] ?? 0) + 1;
   }
-  return counts;
+  return { runs: held.length, byTool: counts };
 }
 
 /** How many of a runner's latest runs its page shows. */
@@ -80,13 +90,22 @@ export interface RunnerMachineView {
  * wake an agent see them (the routes decide); everyone else sees none of them, and of the working directories only
  * their totals.
  */
-export function runnerForViewer<T extends Runner>(
+/** Internal quota revisions never cross a user-facing runtime boundary. */
+export function runnerPublicData<T extends Runner>(
   runner: T,
+): Omit<T, 'quotaRevision'> {
+  const { quotaRevision: _revision, ...visible } = runner;
+  return visible;
+}
+
+export function runnerForViewer(
+  runner: Runner,
   seesMachine: boolean,
-): Omit<T, 'hostname' | 'tools'> & RunnerMachineView {
-  if (seesMachine) return { ...runner, canSeeMachine: true };
+): Omit<Runner, 'hostname' | 'tools' | 'quotaRevision'> & RunnerMachineView {
+  const visible = runnerPublicData(runner);
+  if (seesMachine) return { ...visible, canSeeMachine: true };
   return {
-    ...runner,
+    ...visible,
     canSeeMachine: false,
     hostname: null,
     tools: runner.tools.map(({ path: _path, ...tool }) => tool),
@@ -97,6 +116,7 @@ export function runnerForViewer<T extends Runner>(
 }
 
 export interface RunnerView {
+  recentCount(runnerId: string): Promise<number>;
   /** What each of `runners` takes work for: the agents it may run, by what people configured and what it reported. */
   takes(
     runners: readonly Runner[],
@@ -108,6 +128,7 @@ export interface RunnerView {
 }
 
 export function createRunnerView(deps: {
+  readonly clock: Clock;
   readonly agents: Pick<AgentService, 'list' | 'names'>;
   readonly subjects: Pick<SubjectRegistry, 'get'>;
   readonly tx: TxRunner;
@@ -130,8 +151,39 @@ export function createRunnerView(deps: {
       ? binding.path.replaceAll('{id}', encodeURIComponent(run.subject.id))
       : null;
   };
+  const subjectLabels = async (
+    runs: readonly Run[],
+    viewerUserId: string,
+  ): Promise<Map<string, string>> => {
+    const labels = new Map<string, string>();
+    const byKind = new Map<string, string[]>();
+    for (const run of runs)
+      if (pathOf(run, viewerUserId))
+        byKind.set(run.subject.kind, [
+          ...(byKind.get(run.subject.kind) ?? []),
+          run.subject.id,
+        ]);
+    for (const [kind, ids] of byKind) {
+      const facts = await deps.subjects
+        .get(kind)
+        ?.reports?.describe(deps.tx.read(), viewerUserId, [...new Set(ids)]);
+      for (const [id, fact] of facts ?? [])
+        if (fact.visible) labels.set(`${kind}:${id}`, fact.label);
+    }
+    return labels;
+  };
   return {
+    async recentCount(runnerId) {
+      return (
+        await runsRepo(deps.tx.read()).findMany({
+          filter: { runnerId },
+          select: (s) => s.fields('id'),
+          limit: RECENT_RUNS,
+        })
+      ).length;
+    },
     async takes(runners) {
+      const now = deps.clock.now().getTime();
       const agents = (await deps.agents.list()).filter(
         (agent) => agent.status === 'enabled',
       );
@@ -139,7 +191,7 @@ export function createRunnerView(deps: {
         runners.map((runner) => [
           runner.id,
           agents
-            .filter((agent) => runnerTakesAgent(runner, agent))
+            .filter((agent) => runnerTakesAgent(runner, agent, now))
             .map((agent) => ({ id: agent.id, name: agent.name })),
         ]),
       );
@@ -154,7 +206,12 @@ export function createRunnerView(deps: {
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
       });
       const names = await agentNames(records);
-      return records.map(toRun).map((run) => ({
+      const runs = records.map(toRun);
+      const labels = await subjectLabels(runs, viewerUserId);
+      return runs.map((run) => ({
+        subjectLabel:
+          labels.get(`${run.subject.kind}:${run.subject.id}`) ?? null,
+        failureReason: run.failureReason,
         id: run.id,
         kind: 'run' as const,
         title: names.get(run.agentId) ?? run.agentId,
@@ -173,7 +230,12 @@ export function createRunnerView(deps: {
         limit: RECENT_RUNS,
       });
       const names = await agentNames(records);
-      return records.map(toRun).map((run) => ({
+      const runs = records.map(toRun);
+      const labels = await subjectLabels(runs, viewerUserId);
+      return runs.map((run) => ({
+        subjectLabel:
+          labels.get(`${run.subject.kind}:${run.subject.id}`) ?? null,
+        failureReason: run.failureReason,
         id: run.id,
         title: names.get(run.agentId) ?? run.agentId,
         status: run.status,

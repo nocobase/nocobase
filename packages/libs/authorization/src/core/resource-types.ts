@@ -13,6 +13,7 @@ import type {
 export interface ResourceItemAction {
   readonly name: string;
   readonly title?: AuthorizationTitle;
+  readonly description?: AuthorizationTitle;
 }
 
 /** One thing of a resource type that can be granted. */
@@ -127,7 +128,7 @@ function resolveItem(
       const title =
         value.title ??
         declared.find((entry) => entry.name === value.name)?.title;
-      return title === undefined ? { name: value.name } : { ...value, title };
+      return { ...value, ...(title === undefined ? {} : { title }) };
     },
   );
   return structuredClone({ ...item, actions });

@@ -2,6 +2,7 @@ packages:
   - packages/*/*
   - ui-library
   - docs
+  - skills/nocobase-app-plugin-development/assets/testing-example
 
 # Commands with --dry-run must not trigger an implicit install before their
 # own code can enforce read-only behavior. Dependency changes are synchronized
@@ -30,7 +31,6 @@ catalog:
   '@hono/node-server': ^2.1.1
   '@oclif/core': ^4.14.0
   '@playwright/test': ^1.62.1
-  '@refinedev/core': ^5.0.8
   '@sinclair/typebox': ^0.34.52
   '@tailwindcss/postcss': ^4.1.4
   '@tailwindcss/vite': ^4.1.8
@@ -61,7 +61,8 @@ catalog:
   '@vitejs/plugin-react': ^4.4.1
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/eslint-plugin': ^1.6.27
-  ai: ^7.0.127
+  ai: 7.0.128
+  '@ai-sdk/react': 4.0.131
   ajv: ^8.20.0
   better-auth: 1.7.5
   better-sqlite3: ^13.0.3
@@ -146,10 +147,6 @@ allowBuilds:
   oracledb: true
   esbuild: true
   tesseract.js: false
-  # Pulled in by @iconscout/unicons, the icon font the documentation site uses. Its build script only runs when
-  # unicons regenerates its own fonts; the .woff2 files ship in the published package, so compiling the native addon
-  # at install time produces nothing anything reads.
-  ttf2woff2: false
   '@parcel/watcher': false
   '@biomejs/biome': true
   '@swc/core': true
@@ -162,6 +159,9 @@ allowBuilds:
   # Arrives through swagger-ui-dist, a development dependency of @nocobase/app-server; its install script only
   # reports download analytics.
   '@scarf/scarf': false
+  # just-bash's optional archive codecs are outside the configured virtual command set.
+  '@mongodb-js/zstd': false
+  node-liblzma: false
 
 # Use msgpackr without its optional native accelerator or platform binary packages.
 ignoredOptionalDependencies:

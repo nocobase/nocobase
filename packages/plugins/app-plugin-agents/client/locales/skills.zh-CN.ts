@@ -3,6 +3,12 @@ import type skillsEnUS from './skills.en-US.js';
 const skillsZhCN: typeof skillsEnUS = {
   skills: {
     attachments: '挂载范围',
+    globalMount: '全局挂载',
+    globalMountDescription: '立即保存，之后所有项目的运行都会默认带上此技能。',
+    mountSaved: '挂载设置已保存。',
+    mountRetry: '无法加载设置，重试',
+    unavailableTarget: '不可用的挂载位置',
+    noAttachments: '尚未挂载。',
     title: '技能',
     description: '可复用的说明与配套文件，可挂为全局、项目或工作目录默认技能。',
     new: '新建技能',

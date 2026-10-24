@@ -1,9 +1,21 @@
 # @nocobase/app-client
 
-Browser application runtime for NocoBase v3. It provides the stateful
-`ClientApplication`, application-scoped services, static Client plugin
-composition, Refine integration, React tree composition, routes, locale
-resources, and public runtime configuration.
+Browser application runtime for NocoBase v3. It provides the stateful `ClientApplication`, application-scoped services, static Client plugin composition, React tree composition, routes, locale resources, and public runtime configuration.
+
+## Browser utilities
+
+```ts
+import { copyText, createUuid } from '@nocobase/app-client';
+
+const requestId = createUuid();
+const copied = await copyText('Text to copy');
+```
+
+`createUuid(): string` generates a cryptographically random UUID v4 with `crypto.getRandomValues`, including on LAN HTTP origins where `crypto.randomUUID` is unavailable.
+
+Call `copyText(text, options?): Promise<boolean>` directly from a user action. It uses the Clipboard API when available, falling back to selection-based copying if the API is absent or rejects the write. The fallback runs synchronously on HTTP to preserve user activation, removes its temporary text field and restores focus and selection. Pass `{ container: dialogElement }` for a focus trap whose trigger does not take focus; otherwise the helper uses the active element's nearest dialog or the document body.
+
+Only show a copied confirmation when the result is `true`. A `false` result means browser policy or unsupported copying prevented the operation: show the original text and localized manual-copy instructions. The helper does not render UI or request permissions itself. Its HTTP fallback uses deprecated `document.execCommand('copy')`, so browser verification and a manual-copy path remain necessary.
 
 ## Architecture
 
@@ -16,16 +28,12 @@ public HTML config + static declarations
           ├── config
           ├── ServiceContainer
           ├── ServiceProviders
-          ├── Refine configuration
           └── React render configuration
                     ↓
           start() → host render()
 ```
 
-The Client and Server use the same explicit `serviceProviders` term for
-application services and lifecycle. Client React tree contributions are named
-`reactProviders`, so they cannot be confused with ServiceProviders or with
-Refine properties such as `authProvider` and `dataProvider`.
+The Client and Server use the same explicit `serviceProviders` term for application services and lifecycle. Client React tree contributions are named `reactProviders`, so they cannot be confused with ServiceProviders.
 
 ## Application runtime declaration
 
@@ -83,13 +91,9 @@ await app.start();
 root.render(<AppClientRoot app={app} />);
 ```
 
-`app.start()` performs the complete ServiceProvider lifecycle and finalizes the
-Refine and render configuration. The Browser host owns the React root and
-renders `AppClientRoot` only after startup succeeds. During disposal, the host
-unmounts its React root and `app.shutdown()` shuts down providers in reverse
-order.
+`app.start()` performs the complete ServiceProvider lifecycle and finalizes the render configuration. The Browser host owns the React root and renders `AppClientRoot` only after startup succeeds. During disposal, the host unmounts its React root and `app.shutdown()` shuts down providers in reverse order.
 
-`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application, its React providers and Refine around the routes. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
+`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application and its React providers around the routes. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
 
 `new ClientApplication({ runtime, createRenderConfig, fetch })` sends the API client's requests through `fetch` instead of the global one. Production leaves it out; a test passes a server it runs in process. `resolveAppRuntime(definition, { i18n })` likewise runs the application on the i18n runtime it is given instead of building one from the locales; a test passes a strict one.
 
@@ -103,16 +107,9 @@ An application owns:
 - ServiceProvider instances and lifecycle state;
 - the HTTP API client binding under `apiClientToken`;
 - the WebSocket client binding under `realtimeClientToken`;
-- mutable `app.refine` setters during Provider lifecycle;
-- finalized `app.refineConfig` after startup;
 - finalized React render configuration consumed by `AppClientRoot`.
 
-The application owns a separate lazy realtime service under `realtimeClientToken`. By default,
-its WebSocket endpoint is the `/ws` sibling of `api.baseURL`; deployments with
-a different topology can set `api.realtimeURL` explicitly. Consumers that keep
-durable state should use `onOpen()` to refetch after the initial connection and
-reconnection. Topic events remain lightweight invalidation signals rather than
-authoritative state.
+The application owns a separate lazy realtime service under `realtimeClientToken`. Its default WebSocket endpoint is the `/ws` sibling of `api.baseURL`; deployments can set `api.realtimeURL` explicitly. Use a topic watch's `onReady` to refetch after the server acknowledges the initial subscription and each reconnection. Topic events remain lightweight invalidations; the API supplies authoritative state.
 
 Create an application directly when the default helper is sufficient:
 
@@ -120,11 +117,11 @@ Create an application directly when the default helper is sufficient:
 import { createApp } from '@nocobase/app-client';
 
 const app = createApp(runtime, (application) => {
-  const { runtime, refineConfig } = application;
+  const { runtime } = application;
   return {
     basename: runtime.basename,
     reactProviders: runtime.reactProviders.map(({ component }) => component),
-    routes: createRoutes(runtime.routes, refineConfig),
+    routes: createRoutes(runtime.routes),
   };
 });
 ```
@@ -171,10 +168,6 @@ export class AuditServiceProvider extends ServiceProvider<ClientApplication> {
     );
   }
 
-  public override async boot(): Promise<void> {
-    this.app.refine.setLiveProvider(createLiveProvider());
-  }
-
   public override async shutdown(): Promise<void> {
     await this.app.container.resolve(auditToken).close();
   }
@@ -186,16 +179,13 @@ The lifecycle order inside `app.start()` is:
 ```text
 register all
 → boot all
-→ finalize Refine and render configuration
+→ finalize render configuration
 → validate authenticated-route prerequisites and Runtime
 → start all
 → ready all
 ```
 
 Startup failure triggers reverse cleanup for providers that entered lifecycle.
-Async hooks retain the owning Provider context, so `this.app.refine` remains
-valid across `await` while the hook is running. Outside Provider lifecycle,
-read the finalized `app.refineConfig` instead of mutating `app.refine`.
 
 React components and custom Hooks can obtain the application's HTTP client with `useApiClient()`:
 
@@ -285,7 +275,7 @@ Each form reports `useUnsavedChanges(dirty)`, where dirty means a field differs 
 
 ## Page navigation guards
 
-`AppClientProviders` includes a stable `NavigationGuardProvider` below its router. A page calls `useNavigationGuard(() => !pending && (!dirty || window.confirm(message)))` to register its synchronous leave decision. The host scopes PUSH and REPLACE to its descendants and holds the accepted route during rejected history traversal, preserving the mounted editor even when the browser has already notified its router. The callback should read the latest committed state; unregistering happens on unmount. Keep `beforeunload` separate and subscribe only while dirty or pending, since document navigation is outside the client router. A custom host using `AppClientProviders` gets the boundary automatically; one composing its own router/providers must mount `NavigationGuardProvider` above its routes.
+`AppClientProviders` includes a stable `NavigationGuardProvider` below its router. A page calls `useNavigationGuard(() => !pending && (!dirty || guard.confirmDiscard()))` to register a leave decision returning a boolean or a promise of one, with the page rendering its existing unsaved-changes confirmation boundary. An asynchronous PUSH or REPLACE waits for the decision; concurrent link requests share the pending decision, and an answer from a superseded or unmounted boundary cannot navigate. A rejected promise declines navigation. The host scopes PUSH and REPLACE to its descendants and holds the accepted route during rejected history traversal, preserving the mounted editor even when the browser has already notified its router. The callback should read the latest committed state; unregistering happens on unmount. Keep `beforeunload` separate and subscribe only while dirty or pending, since document navigation is outside the client router. A custom host using `AppClientProviders` gets the boundary automatically; one composing its own router/providers must mount `NavigationGuardProvider` above its routes.
 
 Index-based restoration is limited to entries observed in the same continuous history segment. For native hash entries or entries outside that segment, including history predating the mounted boundary, rejecting navigation replaces the current history entry with the accepted location instead of guessing a traversal distance. The draft remains mounted and subsequent navigation remains available, but the rejected history entry is replaced.
 
@@ -312,12 +302,7 @@ const reactProviders: readonly AppClientReactProviderDefinition[] =
 export default reactProviders;
 ```
 
-React Providers are ordered outer-to-inner by layer and explicit `before`/`after`
-constraints. Their components render only when the Browser host renders
-`AppClientRoot` for a started application. Use a
-Wrapper for React Context or tree-local UI behavior; use a ServiceProvider for
-application services, Container bindings, Refine setup, connections, listeners,
-and lifecycle cleanup.
+React Providers are ordered outer-to-inner by layer and explicit `before`/`after` constraints. Their components render only when the Browser host renders `AppClientRoot` for a started application. Use a Wrapper for React Context or tree-local UI behavior; use a ServiceProvider for application services, Container bindings, connections, listeners, and lifecycle cleanup.
 
 ## Routes and locale resources
 
@@ -421,6 +406,16 @@ plugins that consume the changed fields.
 
 ## Authorization
 
-Application authorization is provided by `@nocobase/app-plugin-authorization/client`. Use `useCan` for reactive visibility checks and `useAuthorizationClient` or `authorizationClientToken` for the current application client. `AppClientRefineConfig` excludes `accessControlProvider`, and the Refine registry has no `setAccessControlProvider` setter.
+Application authorization is provided by `@nocobase/app-plugin-authorization/client`. Use `useCan` for reactive visibility checks and `useAuthorizationClient` or `authorizationClientToken` for the current application client.
 
 Client route authentication uses `auth: 'required' | 'guest' | 'optional'`. Authorization uses `authz: 'skip' | 'unrestricted' | { resource: { type, id }, action }`. Declare it on the first page of every path. A nested page that omits it inherits the effective value of its nearest ancestor page, through any number of groups and levels, and a child that declares its own value overrides it for its subtree. A first page that omits it never stops the application: protected pages (`auth: 'required'`) default to `'unrestricted'`, which admits only identities with unrestricted access such as root and hides the page from everyone else's menus, while `guest` and `optional` pages default to `'skip'`. Development builds log one warning per defaulted page naming its id, path and default; production logs nothing. `'unrestricted'` may also be declared explicitly for a root-only page, and it is never offered as a grant. `'skip'` applies only to the current page and does not bypass parent guards. Route groups cannot declare `authz`. Malformed values, the removed `access` field and string resource declarations are rejected.
+
+## Acknowledged realtime subscriptions
+
+Use `useRealtimeTopic(topic, onEvent, { onReady, onError, enabled })` for payload-driven updates, `useRealtimeRefresh(topic, refresh, { enabled, delayMs })` for coalesced API refreshes, and `useRealtimeConnectionState()` to observe the transport. A null topic or `enabled: false` releases the component's subscription. `onReady` runs after the server acknowledges this topic, including reconnects; transport `onOpen` alone does not prove subscription success. Return the refresh promise so events arriving during that read schedule a follow-up instead of cancelling it. The non-React `createRealtimeRefresh(refresh)` helper exposes `request()` and `close()` with the same burst and visibility handling.
+
+The host's client also exposes `watch(topic, callbacks)`, which returns a handle with `state`, `error`, `retry()` and `close()`. The existing `subscribe()` cleanup API remains available. See the [Realtime usage and migration guide](../../libs/realtime/README.md) for server declarations, personal and resource-authorized topics, identity changes, failure handling and delivery limits.
+
+## Inspecting registered plugins
+
+`runtime.registeredPlugins` is a frozen list of explicit Client plugin package names, including plugins that contribute only locales or services. It contains no plugin options or executable contributions. It describes registration, not configuration or actual use; older hand-composed runtimes may omit it.

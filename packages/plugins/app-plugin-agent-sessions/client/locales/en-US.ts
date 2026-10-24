@@ -5,6 +5,7 @@ const enUS = {
   navigation: { agentSessions: 'My agents' },
   actions: { close: 'Close', copy: 'Copy', cancel: 'Cancel' },
   status: {
+    permission: 'Waiting for your permission',
     loading: 'Loading',
     offline: 'Computer offline',
     waiting: 'Needs you',
@@ -16,9 +17,13 @@ const enUS = {
     sessionNotFound: 'This session does not exist, or it is not yours.',
   },
   list: {
+    panelEmpty: 'No conversations',
+    expand: 'Show sessions',
     label: 'Sessions',
     title: 'My agents',
     archived: 'Archived',
+    archivedView:
+      'Choose an archived session to read it. Your open session and unsent draft are kept.',
     back: 'Back to sessions',
     new: 'New session',
     search: 'Search sessions',
@@ -67,9 +72,12 @@ const enUS = {
     left: '{{keys}} left in {{status}}',
     separator: ', ',
     comma: ', ',
+    waiting: 'Needs you {{count}}',
     unknown: 'Unknown',
   },
   newSession: {
+    sendUnconfirmed:
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
     settingsOutdated:
       'This computer\'s command line is too old for this application. Update it there, as "My computers" shows.',
     settingsOffline:
@@ -77,13 +85,11 @@ const enUS = {
     settingsLoading: 'Loading settings…',
     settingsFailed: 'Could not load agent settings.',
     settingsRetry: 'Retry settings',
+    settingsReset: 'Use agent defaults',
     settingsUnsupported:
       'This agent does not expose settings. Its defaults will be used.',
     settingsEmpty:
       'This agent has no configurable settings. Its defaults will be used.',
-    title: 'New session',
-    subtitle:
-      'Discuss and clarify requirements with an agent on your own computer, record tasks, and follow progress here. Studio’s project manager coordinates agents to develop tasks after you start them.',
     pickComputer: 'Choose a computer',
     noAgent: 'No agent available',
     folder: 'Directory on the computer',
@@ -99,7 +105,7 @@ const enUS = {
       'Run this on the computer to keep it connected from every login.',
     noAgentTitle: 'No agent is ready on this computer',
     noAgentHint:
-      'Install any of them there and sign in with its own command; it shows up here within a minute, without connecting again.',
+      'Install any of them there and sign in with its own command. The bridge checks every minute and lists it after setup and startup succeed, without connecting again.',
     supported: 'Supported: {{names}}',
     failedAgent: '{{name}} could not start: {{detail}}',
     modelHint:
@@ -109,7 +115,7 @@ const enUS = {
     agents: 'Agents on this computer',
     availableAgents: 'Available agents',
     agentsHint:
-      'Only the agents installed on this computer are listed; one installed and signed in later shows up within a minute.',
+      'Only installed agents are listed. The bridge checks every minute; setup and startup must finish before an agent is ready.',
     alsoSupported: 'Also supported: {{names}}',
     thisComputer: 'This computer',
     recentFolders: 'Recently used',
@@ -125,11 +131,17 @@ const enUS = {
     noProject: 'No project',
   },
   session: {
+    info: 'Session info',
     archived: 'This session is archived. Restore it to continue.',
     offline: '{{computer}} is offline',
     offlineBody:
       'The conversation and its tasks are kept here to read as usual. The session continues once the computer is back.',
     working: 'The agent is working…',
+    startup: {
+      starting: 'Starting the agent on your computer…',
+      opening: 'Opening the agent’s session…',
+      configuring: 'Applying settings…',
+    },
     answering: 'Answering',
     asking: 'Needs your approval',
     stop: 'Stop',
@@ -155,6 +167,13 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    unconfirmed:
+      'Delivery is unconfirmed. Retry the original submission, or edit as a new message (the original may already have arrived).',
+    retrySubmission: 'Retry original submission',
+    editAsNew: 'Edit as new message',
+    sendUnconfirmed:
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
+    sending: 'Sending…',
     expand: 'Expand input',
     collapse: 'Collapse input',
     placeholder: 'Reply, or ask for the next thing…',
@@ -166,6 +185,8 @@ const enUS = {
     queue: 'Send after this turn',
     addImage: 'Add images',
     removeImage: 'Remove image',
+    attached: 'Goes with the message',
+    removeAttached: 'Remove {{name}}',
     commands: 'The agent’s commands',
     mentions: 'Mention a task',
     keys: {
@@ -176,6 +197,7 @@ const enUS = {
     },
   },
   choices: { more: 'More options' },
+  panel: { fullScreen: 'Open full page' },
   transcript: {
     image: {
       open: 'Open image preview',
@@ -187,6 +209,19 @@ const enUS = {
     thought: 'Thinking',
     plan: 'Plan {{done}}/{{total}}',
     prompt: {
+      withdrawing: 'Withdrawing, waiting for computer confirmation',
+      withdrawn: 'Withdrawn',
+      withdraw: 'Withdraw',
+      retry: 'Retry',
+      copy: 'Copy',
+      edit: 'Edit and send again',
+      editBody:
+        'Edit this message in a separate draft. Your current draft stays as it is.',
+      attachmentError:
+        'Could not load the original attachments. Retry before editing.',
+      loading: 'Loading message and attachments…',
+      unsupported:
+        'This older message cannot be safely withdrawn. Update the command line and restart the computer connection.',
       queued: 'Queued, sent when this turn ends',
       cancelled: 'Cancelled',
       failed: 'Not answered',
@@ -265,6 +300,8 @@ const enUS = {
     remove: 'Remove',
     confirmRemove: 'Remove it',
     problems: { notInstalled: 'not installed', failed: 'could not start' },
+    recheckHint:
+      'While connected, the bridge automatically checks agents again every minute.',
     ready: 'Ready',
     name: 'Name',
     system: 'System',
@@ -285,7 +322,6 @@ const enUS = {
       agent: 'Install a coding agent and sign in to it',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI and more: sign in with its own command. Use the strongest model you can.',
-      install: 'Install the command line',
       login: 'Sign in with your account',
       start: 'Keep this computer connected',
       startHint:

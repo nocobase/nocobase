@@ -7,13 +7,10 @@
 //
 // - heartbeat, per application, every 15 s: reports the tools, that application's active runs and the free slots; the
 //   answer names the runs whose cancel was requested, and the supervisor makes sure their workers stop;
-// - claim: while a slot is free, asks for work. The slots are shared by every application, and so are the limits per
-//   coding tool (`settings.toolSlots`): each claim says how many runs of each limited tool the runner can still take
-//   (`ClaimRequest.tools`), and the heartbeat reports them (`load.tools`). With one application the
-//   claim long-polls (`POST /api/agents/runners/claim?wait=true`, held up to 25 s); an empty answer that came back early means the
-//   server does not hold the poll, so the loop waits out the rest of the 15 s fallback interval. With several, the
-//   claims rotate across them without waiting, starting each round with the application after the one that last had
-//   work, and a round that found nothing waits a few seconds.
+// - claim: asks for work within each application's last heartbeat capacity. Runs and jobs share that application's
+//   allowance; tool limits count only its own runs. A single application's claim long-polls up to 25 seconds.
+//   With several applications, claims rotate without waiting. Capacity changes wake full-slot and fallback waits;
+//   outstanding polls keep their leases and the next request recomputes the allowance.
 //
 // - collect working directories, an hour after the last collection ended (sooner when an application asks, at once when
 //   the disk runs low): the retention rules, then a report to every application whose heartbeat answer accepts one,
@@ -41,6 +38,9 @@ import { detectionEnv, providedNames } from '../agent/env.ts';
 import type { loadAdapters } from '../agent/adapters/registry.ts';
 import {
   readConnection,
+  writeConnection,
+  markRevoked,
+  type RevocationReason,
   passEnvNames,
   dropWorkspaceLimit,
   artifactPatterns,
@@ -48,6 +48,7 @@ import {
   minFreeDisk,
   modelListOverrides,
   readSettings,
+  writeSettings,
   runnerClient,
   type AppConnection,
   type RunnerSettings,
@@ -60,6 +61,7 @@ import {
 } from '../lib/home.ts';
 import { backoff, delay, ApiError, type ApiClient } from '../lib/http.ts';
 import {
+  EXIT_CODES,
   ClaimResponseSchema,
   type ClaimResponse,
   HeartbeatResponseSchema,
@@ -74,12 +76,12 @@ import {
   type RunnerFeature,
   type ToolInfo,
   type ToolLoad,
-  type ToolSlots,
+  type RunnerCapacity,
   type AgentTool,
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
 import { gcRunTemps } from './run-temp.ts';
-import { gcWorkspaces } from './checkout.ts';
+import { gcWorkspaces, WorkspaceBusyError } from './checkout.ts';
 import { prunePnpmStore } from './pnpm-store.ts';
 import {
   collectWorkspaces,
@@ -114,7 +116,7 @@ import {
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
-import { ToolCapabilitiesCache, detectTools } from './tool-capabilities.ts';
+import { ToolCapabilitiesCache } from './tool-capabilities.ts';
 export { detectTools } from './tool-capabilities.ts';
 import { reportedModels } from './model-list.ts';
 
@@ -138,6 +140,8 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'mounts',
   // Repository credentials asked for whenever git needs one (agent/git-credentials.ts).
   'gitCredentials',
+  // Code host CLI wrappers with the run's credential (agent/host-tools.ts).
+  'gitTools',
   // Updates from the npm registry (`npmUpgrade` in heartbeat answers; update.ts).
   NPM_UPGRADE_FEATURE,
 ];
@@ -176,9 +180,6 @@ export interface DaemonOptions {
   adapters: Map<AgentTool, AgentAdapter>;
   /** Fresh adapters for each application's detection environment; the supplied adapters otherwise (tests). */
   adaptersFor?: typeof loadAdapters;
-  slots?: number;
-  /** Limits per coding tool for this start; the settings' otherwise. */
-  toolSlots?: ToolSlots;
   timings?: Timings;
   log: (message: string) => void;
   /** Overrides the client built for a registration, by its key; for tests. */
@@ -208,7 +209,14 @@ interface AppLink {
   revoked: boolean;
   /** The application cannot work with this runner's protocol: heartbeats only, no claims. */
   upgradeRequired: boolean;
+  /** Fetch the server selection before the first inspection after a daemon restart. */
+  selectionConfirmed?: boolean;
   heartbeatTimer?: NodeJS.Timeout;
+  heartbeatInFlight?: Promise<void>;
+  capacity?: RunnerCapacity;
+  capacitySource?: 'online' | 'legacyLocal';
+  heartbeatHealthy?: boolean;
+  capacityReportedAt?: string;
   /** The owner's local policy for this application, as last read (every heartbeat and claim reads it again). */
   policy?: PolicyReport;
   /** Detection is cached only for this application and refreshed when its effective variables change. */
@@ -230,8 +238,9 @@ export class RunnerDaemon {
   private readonly options: DaemonOptions;
   private readonly links: AppLink[];
   private readonly timings: Timings;
-  private readonly slots: number;
-  private readonly toolSlots: ToolSlots;
+  private wakeController = new AbortController();
+  private readonly startedAt = new Date().toISOString();
+  private snapshotWrite: Promise<void> = Promise.resolve();
   private readonly supervisor: Supervisor;
   private readonly stopping = new AbortController();
   private slotFreed: (() => void) | undefined;
@@ -263,6 +272,8 @@ export class RunnerDaemon {
   private readonly protocolNoticed = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
+  private revocationFailed = false;
+  private readonly revocations = new Set<Promise<void>>();
 
   constructor(options: DaemonOptions) {
     this.options = options;
@@ -272,12 +283,10 @@ export class RunnerDaemon {
       client:
         options.clients?.get(connection.registration.key) ??
         runnerClient(connection),
-      revoked: false,
+      revoked: connection.registration.revoked !== undefined,
       upgradeRequired: false,
     }));
     this.timings = options.timings ?? {};
-    this.slots = Math.max(1, options.slots ?? options.settings.slots);
-    this.toolSlots = options.toolSlots ?? options.settings.toolSlots ?? {};
     this.supervisor = new Supervisor({
       paths: options.paths,
       clientFor: (key) => this.links.find((link) => link.key === key)?.client,
@@ -291,8 +300,10 @@ export class RunnerDaemon {
     });
   }
 
-  /** How the process exits once the daemon has stopped: `RESTART_EXIT_CODE` when it updated itself, 0 otherwise. */
+  /** Authentication stops permanently; an update asks the service to restart. */
   get exitCode(): number {
+    if (this.revocationFailed) return EXIT_CODES.general;
+    if (this.live.length === 0) return EXIT_CODES.auth;
     return this.updatedTo === undefined ? 0 : RESTART_EXIT_CODE;
   }
 
@@ -300,27 +311,74 @@ export class RunnerDaemon {
     return [...this.supervisor.runs.keys()];
   }
 
-  /** The coding tools it keeps a limit of their own for. */
-  private get limitedTools(): AgentTool[] {
-    return (Object.keys(this.toolSlots) as AgentTool[]).filter(
-      (tool) => this.toolSlots[tool] !== undefined,
+  private held(link: AppLink, tool?: AgentTool): number {
+    return [...this.supervisor.runs.values()].filter(
+      (run) =>
+        run.appKey === link.key && (tool === undefined || run.tool === tool),
+    ).length;
+  }
+
+  private free(link: AppLink): number {
+    return Math.max(0, (link.capacity?.slots ?? 0) - this.held(link));
+  }
+
+  private toolLimit(link: AppLink, tool: AgentTool): number {
+    const capacity = link.capacity!;
+    return Math.min(capacity.toolSlots[tool] ?? capacity.slots, capacity.slots);
+  }
+
+  toolRoom(link: AppLink): Partial<Record<AgentTool, number>> {
+    return Object.fromEntries(
+      Object.keys(link.capacity?.toolSlots ?? {}).map((tool) => [
+        tool,
+        Math.max(
+          0,
+          this.toolLimit(link, tool as AgentTool) -
+            this.held(link, tool as AgentTool),
+        ),
+      ]),
     );
   }
 
-  /** How many runs of `tool` it holds at most: its limit, never above the total. */
-  private toolLimit(tool: AgentTool): number {
-    return Math.min(this.toolSlots[tool] ?? this.slots, this.slots);
+  private wake(): void {
+    this.slotFreed?.();
+    this.wakeController.abort();
+    this.wakeController = new AbortController();
   }
 
-  /** How many runs of each limited tool it could take now, across every application. */
-  toolRoom(): Partial<Record<AgentTool, number>> {
-    const room: Partial<Record<AgentTool, number>> = {};
-    for (const tool of this.limitedTools)
-      room[tool] = Math.max(
-        0,
-        this.toolLimit(tool) - this.supervisor.heldOf(tool),
-      );
-    return room;
+  private pause(ms: number): Promise<void> {
+    return delay(
+      ms,
+      AbortSignal.any([this.stopping.signal, this.wakeController.signal]),
+    );
+  }
+
+  private saveCapacity(): Promise<void> {
+    const snapshot = {
+      pid: process.pid,
+      startedAt: this.startedAt,
+      apps: Object.fromEntries(
+        this.live.map((link) => [
+          link.key,
+          {
+            ...link.capacity,
+            toolSlots: Object.fromEntries(
+              Object.keys(link.capacity?.toolSlots ?? {}).map((tool) => [
+                tool,
+                this.toolLimit(link, tool as AgentTool),
+              ]),
+            ),
+            source: link.capacitySource,
+            connected: link.heartbeatHealthy === true,
+            reportedAt: link.capacityReportedAt,
+          },
+        ]),
+      ),
+    };
+    this.snapshotWrite = this.snapshotWrite
+      .catch(() => undefined)
+      .then(() => writeJsonAtomic(this.options.paths.capacity, snapshot));
+    return this.snapshotWrite;
   }
 
   private get live(): AppLink[] {
@@ -329,7 +387,12 @@ export class RunnerDaemon {
 
   /** The applications that may hand this runner work. */
   private get claimable(): AppLink[] {
-    return this.live.filter((link) => !link.upgradeRequired);
+    return this.live.filter(
+      (link) =>
+        !link.upgradeRequired &&
+        link.heartbeatHealthy === true &&
+        link.capacity !== undefined,
+    );
   }
 
   /** Records whether `link`'s application can work with this runner, logging each change. */
@@ -340,6 +403,7 @@ export class RunnerDaemon {
   ): void {
     if (link.upgradeRequired === required) return;
     link.upgradeRequired = required;
+    this.wake();
     this.options.log(
       required
         ? `${link.key}: upgrade required, claiming nothing until then: ${message ?? 'the application does not serve this runner protocol'}`
@@ -358,18 +422,27 @@ export class RunnerDaemon {
     await ensureHome(paths);
     await writeJsonAtomic(paths.daemonPid, {
       pid: process.pid,
-      startedAt: new Date().toISOString(),
+      startedAt: this.startedAt,
     } satisfies DaemonPid);
+    if (this.live.length === 0) {
+      await this.stop('RUNNER_REVOKED');
+      return;
+    }
     await installGitHooks(paths.hooksDir);
     log(
-      `runner ${this.options.settings.name} starting for ${this.links
-        .map(
-          (link) =>
-            `${link.connection.registration.app.name || link.key} (${link.connection.registration.runnerId})`,
-        )
-        .join(
-          ', ',
-        )}; ${this.slots} slot(s)${this.limitedTools.length > 0 ? ` (${this.limitedTools.map((tool) => `${tool} ${this.toolLimit(tool)}`).join(', ')})` : ''}`,
+      'runner ' +
+        this.options.settings.name +
+        ' starting for ' +
+        this.links
+          .map(
+            (link) =>
+              (link.connection.registration.app.name || link.key) +
+              ' (' +
+              link.connection.registration.runnerId +
+              ')',
+          )
+          .join(', ') +
+        '; capacity is configured separately in each application',
     );
     if (await dropWorkspaceLimit(paths).catch(() => false))
       log(
@@ -386,8 +459,10 @@ export class RunnerDaemon {
       log(
         `recovered ${recovered.length} orphaned run(s): ${recovered.join(', ')}`,
       );
-    for (const link of this.links) {
+    for (const link of this.live) {
       await this.heartbeat(link);
+      if (this.stopping.signal.aborted) return;
+      if (link.revoked) continue;
       link.heartbeatTimer = setInterval(
         () => void this.heartbeat(link),
         this.timings.heartbeatIntervalMs ??
@@ -414,6 +489,7 @@ export class RunnerDaemon {
     this.stopped ??= (async () => {
       this.options.log(`runner stopping: ${reason}`);
       this.stopping.abort();
+      this.wake();
       await Promise.allSettled(
         this.links.map(async (link) => {
           link.detection?.controller.abort();
@@ -426,7 +502,14 @@ export class RunnerDaemon {
           clearInterval(link.heartbeatTimer);
       if (this.gcTimer !== undefined) clearInterval(this.gcTimer);
       await this.claimLoop?.catch(() => undefined);
+      await Promise.all(this.revocations);
       await this.supervisor.stopAll();
+      await Promise.allSettled(
+        this.links.flatMap((link) =>
+          link.heartbeatInFlight ? [link.heartbeatInFlight] : [],
+        ),
+      );
+      await this.snapshotWrite.catch(() => undefined);
       await this.collecting;
       const pid = await readJson<DaemonPid>(this.options.paths.daemonPid).catch(
         () => undefined,
@@ -478,23 +561,42 @@ export class RunnerDaemon {
       this.options.settings;
     const passEnv = passEnvNames(settings.passEnv);
     const localVariables = (stored ?? link.connection).registration.variables;
+    const selected = link.selectionConfirmed
+      ? (link.connection.registration.enabledTools ?? [])
+      : [];
     const key = createHash('sha256')
       .update(
-        JSON.stringify(
+        JSON.stringify([
+          selected,
           Object.entries(
             detectionEnv(process.env, passEnv, localVariables),
           ).sort(([a], [b]) => a.localeCompare(b)),
-        ),
+        ]),
       )
       .digest('hex');
     if (link.detection?.key !== key) {
       const previous = link.detection;
       previous?.controller.abort();
       const controller = new AbortController();
-      const adaptersFor = () =>
-        this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
-        this.options.adapters;
-      const tools = detectTools(adaptersFor(), controller.signal);
+      const adaptersFor = () => {
+        const adapters =
+          this.options.adaptersFor?.(
+            process.env,
+            passEnv,
+            localVariables,
+            selected,
+          ) ?? this.options.adapters;
+        return new Map(
+          [...adapters].filter(([kind]) => selected.includes(kind)),
+        );
+      };
+      const tools = Promise.resolve(
+        selected.map((kind): ToolInfo => ({
+          kind,
+          authenticated: false,
+          status: 'checking',
+        })),
+      );
       link.detection = {
         key,
         controller,
@@ -542,6 +644,7 @@ export class RunnerDaemon {
       const startedAt = Date.now();
       log('gc: collection started');
       try {
+        while (this.claimsInFlight > 0) await delay(20, this.stopping.signal);
         const settings = await readSettings(paths);
         const reporters = new Map<
           string,
@@ -671,17 +774,52 @@ export class RunnerDaemon {
   }
 
   /** The application's key was refused: stop serving it, and stop the daemon when none is left. */
-  private revoke(link: AppLink, code: string, message: string): void {
+  private async revoke(
+    link: AppLink,
+    code: string,
+    message: string,
+  ): Promise<void> {
     if (link.revoked) return;
     link.revoked = true;
     if (link.heartbeatTimer !== undefined) clearInterval(link.heartbeatTimer);
     this.options.log(`${link.key}: ${code}: ${message}`);
+    const saving = markRevoked(
+      link.connection.registration,
+      code as RevocationReason,
+      this.options.paths,
+    ).catch((error: unknown) => {
+      this.revocationFailed = true;
+      this.options.log(
+        `${link.key}: failed to save revocation: ${String(error)}`,
+      );
+    });
+    this.revocations.add(saving);
+    await saving;
+    this.revocations.delete(saving);
     if (this.live.length === 0) void this.stop(code);
   }
 
-  async heartbeat(link: AppLink): Promise<void> {
+  heartbeat(link: AppLink): Promise<void> {
+    link.heartbeatInFlight ??= this.sendHeartbeat(link).finally(() => {
+      link.heartbeatInFlight = undefined;
+    });
+    return link.heartbeatInFlight;
+  }
+
+  /**
+   * Sends a heartbeat that reflects the state from now on: one already in flight may have read its load before a change
+   * (such as a pending update), so it is awaited first rather than joined, keeping one heartbeat per application at a
+   * time.
+   */
+  private async reportNow(link: AppLink): Promise<void> {
+    while (link.heartbeatInFlight !== undefined) await link.heartbeatInFlight;
+    await this.heartbeat(link);
+  }
+
+  private async sendHeartbeat(link: AppLink): Promise<void> {
     if (this.stopping.signal.aborted || link.revoked) return;
     const { log } = this.options;
+    let capacityChanged = false;
     const held = [...this.supervisor.runs.values()].filter(
       (run) => run.appKey === link.key,
     );
@@ -729,20 +867,28 @@ export class RunnerDaemon {
               ? { draining: 'updatePending' as const }
               : this.pruning
                 ? { draining: 'pruning' as const }
-                : {}),
-            slots: this.slots,
+                : this.diskPaused
+                  ? { draining: 'diskLow' as const }
+                  : {}),
+            slots: link.capacity?.slots ?? 0,
+            ...(link.capacitySource
+              ? { capacitySource: link.capacitySource }
+              : {}),
             free:
-              this.pendingUpdate || this.pruning
+              this.pendingUpdate || this.pruning || this.diskPaused
                 ? 0
-                : Math.max(0, this.slots - this.supervisor.size),
-            ...(this.limitedTools.length > 0
+                : this.free(link),
+            ...(Object.keys(link.capacity?.toolSlots ?? {}).length > 0
               ? {
                   tools: Object.fromEntries(
-                    Object.entries(this.toolRoom()).map(([tool, free]) => [
+                    Object.entries(this.toolRoom(link)).map(([tool, free]) => [
                       tool,
                       {
-                        slots: this.toolLimit(tool as AgentTool),
-                        free: this.pendingUpdate || this.pruning ? 0 : free,
+                        slots: this.toolLimit(link, tool as AgentTool),
+                        free:
+                          this.pendingUpdate || this.pruning || this.diskPaused
+                            ? 0
+                            : (free ?? 0),
                       } satisfies ToolLoad,
                     ]),
                   ),
@@ -753,11 +899,52 @@ export class RunnerDaemon {
         HeartbeatResponseSchema,
         { timeoutMs: 10_000 },
       );
+      const capacity = response.capacity ??
+        link.capacity ?? {
+          slots: this.options.settings.slots ?? 4,
+          toolSlots: this.options.settings.toolSlots ?? {},
+        };
+      const source =
+        response.capacity !== undefined || link.capacitySource === 'online'
+          ? 'online'
+          : 'legacyLocal';
+      capacityChanged =
+        JSON.stringify(link.capacity) !== JSON.stringify(capacity) ||
+        link.capacitySource !== source;
+      if (!link.heartbeatHealthy) this.wake();
+      link.heartbeatHealthy = true;
+      link.capacityReportedAt = new Date().toISOString();
+      link.capacity = capacity;
+      link.capacitySource = source;
+      if (capacityChanged) {
+        this.wake();
+      }
+      if (
+        this.live.every((app) => app.capacitySource === 'online') &&
+        (settings.slots !== undefined || settings.toolSlots !== undefined)
+      ) {
+        const currentSettings = await readSettings(this.options.paths);
+        delete currentSettings.slots;
+        delete currentSettings.toolSlots;
+        await writeSettings(currentSettings, this.options.paths);
+      }
       this.setUpgradeRequired(
         link,
         response.compatibility !== undefined,
         response.compatibility?.message,
       );
+      if (response.enabledTools !== undefined) link.selectionConfirmed = true;
+      if (
+        response.enabledTools !== undefined &&
+        JSON.stringify(response.enabledTools) !==
+          JSON.stringify(link.connection.registration.enabledTools)
+      ) {
+        link.connection.registration.enabledTools = response.enabledTools;
+        await writeConnection(link.connection, this.options.paths);
+      }
+      if (response.detectTools) {
+        (await link.detection?.capabilities)?.invalidate();
+      }
       link.workspaceReporting = response.workspaces;
       const { upgrade, npmUpgrade } = response;
       if (upgrade !== undefined)
@@ -791,8 +978,10 @@ export class RunnerDaemon {
       for (const jobId of response.jobs?.release ?? [])
         void this.supervisor.release(jobRecordKey(jobId));
     } catch (error) {
+      link.heartbeatHealthy = false;
+      this.wake();
       if (error instanceof ApiError && REVOKED.has(error.reason)) {
-        this.revoke(link, error.reason, error.message);
+        await this.revoke(link, error.reason, error.message);
         return;
       }
       if (error instanceof ApiError && error.reason === UNSUPPORTED) {
@@ -803,6 +992,11 @@ export class RunnerDaemon {
         `${link.key}: heartbeat failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+    await this.saveCapacity().catch((error: unknown) =>
+      log('Could not save capacity status: ' + String(error)),
+    );
+    if (capacityChanged && !this.stopping.signal.aborted && !link.revoked)
+      await this.sendHeartbeat(link);
   }
 
   /**
@@ -872,7 +1066,7 @@ export class RunnerDaemon {
       return;
     this.updating = true;
     try {
-      const reported = Promise.all(this.live.map((app) => this.heartbeat(app)));
+      await Promise.all(this.live.map((app) => this.reportNow(app)));
       const cancellations = new Map<string, Promise<void>>();
       const interruptAgents = (): void => {
         for (const run of this.supervisor.runs.values()) {
@@ -891,7 +1085,7 @@ export class RunnerDaemon {
       }
       interruptAgents();
       await Promise.all(cancellations.values());
-      await reported;
+
       // Background jobs retain their existing completion semantics.
       if (this.supervisor.size > 0 || this.stopping.signal.aborted) return;
       await (selfUpdate.apply ?? applyUpdate)({
@@ -923,6 +1117,9 @@ export class RunnerDaemon {
     wait: boolean,
   ): Promise<number> {
     if (
+      !link.heartbeatHealthy ||
+      link.revoked ||
+      link.upgradeRequired ||
       this.pendingUpdate ||
       this.pruning ||
       this.holdingForPrune ||
@@ -936,6 +1133,9 @@ export class RunnerDaemon {
     );
     if (
       this.holdingForPrune ||
+      !link.heartbeatHealthy ||
+      link.revoked ||
+      link.upgradeRequired ||
       this.pendingUpdate ||
       this.pruning ||
       this.diskPaused ||
@@ -948,7 +1148,11 @@ export class RunnerDaemon {
     }
     this.claimsInFlight += 1;
     try {
-      return await this.claimAndStart(link, free, wait);
+      return await this.claimAndStart(
+        link,
+        Math.min(free, this.free(link)),
+        wait,
+      );
     } finally {
       this.claimsInFlight -= 1;
       if (this.claimsInFlight === 0) {
@@ -971,7 +1175,9 @@ export class RunnerDaemon {
       RUNNER_ROUTES.claim,
       {
         free,
-        ...(this.limitedTools.length > 0 ? { tools: this.toolRoom() } : {}),
+        ...(Object.keys(link.capacity?.toolSlots ?? {}).length > 0
+          ? { tools: this.toolRoom(link) }
+          : {}),
       },
       ClaimResponseSchema,
       {
@@ -1020,7 +1226,11 @@ export class RunnerDaemon {
     }
     for (const payload of response.runs) {
       if (this.stopping.signal.aborted) break;
-      const refused = refuseRun(policy.policy, payload);
+      const refused = !(
+        link.connection.registration.enabledTools ?? []
+      ).includes(payload.tool.kind)
+        ? 'The coding tool is disabled for this runner.'
+        : refuseRun(policy.policy, payload);
       if (refused !== undefined) {
         this.options.log(`run ${payload.run.id}: refused: ${refused}`);
         await link.client
@@ -1033,17 +1243,22 @@ export class RunnerDaemon {
         continue;
       }
       // An application that does not know limits per tool may hand over a run of a full tool: it runs all the same.
-      const limit = this.toolSlots[payload.tool.kind];
+      const limit = link.capacity?.toolSlots[payload.tool.kind];
       if (
         limit !== undefined &&
-        this.supervisor.heldOf(payload.tool.kind) >=
-          this.toolLimit(payload.tool.kind)
+        this.held(link, payload.tool.kind) >=
+          this.toolLimit(link, payload.tool.kind)
       )
         this.options.log(
-          `run ${payload.run.id}: ${payload.tool.kind} is over its limit of ${this.toolLimit(payload.tool.kind)}; ${link.key} does not apply limits per tool`,
+          `run ${payload.run.id}: ${payload.tool.kind} is over its limit of ${this.toolLimit(link, payload.tool.kind)}; ${link.key} does not apply limits per tool`,
         );
       try {
-        await this.supervisor.spawn(link.key, payload);
+        const tools = (await link.detection?.capabilities)?.tools;
+        await this.supervisor.spawn(
+          link.key,
+          payload,
+          tools?.find((tool) => tool.kind === payload.tool.kind)?.version,
+        );
       } catch (error) {
         this.options.log(
           `run ${payload.run.id}: could not start: ${error instanceof Error ? error.message : String(error)}`,
@@ -1053,7 +1268,12 @@ export class RunnerDaemon {
             'POST',
             routePath(RUNNER_ROUTES.fail, { runId: payload.run.id }),
             {
-              reason: isDiskFull(error) ? 'runnerDiskFull' : 'startTimeout',
+              reason: isDiskFull(error)
+                ? 'runnerDiskFull'
+                : error instanceof WorkspaceBusyError &&
+                    payload.run.acceptedFailures?.includes('workspaceBusy')
+                  ? 'workspaceBusy'
+                  : 'startTimeout',
               detail: `The runner could not start a worker: ${error instanceof Error ? error.message : String(error)}`,
             },
           )
@@ -1072,12 +1292,12 @@ export class RunnerDaemon {
       if (this.live.length === 0) break;
       const live = this.claimable;
       if (live.length === 0) {
-        // Every application left wants an upgrade first; heartbeats say when one no longer does.
-        await delay(fallback, this.stopping.signal);
+        // No application has a usable heartbeat configuration; a successful heartbeat wakes this wait.
+        await this.pause(fallback);
         continue;
       }
       if (
-        this.slots - this.supervisor.size <= 0 ||
+        live.every((link) => this.free(link) <= 0) ||
         this.pendingUpdate ||
         this.pruning ||
         this.holdingForPrune ||
@@ -1090,13 +1310,14 @@ export class RunnerDaemon {
         continue;
       }
       const single = live.length === 1;
+      const wakeSignal = this.wakeController.signal;
       const startedAt = Date.now();
       let claimed = 0;
       for (let step = 0; step < live.length; step += 1) {
         if (this.stopping.signal.aborted) break;
-        const free = this.slots - this.supervisor.size;
-        if (free <= 0) break;
         const link = live[(this.nextApp + step) % live.length];
+        const free = this.free(link);
+        if (free <= 0) continue;
         try {
           const count = await this.claimFrom(link, free, single);
           failures = 0;
@@ -1107,7 +1328,7 @@ export class RunnerDaemon {
         } catch (error) {
           if (this.stopping.signal.aborted) break;
           if (error instanceof ApiError && REVOKED.has(error.reason)) {
-            this.revoke(link, error.reason, error.message);
+            await this.revoke(link, error.reason, error.message);
             continue;
           }
           if (error instanceof ApiError && error.reason === UNSUPPORTED) {
@@ -1118,22 +1339,25 @@ export class RunnerDaemon {
           log(
             `${link.key}: claim failed: ${error instanceof Error ? error.message : String(error)}`,
           );
-          if (single)
-            await delay(backoff(failures, 1_000, 15_000), this.stopping.signal);
+          if (single) await this.pause(backoff(failures, 1_000, 15_000));
         }
       }
-      if (claimed > 0) continue;
+      if (
+        wakeSignal.aborted ||
+        claimed > 0 ||
+        live.every((link) => this.free(link) <= 0)
+      )
+        continue;
       if (single) {
         const elapsed = Date.now() - startedAt;
         const pollTimeout =
           this.timings.pollTimeoutMs ??
           live[0].connection.registration.pollTimeoutMs;
         if (elapsed < Math.min(fallback, pollTimeout) / 2)
-          await delay(fallback - elapsed, this.stopping.signal);
+          await this.pause(fallback - elapsed);
       } else {
-        await delay(
+        await this.pause(
           failures > 0 ? backoff(failures, rotation, 15_000) : rotation,
-          this.stopping.signal,
         );
       }
     }
