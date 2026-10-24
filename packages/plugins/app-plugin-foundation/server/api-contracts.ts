@@ -22,7 +22,8 @@ export function importedContract(
       ts.isImportDeclaration(statement) &&
       !statement.importClause?.isTypeOnly &&
       ts.isStringLiteralLike(statement.moduleSpecifier) &&
-      statement.moduleSpecifier.text === module
+      statement.moduleSpecifier.text === module &&
+      analysis.isExternalImport(statement)
     );
   });
 }

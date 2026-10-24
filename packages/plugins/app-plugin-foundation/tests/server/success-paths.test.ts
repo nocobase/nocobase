@@ -223,3 +223,64 @@ it('does not turn framework rejection callbacks into successful-handler dependen
     '@nocobase/app-plugin-mail',
   );
 });
+
+it.each([
+  { targets: ['./server/stop.js'] },
+  { targets: ['./server/missing.js'] },
+  { targets: ['./server/stop.js', './server/other.js'] },
+])(
+  'rejects a local bodyLimit override declared as $targets in source, cache and deployment',
+  async ({ targets }) => {
+    const root = await fixture();
+    await writeFile(
+      path.join(root, 'server/stop.js'),
+      `export function bodyLimit(){return c=>c.text('stopped',403);}`,
+    );
+    const cache = new ModuleSourceCache();
+    const genuine = await cache.read(root);
+    expect(genuine.routes[0]?.apiProviders).toContain('@nocobase/db');
+    await writeFile(
+      path.join(root, 'tsconfig.json'),
+      JSON.stringify({
+        compilerOptions: { paths: { 'hono/body-limit': targets } },
+      }),
+    );
+    const direct = await collectModuleSources(root);
+    expect(direct.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+    expect(JSON.stringify(direct)).not.toContain('hono/body-limit#bodyLimit');
+    const changed = await cache.read(root);
+    expect(changed).toEqual(direct);
+    expect(changed).not.toBe(genuine);
+    expect(await cache.read(root)).toBe(changed);
+    await writeModuleManifest(root);
+    await writeFile(
+      path.join(root, 'dist/package.json'),
+      JSON.stringify({ name: 'success-fixture' }),
+    );
+    await rm(path.join(root, 'client'), { recursive: true });
+    await rm(path.join(root, 'server'), { recursive: true });
+    const deployed = await cache.read(path.join(root, 'dist'));
+    expect(deployed).toEqual(direct);
+    expect(await collectModuleSources(path.join(root, 'dist'))).toEqual(direct);
+    expect(await cache.read(path.join(root, 'dist'))).toBe(deployed);
+  },
+);
+
+it('recovers the genuine framework contract when a local override is removed', async () => {
+  const root = await fixture();
+  const config = path.join(root, 'tsconfig.json');
+  await writeFile(
+    config,
+    JSON.stringify({
+      compilerOptions: { paths: { 'hono/body-limit': ['./missing.js'] } },
+    }),
+  );
+  const cache = new ModuleSourceCache();
+  const unknown = await cache.read(root);
+  expect(unknown.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+  await rm(config);
+  const recovered = await cache.read(root);
+  expect(recovered.routes[0]?.apiProviders).toContain('@nocobase/db');
+  expect(recovered).not.toBe(unknown);
+  expect(await cache.read(root)).toBe(recovered);
+});
