@@ -285,11 +285,13 @@ describe('static module dependencies', () => {
     'duplicates',
     'loop',
     'unknownMap',
+    'cyclicMap',
     'tooMany',
   ])(
     'retains known routes beside an unsupported %s factory without executing it',
     async (kind) => {
       const expressions = {
+        cyclicMap: `cyclic.map(value=>({name:'invented',componentLoader:()=>import('./page.js')}))`,
         opaque: `unknownFactory({})`,
         recursive: `recurse({})`,
         sideEffect: `effect({})`,
@@ -300,7 +302,7 @@ describe('static module dependencies', () => {
         tooMany: `Array.from({length:1000}).map(x=>({name:x,componentLoader:()=>import('./page.js')}))`,
       };
       const root = await fixture({
-        'client/routes.ts': `function constEffect(){const x=(globalThis.__foundationSideEffect=true);return {name:'invented',componentLoader:()=>import('./page.js')}}function recurse(value){return recurse(value)}function effect(){globalThis.__foundationSideEffect=true;fetch('https://invalid.test');return {name:'invented',componentLoader:()=>import('./page.js')}}function loop(){while(true){}return {name:'invented',componentLoader:()=>import('./page.js')}}export default [{name:'known',componentLoader:()=>import('./page.js')},${expressions[kind as keyof typeof expressions]}];`,
+        'client/routes.ts': `const cyclic=[...cyclic];function constEffect(){const x=(globalThis.__foundationSideEffect=true);return {name:'invented',componentLoader:()=>import('./page.js')}}function recurse(value){return recurse(value)}function effect(){globalThis.__foundationSideEffect=true;fetch('https://invalid.test');return {name:'invented',componentLoader:()=>import('./page.js')}}function loop(){while(true){}return {name:'invented',componentLoader:()=>import('./page.js')}}export default [{name:'known',componentLoader:()=>import('./page.js')},${expressions[kind as keyof typeof expressions]}];`,
         'client/page.ts': `export default ()=>null;`,
       });
       const result = await collectModuleSources(root);

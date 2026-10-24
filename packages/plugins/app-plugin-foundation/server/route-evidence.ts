@@ -349,6 +349,11 @@ export class RouteEvidence {
   }
 
   private elements(value: Value, seen: Set<ts.Node>): Value[] {
+    if (++this.visits > 100_000 || seen.size >= 32 || seen.has(value.node)) {
+      this.complete = false;
+      return [];
+    }
+    seen = new Set(seen).add(value.node);
     if (
       !ts.isArrayLiteralExpression(value.node) ||
       value.node.elements.length > 32
