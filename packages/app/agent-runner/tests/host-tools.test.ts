@@ -179,6 +179,8 @@ describe('code host CLI wrappers', () => {
       ['--json', 'auth', 'login'],
       ['config', 'set', 'ai.token', 'fixture'],
       ['--no-tui', 'config', 'set', 'tui', 'false'],
+      ['auth', 'status', '-t'],
+      ['auth', 'status', '--show-token'],
       ['--hostname', 'elsewhere.test', 'pr', 'list'],
     ]) {
       const denied = await run(path.join(binDir, 'gitee'), args, env);
@@ -187,7 +189,14 @@ describe('code host CLI wrappers', () => {
     }
   });
 
-  it('denies PR approval and non-squash merges before asking for credentials', async () => {
+  it('passes Gitee PR review and merge methods through to the CLI', async () => {
+    answers = [
+      () => ({
+        username: 'oauth2',
+        password: 'gitee-fixture',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
     const { binDir, env } = await setUp([
       {
         bin: 'gitee',
@@ -202,22 +211,19 @@ describe('code host CLI wrappers', () => {
       ['pr', 'merge', '42'],
       ['pr', 'merge', '42', '--method', 'merge'],
       ['pr', 'merge', '42', '--method=rebase'],
-      ['pr', 'merge', '42', '--method', 'squash', '--method', 'merge'],
-      ['pr', 'merge', '42', '--method', 'squash', '-m', 'rebase'],
-      ['pr', 'merge', '42', '--method', 'squash', '-qmmerge'],
-      ['pr', 'merge', '42', '--body', '--method', 'squash'],
-      ['auth', 'status', '-t'],
-      ['auth', 'status', '--show-token'],
+      ['pr', 'merge', '42', '--method', 'squash'],
     ]) {
       const result = await run(path.join(binDir, 'gitee'), args, env);
-      expect(result.code).toBe(1);
-      expect(result.stdout).toBe('');
-      expect(result.stderr).toContain('refused:');
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain(
+        'args=--hostname gitee.com ' + args.join(' '),
+      );
+      expect(result.stdout).toContain('token=gitee-fixture');
     }
-    expect(asked).toBe(0);
+    expect(asked).toBeGreaterThan(0);
   });
 
-  it('keeps option values literal and accepts explicit squash without changing arguments', async () => {
+  it('keeps option values literal without changing arguments', async () => {
     answers = [
       () => ({
         username: 'oauth2',
@@ -245,11 +251,15 @@ describe('code host CLI wrappers', () => {
       ],
       ['pr', 'create', '--body', 'review', '--title', 'merge'],
       ['api', '/user', '--body=https://ci.example/build'],
-      ['pr', 'merge', '42', '--method', 'squash'],
-      ['--hostname=gitee.com', 'pr', 'merge', '42', '--method=squash'],
-      ['pr', '--no-tui', 'merge', '42', '-m', 'squash'],
-      ['pr', 'merge', '42', '-qmsquash'],
-      ['pr', 'merge', '42', '--method=squash', '-qRbot/main'],
+      [
+        'pr',
+        'create',
+        '--title',
+        'merge',
+        '--body',
+        'https://ci.example/build',
+      ],
+      ['pr', 'create', '--title=auth', '--body=login'],
     ]) {
       const result = await run(path.join(binDir, 'gitee'), args, env);
       expect(result.code).toBe(0);
