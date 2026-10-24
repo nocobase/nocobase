@@ -941,8 +941,8 @@ export class RunWorker {
       this.handle = handle;
       // Inputs that arrived while no turn was running.
       for (const input of this.undelivered()) void this.steer(input);
-      // The run can end while the tool is mid-step; stop reading its events then rather than wait for it to close
-      // them, and let finishEnding() stop it.
+      // Cancellation snapshots arrive while the adapter stops. Keep the outstanding read so the event that
+      // loses the abort race is consumed exactly once, then drain within the tool's existing stop budget.
       const iterator = handle.events[Symbol.asyncIterator]();
       const ended = new Promise<'ended'>((resolve) => {
         if (this.abort.signal.aborted) resolve('ended');
@@ -952,8 +952,13 @@ export class RunWorker {
           });
       });
       for (;;) {
-        const next = await Promise.race([iterator.next(), ended]);
-        if (next === 'ended' || next.done === true) break;
+        const pending = iterator.next();
+        const next = await Promise.race([pending, ended]);
+        if (next === 'ended') {
+          await this.stopTool({ iterator, pending });
+          break;
+        }
+        if (next.done === true) break;
         this.lastActivity = Date.now();
         this.recordEvent(next.value);
       }
@@ -1036,24 +1041,45 @@ export class RunWorker {
     }
   }
 
-  private async stopTool(): Promise<void> {
+  private async stopTool(events?: {
+    iterator: AsyncIterator<AdapterEvent>;
+    pending: Promise<IteratorResult<AdapterEvent>>;
+  }): Promise<void> {
     const handle = this.handle;
     if (handle === undefined) return;
     this.handle = undefined;
-    const settled = await Promise.race([
-      handle.stop().then(
-        () => true,
-        () => true,
-      ),
-      delay(this.timings.killGraceMs ?? 5_000).then(() => false),
-    ]);
-    if (settled) {
+    let active = true;
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        active = false;
+        this.deps.log(`run ${this.runId}: tool stop timed out`);
+        resolve();
+      }, this.timings.killGraceMs ?? 5_000);
+    });
+    const stopped = (async () => {
+      await handle.stop().catch(() => undefined);
       const result = await handle.result.catch(() => undefined);
-      if (result !== undefined) {
+      if (active && result !== undefined) {
         this.usage.push(...result.usage);
         this.sessionId = result.sessionId ?? this.sessionId;
         this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       }
+    })();
+    const drained = (async () => {
+      if (events === undefined || this.ending?.kind !== 'cancel') return;
+      let next = await events.pending;
+      while (active && !next.done) {
+        this.recordEvent(next.value);
+        next = await events.iterator.next();
+      }
+    })();
+    try {
+      // Stop, result and final events share one deadline. A late adapter cannot write after final reporting.
+      await Promise.race([Promise.all([stopped, drained]), timeout]);
+    } finally {
+      active = false;
+      clearTimeout(timer);
     }
   }
 

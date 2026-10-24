@@ -27,7 +27,7 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { AbortError, query } from '@anthropic-ai/claude-agent-sdk';
 import type {
   ModelInfo,
   Options,
@@ -612,12 +612,7 @@ class ClaudeRun {
     }
     const result = this.outcome(thrown);
     if (this.session.outputBlocks)
-      this.streaming.end(
-        this.stopping &&
-          thrown instanceof Error &&
-          (thrown.name === 'AbortError' ||
-            thrown.constructor.name === 'AbortError'),
-      );
+      this.streaming.end(this.stopping && thrown instanceof AbortError);
     if (result.error)
       this.emit({
         type: 'error',

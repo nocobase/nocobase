@@ -17,7 +17,8 @@ import type {
 import { calls, replay, setScript, setSupportedModels } from './fake-sdk.ts';
 import { SESSION_ID, assistant, init, result, toolResult } from './messages.ts';
 
-vi.mock('@anthropic-ai/claude-agent-sdk', async () => ({
+vi.mock('@anthropic-ai/claude-agent-sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@anthropic-ai/claude-agent-sdk')>()),
   query: (await import('./fake-sdk.ts')).fakeQuery,
 }));
 
