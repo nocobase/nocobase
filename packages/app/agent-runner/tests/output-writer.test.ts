@@ -250,3 +250,30 @@ it('withholds buffered previews when credentials change before transmission', ()
   ).toBe(true);
   expect(live.map((e) => e.content).join('')).not.toContain(secret);
 });
+
+it('persists an interrupted snapshot once and withholds a credential cut by the buffer cap', () => {
+  const saved: SpoolEvent[] = [];
+  const live: SpoolEvent[] = [];
+  const secret = 'private-run-token-123456789';
+  const writer = new OutputWriter(
+    (e) => saved.push(e),
+    createRedactor([secret]),
+    true,
+    (e) => live.push(e),
+  );
+  const text = 'x'.repeat(65_520) + ' ' + secret;
+  for (let i = 0; i < text.length; i += 200)
+    writer.write(event(text.slice(i, i + 200)));
+  const snapshot = {
+    ...event(text.slice(0, 65_536), 'end'),
+    meta: { ...event('', 'end').meta, truncated: true },
+  };
+  writer.write(snapshot);
+  writer.write(snapshot);
+  writer.end();
+  expect(saved).toHaveLength(1);
+  expect(saved[0]?.content).toBe('x'.repeat(65_520) + ' ' + REDACTED);
+  expect(Buffer.byteLength(saved[0]!.content!)).toBeLessThanOrEqual(65_536);
+  expect(live.map((e) => e.content ?? '').join('')).not.toContain(secret);
+  expect(saved[0]?.content).not.toContain('private-run');
+});
