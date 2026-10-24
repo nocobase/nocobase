@@ -3,8 +3,7 @@
  * changed since the running deployment, and the first administrator a first deployment generated (shown masked to
  * those who may deploy, until someone saved it).
  */
-import { copyText } from '@nocobase/app-client';
-import { ApiClientError } from '@nocobase/app-client';
+import { copyText, ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   CopyIcon,

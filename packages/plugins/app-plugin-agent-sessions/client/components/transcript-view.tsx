@@ -4,7 +4,6 @@
  * turn the work it created with the choice to start it.
  */
 import { copyText, resolveAppUrl, useToaster } from '@nocobase/app-client';
-
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {

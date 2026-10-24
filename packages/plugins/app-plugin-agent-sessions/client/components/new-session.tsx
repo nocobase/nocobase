@@ -9,8 +9,7 @@
  * browser. Without a connected computer it says how to connect one. In a panel it starts with the panel's project and
  * shows the new session in place of opening its page.
  */
-import { createUuid } from '@nocobase/app-client';
-import { ApiClientError, useToaster } from '@nocobase/app-client';
+import { createUuid, ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import { useIsMutating, useQueryClient } from '@tanstack/react-query';
