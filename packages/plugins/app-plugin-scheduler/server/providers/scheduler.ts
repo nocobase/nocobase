@@ -58,7 +58,7 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
     );
   }
 
-  public override start(): Promise<void> {
+  public override async start(): Promise<void> {
     const { service } = this.compose();
     if (service.draining)
       return Promise.reject(new Error('The Scheduler has been drained.'));

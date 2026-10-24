@@ -154,7 +154,7 @@ describe('SchedulerProvider', () => {
     expect(shutdown).toHaveBeenCalledOnce();
   });
 
-  it('refuses a scheduler.jobs naming no jobs configuration', () => {
+  it('refuses a scheduler.jobs naming no jobs configuration', async () => {
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, {} as DatabaseManager);
     container.instance(jobExecutorServiceToken, {
@@ -171,6 +171,8 @@ describe('SchedulerProvider', () => {
     expect(() => container.resolve(schedulerServiceToken)).toThrow(
       /scheduler\.jobs names "redis-typo", which is not a jobs configuration/u,
     );
+    await expect(provider.start()).rejects.toThrow('scheduler.jobs');
+    await provider.shutdown();
   });
 
   it('syncs, subscribes and sets the executor up before reconciling', async () => {
