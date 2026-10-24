@@ -98,29 +98,16 @@ const viVN: LocaleResource<typeof enUS> = {
     description:
       'Mỗi công cụ mã hóa và mô hình mà trình chạy báo cáo là một tác nhân. Người quản lý dự án giao từng bước của một vấn đề cho người đại diện có mô tả phù hợp với nó.',
     fromRunners: 'Đại lý từ trình chạy',
-    discovery: {
-      selectAll: 'Chọn tất cả kết quả',
-      selectFirst: 'Chọn kết quả {{limit}} đầu tiên',
-      selectionCount: 'Các nhóm {{count}} / {{limit}} đã chọn',
-      clearSelection: 'Lựa chọn rõ ràng',
-      new: 'Những khám phá mới ({{count}})',
-      ignored: 'Đã bỏ qua ({{count}})',
+    display: {
       search: 'Tìm kiếm người mẫu hoặc nhà cung cấp',
       select: 'Chọn {{name}}',
-      ignore: 'Bỏ qua',
-      restore: 'Khôi phục',
-      ignoreSelected: 'Bỏ qua đã chọn',
-      restoreSelected: 'Khôi phục đã chọn',
       showDisabled: 'Hiện đã tắt',
       hideDisabled: 'Ẩn đã tắt',
-      provider: 'Nhà cung cấp và trình chạy',
-      saved: 'Đã lưu tùy chọn khám phá',
     },
     filterLabel: 'Hiển thị đại lý',
     filters: {
       all: 'Tất cả {{count}}',
       enabled: 'Đã bật {{count}}',
-      pending: 'Để kích hoạt {{count}}',
       unreported: 'Không có trình chạy {{count}}',
     },
     loadFailed: 'Không thể tải các đại lý',
@@ -153,7 +140,6 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Đã bật',
-      pending: 'Để kích hoạt',
       disabled: 'Đã tắt',
       unreported: 'Không có trình chạy',
     },
@@ -238,31 +224,6 @@ const viVN: LocaleResource<typeof enUS> = {
         'Đã thêm {{succeeded}}, {{failed}} không thể thêm. Lý do ở dưới mỗi mục.',
       addFailed:
         '{{failed}} không thể thêm. Lý do ở dưới mỗi mục; hãy thử lại.',
-    },
-    cleanup: {
-      open: 'Dọn dẹp',
-      title: 'Xóa các agent được phát hiện nhưng không dùng',
-      description:
-        'Các agent do báo cáo của runner tạo ra, chưa ai bật và chưa từng chạy: có thể xóa thẳng mà an toàn. Mọi thứ đã thay đổi từ khi danh sách này được tải sẽ bị bỏ qua, không bị xóa.',
-      none: 'Không có gì để xóa.',
-      select: 'Chọn {{name}}',
-      selectGroup: 'Chọn tất cả trong {{tool}}',
-      clearGroup: 'Bỏ chọn {{tool}}',
-      neverEnabled: 'Chưa từng bật · Không có lịch sử chạy',
-      createdAt: 'Phát hiện {{when}}',
-      group_one: '{{tool}} · {{count}} mục',
-      group_other: '{{tool}} · {{count}} mục',
-      selectedCount_one: 'Đã chọn {{count}}',
-      selectedCount_other: 'Đã chọn {{count}}',
-      remove: 'Xóa {{count}}',
-      confirmTitle_one: 'Xóa {{count}} agent?',
-      confirmTitle_other: 'Xóa {{count}} agent?',
-      confirmDescription:
-        'Trong {{tools}}. An toàn để xóa: được kiểm tra lại ngay trước khi xóa, và những mục không còn đủ điều kiện sẽ bị bỏ qua, không bị xóa.',
-      confirmAction: 'Xóa {{count}}',
-      done: 'Đã xóa {{removed}}, bỏ qua {{skipped}}',
-      partialFailure:
-        'Đã xóa {{removed}}, bỏ qua {{skipped}}; {{failed}} không thể xóa ({{reason}}). Vẫn được chọn để thử lại.',
     },
   },
   agentTypes: {

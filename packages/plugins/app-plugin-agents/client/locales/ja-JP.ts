@@ -98,29 +98,16 @@ const jaJP: LocaleResource<typeof enUS> = {
     description:
       'ランナーが報告する各コーディング ツールとモデルはエージェントです。プロジェクト マネージャーは、問題の各ステップを、その説明に該当するエージェントに渡します。',
     fromRunners: 'ランナーからのエージェント',
-    discovery: {
-      selectAll: 'すべての結果を選択',
-      selectFirst: '最初の{{limit}}結果を選択してください',
-      selectionCount: '選択された {{count}} / {{limit}} グループ',
-      clearSelection: '選択をクリア',
-      new: '新しい発見 ({{count}})',
-      ignored: '無視されました ({{count}})',
+    display: {
       search: 'モデルまたはプロバイダーの検索',
       select: '{{name}}を選択してください',
-      ignore: '無視する',
-      restore: '復元',
-      ignoreSelected: '選択を無視します',
-      restoreSelected: '選択したものを復元する',
       showDisabled: '無効を表示',
       hideDisabled: '無効を隠す',
-      provider: 'プロバイダーとランナー',
-      saved: '検出設定が保存されました',
     },
     filterLabel: 'ショーエージェント',
     filters: {
       all: 'すべての{{count}}',
       enabled: '{{count}}を有効にしました',
-      pending: '{{count}}を有効にするには',
       unreported: 'ランナーなし {{count}}',
     },
     loadFailed: 'エージェントをロードできませんでした',
@@ -153,7 +140,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: '有効',
-      pending: '有効にするには',
       disabled: '無効',
       unreported: 'ランナーなし',
     },
@@ -238,31 +224,6 @@ const jaJP: LocaleResource<typeof enUS> = {
         '{{succeeded}} 件を追加しました。{{failed}} 件は追加できませんでした。理由は各項目の下に表示されています。',
       addFailed:
         '{{failed}} 件を追加できませんでした。理由は各項目の下に表示されています。もう一度お試しください。',
-    },
-    cleanup: {
-      open: '整理',
-      title: '未使用の発見済みエージェントを削除',
-      description:
-        'ランナーの報告によって作成され、誰も有効化せず、一度も実行されていないエージェント: そのまま削除しても安全です。このリストを読み込んだ後に変わったものはスキップされ、削除されません。',
-      none: '削除するものはありません。',
-      select: '{{name}} を選択',
-      selectGroup: '{{tool}} をすべて選択',
-      clearGroup: '{{tool}} の選択を解除',
-      neverEnabled: '未有効化・実行履歴なし',
-      createdAt: '{{when}} に発見',
-      group_one: '{{tool}} · {{count}} 件',
-      group_other: '{{tool}} · {{count}} 件',
-      selectedCount_one: '{{count}} 件選択中',
-      selectedCount_other: '{{count}} 件選択中',
-      remove: '{{count}} 件を削除',
-      confirmTitle_one: '{{count}} 件のエージェントを削除しますか？',
-      confirmTitle_other: '{{count}} 件のエージェントを削除しますか？',
-      confirmDescription:
-        '{{tools}} にまたがります。削除は安全です：削除直前に再確認し、条件を満たさなくなったものはスキップされ、削除されません。',
-      confirmAction: '{{count}} 件を削除',
-      done: '{{removed}} 件削除、{{skipped}} 件スキップ',
-      partialFailure:
-        '{{removed}} 件削除、{{skipped}} 件スキップ。{{failed}} 件は削除できませんでした（{{reason}}）。再試行できるよう選択は保持されます。',
     },
   },
   agentTypes: {

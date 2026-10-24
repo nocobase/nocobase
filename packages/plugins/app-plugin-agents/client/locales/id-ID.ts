@@ -100,29 +100,16 @@ const idID: LocaleResource<typeof enUS> = {
     description:
       'Setiap alat pengkodean dan model laporan runner adalah agen. Manajer proyek menyerahkan setiap langkah suatu masalah kepada agen yang deskripsinya sesuai.',
     fromRunners: 'Agen dari runner',
-    discovery: {
-      selectAll: 'Pilih semua hasil',
-      selectFirst: 'Pilih hasil {{limit}} pertama',
-      selectionCount: 'Grup {{count}} / {{limit}} yang dipilih',
-      clearSelection: 'Hapus pilihan',
-      new: 'Penemuan baru ({{count}})',
-      ignored: 'Diabaikan ({{count}})',
+    display: {
       search: 'Model atau penyedia pencarian',
       select: 'Pilih {{name}}',
-      ignore: 'Abaikan',
-      restore: 'Pulihkan',
-      ignoreSelected: 'Abaikan yang dipilih',
-      restoreSelected: 'Pemulihan dipilih',
       showDisabled: 'Tampilkan nonaktif',
       hideDisabled: 'Sembunyikan nonaktif',
-      provider: 'Penyedia dan runner',
-      saved: 'Preferensi penemuan disimpan',
     },
     filterLabel: 'Tunjukkan agen',
     filters: {
       all: 'Semua {{count}}',
       enabled: 'Mengaktifkan {{count}}',
-      pending: 'Untuk mengaktifkan {{count}}',
       unreported: 'Tidak ada runner {{count}}',
     },
     loadFailed: 'Tidak dapat memuat agen',
@@ -155,7 +142,6 @@ const idID: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Aktif',
-      pending: 'Untuk mengaktifkan',
       disabled: 'Nonaktif',
       unreported: 'Tidak ada runner',
     },
@@ -239,31 +225,6 @@ const idID: LocaleResource<typeof enUS> = {
         '{{succeeded}} ditambahkan, {{failed}} tidak dapat ditambahkan. Alasan ada di bawah masing-masing.',
       addFailed:
         '{{failed}} tidak dapat ditambahkan. Alasan ada di bawah masing-masing; coba lagi.',
-    },
-    cleanup: {
-      open: 'Bersihkan',
-      title: 'Hapus agen temuan yang tidak terpakai',
-      description:
-        'Agen yang dibuat dari laporan runner, tidak diaktifkan siapa pun, dan belum pernah berjalan: aman untuk dihapus langsung. Yang berubah sejak daftar ini dimuat akan dilewati, tidak dihapus.',
-      none: 'Tidak ada yang perlu dihapus.',
-      select: 'Pilih {{name}}',
-      selectGroup: 'Pilih semua di {{tool}}',
-      clearGroup: 'Batalkan pilihan {{tool}}',
-      neverEnabled: 'Belum pernah diaktifkan · Tidak ada riwayat berjalan',
-      createdAt: 'Ditemukan {{when}}',
-      group_one: '{{tool}} · {{count}} kandidat',
-      group_other: '{{tool}} · {{count}} kandidat',
-      selectedCount_one: '{{count}} dipilih',
-      selectedCount_other: '{{count}} dipilih',
-      remove: 'Hapus {{count}}',
-      confirmTitle_one: 'Hapus {{count}} agen?',
-      confirmTitle_other: 'Hapus {{count}} agen?',
-      confirmDescription:
-        'Mencakup {{tools}}. Aman dihapus: diperiksa ulang tepat sebelum dihapus, dan yang sudah tidak memenuhi syarat akan dilewati, tidak dihapus.',
-      confirmAction: 'Hapus {{count}}',
-      done: '{{removed}} dihapus, {{skipped}} dilewati',
-      partialFailure:
-        '{{removed}} dihapus, {{skipped}} dilewati; {{failed}} tidak dapat dihapus ({{reason}}). Tetap dipilih untuk dicoba lagi.',
     },
   },
   agentTypes: {

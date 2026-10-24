@@ -1,12 +1,9 @@
 /**
  * Agents as the browser and the server's admin API exchange them.
  *
- * Nobody creates an agent. Each coding tool and model the runners report becomes one agent (`source: 'runner'`): the
- * runners report, per tool, whether it is installed and signed in and which models it can use, and the server keeps one
- * agent per tool and model (`model-catalog.ts` names it and normalizes the model), however many runners report it. A new
- * one waits (`pending`) until someone who manages agents writes what it is good at and enables it. The application may
- * also keep agents of its own (`source: 'system'`), such as a project manager, which it configures through its own
- * settings and runs with the tool and model of the agents it names.
+ * People add a runner agent from the live available models list, already enabled. Recommended tool and model
+ * combinations are enabled automatically when a runner reports them. Other reported models stay out of the database
+ * until someone adds them. The application may also keep agents of its own (`source: 'system'`).
  *
  * Which tool and model an agent works with, and with what reasoning effort, is an ordered list (`modelEntries`); a
  * runner takes a run with the first entry it reports. An agent discovered from runners has exactly one entry, its own
@@ -29,10 +26,10 @@ export const AGENT_SOURCES = ['runner', 'system'] as const;
 export type AgentSource = (typeof AGENT_SOURCES)[number];
 
 /**
- * Whether an agent is offered work: `pending` (discovered, nobody enabled it yet), `enabled`, `disabled`. Only enabled
+ * Whether an agent is offered work: `enabled` or `disabled`. Only enabled
  * agents are offered work, mentioned or chatted with.
  */
-export const AGENT_STATUSES = ['pending', 'enabled', 'disabled'] as const;
+export const AGENT_STATUSES = ['enabled', 'disabled'] as const;
 
 export type AgentStatus = (typeof AGENT_STATUSES)[number];
 
@@ -119,13 +116,12 @@ export interface Agent {
 }
 
 /**
- * Why an agent cannot take the caller's work now: `pending` and `disabled` (not enabled), `unreported` (no runner
+ * Why an agent cannot take the caller's work now: `disabled` (not enabled), `unreported` (no runner
  * reported its tool and model for `AGENT_UNREPORTED_AFTER_MS`), `notConfigured` (an application's own agent with no
  * tool and model yet), `noRunner` (no runner online that has it and would take the caller's work), `othersPersonal`
  * (only other people's personal runners have it).
  */
 export const AGENT_UNUSABLE_REASONS = [
-  'pending',
   'disabled',
   'unreported',
   'notConfigured',
@@ -150,9 +146,6 @@ export interface AgentRunners {
 /** An agent as the Agent page lists it (`GET /api/agents`), for the caller. */
 export interface AgentView extends Agent {
   readonly quota?: readonly QuotaLocation[];
-  readonly discoveryKey?: string;
-  readonly discoveryRevision?: number;
-  readonly ignored?: boolean;
   /** Its default reasoning effort: its first entry's. */
   readonly effort: string | null;
   /** The efforts its tool takes, weakest first; empty for an application's own agent. */
@@ -289,26 +282,7 @@ export interface RunnerAgentCreateInput {
   readonly effort?: string | null;
 }
 
-/**
- * A runner-discovered agent nobody enabled and that never ran (`GET /api/agents/cleanupCandidates` with `tool`): safe
- * for an administrator to remove outright, such as a batch a tool reporting far too many models created before the
- * application stopped creating one agent per reported model.
- */
-export interface CleanupCandidate {
-  readonly id: string;
-  readonly name: string;
-  readonly tool: AgentTool | null;
-  readonly model: string | null;
-  readonly createdAt: string;
-}
-
-/** One coding tool's cleanup candidates (`GET /api/agents/cleanupCandidates` without `tool`), for the cleanup drawer. */
-export interface CleanupGroup {
-  readonly tool: AgentTool | null;
-  readonly count: number;
-}
-
-/** Paging shared by the available-model and cleanup-candidate row pages. */
+/** Paging for available-model rows. */
 export interface ListPageMeta {
   readonly total: number;
   readonly page: number;
@@ -324,18 +298,6 @@ export interface AvailableModelGroupsPage {
 /** `GET /api/agents/availableModels` with `tool`. */
 export interface AvailableModelsPage {
   readonly data: readonly AvailableModel[];
-  readonly meta: ListPageMeta;
-}
-
-/** `GET /api/agents/cleanupCandidates` without `tool`. */
-export interface CleanupGroupsPage {
-  readonly data: readonly CleanupGroup[];
-  readonly meta: ListPageMeta;
-}
-
-/** `GET /api/agents/cleanupCandidates` with `tool`. */
-export interface CleanupCandidatesPage {
-  readonly data: readonly CleanupCandidate[];
   readonly meta: ListPageMeta;
 }
 

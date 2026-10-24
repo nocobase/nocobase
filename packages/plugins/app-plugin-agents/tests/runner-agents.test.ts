@@ -141,7 +141,7 @@ describe('agents built from runner reports', () => {
   const damagedAgents = [
     { name: 'deleted marker', deleted: true, status: 'enabled' },
     { name: 'archive marker', archived: true, status: 'disabled' },
-    { name: 'empty model entries', empty: true, status: 'pending' },
+    { name: 'empty model entries', empty: true, status: 'disabled' },
     {
       name: 'all three corruptions',
       deleted: true,

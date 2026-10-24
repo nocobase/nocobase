@@ -104,29 +104,16 @@ const deDE: LocaleResource<typeof enUS> = {
     description:
       'Jedes Codierungstool und jedes Modell, das ein Runner meldet, ist ein Agent. Der Projektmanager übergibt jeden Schritt eines Problems an den Agenten, dessen Beschreibung dazu passt.',
     fromRunners: 'Agenten von Runnern',
-    discovery: {
-      selectAll: 'Alle Ergebnisse auswählen',
-      selectFirst: 'Wählen Sie die ersten {{limit}}-Ergebnisse aus',
-      selectionCount: 'Ausgewählte {{count}} / {{limit}}-Gruppen',
-      clearSelection: 'Auswahl löschen',
-      new: 'Neue Entdeckungen ({{count}})',
-      ignored: 'Ignoriert ({{count}})',
+    display: {
       search: 'Suchmodelle oder Anbieter',
       select: 'Wählen Sie {{name}}',
-      ignore: 'Ignorieren',
-      restore: 'Wiederherstellen',
-      ignoreSelected: 'Ausgewählte ignorieren',
-      restoreSelected: 'Ausgewählte Wiederherstellung',
       showDisabled: 'Deaktivierte anzeigen',
       hideDisabled: 'Deaktivierte ausblenden',
-      provider: 'Versorger und Runner',
-      saved: 'Discovery-Einstellungen gespeichert',
     },
     filterLabel: 'Agenten anzeigen',
     filters: {
       all: 'Alle {{count}}',
       enabled: 'Aktiviert {{count}}',
-      pending: 'Zum Aktivieren von {{count}}',
       unreported: 'Kein Runner {{count}}',
     },
     loadFailed: 'Die Agenten konnten nicht geladen werden',
@@ -159,7 +146,6 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Aktiviert',
-      pending: 'Zum Aktivieren',
       disabled: 'Deaktiviert',
       unreported: 'Kein Runner',
     },
@@ -244,31 +230,6 @@ const deDE: LocaleResource<typeof enUS> = {
         '{{succeeded}} hinzugefügt, {{failed}} konnten nicht hinzugefügt werden. Grund jeweils darunter.',
       addFailed:
         '{{failed}} konnten nicht hinzugefügt werden. Grund jeweils darunter; bitte erneut versuchen.',
-    },
-    cleanup: {
-      open: 'Aufräumen',
-      title: 'Ungenutzte entdeckte Agenten entfernen',
-      description:
-        'Agenten, die ein Runner-Bericht erstellt hat, die niemand aktiviert hat und die nie gelaufen sind: können bedenkenlos entfernt werden. Alles, was sich seit dem Laden dieser Liste geändert hat, wird übersprungen, nicht entfernt.',
-      none: 'Nichts zu entfernen.',
-      select: '{{name}} auswählen',
-      selectGroup: 'Alle in {{tool}} auswählen',
-      clearGroup: '{{tool}} abwählen',
-      neverEnabled: 'Nie aktiviert · Keine Ausführungshistorie',
-      createdAt: 'Entdeckt {{when}}',
-      group_one: '{{tool}} · {{count}} Kandidat',
-      group_other: '{{tool}} · {{count}} Kandidaten',
-      selectedCount_one: '{{count}} ausgewählt',
-      selectedCount_other: '{{count}} ausgewählt',
-      remove: '{{count}} entfernen',
-      confirmTitle_one: '{{count}} Agent entfernen?',
-      confirmTitle_other: '{{count}} Agenten entfernen?',
-      confirmDescription:
-        'Über {{tools}}. Sicher zu entfernen: wird unmittelbar vor dem Entfernen erneut geprüft; alles nicht mehr Zutreffende wird übersprungen, nicht entfernt.',
-      confirmAction: '{{count}} entfernen',
-      done: '{{removed}} entfernt, {{skipped}} übersprungen',
-      partialFailure:
-        '{{removed}} entfernt, {{skipped}} übersprungen; {{failed}} konnten nicht entfernt werden ({{reason}}). Sie bleiben ausgewählt, um es erneut zu versuchen.',
     },
   },
   agentTypes: {

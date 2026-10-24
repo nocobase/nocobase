@@ -20,8 +20,6 @@ import type {
   AgentView,
   AvailableModel,
   AvailableModelGroup,
-  CleanupCandidate,
-  CleanupGroup,
 } from '../../shared/agents.js';
 import {
   api,
@@ -45,8 +43,6 @@ const { default: AgentsPage } =
 let agents: AgentView[] = [];
 let availableGroups: AvailableModelGroup[] = [];
 let availableRows: Record<string, AvailableModel[]> = {};
-let cleanupGroups: CleanupGroup[] = [];
-let cleanupRows: Record<string, CleanupCandidate[]> = {};
 
 describe('the Agent page', () => {
   beforeEach(() => {
@@ -93,18 +89,6 @@ describe('the Agent page', () => {
         },
       ],
     };
-    cleanupGroups = [{ tool: 'kilo', count: 1 }];
-    cleanupRows = {
-      kilo: [
-        {
-          id: 'stray-1',
-          name: 'Kilo Code · Stray',
-          tool: 'kilo',
-          model: 'stray',
-          createdAt: '2026-10-01T08:00:00.000Z',
-        },
-      ],
-    };
     resetApi({
       agents: () => agents,
       'agents/availableModels': (request) => {
@@ -142,25 +126,6 @@ describe('the Agent page', () => {
           meta: { total: rows.length, page, pageSize },
         };
       },
-      'agents/cleanupCandidates': (request) => {
-        const tool = request.query.tool as string | undefined;
-        if (!tool)
-          return {
-            data: cleanupGroups,
-            meta: {
-              total: cleanupGroups.length,
-              page: 1,
-              pageSize: cleanupGroups.length,
-            },
-          };
-        const rows = cleanupRows[tool] ?? [];
-        const page = Number(request.query.page ?? 1);
-        const pageSize = Number(request.query.pageSize ?? 50);
-        return {
-          data: rows.slice((page - 1) * pageSize, page * pageSize),
-          meta: { total: rows.length, page, pageSize },
-        };
-      },
       'PATCH agents/sonnet': (request) => ({
         ...agents[0],
         ...(request.json as object),
@@ -177,10 +142,6 @@ describe('the Agent page', () => {
           status: 'enabled',
           description: body.description,
         };
-      },
-      'POST agents/cleanup': (request) => {
-        const body = request.json as { agentIds: string[] };
-        return { removed: body.agentIds, skipped: [] };
       },
     });
   });
@@ -889,144 +850,6 @@ describe('the Agent page', () => {
         'available-model-good-at-claude-claude-fable-5-1',
       ),
     ).toHaveValue('Draft text');
-  });
-
-  it('removes chosen cleanup candidates after a second confirmation', async () => {
-    renderPage(<AgentsPage />);
-    fireEvent.click(await screen.findByTestId('agents-cleanup-open'));
-    const drawer = await screen.findByTestId('cleanup-drawer');
-    fireEvent.click(await within(drawer).findByTestId('cleanup-group-kilo'));
-    fireEvent.click(
-      within(
-        await within(drawer).findByTestId('cleanup-candidate-stray-1'),
-      ).getByRole('checkbox'),
-    );
-    fireEvent.click(within(drawer).getByTestId('cleanup-open-confirm'));
-    const confirm = await screen.findByTestId('cleanup-confirm');
-    expect(screen.getByTestId('cleanup-confirm-overlay')).toBeVisible();
-    fireEvent.click(within(confirm).getByTestId('cleanup-confirm-submit'));
-    await waitFor(() =>
-      expect(
-        callsTo('POST', 'agents/cleanup').map((call) => call.json),
-      ).toEqual([{ agentIds: ['stray-1'] }]),
-    );
-  });
-
-  it('selects an entire cleanup group at once', async () => {
-    cleanupGroups = [{ tool: 'kilo', count: 2 }];
-    cleanupRows.kilo = [
-      ...cleanupRows.kilo!,
-      {
-        id: 'stray-2',
-        name: 'Kilo Code · Stray 2',
-        tool: 'kilo',
-        model: 'stray-2',
-        createdAt: '2026-10-01T08:00:00.000Z',
-      },
-    ];
-    renderPage(<AgentsPage />);
-    fireEvent.click(await screen.findByTestId('agents-cleanup-open'));
-    const drawer = await screen.findByTestId('cleanup-drawer');
-    fireEvent.click(await within(drawer).findByTestId('cleanup-group-kilo'));
-    fireEvent.click(
-      await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
-    );
-    await waitFor(() =>
-      expect(
-        within(drawer).getByTestId('cleanup-open-confirm'),
-      ).toHaveTextContent('2'),
-    );
-  });
-
-  it('cleans up a selection larger than the per-request cap in several batches, and clears the whole group across pages', async () => {
-    cleanupGroups = [{ tool: 'kilo', count: 278 }];
-    cleanupRows.kilo = Array.from({ length: 278 }, (_, i) => ({
-      id: `stray-${i}`,
-      name: `Kilo Code · Stray ${i}`,
-      tool: 'kilo',
-      model: `stray-${i}`,
-      createdAt: '2026-10-01T08:00:00.000Z',
-    }));
-    renderPage(<AgentsPage />);
-    fireEvent.click(await screen.findByTestId('agents-cleanup-open'));
-    const drawer = await screen.findByTestId('cleanup-drawer');
-    fireEvent.click(await within(drawer).findByTestId('cleanup-group-kilo'));
-    fireEvent.click(
-      await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
-    );
-    await waitFor(() =>
-      expect(
-        within(drawer).getByTestId('cleanup-open-confirm'),
-      ).toHaveTextContent('278'),
-    );
-    // Clearing the whole group again must drop every selected id, not just the page the group list has loaded.
-    fireEvent.click(
-      await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
-    );
-    expect(within(drawer).getByTestId('cleanup-open-confirm')).toBeDisabled();
-    fireEvent.click(
-      await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
-    );
-    await waitFor(() =>
-      expect(
-        within(drawer).getByTestId('cleanup-open-confirm'),
-      ).toHaveTextContent('278'),
-    );
-    fireEvent.click(within(drawer).getByTestId('cleanup-open-confirm'));
-    const confirm = await screen.findByTestId('cleanup-confirm');
-    fireEvent.click(within(confirm).getByTestId('cleanup-confirm-submit'));
-    await waitFor(() =>
-      expect(callsTo('POST', 'agents/cleanup')).toHaveLength(2),
-    );
-    const sizes = callsTo('POST', 'agents/cleanup').map(
-      (call) => (call.json as { agentIds: string[] }).agentIds.length,
-    );
-    expect(new Set(sizes)).toEqual(new Set([256, 22]));
-    const allIds = callsTo('POST', 'agents/cleanup').flatMap(
-      (call) => (call.json as { agentIds: string[] }).agentIds,
-    );
-    expect(new Set(allIds).size).toBe(278);
-  });
-
-  it('keeps a batch’s successful removals when a later batch fails, and leaves only the failed ids selected to retry', async () => {
-    cleanupGroups = [{ tool: 'kilo', count: 278 }];
-    cleanupRows.kilo = Array.from({ length: 278 }, (_, i) => ({
-      id: `stray-${i}`,
-      name: `Kilo Code · Stray ${i}`,
-      tool: 'kilo',
-      model: `stray-${i}`,
-      createdAt: '2026-10-01T08:00:00.000Z',
-    }));
-    renderPage(<AgentsPage />);
-    fireEvent.click(await screen.findByTestId('agents-cleanup-open'));
-    const drawer = await screen.findByTestId('cleanup-drawer');
-    fireEvent.click(await within(drawer).findByTestId('cleanup-group-kilo'));
-    fireEvent.click(
-      await within(drawer).findByTestId('cleanup-group-select-all-kilo'),
-    );
-    await waitFor(() =>
-      expect(
-        within(drawer).getByTestId('cleanup-open-confirm'),
-      ).toHaveTextContent('278'),
-    );
-    // The first 256-item batch succeeds; the second (the remaining 22) fails, as a network error would.
-    let calls = 0;
-    api.routes['POST agents/cleanup'] = (request) => {
-      calls += 1;
-      if (calls === 2) throw new FakeApiError(500, 'SERVER_ERROR');
-      const body = request.json as { agentIds: string[] };
-      return { removed: body.agentIds, skipped: [] };
-    };
-    fireEvent.click(within(drawer).getByTestId('cleanup-open-confirm'));
-    const confirm = await screen.findByTestId('cleanup-confirm');
-    fireEvent.click(within(confirm).getByTestId('cleanup-confirm-submit'));
-    // The 256 that succeeded are gone from the selection; only the 22 that failed remain, ready to retry.
-    await waitFor(() =>
-      expect(
-        within(drawer).getByTestId('cleanup-open-confirm'),
-      ).toHaveTextContent('22'),
-    );
-    expect(screen.queryByTestId('cleanup-confirm')).toBeInTheDocument();
   });
 
   it('offers no change to who does not manage agents', async () => {

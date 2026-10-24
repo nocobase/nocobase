@@ -101,29 +101,16 @@ const frFR: LocaleResource<typeof enUS> = {
     description:
       "Chaque outil de codage et modèle signalé par un exécuteur est un agent. Le chef de projet confie chaque étape d'un problème à l'agent dont la description correspond.",
     fromRunners: 'Agents des exécuteurs',
-    discovery: {
-      selectAll: 'Sélectionner tous les résultats',
-      selectFirst: 'Sélectionnez les premiers résultats {{limit}}',
-      selectionCount: 'Groupes {{count}} / {{limit}} sélectionnés',
-      clearSelection: 'Effacer la sélection',
-      new: 'Nouvelles découvertes ({{count}})',
-      ignored: 'Ignoré ({{count}})',
+    display: {
       search: 'Rechercher des modèles ou des fournisseurs',
       select: 'Sélectionnez {{name}}',
-      ignore: 'Ignorer',
-      restore: 'Restaurer',
-      ignoreSelected: 'Ignorer la sélection',
-      restoreSelected: 'Restaurer la sélection',
       showDisabled: 'Afficher désactivés',
       hideDisabled: 'Masquer désactivés',
-      provider: 'Fournisseur et exécuteur',
-      saved: 'Préférences de découverte enregistrées',
     },
     filterLabel: 'Afficher les agents',
     filters: {
       all: 'Tous les {{count}}',
       enabled: 'Activé {{count}}',
-      pending: 'Pour activer {{count}}',
       unreported: 'Aucun exécuteur {{count}}',
     },
     loadFailed: 'Impossible de charger les agents',
@@ -158,7 +145,6 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Activé',
-      pending: 'Pour activer',
       disabled: 'Désactivé',
       unreported: 'Aucun exécuteur',
     },
@@ -252,34 +238,6 @@ const frFR: LocaleResource<typeof enUS> = {
         '{{succeeded}} ajoutés, {{failed}} n’ont pas pu être ajoutés. Raison sous chacun.',
       addFailed:
         '{{failed}} n’ont pas pu être ajoutés. Raison sous chacun ; réessayez.',
-    },
-    cleanup: {
-      open: 'Nettoyer',
-      title: 'Supprimer les agents découverts inutilisés',
-      description:
-        'Agents créés par le rapport d’un exécuteur, que personne n’a activés et qui n’ont jamais été exécutés : peuvent être supprimés sans risque. Tout ce qui a changé depuis le chargement de cette liste est ignoré, pas supprimé.',
-      none: 'Rien à supprimer.',
-      select: 'Sélectionner {{name}}',
-      selectGroup: 'Tout sélectionner dans {{tool}}',
-      clearGroup: 'Désélectionner {{tool}}',
-      neverEnabled: 'Jamais activé · Aucun historique d’exécution',
-      createdAt: 'Découvert {{when}}',
-      group_one: '{{tool}} · {{count}} candidat',
-      group_other: '{{tool}} · {{count}} candidats',
-      group_many: '{{tool}} · {{count}} candidats',
-      selectedCount_one: '{{count}} sélectionné',
-      selectedCount_other: '{{count}} sélectionnés',
-      selectedCount_many: '{{count}} sélectionnés',
-      remove: 'Supprimer {{count}}',
-      confirmTitle_one: 'Supprimer {{count}} agent ?',
-      confirmTitle_other: 'Supprimer {{count}} agents ?',
-      confirmTitle_many: 'Supprimer {{count}} agents ?',
-      confirmDescription:
-        'Dans {{tools}}. Sans risque : revérifié juste avant la suppression, et tout ce qui n’est plus éligible est ignoré, pas supprimé.',
-      confirmAction: 'Supprimer {{count}}',
-      done: '{{removed}} supprimés, {{skipped}} ignorés',
-      partialFailure:
-        '{{removed}} supprimés, {{skipped}} ignorés ; {{failed}} n’ont pas pu être supprimés ({{reason}}). Ils restent sélectionnés pour réessayer.',
     },
   },
   agentTypes: {

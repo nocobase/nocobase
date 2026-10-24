@@ -126,7 +126,7 @@ export function toAgent(record: AgentRecord): Agent {
       ? 'disabled'
       : (AGENT_STATUSES as readonly string[]).includes(record.status)
         ? (record.status as AgentStatus)
-        : 'pending';
+        : 'disabled';
   return {
     id: record.id,
     name: record.name,

@@ -97,29 +97,16 @@ const zhTW: LocaleResource<typeof enUS> = {
     description:
       '執行器報告的每個編碼工具和模型都是一個代理。專案經理將議題的每一步交給與其描述相符的代理人。',
     fromRunners: '執行器代理',
-    discovery: {
-      selectAll: '選擇所有結果',
-      selectFirst: '選擇第一個 {{limit}} 結果',
-      selectionCount: '選定的 {{count}} / {{limit}} 組',
-      clearSelection: '清除選擇',
-      new: '新發現({{count}})',
-      ignored: '忽略 ({{count}})',
+    display: {
       search: '搜尋型號或供應商',
       select: '選擇{{name}}',
-      ignore: '忽略',
-      restore: '恢復',
-      ignoreSelected: '忽略所選',
-      restoreSelected: '恢復所選',
       showDisabled: '顯示已停用',
       hideDisabled: '隱藏已停用',
-      provider: '提供者和執行者',
-      saved: '已儲存發現首選項',
     },
     filterLabel: '顯示代理',
     filters: {
       all: '全部{{count}}',
       enabled: '啟用 {{count}}',
-      pending: '待啟用 {{count}}',
       unreported: '無參賽者 {{count}}',
     },
     loadFailed: '無法載入代理',
@@ -152,7 +139,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: '已啟用',
-      pending: '啟用',
       disabled: '已停用',
       unreported: '沒有執行器',
     },
@@ -233,31 +219,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       addedPartial:
         '已新增 {{succeeded}} 個，{{failed}} 個無法新增，原因見各自下方。',
       addFailed: '{{failed}} 個無法新增，原因見各自下方，請重試。',
-    },
-    cleanup: {
-      open: '清理',
-      title: '移除未使用的發現項目',
-      description:
-        '執行機回報建立、沒人啟用、也從未執行過的 Agent：可以直接移除。預覽之後有變動的項目會跳過，不會被移除。',
-      none: '沒有可移除的項目。',
-      select: '選擇 {{name}}',
-      selectGroup: '全選 {{tool}}',
-      clearGroup: '取消全選 {{tool}}',
-      neverEnabled: '從未啟用・無執行記錄',
-      createdAt: '發現於 {{when}}',
-      group_one: '{{tool}} · {{count}} 項',
-      group_other: '{{tool}} · {{count}} 項',
-      selectedCount_one: '已選 {{count}} 個',
-      selectedCount_other: '已選 {{count}} 個',
-      remove: '移除 {{count}} 項',
-      confirmTitle_one: '移除 {{count}} 個 Agent？',
-      confirmTitle_other: '移除 {{count}} 個 Agent？',
-      confirmDescription:
-        '涉及 {{tools}}。移除前會重新驗證，期間已不符合條件的項目會被跳過，不會被移除。',
-      confirmAction: '移除 {{count}} 項',
-      done: '已移除 {{removed}} 項，跳過 {{skipped}} 項',
-      partialFailure:
-        '已移除 {{removed}} 項，跳過 {{skipped}} 項；{{failed}} 項無法移除（{{reason}}），已保留選取以便重試。',
     },
   },
   agentTypes: {
