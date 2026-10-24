@@ -98,6 +98,38 @@ describe('actions', () => {
       const checkRes = await agent.set('Authorization', `Bearer ${result.token}`).resource('auth').check();
       expect(checkRes.body.data.nickname).toBe(user.nickname);
     });
+
+    it('should keep the bound role when the system role mode is only-use-union', async () => {
+      const noPermissionRole = await db.getRepository('roles').create({
+        values: {
+          name: 'noPermissionRole',
+        },
+      });
+      await db.getRepository('rolesUsers').create({
+        values: {
+          userId: user.id,
+          roleName: noPermissionRole.name,
+        },
+      });
+      await userAgent.resource('roles').setSystemRoleMode({
+        values: {
+          roleMode: 'only-use-union',
+        },
+      });
+
+      const keyResult = await resource.create({
+        values: {
+          name: 'ONLY_UNION',
+          role: { name: noPermissionRole.name },
+          expiresIn,
+        },
+      });
+      const keyAgent = app.agent().set('Authorization', `Bearer ${keyResult.body.data.token}`);
+      const listRes = await keyAgent.resource('users').list();
+
+      expect(listRes.statusCode).toBe(403);
+    });
+
     it('token sercurity config should not affect api key auth', async () => {
       const res = await userAgent.resource('tokenControlConfig').update({
         filterByTk: 'token-policy-config',
