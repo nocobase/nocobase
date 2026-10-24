@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@nocobase/flow-engine';
+import { observer } from '@formily/react';
 import { Select } from 'antd';
 import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';
@@ -27,7 +27,7 @@ export const ViewSelect = observer(
         <Select popupMatchSelectWidth={false} value={view} onChange={onView}>
           {views.map((name) => (
             <Select.Option key={name} value={name}>
-              {messages[name]}
+              {name === 'work_week' ? messages.work_week : messages[name]}
             </Select.Option>
           ))}
         </Select>
