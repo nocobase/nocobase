@@ -10,7 +10,7 @@ import { Button as DefaultButton } from '../components/ui/button.js';
 import * as cards from '../components/ui/card.js';
 import { DemoSettingsContext } from './context.js';
 
-/** Localized page chrome; the plugin retains refresh permissions and draft guards. */
+/** Localized page chrome; the plugin retains refresh permissions and loading state. */
 export interface DemoSettingsHeaderProps {
   readonly title: string;
   readonly description?: string;

@@ -29,7 +29,7 @@ When ordinary sample installation uses the same story, share an application-owne
 
 ## Visitor accounts
 
-Keep `accounts(language)` and `createAccount()` on one shared definition with explicit passwords satisfying the host's authentication policy. Use `createPermissionSet`, `createAccount` and `assignPermissionSet` for identities and grants. Every listed account is publicly enterable while quick sign-in is enabled, as intended; list any role the demo should show, administrators included.
+Keep `accounts(language)` and `createAccount()` on one shared definition with explicit passwords satisfying the host's authentication policy. Use `createPermissionSet`, `createAccount` and `assignPermissionSet` for identities and grants. All enabled person accounts are publicly enterable while quick sign-in is enabled, including accounts created outside the dataset. The dataset list supplies optional role labels; quick sign-in does not read its passwords or require dataset ownership.
 
 Create demo-owned Permission Sets rather than assigning a built-in administrator role, whose last active assignment may prevent account cleanup. Supply any `roleScopes` marked `requiredOnCreate`. Assign a Permission Set through either `permissionSets` or its role scope, not both.
 
@@ -37,7 +37,7 @@ Create demo-owned Permission Sets rather than assigning a built-in administrator
 
 Clear and failed-import cleanup automatically preserve the executing administrator's current enabled state, password, sessions, assignments and required Permission Sets, including role scopes. HTTP operations use the authenticated, authorized user ID; scheduled reset uses the dataset's recorded actor ID. CLI import and clear still require `--actor`; reset may reuse the recorded actor and fails if none exists. No new permissions are granted. Ordinary demo accounts are disabled and lose their assignments, while all business data is cleared.
 
-Necessary tracking and ownership remain so generation/reset can reuse the same account and Permission Sets. Successful regeneration reconciles obsolete tracked grants. A later clear by a different administrator applies ordinary cleanup to the previous dataset-owned actor; accounts outside the dataset are never disabled or adopted. After clear, use normal password sign-in; quick sign-in lists accounts only while a dataset is ready.
+Necessary tracking and ownership remain so generation/reset can reuse the same account and Permission Sets. Successful regeneration reconciles obsolete tracked grants. A later clear by a different administrator applies ordinary cleanup to the previous dataset-owned actor; accounts outside the dataset are never disabled or adopted. After clear, quick sign-in continues to offer all remaining enabled person accounts, including the executing administrator. Tracking is cleanup bookkeeping, not a separate account type.
 
 ### Update demo accounts
 

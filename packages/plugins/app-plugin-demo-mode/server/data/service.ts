@@ -83,8 +83,6 @@ export interface DemoDataDependencies {
   readonly users?: () => UserManagementService | undefined;
   readonly authorization?: () => AppAuthorization | undefined;
   readonly agents?: () => DemoAgents | undefined;
-  /** Called when a dataset is registered and when an import, clear or reset this process ran has finished, whatever its outcome. */
-  readonly onSettled?: () => void;
   readonly logger?: {
     info(details: object, message: string): void;
     warn(details: object, message: string): void;
@@ -170,8 +168,6 @@ export class DefaultDemoDataService implements DemoDataService {
       throw new Error(`Demo dataset ${dataset.id} names no language.`);
     this.dataset = dataset;
     this.models.setAnswers(dataset.answers ?? []);
-    // A dataset registered after this plugin is ready still gets its default daily reset.
-    this.deps.onSettled?.();
     // An application may register after this plugin is ready; the simulated model's key still has to be known.
     void this.load().catch((cause: unknown) =>
       this.deps.logger?.warn(
@@ -187,11 +183,6 @@ export class DefaultDemoDataService implements DemoDataService {
 
   public load(): Promise<void> {
     return this.runtime.load();
-  }
-
-  /** The time zone the dataset writes the given language's demo in. */
-  public timeZone(language: string): string {
-    return this.dataset?.timeZone?.(language) ?? 'UTC';
   }
 
   public async status(): Promise<DemoDataStatus> {
@@ -364,7 +355,6 @@ export class DefaultDemoDataService implements DemoDataService {
       .catch(() => undefined)
       .finally(() => {
         this.running = undefined;
-        this.deps.onSettled?.();
       });
     await claiming;
     if (options.wait) await job;
@@ -440,7 +430,6 @@ export class DefaultDemoDataService implements DemoDataService {
       return await job;
     } finally {
       this.running = undefined;
-      this.deps.onSettled?.();
     }
   }
 
@@ -511,7 +500,6 @@ export class DefaultDemoDataService implements DemoDataService {
       .catch(() => undefined)
       .finally(() => {
         this.running = undefined;
-        this.deps.onSettled?.();
       });
     return { job };
   }

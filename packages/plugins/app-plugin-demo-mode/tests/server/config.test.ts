@@ -20,6 +20,10 @@ it('resolves defaults, file values and per-application environment without leaki
         env: {
           NOCOBASE_DEMO_MODE: String(enabled),
           NOCOBASE_DEMO_WRITABLE_COLLECTIONS: ' demonotes, demonotes ',
+          NOCOBASE_DEMO_RESET_HOUR: enabled ? '4' : '5',
+          NOCOBASE_DEMO_RESET_MINUTE: '30',
+          NOCOBASE_DEMO_RESET_TIMEZONE: enabled ? 'Asia/Shanghai' : 'UTC',
+          NOCOBASE_DEMO_RESET_LANGUAGE: enabled ? 'zh-CN' : 'en-US',
         },
       },
       config: {
@@ -27,6 +31,12 @@ it('resolves defaults, file values and per-application environment without leaki
           enabled: !enabled,
           allowCollections: ['demoitems'],
           quickSignIn: false,
+          dailyReset: {
+            hour: 8,
+            minute: 15,
+            timezone: 'Europe/London',
+            language: 'ja-JP',
+          },
         },
       },
     });
@@ -38,6 +48,12 @@ it('resolves defaults, file values and per-application environment without leaki
       enabled,
       allowCollections: ['demonotes', 'demonotes'],
       quickSignIn: false,
+      dailyReset: {
+        hour: enabled ? 4 : 5,
+        minute: 30,
+        timezone: enabled ? 'Asia/Shanghai' : 'UTC',
+        language: enabled ? 'zh-CN' : 'en-US',
+      },
     });
     expect(app.application.config.publicValues().demoMode).toEqual({ enabled });
     expect(
@@ -52,22 +68,16 @@ it('resolves defaults, file values and per-application environment without leaki
   }
 });
 
-it('uses defaults and ignores removed environment controls', async () => {
+it('uses deployment defaults for daily resets', async () => {
   const app = await createTestApp({
     createServer: createStandaloneServer,
-    server: {
-      env: {
-        NOCOBASE_DEMO_QUICK_SIGN_IN: 'false',
-        NOCOBASE_DEMO_DATA_MODELS: 'false',
-        NOCOBASE_DEMO_DATA_MODEL_BASE_URL: 'not-a-url',
-      },
-    },
   });
   apps.push(app);
   expect(app.application.config.get('demoMode')).toEqual({
     enabled: false,
     allowCollections: [],
     quickSignIn: true,
+    dailyReset: { hour: 3, minute: 0, timezone: 'UTC', language: 'en-US' },
   });
   expect(app.application.config.publicValues().demoMode).toEqual({
     enabled: false,
@@ -75,6 +85,10 @@ it('uses defaults and ignores removed environment controls', async () => {
   expect(Object.keys(defineDemoModeConfig().rules?.env ?? {})).toEqual([
     'NOCOBASE_DEMO_MODE',
     'NOCOBASE_DEMO_WRITABLE_COLLECTIONS',
+    'NOCOBASE_DEMO_RESET_HOUR',
+    'NOCOBASE_DEMO_RESET_MINUTE',
+    'NOCOBASE_DEMO_RESET_TIMEZONE',
+    'NOCOBASE_DEMO_RESET_LANGUAGE',
   ]);
 });
 
@@ -90,3 +104,24 @@ it.each([
     }),
   ).rejects.toThrow(/demoMode/);
 });
+
+it.each([
+  ['NOCOBASE_DEMO_RESET_HOUR', '24'],
+  ['NOCOBASE_DEMO_RESET_HOUR', '-1'],
+  ['NOCOBASE_DEMO_RESET_MINUTE', '60'],
+  ['NOCOBASE_DEMO_RESET_MINUTE', '1.5'],
+  ['NOCOBASE_DEMO_RESET_TIMEZONE', 'Invalid/Zone'],
+  ['NOCOBASE_DEMO_RESET_TIMEZONE', ''],
+  ['NOCOBASE_DEMO_RESET_LANGUAGE', 'not_a_locale'],
+  ['NOCOBASE_DEMO_RESET_LANGUAGE', ''],
+])(
+  'rejects invalid reset environment %s=%s at startup',
+  async (name, value) => {
+    await expect(
+      createTestApp({
+        createServer: createStandaloneServer,
+        server: { env: { [name]: value } },
+      }),
+    ).rejects.toThrow(/demoMode|Expected an integer/);
+  },
+);
