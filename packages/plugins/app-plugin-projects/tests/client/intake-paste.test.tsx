@@ -23,7 +23,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import locales from '../../client/locales/index.js';
 import NewIssuePage from '../../client/pages/issues/new.js';
-import type { IntakeFile } from '../../shared/intake.js';
+import {
+  INTAKE_FILES_MAX,
+  INTAKE_FILE_SIZE_MAX,
+  type IntakeFile,
+} from '../../shared/intake.js';
 import { permissionsOf } from '../permissions.js';
 
 beforeEach(() => window.localStorage.clear());
@@ -43,7 +47,10 @@ async function setup(
   locale = 'en-US',
   stored: Partial<IntakeFile> = {},
   basePath = '',
-  uploadFails = false,
+  handlers: {
+    upload?: (index: number) => Promise<Response>;
+    remove?: () => Response;
+  } = {},
 ) {
   const uploaded: string[] = [];
   const requests = vi.fn(({ path, method }: ApiCall): unknown => {
@@ -66,13 +73,14 @@ async function setup(
       return {
         data: { available: false, reason: 'noAgent', by: null, waits: false },
       };
-    if (method === 'DELETE') return new Response(null, { status: 204 });
+    if (method === 'DELETE')
+      return handlers.remove?.() ?? new Response(null, { status: 204 });
     if (path === 'projects/intake/split')
       return new Response(null, { status: 500 });
     return new Response(null, { status: 404 });
   });
   const answer = answerApi(requests);
-  await renderWithApp(
+  const view = await renderWithApp(
     <QueryClientProvider
       client={
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -97,7 +105,7 @@ async function setup(
           new URL(request.url).pathname.endsWith('/intake/files')
         ) {
           uploaded.push(await request.text());
-          if (uploadFails) return new Response(null, { status: 500 });
+          if (handlers.upload) return handlers.upload(uploaded.length);
           return Response.json({
             data: {
               id: `f${uploaded.length}`,
@@ -131,7 +139,7 @@ async function setup(
       ),
     ).toBe(true),
   );
-  return { box, uploaded, requests };
+  return { box, uploaded, requests, toasts: view.toasts };
 }
 
 function paste(box: HTMLElement, files: readonly File[]) {
@@ -142,7 +150,277 @@ function paste(box: HTMLElement, files: readonly File[]) {
   expect(event.defaultPrevented).toBe(false);
 }
 
+function storedImage(id: string): Response {
+  return Response.json({
+    data: {
+      id,
+      filename: 'same.png',
+      ext: 'png',
+      mimeType: 'image/png',
+      size: 5,
+      createdAt: '2026-10-01T00:00:00Z',
+    } satisfies IntakeFile,
+  });
+}
+
+async function expectSplit(
+  requests: ReturnType<typeof vi.fn>,
+  box: HTMLElement,
+  fileIds: string[],
+) {
+  fireEvent.change(box, { target: { value: '- Keep task' } });
+  await waitFor(() => expect(screen.getByTestId('intake-split')).toBeEnabled());
+  fireEvent.click(screen.getByTestId('intake-split'));
+  await waitFor(() =>
+    expect(
+      requests.mock.calls.find(
+        ([call]: [ApiCall]) => call.path === 'projects/intake/split',
+      )?.[0].json,
+    ).toMatchObject({ fileIds }),
+  );
+}
+
 describe('requirements image paste', () => {
+  it('keeps list and submitted IDs in addition order when uploads finish in reverse', async () => {
+    const finishes: ((response: Response) => void)[] = [];
+    const { box, requests, uploaded } = await setup('en-US', {}, '', {
+      upload: () => new Promise((resolve) => finishes.push(resolve)),
+    });
+    paste(
+      box,
+      ['first.png', 'second.png', 'third.png'].map(
+        (name) => new File(['image'], name, { type: 'image/png' }),
+      ),
+    );
+    await waitFor(() => expect(uploaded).toHaveLength(3));
+    finishes[2]!(storedImage('third'));
+    finishes[1]!(storedImage('second'));
+    expect(screen.getByTestId('intake-split')).toBeDisabled();
+    finishes[0]!(storedImage('first'));
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('button', { name: /^Preview / })
+          .map((button) => button.getAttribute('aria-label')),
+      ).toEqual([
+        'Preview first.png',
+        'Preview second.png',
+        'Preview third.png',
+      ]),
+    );
+    await expectSplit(requests, box, ['first', 'second', 'third']);
+  });
+
+  it.each(['paste', 'manual'])(
+    'retains independent IDs for repeated identical %s files',
+    async (source) => {
+      const { box, requests, uploaded } = await setup();
+      const image = new File(['same bytes'], 'same.png', { type: 'image/png' });
+      for (let count = 1; count <= 2; count += 1) {
+        if (source === 'paste') paste(box, [image]);
+        else
+          fireEvent.change(screen.getByTestId('intake-file-input'), {
+            target: { files: [image] },
+          });
+        await waitFor(() => expect(uploaded).toHaveLength(count));
+      }
+      await waitFor(() =>
+        expect(
+          screen.getAllByRole('button', { name: 'Preview same.png' }),
+        ).toHaveLength(2),
+      );
+      await expectSplit(requests, box, ['f1', 'f2']);
+    },
+  );
+
+  it.each([false, true])(
+    'reports deletion failure and retries cleanup (late upload: %s)',
+    async (late) => {
+      let finish!: (response: Response) => void;
+      let attempts = 0;
+      const { box, requests, uploaded } = await setup('en-US', {}, '', {
+        ...(late
+          ? {
+              upload: () =>
+                new Promise<Response>((resolve) => {
+                  finish = resolve;
+                }),
+            }
+          : {}),
+        remove: () =>
+          new Response(null, { status: ++attempts === 1 ? 500 : 204 }),
+      });
+      paste(box, [new File(['image'], 'same.png', { type: 'image/png' })]);
+      await waitFor(() => expect(uploaded).toHaveLength(1));
+      if (!late)
+        await screen.findByRole('button', { name: 'Preview same.png' });
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Remove same.png' }),
+      );
+      if (late) finish(storedImage('late'));
+      const retry = await screen.findByRole('button', {
+        name: 'Retry deleting same.png',
+      });
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Could not delete same.png',
+      );
+      expect(
+        screen.queryByRole('button', { name: 'Preview same.png' }),
+      ).toBeNull();
+      await expectSplit(requests, box, []);
+      fireEvent.click(retry);
+      await waitFor(() => expect(attempts).toBe(2));
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('button', { name: 'Retry deleting same.png' }),
+        ).toBeNull(),
+      );
+    },
+  );
+
+  it('enforces the shared count and size limits on pasted images', async () => {
+    const { box, uploaded, requests, toasts } = await setup();
+    const oversized = new File(['large'], 'large.png', { type: 'image/png' });
+    Object.defineProperty(oversized, 'size', {
+      value: INTAKE_FILE_SIZE_MAX + 1,
+    });
+    paste(box, [oversized]);
+    expect(uploaded).toHaveLength(0);
+    expect(screen.queryByText('large.png')).toBeNull();
+    expect(toasts()).toMatchObject([
+      { type: 'error', title: 'large.png is larger than 20 MB.' },
+    ]);
+    paste(
+      box,
+      Array.from(
+        { length: INTAKE_FILES_MAX + 1 },
+        (_, index) =>
+          new File(['image'], `${index}.png`, { type: 'image/png' }),
+      ),
+    );
+    await waitFor(() => expect(uploaded).toHaveLength(INTAKE_FILES_MAX));
+    expect(screen.queryByText(`${INTAKE_FILES_MAX}.png`)).toBeNull();
+    expect(toasts()).toContainEqual(
+      expect.objectContaining({ type: 'error', title: 'At most 10 files.' }),
+    );
+    await expectSplit(
+      requests,
+      box,
+      Array.from({ length: INTAKE_FILES_MAX }, (_, index) => `f${index + 1}`),
+    );
+  });
+
+  it('removes failed uploads from the list and submission', async () => {
+    const { box, requests, uploaded, toasts } = await setup('en-US', {}, '', {
+      upload: async () => new Response(null, { status: 500 }),
+    });
+    paste(box, [new File(['image'], 'failed.png', { type: 'image/png' })]);
+    await waitFor(() => expect(uploaded).toHaveLength(1));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Remove failed.png' }),
+      ).toBeNull(),
+    );
+    await expectSplit(requests, box, []);
+    expect(toasts()).toContainEqual(
+      expect.objectContaining({
+        type: 'error',
+        title: 'Could not upload failed.png.',
+      }),
+    );
+  });
+
+  it.each([
+    ['HTML with text', '<b>pasted</b>', 'pasted'],
+    ['HTML only', '<img src="https://example.com/image.png">', ''],
+    ['file path', '', '/tmp/screenshot.png'],
+    ['non-image file', '', 'notes'],
+  ])(
+    'preserves default paste for %s without adding files',
+    async (kind, html, text) => {
+      const { box, uploaded } = await setup();
+      const user = userEvent.setup();
+      await user.click(box);
+      await user.type(box, 'Before selected after');
+      if (!(box instanceof HTMLTextAreaElement))
+        throw new Error('Expected textarea');
+      box.setSelectionRange(7, 15);
+      const clipboard = await user.copy();
+      if (!clipboard) throw new Error('Expected clipboard');
+      clipboard.clearData();
+      if (text) clipboard.setData('text/plain', text);
+      if (html) clipboard.setData('text/html', html);
+      if (kind === 'non-image file')
+        Object.defineProperty(clipboard, 'files', {
+          value: [new File(['notes'], 'notes.txt', { type: 'text/plain' })],
+        });
+      const event = createEvent.paste(box, { clipboardData: clipboard });
+      fireEvent(box, event);
+      expect(event.defaultPrevented).toBe(false);
+      // user-event inserts HTML as text; jsdom has no native paste default.
+      if (text) await user.paste(clipboard);
+      expect(box).toHaveValue(
+        text ? `Before ${text} after` : 'Before selected after',
+      );
+      expect(uploaded).toHaveLength(0);
+      expect(screen.queryByRole('button', { name: /^Remove / })).toBeNull();
+    },
+  );
+  it.each(['paste', 'manual'])(
+    'cleans up a %s upload removed before it finishes',
+    async (source) => {
+      let finish!: (response: Response) => void;
+      const { box, requests, uploaded } = await setup('en-US', {}, '', {
+        upload: () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      });
+      const image = new File(['image'], 'pending.png', { type: 'image/png' });
+      if (source === 'paste') paste(box, [image]);
+      else
+        fireEvent.change(screen.getByTestId('intake-file-input'), {
+          target: { files: [image] },
+        });
+      await waitFor(() => expect(uploaded).toHaveLength(1));
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Remove pending.png' }),
+      );
+      finish(
+        Response.json({
+          data: {
+            id: 'late',
+            filename: 'pending.png',
+            ext: 'png',
+            mimeType: 'image/png',
+            size: 5,
+            createdAt: '2026-10-01T00:00:00Z',
+          } satisfies IntakeFile,
+        }),
+      );
+      await waitFor(() =>
+        expect(
+          requests.mock.calls.some(
+            ([call]) =>
+              call.method === 'DELETE' &&
+              call.path === 'projects/intake/files/late',
+          ),
+        ).toBe(true),
+      );
+      expect(
+        screen.queryByRole('button', { name: 'Preview pending.png' }),
+      ).toBeNull();
+      fireEvent.change(box, { target: { value: '- Keep task' } });
+      fireEvent.click(screen.getByTestId('intake-split'));
+      await waitFor(() =>
+        expect(
+          requests.mock.calls.find(
+            ([call]) => call.path === 'projects/intake/split',
+          )?.[0].json,
+        ).toMatchObject({ fileIds: [] }),
+      );
+    },
+  );
   it('restores the text and selected uploads after leaving and returning without automatically submitting', async () => {
     const { box, requests } = await setup();
     fireEvent.change(box, { target: { value: 'Keep the red card and retry' } });
@@ -179,7 +457,9 @@ describe('requirements image paste', () => {
     ).toMatchObject({ fileIds: ['f1'], text: 'Keep the red card and retry' });
   });
   it('reports a failed TXT upload and excludes it from the submitted files', async () => {
-    const { box, uploaded, requests } = await setup('en-US', {}, '', true);
+    const { box, uploaded, requests } = await setup('en-US', {}, '', {
+      upload: async () => new Response(null, { status: 500 }),
+    });
     fireEvent.change(box, { target: { value: 'Keep these requirements' } });
     fireEvent.change(screen.getByTestId('intake-file-input'), {
       target: {
