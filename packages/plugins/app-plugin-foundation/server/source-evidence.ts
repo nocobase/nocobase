@@ -221,6 +221,29 @@ export class SourceEvidence {
     return { references, nodes, complete };
   }
 
+  public importedSource(
+    node: ts.ImportDeclaration | ts.ExportDeclaration,
+  ): ts.SourceFile | undefined {
+    if (ts.isExportDeclaration(node) && node.isTypeOnly) return undefined;
+    const clause = ts.isImportDeclaration(node) ? node.importClause : undefined;
+    if (clause?.isTypeOnly) return undefined;
+    const named = clause?.namedBindings;
+    if (
+      named &&
+      ts.isNamedImports(named) &&
+      !clause?.name &&
+      named.elements.length &&
+      named.elements.every((item) => item.isTypeOnly)
+    )
+      return undefined;
+    if (!node.moduleSpecifier || !ts.isStringLiteralLike(node.moduleSpecifier))
+      return undefined;
+    const file = this.resolutions.get(
+      `${node.getSourceFile().fileName}\0${node.moduleSpecifier.text}`,
+    );
+    return file ? this.sources.get(file)?.ast : undefined;
+  }
+
   public symbol(node: ts.Node): ts.Symbol | undefined {
     if (
       node.parent &&

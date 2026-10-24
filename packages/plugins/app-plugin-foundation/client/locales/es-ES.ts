@@ -45,7 +45,7 @@ const esES: FoundationResource = {
     legend:
       '✓ Integración identificada; · relación sin identificar. Las referencias de código describen dependencias, no ejecuciones.',
     partial:
-      'No se pudieron leer algunas dependencias. Se muestran las relaciones confirmadas.',
+      'No se pudieron determinar algunas dependencias de las páginas; solo se muestran las conexiones confirmadas.',
     evidence: {
       page: 'Página registrada en la aplicación',
       authentication: 'La página requiere iniciar sesión',

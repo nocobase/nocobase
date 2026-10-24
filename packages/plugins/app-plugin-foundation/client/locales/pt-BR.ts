@@ -45,7 +45,7 @@ const ptBR: FoundationResource = {
     legend:
       '✓ Integração identificada; · relação não identificada. Referências de código descrevem dependências, não execuções.',
     partial:
-      'Algumas dependências não puderam ser lidas. As relações confirmadas continuam visíveis.',
+      'Não foi possível determinar algumas dependências das páginas; apenas conexões confirmadas são exibidas.',
     evidence: {
       page: 'Página registrada na aplicação',
       authentication: 'A página exige autenticação',

@@ -10,6 +10,7 @@ import type { RuntimeProviderEvidence } from './provider-inventory.js';
 import { SourceEvidence } from './source-evidence.js';
 import { readModuleManifest } from './module-manifest.js';
 import { apiDependencies as analyzeApiDependencies } from './api-evidence.js';
+import { endpointChain } from './endpoint-chain.js';
 import { pageRequests } from './request-evidence.js';
 import { StaticValues } from './static-values.js';
 
@@ -89,16 +90,13 @@ export async function collectModuleSources(
             for (const provider of page.providers) providers.add(provider);
             for (const request of graph.requests(page.sources)) {
               routeComplete &&= backendComplete;
-              for (const endpoint of endpoints) {
-                if (
-                  request.method === endpoint.method &&
-                  sameApiPath(request.path, endpoint.path)
-                ) {
-                  for (const provider of endpoint.providers)
-                    apiProviders.add(provider);
-                  for (const collection of endpoint.collections ?? [])
-                    collections.add(collection);
-                }
+              const chain = endpointChain(request, endpoints);
+              routeComplete &&= chain.complete;
+              for (const endpoint of chain.endpoints) {
+                for (const provider of endpoint.providers)
+                  apiProviders.add(provider);
+                for (const collection of endpoint.collections ?? [])
+                  collections.add(collection);
               }
             }
             routeComplete &&= page.complete;
@@ -363,10 +361,9 @@ class SourceGraph {
     const entry = this.serverEntry;
     const source = entry && this.files.get(entry);
     if (!source || !this.analysis) return [];
-    const graph = this.evidence(source.file);
     return analyzeApiDependencies(
       source.ast,
-      graph.sources,
+      (await this.walk(source.file, false)).sources,
       this.analysis,
       (file, nodes) => [...this.evidence(file, nodes).providers].sort(),
     );
@@ -524,18 +521,6 @@ function dynamicImports(node: ts.Node): string[] {
   return importsIn(node);
 }
 
-function sameApiPath(request: string, endpoint: string): boolean {
-  const segments = (value: string): string[] =>
-    value.split('?')[0].split('/').filter(Boolean);
-  const left = segments(request),
-    right = segments(endpoint);
-  return (
-    left.length === right.length &&
-    left.every((part, index) =>
-      right[index]?.startsWith(':') ? part.length > 0 : part === right[index],
-    )
-  );
-}
 function importsIn(node: ts.Node): string[] {
   const found: string[] = [];
   const visit = (child: ts.Node): void => {

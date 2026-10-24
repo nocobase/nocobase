@@ -42,6 +42,67 @@ afterEach(async () => {
 });
 
 describe('static module dependencies', () => {
+  it('invokes router factories in export order and snapshots each contribution before the next factory', async () => {
+    const root = await fixture({
+      'client/routes.ts':
+        "export default [{name:'page',componentLoader:()=>import('./page.js')}];",
+      'client/page.ts':
+        "import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'items/export'});",
+      'server/routes/index.ts':
+        "import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {read} from '@nocobase/db';import {send} from '@nocobase/app-plugin-mail/server';const router=new Hono();const second=defineApiRoutes(()=>{router.get('/items/:id',c=>{read();return c.text('db');});return router;});const first=defineApiRoutes(()=>{router.get('/items/export',c=>{send();return c.text('mail');});return router;});export default [first,second];",
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/app-plugin-mail',
+    ]);
+    await writeFile(
+      path.join(root, 'server/routes/index.ts'),
+      "import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {read} from '@nocobase/db';import {send} from '@nocobase/app-plugin-mail/server';import {notify} from '@nocobase/app-plugin-notification/server';const router=new Hono().get('/items/:id',async(c,next)=>{read();await next();});const later=defineApiRoutes(()=>{router.get('/items/export',c=>{send();return c.text('mail');});return router;});export default [router,new Hono().get('/items/export',c=>{notify();return c.text('notification');}),later];",
+    );
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/app-plugin-notification',
+      '@nocobase/db',
+    ]);
+  });
+  it('respects side-effect registration modules without attributing unrelated router imports', async () => {
+    const root = await fixture({
+      'client/routes.ts':
+        "export default [{name:'page',componentLoader:()=>import('./page.js')}];",
+      'client/page.ts':
+        "import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'items/export'});",
+      'server/routes/index.ts':
+        "import router from './router.js';import './register.js'; import {send} from '@nocobase/app-plugin-mail/server';router.get('/items/export',c=>{send();return c.text('mail');});export default router;",
+      'server/routes/router.ts':
+        "import {Hono} from 'hono';export default new Hono();",
+      'server/routes/register.ts':
+        "import router from './router.js';import {read} from '@nocobase/db';router.get('/items/:id',c=>{read();return c.text('db');});",
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+  });
+  it('keeps imported router registration before importer additions and preserves ordered API exports', async () => {
+    const root = await fixture({
+      'client/routes.ts':
+        "export default [{name:'page',componentLoader:()=>import('./page.js')}];",
+      'client/page.ts':
+        "import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'items/export'});",
+      'server/routes/index.ts':
+        "import router from './child.js'; import {send} from '@nocobase/app-plugin-mail/server'; router.get('/items/export',c=>{send();return c.text('mail');}); export default router;",
+      'server/routes/child.ts':
+        "import {Hono} from 'hono';import {read} from '@nocobase/db';const router=new Hono();router.get('/items/:id',c=>{read();return c.text('db');});export default router;",
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+    await writeFile(
+      path.join(root, 'server/routes/index.ts'),
+      "import child from './child.js';import {Hono} from 'hono';import {send} from '@nocobase/app-plugin-mail/server';export default [new Hono().get('/items/export',c=>{send();return c.text('mail');}),child];",
+    );
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/app-plugin-mail',
+    ]);
+  });
+
   it.each(['server/routes/index.js', 'server/routes.js'])(
     'matches source and published %s entries for applications and registered plugins',
     async (router) => {

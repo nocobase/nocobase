@@ -39,7 +39,7 @@ const zhTW: FoundationResource = {
     empty: '尚未發現業務模組，新增頁面與選單後會自動出現在這裡。',
     legend:
       '✓ 表示已識別的整合關係；· 表示尚未識別。程式碼引用說明相依關係，不代表實際執行次數。',
-    partial: '部分頁面相依項目暫時無法讀取，已確認的關聯仍會顯示。',
+    partial: '部分頁面依賴尚無法確認；這裡只顯示已確認的關聯。',
     evidence: {
       page: '已註冊應用頁面',
       authentication: '頁面要求登入',
