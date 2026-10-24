@@ -98,41 +98,28 @@ const idID: LocaleResource<typeof enUS> = {
     unavailableNow: 'Tidak tersedia saat ini',
     title: 'Agen',
     description:
-      'Setiap alat pengkodean dan model laporan runner adalah agen. Manajer proyek menyerahkan setiap langkah suatu masalah kepada agen yang deskripsinya sesuai.',
+      'Tambahkan agen dari model yang dilaporkan runner. Manajer proyek menugaskan setiap langkah tugas kepada agen yang deskripsinya sesuai.',
     fromRunners: 'Agen dari runner',
-    discovery: {
-      selectAll: 'Pilih semua hasil',
-      selectFirst: 'Pilih hasil {{limit}} pertama',
-      selectionCount: 'Grup {{count}} / {{limit}} yang dipilih',
-      clearSelection: 'Hapus pilihan',
-      new: 'Penemuan baru ({{count}})',
-      ignored: 'Diabaikan ({{count}})',
+    display: {
       search: 'Model atau penyedia pencarian',
       select: 'Pilih {{name}}',
-      ignore: 'Abaikan',
-      restore: 'Pulihkan',
-      ignoreSelected: 'Abaikan yang dipilih',
-      restoreSelected: 'Pemulihan dipilih',
       showDisabled: 'Tampilkan nonaktif',
       hideDisabled: 'Sembunyikan nonaktif',
-      provider: 'Penyedia dan runner',
-      saved: 'Preferensi penemuan disimpan',
     },
     filterLabel: 'Tunjukkan agen',
     filters: {
       all: 'Semua {{count}}',
       enabled: 'Mengaktifkan {{count}}',
-      pending: 'Untuk mengaktifkan {{count}}',
       unreported: 'Tidak ada runner {{count}}',
     },
     loadFailed: 'Tidak dapat memuat agen',
     loadMore: 'Muat lebih banyak',
     emptyTitle: 'Belum ada agen',
     emptyDescription:
-      'Hubungkan runner dengan alat pengkodean yang masuk: masing-masing modelnya muncul di sini sebagai agen untuk diaktifkan.',
+      'Hubungkan runner dengan alat pengkodean yang sudah masuk ke akun, lalu tambahkan agen melalui “Model yang tersedia”.',
     noneInFilter: 'Tidak ada agen di sini.',
     howToAdd:
-      'Untuk menambahkan agen, instal alat pengkodean pada runner dan masuk ke model yang mungkin Anda gunakan: setelah runner melaporkannya, itu akan muncul di sini, dan Anda mengaktifkannya dengan menulis keahliannya. Agen yang hanya dimiliki oleh runner pribadi hanya mengerjakan masalah yang dimulai oleh pemiliknya.',
+      'Untuk menambahkan agen, instal alat pengkodean pada runner dan masuk ke akun untuk menggunakan model yang tersedia. Setelah runner melaporkannya, tambahkan agen melalui “Model yang tersedia” dan tuliskan keahliannya. Agen langsung diaktifkan saat ditambahkan. Agen yang hanya tersedia pada runner pribadi hanya mengerjakan tugas yang dimulai oleh pemiliknya.',
     goodAtMissing: 'Belum ditulis',
     columns: {
       agent: 'Agen',
@@ -155,7 +142,6 @@ const idID: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Aktif',
-      pending: 'Untuk mengaktifkan',
       disabled: 'Nonaktif',
       unreported: 'Tidak ada runner',
     },
@@ -171,9 +157,6 @@ const idID: LocaleResource<typeof enUS> = {
       ultra: 'Sangat',
     },
     enable: {
-      button: 'Isi dan aktifkan',
-      buttonFor: 'Isi dan aktifkan {{name}}',
-      title: 'Aktifkan {{name}}',
       reportedBy_one: 'Dilaporkan oleh runner {{count}} online: {{names}}.',
       reportedBy_other: 'Dilaporkan oleh runner online {{count}}: {{names}}.',
       noRunnerNow: 'Tidak ada runner yang memilikinya yang online sekarang.',
@@ -184,8 +167,6 @@ const idID: LocaleResource<typeof enUS> = {
         'Manajer proyek tidak dapat mengubahnya ketika penyerahan pekerjaan.',
       personalOnly:
         'Hanya runner pribadi yang memilikinya: manajer proyek menyerahkan pekerjaan hanya pada masalah yang dimulai oleh pemiliknya.',
-      submit: 'Aktifkan',
-      done: '{{name}} diaktifkan',
     },
     edit: {
       button: 'Edit',
@@ -239,31 +220,6 @@ const idID: LocaleResource<typeof enUS> = {
         '{{succeeded}} ditambahkan, {{failed}} tidak dapat ditambahkan. Alasan ada di bawah masing-masing.',
       addFailed:
         '{{failed}} tidak dapat ditambahkan. Alasan ada di bawah masing-masing; coba lagi.',
-    },
-    cleanup: {
-      open: 'Bersihkan',
-      title: 'Hapus agen temuan yang tidak terpakai',
-      description:
-        'Agen yang dibuat dari laporan runner, tidak diaktifkan siapa pun, dan belum pernah berjalan: aman untuk dihapus langsung. Yang berubah sejak daftar ini dimuat akan dilewati, tidak dihapus.',
-      none: 'Tidak ada yang perlu dihapus.',
-      select: 'Pilih {{name}}',
-      selectGroup: 'Pilih semua di {{tool}}',
-      clearGroup: 'Batalkan pilihan {{tool}}',
-      neverEnabled: 'Belum pernah diaktifkan · Tidak ada riwayat berjalan',
-      createdAt: 'Ditemukan {{when}}',
-      group_one: '{{tool}} · {{count}} kandidat',
-      group_other: '{{tool}} · {{count}} kandidat',
-      selectedCount_one: '{{count}} dipilih',
-      selectedCount_other: '{{count}} dipilih',
-      remove: 'Hapus {{count}}',
-      confirmTitle_one: 'Hapus {{count}} agen?',
-      confirmTitle_other: 'Hapus {{count}} agen?',
-      confirmDescription:
-        'Mencakup {{tools}}. Aman dihapus: diperiksa ulang tepat sebelum dihapus, dan yang sudah tidak memenuhi syarat akan dilewati, tidak dihapus.',
-      confirmAction: 'Hapus {{count}}',
-      done: '{{removed}} dihapus, {{skipped}} dilewati',
-      partialFailure:
-        '{{removed}} dihapus, {{skipped}} dilewati; {{failed}} tidak dapat dihapus ({{reason}}). Tetap dipilih untuk dicoba lagi.',
     },
   },
   agentTypes: {

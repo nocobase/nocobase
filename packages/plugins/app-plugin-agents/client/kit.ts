@@ -140,7 +140,7 @@ export const VariablesSection: ComponentType<ScopeSectionProps> =
 export const ScopedVariablesSection: ComponentType<ScopedVariablesSectionProps> =
   withAgents(ScopedVariables);
 /**
- * The agents discovered from runners, as the Agent page lists them, with enabling and editing for those who manage
+ * The runner agents, as the Agent page lists them, with adding and editing for those who manage
  * agents: for an application that composes its own Agent page.
  */
 export const RunnerAgentsSection: ComponentType = withAgents(RunnerAgents);
