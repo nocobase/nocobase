@@ -137,7 +137,12 @@ export class SourceEvidence {
           ts.isImportSpecifier(declaration) ||
           ts.isExportSpecifier(declaration)
         ) {
-          if (declaration.isTypeOnly) continue;
+          if (
+            declaration.isTypeOnly ||
+            (ts.isExportSpecifier(declaration) &&
+              declaration.parent.parent.isTypeOnly)
+          )
+            continue;
           if (
             imported(
               declaration,

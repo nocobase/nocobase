@@ -144,7 +144,16 @@ describe('static module dependencies', () => {
     },
   );
 
-  it.each(['own', 'decoy', 'missing', 'inherited', 'baseUrl'])(
+  it.each([
+    'own',
+    'decoy',
+    'missing',
+    'inherited',
+    'baseUrl',
+    'renamed',
+    'typeElement',
+    'typeStatement',
+  ])(
     'uses the declared paths directory with %s inherited configuration',
     async (kind) => {
       const root = await fixture({
@@ -164,11 +173,11 @@ describe('static module dependencies', () => {
           },
         }),
         'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
-        'client/page.ts': `import {read} from '@/helper';export default ()=>read();`,
+        'client/page.ts': `import {${kind === 'renamed' ? 'selected as read' : 'read'}} from '@/helper';export default ()=>read();`,
         ...(kind === 'missing'
           ? {}
           : {
-              'client/helper.ts': `import {read} from '@nocobase/db';export {read};`,
+              'client/helper.ts': `import {read} from '@nocobase/db';import {send} from '@nocobase/app-plugin-mail/client';export ${kind === 'typeStatement' ? 'type ' : ''}{${kind === 'typeElement' ? 'type ' : ''}read${kind === 'renamed' ? ' as selected' : ''}};`,
             }),
         ...(kind === 'decoy' || kind === 'missing'
           ? {
@@ -178,7 +187,7 @@ describe('static module dependencies', () => {
       });
       const result = await collectModuleSources(root);
       expect(result.routes[0]?.providers).toEqual(
-        kind === 'missing' ? [] : ['@nocobase/db'],
+        kind === 'missing' || kind.startsWith('type') ? [] : ['@nocobase/db'],
       );
       expect(result.complete).toBe(kind !== 'missing');
       const parsed = ts.getParsedCommandLineOfConfigFile(
