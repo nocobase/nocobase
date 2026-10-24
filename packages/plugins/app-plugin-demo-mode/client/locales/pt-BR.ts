@@ -39,10 +39,6 @@ const resource: DemoModeResource = {
     apply: 'Aplicar alterações',
     unsaved: 'Alterações não salvas',
     discardAndReload: 'Descartar minhas alterações e recarregar',
-    tabs: {
-      overview: 'Visão geral',
-      schedule: 'Redefinição diária',
-    },
     leave: {
       title: 'Sair sem salvar?',
       description: 'As alterações não salvas nesta página serão perdidas.',
@@ -128,6 +124,7 @@ const resource: DemoModeResource = {
         'Não foi possível copiar. Copie o link da barra de endereços.',
     },
     schedule: {
+      title: 'Redefinição diária',
       confirmTitle: 'Salvar a redefinição diária?',
       confirmDescription:
         'No horário abaixo, todos os dados de negócio desta instância são excluídos e gerados novamente.',

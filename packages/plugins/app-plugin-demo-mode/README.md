@@ -173,12 +173,13 @@ Set `showFloatingAccountSwitcher: false` in the client registration to hide the 
 
 ## Administration page
 
-`DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is the whole demo administration: an application mounts it on a route of its own, inside its own page layout, and protects that route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`. Management uses the settings grants below, without an additional page grant. It has two tabs, the current one kept in `?tab=`:
+`DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is the whole demo administration: an application mounts it on a route of its own, inside its own page layout, and protects that route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`. Management uses the settings grants below, without an additional page grant. It is a single page of three cards:
 
-- **Overview** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence), and demo accounts, their credentials and a copyable sign-in link for each.
+- **Demo data** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence).
 - **Daily reset** — on or off, the time, a searchable IANA time zone, the dataset language and the next run.
+- **Demo accounts** — their credentials and a copyable sign-in link for each.
 
-Visitor write policies, simulation and AI controls are not displayed. Existing collection exceptions remain effective and can be managed through deployment configuration or the configuration API. Registered simulations and integrated demo chat are enabled by default; the application decides which flows to integrate. Existing `?tab=writes` and `?tab=simulation` links display the first accessible tab.
+Visitor write policies, simulation and AI controls are not displayed. Existing collection exceptions remain effective and can be managed through deployment configuration or the configuration API. Registered simulations and integrated demo chat are enabled by default; the application decides which flows to integrate. The page has no tabs; an existing `?tab=` parameter is ignored.
 
 Each card saves on its own with the revision it was started from and says when another administrator saved first; leaving with unsaved changes asks first. What the viewer lacks the grant for is shown without its actions.
 
@@ -197,11 +198,11 @@ import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings
 
 ### Host presentation components
 
-Pass a stable, module-level `components` map to reuse the host's page header, cards, buttons and tabs. `DemoSettingsComponents` and `DemoSettingsHeaderProps` are public types on the same `client/settings` export. Omitted slots retain the plugin defaults, so existing callers keep their presentation. Keep one `PageContainer` in the owning application.
+Pass a stable, module-level `components` map to reuse the host's page header, cards and buttons. `DemoSettingsComponents` and `DemoSettingsHeaderProps` are public types on the same `client/settings` export. Omitted slots retain the plugin defaults, so existing callers keep their presentation. Keep one `PageContainer` in the owning application.
 
-The slots are `Header`, `Button`, `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter`, `TabsList` and `TabsTrigger`. Header receives localized `title`, `refreshLabel`, `activeTabLabel`, `refreshDisabled`, `refreshing` and `onRefresh`; preserve the refresh guard, and use `refreshing` for pending feedback. A host with a parent settings heading should use its frame-aware header. `activeTabLabel` supports a host breadcrumb without coupling the plugin to private routing contexts.
+The slots are `Header`, `Button`, `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent` and `CardFooter`. Header receives localized `title`, `refreshLabel`, `refreshDisabled`, `refreshing` and `onRefresh`; preserve the refresh guard, and use `refreshing` for pending feedback. A host with a parent settings heading should use its frame-aware header.
 
-Define component functions outside the page render to preserve drafts and focus. Primitive replacements must forward children, refs, disabled states, events and accessibility props. Use compatible Base UI components from the same shared `@base-ui/react` peer instance; the plugin retains the Tabs root and panels, URL state, permissions, confirmation dialogs and revision-safe saves. For example, a host `TabsList` adapter can set `variant="line"` and wrap at narrow widths while forwarding all other props. Replace card parts together when the host uses a different spacing model, and allow action rows and unsaved-state footers to wrap on mobile. Do not change theme tokens or use global CSS overrides to adapt this one page.
+Define component functions outside the page render to preserve drafts and focus. Primitive replacements must forward children, refs, disabled states, events and accessibility props. The plugin retains permissions, confirmation dialogs and revision-safe saves. Replace card parts together when the host uses a different spacing model, and allow action rows and unsaved-state footers to wrap on mobile. Do not change theme tokens or use global CSS overrides to adapt this one page.
 
 ## Command line
 

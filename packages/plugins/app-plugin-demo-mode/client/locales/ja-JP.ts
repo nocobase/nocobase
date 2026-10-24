@@ -39,10 +39,6 @@ const resource: DemoModeResource = {
     apply: '変更を適用',
     unsaved: '未保存の変更があります',
     discardAndReload: '自分の変更を破棄して再読み込み',
-    tabs: {
-      overview: '概要',
-      schedule: '毎日のリセット',
-    },
     leave: {
       title: '保存せずに移動しますか？',
       description: 'このページで保存していない変更は失われます。',
@@ -125,6 +121,7 @@ const resource: DemoModeResource = {
         'コピーできませんでした。アドレスバーからリンクをコピーしてください。',
     },
     schedule: {
+      title: '毎日のリセット',
       confirmTitle: '毎日のリセットを保存しますか？',
       confirmDescription:
         '下の時刻に、このインスタンスの業務データをすべて削除して再生成します。',

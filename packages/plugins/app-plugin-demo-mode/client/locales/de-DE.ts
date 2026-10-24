@@ -39,10 +39,6 @@ const resource: DemoModeResource = {
     apply: 'Änderungen übernehmen',
     unsaved: 'Ungespeicherte Änderungen',
     discardAndReload: 'Meine Änderungen verwerfen und neu laden',
-    tabs: {
-      overview: 'Übersicht',
-      schedule: 'Tägliches Zurücksetzen',
-    },
     leave: {
       title: 'Ohne Speichern verlassen?',
       description:
@@ -128,6 +124,7 @@ const resource: DemoModeResource = {
         'Kopieren fehlgeschlagen. Kopieren Sie den Link aus der Adressleiste.',
     },
     schedule: {
+      title: 'Tägliches Zurücksetzen',
       confirmTitle: 'Tägliches Zurücksetzen speichern?',
       confirmDescription:
         'Zur unten genannten Zeit werden alle Geschäftsdaten dieser Instanz gelöscht und neu erzeugt.',

@@ -72,6 +72,7 @@ export function ScheduleCard({
     draft.setDraft({ ...value, ...patch });
   return (
     <SettingsCard
+      title={t('schedule.title')}
       draft={draft}
       canEdit={configuration.canEdit}
       busy={configuration.view.busy || (value.enabled && !zoneOk)}
