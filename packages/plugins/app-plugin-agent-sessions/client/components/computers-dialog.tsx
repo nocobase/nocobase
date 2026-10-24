@@ -1,9 +1,9 @@
-import { copyText } from '@nocobase/app-client';
 /**
  * The viewer's computers: which are online and what each can run, removing one, and the steps that connect another
  * (`ConnectSteps`, also what a person with no computer sees first). These computers run only their owner's sessions;
  * machines that run the team's background work are managed elsewhere in the application.
  */
+import { copyText } from '@nocobase/app-client';
 import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
@@ -397,7 +397,8 @@ function Command({ text }: { readonly text: string }): ReactElement {
         onClick={() =>
           void copyText(text).then((copied) => {
             setCopied(copied);
-            if (!copied) toaster.show({ type: 'error', title: t('errors.copy') });
+            if (!copied)
+              toaster.show({ type: 'error', title: t('errors.copy') });
           })
         }
       >

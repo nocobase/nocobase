@@ -16,6 +16,7 @@ export async function copyText(
     (typeof document === 'undefined' ? undefined : document);
   if (!doc) return false;
   try {
+    // eslint-disable-next-line no-restricted-properties -- This shared helper owns capability detection and the HTTP fallback.
     const clipboard = doc.defaultView?.navigator.clipboard;
     if (typeof clipboard?.writeText === 'function') {
       await clipboard.writeText(text);

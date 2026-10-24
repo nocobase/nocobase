@@ -138,6 +138,7 @@
         "iframeHeight": 760
       },
       "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.2",
         "@ai-sdk/react@4.0.131",
         "ai@7.0.128",
         "@nocobase/app-plugin-agents@^1.0.0-beta.21",

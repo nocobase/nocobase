@@ -1,4 +1,3 @@
-import { createUuid } from '@nocobase/app-client';
 /**
  * A new session: which of the viewer's computers, which agent there, which folder and, when the application has
  * projects, which project it works for; the agent's choices; then the first message. Choices are discovered from the
@@ -10,6 +9,7 @@ import { createUuid } from '@nocobase/app-client';
  * browser. Without a connected computer it says how to connect one. In a panel it starts with the panel's project and
  * shows the new session in place of opening its page.
  */
+import { createUuid } from '@nocobase/app-client';
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';

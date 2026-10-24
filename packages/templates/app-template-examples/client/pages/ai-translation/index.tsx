@@ -1,4 +1,9 @@
-import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  copyText,
+  ApiClientError,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import type { ModelService } from '@nocobase/app-plugin-agents/shared/models';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -185,12 +190,12 @@ function TranslationDemo(): ReactElement {
   async function copyTranslation(): Promise<void> {
     const owner = lifetimeRef.current;
     try {
-      await navigator.clipboard.writeText(translation);
+      const copied = await copyText(translation);
       if (owner?.signal.aborted) return;
       toaster.show({
         id: 'ai-translation-copy',
-        type: 'success',
-        title: t('aiTranslation.copied'),
+        type: copied ? 'success' : 'error',
+        title: t(copied ? 'aiTranslation.copied' : 'aiTranslation.copyFailed'),
       });
     } catch {
       if (owner?.signal.aborted) return;

@@ -542,7 +542,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       hide: 'パスワードを隠す',
       copy: 'パスワードをコピーする',
       copied: 'パスワードがコピーされました。',
-      copyFailed: 'パスワードをコピーできませんでした。表示して手動でコピーしてください。',
+      copyFailed:
+        'パスワードをコピーできませんでした。表示して手動でコピーしてください。',
       dismiss: '保存しました',
       dismissed: '最初の管理者がリリースマネージャーから削除されました。',
     },

@@ -1,4 +1,3 @@
-import { createUuid } from '@nocobase/app-client';
 /**
  * Where a person writes to the agent. Enter sends, Shift+Enter breaks the line, and while the agent is answering a
  * message waits for the turn to end unless sent with ⌘↩ (Ctrl+Enter), which stops the turn first. Pasted, dropped or
@@ -6,6 +5,7 @@ import { createUuid } from '@nocobase/app-client';
  * what the message can mention, such as an issue, which then goes with it. What the host attached, such as the page
  * it was opened from, shows above the message until removed and goes with the next message sent.
  */
+import { createUuid } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {

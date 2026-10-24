@@ -1,10 +1,10 @@
-import { copyText } from '@nocobase/app-client';
 /**
  * A session's transcript, item by item (`transcript.ts`): the person's messages, the agent's answers in Markdown, its
  * thinking and tool calls folded away, its plan, the permission requests waiting for an answer, and at the end of a
  * turn the work it created with the choice to start it.
  */
-import { resolveAppUrl, useToaster } from '@nocobase/app-client';
+import { copyText, resolveAppUrl, useToaster } from '@nocobase/app-client';
+
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -186,7 +186,11 @@ function Item({
                   variant='ghost'
                   onClick={() =>
                     void copyText(item.text).then((copied) => {
-                      if (!copied) toaster.show({ type: 'error', title: t('errors.copy') });
+                      if (!copied)
+                        toaster.show({
+                          type: 'error',
+                          title: t('errors.copy'),
+                        });
                     })
                   }
                 >

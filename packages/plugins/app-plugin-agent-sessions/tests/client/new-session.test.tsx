@@ -53,7 +53,9 @@ const choices: DiscoveredChoices = {
 beforeEach(() => {
   localStorage.clear();
   // A LAN HTTP browser exposes getRandomValues, but not randomUUID.
-  vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) });
+  vi.stubGlobal('crypto', {
+    getRandomValues: crypto.getRandomValues.bind(crypto),
+  });
 });
 afterEach(() => vi.unstubAllGlobals());
 
