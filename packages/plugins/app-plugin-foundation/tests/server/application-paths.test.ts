@@ -107,6 +107,14 @@ it.each(['source', 'standalone', 'embedded'] as const)(
             routeName: 'files',
             providers: ['@nocobase/app-client', '@nocobase/app-plugin-file'],
             apiProviders: ['@nocobase/db'],
+            apiEvidence: [
+              {
+                method: 'GET',
+                path: '/files',
+                providers: ['@nocobase/db'],
+                conditions: [],
+              },
+            ],
             complete: true,
           },
         ],

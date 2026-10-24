@@ -11,7 +11,7 @@ import {
 export const workflows: CapabilityCollector = {
   key: 'workflows',
   packages: ['@nocobase/lifecycle', '@nocobase/app-plugin-scheduler'],
-  async collect({ probe }) {
+  async collect({ probe, report }) {
     if (!probe) return NO_DATABASE;
     const findings: CapabilityFindings[] = [];
     const parts: FoundationPart[] = [];
@@ -19,10 +19,35 @@ export const workflows: CapabilityCollector = {
     // The lifecycle store's two Collections exist once the application persists its lifecycles, which is the
     // integration itself: a lifecycle nobody has moved yet is still in use.
     if (probe.has('lifecycleTransitions')) {
+      report?.({
+        status: 'active',
+        parts: [
+          { key: 'lifecycles', status: 'active' },
+          {
+            key: 'schedules',
+            status: probe.has('scheduleDefinitions') ? null : 'unused',
+          },
+        ],
+      });
       const byLifecycle = await probe.groupCount(
         'lifecycleTransitions',
         'lifecycle',
       );
+      report?.({
+        status: 'active',
+        metrics: [
+          metric(
+            'transitions',
+            byLifecycle === null
+              ? null
+              : [...byLifecycle.values()].reduce(
+                  (sum, count) => sum + count,
+                  0,
+                ),
+          ),
+          metric('lifecycles', byLifecycle?.size ?? null),
+        ],
+      });
       const effects = probe.has('lifecycleEffectRuns')
         ? await probe.groupCount('lifecycleEffectRuns', 'status')
         : new Map<string, number>();
@@ -33,15 +58,18 @@ export const workflows: CapabilityCollector = {
       parts.push({ key: 'lifecycles', status: 'active' });
       findings.push({
         status: 'active',
-        facts: [
-          byLifecycle === null || byLifecycle.size === 0
-            ? fact('lifecyclesWithoutTransitions')
-            : fact('lifecycles', {
-                count: byLifecycle.size,
-                names: [...byLifecycle.keys()],
-                transitions: transitions ?? 0,
-              }),
-        ],
+        facts:
+          byLifecycle === null
+            ? []
+            : [
+                byLifecycle.size === 0
+                  ? fact('lifecyclesWithoutTransitions')
+                  : fact('lifecycles', {
+                      count: byLifecycle.size,
+                      names: [...byLifecycle.keys()],
+                      transitions: transitions ?? 0,
+                    }),
+              ],
         metrics: [
           metric('transitions', transitions),
           metric('lifecycles', byLifecycle?.size ?? null),
@@ -62,24 +90,35 @@ export const workflows: CapabilityCollector = {
       const enabled = await probe.count('scheduleDefinitions', {
         enabled: true,
       });
+      report?.({
+        status: enabled !== null && enabled > 0 ? 'active' : null,
+        metrics: [metric('schedules', enabled)],
+        parts: [
+          {
+            key: 'schedules',
+            status: enabled === null ? null : enabled > 0 ? 'active' : 'unused',
+          },
+        ],
+      });
       const occurrences = probe.has('scheduleOccurrences')
         ? await probe.count('scheduleOccurrences')
         : null;
       const active = (enabled ?? 0) > 0;
       parts.push(
-        active
-          ? { key: 'schedules', status: 'active' }
-          : { key: 'schedules', status: 'unused', reason: 'noSchedules' },
+        enabled === null
+          ? { key: 'schedules', status: null }
+          : active
+            ? { key: 'schedules', status: 'active' }
+            : { key: 'schedules', status: 'unused', reason: 'noSchedules' },
       );
-      if (active)
-        findings.push({
-          status: 'active',
-          facts: [fact('schedules', { count: enabled ?? 0 })],
-          metrics: [
-            metric('schedules', enabled),
-            metric('scheduleOccurrences', occurrences),
-          ],
-        });
+      findings.push({
+        status: active ? 'active' : enabled === null ? null : 'unused',
+        facts: active ? [fact('schedules', { count: enabled ?? 0 })] : [],
+        metrics: [
+          metric('schedules', enabled),
+          metric('scheduleOccurrences', occurrences),
+        ],
+      });
     } else {
       parts.push({
         key: 'schedules',
@@ -88,10 +127,11 @@ export const workflows: CapabilityCollector = {
       });
     }
 
-    if (findings.length === 0)
-      return { status: 'unused', reason: 'noWorkflows', parts };
+    const active = findings.some((finding) => finding.status === 'active');
+    const unknown = parts.some((part) => part.status === null);
     return {
-      status: 'active',
+      status: active ? 'active' : unknown ? null : 'unused',
+      ...(active || unknown ? {} : { reason: 'noWorkflows' }),
       facts: findings.flatMap((finding) => finding.facts ?? []),
       metrics: findings.flatMap((finding) => finding.metrics ?? []),
       parts,

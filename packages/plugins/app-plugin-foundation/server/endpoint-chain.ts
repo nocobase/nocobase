@@ -1,5 +1,6 @@
 import type { EndpointEvidence } from './api-evidence.js';
 import type { ApiReference } from './request-evidence.js';
+import type { FoundationApiCondition } from '../shared/foundation.js';
 
 type Match = 'yes' | 'maybe' | 'no';
 
@@ -41,6 +42,7 @@ export function endpointChain(
   endpoints: readonly EndpointEvidence[],
 ): { endpoints: EndpointEvidence[]; complete: boolean } {
   const reached: EndpointEvidence[] = [];
+  const conditions = new Map<string, FoundationApiCondition>();
   for (const endpoint of endpoints) {
     if (endpoint.method !== 'ALL' && request.method !== endpoint.method)
       continue;
@@ -48,7 +50,9 @@ export function endpointChain(
     if (match === 'no') continue;
     if (match === 'maybe' || endpoint.uncertain)
       return { endpoints: reached, complete: false };
-    reached.push(endpoint);
+    for (const condition of endpoint.conditions ?? [])
+      conditions.set(condition.kind + ':' + condition.source, condition);
+    reached.push({ ...endpoint, conditions: [...conditions.values()] });
     if (endpoint.continuation === 'stop') break;
     if (endpoint.continuation === 'unknown')
       return { endpoints: reached, complete: false };

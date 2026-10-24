@@ -118,8 +118,7 @@ const OVERVIEW: FoundationOverview = {
 
 describe('App Foundation page', () => {
   beforeEach(() => {
-    // The page honours reduced motion by lighting everything at once, which keeps these tests free of timers.
-    // jsdom has no matchMedia of its own.
+    // jsdom has no matchMedia of its own; capability counts must also stay stable without reduced motion.
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: (query: string) =>
@@ -166,14 +165,16 @@ describe('App Foundation page', () => {
     ).toHaveAttribute('data-status', 'needsSetup');
     // A capability that could not be examined is undetermined, never "not used".
     expect(
-      screen.getByRole('button', { name: 'Notifications: Undetermined' }),
+      screen.getByRole('button', {
+        name: 'Notifications: Information pending update',
+      }),
     ).toHaveAttribute('data-status', 'undetermined');
     expect(screen.getAllByRole('button', { pressed: false })).toHaveLength(
       FOUNDATION_CAPABILITIES.length - 1,
     );
     expect(screen.getByText('3 / 13')).toBeInTheDocument();
     expect(
-      screen.getByText('1 capability could not be determined'),
+      screen.getByText('Information pending update (1)'),
     ).toBeInTheDocument();
   });
 
@@ -271,15 +272,22 @@ describe('App Foundation page', () => {
     expect(within(detail).getByText('≥ 12')).toBeInTheDocument();
     expect(
       within(detail).getByText('Could not read: userInvitations'),
-    ).toBeInTheDocument();
+    ).not.toBeVisible();
+    fireEvent.click(within(detail).getByText('Read details'));
+    expect(
+      within(detail).getByText('Could not read: userInvitations'),
+    ).toBeVisible();
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Notifications: Undetermined' }),
+      screen.getByRole('button', {
+        name: 'Notifications: Information pending update',
+      }),
     );
     const failed = screen.getByRole('region', { name: /Notifications/ });
+    fireEvent.click(within(failed).getByText('Read details'));
     expect(
       within(failed).getByText('Examining it took too long.'),
-    ).toBeInTheDocument();
+    ).toBeVisible();
     expect(within(failed).queryByText('0')).not.toBeInTheDocument();
   });
 
@@ -310,8 +318,58 @@ describe('App Foundation page', () => {
     expect(within(detail).getByText('Once in use')).toBeInTheDocument();
   });
 
+  it('shows a collecting placeholder without invented counts before the first result', async () => {
+    let resolve: (value: unknown) => void = () => undefined;
+    const pending = new Promise((done) => {
+      resolve = done;
+    });
+    const calls = await render(() => pending);
+    expect(screen.getByRole('status')).toHaveTextContent('Collecting');
+    expect(
+      document.querySelector('[aria-busy="true"] [data-slot="skeleton"]'),
+    ).not.toBeNull();
+    expect(screen.queryByText('0 / 13')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(calls).toHaveLength(1));
+    await act(async () => resolve({ data: OVERVIEW }));
+    expect(await screen.findByText('3 / 13')).toBeInTheDocument();
+  });
+
+  it('does not restart known counts from zero when a newer result arrives without reduced motion', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: () => ({ matches: false }),
+    });
+    const calls = await render((call) => ({
+      data: {
+        ...OVERVIEW,
+        checkedAt: call.query?.refresh
+          ? '2026-10-21T08:00:00.000Z'
+          : OVERVIEW.checkedAt,
+      },
+    }));
+    expect(await screen.findByText('3 / 13')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled(),
+    );
+    expect(screen.getByText('3 / 13')).toBeInTheDocument();
+    expect(screen.queryByText('0 / 13')).not.toBeInTheDocument();
+  });
+
   it('refreshes the overview without requesting expensive business record counts', async () => {
-    const calls = await render();
+    let completeRefresh: () => void = () => undefined;
+    const pending = new Promise<void>((resolve) => {
+      completeRefresh = resolve;
+    });
+    const calls = await render((call) =>
+      call.query?.refresh
+        ? pending.then(() => ({ data: OVERVIEW }))
+        : { data: OVERVIEW },
+    );
     await screen.findByText('3 / 13');
 
     expect(
@@ -326,6 +384,20 @@ describe('App Foundation page', () => {
       path: 'foundation/overview',
       query: { refresh: 'true' },
     });
+    expect(
+      within(screen.getByRole('region', { name: 'NocoBase Core' })).getByRole(
+        'button',
+        { name: 'Collecting…' },
+      ),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Try again' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('3 / 13')).toBeInTheDocument();
+    await act(async () => completeRefresh());
+    expect(
+      await screen.findByRole('button', { name: 'Refresh' }),
+    ).toBeEnabled();
   });
 
   it('explains active model services without asking native OnlineAgent users to define an Agent', async () => {
@@ -588,28 +660,37 @@ describe('App Foundation page', () => {
     },
   );
 
-  it('tells a user without unrestricted access that the page is not theirs', async () => {
-    await render(() =>
-      Response.json(
-        {
-          error: {
-            code: 403,
-            status: 'PERMISSION_DENIED',
-            reason: 'FOUNDATION_FORBIDDEN',
-            domain: 'foundation',
-            message: 'Forbidden.',
+  it.each([401, 403])(
+    'offers no retry when initial access is denied (%i)',
+    async (status) => {
+      await render(() =>
+        Response.json(
+          {
+            error: {
+              code: status,
+              status: 'PERMISSION_DENIED',
+              reason: 'FOUNDATION_FORBIDDEN',
+              domain: 'foundation',
+              message: 'Forbidden.',
+            },
           },
-        },
-        { status: 403 },
-      ),
-    );
+          { status },
+        ),
+      );
 
-    expect(
-      await screen.findByText(
-        'Only an administrator with unrestricted access can view the App foundation.',
-      ),
-    ).toBeInTheDocument();
-  });
+      expect(
+        await screen.findByText(
+          'Only an administrator with unrestricted access can view the App foundation.',
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Try again' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Refresh' }),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it('makes a failed refresh visible while retaining the previous result and recovers on retry', async () => {
     let fail = false;
@@ -630,7 +711,7 @@ describe('App Foundation page', () => {
         : { data: OVERVIEW },
     );
     const refresh = await screen.findByRole('button', { name: 'Refresh' });
-    const timestamp = screen.getByText(/^Collected /).textContent;
+    const timestamp = screen.getByText(/^Last check /).textContent;
     fail = true;
     fireEvent.click(refresh);
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -639,12 +720,159 @@ describe('App Foundation page', () => {
     expect(
       screen.getByRole('region', { name: 'NocoBase Core' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/^Collected /)).toHaveTextContent(timestamp!);
+    expect(screen.getByText(/^Last check /)).toHaveTextContent(timestamp!);
     fail = false;
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     await waitFor(() =>
       expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
     );
+  });
+
+  it.each(['partial', 'failed'] as const)(
+    'uses only the top refresh for a %s capability without a missing-configuration claim',
+    async (completeness) => {
+      let reads = 0;
+      await render((call) => {
+        if (reads++ > 0) {
+          expect(call.query).toEqual({ refresh: 'true' });
+          return {
+            data: {
+              ...OVERVIEW,
+              capabilities: [capability('mail', { status: 'active' })],
+            },
+          };
+        }
+        return {
+          data: {
+            ...OVERVIEW,
+            capabilities: [
+              capability('mail', {
+                status: null,
+                completeness,
+                issues: [{ code: 'SOURCE_UNREADABLE', source: 'mailAccounts' }],
+              }),
+            ],
+          },
+        };
+      });
+      const detail = await screen.findByRole('region', {
+        name: 'Mail Information pending update',
+      });
+      expect(
+        within(detail).queryByText('No mailbox is connected.'),
+      ).not.toBeInTheDocument();
+      expect(within(detail).getByRole('note')).not.toHaveClass(
+        'border-destructive/30',
+      );
+      expect(
+        screen.queryByRole('button', { name: 'Try again' }),
+      ).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Refresh' })).toHaveLength(
+        1,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+      expect(
+        await screen.findByRole('region', { name: 'Mail In use' }),
+      ).toBeInTheDocument();
+      expect(reads).toBe(2);
+    },
+  );
+
+  it('retries an initial whole-page failure and restores the overview with top refresh', async () => {
+    let reads = 0;
+    await render((call) => {
+      if (reads++ === 0)
+        return Response.json(
+          {
+            error: {
+              code: 500,
+              status: 'INTERNAL_SERVER_ERROR',
+              reason: 'FAILED',
+              domain: 'foundation',
+              message: 'Unavailable.',
+            },
+          },
+          { status: 500 },
+        );
+      expect(call.query).toEqual({ refresh: 'true' });
+      return { data: OVERVIEW };
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Information pending update',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: 'NocoBase Core' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('region', { name: 'NocoBase Core' }),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: 'Try again' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(reads).toBe(2);
+  });
+
+  it('words partial file numbers and distinguishes original history dates from the latest check', async () => {
+    const historicalAt = '2026-10-19T07:00:00Z';
+    await render(() => ({
+      data: {
+        ...OVERVIEW,
+        capabilities: [
+          capability('files', {
+            status: 'active',
+            checkedAt: historicalAt,
+            completeness: 'partial',
+            facts: [
+              {
+                code: 'fileCollectionsPartial',
+                params: { count: 1, names: ['photos'] },
+              },
+            ],
+            metrics: [
+              { key: 'files', value: 3, unit: 'count', complete: false },
+              {
+                key: 'storedBytes',
+                value: 120,
+                unit: 'bytes',
+                complete: false,
+              },
+              {
+                key: 'fileCollections',
+                value: 2,
+                unit: 'count',
+                complete: true,
+                checkedAt: historicalAt,
+              },
+            ],
+          }),
+        ],
+      },
+    }));
+    const detail = await screen.findByRole('region', {
+      name: 'File management In use',
+    });
+    expect(within(detail).getByText('Counted 3')).toBeVisible();
+    expect(within(detail).getByText('Counted 120 B')).toBeVisible();
+    expect(
+      within(detail).getByText('Counted 1 file collections: photos.'),
+    ).toBeVisible();
+    expect(
+      within(detail).getAllByText('Some data is pending update'),
+    ).toHaveLength(2);
+    expect(
+      within(detail).getAllByText(/Last confirmed Oct 19, 2026/),
+    ).toHaveLength(2);
+    expect(screen.getByText(/Last check Oct 20, 2026/)).toBeVisible();
+    expect(within(detail).queryByText(/≥/)).not.toBeInTheDocument();
+    expect(
+      within(detail).queryByRole('button', { name: 'Try again' }),
+    ).not.toBeInTheDocument();
   });
 
   it.each([401, 403])(
@@ -677,6 +905,12 @@ describe('App Foundation page', () => {
         screen.queryByRole('region', { name: 'NocoBase Core' }),
       ).not.toBeInTheDocument();
       expect(screen.queryByText('75,413')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Try again' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Refresh' }),
+      ).not.toBeInTheDocument();
     },
   );
 

@@ -235,6 +235,16 @@ export class SourceEvidence {
     return { references, nodes, complete };
   }
 
+  /** External contracts cannot describe resolved local overrides or unresolved local declarations. */
+  public isExternalImport(node: ts.ImportDeclaration): boolean {
+    if (!ts.isStringLiteralLike(node.moduleSpecifier)) return false;
+    const specifier = node.moduleSpecifier.text;
+    return (
+      !this.isLocal(specifier) &&
+      !this.resolutions.has(`${node.getSourceFile().fileName}\0${specifier}`)
+    );
+  }
+
   public importedSource(
     node: ts.ImportDeclaration | ts.ExportDeclaration,
   ): ts.SourceFile | undefined {

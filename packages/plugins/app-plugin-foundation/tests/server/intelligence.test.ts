@@ -138,7 +138,7 @@ describe('AI Foundation configuration evidence', () => {
       expect(result.reason).toBeUndefined();
       const key =
         collection === 'agModelServices' ? 'modelServices' : 'runners';
-      expect(result.parts.some((item) => item.key === key)).toBe(false);
+      expect(result.parts).toContainEqual({ key, status: null });
       expect(result.metrics).toContainEqual(
         expect.objectContaining({
           key,
