@@ -6,7 +6,11 @@ import {
   writePendingDelivery,
   clearPendingDelivery,
 } from '../lib/mail-pending-delivery.js';
-import { ApiClientError, resolveAppUrl } from '@nocobase/app-client';
+import {
+  createUuid,
+  ApiClientError,
+  resolveAppUrl,
+} from '@nocobase/app-client';
 import { uploadedImageContentId } from '../../shared/inline-images.js';
 import type { Dispatch, SetStateAction, RefObject } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -118,7 +122,7 @@ export function useMailComposer({
   const composerSessionRef = useRef(0);
   const pendingSaveRef = useRef<Promise<MailMessage> | undefined>(undefined);
   const [initialDraftKey] = useState(
-    () => initialRecovery?.draftKey ?? crypto.randomUUID(),
+    () => initialRecovery?.draftKey ?? createUuid(),
   );
   const draftKeyRef = useRef(initialDraftKey);
   const draftRevisionRef = useRef(

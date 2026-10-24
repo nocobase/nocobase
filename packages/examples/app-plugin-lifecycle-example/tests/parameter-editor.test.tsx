@@ -74,6 +74,26 @@ async function editor(
   );
 }
 describe('shared parameter editor', () => {
+  it('sends a UUID request identifier without randomUUID on HTTP', async () => {
+    vi.stubGlobal('crypto', {
+      getRandomValues: crypto.getRandomValues.bind(crypto),
+    });
+    try {
+      const save = vi.fn<ParameterApi['save']>().mockResolvedValue(group);
+      await editor(group, save);
+      fireEvent.change(screen.getByLabelText('Finance limit'), {
+        target: { value: '1500' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Save values' }));
+      await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+      expect(save.mock.calls[0]?.[3]).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it.each(['en-US', 'zh-CN'] as const)(
     'explains timing parameters in business terms in %s',
     async (locale) => {

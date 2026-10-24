@@ -1,5 +1,40 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.62
+
+### Patch Changes
+
+- 58531da: Require HTTP-compatible UUID and clipboard helpers in browser source while preserving Node APIs. Use the shared helpers for mail composition, demo links, example records, template copy actions and workflow request identifiers.
+- Updated dependencies [58531da]
+- Updated dependencies [58531da]
+- Updated dependencies [7f36872]
+  - @nocobase/app-plugin-mail@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.19
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.2
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.12
+  - @nocobase/app-plugin-agents@1.0.0-beta.23
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.20
+  - @nocobase/jobs@0.1.0-beta.4
+
+## 1.0.0-beta.61
+
+### Patch Changes
+
+- d490379: Show safe, actionable, localized attachment preparation failures in live chat and saved history, including unconfigured image input, unreadable documents, extraction timeouts, and file or text limits. Keep Provider messages and document contents private, preserve cancellation and model capability checks, and use a generic localized explanation for historical failures without a saved reason.
+- d490379: Declare official DeepSeek Flash JPEG, PNG, GIF, and WebP capability in the shared model capability catalog, and derive native file routing from it regardless of service name. Remove the duplicated Examples profile while preserving exact model and endpoint admission, explicit deployment-policy overrides, local document extraction, and existing file limits.
+- d490379: Keep native agent conversations usable when a user attaches an unsupported file type. Describe the filename, MIME type and parsing limitation in user-level model replay instead of failing the execution, including historical follow-up and unsupported image inputs. Preserve original attachments, authorization, input budgets and genuine parsing or Provider failures; update the Examples regression coverage without granting additional image capabilities.
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [4c98f67]
+- Updated dependencies [01e03b7]
+  - @nocobase/app-plugin-agents@1.0.0-beta.22
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.11
+
 ## 1.0.0-beta.60
 
 ### Patch Changes

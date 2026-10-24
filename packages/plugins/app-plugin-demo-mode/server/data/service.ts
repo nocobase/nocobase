@@ -56,7 +56,7 @@ export interface DemoDataService {
   start(actorId: string, language?: string): Promise<DemoDataStatus>;
   /** Imports and waits, for commands, schedules and tests. */
   importNow(actorId: string, language?: string): Promise<DemoDataStatus>;
-  /** Clears application business data and disables demo accounts; environment configuration stays. */
+  /** Clears business data and disables demo accounts except the trusted actor and their permissions. */
   clear(actorId: string): Promise<DemoDataStatus>;
   /**
    * Clears the business data and imports again, answering once the reset is claimed; waits when `wait` is set. Demo
@@ -354,7 +354,7 @@ export class DefaultDemoDataService implements DemoDataService {
         row ?? (await this.claimEmptyClear(dataset, actor, chosen, 'reset'));
       return {
         current,
-        operationId: await this.claimRemoval(dataset, current, 'reset'),
+        operationId: await this.claimRemoval(dataset, current, actor, 'reset'),
       };
     })();
     const job = claiming.then(({ current, operationId }) =>
@@ -528,14 +528,6 @@ export class DefaultDemoDataService implements DemoDataService {
     clearOperationId: string,
   ): Promise<void> {
     await this.clearClaimed(dataset, row, actorId, clearOperationId, true);
-    const carried: Carried = {
-      records: new Set(
-        (await this.records(dataset.id)).map((record) =>
-          carriedKey(record.collection, record.recordId),
-        ),
-      ),
-      touched: new Set(),
-    };
     const now = new Date();
     const operationId = randomUUID();
     const handed = await this.deps.database
@@ -560,7 +552,7 @@ export class DefaultDemoDataService implements DemoDataService {
     if (handed.updatedCount !== 1) throw this.lease.leaseLost();
     this.percent = 0;
     await this.lease.withLease(dataset.id, operationId, () =>
-      this.populate(dataset, language, actorId, now, operationId, carried),
+      this.populate(dataset, language, actorId, now, operationId),
     );
   }
 
@@ -571,9 +563,17 @@ export class DefaultDemoDataService implements DemoDataService {
     actorId: string,
     startedAt: Date,
     operationId: string,
-    carried?: Carried,
   ): Promise<void> {
     try {
+      // Reset identities and accounts retained by an earlier clear share the same reuse path.
+      const carried: Carried = {
+        records: new Set(
+          (await this.records(dataset.id)).map((record) =>
+            carriedKey(record.collection, record.recordId),
+          ),
+        ),
+        touched: new Set(),
+      };
       const run = () =>
         this.populateSteps(
           dataset,
@@ -731,8 +731,15 @@ export class DefaultDemoDataService implements DemoDataService {
           carried.records.has(carriedKey(record.collection, record.recordId)) &&
           !carried.touched.has(carriedKey(record.collection, record.recordId)),
       );
-      await this.identities.release(dataset.id, operationId, left);
-      for (const record of left)
+      const kept = await this.identities.release(
+        dataset.id,
+        operationId,
+        left,
+        actorId,
+        carried.touched,
+      );
+      for (const record of left.filter((record) => !kept.includes(record))) {
+        await this.lease.assertLease(dataset.id, operationId);
         await this.deps.database
           .query()
           .deleteFrom('demoModeRecords')
@@ -740,6 +747,7 @@ export class DefaultDemoDataService implements DemoDataService {
           .where('collection', '=', record.collection)
           .where('recordId', '=', record.recordId)
           .execute();
+      }
     }
     this.percent = 100;
     await this.lease.touch(dataset.id, operationId, {
@@ -759,7 +767,7 @@ export class DefaultDemoDataService implements DemoDataService {
     row: DatasetRow,
     actorId: string,
   ): Promise<void> {
-    const operationId = await this.claimRemoval(dataset, row);
+    const operationId = await this.claimRemoval(dataset, row, actorId);
     await this.clearClaimed(dataset, row, actorId, operationId);
     const removed = await this.deps.database
       .query()
@@ -775,6 +783,7 @@ export class DefaultDemoDataService implements DemoDataService {
   private async claimRemoval(
     dataset: DemoDataset,
     row: DatasetRow,
+    actorId: string,
     operation: DemoDataOperation = 'clear',
   ): Promise<string> {
     const operationId = randomUUID();
@@ -785,6 +794,8 @@ export class DefaultDemoDataService implements DemoDataService {
         state: 'clearing',
         operation,
         operationId,
+        // A scheduled retry must use this actor even if business cleanup fails before generation starts.
+        actorId,
         percent: 0,
         updatedAt: new Date(),
       })
@@ -869,13 +880,28 @@ export class DefaultDemoDataService implements DemoDataService {
       this.percent = 100;
       return;
     }
-    await this.identities.release(dataset.id, operationId, records);
+    const kept = await this.identities.release(
+      dataset.id,
+      operationId,
+      records,
+      actorId,
+    );
     await this.lease.assertLease(dataset.id, operationId);
-    await this.deps.database
+    let removing = this.deps.database
       .query()
       .deleteFrom('demoModeRecords')
-      .where('datasetId', '=', dataset.id)
-      .execute();
+      .where('datasetId', '=', dataset.id);
+    if (kept.length)
+      removing = removing.where((builder) =>
+        builder.not(
+          builder.or(
+            kept.map(({ collection, recordId }) =>
+              builder.and({ collection, recordId }),
+            ),
+          ),
+        ),
+      );
+    await removing.execute();
     this.percent = 100;
   }
 

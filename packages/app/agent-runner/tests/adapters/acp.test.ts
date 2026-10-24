@@ -350,20 +350,31 @@ it('merges a turn’s small consecutive text chunks into about one event instead
   );
 });
 
-it('cancels a running turn before reaping its process', async () => {
-  const f = await fixture('hang');
-  const handle = f.adapter.start(f.session);
-  for await (const event of handle.events) {
-    if (event.type === 'text') {
-      await handle.stop();
-      break;
+it.each([false, true])(
+  'cancels a running turn before reaping its process (outputBlocks=%s)',
+  async (outputBlocks) => {
+    const f = await fixture('hang');
+    const handle = f.adapter.start({ ...f.session, outputBlocks });
+    const events: AdapterEvent[] = [];
+    for await (const event of handle.events) {
+      events.push(event);
+      if (
+        event.type === 'text' &&
+        (!outputBlocks || event.meta?.output?.phase === 'delta')
+      )
+        await handle.stop();
     }
-  }
-  expect(await handle.result).toMatchObject({ exit: 'aborted' });
-  expect((await f.messages()).map((message) => message.method)).toContain(
-    'session/cancel',
-  );
-});
+    expect(await handle.result).toMatchObject({ exit: 'aborted' });
+    if (outputBlocks)
+      expect(
+        events.find((e) => e.type === 'text' && e.meta?.output?.phase === 'end')
+          ?.content,
+      ).toBe('running');
+    expect((await f.messages()).map((message) => message.method)).toContain(
+      'session/cancel',
+    );
+  },
+);
 
 it('declines permissions during detection', async () => {
   const f = await fixture('permission');
@@ -443,3 +454,43 @@ it('detects behind the same host CLI guard a run gets, not the bare host PATH', 
     messages.find((message) => message.method === 'hostCliCheck')?.params,
   ).toEqual({ ghRefused: true });
 });
+
+it('retains canonical ACP blocks behind the conversation flag', async () => {
+  const f = await fixture();
+  const handle = f.adapter.start({ ...f.session, outputBlocks: true });
+  const events: AdapterEvent[] = [];
+  for await (const event of handle.events) events.push(event);
+  expect((await handle.result).exit).toBe('completed');
+  for (const type of ['text', 'thinking']) {
+    const deltas = events
+      .filter((e) => e.type === type && e.meta?.output?.phase === 'delta')
+      .map((e) => e.content)
+      .join('');
+    const snapshots = events
+      .filter((e) => e.type === type && e.meta?.output?.phase === 'end')
+      .map((e) => e.content)
+      .join('');
+    expect(snapshots).toBe(deltas);
+  }
+  expect(events.some((e) => e.meta?.output?.phase === 'end' && e.content)).toBe(
+    true,
+  );
+});
+
+it.each(['max_tokens', 'refusal', 'cancelled', 'crash'])(
+  'retains ACP partial snapshots on %s except process failure',
+  async (variant) => {
+    const f = await fixture(variant);
+    const handle = f.adapter.start({ ...f.session, outputBlocks: true });
+    const events: AdapterEvent[] = [];
+    for await (const event of handle.events) events.push(event);
+    await handle.result;
+    const ends = events.filter(
+      (e) => e.type === 'text' && e.meta?.output?.phase === 'end',
+    );
+    expect(ends).toHaveLength(1);
+    expect(ends[0].content).toBe(
+      variant === 'crash' ? undefined : 'Partial safe answer.',
+    );
+  },
+);

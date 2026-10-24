@@ -39,16 +39,6 @@ const resource: DemoModeResource = {
     apply: 'Aplicar alterações',
     unsaved: 'Alterações não salvas',
     discardAndReload: 'Descartar minhas alterações e recarregar',
-    switch: {
-      on: 'Ligado',
-      off: 'Desligado',
-    },
-    tabs: {
-      overview: 'Visão geral',
-      schedule: 'Redefinição diária',
-      writes: 'Gravações de visitantes',
-      simulation: 'Simulação e IA',
-    },
     leave: {
       title: 'Sair sem salvar?',
       description: 'As alterações não salvas nesta página serão perdidas.',
@@ -134,6 +124,7 @@ const resource: DemoModeResource = {
         'Não foi possível copiar. Copie o link da barra de endereços.',
     },
     schedule: {
+      title: 'Redefinição diária',
       confirmTitle: 'Salvar a redefinição diária?',
       confirmDescription:
         'No horário abaixo, todos os dados de negócio desta instância são excluídos e gerados novamente.',
@@ -150,60 +141,6 @@ const resource: DemoModeResource = {
       noTimezone: 'Nenhum fuso horário corresponde',
       invalidTimezone: 'Escolha um fuso horário da lista.',
       next: 'Próxima redefinição: {{time}}',
-    },
-    writes: {
-      intro:
-        'Quando a demonstração está ativada, as gravações são recusadas por padrão. Selecione as coleções que os visitantes precisam modificar; as permissões do aplicativo controlam as operações e o acesso aos registros.',
-      allow: 'Permitir',
-      revoke: 'Recusar novamente',
-      confirmTitle: 'Alterar o que os visitantes podem gravar?',
-      confirmDescription:
-        'As alterações dos visitantes nisto são salvas de verdade até a próxima redefinição.',
-      collections: {
-        title: 'Koleksias',
-        description:
-          'As solicitações autorizadas pelo aplicativo podem gravar nestas coleções.',
-        label: 'Koleksias que os visitantes podem gravar',
-        placeholder: 'Pesquisar koleksias',
-        noMatch: 'Nenhuma koleksia corresponde',
-        fixed: 'Sempre graváveis',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'Modelo',
-        tool: 'Ferramenta',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'Simulações',
-        description:
-          'O que responde no lugar dos serviços externos nesta demonstração.',
-        confirmTitle: 'Alterar as simulações?',
-        confirmDescription:
-          'Uma simulação desligada faz esse trabalho falhar; ele nunca é enviado ao serviço real.',
-        empty: 'Nenhuma simulação registrada',
-        emptyHelp: 'O aplicativo não registrou nenhum serviço simulado.',
-        onHelp: 'Responde com resultados simulados.',
-        offHelp: 'Desligada: o trabalho é recusado.',
-      },
-      chat: {
-        title: 'Chat online',
-        description:
-          'Permite que os visitantes conversem com a IA do aplicativo.',
-        confirmTitle: 'Salvar as configurações do chat online?',
-        confirmDescription:
-          'As conversas dos visitantes seguem estas configurações a partir da próxima mensagem.',
-        enabled: 'Os visitantes podem conversar',
-        enabledHelp: 'Desligado: o chat recusa as mensagens dos visitantes.',
-        tools: 'Ferramentas',
-        noTools: 'O aplicativo não declara ferramentas de chat.',
-        policy: {
-          deny: 'Recusar',
-          read: 'Ler dados',
-          mock: 'Simular',
-        },
-      },
     },
   },
 };

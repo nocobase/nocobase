@@ -10,8 +10,11 @@ import type { RuntimeProviderEvidence } from './provider-inventory.js';
 import { SourceEvidence } from './source-evidence.js';
 import { readModuleManifest } from './module-manifest.js';
 import { apiDependencies as analyzeApiDependencies } from './api-evidence.js';
+import { endpointChain } from './endpoint-chain.js';
 import { pageRequests } from './request-evidence.js';
 import { StaticValues } from './static-values.js';
+import { RouteEvidence } from './route-evidence.js';
+import { sourceAliases, aliasMatches } from './source-aliases.js';
 
 const MAX_FILES = 400;
 const MAX_BYTES = 512_000;
@@ -94,7 +97,7 @@ export async function collectModuleSources(
           for (const { from, specifier } of imports) {
             const target = await graph.local(from, specifier);
             if (!target) {
-              if (!isLocal(specifier)) addProvider(providers, specifier);
+              if (!graph.isLocal(specifier)) addProvider(providers, specifier);
               else routeComplete = false;
               continue;
             }
@@ -102,16 +105,13 @@ export async function collectModuleSources(
             for (const provider of page.providers) providers.add(provider);
             for (const request of graph.requests(page.sources)) {
               routeComplete &&= backendComplete;
-              for (const endpoint of endpoints) {
-                if (
-                  request.method === endpoint.method &&
-                  sameApiPath(request.path, endpoint.path)
-                ) {
-                  for (const provider of endpoint.providers)
-                    apiProviders.add(provider);
-                  for (const collection of endpoint.collections ?? [])
-                    collections.add(collection);
-                }
+              const chain = endpointChain(request, endpoints);
+              routeComplete &&= chain.complete;
+              for (const endpoint of chain.endpoints) {
+                for (const provider of endpoint.providers)
+                  apiProviders.add(provider);
+                for (const collection of endpoint.collections ?? [])
+                  collections.add(collection);
               }
             }
             routeComplete &&= page.complete;
@@ -131,7 +131,7 @@ export async function collectModuleSources(
           complete &&= routeComplete;
         }
       }
-      complete &&= declarationFiles.complete;
+      complete &&= declarationFiles.complete && graph.declarationsComplete;
     } catch {
       observation?.unreadable();
       complete = false;
@@ -149,6 +149,7 @@ class SourceGraph {
     private readonly root: string,
     public readonly packageName: string,
     private readonly aliases: Readonly<Record<string, unknown>>,
+    private readonly paths: ReadonlyMap<string, string | undefined>,
     private readonly observation?: ModuleSourceObservation,
   ) {}
 
@@ -167,6 +168,7 @@ class SourceGraph {
       directory,
       typeof record.name === 'string' ? record.name : '',
       isRecord(record.imports) ? record.imports : {},
+      await sourceAliases(directory, observation),
       observation,
     );
   }
@@ -222,7 +224,6 @@ class SourceGraph {
   }
 
   public async prepare(entry: string): Promise<boolean> {
-    await this.walk(entry, true);
     this.serverEntry = await this.conventionalEntry(
       'server/routes/index.js',
       'server/routes.js',
@@ -243,6 +244,8 @@ class SourceGraph {
         backendComplete &&= graph.complete;
       }
     }
+    // Read backend declarations before lazy page graphs can exhaust the shared source budget.
+    await this.walk(entry, true);
     const resolutions = new Map<string, string>();
     for (const source of this.files.values()) {
       if (!source) continue;
@@ -259,6 +262,7 @@ class SourceGraph {
         Boolean(source),
       ),
       resolutions,
+      (specifier) => this.isLocal(specifier),
     );
     this.analysis.registerServices(providerEntries);
     return backendComplete;
@@ -292,56 +296,14 @@ class SourceGraph {
     return this.analysis ? pageRequests(sources, this.analysis) : [];
   }
 
-  public routeDeclarations(ast: ts.SourceFile): {
-    name: string;
-    loader: ts.Node;
-    bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
-  }[] {
+  public declarationsComplete = true;
+  public routeDeclarations(
+    ast: ts.SourceFile,
+  ): ReturnType<RouteEvidence['collect']> {
     if (!this.analysis) return [];
-    const analysis = this.analysis;
-    const declarations: ReturnType<SourceGraph['routeDeclarations']> = [];
-    let visits = 0;
-    const visit = (
-      node: ts.Node,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-    ): void => {
-      if (++visits > 100_000) return;
-      const literals = new StaticValues(analysis, bindings);
-      if (
-        ts.isCallExpression(node) &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        node.expression.name.text === 'map'
-      ) {
-        const arrays = literals
-          .values(node.expression.expression)
-          .filter(ts.isArrayLiteralExpression);
-        const callback = node.arguments[0];
-        if (
-          arrays.length === 1 &&
-          arrays[0].elements.length <= 32 &&
-          !arrays[0].elements.some(ts.isSpreadElement) &&
-          callback &&
-          (ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)) &&
-          callback.parameters[0]
-        ) {
-          for (const element of arrays[0].elements) {
-            const context = new Map(bindings);
-            context.set(callback.parameters[0], [element]);
-            visit(callback.body, context);
-          }
-          return;
-        }
-      }
-      if (ts.isObjectLiteralExpression(node)) {
-        const name = property(node, 'name');
-        const loader = property(node, 'componentLoader');
-        if (name && loader)
-          for (const routeName of literals.strings(name))
-            declarations.push({ name: routeName, loader, bindings });
-      }
-      ts.forEachChild(node, (child) => visit(child, bindings));
-    };
-    visit(ast, new Map());
+    const evidence = new RouteEvidence(this.analysis);
+    const declarations = evidence.collect(ast);
+    this.declarationsComplete &&= evidence.complete;
     return declarations;
   }
 
@@ -350,7 +312,7 @@ class SourceGraph {
     bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
   ): { from: string; specifier: string }[] {
     const literals = this.analysis && new StaticValues(this.analysis, bindings);
-    return (this.analysis?.values(node) ?? [node]).flatMap((value) => {
+    return (literals?.values(node) ?? [node]).flatMap((value) => {
       const body =
         ts.isArrowFunction(value) && !ts.isBlock(value.body)
           ? value.body
@@ -388,12 +350,21 @@ class SourceGraph {
     const entry = this.serverEntry;
     const source = entry && this.files.get(entry);
     if (!source || !this.analysis) return [];
-    const graph = this.evidence(source.file);
     return analyzeApiDependencies(
       source.ast,
-      graph.sources,
+      (await this.walk(source.file, false)).sources,
       this.analysis,
       (file, nodes) => [...this.evidence(file, nodes).providers].sort(),
+    );
+  }
+
+  public isLocal(specifier: string): boolean {
+    return (
+      isLocal(specifier) ||
+      specifier.startsWith('@/') ||
+      [...this.paths.keys()].some(
+        (alias) => aliasMatches(alias, specifier) !== undefined,
+      )
     );
   }
 
@@ -403,7 +374,25 @@ class SourceGraph {
   ): Promise<string | undefined> {
     if (specifier.startsWith('.'))
       return this.resolve(path.resolve(path.dirname(from), specifier));
-    if (!specifier.startsWith('#')) return undefined;
+    if (!specifier.startsWith('#')) {
+      const matches = [...this.paths].filter(
+        ([alias]) => aliasMatches(alias, specifier) !== undefined,
+      );
+      // Equal-specificity declarations must not pick an arbitrary target.
+      const specificity = (alias: string): number =>
+        alias.includes('*') ? alias.indexOf('*') : Number.MAX_SAFE_INTEGER;
+      matches.sort(([a], [b]) => specificity(b) - specificity(a));
+      const selected = matches[0];
+      if (
+        !selected ||
+        !selected[1] ||
+        (matches[1] && specificity(matches[1][0]) === specificity(selected[0]))
+      )
+        return undefined;
+      return this.resolve(
+        selected[1].replace('*', aliasMatches(selected[0], specifier)!),
+      );
+    }
     for (const [alias, value] of Object.entries(this.aliases).sort(
       ([a], [b]) => b.length - a.length,
     )) {
@@ -449,7 +438,7 @@ class SourceGraph {
       }
       sources.push(source);
       for (const specifier of source.imports) {
-        if (!isLocal(specifier)) {
+        if (!this.isLocal(specifier)) {
           addProvider(providers, specifier);
           continue;
         }
@@ -464,7 +453,7 @@ class SourceGraph {
         for (const specifier of dynamicImports(source.ast)) {
           const target = await this.local(file, specifier);
           if (target) pending.push(target);
-          else if (isLocal(specifier)) complete = false;
+          else if (this.isLocal(specifier)) complete = false;
           else addProvider(providers, specifier);
         }
       }
@@ -554,18 +543,6 @@ function dynamicImports(node: ts.Node): string[] {
   return importsIn(node);
 }
 
-function sameApiPath(request: string, endpoint: string): boolean {
-  const segments = (value: string): string[] =>
-    value.split('?')[0].split('/').filter(Boolean);
-  const left = segments(request),
-    right = segments(endpoint);
-  return (
-    left.length === right.length &&
-    left.every((part, index) =>
-      right[index]?.startsWith(':') ? part.length > 0 : part === right[index],
-    )
-  );
-}
 function importsIn(node: ts.Node): string[] {
   const found: string[] = [];
   const visit = (child: ts.Node): void => {

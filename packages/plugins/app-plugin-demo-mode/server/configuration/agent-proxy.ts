@@ -4,6 +4,7 @@ import type { DemoConfigurationService } from './contract.js';
 export interface DemoAgentAdapter<Input, Output> {
   id: string;
   title: string;
+  /** Defaults to true; registration and calling the proxy are the application's opt-in. */
   defaultEnabled?: boolean;
   execute(input: Input): Promise<Output>;
 }

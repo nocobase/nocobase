@@ -36,17 +36,46 @@ export class DemoIdentities {
       operationId: string,
     ) => Promise<void>,
   ) {}
-  /** Revokes the assignments, signs out and disables the accounts and deletes the Permission Sets among `records`. */
+  /** Releases identities except the operation's actor and permissions; returns the tracking that must stay. */
   public async release(
     datasetId: string,
     operationId: string,
     records: readonly DemoTrackedRecord[],
-  ): Promise<void> {
+    actorId: string,
+    touched?: ReadonlySet<string>,
+  ): Promise<readonly DemoTrackedRecord[]> {
+    const kept = new Set([carriedKey(USER, actorId)]);
+    const sets = this.deps.authorization?.()?.permissionSets;
+    if (actorId) {
+      const releasing = new Set(
+        records
+          .filter((r) => r.collection === ASSIGNMENT)
+          .map((r) => r.recordId),
+      );
+      for (const assignment of (await sets?.listAssignments()) ?? []) {
+        if (
+          assignment.subject.type !== 'user' ||
+          String(assignment.subject.id) !== actorId
+        )
+          continue;
+        // Successful regeneration reconciles obsolete grants; cleanup otherwise preserves the actor's access.
+        if (
+          touched?.has(carriedKey(USER, String(assignment.subject.id))) &&
+          releasing.has(String(assignment.id))
+        )
+          continue;
+        kept.add(carriedKey(ASSIGNMENT, String(assignment.id)));
+        kept.add(carriedKey(PERMISSION_SET, assignment.permissionSet));
+      }
+    }
     const of = (collection: string) =>
       records
-        .filter((record) => record.collection === collection)
+        .filter(
+          (record) =>
+            record.collection === collection &&
+            !kept.has(carriedKey(collection, record.recordId)),
+        )
         .map((record) => record.recordId);
-    const sets = this.deps.authorization?.()?.permissionSets;
     for (const id of of(ASSIGNMENT)) {
       await this.assertLease(datasetId, operationId);
       await sets?.revoke(id).catch(() => undefined);
@@ -70,6 +99,9 @@ export class DemoIdentities {
       await this.assertLease(datasetId, operationId);
       await sets?.delete(key).catch(() => undefined);
     }
+    return records.filter((record) =>
+      kept.has(carriedKey(record.collection, record.recordId)),
+    );
   }
 
   public async createAccount(

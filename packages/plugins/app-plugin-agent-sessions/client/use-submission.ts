@@ -1,3 +1,4 @@
+import { createUuid } from '@nocobase/app-client';
 import { useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -35,7 +36,7 @@ export function useSubmission<T extends object>(
   };
   return {
     pending: pending !== null,
-    send: (input: T, submissionId = crypto.randomUUID()) =>
+    send: (input: T, submissionId = createUuid()) =>
       execute(structuredClone({ ...input, submissionId })),
     retry: async () => {
       if (!pending) return;

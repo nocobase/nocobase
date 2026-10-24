@@ -792,6 +792,8 @@ export const RunHeaderSchema: z.ZodType<RunHeader> = z.object({
  * here and only once.
  */
 export interface RunPayload {
+  /** Enable realtime-only previews for a conversation claimed by a capable runner. Never set on tasks. */
+  readonly outputBlocks?: boolean;
   readonly run: RunHeader;
   readonly app: RunApp;
   readonly subject: RunSubject;
@@ -819,6 +821,7 @@ export interface RunAgentRef {
 }
 
 export const RunPayloadSchema: z.ZodType<RunPayload> = z.object({
+  outputBlocks: z.boolean().optional(),
   run: RunHeaderSchema,
   app: RunAppSchema,
   subject: RunSubjectSchema,

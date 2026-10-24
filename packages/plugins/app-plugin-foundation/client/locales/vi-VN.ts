@@ -44,7 +44,7 @@ const viVN: FoundationResource = {
     legend:
       '✓ Tích hợp đã xác định; · chưa xác định liên kết. Tham chiếu mã thể hiện phụ thuộc, không phải số lần thực thi.',
     partial:
-      'Không đọc được một số phụ thuộc của trang. Các liên kết đã xác nhận vẫn được hiển thị.',
+      'Chưa thể xác định một số phụ thuộc của trang; chỉ hiển thị các liên kết đã được xác nhận.',
     evidence: {
       page: 'Trang đã đăng ký trong ứng dụng',
       authentication: 'Trang yêu cầu đăng nhập',

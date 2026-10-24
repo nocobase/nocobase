@@ -40,7 +40,7 @@ export type ScheduleQueue = Pick<
 /** The part of a BullMQ `Worker` this backend calls, all of it public API. */
 export type ScheduleWorker = Pick<
   Worker,
-  'waitUntilReady' | 'close' | 'cancelAllJobs' | 'on'
+  'waitUntilReady' | 'close' | 'cancelAllJobs' | 'on' | 'processJob'
 >;
 
 export type ScheduleProcessor = (
@@ -96,6 +96,8 @@ export class RedisScheduleBackend implements ScheduleBackend {
   private worker: ScheduleWorker | undefined;
   private runner: ScheduleRunner | undefined;
   private events: Promise<void> = Promise.resolve();
+  private readonly running = new Set<Promise<unknown>>();
+  private closing = false;
 
   public constructor(
     private readonly config: ResolvedRedisJobsConfig,
@@ -191,11 +193,24 @@ export class RedisScheduleBackend implements ScheduleBackend {
   }
 
   public async consume(runner: ScheduleRunner): Promise<void> {
+    this.closing = false;
     this.runner = runner;
     // BullMQ passes the abort signal only to a processor declaring three parameters.
     const processor: ScheduleProcessor = (job, _token, signal) =>
       this.process(job, signal ?? new AbortController().signal);
     const worker = this.factories.worker(this.config, processor);
+    // Track the public worker operation, not just our processor: BullMQ saves
+    // terminal state and emits completed/failed after the processor returns.
+    const processJob = worker.processJob.bind(worker);
+    worker.processJob = (...args) => {
+      const execution = processJob(...args);
+      this.running.add(execution);
+      void execution.then(
+        () => this.running.delete(execution),
+        () => this.running.delete(execution),
+      );
+      return execution;
+    };
     // Local worker events fire on the instance that ran the firing, once per
     // attempt, which is what subscribers count on. QueueEvents would broadcast
     // every firing to every instance.
@@ -219,17 +234,50 @@ export class RedisScheduleBackend implements ScheduleBackend {
     const queue = this.queue;
     this.worker = undefined;
     this.queue = undefined;
-    if (worker) {
-      worker.cancelAllJobs('The schedule executor is shutting down.');
-      // Waits for running processors before closing the worker's connections.
-      await worker.close();
+    this.closing = true;
+    const errors: unknown[] = [];
+    const executions = Promise.allSettled([...this.running]);
+    try {
+      if (worker) {
+        worker.cancelAllJobs('The schedule executor is shutting down.');
+        await worker.close();
+      }
+    } catch (error) {
+      errors.push(error);
     }
-    await this.events;
+    // A failed close must still wait for terminal persistence and local events.
+    for (const result of await executions) {
+      if (result.status === 'rejected') errors.push(result.reason);
+    }
     this.runner = undefined;
-    await queue?.close();
+    try {
+      await this.events;
+    } catch (error) {
+      errors.push(error);
+    }
+    try {
+      await queue?.close();
+    } catch (error) {
+      errors.push(error);
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) {
+      throw new AggregateError(
+        errors,
+        'Redis schedule backend shutdown failed.',
+      );
+    }
   }
 
-  private async process(job: Job, signal: AbortSignal): Promise<void> {
+  private process(job: Job, signal: AbortSignal): Promise<void> {
+    if (this.closing)
+      return Promise.reject(
+        new Error('The schedule executor is shutting down.'),
+      );
+    return this.runProcess(job, signal);
+  }
+
+  private async runProcess(job: Job, signal: AbortSignal): Promise<void> {
     const runner = this.runner;
     if (!runner) throw new Error('The schedule executor is not consuming.');
     try {

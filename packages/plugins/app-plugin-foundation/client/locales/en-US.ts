@@ -46,7 +46,7 @@ const enUS = {
     legend:
       '✓ Identified integration; · no connection identified. Code references describe dependencies, not execution counts.',
     partial:
-      'Some page dependencies could not be read; their confirmed connections are still shown.',
+      'Some page dependencies could not be established; only confirmed connections are shown.',
     evidence: {
       page: 'Page registered in the application',
       authentication: 'Sign-in required by the page',

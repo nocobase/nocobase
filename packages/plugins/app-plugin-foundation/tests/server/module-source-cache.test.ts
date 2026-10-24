@@ -305,3 +305,46 @@ it('does not retain an oversized registration identity', async () => {
   const first = await cache.read(root, runtime);
   expect(await cache.read(root, runtime)).not.toBe(first);
 });
+
+it('invalidates missing, inherited and unreadable local alias declarations', async () => {
+  const root = await fixture();
+  await writeFile(
+    path.join(root, 'client/page.js'),
+    `import {read} from '@/evidence';export default ()=>read();`,
+  );
+  await writeFile(
+    path.join(root, 'client/database.js'),
+    `export {read} from '@nocobase/db';`,
+  );
+  await writeFile(
+    path.join(root, 'client/files.js'),
+    `export {read} from '@nocobase/app-plugin-file';`,
+  );
+  const cache = new ModuleSourceCache();
+  const missing = await cache.read(root);
+  expect(missing.routes[0]?.providers).not.toContain('@nocobase/db');
+  expect(await cache.read(root)).toBe(missing);
+  const config = path.join(root, 'tsconfig.json');
+  const inherited = path.join(root, 'aliases.json');
+  const declarations = (target: string) =>
+    JSON.stringify({ compilerOptions: { paths: { '@/evidence': [target] } } });
+  await writeFile(config, JSON.stringify({ extends: './aliases.json' }));
+  await writeFile(inherited, declarations('./client/database.js'));
+  const database = await cache.read(root);
+  expect(database.routes[0]?.providers).toContain('@nocobase/db');
+  expect(await cache.read(root)).toBe(database);
+  await writeFile(inherited, declarations('./client/files.js'));
+  const files = await cache.read(root);
+  expect(files.routes[0]?.providers).toContain('@nocobase/app-plugin-file');
+  expect(files.routes[0]?.providers).not.toContain('@nocobase/db');
+  await chmod(inherited, 0);
+  const failed = await cache.read(root);
+  expect(failed.routes[0]?.providers).not.toContain(
+    '@nocobase/app-plugin-file',
+  );
+  expect(await cache.read(root)).not.toBe(failed);
+  await chmod(inherited, 0o644);
+  expect((await cache.read(root)).routes[0]?.providers).toContain(
+    '@nocobase/app-plugin-file',
+  );
+});

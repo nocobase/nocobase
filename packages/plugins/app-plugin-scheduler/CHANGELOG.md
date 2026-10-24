@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-scheduler
 
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- 7f36872: Add a public, idempotent Scheduler drain boundary that waits for in-flight reconciliation, executor shutdown, event records, and accepted completion reports before releasing subscriptions. Preserve shutdown failures after remaining work settles, including queued Jobs event delivery when backend close fails.
+- Updated dependencies [58531da]
+- Updated dependencies [7f36872]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/jobs@0.1.0-beta.4
+  - @nocobase/app-cli@1.0.0-beta.27
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+
 ## 1.0.0-beta.19
 
 ### Patch Changes

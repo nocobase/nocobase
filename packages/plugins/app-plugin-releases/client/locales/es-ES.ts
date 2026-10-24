@@ -554,6 +554,8 @@ const esES: LocaleResource<typeof enUS> = {
       hide: 'Ocultar contraseña',
       copy: 'Copiar contraseña',
       copied: 'Contraseña copiada.',
+      copyFailed:
+        'No se pudo copiar la contraseña. Muéstrala y cópiala manualmente.',
       dismiss: 'Lo he guardado',
       dismissed:
         'El primer administrador fue eliminado del administrador de versiones.',

@@ -1,4 +1,4 @@
-import { useToaster } from '@nocobase/app-client';
+import { copyText, useToaster } from '@nocobase/app-client';
 import { Check, Copy, DatabaseZap, ExternalLink } from 'lucide-react';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -370,15 +370,14 @@ function CopyButton({
       variant='outline'
       aria-label={label}
       onClick={() => {
-        void navigator.clipboard
-          .writeText(value)
-          .then(() => {
+        void copyText(value).then((success) => {
+          if (success) {
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
-          })
-          .catch(() =>
-            toaster.show({ type: 'error', title: t('visitors.copyFailed') }),
-          );
+          } else {
+            toaster.show({ type: 'error', title: t('visitors.copyFailed') });
+          }
+        });
       }}
     >
       {copied ? <Check /> : <Copy />}

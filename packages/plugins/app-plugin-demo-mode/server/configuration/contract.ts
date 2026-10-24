@@ -21,11 +21,12 @@ export interface DemoConfigurationService {
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView>;
-  /** Returns the supplied simulated model in demo mode; call before admission and each model request. */
+  /** Enabled by default; returns the supplied simulated model in demo mode without redirecting other callers. */
   chatModel(simulated: {
     modelService: string;
     model: string;
   }): Promise<{ modelService: string; model: string } | undefined>;
+  /** Uses an explicit policy, else the supplied mock or a host-declared local read. Other operations are refused. */
   runChatTool<T>(
     id: string,
     operation: {

@@ -18,7 +18,11 @@ export interface ScheduleExecutor {
   /** Subscribes to firings executed by this instance; nothing is broadcast. */
   subscribe(subscriber: Subscriber): Unsubscribe;
   setup(options?: ScheduleSetupOptions): Promise<void>;
-  /** Stops executing and releases resources. Rules stay in the backend. */
+  /**
+   * Stops executing and drains queued event delivery before releasing subscriptions,
+   * even when backend close fails. Repeated calls share the same result, including
+   * rejection. Rules stay in the backend; subscriber failures retain their logging policy.
+   */
   shutdown(): Promise<void>;
 }
 

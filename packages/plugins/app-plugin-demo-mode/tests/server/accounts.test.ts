@@ -132,21 +132,21 @@ it('gives a new account its role scopes and applies them again when an import re
   await demo.clear('admin');
 });
 
-it('disables and revokes sessions of a demo account that initiates cleanup', async () => {
+it('keeps the initiating demo account usable and tracked for reuse', async () => {
   const demo = service();
   demo.register(dataset());
   await demo.importNow('admin');
   calls = [];
   await demo.clear('u1');
-  expect(calls).toEqual(['disable u1']);
-  expect(disabled.has('u1')).toBe(true);
-  expect(revokedSessions).toEqual(['u1']);
+  expect(calls).toEqual([]);
+  expect(disabled.has('u1')).toBe(false);
+  expect(revokedSessions).toEqual([]);
   expect(
     await app.connection.query
       .selectFrom('demoModeRecords')
-      .selectAll()
+      .select(['collection', 'recordId'])
       .execute(),
-  ).toEqual([]);
+  ).toEqual([{ collection: '@user', recordId: 'u1' }]);
   // Clearing as a demo user must not disable the real administrator or prevent account reuse.
   expect(await demo.importNow('admin')).toMatchObject({ state: 'ready' });
   expect(disabled.has('u1')).toBe(false);
@@ -252,19 +252,30 @@ it('keeps the accounts a reset creates again signed in and permitted, and releas
             password: 'ann12345',
             permissionSets: ['demo.sales'],
           });
-          if (withBob)
+          if (withBob) {
             await context.createAccount({
               username: 'bob',
               name: 'Bob',
               email: 'bob@example.com',
               permissionSets: ['demo.sales'],
             });
+            await context.createPermissionSet({
+              key: 'demo.obsolete',
+              title: 'Obsolete',
+              grants: [],
+            });
+            await context.assignPermissionSet('u1', 'demo.obsolete');
+          }
         },
       },
     ],
   });
   await demo.importNow('admin');
-  expect(roles.assignments().map((item) => item.id)).toEqual(['a1', 'a2']);
+  expect(roles.assignments().map((item) => item.id)).toEqual([
+    'a1',
+    'a2',
+    'a3',
+  ]);
   calls = [];
   roles.log.length = 0;
   withBob = false;
@@ -272,15 +283,24 @@ it('keeps the accounts a reset creates again signed in and permitted, and releas
     state: 'ready',
     records: 3,
   });
-  expect(during).toEqual([false, ['a1', 'a2']]);
+  expect(during).toEqual([false, ['a1', 'a2', 'a3']]);
   // Ann keeps her sessions, password and assignment; Bob, not created again, goes as a clear would take him.
   expect(calls).toEqual(['enable u1', 'disable u2']);
   expect(revokedSessions).toEqual(['u2']);
-  expect(roles.log).toEqual(['update demo.sales Sales', 'revoke a2']);
+  expect(roles.log).toEqual([
+    'update demo.sales Sales',
+    'revoke a2',
+    'revoke a3',
+    'delete demo.obsolete',
+  ]);
   expect(roles.assignments().map((item) => item.id)).toEqual(['a1']);
   calls = [];
+  await demo.clear('u1');
+  expect(calls).toEqual([]);
+  expect(roles.assignments().map((item) => item.id)).toEqual(['a1']);
   await demo.clear('admin');
-  expect(calls).toEqual(['disable u1']);
+  expect(disabled.has('u1')).toBe(true);
+  expect(roles.assignments()).toEqual([]);
 });
 
 it('answers a reset once it is claimed and reports how far the cleanup got', async () => {

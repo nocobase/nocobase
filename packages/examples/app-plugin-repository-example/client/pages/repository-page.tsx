@@ -12,7 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '../components/ui/sheet.js';
-import { useApiClient, ApiClientError } from '@nocobase/app-client';
+import { createUuid, useApiClient, ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useCallback,
@@ -231,7 +231,7 @@ function EntityWorkspace({
     if (editing === 'new') {
       const input = {
         values: {
-          id: crypto.randomUUID(),
+          id: createUuid(),
           ...data,
           ...(entity.key === 'orders' && items.length
             ? {

@@ -3,7 +3,7 @@
  * changed since the running deployment, and the first administrator a first deployment generated (shown masked to
  * those who may deploy, until someone saved it).
  */
-import { ApiClientError } from '@nocobase/app-client';
+import { copyText, ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   CopyIcon,
@@ -153,12 +153,9 @@ export function InitialAdminAlert({
   if (!data || dismissed) return null;
   const { hours } = data;
   const copy = async (): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(data.password);
+    if (await copyText(data.password))
       notify.success(t('ui.initialAdmin.copied'));
-    } catch (reason) {
-      notify.error(reason);
-    }
+    else notify.error(new Error(t('ui.initialAdmin.copyFailed')));
   };
   const dismiss = async (): Promise<void> => {
     setDismissing(true);

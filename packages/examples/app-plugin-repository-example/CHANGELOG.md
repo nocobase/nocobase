@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-repository-example
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 58531da: Require HTTP-compatible UUID and clipboard helpers in browser source while preserving Node APIs. Use the shared helpers for mail composition, demo links, example records, template copy actions and workflow request identifiers.
+- Updated dependencies [58531da]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+
 ## 2.0.0-beta.1
 
 ### Patch Changes

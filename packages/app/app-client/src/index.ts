@@ -1,4 +1,6 @@
 export { refreshRealtimeQueries } from './realtime-query.js';
+export { createUuid } from './create-uuid.js';
+export { copyText, type CopyTextOptions } from './copy-text.js';
 export {
   apiClientToken,
   ClientApplication,

@@ -34,6 +34,20 @@ Conventions every page follows, each explained in its home:
 - Toasts with `useToaster()` from `@nocobase/app-client`, never a second `Toaster` (["Toasts" in `references/api.md`](references/api.md#toasts)).
 - Every user-visible string through a translation key ([`references/i18n.md`](references/i18n.md)).
 
+## Browser API compatibility
+
+Check browser support and secure-context requirements before choosing a browser API, including APIs called by third-party libraries. HTTPS-only APIs are allowed when a feature needs them: detect availability and permission failures, and show a localized explanation of the requirement and how the user can proceed. Keep unrelated actions working. Do not silently do nothing or show a success message when an API is unavailable. A LAN IP served over HTTP is not a secure context, while localhost is treated as trustworthy, so test the unavailable state instead of relying on localhost alone.
+
+UUID generation and copying text must work on ordinary HTTP, including LAN IP access. Use the public `createUuid()` and `copyText()` utilities from `@nocobase/app-client` rather than duplicating browser-specific implementations in pages. `createUuid()` returns a cryptographically random UUID v4 using `crypto.getRandomValues`, with the standard version, variant and encoding; it does not require `crypto.randomUUID`. Server-side `node:crypto` is unaffected.
+
+### Copy and clipboard actions
+
+Call `copyText(text)` directly from the user's click handler and await its boolean result. It uses the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText) when available and falls back to selection-based copying on HTTP or after a rejected write. It returns `false` when programmatic copying is refused or unsupported. Only show a copied confirmation when it returns `true`; on `false`, present the exact text in a selectable field with localized manual-copy instructions. Do not use optional chaining on `navigator.clipboard` that silently skips copying.
+
+For a dialog or other focus trap, pass `copyText(text, { container: dialogElement })` when the trigger does not take focus. Otherwise the helper selects the nearest dialog containing the active element, or the document body. Its temporary field is removed and the previous focus and selection are restored. The HTTP fallback uses the [deprecated `document.execCommand('copy')` compatibility mechanism](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand); browser policy can still reject it, so keep the manual-copy path.
+
+Verify UUID generation and copy actions on a non-secure HTTP origin where `window.isSecureContext` is `false`, including missing clipboard APIs, permission denial and copying from a dialog. Verify copied content by pasting into a normal input, including multiline and non-ASCII text; do not rely only on another secure-context-only API such as `navigator.clipboard.readText()`. For other HTTPS-only features, test the unavailable/denied state and its user-facing explanation as well as the supported path. Report browser checks that could not be performed.
+
 ## Look up by task
 
 | Task                                                                                     | Read                                                                                                                                                                                                                                                                                           |

@@ -46,7 +46,7 @@ const deDE: FoundationResource = {
     legend:
       '✓ Erkannte Einbindung; · keine Zuordnung erkannt. Codereferenzen zeigen Abhängigkeiten, keine Ausführungen.',
     partial:
-      'Einige Seitenabhängigkeiten konnten nicht gelesen werden. Bestätigte Zuordnungen bleiben sichtbar.',
+      'Einige Seitenabhängigkeiten konnten nicht festgestellt werden; es werden nur bestätigte Verbindungen angezeigt.',
     evidence: {
       page: 'Registrierte Anwendungsseite',
       authentication: 'Seite erfordert Anmeldung',

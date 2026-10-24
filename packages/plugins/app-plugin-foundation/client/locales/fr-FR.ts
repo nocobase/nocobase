@@ -47,7 +47,7 @@ const frFR: FoundationResource = {
     legend:
       '✓ Intégration identifiée ; · lien non identifié. Les références du code décrivent des dépendances, pas des exécutions.',
     partial:
-      'Certaines dépendances sont illisibles. Les liens confirmés restent affichés.',
+      'Certaines dépendances des pages n’ont pas pu être établies ; seules les connexions confirmées sont affichées.',
     evidence: {
       page: 'Page enregistrée dans l’application',
       authentication: 'Connexion requise pour la page',

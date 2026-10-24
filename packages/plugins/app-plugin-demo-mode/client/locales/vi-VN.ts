@@ -39,16 +39,6 @@ const resource: DemoModeResource = {
     apply: 'Áp dụng thay đổi',
     unsaved: 'Có thay đổi chưa lưu',
     discardAndReload: 'Bỏ thay đổi của tôi và tải lại',
-    switch: {
-      on: 'Bật',
-      off: 'Tắt',
-    },
-    tabs: {
-      overview: 'Tổng quan',
-      schedule: 'Đặt lại hằng ngày',
-      writes: 'Ghi của khách',
-      simulation: 'Mô phỏng & AI',
-    },
     leave: {
       title: 'Rời đi mà không lưu?',
       description: 'Các thay đổi chưa lưu trên trang này sẽ mất.',
@@ -130,6 +120,7 @@ const resource: DemoModeResource = {
         'Không sao chép được. Hãy sao chép liên kết từ thanh địa chỉ.',
     },
     schedule: {
+      title: 'Đặt lại hằng ngày',
       confirmTitle: 'Lưu đặt lại hằng ngày?',
       confirmDescription:
         'Vào giờ dưới đây, mọi dữ liệu nghiệp vụ trong phiên bản này bị xóa và tạo lại.',
@@ -145,59 +136,6 @@ const resource: DemoModeResource = {
       noTimezone: 'Không có múi giờ phù hợp',
       invalidTimezone: 'Hãy chọn một múi giờ trong danh sách.',
       next: 'Lần đặt lại tiếp theo: {{time}}',
-    },
-    writes: {
-      intro:
-        'Khi bật bản demo, các thao tác ghi mặc định bị từ chối. Chọn các bộ sưu tập mà khách cần ghi; quyền của ứng dụng kiểm soát thao tác và quyền truy cập bản ghi.',
-      allow: 'Cho phép',
-      revoke: 'Từ chối lại',
-      confirmTitle: 'Thay đổi những gì khách được ghi?',
-      confirmDescription:
-        'Thay đổi của khách đối với các mục này được lưu thật cho đến lần đặt lại tiếp theo.',
-      collections: {
-        title: 'Bộ sưu tập',
-        description:
-          'Các yêu cầu được ứng dụng cấp quyền có thể ghi vào các bộ sưu tập này.',
-        label: 'Bộ sưu tập khách được ghi',
-        placeholder: 'Tìm bộ sưu tập',
-        noMatch: 'Không có bộ sưu tập phù hợp',
-        fixed: 'Luôn được ghi',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'Mô hình',
-        tool: 'Công cụ',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'Mô phỏng',
-        description:
-          'Những gì trả lời thay cho dịch vụ bên ngoài trong bản demo này.',
-        confirmTitle: 'Thay đổi mô phỏng?',
-        confirmDescription:
-          'Một mô phỏng bị tắt khiến công việc đó thất bại; nó không bao giờ được gửi tới dịch vụ thật.',
-        empty: 'Chưa đăng ký mô phỏng nào',
-        emptyHelp: 'Ứng dụng chưa đăng ký dịch vụ mô phỏng nào.',
-        onHelp: 'Trả lời bằng kết quả mô phỏng.',
-        offHelp: 'Đã tắt: công việc bị từ chối.',
-      },
-      chat: {
-        title: 'Trò chuyện trực tuyến',
-        description: 'Cho phép khách trò chuyện với AI của ứng dụng.',
-        confirmTitle: 'Lưu cài đặt trò chuyện trực tuyến?',
-        confirmDescription:
-          'Cuộc trò chuyện của khách tuân theo cài đặt này từ tin nhắn tiếp theo.',
-        enabled: 'Khách có thể trò chuyện',
-        enabledHelp: 'Tắt: trò chuyện từ chối tin nhắn của khách.',
-        tools: 'Công cụ',
-        noTools: 'Ứng dụng không khai báo công cụ trò chuyện nào.',
-        policy: {
-          deny: 'Từ chối',
-          read: 'Đọc dữ liệu',
-          mock: 'Mô phỏng',
-        },
-      },
     },
   },
 };

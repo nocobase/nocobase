@@ -10,7 +10,7 @@ import {
 } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 
 function LocationProbe() {
   return <output data-testid='location'>{useLocation().search}</output>;
@@ -22,7 +22,6 @@ import DemoModeSettings, {
 } from '../../client/settings/index.js';
 import { Button } from '../../client/components/ui/button.js';
 import * as cards from '../../client/components/ui/card.js';
-import { TabsList, TabsTrigger } from '../../client/components/ui/tabs.js';
 
 const hostComponents: DemoSettingsComponents = {
   ...cards,
@@ -48,8 +47,6 @@ const hostComponents: DemoSettingsComponents = {
   ),
   Button: (props) => <Button {...props} data-host-button />,
   Card: (props) => <cards.Card {...props} data-testid='host-card' />,
-  TabsList: (props) => <TabsList {...props} variant='line' />,
-  TabsTrigger,
 };
 import type { DemoConfigurationView } from '../../shared/configuration.js';
 
@@ -65,7 +62,7 @@ const view = (patch: Partial<DemoConfigurationView> = {}) => ({
     timezone: 'Asia/Shanghai',
     language: 'zh-CN',
   },
-  chat: { enabled: false, tools: {} },
+  chat: { enabled: true, tools: {} },
   busy: false,
   enabled: true,
   fixedCollections: ['session', 'verification'],
@@ -155,11 +152,6 @@ function demoApi({
           },
         ],
       };
-    if (
-      call.method === 'GET' &&
-      call.path === 'demoMode/configuration/collections'
-    )
-      return { data: [{ name: 'userPreferences', title: 'View preferences' }] };
     if (call.method === 'GET' && call.path === 'demoMode/configuration')
       return { data: configuration };
     if (call.method === 'PUT' && onPut) return onPut(call);
@@ -186,6 +178,7 @@ const renderSettings = (
   renderWithApp(
     <>
       <LocationProbe />
+      <Link to='/elsewhere?left=1'>elsewhere</Link>
       <DemoModeSettings
         components={components}
         onDataChange={onDataChange}
@@ -233,10 +226,6 @@ describe.each(['default', 'host'] as const)(
       if (presentation === 'host') {
         expect(screen.getByTestId('host-header')).toBeInTheDocument();
         expect(screen.getAllByTestId('host-card').length).toBeGreaterThan(1);
-        expect(screen.getByRole('tablist')).toHaveAttribute(
-          'data-variant',
-          'line',
-        );
         expect(screen.getByRole('button', { name: '重置' })).toHaveAttribute(
           'data-host-button',
         );
@@ -249,6 +238,10 @@ describe.each(['default', 'host'] as const)(
       expect(
         screen.getByRole('button', { name: '复制 李明 的进入链接' }),
       ).toBeInTheDocument();
+      // The data, the daily reset and the accounts share one page.
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+      expect(screen.getByText('每日重置')).toBeInTheDocument();
+      expect(screen.getByRole('switch', { name: '每天重置' })).toBeEnabled();
     });
 
     it('saves the daily reset with the revision it started from, after confirming', async () => {
@@ -265,7 +258,7 @@ describe.each(['default', 'host'] as const)(
             };
           },
         }),
-        '/?tab=schedule',
+        '/',
       );
       fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
       fireEvent.click(screen.getByRole('button', { name: '保存' }));
@@ -285,11 +278,11 @@ describe.each(['default', 'host'] as const)(
       );
     });
 
-    it('guards dirty navigation and preserves unrelated query parameters', async () => {
-      await render(demoApi(), '/?tab=schedule&filter=retained');
+    it('guards navigation away while a change is unsaved', async () => {
+      await render(demoApi(), '/?filter=retained');
       fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
       expect(screen.getByRole('button', { name: '刷新' })).toBeDisabled();
-      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
+      fireEvent.click(screen.getByRole('link', { name: 'elsewhere' }));
       const dialog = await screen.findByRole('alertdialog');
       fireEvent.click(within(dialog).getByRole('button', { name: '继续编辑' }));
       await waitFor(() =>
@@ -300,14 +293,12 @@ describe.each(['default', 'host'] as const)(
         'true',
       );
       expect(screen.getByTestId('location')).toHaveTextContent(
-        'tab=schedule&filter=retained',
+        '?filter=retained',
       );
       fireEvent.click(screen.getByRole('button', { name: '取消' }));
-      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
+      fireEvent.click(screen.getByRole('link', { name: 'elsewhere' }));
       await waitFor(() =>
-        expect(screen.getByTestId('location')).toHaveTextContent(
-          'tab=overview&filter=retained',
-        ),
+        expect(screen.getByTestId('location')).toHaveTextContent('left=1'),
       );
     });
 
@@ -327,7 +318,7 @@ describe.each(['default', 'host'] as const)(
               { status: 409 },
             ),
         }),
-        '/?tab=schedule',
+        '/',
       );
       fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
       fireEvent.click(screen.getByRole('button', { name: '保存' }));
@@ -349,20 +340,29 @@ describe.each(['default', 'host'] as const)(
             actions: ['read'],
           })),
         }),
-        '/?tab=simulation',
+        '/',
       );
-      expect(await screen.findByText('在线聊天')).toBeInTheDocument();
       expect(
-        screen.getByRole('switch', { name: '允许访客聊天' }),
+        await screen.findByRole('switch', { name: '每天重置' }),
       ).toHaveAttribute('data-disabled');
       expect(
         screen.queryByRole('button', { name: '保存' }),
       ).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
       expect(
         screen.queryByRole('button', { name: '重置' }),
       ).not.toBeInTheDocument();
     });
+
+    it.each(['overview', 'schedule', 'simulation', 'writes'])(
+      'opens the whole page for legacy %s tab links',
+      async (tab) => {
+        await render(demoApi(), `/?tab=${tab}&filter=retained`);
+        expect(await screen.findByText('公司')).toBeInTheDocument();
+        expect(
+          await screen.findByRole('switch', { name: '每天重置' }),
+        ).toBeEnabled();
+      },
+    );
 
     it('clears after confirming and tells the application its data changed', async () => {
       const onDataChange = vi.fn();

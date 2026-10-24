@@ -10,6 +10,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import { afterEach, expect, it } from 'vitest';
+import {
+  overlapCases,
+  withOverlapFixture,
+} from '../helpers/overlapping-routes.js';
 import cliPlugin from '../../cli/index.js';
 import BuildModuleManifest from '../../cli/module-manifest.js';
 import { collectModuleSources } from '../../server/module-sources.js';
@@ -130,5 +134,47 @@ it.each(['', 'dist/'])(
     ]);
     expect(first).not.toContain(root);
     expect(first).not.toContain('useCallback');
+  },
+);
+
+it.each([
+  'fixed first',
+  'conditional next',
+  'registration guard clause',
+  'registration loop break',
+  'uninstantiated class field',
+  'wildcard suffix mismatch',
+])(
+  '%s builds reproducible corrected associations and reads them without business sources',
+  async (name) => {
+    const scenario = overlapCases.find((item) => item.name === name)!;
+    await withOverlapFixture(
+      scenario,
+      async ({ root: fixtureRoot, sources }) => {
+        expect(await writeModuleManifest(fixtureRoot)).toEqual({
+          routes: 1,
+          complete: scenario.complete,
+        });
+        const artifact = path.join(
+          fixtureRoot,
+          'dist/server/foundation-modules.json',
+        );
+        const first = await readFile(artifact, 'utf8');
+        const before = (await stat(artifact)).mtimeMs;
+        await writeModuleManifest(fixtureRoot);
+        expect(await readFile(artifact, 'utf8')).toBe(first);
+        expect((await stat(artifact)).mtimeMs).toBe(before);
+        expect(JSON.parse(first).sources).toEqual(sources);
+        await writeFile(
+          path.join(fixtureRoot, 'dist/package.json'),
+          '{"name":"app"}',
+        );
+        await rm(path.join(fixtureRoot, 'client'), { recursive: true });
+        await rm(path.join(fixtureRoot, 'server'), { recursive: true });
+        expect(
+          await collectModuleSources(path.join(fixtureRoot, 'dist')),
+        ).toEqual(sources);
+      },
+    );
   },
 );

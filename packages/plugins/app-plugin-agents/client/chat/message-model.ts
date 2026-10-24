@@ -216,7 +216,11 @@ export function chatMessageSegments(
   return messages
     .flatMap((message) => {
       const partIndexes = message.parts.flatMap((part, index) =>
-        (part.type === 'text' && !part.text.trim()) ||
+        (part.type === 'text' &&
+          !part.text.trim() &&
+          !message.metadata?.sourceRecords?.some(
+            (source) => source.partIndex === index && source.output,
+          )) ||
         part.type === 'step-start' ||
         (part.type === 'reasoning' && !part.text.trim()) ||
         (part.type === 'data-notice' &&

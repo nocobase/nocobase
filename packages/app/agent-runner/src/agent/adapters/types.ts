@@ -102,6 +102,8 @@ export interface ToolDetection {
 }
 
 export interface AdapterSession {
+  /** Conversation-only incremental transport, negotiated by the server. */
+  outputBlocks?: boolean;
   /** Absolute path the agent works in (the checked-out worktree). */
   workDir: string;
   /** The first user message of the run. */
