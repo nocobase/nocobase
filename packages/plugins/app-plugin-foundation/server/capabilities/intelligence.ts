@@ -14,7 +14,7 @@ export const aiAgents: CapabilityCollector = {
     '@nocobase/app-plugin-agent-sessions',
     '@nocobase/app-plugin-ai-employee',
   ],
-  async collect({ probe }) {
+  async collect({ probe, report }) {
     if (!probe) return NO_DATABASE;
     const hasModelServices = probe.has('agModelServices');
     if (!hasModelServices && !probe.has('agRunners'))
@@ -22,10 +22,48 @@ export const aiAgents: CapabilityCollector = {
     const [services, agents, runners, runs, modelCalls, input, output] =
       await Promise.all([
         hasModelServices
-          ? probe.count('agModelServices', { enabled: true })
+          ? probe
+              .count('agModelServices', { enabled: true })
+              .then((services) => {
+                report?.({
+                  status: (services ?? 0) > 0 ? 'active' : null,
+                  metrics: [metric('modelServices', services)],
+                  parts: [
+                    {
+                      key: 'modelServices',
+                      status:
+                        services === null
+                          ? null
+                          : services > 0
+                            ? 'active'
+                            : 'needsSetup',
+                    },
+                  ],
+                });
+                return services;
+              })
           : Promise.resolve(0),
         probe.has('agAgents') ? probe.count('agAgents') : Promise.resolve(0),
-        probe.has('agRunners') ? probe.count('agRunners') : Promise.resolve(0),
+        probe.has('agRunners')
+          ? probe.count('agRunners').then((runners) => {
+              report?.({
+                status: (runners ?? 0) > 0 ? 'active' : null,
+                metrics: [metric('runners', runners)],
+                parts: [
+                  {
+                    key: 'runners',
+                    status:
+                      runners === null
+                        ? null
+                        : runners > 0
+                          ? 'active'
+                          : 'unused',
+                  },
+                ],
+              });
+              return runners;
+            })
+          : Promise.resolve(0),
         probe.has('agRuns') ? probe.count('agRuns') : Promise.resolve(0),
         probe.has('agModelUsage')
           ? probe.count('agModelUsage')
@@ -89,14 +127,36 @@ export const aiAgents: CapabilityCollector = {
 export const knowledge: CapabilityCollector = {
   key: 'knowledge',
   packages: ['@nocobase/app-plugin-knowledge'],
-  async collect({ probe }) {
+  async collect({ probe, report }) {
     if (!probe) return NO_DATABASE;
     if (!probe.has('kbSpaces'))
       return { status: 'unused', reason: 'notRegistered' };
     const [spaces, docs, chunks] = await Promise.all([
-      probe.count('kbSpaces'),
-      probe.has('kbDocs') ? probe.count('kbDocs') : Promise.resolve(0),
-      probe.has('kbChunks') ? probe.count('kbChunks') : Promise.resolve(0),
+      probe.count('kbSpaces').then((spaces) => {
+        report?.({ status: null, metrics: [metric('spaces', spaces)] });
+        return spaces;
+      }),
+      (probe.has('kbDocs') ? probe.count('kbDocs') : Promise.resolve(0)).then(
+        (docs) => {
+          report?.({
+            status: docs === null ? null : docs > 0 ? 'active' : 'needsSetup',
+            ...(docs === 0 ? { reason: 'noDocuments' } : {}),
+            facts:
+              docs !== null && docs > 0
+                ? [fact('documents', { count: docs })]
+                : [],
+            metrics: [metric('documents', docs)],
+          });
+          return docs;
+        },
+      ),
+      (probe.has('kbChunks')
+        ? probe.count('kbChunks')
+        : Promise.resolve(0)
+      ).then((chunks) => {
+        report?.({ status: null, metrics: [metric('chunks', chunks)] });
+        return chunks;
+      }),
     ]);
     const active = (docs ?? 0) > 0;
     return {

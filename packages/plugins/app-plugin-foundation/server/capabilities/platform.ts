@@ -16,30 +16,38 @@ import {
 export const integrations: CapabilityCollector = {
   key: 'integrations',
   packages: ['@nocobase/app-plugin-api-keys'],
-  async collect({ probe }) {
+  async collect({ probe, report }) {
     if (!probe) return NO_DATABASE;
     if (!probe.has('apikey'))
       return { status: 'unused', reason: 'notRegistered' };
     const [enabled, used] = await Promise.all([
       probe.count('apikey', { enabled: true }),
       // A key someone has called the API with; holding one proves nothing about an integration.
-      probe.count('apikey', (filter) =>
-        filter.and([
-          filter.boolean('enabled').isTrue(),
-          filter.date('lastRequest').notEmpty(),
-        ]),
-      ),
+      probe
+        .count('apikey', (filter) =>
+          filter.and([
+            filter.boolean('enabled').isTrue(),
+            filter.date('lastRequest').notEmpty(),
+          ]),
+        )
+        .then((used) => {
+          report?.({
+            status: used === null ? null : used > 0 ? 'active' : 'unused',
+            metrics: [metric('usedApiKeys', used)],
+            facts:
+              used !== null && used > 0
+                ? [fact('usedApiKeys', { count: used })]
+                : [],
+          });
+          return used;
+        }),
     ]);
     const active = (used ?? 0) > 0;
     return {
-      status: active
-        ? 'active'
-        : used === null || enabled === null
-          ? null
-          : 'unused',
-      ...(active || used === null || enabled === null
+      status: active ? 'active' : used === null ? null : 'unused',
+      ...(active || used === null
         ? {}
-        : { reason: (enabled ?? 0) > 0 ? 'noUsedApiKey' : 'noApiKey' }),
+        : { reason: enabled === 0 ? 'noApiKey' : 'noUsedApiKey' }),
       facts: active ? [fact('usedApiKeys', { count: used ?? 0 })] : [],
       metrics: [metric('usedApiKeys', used), metric('apiKeys', enabled)],
     };

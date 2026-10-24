@@ -58,14 +58,24 @@ export class ReliableHistory {
       result.status = 'active';
       result.checkedAt = statusAt;
     }
-    const metrics =
-      current.completeness === 'failed'
-        ? [...history.metrics.values()].map((entry) => ({
-            ...entry.value,
-            value: null,
-            complete: false,
-          }))
-        : current.metrics;
+    const metrics = [
+      ...current.metrics,
+      ...(current.completeness === 'failed' ||
+      current.issues.some((issue) => issue.code === 'COLLECTOR_TIMEOUT')
+        ? [...history.metrics.values()]
+            .filter(
+              (entry) =>
+                !current.metrics.some(
+                  (metric) => metric.key === entry.value.key,
+                ),
+            )
+            .map((entry) => ({
+              ...entry.value,
+              value: null,
+              complete: false,
+            }))
+        : []),
+    ];
     result.metrics = metrics.map((metric) => {
       // Explicit business row counts already have their own retention and original timestamp.
       if (current.key === 'dataModeling' && metric.key === 'businessRecords')

@@ -11,7 +11,7 @@ import {
 export const workflows: CapabilityCollector = {
   key: 'workflows',
   packages: ['@nocobase/lifecycle', '@nocobase/app-plugin-scheduler'],
-  async collect({ probe }) {
+  async collect({ probe, report }) {
     if (!probe) return NO_DATABASE;
     const findings: CapabilityFindings[] = [];
     const parts: FoundationPart[] = [];
@@ -19,10 +19,35 @@ export const workflows: CapabilityCollector = {
     // The lifecycle store's two Collections exist once the application persists its lifecycles, which is the
     // integration itself: a lifecycle nobody has moved yet is still in use.
     if (probe.has('lifecycleTransitions')) {
+      report?.({
+        status: 'active',
+        parts: [
+          { key: 'lifecycles', status: 'active' },
+          {
+            key: 'schedules',
+            status: probe.has('scheduleDefinitions') ? null : 'unused',
+          },
+        ],
+      });
       const byLifecycle = await probe.groupCount(
         'lifecycleTransitions',
         'lifecycle',
       );
+      report?.({
+        status: 'active',
+        metrics: [
+          metric(
+            'transitions',
+            byLifecycle === null
+              ? null
+              : [...byLifecycle.values()].reduce(
+                  (sum, count) => sum + count,
+                  0,
+                ),
+          ),
+          metric('lifecycles', byLifecycle?.size ?? null),
+        ],
+      });
       const effects = probe.has('lifecycleEffectRuns')
         ? await probe.groupCount('lifecycleEffectRuns', 'status')
         : new Map<string, number>();
@@ -64,6 +89,16 @@ export const workflows: CapabilityCollector = {
     if (probe.has('scheduleDefinitions')) {
       const enabled = await probe.count('scheduleDefinitions', {
         enabled: true,
+      });
+      report?.({
+        status: enabled !== null && enabled > 0 ? 'active' : null,
+        metrics: [metric('schedules', enabled)],
+        parts: [
+          {
+            key: 'schedules',
+            status: enabled === null ? null : enabled > 0 ? 'active' : 'unused',
+          },
+        ],
       });
       const occurrences = probe.has('scheduleOccurrences')
         ? await probe.count('scheduleOccurrences')

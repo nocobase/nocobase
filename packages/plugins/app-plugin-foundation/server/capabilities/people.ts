@@ -66,7 +66,7 @@ export const permissions: CapabilityCollector = {
     '@nocobase/app-plugin-authz-sharing-rules',
     '@nocobase/app-plugin-authz-restriction-rules',
   ],
-  async collect({ probe, config }) {
+  async collect({ probe, config, report }) {
     if (!probe) return NO_DATABASE;
     if (!probe.has('authorizationPermissionSets'))
       return { status: 'unused', reason: 'notRegistered' };
@@ -74,31 +74,60 @@ export const permissions: CapabilityCollector = {
       config.get<{ permissionSets?: { rootSet?: string } }>('authorization')
         ?.permissionSets?.rootSet ?? 'root';
     const sets = await probe.records('authorizationPermissionSets');
-    const assignments = probe.has('authorizationPermissionSetAssignments')
-      ? await probe.groupCount(
+    const assignmentsRead = probe.has('authorizationPermissionSetAssignments')
+      ? probe.groupCount(
           'authorizationPermissionSetAssignments',
           'permissionSetKey',
         )
-      : new Map<string, number>();
+      : Promise.resolve(new Map<string, number>());
     // Holding the root set grants everything without a grant, so its own grants say nothing about the application.
     const grantedSets = sets?.filter((set) => set.key !== rootSet);
     const grants =
       grantedSets?.reduce((sum, set) => sum + grantCount(set.grants), 0) ??
       null;
+    report?.({
+      status: (grants ?? 0) > 0 ? 'active' : null,
+      metrics: [
+        metric('grants', grants),
+        metric('permissionSets', grantedSets?.length ?? null),
+      ],
+      parts: [
+        {
+          key: 'permissionSets',
+          status: grants === null ? null : grants > 0 ? 'active' : 'needsSetup',
+        },
+        ...RULE_COLLECTIONS.map(({ part, collection }): FoundationPart => ({
+          key: part,
+          status: probe.has(collection) ? null : 'unused',
+        })),
+      ],
+    });
+    const rules = await Promise.all(
+      RULE_COLLECTIONS.map(async ({ part, collection }) => {
+        const count = probe.has(collection)
+          ? await probe.count(collection)
+          : undefined;
+        report?.({
+          status: (count ?? 0) > 0 ? 'active' : null,
+          metrics: count === undefined ? [] : [metric(part, count)],
+          parts: [
+            {
+              key: part,
+              status:
+                count === null ? null : (count ?? 0) > 0 ? 'active' : 'unused',
+            },
+          ],
+        });
+        return { part, count };
+      }),
+    );
+    const assignments = await assignmentsRead;
     const assigned =
       assignments === null
         ? null
         : [...assignments.entries()]
             .filter(([key]) => key !== rootSet)
             .reduce((sum, [, count]) => sum + count, 0);
-    const rules = await Promise.all(
-      RULE_COLLECTIONS.map(async ({ part, collection }) => ({
-        part,
-        count: probe.has(collection)
-          ? await probe.count(collection)
-          : undefined,
-      })),
-    );
     const parts: FoundationPart[] = [
       {
         key: 'permissionSets',

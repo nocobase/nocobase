@@ -45,6 +45,8 @@ The application service keeps reliable active statuses, subpart statuses and com
 
 History is service-local, isolated by application and default connection identity, and invalidated conservatively on catalog, physical table, provider/ownership, relevant configuration or readable definition changes. It uses existing reads only. Restarting or replacing the application service clears it; separate server processes have independent histories. There is no persistent data, background collection or automatic retry. Authorization always runs before the service; a browser refresh receiving `401` or `403` hides internal cached values.
 
+The existing deadline preserves evidence completed before another read stalled, including confirmed configuration and partial file statistics. This does not issue a second query or extend the deadline. Late completions cannot replace the response, and queries already in flight retain their shared slots until they settle.
+
 - As the root administrator, `/foundation` shows the capabilities available in this runtime, and `GET /api/foundation/overview` answers `200`.
 - As any other user, the page is not in the menu, and the route answers `403 FOUNDATION_FORBIDDEN`.
 - After adding a Collection, a lifecycle or a notification channel and refreshing, the matching capability changes.

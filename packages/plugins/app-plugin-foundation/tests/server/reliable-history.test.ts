@@ -4,17 +4,19 @@ import path from 'node:path';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 
 import { files } from '../../server/capabilities/data.js';
 import { mail } from '../../server/capabilities/messaging.js';
 import { permissions } from '../../server/capabilities/people.js';
 import { workflows } from '../../server/capabilities/processes.js';
+import { knowledge } from '../../server/capabilities/intelligence.js';
 import type { CapabilityCollector } from '../../server/capabilities/types.js';
 import { DefaultFoundationService } from '../../server/services/foundation.js';
 
 const roots: string[] = [];
 afterEach(async () => {
+  vi.useRealTimers();
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );
@@ -27,6 +29,9 @@ async function fixture(collector: CapabilityCollector, names: string[]) {
   const state = {
     names,
     failed: new Set<string>(),
+    hanging: new Set<string>(),
+    finish: [] as (() => void)[],
+    onHang: () => undefined as void,
     definitionsFailed: new Set<string>(),
     nonFiles: new Set<string>(),
     count: 3,
@@ -62,15 +67,20 @@ async function fixture(collector: CapabilityCollector, names: string[]) {
     }),
     repository: (name: string) => {
       const read = () => {
+        if (state.hanging.has(name))
+          return new Promise<number>((resolve) => {
+            state.finish.push(() => resolve(state.count));
+            state.onHang();
+          });
         if (state.failed.has(name)) throw new Error('private driver detail');
         return state.count;
       };
       return {
         count: async () => read(),
-        aggregate: async () => ({ total: read() * 40 }),
-        groupBy: async () => [{ status: 'active', count: read() }],
+        aggregate: async () => ({ total: (await read()) * 40 }),
+        groupBy: async () => [{ status: 'active', count: await read() }],
         findMany: async () => {
-          read();
+          await read();
           return [
             { key: 'member', grants: state.grants && state.count ? [{}] : [] },
           ];
@@ -90,6 +100,7 @@ async function fixture(collector: CapabilityCollector, names: string[]) {
         get: <T>() => ({ permissionSets: { rootSet: state.rootSet } }) as T,
       },
       collectors: [collector],
+      collectorTimeoutMs: 1000,
       now: () => state.now,
       runtimeProviders: () => state.providers,
     });
@@ -144,6 +155,67 @@ it('retains the original status and metric dates across repeated failures, then 
     current.metrics.find((item) => item.key === 'connectedMailboxes'),
   ).toMatchObject({ value: 0, complete: true });
 });
+
+it.each([
+  [
+    mail,
+    ['mailAccounts', 'mailMessages', 'mailSubmissions'],
+    'mailSubmissions',
+    'messages',
+    3,
+  ],
+  [files, ['photos'], 'photos', 'fileCollections', 1],
+  [
+    workflows,
+    ['lifecycleTransitions'],
+    'lifecycleTransitions',
+    undefined,
+    undefined,
+  ],
+  [
+    permissions,
+    ['authorizationPermissionSets', 'authorizationPermissionSetAssignments'],
+    'authorizationPermissionSetAssignments',
+    'grants',
+    1,
+  ],
+  [knowledge, ['kbSpaces', 'kbDocs', 'kbChunks'], 'kbChunks', 'documents', 3],
+] as [
+  CapabilityCollector,
+  string[],
+  string,
+  string | undefined,
+  number | undefined,
+][])(
+  'retains completed %s evidence when an optional read reaches the existing deadline',
+  async (collector, names, hanging, metricKey, value) => {
+    const { state, service } = await fixture(collector, names);
+    state.hanging.add(hanging);
+    const started = new Promise<void>((resolve) => {
+      state.onHang = resolve;
+    });
+    vi.useFakeTimers();
+    const pending = service.overview();
+    await started;
+    await vi.advanceTimersByTimeAsync(1000);
+    const current = (await pending).capabilities[0]!;
+    expect(current).toMatchObject({
+      status: 'active',
+      completeness: 'partial',
+    });
+    expect(current.issues).toContainEqual({ code: 'COLLECTOR_TIMEOUT' });
+    if (metricKey)
+      expect(
+        current.metrics.find((metric) => metric.key === metricKey),
+      ).toMatchObject({ value, complete: true });
+    expect(
+      current.facts.some(
+        (fact) => fact.code === 'lifecyclesWithoutTransitions',
+      ),
+    ).toBe(false);
+    state.finish.forEach((finish) => finish());
+  },
+);
 
 it('retains reliable observations after a whole collector failure without leaking the cause', async () => {
   let fail = false;

@@ -17,6 +17,7 @@ import {
   type CapabilityCollector,
   type CollectorContext,
 } from '../capabilities/index.js';
+import type { CapabilityFindings } from '../capabilities/types.js';
 import { Inventory, Probe } from '../inventory.js';
 import { ReadQueue } from '../read-queue.js';
 import { ReliableHistory } from '../reliable-history.js';
@@ -343,26 +344,59 @@ export class DefaultFoundationService implements FoundationService {
     context: CollectorContext,
   ): Promise<FoundationCapability> {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let progress: CapabilityFindings | undefined;
     const abort = new AbortController();
     const probe = context.probe
       ? new Probe(context.probe.inventory, abort.signal)
       : undefined;
+    let deadlineIssues: readonly FoundationIssue[] = [];
     const timeout = new Promise<'timeout'>((resolve) => {
       timer = setTimeout(() => {
+        deadlineIssues = [...(probe?.issues ?? [])];
         resolve('timeout');
         abort.abort();
       }, this.collectorTimeoutMs);
     });
     try {
       const findings = await Promise.race([
-        collector.collect({ ...context, probe }),
+        collector.collect({
+          ...context,
+          probe,
+          report: (finding) => {
+            if (abort.signal.aborted) return;
+            const status =
+              progress?.status === 'active' || finding.status === 'active'
+                ? 'active'
+                : (finding.status ?? progress?.status ?? null);
+            progress = {
+              status,
+              ...(status === 'active'
+                ? {}
+                : { reason: finding.reason ?? progress?.reason }),
+              facts: finding.facts ?? progress?.facts ?? [],
+              metrics: mergeEvidence(
+                progress?.metrics,
+                finding.metrics,
+                (item) => item.key,
+              ),
+              parts: mergeEvidence(
+                progress?.parts,
+                finding.parts,
+                (item) => item.key,
+              ),
+            };
+          },
+        }),
         timeout,
       ]);
       if (findings === 'timeout')
-        return collector.key === 'dataModeling' && probe
+        return progress || (collector.key === 'dataModeling' && probe)
           ? {
-              ...failed(collector, [{ code: 'COLLECTOR_TIMEOUT' }]),
-              ...dataModelingSummary(probe),
+              ...failed(collector, [
+                ...deadlineIssues,
+                { code: 'COLLECTOR_TIMEOUT' },
+              ]),
+              ...(progress ?? dataModelingSummary(probe!)),
               packages: await this.resolvePackages(collector.packages),
               completeness: 'partial',
             }
@@ -380,7 +414,10 @@ export class DefaultFoundationService implements FoundationService {
         issues: [...issues],
       };
     } catch {
-      return failed(collector, [{ code: 'COLLECTOR_FAILED' }]);
+      return {
+        ...failed(collector, [{ code: 'COLLECTOR_FAILED' }]),
+        ...(progress ? { ...progress, completeness: 'partial' as const } : {}),
+      };
     } finally {
       clearTimeout(timer);
     }
@@ -399,6 +436,18 @@ export class DefaultFoundationService implements FoundationService {
       (entry): entry is FoundationPackage => entry !== undefined,
     );
   }
+}
+
+function mergeEvidence<T>(
+  previous: readonly T[] = [],
+  current: readonly T[] = [],
+  key: (item: T) => string,
+): readonly T[] {
+  return [
+    ...new Map(
+      [...previous, ...current].map((item) => [key(item), item]),
+    ).values(),
+  ];
 }
 
 /** A capability whose evidence could not be read: it has no status rather than a guessed one. */
