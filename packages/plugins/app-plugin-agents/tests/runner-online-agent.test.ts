@@ -1791,3 +1791,48 @@ it('restores ordered reasoning in streamed and paged history with one batched re
     ).events.filter((event) => event.type === 'thinking'),
   ).toHaveLength(1);
 });
+
+it('restores a reasoning-only response from its accepted user record without inventing a history cursor', async () => {
+  const f = await fixture({ outputFeature: true });
+  await f.agent.send([{ role: 'user', content: 'Think before replying' }]);
+  const [payload] = await claim(h, f.runner);
+  await f.report(payload.run.id, 'start', {
+    workDir: '/work/reasoning-only',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  });
+  await f.report(payload.run.id, 'events', {
+    events: [
+      {
+        seq: payload.run.firstSeq,
+        type: 'thinking',
+        content: 'Retained summary',
+        at: h.clock.now().toISOString(),
+        meta: { output: { blockId: 'thought', phase: 'end' } },
+      },
+    ],
+  });
+  await f.report(payload.run.id, 'complete', {
+    summary: '',
+    handledInputIds: payload.inputs.map((input) => input.id),
+  });
+  const history = await f.agent.history();
+  expect(history.map((message) => message.role)).toEqual(['user', 'assistant']);
+  expect(history[1].parts).toEqual([
+    { type: 'reasoning', text: 'Retained summary', state: 'done' },
+  ]);
+  const page = await f.agent.messages!({ limit: 50 });
+  expect(page.lastSeq).toBe(1);
+  expect(page.items).toEqual(history);
+  expect(
+    (await f.agent.messages!({ limit: 50, ids: [`runner:${payload.run.id}`] }))
+      .items,
+  ).toEqual([history[1]]);
+  expect(
+    (
+      await h.services.conversations.messages('alice', f.agent.sessionId, {
+        limit: 50,
+      })
+    ).items,
+  ).toHaveLength(1);
+});

@@ -118,6 +118,35 @@ export function runnerUIMessages(
     }
     message.metadata!.revision = Math.max(message.metadata!.revision, row.seq);
   }
+  // User records already carry their accepted run id, including a response stopped before producing text.
+  for (const event of reasoning) {
+    if (
+      !event.content?.trim() ||
+      outputBlock(jsonObject(event.meta))?.phase !== 'end'
+    )
+      continue;
+    const id = runnerMessageId(event.runId);
+    if (messages.has(id)) continue;
+    const user = rows.find(
+      (row) => row.role === 'user' && row.runId === event.runId,
+    );
+    if (!user) continue;
+    messages.set(id, {
+      id,
+      role: 'assistant',
+      metadata: {
+        conversationId: user.conversationId,
+        createdAt: event.at,
+        seq: user.seq,
+        revision: user.seq,
+        ...(user.metadata.agentId ? { agentId: user.metadata.agentId } : {}),
+        executionId: event.runId,
+        turnId: event.runId,
+        sourceRecords: [],
+      },
+      parts: [],
+    });
+  }
   const byRecord = new Map(rows.map((row) => [row.id, row]));
   for (const message of messages.values()) {
     const runId = message.metadata?.executionId;
@@ -139,14 +168,13 @@ export function runnerUIMessages(
       if (seenParts.has(partId)) continue;
       seenParts.add(partId);
       // Use a real conversation cursor, while run-event order positions reasoning within its response.
-      const anchor =
-        parts.find((part) => part.seq > event.seq) ?? parts.at(-1)!;
+      const anchor = parts.find((part) => part.seq > event.seq) ?? parts.at(-1);
       parts.push({
         source: {
           recordId: partId,
           partId,
           partIndex: 0,
-          seq: anchor.source.seq,
+          seq: anchor?.source.seq ?? message.metadata!.seq!,
           createdAt: event.at,
           output,
         },
@@ -161,7 +189,9 @@ export function runnerUIMessages(
       partIndex,
     }));
   }
-  return [...messages.values()];
+  return [...messages.values()].sort(
+    (a, b) => (a.metadata?.seq ?? 0) - (b.metadata?.seq ?? 0),
+  );
 }
 
 /** One batched read of already-redacted summaries; never writes conversation rows or changes model replay. */
@@ -169,15 +199,21 @@ export async function runnerMessages(
   tx: TxRunner,
   rows: ConversationMessage[],
 ): Promise<AppUIMessage[]> {
+  const responses = new Set(
+    rows
+      .filter((row) => row.role === 'assistant' && row.runId)
+      .map((row) => row.runId!),
+  );
   const runIds = [
     ...new Set(
       rows
         .filter(
           (row) =>
-            row.role === 'assistant' &&
             row.runId &&
-            outputBlock(row.metadata as Record<string, unknown>)?.phase ===
-              'end',
+            ((row.role === 'assistant' &&
+              outputBlock(row.metadata as Record<string, unknown>)?.phase ===
+                'end') ||
+              (row.role === 'user' && !responses.has(row.runId))),
         )
         .map((row) => row.runId!),
     ),
