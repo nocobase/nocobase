@@ -3,8 +3,7 @@
  * (`ConnectSteps`, also what a person with no computer sees first). These computers run only their owner's sessions;
  * machines that run the team's background work are managed elsewhere in the application.
  */
-import { copyText } from '@nocobase/app-client';
-import { useToaster } from '@nocobase/app-client';
+import { copyText, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
