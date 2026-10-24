@@ -333,7 +333,6 @@ export function FoundationOverviewView({
           counting={refreshing}
           onCountRecords={onCountRecords}
           recordCountCheckedAt={overview.recordCountCheckedAt}
-          onRefresh={onRefresh}
           modules={modules.filter((module) =>
             module.links.some(
               (link) => link.capability === selectedCapability.key,
@@ -601,7 +600,6 @@ function CapabilityDetail({
   counting,
   onCountRecords,
   recordCountCheckedAt,
-  onRefresh,
 }: {
   readonly capability: FoundationCapability;
   readonly modules: readonly FoundationBusinessModule[];
@@ -609,7 +607,6 @@ function CapabilityDetail({
   readonly counting: boolean;
   readonly onCountRecords?: () => void;
   readonly recordCountCheckedAt?: string;
-  readonly onRefresh?: () => void;
 }): ReactElement {
   const { t, word, text, locale } = useFoundationTranslation();
   const Icon = CAPABILITY_ICONS[capability.key] ?? Plug;
@@ -688,16 +685,6 @@ function CapabilityDetail({
                   : 'detail.partial',
               )}
             </p>
-            {onRefresh ? (
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={counting}
-                onClick={onRefresh}
-              >
-                {t('page.retry')}
-              </Button>
-            ) : null}
             <details key={capability.key}>
               <summary>{t('detail.readNotes')}</summary>
               {capability.issues.some(

@@ -320,7 +320,15 @@ describe('App Foundation page', () => {
   });
 
   it('refreshes the overview without requesting expensive business record counts', async () => {
-    const calls = await render();
+    let completeRefresh: () => void = () => undefined;
+    const pending = new Promise<void>((resolve) => {
+      completeRefresh = resolve;
+    });
+    const calls = await render((call) =>
+      call.query?.refresh
+        ? pending.then(() => ({ data: OVERVIEW }))
+        : { data: OVERVIEW },
+    );
     await screen.findByText('3 / 13');
 
     expect(
@@ -335,6 +343,19 @@ describe('App Foundation page', () => {
       path: 'foundation/overview',
       query: { refresh: 'true' },
     });
+    expect(
+      within(screen.getByRole('region', { name: 'NocoBase Core' })).getByRole(
+        'button',
+        { name: 'Collecting…' },
+      ),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Try again' }),
+    ).not.toBeInTheDocument();
+    await act(async () => completeRefresh());
+    expect(
+      await screen.findByRole('button', { name: 'Refresh' }),
+    ).toBeEnabled();
   });
 
   it('explains active model services without asking native OnlineAgent users to define an Agent', async () => {
@@ -597,28 +618,37 @@ describe('App Foundation page', () => {
     },
   );
 
-  it('tells a user without unrestricted access that the page is not theirs', async () => {
-    await render(() =>
-      Response.json(
-        {
-          error: {
-            code: 403,
-            status: 'PERMISSION_DENIED',
-            reason: 'FOUNDATION_FORBIDDEN',
-            domain: 'foundation',
-            message: 'Forbidden.',
+  it.each([401, 403])(
+    'offers no retry when initial access is denied (%i)',
+    async (status) => {
+      await render(() =>
+        Response.json(
+          {
+            error: {
+              code: status,
+              status: 'PERMISSION_DENIED',
+              reason: 'FOUNDATION_FORBIDDEN',
+              domain: 'foundation',
+              message: 'Forbidden.',
+            },
           },
-        },
-        { status: 403 },
-      ),
-    );
+          { status },
+        ),
+      );
 
-    expect(
-      await screen.findByText(
-        'Only an administrator with unrestricted access can view the App foundation.',
-      ),
-    ).toBeInTheDocument();
-  });
+      expect(
+        await screen.findByText(
+          'Only an administrator with unrestricted access can view the App foundation.',
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Try again' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Refresh' }),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it('makes a failed refresh visible while retaining the previous result and recovers on retry', async () => {
     let fail = false;
@@ -656,44 +686,93 @@ describe('App Foundation page', () => {
     );
   });
 
-  it('offers a working retry for a first collection failure without a missing-configuration claim', async () => {
-    let reads = 0;
-    await render((call) => {
-      if (reads++ > 0) {
-        expect(call.query).toEqual({ refresh: 'true' });
+  it.each(['partial', 'failed'] as const)(
+    'uses only the top refresh for a %s capability without a missing-configuration claim',
+    async (completeness) => {
+      let reads = 0;
+      await render((call) => {
+        if (reads++ > 0) {
+          expect(call.query).toEqual({ refresh: 'true' });
+          return {
+            data: {
+              ...OVERVIEW,
+              capabilities: [capability('mail', { status: 'active' })],
+            },
+          };
+        }
         return {
           data: {
             ...OVERVIEW,
-            capabilities: [capability('mail', { status: 'active' })],
+            capabilities: [
+              capability('mail', {
+                status: null,
+                completeness,
+                issues: [{ code: 'SOURCE_UNREADABLE', source: 'mailAccounts' }],
+              }),
+            ],
           },
         };
-      }
-      return {
-        data: {
-          ...OVERVIEW,
-          capabilities: [
-            capability('mail', {
-              status: null,
-              completeness: 'partial',
-              issues: [{ code: 'SOURCE_UNREADABLE', source: 'mailAccounts' }],
-            }),
-          ],
-        },
-      };
+      });
+      const detail = await screen.findByRole('region', {
+        name: 'Mail Information pending update',
+      });
+      expect(
+        within(detail).queryByText('No mailbox is connected.'),
+      ).not.toBeInTheDocument();
+      expect(within(detail).getByRole('note')).not.toHaveClass(
+        'border-destructive/30',
+      );
+      expect(
+        screen.queryByRole('button', { name: 'Try again' }),
+      ).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Refresh' })).toHaveLength(
+        1,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+      expect(
+        await screen.findByRole('region', { name: 'Mail In use' }),
+      ).toBeInTheDocument();
+      expect(reads).toBe(2);
+    },
+  );
+
+  it('retries an initial whole-page failure and restores the overview with top refresh', async () => {
+    let reads = 0;
+    await render((call) => {
+      if (reads++ === 0)
+        return Response.json(
+          {
+            error: {
+              code: 500,
+              status: 'INTERNAL_SERVER_ERROR',
+              reason: 'FAILED',
+              domain: 'foundation',
+              message: 'Unavailable.',
+            },
+          },
+          { status: 500 },
+        );
+      expect(call.query).toEqual({ refresh: 'true' });
+      return { data: OVERVIEW };
     });
-    const detail = await screen.findByRole('region', {
-      name: 'Mail Information pending update',
-    });
-    expect(
-      within(detail).queryByText('No connected mailbox yet.'),
-    ).not.toBeInTheDocument();
-    expect(within(detail).getByRole('note')).not.toHaveClass(
-      'border-destructive/30',
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Information pending update',
     );
-    fireEvent.click(within(detail).getByRole('button', { name: 'Try again' }));
     expect(
-      await screen.findByRole('region', { name: 'Mail In use' }),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: 'Refresh' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: 'NocoBase Core' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('region', { name: 'NocoBase Core' }),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: 'Try again' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(reads).toBe(2);
   });
 
@@ -749,6 +828,9 @@ describe('App Foundation page', () => {
     ).toHaveLength(2);
     expect(screen.getByText(/Last check Oct 20, 2026/)).toBeVisible();
     expect(within(detail).queryByText(/≥/)).not.toBeInTheDocument();
+    expect(
+      within(detail).queryByRole('button', { name: 'Try again' }),
+    ).not.toBeInTheDocument();
   });
 
   it.each([401, 403])(
@@ -781,6 +863,12 @@ describe('App Foundation page', () => {
         screen.queryByRole('region', { name: 'NocoBase Core' }),
       ).not.toBeInTheDocument();
       expect(screen.queryByText('75,413')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Try again' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Refresh' }),
+      ).not.toBeInTheDocument();
     },
   );
 
