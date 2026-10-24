@@ -428,13 +428,26 @@ export class RouteEvidence {
     }
     if (ts.isCallExpression(node)) {
       // The framework wrapper supplies definitions unchanged. Other opaque wrappers retain only explicit argument evidence.
-      const knownWrapper = this.analysis
-        .declarations(node.expression)
-        .some(
-          (d) =>
-            ts.isImportSpecifier(d) &&
-            (d.propertyName?.text ?? d.name.text) === 'defineAppRoutes',
+      const knownWrapper = (
+        this.analysis.symbol(node.expression)?.declarations ?? []
+      ).some((declaration) => {
+        if (
+          !ts.isImportSpecifier(declaration) ||
+          declaration.isTypeOnly ||
+          (declaration.propertyName?.text ?? declaration.name.text) !==
+            'defineAppRoutes'
+        )
+          return false;
+        const statement = declaration.parent.parent.parent;
+        return (
+          ts.isImportDeclaration(statement) &&
+          !statement.importClause?.isTypeOnly &&
+          ts.isStringLiteralLike(statement.moduleSpecifier) &&
+          ['@nocobase/app-client', '@nocobase/app-client/plugins'].includes(
+            statement.moduleSpecifier.text,
+          )
         );
+      });
       if (!knownWrapper) {
         const values = this.values(value);
         for (const selected of values) this.scan(selected, nextSeen);

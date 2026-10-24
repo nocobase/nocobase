@@ -77,7 +77,7 @@ describe('static module dependencies', () => {
     async (prefix) => {
       const root = await fixture({
         [prefix + 'client/routes.js']:
-          `import {master} from './master.js';export default [master({file:'items',list:()=>import('./items.js'),detail:()=>import('./detail.js'),tabs:[{path:'audit',loader:()=>import('./audit.js') }]}),master({file:'other',list:()=>import('./other.js')})];`,
+          `import {defineAppRoutes as routes} from '@nocobase/app-client/plugins';import {master} from './master.js';export default routes([master({file:'items',list:()=>import('./items.js'),detail:()=>import('./detail.js'),tabs:[{path:'audit',loader:()=>import('./audit.js') }]}),master({file:'other',list:()=>import('./other.js')})]);`,
         [prefix + 'client/master.js']:
           `const history=()=>import('./history.js');const landing=(name,loader)=>loader?[{name:\`\${name}-landing\`,componentLoader:loader}]:[];export const master=({file,list,detail=list,tabs=[]})=>({name:file,componentLoader:list,children:[{name:\`\${file}-detail\`,componentLoader:detail,children:[...landing(file,history),...tabs.map(tab=>({name:\`\${file}-\${tab.path}\`,componentLoader:tab.loader}))]}]});`,
         [prefix + 'client/items.js']:
