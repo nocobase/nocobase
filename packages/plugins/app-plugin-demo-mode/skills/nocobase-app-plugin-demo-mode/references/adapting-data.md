@@ -33,9 +33,15 @@ Keep `accounts(language)` and `createAccount()` on one shared definition with ex
 
 Create demo-owned Permission Sets rather than assigning a built-in administrator role, whose last active assignment may prevent account cleanup. Supply any `roleScopes` marked `requiredOnCreate`. Assign a Permission Set through either `permissionSets` or its role scope, not both.
 
+### Keep the executing administrator available
+
+Clear and failed-import cleanup automatically preserve the executing administrator's current enabled state, password, sessions, assignments and required Permission Sets, including role scopes. HTTP operations use the authenticated, authorized user ID; scheduled reset uses the dataset's recorded actor ID. CLI import and clear still require `--actor`; reset may reuse the recorded actor and fails if none exists. No new permissions are granted. Ordinary demo accounts are disabled and lose their assignments, while all business data is cleared.
+
+Necessary tracking and ownership remain so generation/reset can reuse the same account and Permission Sets. Successful regeneration reconciles obsolete tracked grants. A later clear by a different administrator applies ordinary cleanup to the previous dataset-owned actor; accounts outside the dataset are never disabled or adopted. After clear, use normal password sign-in; quick sign-in lists accounts only while a dataset is ready.
+
 ### Update demo accounts
 
-Reset after changing account definitions, then verify credentials and effective permissions. Clear disables accounts for reuse; reset preserves sessions when credentials are unchanged and revokes them when passwords change.
+Reset after changing account definitions, then verify credentials and effective permissions. Clear disables ordinary accounts for reuse; reset preserves sessions when credentials are unchanged and revokes them when passwords change.
 
 On reuse, omitting a `roleScopes` key preserves its previous value. To remove an optional multi-value scope, supply an explicit empty array, such as `roleScopes: { app: [] }`; other scopes require a host-supported replacement value. Verify an operation the removed role used to allow is now denied.
 

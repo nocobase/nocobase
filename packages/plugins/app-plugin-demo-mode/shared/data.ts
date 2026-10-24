@@ -28,7 +28,7 @@ export interface DemoAccountSpec {
   /**
    * Values for the users plugin's role scopes, by scope key, such as an application role scope marked
    * `requiredOnCreate`. Given when the account is created and applied again when an import reuses it; clearing drops
-   * the account's Permission Set assignments as for `permissionSets`.
+   * the account's Permission Set assignments as for `permissionSets`, except for the operation's actor.
    */
   readonly roleScopes?: Readonly<Record<string, string | readonly string[]>>;
 }
