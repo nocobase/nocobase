@@ -1,4 +1,11 @@
 import ts from 'typescript';
+import type { FoundationApiCondition } from '../shared/foundation.js';
+import {
+  databaseSuccessGuard,
+  databaseAvailable,
+  middlewareContract,
+  importedContract,
+} from './api-contracts.js';
 import type { SourceEvidence } from './source-evidence.js';
 import {
   handlerContinuation,
@@ -17,6 +24,7 @@ export interface EndpointEvidence extends ApiReference {
   readonly collections?: readonly string[];
   readonly continuation?: Continuation;
   readonly uncertain?: boolean;
+  readonly conditions?: readonly FoundationApiCondition[];
 }
 
 /** Compose only routers reachable from the selected API exports, retaining method and handler boundaries. */
@@ -36,6 +44,14 @@ export function apiDependencies(
     factory?: ts.SignatureDeclaration;
     uncertain?: boolean;
   })[] = [];
+  const guards = new Map<ts.SignatureDeclaration, ts.IfStatement | undefined>();
+  const guardFor = (
+    factory: ts.SignatureDeclaration,
+  ): ts.IfStatement | undefined => {
+    if (!guards.has(factory))
+      guards.set(factory, databaseSuccessGuard(factory, analysis));
+    return guards.get(factory);
+  };
   const addRoot = (
     router: ts.Node,
     factory?: ts.SignatureDeclaration,
@@ -52,25 +68,15 @@ export function apiDependencies(
     contributions.push({
       router,
       factory,
-      uncertain: factory ? returned(factory).length !== 1 : false,
+      uncertain: factory
+        ? returned(factory).length !== 1 && !guardFor(factory)
+        : false,
     });
   };
   const invokedFactories = new Set<ts.SignatureDeclaration>();
   const visited = new Set<ts.Node>();
   const imported = (node: ts.Node, module: string, name: string): boolean =>
-    (analysis.symbol(node)?.declarations ?? []).some((declaration) => {
-      if (
-        !ts.isImportSpecifier(declaration) ||
-        (declaration.propertyName?.text ?? declaration.name.text) !== name
-      )
-        return false;
-      const statement = declaration.parent.parent.parent;
-      return (
-        ts.isImportDeclaration(statement) &&
-        ts.isStringLiteralLike(statement.moduleSpecifier) &&
-        statement.moduleSpecifier.text === module
-      );
-    });
+    importedContract(node, analysis, module, name);
   const identity = (
     node: ts.Node,
     seen = new Set<ts.Node>(),
@@ -166,6 +172,14 @@ export function apiDependencies(
           imported(
             value.expression,
             '@nocobase/app-server/router',
+            'defineRootRoutes',
+          )
+        ) {
+          // Root routes are mounted outside /api and cannot intercept this request chain.
+        } else if (
+          imported(
+            value.expression,
+            '@nocobase/app-server/router',
             'defineRepositoryApiRoutes',
           )
         )
@@ -257,6 +271,8 @@ export function apiDependencies(
   const initialized = new Set<string>();
   let visits = 0;
   let exhausted = false;
+  let successGuard: ts.IfStatement | undefined;
+  let conditions: readonly FoundationApiCondition[] = [];
   const barrier = (router: Router, method = 'ALL'): void => {
     router.entries.push({
       path: join(router.base, '*'),
@@ -277,6 +293,8 @@ export function apiDependencies(
       return;
     }
     if (ts.isFunctionLike(node)) return;
+    // This branch is excluded only under the recorded database-available condition.
+    if (node === successGuard) return;
     if (ts.isTypeNode(node)) return;
     if (ts.isSourceFile(node) || ts.isBlock(node)) {
       let pendingExit = false;
@@ -440,6 +458,7 @@ export function apiDependencies(
                 for (const endpoint of [...state(child, bindings).entries])
                   router.entries.push({
                     ...endpoint,
+                    conditions: [...(endpoint.conditions ?? []), ...conditions],
                     path: join(join(router.base, prefix), endpoint.path),
                     uncertain: uncertain || endpoint.uncertain,
                   });
@@ -477,16 +496,20 @@ export function apiDependencies(
             if (!registeredPaths.length) barrier(router, method.toUpperCase());
             for (const path of registeredPaths)
               for (const handler of expanded) {
+                const contract = middlewareContract(handler, analysis);
                 router.entries.push({
                   path: join(router.base, path),
                   method:
                     method === 'use' || method === 'all'
                       ? 'ALL'
                       : method.toUpperCase(),
-                  providers: providers(node.getSourceFile().fileName, [
-                    handler,
-                  ]),
-                  continuation: handlerContinuation(handler, analysis),
+                  providers: contract
+                    ? (contract.providers ?? [])
+                    : providers(node.getSourceFile().fileName, [handler]),
+                  continuation: contract
+                    ? 'next'
+                    : handlerContinuation(handler, analysis),
+                  conditions: [...conditions, ...(contract?.conditions ?? [])],
                   uncertain:
                     uncertain ||
                     registeredPaths.length !== 1 ||
@@ -575,7 +598,11 @@ export function apiDependencies(
     const fn = contribution.factory;
     if (fn && !invokedFactories.has(fn) && 'body' in fn && fn.body) {
       invokedFactories.add(fn);
+      successGuard = guardFor(fn);
+      conditions = successGuard ? [databaseAvailable] : [];
       visit(fn.body);
+      successGuard = undefined;
+      conditions = [];
     }
     if ('router' in contribution)
       endpoints.push(

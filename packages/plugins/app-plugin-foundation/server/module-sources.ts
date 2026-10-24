@@ -5,6 +5,7 @@ import ts from 'typescript';
 import type {
   FoundationModuleSource,
   FoundationModuleSources,
+  FoundationApiEvidence,
 } from '../shared/foundation.js';
 import type { RuntimeProviderEvidence } from './provider-inventory.js';
 import { SourceEvidence } from './source-evidence.js';
@@ -93,6 +94,7 @@ export async function collectModuleSources(
           const providers = new Set<string>();
           const apiProviders = new Set<string>();
           const collections = new Set<string>();
+          const apiEvidence: FoundationApiEvidence[] = [];
           let routeComplete = declarationFiles.complete && imports.length > 0;
           for (const { from, specifier } of imports) {
             const target = await graph.local(from, specifier);
@@ -112,6 +114,21 @@ export async function collectModuleSources(
                   apiProviders.add(provider);
                 for (const collection of endpoint.collections ?? [])
                   collections.add(collection);
+                if (endpoint.providers.length) {
+                  const evidence = {
+                    method: request.method,
+                    path: endpoint.path,
+                    providers: endpoint.providers,
+                    conditions: endpoint.conditions ?? [],
+                  };
+                  if (
+                    !apiEvidence.some(
+                      (item) =>
+                        JSON.stringify(item) === JSON.stringify(evidence),
+                    )
+                  )
+                    apiEvidence.push(evidence);
+                }
               }
             }
             routeComplete &&= page.complete;
@@ -123,6 +140,7 @@ export async function collectModuleSources(
             ...(apiProviders.size
               ? { apiProviders: [...apiProviders].sort() }
               : {}),
+            ...(apiEvidence.length ? { apiEvidence } : {}),
             ...(collections.size
               ? { collections: [...collections].sort() }
               : {}),

@@ -33,6 +33,14 @@ const deDE: FoundationResource = {
     lowerBound: 'Mindestwert: Ein Teil konnte nicht gelesen werden.',
   },
   matrix: {
+    apiPath: 'API-Anfrage: {{method}} {{path}}',
+    successPath: 'Erfolgreiche API-Anfrage: {{method}} {{path}}',
+    conditions: {
+      databaseAvailable: 'Datenbank ist verfügbar',
+      authenticated: 'Authentifizierung akzeptiert',
+      bodyWithinLimit: 'Anfragetext liegt innerhalb des Größenlimits',
+      validInput: 'Eingabeprüfung erfolgreich',
+    },
     collections: 'Datensammlungen: {{names}}',
     title: 'Geschäftsmodule und Basisfunktionen',
     description:

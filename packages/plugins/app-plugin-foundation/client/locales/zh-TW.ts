@@ -30,6 +30,14 @@ const zhTW: FoundationResource = {
     lowerBound: '此為下限：部分資料未能讀取。',
   },
   matrix: {
+    apiPath: 'API 請求：{{method}} {{path}}',
+    successPath: '成功路徑的 API 請求：{{method}} {{path}}',
+    conditions: {
+      databaseAvailable: '資料庫可用',
+      authenticated: '身分驗證通過',
+      bodyWithinLimit: '請求內容未超過大小限制',
+      validInput: '輸入驗證通過',
+    },
     collections: '關聯資料表：{{names}}',
     title: '業務模組與底座能力',
     description:

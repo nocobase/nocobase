@@ -31,6 +31,14 @@ const viVN: FoundationResource = {
     lowerBound: 'Giá trị tối thiểu: chưa đọc được một phần dữ liệu.',
   },
   matrix: {
+    apiPath: 'Yêu cầu API: {{method}} {{path}}',
+    successPath: 'Yêu cầu API thành công: {{method}} {{path}}',
+    conditions: {
+      databaseAvailable: 'Cơ sở dữ liệu khả dụng',
+      authenticated: 'Xác thực được chấp nhận',
+      bodyWithinLimit: 'Nội dung yêu cầu trong giới hạn kích thước',
+      validInput: 'Kiểm tra đầu vào thành công',
+    },
     collections: 'Bộ sưu tập dữ liệu: {{names}}',
     title: 'Mô-đun nghiệp vụ và khả năng nền tảng',
     description:

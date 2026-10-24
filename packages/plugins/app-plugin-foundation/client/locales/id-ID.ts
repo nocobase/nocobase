@@ -33,6 +33,14 @@ const idID: FoundationResource = {
     lowerBound: 'Nilai minimum: sebagian data tidak dapat dibaca.',
   },
   matrix: {
+    apiPath: 'Permintaan API: {{method}} {{path}}',
+    successPath: 'Permintaan API berhasil: {{method}} {{path}}',
+    conditions: {
+      databaseAvailable: 'Database tersedia',
+      authenticated: 'Autentikasi diterima',
+      bodyWithinLimit: 'Isi permintaan berada dalam batas ukuran',
+      validInput: 'Validasi input berhasil',
+    },
     collections: 'Koleksi data: {{names}}',
     title: 'Modul bisnis dan kemampuan fondasi',
     description:

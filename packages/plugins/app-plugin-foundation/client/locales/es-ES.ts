@@ -34,6 +34,14 @@ const esES: FoundationResource = {
     lowerBound: 'Valor mínimo: no se ha podido leer una parte.',
   },
   matrix: {
+    apiPath: 'Solicitud API: {{method}} {{path}}',
+    successPath: 'Solicitud API correcta: {{method}} {{path}}',
+    conditions: {
+      databaseAvailable: 'Base de datos disponible',
+      authenticated: 'Autenticación aceptada',
+      bodyWithinLimit: 'El cuerpo de la solicitud respeta el límite de tamaño',
+      validInput: 'Validación de entrada correcta',
+    },
     collections: 'Colecciones de datos: {{names}}',
     title: 'Módulos de negocio y capacidades base',
     description:

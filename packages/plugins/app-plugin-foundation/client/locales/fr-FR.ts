@@ -34,6 +34,14 @@ const frFR: FoundationResource = {
     lowerBound: 'Valeur minimale : une partie des données est illisible.',
   },
   matrix: {
+    apiPath: 'Requête API : {{method}} {{path}}',
+    successPath: 'Requête API réussie : {{method}} {{path}}',
+    conditions: {
+      databaseAvailable: 'Base de données disponible',
+      authenticated: 'Authentification acceptée',
+      bodyWithinLimit: 'Corps de la requête dans la limite de taille',
+      validInput: 'Validation des entrées réussie',
+    },
     collections: 'Collections de données : {{names}}',
     title: 'Modules métier et capacités du socle',
     description:

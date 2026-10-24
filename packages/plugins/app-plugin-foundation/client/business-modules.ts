@@ -8,6 +8,7 @@ import type {
   FoundationModuleLink,
   FoundationModuleSources,
   FoundationProviderInventory,
+  FoundationApiEvidence,
 } from '../shared/foundation.js';
 
 const SELF = '@nocobase/app-plugin-foundation';
@@ -41,6 +42,7 @@ export function businessModules(
         {
           evidence: Set<FoundationModuleLink['evidence'][number]>;
           providers: Set<string>;
+          apiEvidence: FoundationApiEvidence[];
         }
       >();
       const add = (
@@ -52,6 +54,7 @@ export function businessModules(
         const link = links.get(key) ?? {
           evidence: new Set(),
           providers: new Set(),
+          apiEvidence: [],
         };
         link.evidence.add(evidence);
         if (provider) link.providers.add(provider);
@@ -89,6 +92,20 @@ export function businessModules(
         for (const name of source?.providers ?? []) provider(name, 'source');
         for (const name of source?.apiProviders ?? [])
           provider(name, 'apiSource');
+        for (const link of links.values())
+          for (const evidence of source?.apiEvidence ?? []) {
+            const names = evidence.providers.filter((name) =>
+              link.providers.has(name),
+            );
+            if (!names.length) continue;
+            const item = { ...evidence, providers: names };
+            if (
+              !link.apiEvidence.some(
+                (entry) => JSON.stringify(entry) === JSON.stringify(item),
+              )
+            )
+              link.apiEvidence.push(item);
+          }
         for (const name of source?.collections ?? []) collections.add(name);
       }
       modules.push({
@@ -100,6 +117,7 @@ export function businessModules(
           capability,
           evidence: [...link.evidence],
           providers: [...link.providers].sort(),
+          ...(link.apiEvidence.length ? { apiEvidence: link.apiEvidence } : {}),
           ...(capability === 'dataModeling' && collections.size
             ? { collections: [...collections].sort() }
             : {}),

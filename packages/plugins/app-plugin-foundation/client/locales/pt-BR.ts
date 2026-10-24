@@ -34,6 +34,14 @@ const ptBR: FoundationResource = {
     lowerBound: 'Valor mínimo: parte dos dados não pôde ser lida.',
   },
   matrix: {
+    apiPath: 'Requisição de API: {{method}} {{path}}',
+    successPath: 'Requisição de API bem-sucedida: {{method}} {{path}}',
+    conditions: {
+      databaseAvailable: 'Banco de dados disponível',
+      authenticated: 'Autenticação aceita',
+      bodyWithinLimit: 'Corpo da requisição dentro do limite de tamanho',
+      validInput: 'Validação de entrada bem-sucedida',
+    },
     collections: 'Coleções de dados: {{names}}',
     title: 'Módulos de negócio e recursos da base',
     description:

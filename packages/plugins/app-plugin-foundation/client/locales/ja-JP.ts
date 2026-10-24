@@ -32,6 +32,14 @@ const jaJP: FoundationResource = {
     lowerBound: '一部を読み取れないため下限値です。',
   },
   matrix: {
+    apiPath: 'API リクエスト：{{method}} {{path}}',
+    successPath: '成功する API リクエスト：{{method}} {{path}}',
+    conditions: {
+      databaseAvailable: 'データベースが利用可能',
+      authenticated: '認証が成功',
+      bodyWithinLimit: 'リクエスト本文がサイズ制限内',
+      validInput: '入力検証が成功',
+    },
     collections: '関連コレクション：{{names}}',
     title: '業務モジュールと基盤機能',
     description:

@@ -137,12 +137,37 @@ export interface FoundationCollectionPage {
   readonly total: number;
 }
 
+export const FOUNDATION_API_CONDITIONS = [
+  'databaseAvailable',
+  'authenticated',
+  'bodyWithinLimit',
+  'validInput',
+] as const;
+
+/** A proven framework success contract, never an assumption about an arbitrary middleware. */
+export interface FoundationApiCondition {
+  readonly kind: (typeof FOUNDATION_API_CONDITIONS)[number];
+  /** Public package/export identity; never a filesystem path or business source text. */
+  readonly source: string;
+}
+
+export interface FoundationApiEvidence {
+  readonly method: string;
+  /** Matched API route pattern, excluding literal query strings and dynamic request values. */
+  readonly path: string;
+  readonly providers: readonly string[];
+  /** Empty for a proven unconditional prefix; otherwise all these conditions must hold. */
+  readonly conditions: readonly FoundationApiCondition[];
+}
+
 export interface FoundationModuleSource {
   readonly packageName: string;
   readonly routeName: string;
   /** Value imports reachable from the page; type-only imports and installed-only packages are excluded. */
   readonly providers: readonly string[];
   readonly apiProviders?: readonly string[];
+  /** Request provenance and conditions for API dependencies, including proven normal-success paths. */
+  readonly apiEvidence?: readonly FoundationApiEvidence[];
   readonly collections?: readonly string[];
   readonly complete: boolean;
 }
@@ -164,6 +189,7 @@ export interface FoundationModuleLink {
   )[];
   readonly providers: readonly string[];
   readonly collections?: readonly string[];
+  readonly apiEvidence?: readonly FoundationApiEvidence[];
 }
 
 export interface FoundationBusinessModule {

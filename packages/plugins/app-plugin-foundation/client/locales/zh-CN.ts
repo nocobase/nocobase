@@ -30,6 +30,14 @@ const zhCN: FoundationResource = {
     lowerBound: '至少为此数：部分数据未能读取。',
   },
   matrix: {
+    apiPath: 'API 请求：{{method}} {{path}}',
+    successPath: '成功路径的 API 请求：{{method}} {{path}}',
+    conditions: {
+      databaseAvailable: '数据库可用',
+      authenticated: '身份认证通过',
+      bodyWithinLimit: '请求体未超过大小限制',
+      validInput: '输入校验通过',
+    },
     collections: '关联数据表：{{names}}',
     title: '业务模块与底座能力',
     description:

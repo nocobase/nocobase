@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ApiEvidenceSchema } from '../api-evidence-schema.js';
 
 import {
   FOUNDATION_STATUSES,
@@ -161,6 +162,10 @@ export const OverviewSchema: z.ZodType<FoundationOverview> = z
             routeName: z.string(),
             providers: z.array(z.string()),
             apiProviders: z.array(z.string()).optional(),
+            apiEvidence: z.array(ApiEvidenceSchema).optional().meta({
+              description:
+                'Request method, matched API route pattern and symbolic framework conditions for each proven API dependency. Empty conditions identify an unconditional prefix; success-path evidence does not claim rejected requests use downstream services.',
+            }),
             collections: z.array(z.string()).optional(),
             complete: z.boolean(),
           }),
