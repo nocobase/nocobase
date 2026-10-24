@@ -265,17 +265,114 @@ export function apiDependencies(
       uncertain: true,
     });
   };
+  type Exit = 'return' | 'throw' | 'break' | 'continue' | 'unknown';
   const visit = (
     node: ts.Node,
     bindings: Bindings = new Map(),
     active = new Set<ts.Node>(),
     uncertain = false,
-  ): void => {
+  ): Exit | undefined => {
     if (++visits > 100_000 || active.size >= 32) {
       exhausted = true;
       return;
     }
     if (ts.isFunctionLike(node)) return;
+    if (ts.isTypeNode(node)) return;
+    if (ts.isSourceFile(node) || ts.isBlock(node)) {
+      let pendingExit = false;
+      for (const statement of node.statements) {
+        const exit = visit(
+          statement,
+          bindings,
+          active,
+          uncertain || pendingExit,
+        );
+        if (exit === 'unknown') pendingExit = true;
+        else if (exit) return pendingExit ? 'unknown' : exit;
+      }
+      return pendingExit ? 'unknown' : undefined;
+    }
+    if (ts.isReturnStatement(node) || ts.isThrowStatement(node)) {
+      if (node.expression) visit(node.expression, bindings, active, uncertain);
+      return ts.isReturnStatement(node) ? 'return' : 'throw';
+    }
+    if (ts.isBreakStatement(node) || ts.isContinueStatement(node))
+      return node.label
+        ? 'unknown'
+        : ts.isBreakStatement(node)
+          ? 'break'
+          : 'continue';
+    if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) {
+      // Defining a class does not run instance fields, constructors or methods.
+      for (const clause of node.heritageClauses ?? [])
+        if (clause.token === ts.SyntaxKind.ExtendsKeyword)
+          for (const type of clause.types)
+            visit(type.expression, bindings, active, true);
+      let exit: Exit | undefined;
+      for (const member of node.members) {
+        if (member.name && ts.isComputedPropertyName(member.name))
+          visit(member.name.expression, bindings, active, true);
+        if (ts.isClassStaticBlockDeclaration(member))
+          exit = visit(member.body, bindings, active, uncertain) ?? exit;
+        else if (
+          ts.isPropertyDeclaration(member) &&
+          member.initializer &&
+          member.modifiers?.some(
+            (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword,
+          )
+        )
+          visit(
+            member.initializer,
+            bindings,
+            active,
+            uncertain || Boolean(node.heritageClauses?.length),
+          );
+      }
+      return exit;
+    }
+    if (ts.isNewExpression(node)) {
+      const router = identity(node, new Set(), bindings);
+      if (router) state(router, bindings);
+      visit(node.expression, bindings, active, uncertain);
+      node.arguments?.forEach((argument) =>
+        visit(argument, bindings, active, uncertain),
+      );
+      const classes = analysis
+        .values(node.expression)
+        .filter(
+          (value) =>
+            ts.isClassDeclaration(value) || ts.isClassExpression(value),
+        );
+      for (const argument of node.arguments ?? []) {
+        const router = identity(argument, new Set(), bindings);
+        if (router) barrier(state(router, bindings));
+      }
+      for (const value of classes) {
+        if (active.has(value)) {
+          exhausted = true;
+          continue;
+        }
+        const instanceActive = new Set(active).add(value);
+        if (value.heritageClauses?.length) {
+          // Inherited initialization is outside the supported construction subset.
+          for (const router of routers.values()) barrier(router);
+        }
+        // Instance initialization is recognized only as uncertain registration, without interpreting class construction.
+        for (const member of value.members) {
+          if (
+            ts.isPropertyDeclaration(member) &&
+            member.initializer &&
+            !member.modifiers?.some(
+              (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword,
+            )
+          )
+            visit(member.initializer, bindings, instanceActive, true);
+          if (ts.isConstructorDeclaration(member) && member.body)
+            visit(member.body, bindings, instanceActive, true);
+        }
+      }
+      return;
+    }
     const literals = new StaticValues(analysis, bindings);
     if (ts.isForOfStatement(node)) {
       const arrays = literals
@@ -290,15 +387,28 @@ export function apiDependencies(
         declaration &&
         !arrays[0].elements.some(ts.isSpreadElement)
       ) {
+        let pendingExit = false;
         for (const element of arrays[0].elements) {
           const context = new Map(bindings).set(
             declaration,
             literals.values(element),
           );
-          visit(node.statement, context, active, uncertain);
+          const exit = visit(
+            node.statement,
+            context,
+            active,
+            uncertain || pendingExit,
+          );
+          if (exit === 'break') return pendingExit ? 'unknown' : undefined;
+          if (exit === 'return' || exit === 'throw')
+            return pendingExit ? 'unknown' : exit;
+          if (exit === 'unknown') pendingExit = true;
         }
-      } else visit(node.statement, bindings, active, true);
-      return;
+        return pendingExit ? 'unknown' : undefined;
+      }
+      return visit(node.statement, bindings, active, true)
+        ? 'unknown'
+        : undefined;
     }
     if (ts.isCallExpression(node)) {
       // Evaluate fluent receivers before their outer registration. Handler functions are not registration code.
@@ -431,9 +541,17 @@ export function apiDependencies(
           ts.SyntaxKind.BarBarToken,
           ts.SyntaxKind.QuestionQuestionToken,
         ].includes(node.operatorToken.kind));
-    ts.forEachChild(node, (child) =>
-      visit(child, bindings, active, uncertain || conditional),
-    );
+    let exit: Exit | undefined;
+    ts.forEachChild(node, (child) => {
+      const childExit = visit(
+        child,
+        bindings,
+        active,
+        uncertain || conditional,
+      );
+      if (childExit) exit = conditional ? 'unknown' : childExit;
+    });
+    return exit;
   };
   const initialize = (ast: ts.SourceFile): void => {
     if (initialized.has(ast.fileName)) return;

@@ -12,7 +12,18 @@ function matches(request: string, endpoint: string): Match {
   let result: Match = 'yes';
   for (let index = 0; index < right.length; index++) {
     const part = right[index];
-    if (part === '*') return result;
+    if (part === '*') {
+      if (index === right.length - 1) return result;
+      // A fixed suffix can disprove a match. Other nonterminal wildcard semantics remain unsupported.
+      for (let offset = 1; offset < right.length - index; offset++) {
+        const suffix = right[right.length - offset];
+        const actual = left[left.length - offset];
+        if (/[:{}*?]/.test(suffix)) break;
+        if (!actual || (!actual.startsWith(':') && actual !== suffix))
+          return 'no';
+      }
+      return 'maybe';
+    }
     if (/[{}*?]/.test(part) || (part.startsWith(':') && !/^:\w+$/.test(part)))
       return 'maybe';
     if (!left[index]) return 'no';

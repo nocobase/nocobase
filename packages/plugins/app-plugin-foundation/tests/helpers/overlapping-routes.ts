@@ -266,6 +266,123 @@ export const overlapCases = [
     providers: ['mail'],
     complete: true,
   },
+  {
+    name: 'registration guard clause',
+    registration:
+      "function register(r,enabled){if(!enabled)return;r.get('/items/:id',c=>{read();return c.text('db');});}register(router,false);" +
+      fixed,
+    calls: ['mail'],
+    providers: [],
+    complete: false,
+  },
+  {
+    name: 'registration loop break',
+    registration:
+      "for(const p of ['/other','/items/:id']){router.get(p,c=>{read();return c.text('db');});break;}" +
+      fixed,
+    calls: ['mail'],
+    providers: ['mail'],
+    complete: true,
+  },
+  {
+    name: 'uninstantiated class field',
+    registration:
+      "class Unused{field=router.get('/items/:id',c=>{read();return c.text('db');});}" +
+      fixed,
+    calls: ['mail'],
+    providers: ['mail'],
+    complete: true,
+  },
+  {
+    name: 'wildcard suffix mismatch',
+    registration:
+      "router.get('/items/*/detail',c=>{read();return c.text('db');});" + fixed,
+    calls: ['mail'],
+    providers: ['mail'],
+    complete: true,
+  },
+  {
+    name: 'unconditional registration return',
+    registration:
+      "function register(r){return;r.get('/items/:id',c=>{read();return c.text('db');});}register(router);" +
+      fixed,
+    calls: ['mail'],
+    providers: ['mail'],
+    complete: true,
+  },
+  {
+    name: 'registration loop continue',
+    registration:
+      "for(const p of ['/other','/items/:id']){continue;router.get(p,c=>{read();return c.text('db');});}" +
+      fixed,
+    calls: ['mail'],
+    providers: ['mail'],
+    complete: true,
+  },
+  {
+    name: 'guard retains another reliable request',
+    registration:
+      "function register(r,enabled){if(!enabled)return;r.get('/items/:id',c=>{read();return c.text('db');});}register(router,false);" +
+      fixed +
+      "router.get('/reliable',c=>{send();return c.text('mail');});",
+    otherRequest: 'reliable',
+    calls: ['mail'],
+    providers: ['mail'],
+    complete: false,
+  },
+  {
+    name: 'static class field registers on definition',
+    registration:
+      "class Used{static field=router.get('/items/:id',c=>{read();return c.text('db');});}" +
+      fixed,
+    calls: ['db'],
+    providers: ['db'],
+    complete: true,
+  },
+  {
+    name: 'instance field requires construction',
+    registration:
+      "class Used{field=router.get('/items/:id',c=>{read();return c.text('db');});}new Used();" +
+      fixed,
+    calls: ['db'],
+    providers: [],
+    complete: false,
+  },
+  {
+    name: 'unproven wildcard suffix match',
+    registration:
+      "router.get('/items/*/export',c=>{read();return c.text('db');});" + fixed,
+    calls: ['mail'],
+    providers: [],
+    complete: false,
+  },
+  {
+    name: 'constructor router argument remains uncertain',
+    registration:
+      "class Used{constructor(r){r.get('/items/:id',c=>{read();return c.text('db');});}}new Used(router);" +
+      fixed,
+    calls: ['db'],
+    providers: [],
+    complete: false,
+  },
+  {
+    name: 'inherited field initialization remains uncertain',
+    registration:
+      "class Base{field=router.get('/items/:id',c=>{read();return c.text('db');});}class Used extends Base{}new Used();" +
+      fixed,
+    calls: ['db'],
+    providers: [],
+    complete: false,
+  },
+  {
+    name: 'class heritage expression is evaluated on definition',
+    registration:
+      "function parent(){router.get('/items/:id',c=>{read();return c.text('db');});return class{};}class Unused extends parent(){}" +
+      fixed,
+    calls: ['db'],
+    providers: [],
+    complete: false,
+  },
 ] as const;
 
 export type OverlapCase = (typeof overlapCases)[number];

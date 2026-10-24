@@ -17,6 +17,12 @@ it.each(
       'explicit next',
       'conditional next',
       'independent API evidence',
+      'registration guard clause',
+      'registration loop break',
+      'uninstantiated class field',
+      'wildcard suffix mismatch',
+      'guard retains another reliable request',
+      'unproven wildcard suffix match',
     ].includes(scenario.name),
   ),
 )('$name renders the analyzed matrix checkmarks', async (scenario) => {

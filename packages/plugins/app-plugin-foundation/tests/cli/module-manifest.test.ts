@@ -137,7 +137,14 @@ it.each(['', 'dist/'])(
   },
 );
 
-it.each(['fixed first', 'conditional next'])(
+it.each([
+  'fixed first',
+  'conditional next',
+  'registration guard clause',
+  'registration loop break',
+  'uninstantiated class field',
+  'wildcard suffix mismatch',
+])(
   '%s builds reproducible corrected associations and reads them without business sources',
   async (name) => {
     const scenario = overlapCases.find((item) => item.name === name)!;
