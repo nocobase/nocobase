@@ -917,6 +917,7 @@ export const InvitationResultSchema: z.ZodType<InvitationResult> = z
     email: z.string(),
     outcome: z.enum(['invited', 'added', 'alreadyMember']),
     emailSent: z.boolean().optional(),
+    emailError: z.string().optional(),
     inviteUrl: z.string().optional().meta({
       description:
         'The new shareable invitation link, returned to an authorized original inviter using an unscoped person credential, regardless of email delivery.',

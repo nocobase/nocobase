@@ -2,7 +2,8 @@
 //
 // `--json` prints the cli-envelope (`envelope.ts`), whose `result` is the API's answer, `{ data, meta? }`. Otherwise a
 // list prints a table, a column per `output.columns` (paths such as `owner.name`) or its items' first scalar fields; an
-// answer with `meta.message` prints the message; an object prints its fields, one per line; nothing prints `Done.`.
+// answer with `meta.message` prints the message; an object prints its fields, with configured record arrays as tables;
+// nothing prints `Done.`.
 import { appCliConfig } from '../config.ts';
 import { GLOBAL_FLAG_HELP } from '../lib/globals.ts';
 import {
@@ -66,9 +67,10 @@ export function renderTable(
   ].join('\n');
 }
 
-/** An object's fields, one per line: scalars as they are, anything else on one line. */
+/** Scalar fields and compact structured values; configured record arrays retain every row and usable URL. */
 export function renderFields(
   data: Readonly<Record<string, unknown>>,
+  columns?: readonly string[],
   truncated?: () => void,
 ): string {
   const entries = Object.entries(data).filter(
@@ -77,7 +79,15 @@ export function renderFields(
   if (entries.length === 0) return '(empty)';
   const width = Math.max(...entries.map(([key]) => key.length));
   return entries
-    .map(([key, value]) => `${key.padEnd(width)}  ${cell(value, truncated)}`)
+    .map(([key, value]) =>
+      columns?.length &&
+      Array.isArray(value) &&
+      value.every(
+        (row) => row !== null && typeof row === 'object' && !Array.isArray(row),
+      )
+        ? `${key}\n${renderTable(value, columns, truncated)}`
+        : `${key.padEnd(width)}  ${cell(value, truncated)}`,
+    )
     .join('\n');
 }
 
@@ -130,7 +140,11 @@ function renderAnswerContent(
   if (message) return message;
   if (data === null || data === undefined) return 'Done.';
   if (typeof data === 'object')
-    return renderFields(data as Record<string, unknown>, truncated);
+    return renderFields(
+      data as Record<string, unknown>,
+      command.output.columns,
+      truncated,
+    );
   return typeof data === 'string' ? data : JSON.stringify(data);
 }
 
