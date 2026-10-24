@@ -33,9 +33,17 @@ Keep `accounts(language)` and `createAccount()` on one shared definition with ex
 
 Create demo-owned Permission Sets rather than assigning a built-in administrator role, whose last active assignment may prevent account cleanup. Supply any `roleScopes` marked `requiredOnCreate`. Assign a Permission Set through either `permissionSets` or its role scope, not both.
 
+### Preserve demo administrators
+
+Declare `preserveAccounts: ['demo_manager']` on the `DemoDataset` registered with `demoDataToken` when a dataset-created administrator must remain usable after clearing business data. Supply stable usernames across languages, including any language-specific administrator usernames that must survive. The list applies only to accounts owned by this dataset through `context.createAccount()`; it neither adopts an unrelated account nor grants management access. Give the account its intended grants during generation as usual.
+
+Clear and failed-import cleanup retain these accounts' current enabled state, password, sessions, Permission Set assignments and required Permission Sets, including role-scope assignments. Ownership and necessary tracking remain for subsequent clear, generation and reset. Shared Permission Sets stay while ordinary demo accounts are disabled and lose their assignments; all business data is still cleared. Write protection and endpoint authorization are unchanged. A retained administrator can use normal password sign-in after clear; quick sign-in lists accounts only while a dataset is ready.
+
+Generation reuses the same account ID and tracked Permission Sets. Keep the username and email stable; changed passwords still revoke sessions. Regenerating an account reconciles its tracked grants, removing assignments no longer declared; an administrator omitted by another language stays available. Remove a username from `preserveAccounts` and clear again to apply ordinary cleanup. This option preserves existing access; it does not repair an account already disabled or stripped of grants by an earlier clear. An enabled administrator can regenerate the dataset to restore its declared credentials and permissions.
+
 ### Update demo accounts
 
-Reset after changing account definitions, then verify credentials and effective permissions. Clear disables accounts for reuse; reset preserves sessions when credentials are unchanged and revokes them when passwords change.
+Reset after changing account definitions, then verify credentials and effective permissions. Clear disables ordinary accounts for reuse; reset preserves sessions when credentials are unchanged and revokes them when passwords change.
 
 On reuse, omitting a `roleScopes` key preserves its previous value. To remove an optional multi-value scope, supply an explicit empty array, such as `roleScopes: { app: [] }`; other scopes require a host-supported replacement value. Verify an operation the removed role used to allow is now denied.
 

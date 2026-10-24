@@ -28,7 +28,7 @@ export interface DemoAccountSpec {
   /**
    * Values for the users plugin's role scopes, by scope key, such as an application role scope marked
    * `requiredOnCreate`. Given when the account is created and applied again when an import reuses it; clearing drops
-   * the account's Permission Set assignments as for `permissionSets`.
+   * the account's Permission Set assignments as for `permissionSets`, except for dataset preserveAccounts.
    */
   readonly roleScopes?: Readonly<Record<string, string | readonly string[]>>;
 }
@@ -125,6 +125,12 @@ export interface DemoDataset {
   timeZone?(language: string): string;
   /** The accounts an import in `language` creates, as the demo page lists them before and after the import. */
   accounts(language: string): readonly DemoAccountSummary[];
+  /**
+   * Usernames of dataset-owned administrators to keep through clear and failed imports, across all languages.
+   * Preserves their current credentials, enabled state, assignments and required Permission Sets, never grants access.
+   * Accounts must be created through createAccount; unrelated existing users are never adopted.
+   */
+  readonly preserveAccounts?: readonly string[];
   /** Run in order; a failing step triggers full-business cleanup, not transaction rollback or restoration of prior data. */
   steps?(language: string): readonly DemoStep[];
   /**
