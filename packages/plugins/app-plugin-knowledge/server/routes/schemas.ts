@@ -265,23 +265,37 @@ export const SpacesQuery: z.ZodType<SpacesQuery, unknown> = z.object({
   archived: flag.describe('Filter by archive state.'),
 });
 
-export interface SearchQuery extends SpaceQuery {
+export interface SearchQuery {
+  readonly scope?: string;
+  readonly scopeId: string;
   readonly q: string;
   readonly pageSize?: number;
   readonly explain?: 'true' | 'false';
 }
-export const SearchQuery: z.ZodType<SearchQuery, unknown> = z.object({
-  ...spaceQuery,
-  q: z.string().default('').describe('Text to search for.'),
-  pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional().meta({
-    description:
-      'How many hits at most; the application’s recall settings decide by default (20 unless changed).',
-  }),
-  explain: flag.meta({
-    description:
-      '`true` adds `explain` to each hit (how it was ranked), for someone who manages the space or the search settings; others get the hits without it.',
-  }),
-});
+export const SearchQuery: z.ZodType<SearchQuery, unknown> = z
+  .object({
+    scope: spaceQuery.scope.optional(),
+    scopeId: spaceQuery.scopeId,
+    q: z.string().default('').describe('Text to search for.'),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_PAGE_SIZE)
+      .optional()
+      .meta({
+        description:
+          'How many hits at most; the application’s recall settings decide by default (20 unless changed).',
+      }),
+    explain: flag.meta({
+      description:
+        '`true` adds `explain` to each hit (how it was ranked), for someone who manages the space or the search settings; others get the hits without it.',
+    }),
+  })
+  .refine((query) => query.scope !== undefined || !query.scopeId, {
+    path: ['scopeId'],
+    message: 'A non-empty owner requires a scope.',
+  });
 
 export const SpaceOnlyQuery: z.ZodType<SpaceQuery, unknown> =
   z.object(spaceQuery);
