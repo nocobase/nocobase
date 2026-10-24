@@ -277,6 +277,10 @@ export class StaticValues {
       .slice(0, MAX_VALUES);
   }
 
+  public booleans(node: ts.Node): boolean[] {
+    return [...new Set(this.atoms(node).map(Boolean))];
+  }
+
   public strings(node: ts.Node, dynamic = false): string[] {
     return this.values(node)
       .flatMap((value) => {

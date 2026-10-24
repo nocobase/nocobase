@@ -14,6 +14,8 @@ export class SourceEvidence {
   public constructor(
     sources: readonly EvidenceSource[],
     private readonly resolutions: ReadonlyMap<string, string>,
+    private readonly isLocal: (specifier: string) => boolean = (specifier) =>
+      /^[.#/]/.test(specifier),
   ) {
     this.sources = new Map(sources.map((source) => [source.file, source]));
     const options: ts.CompilerOptions = {
@@ -121,7 +123,7 @@ export class SourceEvidence {
         `${statement.getSourceFile().fileName}\0${specifier}`,
       );
       if (!target) {
-        if (/^[.#/]/.test(specifier)) complete = false;
+        if (this.isLocal(specifier)) complete = false;
         else references.add(specifier);
       } else if (name) exported(target, name);
       else complete = false;
@@ -207,7 +209,7 @@ export class SourceEvidence {
             `${sourceFile.fileName}\0${argument.text}`,
           );
           if (target) exported(target, 'default');
-          else if (/^[.#/]/.test(argument.text)) complete = false;
+          else if (this.isLocal(argument.text)) complete = false;
           else references.add(argument.text);
         } else complete = false;
       }
