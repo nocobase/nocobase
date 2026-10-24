@@ -34,6 +34,7 @@ export const DEFAULT_ALLOW_COLLECTIONS: readonly string[] = [
 export function defineDemoModeConfig(): AppConfigFactory<DemoModeConfig> {
   return defineAppConfig<DemoModeConfig>({
     defaults: { enabled: false, allowCollections: [], quickSignIn: true },
+    public: ['enabled'],
     env: {
       [DEMO_MODE_ENV]: envBoolean('enabled', {
         description: 'Whether this deployment is a demo environment.',

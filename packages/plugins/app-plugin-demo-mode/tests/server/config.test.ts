@@ -39,6 +39,7 @@ it('resolves defaults, file values and per-application environment without leaki
       allowCollections: ['demonotes', 'demonotes'],
       quickSignIn: false,
     });
+    expect(app.application.config.publicValues().demoMode).toEqual({ enabled });
     expect(
       app.application.container.resolve(demoModeServiceToken).enabled,
     ).toBe(enabled);
@@ -67,6 +68,9 @@ it('uses defaults and ignores removed environment controls', async () => {
     enabled: false,
     allowCollections: [],
     quickSignIn: true,
+  });
+  expect(app.application.config.publicValues().demoMode).toEqual({
+    enabled: false,
   });
   expect(Object.keys(defineDemoModeConfig().rules?.env ?? {})).toEqual([
     'NOCOBASE_DEMO_MODE',

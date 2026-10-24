@@ -15,7 +15,7 @@ For a direct link, use `<base path>/demo-sign-in?as=<username>&redirect=/path`. 
 
 ## Management presentation
 
-Mount `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` inside the application's page layout; see the [route example](minimal-example.md#2-wire-existing-composition-roots) for permissions. Keep one owning `PageContainer`.
+Mount `DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` inside the application's page layout and wrap its route declarations with `demoModeRoutes([...])` from `@nocobase/app-plugin-demo-mode/client` to hide both the route and its menu outside Demo Mode; see the [route example](minimal-example.md#2-wire-existing-composition-roots) for permissions. Keep one owning `PageContainer`.
 
 Use its default components. Supply `label(kind, id)` for application-owned dataset count names and `onDataChange` when the application needs to refresh cached business data. The page shows overview and daily reset only. Visitor write policies remain available through [deployment configuration and the API](policies.md#collection-write-exceptions). Simulation and AI have no settings controls; integrate the default-enabled capabilities through the server methods in [simulation](simulation.md).
 
