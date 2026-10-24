@@ -1,5 +1,13 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.48
+
+### Patch Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
 ## 0.1.0-beta.47
 
 ### Patch Changes
