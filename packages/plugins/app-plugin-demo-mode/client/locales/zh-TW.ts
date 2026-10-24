@@ -38,15 +38,9 @@ const resource: DemoModeResource = {
     apply: '確認變更',
     unsaved: '有未儲存的變更',
     discardAndReload: '捨棄我的變更並重新載入',
-    switch: {
-      on: '開啟',
-      off: '關閉',
-    },
     tabs: {
       overview: '概覽',
       schedule: '每日重設',
-      writes: '訪客寫入',
-      simulation: '模擬與 AI',
     },
     leave: {
       title: '不儲存就離開？',
@@ -138,54 +132,6 @@ const resource: DemoModeResource = {
       noTimezone: '沒有符合的時區',
       invalidTimezone: '請從清單中選擇時區。',
       next: '下次重設：{{time}}',
-    },
-    writes: {
-      intro:
-        '啟用示範後，預設拒絕寫入。請選擇訪客需要寫入的資料表；操作權限和記錄範圍由應用的業務權限控制。',
-      allow: '開放',
-      revoke: '恢復拒絕',
-      confirmTitle: '變更訪客可以寫入的內容？',
-      confirmDescription: '訪客對這些內容的變更會真實儲存，直到下次重設。',
-      collections: {
-        title: '資料表',
-        description: '允許通過業務權限檢查的請求寫入這些資料表。',
-        label: '訪客可以寫入的資料表',
-        placeholder: '搜尋資料表',
-        noMatch: '沒有符合的資料表',
-        fixed: '一律可寫',
-      },
-    },
-    simulation: {
-      kind: {
-        model: '模型',
-        tool: '工具',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: '模擬服務',
-        description: '在示範中替代外部服務回應的模擬。',
-        confirmTitle: '變更模擬服務？',
-        confirmDescription: '關閉的模擬會讓對應工作失敗，絕不會轉給真實服務。',
-        empty: '沒有註冊模擬服務',
-        emptyHelp: '這個應用沒有註冊模擬服務。',
-        onHelp: '回傳模擬結果。',
-        offHelp: '已關閉：對應工作會被拒絕。',
-      },
-      chat: {
-        title: '線上聊天',
-        description: '讓訪客和應用的 AI 對話。',
-        confirmTitle: '儲存線上聊天設定？',
-        confirmDescription: '訪客的對話從下一則訊息起依新設定執行。',
-        enabled: '允許訪客聊天',
-        enabledHelp: '關閉後會拒絕訪客的訊息。',
-        tools: '工具',
-        noTools: '這個應用沒有宣告聊天工具。',
-        policy: {
-          deny: '拒絕',
-          read: '讀取資料',
-          mock: '模擬',
-        },
-      },
     },
   },
 };

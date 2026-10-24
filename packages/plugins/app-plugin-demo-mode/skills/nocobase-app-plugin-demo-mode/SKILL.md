@@ -15,7 +15,7 @@ description: >-
 
 # Demo Mode
 
-Use `@nocobase/app-plugin-demo-mode` for a dedicated demo with its own database and storage. The plugin supplies data lifecycle, visitor accounts, write protection, management components and optional simulation. The application supplies its business records, cleanup and external adapters.
+Use `@nocobase/app-plugin-demo-mode` for a dedicated demo with its own database and storage. The plugin supplies data lifecycle, visitor accounts, write protection, management components and optional simulation. The application supplies its business records, cleanup and external adapters. Simulation adapters and demo chat are enabled by default once integrated, without AI switches on the management page; the application chooses which flows to connect.
 
 ## Check that this Skill applies
 

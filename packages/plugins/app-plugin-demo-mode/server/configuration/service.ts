@@ -156,14 +156,14 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       collections: stored.collections ?? [],
       schedule: stored.schedule,
       chat: {
-        enabled: stored.chat?.enabled ?? false,
+        enabled: stored.chat?.enabled ?? true,
         tools: stored.chat?.tools ?? {},
       },
       mocks: {
         ...Object.fromEntries(
           [...this.adapters.values()].map((a) => [
             a.id,
-            a.defaultEnabled === true,
+            a.defaultEnabled !== false,
           ]),
         ),
         ...stored.mocks,
@@ -335,7 +335,9 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         'DEMO_CHAT_DISABLED',
         'Online demo chat is disabled.',
       );
-    const policy = chat.tools[id] ?? 'deny';
+    const policy =
+      chat.tools[id] ??
+      (operation.mock ? 'mock' : operation.readOnly === true ? 'read' : 'deny');
     if (policy === 'read' && operation.readOnly === true)
       return operation.run();
     if (policy === 'mock' && operation.mock) return operation.mock();

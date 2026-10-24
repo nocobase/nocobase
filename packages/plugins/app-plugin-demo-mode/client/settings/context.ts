@@ -12,25 +12,14 @@ import type { DemoConfigurationView } from '../../shared/configuration.js';
 import type { DemoSettingsComponents } from './components.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
-/** What a registered item is called in the application's language. */
-export type DemoLabelKind = 'count' | 'adapter' | 'chatTool';
-
-/** An online chat tool the application lets administrators allow, and the policies it supports. */
-export interface DemoChatTool {
-  readonly id: string;
-  readonly policies: readonly ('read' | 'mock')[];
-}
+/** A dataset count label in the application's language. */
+export type DemoLabelKind = 'count';
 
 export interface DemoSettingsOptions {
   /** Optional host page chrome and primitives; keep component identities stable across renders. */
   readonly components?: DemoSettingsComponents;
-  /**
-   * The application's name for a registered item, such as a dataset count (`count`, `companies`) or a mock
-   * adapter (`adapter`, `dataset.model`); `undefined` falls back to the title it registered with, or its id.
-   */
+  /** The application's name for a dataset count (`count`, `companies`); undefined falls back to its id. */
   readonly label?: (kind: DemoLabelKind, id: string) => string | undefined;
-  /** The online chat tools the application serves; tools a saved policy names are shown too. */
-  readonly chatTools?: readonly DemoChatTool[];
   /**
    * Called when the demo data changed under the page: a clear answered, or an import or reset it watched finished.
    * An application refreshes what it caches, such as its query cache.
@@ -49,14 +38,10 @@ export function useT(): (
   return (key, values) => t(`settings.${key}`, values);
 }
 
-/** An item's name: the application's label, else what it registered as, else its id. */
-export function useLabel(): (
-  kind: DemoLabelKind,
-  id: string,
-  registered?: string,
-) => string {
+/** A dataset count's name: the application's label, else its id. */
+export function useLabel(): (kind: DemoLabelKind, id: string) => string {
   const { label } = useContext(DemoSettingsContext);
-  return (kind, id, registered) => label?.(kind, id) ?? registered ?? id;
+  return (kind, id) => label?.(kind, id) ?? id;
 }
 
 /** A language's own name, such as 简体中文 for zh-CN. */
@@ -111,7 +96,7 @@ export interface Configuration {
   readonly onDirty: (id: string, dirty: boolean) => void;
 }
 
-export type ConfigurationPath = 'collections' | 'mocks' | 'schedule' | 'chat';
+export type ConfigurationPath = 'schedule';
 
 /** What a settings card needs from a section's draft to show its save bar. */
 export interface DraftControls {

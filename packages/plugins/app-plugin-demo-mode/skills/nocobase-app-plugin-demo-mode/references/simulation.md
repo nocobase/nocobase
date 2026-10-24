@@ -1,6 +1,6 @@
 # Model and execution simulation
 
-Read only the sections needed by the demo. A simulated model does not intercept tool calls, external services or Runner execution; adapt each used boundary. Resolve the original `demoDataToken` and `demoConfigurationToken` from `@nocobase/app-plugin-demo-mode/server/tokens`.
+Read only the sections needed by the demo. Registered simulations and integrated demo chat are enabled by default and have no administration-page controls. The application opts in by connecting the relevant boundaries; unused integration methods have no effect on its flows. A simulated model does not intercept tool calls, external services or Runner execution; adapt each used boundary. Resolve the original `demoDataToken` and `demoConfigurationToken` from `@nocobase/app-plugin-demo-mode/server/tokens`.
 
 ## Simulated model
 
@@ -14,13 +14,13 @@ Unmatched requests to this model receive a simulated fallback. Calls that the ap
 
 ## Tool and external adapters
 
-Register `configuration.registerMock({ id, title, kind, scope, defaultEnabled, invoke })`, then call `invokeMock(id, input)` at the authorized application boundary. Registration does not intercept anything. Set `defaultEnabled: true` when the adapter should initially be available; saved administrator choices still apply.
+Register `configuration.registerMock({ id, title, kind, scope, invoke })`, then call `invokeMock(id, input)` at the authorized application boundary. Registration does not intercept or invoke anything. Registered adapters default to enabled; `defaultEnabled: false` opts out. Explicit saved overrides still apply and can be changed through the configuration service or API, including values saved before the UI controls were removed.
 
 Adapters return the business service's expected result shape. Unknown or disabled adapters throw `DEMO_MOCK_UNAVAILABLE`; never catch this to invoke the real provider. Use the server-side Demo Mode flag for dispatch, including visitor-created records and background work.
 
 ## Replace a whole Agent
 
-Use `configuration.registerAgent<Input, Output>({ id, title, defaultEnabled, execute })` when the application should simulate the entire Agent. Keep a stable ID and return the application's normal result contract, labeled as simulated. Enable the adapter by default when it is part of the requested demo.
+Use `configuration.registerAgent<Input, Output>({ id, title, execute })` when the application should simulate the entire Agent. Keep a stable ID and return the application's normal result contract, labeled as simulated. Registered Agent adapters default to enabled; `defaultEnabled: false` and explicit saved overrides remain supported.
 
 For immediate execution, call `proxy.run(input, () => normalAgent(input))` after normal authorization. Demo Mode off selects the normal callback; enabled Demo Mode selects the adapter. Disabled mocks and adapter failures must refuse execution without a real fallback.
 
@@ -42,9 +42,9 @@ Ordinary queued jobs must also check the current Demo Mode flag at execution bef
 
 ## Optional online chat
 
-Online chat is disabled by default; enable it only for a requested chat experience. Call `configuration.chatModel(simulatedRef)` before admission and each model request, outside business transactions. It returns undefined outside Demo Mode and rejects disabled demo chat. Use the returned model reference for the operation, retaining normal selection outside Demo Mode.
+Online demo chat is enabled by default, with no UI switch. Integrate it only for a requested chat experience; the plugin does not automatically redirect standard Online Agent sessions. Call `configuration.chatModel(simulatedRef)` before admission and each model request, outside business transactions. It returns undefined outside Demo Mode and rejects an explicit disabled chat override. Use the returned model reference for the operation, retaining normal selection outside Demo Mode. Existing saved overrides remain effective; use the configuration service or API to change them when needed.
 
-After business authorization, wrap tools with `runChatTool(id, { readOnly, run, mock })` and declare their IDs through the management page's `chatTools`. Administrators choose `read`, `mock` or `deny`. Only local data queries qualify as `readOnly`; network fetches need mocks. Missing rules or adapters must reject execution.
+After business authorization, wrap tools with `runChatTool(id, { readOnly, run, mock })`. Without a saved override, the supplied `mock` takes precedence; otherwise a host-declared `readOnly: true` permits the local `run` callback. All other operations are refused. Only local data queries qualify as `readOnly`; network fetches need mocks. Explicit `read`, `mock` or `deny` overrides remain supported, and a missing required adapter must reject execution. Tool adaptation belongs at the server invocation boundary.
 
 For the Agents OnlineAgent service, wrap only its public session operation with `runOnlineConversation(callback)`, keeping the service's normal session checks. This permits conversation/message persistence when chat is enabled. Do not wrap a dispatcher, tool/model call, upload or agent configuration. Keep fixture creation separate from visitor chat enablement. Applications with their own conversation persistence use their normal collection policy.
 

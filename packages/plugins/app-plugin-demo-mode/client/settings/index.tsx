@@ -26,21 +26,15 @@ import {
   type DemoSettingsOptions,
 } from './context.js';
 import { ErrorAlert } from './shared.js';
-import { ChatCard, MocksCard } from './simulation.js';
-import { CollectionsCard } from './writes.js';
 
 export type {
   DemoSettingsComponents,
   DemoSettingsHeaderProps,
 } from './components.js';
 
-export type {
-  DemoChatTool,
-  DemoLabelKind,
-  DemoSettingsOptions,
-} from './context.js';
+export type { DemoLabelKind, DemoSettingsOptions } from './context.js';
 
-const TABS = ['overview', 'schedule', 'writes', 'simulation'] as const;
+const TABS = ['overview', 'schedule'] as const;
 type Tab = (typeof TABS)[number];
 
 const settings = (id: string, action: string) => ({
@@ -64,8 +58,8 @@ function useAccess() {
 }
 
 /**
- * The demo's administration page: its data and how visitors enter, the daily reset, what visitors may write, and
- * what is simulated. An application mounts it on a route of its own, passing the names of what it registered.
+ * The demo's administration page: its data, how visitors enter, and the daily reset.
+ * An application mounts it on a route of its own, passing the names of its dataset counts.
  */
 export function DemoModeSettings(
   options: DemoSettingsOptions = {},
@@ -274,30 +268,6 @@ export function DemoModeSettings(
                 configuration={value}
                 languages={demo.status?.languages ?? []}
               />
-            ))}
-          </TabsContent>
-          <TabsContent
-            keepMounted
-            value='writes'
-            className='mt-4 flex flex-col gap-4'
-          >
-            <p className='text-sm text-muted-foreground'>{t('writes.intro')}</p>
-            {configured((value) => (
-              <>
-                <CollectionsCard configuration={value} />
-              </>
-            ))}
-          </TabsContent>
-          <TabsContent
-            keepMounted
-            value='simulation'
-            className='mt-4 flex flex-col gap-4'
-          >
-            {configured((value) => (
-              <>
-                <ChatCard configuration={value} />
-                <MocksCard configuration={value} />
-              </>
             ))}
           </TabsContent>
         </Tabs>

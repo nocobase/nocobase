@@ -39,15 +39,9 @@ const resource: DemoModeResource = {
     apply: 'Änderungen übernehmen',
     unsaved: 'Ungespeicherte Änderungen',
     discardAndReload: 'Meine Änderungen verwerfen und neu laden',
-    switch: {
-      on: 'Ein',
-      off: 'Aus',
-    },
     tabs: {
       overview: 'Übersicht',
       schedule: 'Tägliches Zurücksetzen',
-      writes: 'Schreiben durch Besucher',
-      simulation: 'Simulation & KI',
     },
     leave: {
       title: 'Ohne Speichern verlassen?',
@@ -150,58 +144,6 @@ const resource: DemoModeResource = {
       noTimezone: 'Keine passende Zeitzone',
       invalidTimezone: 'Wählen Sie eine Zeitzone aus der Liste.',
       next: 'Nächstes Zurücksetzen: {{time}}',
-    },
-    writes: {
-      intro:
-        'Bei aktivierter Demo werden Schreibzugriffe standardmäßig abgelehnt. Wählen Sie die Sammlungen aus, die Besucher bearbeiten dürfen; die Anwendungsberechtigungen steuern die Vorgänge und den Zugriff auf Datensätze.',
-      allow: 'Erlauben',
-      revoke: 'Wieder ablehnen',
-      confirmTitle: 'Ändern, was Besucher schreiben dürfen?',
-      confirmDescription:
-        'Änderungen der Besucher daran werden tatsächlich gespeichert und bleiben bis zum nächsten Zurücksetzen.',
-      collections: {
-        title: 'Collections',
-        description:
-          'Von der Anwendung autorisierte Anfragen dürfen diese Sammlungen ändern.',
-        label: 'Collections, die Besucher schreiben dürfen',
-        placeholder: 'Collections suchen',
-        noMatch: 'Keine passende Collection',
-        fixed: 'Immer beschreibbar',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'Modell',
-        tool: 'Werkzeug',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'Simulationen',
-        description: 'Was in dieser Demo anstelle externer Dienste antwortet.',
-        confirmTitle: 'Simulationen ändern?',
-        confirmDescription:
-          'Eine ausgeschaltete Simulation lässt diese Arbeit fehlschlagen; sie wird nie an den echten Dienst gesendet.',
-        empty: 'Keine Simulationen registriert',
-        emptyHelp: 'Die Anwendung hat keinen simulierten Dienst registriert.',
-        onHelp: 'Antwortet mit simulierten Ergebnissen.',
-        offHelp: 'Ausgeschaltet: Die Arbeit wird abgelehnt.',
-      },
-      chat: {
-        title: 'Online-Chat',
-        description: 'Lässt Besucher mit der KI der Anwendung sprechen.',
-        confirmTitle: 'Online-Chat-Einstellungen speichern?',
-        confirmDescription:
-          'Unterhaltungen von Besuchern folgen diesen Einstellungen ab ihrer nächsten Nachricht.',
-        enabled: 'Besucher dürfen chatten',
-        enabledHelp: 'Aus: Der Chat lehnt Nachrichten von Besuchern ab.',
-        tools: 'Werkzeuge',
-        noTools: 'Die Anwendung deklariert keine Chat-Werkzeuge.',
-        policy: {
-          deny: 'Ablehnen',
-          read: 'Daten lesen',
-          mock: 'Simulieren',
-        },
-      },
     },
   },
 };

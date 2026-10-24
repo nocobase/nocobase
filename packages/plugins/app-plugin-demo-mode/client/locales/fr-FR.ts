@@ -42,15 +42,9 @@ const resource: DemoModeResource = {
     apply: 'Appliquer les modifications',
     unsaved: 'Modifications non enregistrées',
     discardAndReload: 'Abandonner mes modifications et recharger',
-    switch: {
-      on: 'Activé',
-      off: 'Désactivé',
-    },
     tabs: {
       overview: 'Vue d’ensemble',
       schedule: 'Réinitialisation quotidienne',
-      writes: 'Écritures des visiteurs',
-      simulation: 'Simulation et IA',
     },
     leave: {
       title: 'Quitter sans enregistrer ?',
@@ -155,60 +149,6 @@ const resource: DemoModeResource = {
       noTimezone: 'Aucun fuseau horaire ne correspond',
       invalidTimezone: 'Choisissez un fuseau horaire dans la liste.',
       next: 'Prochaine réinitialisation : {{time}}',
-    },
-    writes: {
-      intro:
-        'Lorsque la démonstration est activée, les écritures sont refusées par défaut. Sélectionnez les collections que les visiteurs doivent modifier ; les autorisations de l’application contrôlent les opérations et l’accès aux enregistrements.',
-      allow: 'Autoriser',
-      revoke: 'Refuser à nouveau',
-      confirmTitle: 'Modifier ce que les visiteurs peuvent écrire ?',
-      confirmDescription:
-        'Les modifications des visiteurs sur ces éléments sont réellement enregistrées jusqu’à la prochaine réinitialisation.',
-      collections: {
-        title: 'Collections',
-        description:
-          'Les requêtes autorisées par l’application peuvent écrire dans ces collections.',
-        label: 'Collections que les visiteurs peuvent écrire',
-        placeholder: 'Rechercher des collections',
-        noMatch: 'Aucune collection ne correspond',
-        fixed: 'Toujours accessibles en écriture',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'Modèle',
-        tool: 'Outil',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'Simulations',
-        description:
-          'Ce qui répond à la place des services externes dans cette démonstration.',
-        confirmTitle: 'Modifier les simulations ?',
-        confirmDescription:
-          'Une simulation désactivée fait échouer ce travail ; il n’est jamais envoyé au vrai service.',
-        empty: 'Aucune simulation enregistrée',
-        emptyHelp: 'L’application n’a enregistré aucun service simulé.',
-        onHelp: 'Répond avec des résultats simulés.',
-        offHelp: 'Désactivée : le travail est refusé.',
-      },
-      chat: {
-        title: 'Chat en ligne',
-        description:
-          'Permet aux visiteurs de discuter avec l’IA de l’application.',
-        confirmTitle: 'Enregistrer les réglages du chat en ligne ?',
-        confirmDescription:
-          'Les conversations des visiteurs suivent ces réglages dès leur prochain message.',
-        enabled: 'Les visiteurs peuvent discuter',
-        enabledHelp: 'Désactivé : le chat refuse les messages des visiteurs.',
-        tools: 'Outils',
-        noTools: 'L’application ne déclare aucun outil de chat.',
-        policy: {
-          deny: 'Refuser',
-          read: 'Lire les données',
-          mock: 'Simuler',
-        },
-      },
     },
   },
 };

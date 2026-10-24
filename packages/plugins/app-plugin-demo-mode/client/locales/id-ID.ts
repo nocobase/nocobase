@@ -39,15 +39,9 @@ const resource: DemoModeResource = {
     apply: 'Terapkan perubahan',
     unsaved: 'Ada perubahan yang belum disimpan',
     discardAndReload: 'Buang perubahan saya dan muat ulang',
-    switch: {
-      on: 'Aktif',
-      off: 'Nonaktif',
-    },
     tabs: {
       overview: 'Ringkasan',
       schedule: 'Reset harian',
-      writes: 'Penulisan pengunjung',
-      simulation: 'Simulasi & AI',
     },
     leave: {
       title: 'Keluar tanpa menyimpan?',
@@ -144,58 +138,6 @@ const resource: DemoModeResource = {
       noTimezone: 'Tidak ada zona waktu yang cocok',
       invalidTimezone: 'Pilih zona waktu dari daftar.',
       next: 'Reset berikutnya: {{time}}',
-    },
-    writes: {
-      intro:
-        'Saat demo aktif, penulisan ditolak secara default. Pilih koleksi yang perlu ditulis pengunjung; izin aplikasi mengontrol operasi dan akses catatan.',
-      allow: 'Izinkan',
-      revoke: 'Tolak lagi',
-      confirmTitle: 'Ubah apa yang boleh ditulis pengunjung?',
-      confirmDescription:
-        'Perubahan pengunjung pada hal ini benar-benar tersimpan sampai reset berikutnya.',
-      collections: {
-        title: 'Koleksi',
-        description:
-          'Permintaan yang diizinkan aplikasi dapat menulis ke koleksi ini.',
-        label: 'Koleksi yang boleh ditulis pengunjung',
-        placeholder: 'Cari koleksi',
-        noMatch: 'Tidak ada koleksi yang cocok',
-        fixed: 'Selalu bisa ditulis',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'Model',
-        tool: 'Alat',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'Simulasi',
-        description: 'Yang menjawab menggantikan layanan luar di demo ini.',
-        confirmTitle: 'Ubah simulasi?',
-        confirmDescription:
-          'Simulasi yang dinonaktifkan membuat pekerjaan itu gagal; tidak pernah dikirim ke layanan sungguhan.',
-        empty: 'Tidak ada simulasi terdaftar',
-        emptyHelp: 'Aplikasi belum mendaftarkan layanan simulasi.',
-        onHelp: 'Menjawab dengan hasil simulasi.',
-        offHelp: 'Nonaktif: pekerjaan ditolak.',
-      },
-      chat: {
-        title: 'Obrolan daring',
-        description: 'Memungkinkan pengunjung berbicara dengan AI aplikasi.',
-        confirmTitle: 'Simpan setelan obrolan daring?',
-        confirmDescription:
-          'Percakapan pengunjung mengikuti setelan ini mulai pesan berikutnya.',
-        enabled: 'Pengunjung bisa mengobrol',
-        enabledHelp: 'Nonaktif: obrolan menolak pesan pengunjung.',
-        tools: 'Alat',
-        noTools: 'Aplikasi tidak mendeklarasikan alat obrolan.',
-        policy: {
-          deny: 'Tolak',
-          read: 'Baca data',
-          mock: 'Simulasikan',
-        },
-      },
     },
   },
 };
