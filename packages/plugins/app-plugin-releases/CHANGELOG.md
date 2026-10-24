@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.12
+
+### Patch Changes
+
+- e5e7498: Normalize shared client imports in session, invitation and release components without changing their behavior.
+- Updated dependencies [756f3df]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+
 ## 0.1.0-beta.11
 
 ### Patch Changes

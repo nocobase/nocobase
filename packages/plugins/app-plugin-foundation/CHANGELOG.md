@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- 7085345: Recognize explicitly declared package-local TypeScript path aliases and finite local route constructors when collecting page capability associations. Keep unresolved aliases and unsupported route computation incomplete, preserve package boundaries and source limits, and retain the existing build artifact format.
+- Updated dependencies [756f3df]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+
 ## 0.1.0-beta.4
 
 ### Patch Changes
