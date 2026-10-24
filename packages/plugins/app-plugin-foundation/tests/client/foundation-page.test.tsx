@@ -166,14 +166,16 @@ describe('App Foundation page', () => {
     ).toHaveAttribute('data-status', 'needsSetup');
     // A capability that could not be examined is undetermined, never "not used".
     expect(
-      screen.getByRole('button', { name: 'Notifications: Undetermined' }),
+      screen.getByRole('button', {
+        name: 'Notifications: Information pending update',
+      }),
     ).toHaveAttribute('data-status', 'undetermined');
     expect(screen.getAllByRole('button', { pressed: false })).toHaveLength(
       FOUNDATION_CAPABILITIES.length - 1,
     );
     expect(screen.getByText('3 / 13')).toBeInTheDocument();
     expect(
-      screen.getByText('1 capability could not be determined'),
+      screen.getByText('Information pending update (1)'),
     ).toBeInTheDocument();
   });
 
@@ -271,15 +273,22 @@ describe('App Foundation page', () => {
     expect(within(detail).getByText('≥ 12')).toBeInTheDocument();
     expect(
       within(detail).getByText('Could not read: userInvitations'),
-    ).toBeInTheDocument();
+    ).not.toBeVisible();
+    fireEvent.click(within(detail).getByText('Read details'));
+    expect(
+      within(detail).getByText('Could not read: userInvitations'),
+    ).toBeVisible();
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Notifications: Undetermined' }),
+      screen.getByRole('button', {
+        name: 'Notifications: Information pending update',
+      }),
     );
     const failed = screen.getByRole('region', { name: /Notifications/ });
+    fireEvent.click(within(failed).getByText('Read details'));
     expect(
       within(failed).getByText('Examining it took too long.'),
-    ).toBeInTheDocument();
+    ).toBeVisible();
     expect(within(failed).queryByText('0')).not.toBeInTheDocument();
   });
 
@@ -630,7 +639,7 @@ describe('App Foundation page', () => {
         : { data: OVERVIEW },
     );
     const refresh = await screen.findByRole('button', { name: 'Refresh' });
-    const timestamp = screen.getByText(/^Collected /).textContent;
+    const timestamp = screen.getByText(/^Last check /).textContent;
     fail = true;
     fireEvent.click(refresh);
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -639,12 +648,107 @@ describe('App Foundation page', () => {
     expect(
       screen.getByRole('region', { name: 'NocoBase Core' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/^Collected /)).toHaveTextContent(timestamp!);
+    expect(screen.getByText(/^Last check /)).toHaveTextContent(timestamp!);
     fail = false;
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     await waitFor(() =>
       expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
     );
+  });
+
+  it('offers a working retry for a first collection failure without a missing-configuration claim', async () => {
+    let reads = 0;
+    await render((call) => {
+      if (reads++ > 0) {
+        expect(call.query).toEqual({ refresh: 'true' });
+        return {
+          data: {
+            ...OVERVIEW,
+            capabilities: [capability('mail', { status: 'active' })],
+          },
+        };
+      }
+      return {
+        data: {
+          ...OVERVIEW,
+          capabilities: [
+            capability('mail', {
+              status: null,
+              completeness: 'partial',
+              issues: [{ code: 'SOURCE_UNREADABLE', source: 'mailAccounts' }],
+            }),
+          ],
+        },
+      };
+    });
+    const detail = await screen.findByRole('region', {
+      name: 'Mail Information pending update',
+    });
+    expect(
+      within(detail).queryByText('No connected mailbox yet.'),
+    ).not.toBeInTheDocument();
+    expect(within(detail).getByRole('note')).not.toHaveClass(
+      'border-destructive/30',
+    );
+    fireEvent.click(within(detail).getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('region', { name: 'Mail In use' }),
+    ).toBeInTheDocument();
+    expect(reads).toBe(2);
+  });
+
+  it('words partial file numbers and distinguishes original history dates from the latest check', async () => {
+    const historicalAt = '2026-10-19T07:00:00Z';
+    await render(() => ({
+      data: {
+        ...OVERVIEW,
+        capabilities: [
+          capability('files', {
+            status: 'active',
+            checkedAt: historicalAt,
+            completeness: 'partial',
+            facts: [
+              {
+                code: 'fileCollectionsPartial',
+                params: { count: 1, names: ['photos'] },
+              },
+            ],
+            metrics: [
+              { key: 'files', value: 3, unit: 'count', complete: false },
+              {
+                key: 'storedBytes',
+                value: 120,
+                unit: 'bytes',
+                complete: false,
+              },
+              {
+                key: 'fileCollections',
+                value: 2,
+                unit: 'count',
+                complete: true,
+                checkedAt: historicalAt,
+              },
+            ],
+          }),
+        ],
+      },
+    }));
+    const detail = await screen.findByRole('region', {
+      name: 'File management In use',
+    });
+    expect(within(detail).getByText('Counted 3')).toBeVisible();
+    expect(within(detail).getByText('Counted 120 B')).toBeVisible();
+    expect(
+      within(detail).getByText('Counted 1 file collections: photos.'),
+    ).toBeVisible();
+    expect(
+      within(detail).getAllByText('Some data is pending update'),
+    ).toHaveLength(2);
+    expect(
+      within(detail).getAllByText(/Last confirmed Oct 19, 2026/),
+    ).toHaveLength(2);
+    expect(screen.getByText(/Last check Oct 20, 2026/)).toBeVisible();
+    expect(within(detail).queryByText(/≥/)).not.toBeInTheDocument();
   });
 
   it.each([401, 403])(

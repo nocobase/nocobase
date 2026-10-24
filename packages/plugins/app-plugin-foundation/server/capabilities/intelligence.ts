@@ -100,8 +100,8 @@ export const knowledge: CapabilityCollector = {
     ]);
     const active = (docs ?? 0) > 0;
     return {
-      status: active ? 'active' : 'needsSetup',
-      ...(active ? {} : { reason: 'noDocuments' }),
+      status: active ? 'active' : docs === null ? null : 'needsSetup',
+      ...(active || docs === null ? {} : { reason: 'noDocuments' }),
       facts: active ? [fact('documents', { count: docs ?? 0 })] : [],
       metrics: [
         metric('documents', docs),

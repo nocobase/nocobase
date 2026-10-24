@@ -6,6 +6,8 @@ const deDE: FoundationResource = {
     foundation: 'Anwendungsbasis',
   },
   page: {
+    counted: 'Erfasst: {{value}}',
+    partial: 'Einige Daten warten auf Aktualisierung',
     title: 'Anwendungsbasis',
     description:
       'Ihre Anwendung konzentriert sich auf das Geschäft. Daten, Berechtigungen und Abläufe werden von NocoBase Core unterstützt: gemeinsame Funktionen, die NocoBase entwickelt, testet, pflegt und mit offiziellen Versionen aktualisiert.',
@@ -16,18 +18,18 @@ const deDE: FoundationResource = {
     scoreCaption: 'Fähigkeiten unterstützen diese Anwendung',
     refresh: 'Aktualisieren',
     refreshing: 'Wird erfasst…',
-    updatedAt: 'Erfasst am {{time}}',
+    updatedAt: 'Letzte Prüfung {{time}}',
     loading: 'Fähigkeiten werden erfasst…',
     refreshFailed:
       'Die Aktualisierung ist fehlgeschlagen. Das zuletzt erfolgreich erfasste Ergebnis wird angezeigt.',
-    loadFailed: 'Die Übersicht konnte nicht geladen werden.',
+    loadFailed: 'Informationen werden aktualisiert',
     forbidden:
       'Nur Administratoren mit uneingeschränktem Zugriff können diese Seite sehen.',
     retry: 'Erneut versuchen',
-    undetermined_one: '{{count}} Fähigkeit nicht bestimmbar',
-    undetermined_other: '{{count}} Fähigkeiten nicht bestimmbar',
+    undetermined_one: 'Informationen werden aktualisiert ({{count}})',
+    undetermined_other: 'Informationen werden aktualisiert ({{count}})',
     highlightsLabel: 'Kennzahlen',
-    unavailable: 'Nicht verfügbar',
+    unavailable: 'Informationen werden aktualisiert',
     lowerBound: 'Mindestwert: Ein Teil konnte nicht gelesen werden.',
   },
   matrix: {
@@ -102,12 +104,14 @@ const deDE: FoundationResource = {
     active: 'In Verwendung',
     needsSetup: 'Bereit, Einrichtung erforderlich',
     unused: 'Noch ungenutzt',
-    undetermined: 'Unbestimmt',
+    undetermined: 'Informationen werden aktualisiert',
     legendActive: 'In Verwendung {{count}}',
     legendNeedsSetup: 'Einrichtung erforderlich {{count}}',
     legendUnused: 'Noch ungenutzt {{count}}',
   },
   detail: {
+    retainedAt: 'Zuletzt bestätigt {{time}}',
+    readNotes: 'Lesedetails',
     collectionCount: '{{count}} Tabellen',
     collectionPreview: 'Tabellenvorschau',
     collectionsTitle: 'Tabellen',
@@ -131,14 +135,13 @@ const deDE: FoundationResource = {
     withoutFoundation: 'Ohne die Basis',
     onceInUse: 'Nach der Einrichtung',
     whyNot: 'Warum ungenutzt',
-    liveData: 'Aktuelle Daten',
+    liveData: 'Statistik',
     parts: 'Bestandteile',
     packages: 'Bereitgestellt durch NocoBase-Pakete',
     noPackages: 'Kein Paket dieser Fähigkeit installiert.',
     noFacts: 'Noch keine bestätigten Fakten.',
-    partial:
-      'Ein Teil der Nachweise ist nicht lesbar. Mindestwerte umfassen nur gelesene Daten.',
-    failed: 'Diese Fähigkeit konnte nicht geprüft werden. Bitte aktualisieren.',
+    partial: 'Einige Daten warten auf Aktualisierung.',
+    failed: 'Informationen werden aktualisiert.',
     unreadable: 'Nicht lesbar: {{sources}}',
     timeout: 'Zeitüberschreitung bei der Prüfung.',
   },
@@ -276,6 +279,7 @@ const deDE: FoundationResource = {
     notConfigured: 'Nicht eingerichtet.',
   },
   facts: {
+    fileCollectionsPartial: '{{count}} Dateisammlungen erfasst: {{names}}.',
     collectionOwnershipUnknown:
       'Nicht zugeordnete Laufzeiterweiterung gefunden. Die Zugehörigkeit von Sammlungen ist unklar; Geschäftszahlen werden ausgeblendet.',
     noApplicationCollections:

@@ -29,8 +29,8 @@ export const mail: CapabilityCollector = {
     const attention = countOf(accounts, ATTENTION_STATES);
     const active = (connected ?? 0) > 0;
     return {
-      status: active ? 'active' : 'needsSetup',
-      ...(active ? {} : { reason: 'noConnectedMailbox' }),
+      status: active ? 'active' : connected === null ? null : 'needsSetup',
+      ...(active || connected === null ? {} : { reason: 'noConnectedMailbox' }),
       facts: [
         ...(active ? [fact('mailboxes', { count: connected ?? 0 })] : []),
         ...((attention ?? 0) > 0

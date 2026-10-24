@@ -6,6 +6,8 @@ const ptBR: FoundationResource = {
     foundation: 'Base do aplicativo',
   },
   page: {
+    counted: 'Contabilizado: {{value}}',
+    partial: 'Alguns dados aguardam atualização',
     title: 'Base do aplicativo',
     description:
       'Sua aplicação se concentra no negócio. Dados, permissões e fluxos são sustentados pelo NocoBase Core, com recursos comuns desenvolvidos, testados e mantidos pelo NocoBase e atualizados nas versões oficiais.',
@@ -16,19 +18,19 @@ const ptBR: FoundationResource = {
     scoreCaption: 'capacidades sustentam o aplicativo',
     refresh: 'Atualizar',
     refreshing: 'Coletando…',
-    updatedAt: 'Coletado em {{time}}',
+    updatedAt: 'Última verificação {{time}}',
     loading: 'Coletando capacidades…',
     refreshFailed:
       'A atualização falhou. Exibindo o último resultado coletado com sucesso.',
-    loadFailed: 'Não foi possível carregar a visão geral.',
+    loadFailed: 'Informações aguardando atualização',
     forbidden:
       'Somente administradores com acesso irrestrito podem ver esta página.',
     retry: 'Tentar novamente',
-    undetermined_one: 'Não foi possível determinar {{count}} capacidade',
-    undetermined_many: 'Não foi possível determinar {{count}} capacidades',
-    undetermined_other: 'Não foi possível determinar {{count}} capacidades',
+    undetermined_one: 'Informações aguardando atualização ({{count}})',
+    undetermined_many: 'Informações aguardando atualização ({{count}})',
+    undetermined_other: 'Informações aguardando atualização ({{count}})',
     highlightsLabel: 'Números principais',
-    unavailable: 'Indisponível',
+    unavailable: 'Informações aguardando atualização',
     lowerBound: 'Valor mínimo: parte dos dados não pôde ser lida.',
   },
   matrix: {
@@ -102,12 +104,14 @@ const ptBR: FoundationResource = {
     active: 'Em uso',
     needsSetup: 'Disponível, requer configuração',
     unused: 'Ainda sem uso',
-    undetermined: 'Indeterminado',
+    undetermined: 'Informações aguardando atualização',
     legendActive: 'Em uso {{count}}',
     legendNeedsSetup: 'Requer configuração {{count}}',
     legendUnused: 'Ainda sem uso {{count}}',
   },
   detail: {
+    retainedAt: 'Última confirmação {{time}}',
+    readNotes: 'Detalhes da leitura',
     collectionCount: '{{count}} tabelas',
     collectionPreview: 'Prévia das tabelas',
     collectionsTitle: 'Tabelas',
@@ -130,15 +134,13 @@ const ptBR: FoundationResource = {
     withoutFoundation: 'Sem a base',
     onceInUse: 'Ao utilizar',
     whyNot: 'Por que não está em uso',
-    liveData: 'Dados reais',
+    liveData: 'Estatísticas',
     parts: 'Componentes',
     packages: 'Fornecido por pacotes NocoBase',
     noPackages: 'Nenhum pacote desta capacidade está instalado.',
     noFacts: 'Nenhum fato confirmado ainda.',
-    partial:
-      'Parte da evidência não pôde ser lida; os valores mínimos incluem apenas o que foi lido.',
-    failed:
-      'Não foi possível examinar esta capacidade. Atualize para tentar novamente.',
+    partial: 'Alguns dados aguardam atualização.',
+    failed: 'Informações aguardando atualização.',
     unreadable: 'Não foi possível ler: {{sources}}',
     timeout: 'A verificação excedeu o tempo limite.',
   },
@@ -276,6 +278,8 @@ const ptBR: FoundationResource = {
     notConfigured: 'Não configurado.',
   },
   facts: {
+    fileCollectionsPartial:
+      'Coleções de arquivos contabilizadas: {{count}}: {{names}}.',
     collectionOwnershipUnknown:
       'Foi encontrada uma extensão em execução sem classificação. A origem das coleções é incerta; os totais de negócio foram omitidos.',
     noApplicationCollections:

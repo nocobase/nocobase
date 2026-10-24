@@ -1,5 +1,6 @@
 import type { AppConfigAccessor } from '@nocobase/app-server/config';
 import { databaseManagerToken } from '@nocobase/db';
+import { driveManagerToken } from '@nocobase/app-server/drive';
 import type { ServiceContainer } from '@nocobase/service-provider';
 
 import type {
@@ -18,6 +19,7 @@ import {
 } from '../capabilities/index.js';
 import { Inventory, Probe } from '../inventory.js';
 import { ReadQueue } from '../read-queue.js';
+import { ReliableHistory } from '../reliable-history.js';
 import {
   applicationCollections,
   dataModelingSummary,
@@ -57,6 +59,11 @@ const DATABASE_FREE: ReadonlySet<string> = new Set(['interface', 'audit']);
 const CONCURRENCY = 4;
 
 export class DefaultFoundationService implements FoundationService {
+  private readonly history = new ReliableHistory();
+  private historyScope?: string;
+  private catalogScope?: string;
+  private readonly definitionShapes = new Map<string, string>();
+  private connectionIdentity?: unknown;
   private cached?: {
     readonly at: number;
     readonly overview: FoundationOverview;
@@ -89,6 +96,19 @@ export class DefaultFoundationService implements FoundationService {
   public async overview(
     options: FoundationOverviewOptions = {},
   ): Promise<FoundationOverview> {
+    const container = this.options.container;
+    const database = container.has(databaseManagerToken)
+      ? container.resolve(databaseManagerToken)
+      : undefined;
+    const connection = database?.connection?.() ?? database;
+    if (connection !== this.connectionIdentity) {
+      this.connectionIdentity = connection;
+      this.cached = undefined;
+      this.history.clear();
+      this.recordCount = undefined;
+      this.catalogScope = undefined;
+      this.definitionShapes.clear();
+    }
     if (
       !options.refresh &&
       !options.countRecords &&
@@ -159,6 +179,41 @@ export class DefaultFoundationService implements FoundationService {
       this.options.runtimeProviders?.(),
       this.options.serverRegistrationsComplete?.(),
     );
+    if (inventory)
+      this.catalogScope = JSON.stringify(
+        inventory.collections
+          .map((item) => [item.name, item.kind, item.tableName, item.title])
+          .sort(),
+      );
+    const scope = JSON.stringify({
+      applicationName,
+      catalog: this.catalogScope,
+      providers: inventoryOfProviders.entries
+        .map((entry) => [entry.name, entry.categories, entry.registration])
+        .sort(),
+      rootSet: this.options.config.get<{
+        permissionSets?: { rootSet?: string };
+      }>('authorization')?.permissionSets?.rootSet,
+      channels: Object.keys(
+        this.options.config.get<{ channels?: Record<string, unknown> }>(
+          'notification',
+        )?.channels ?? {},
+      ).sort(),
+      drive: container.has(driveManagerToken),
+    });
+    const changedDefinition = [...(inventory?.definitionShapes ?? [])].some(
+      ([name, shape]) =>
+        this.definitionShapes.has(name) &&
+        this.definitionShapes.get(name) !== shape,
+    );
+    if (scope !== this.historyScope || changedDefinition) {
+      this.history.clear();
+      if (scope !== this.historyScope) this.recordCount = undefined;
+      this.definitionShapes.clear();
+      this.historyScope = scope;
+    }
+    for (const [name, shape] of inventory?.definitionShapes ?? [])
+      this.definitionShapes.set(name, shape);
     // An unclassified runtime extension may own Collections absent from our ownership catalog. Its rows must not be
     // presented as an exact business-only count until ownership is known.
     if (
@@ -231,6 +286,11 @@ export class DefaultFoundationService implements FoundationService {
       this.options.runtimeProviders?.(),
     );
     const finished = this.now();
+    for (let index = 0; index < capabilities.length; index++)
+      capabilities[index] = this.history.retain(
+        capabilities[index],
+        new Date(finished).toISOString(),
+      );
     const overview: FoundationOverview = {
       capabilities,
       moduleSources,

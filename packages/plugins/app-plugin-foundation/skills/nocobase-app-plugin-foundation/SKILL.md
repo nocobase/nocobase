@@ -35,11 +35,15 @@ The authentication and authorization plugins are registered, as in the default t
 - Collected read-only by the plugin; nothing reports to it, so there is nothing to register per capability.
 - In use means wired in: a persisted lifecycle, an enabled schedule, a connected mailbox, a configured notification channel, an API key that has been used. Zero uses still count as in use.
 - Needs setup names what is missing in its reason, such as `noChannel` or `noDrive`.
-- Undetermined means the evidence could not be read this time, never that it is unused; the details list what could not be read.
+- Information pending update means the evidence could not be read this time, never that it is unused; the existing Refresh operation and the detail's retry button retry collection. Expand the read details for sanitized source notes.
 - AI and agents are in use with an enabled model service or a registered Runner. Native OnlineAgent and model gateway calls do not require an `agAgents` record. Stored Agent definitions and historical usage alone do not prove current configuration. If neither execution path is confirmed and a required read failed, leave the status undetermined. Preserve another confirmed active path when optional statistics fail; never turn a failed read into zero or a missing-configuration claim.
 - Business record ownership uses `server/catalog.ts`. If an unclassified runtime extension makes ownership uncertain, business counts are withheld; add a supported ownership adapter rather than interpreting them as zero.
 
 ## Verification
+
+The application service keeps reliable active statuses, subpart statuses and complete metrics in memory. Retained values expose their original `checkedAt` and display “Last confirmed”; the overview timestamp is the latest check. Current reliable values take precedence, including zero. Earlier unused or needs-setup states do not become current negative conclusions after a failure. File counts, bytes and table counts require complete candidate discovery as well as successful aggregation to be exact. Without complete history, partial values read “Counted …” and “Some data is pending update”; wholly unreadable values remain pending. A fully confirmed empty catalog still reports exact zero. File facts retained from complete discovery carry their original date as well.
+
+History is service-local, isolated by application and default connection identity, and invalidated conservatively on catalog, physical table, provider/ownership, relevant configuration or readable definition changes. It uses existing reads only. Restarting or replacing the application service clears it; separate server processes have independent histories. There is no persistent data, background collection or automatic retry. Authorization always runs before the service; a browser refresh receiving `401` or `403` hides internal cached values.
 
 - As the root administrator, `/foundation` shows the capabilities available in this runtime, and `GET /api/foundation/overview` answers `200`.
 - As any other user, the page is not in the menu, and the route answers `403 FOUNDATION_FORBIDDEN`.

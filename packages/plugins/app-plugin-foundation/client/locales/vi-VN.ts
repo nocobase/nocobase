@@ -6,6 +6,8 @@ const viVN: FoundationResource = {
     foundation: 'Nền tảng ứng dụng',
   },
   page: {
+    counted: 'Đã thống kê {{value}}',
+    partial: 'Một số dữ liệu đang chờ cập nhật',
     title: 'Nền tảng ứng dụng',
     description:
       'Ứng dụng tập trung vào nghiệp vụ. Dữ liệu, phân quyền và quy trình được NocoBase Core hỗ trợ bằng các khả năng chung do NocoBase phát triển, kiểm thử, bảo trì và cập nhật theo phiên bản chính thức.',
@@ -16,17 +18,17 @@ const viVN: FoundationResource = {
     scoreCaption: 'khả năng đang hỗ trợ ứng dụng',
     refresh: 'Làm mới',
     refreshing: 'Đang thu thập…',
-    updatedAt: 'Thu thập lúc {{time}}',
+    updatedAt: 'Kiểm tra gần nhất {{time}}',
     loading: 'Đang thu thập khả năng…',
     refreshFailed:
       'Làm mới thất bại. Đang hiển thị kết quả thu thập thành công gần nhất.',
-    loadFailed: 'Không tải được tổng quan.',
+    loadFailed: 'Thông tin đang chờ cập nhật',
     forbidden: 'Chỉ quản trị viên có quyền không giới hạn được xem trang này.',
     retry: 'Thử lại',
-    undetermined_one: 'Chưa xác định được {{count}} khả năng',
-    undetermined_other: 'Chưa xác định được {{count}} khả năng',
+    undetermined_one: 'Thông tin đang chờ cập nhật ({{count}})',
+    undetermined_other: 'Thông tin đang chờ cập nhật ({{count}})',
     highlightsLabel: 'Số liệu chính',
-    unavailable: 'Không có dữ liệu',
+    unavailable: 'Thông tin đang chờ cập nhật',
     lowerBound: 'Giá trị tối thiểu: chưa đọc được một phần dữ liệu.',
   },
   matrix: {
@@ -100,12 +102,14 @@ const viVN: FoundationResource = {
     active: 'Đang dùng',
     needsSetup: 'Sẵn sàng, cần cấu hình',
     unused: 'Chưa dùng',
-    undetermined: 'Chưa xác định',
+    undetermined: 'Thông tin đang chờ cập nhật',
     legendActive: 'Đang dùng {{count}}',
     legendNeedsSetup: 'Cần cấu hình {{count}}',
     legendUnused: 'Chưa dùng {{count}}',
   },
   detail: {
+    retainedAt: 'Xác nhận gần nhất {{time}}',
+    readNotes: 'Chi tiết đọc dữ liệu',
     collectionCount: '{{count}} bảng dữ liệu',
     collectionPreview: 'Xem trước bảng dữ liệu',
     collectionsTitle: 'Bảng dữ liệu',
@@ -128,14 +132,13 @@ const viVN: FoundationResource = {
     withoutFoundation: 'Nếu không có nền tảng',
     onceInUse: 'Khi sử dụng',
     whyNot: 'Lý do chưa dùng',
-    liveData: 'Dữ liệu thực tế',
+    liveData: 'Số liệu thống kê',
     parts: 'Thành phần',
     packages: 'Do các gói NocoBase cung cấp',
     noPackages: 'Chưa cài gói nào cho khả năng này.',
     noFacts: 'Chưa có thông tin xác nhận.',
-    partial:
-      'Chưa đọc được một phần bằng chứng; giá trị tối thiểu chỉ tính dữ liệu đã đọc.',
-    failed: 'Lần này chưa kiểm tra được khả năng. Hãy làm mới để thử lại.',
+    partial: 'Một số dữ liệu đang chờ cập nhật.',
+    failed: 'Thông tin đang chờ cập nhật.',
     unreadable: 'Không đọc được: {{sources}}',
     timeout: 'Kiểm tra quá thời gian chờ.',
   },
@@ -265,6 +268,7 @@ const viVN: FoundationResource = {
     notConfigured: 'Chưa cấu hình.',
   },
   facts: {
+    fileCollectionsPartial: 'Đã thống kê {{count}} bộ sưu tập tệp: {{names}}.',
     collectionOwnershipUnknown:
       'Phát hiện phần mở rộng lúc chạy chưa phân loại. Chưa xác nhận bộ sưu tập thuộc bên nào nên ẩn số liệu nghiệp vụ.',
     noApplicationCollections:

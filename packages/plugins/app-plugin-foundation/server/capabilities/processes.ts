@@ -33,15 +33,18 @@ export const workflows: CapabilityCollector = {
       parts.push({ key: 'lifecycles', status: 'active' });
       findings.push({
         status: 'active',
-        facts: [
-          byLifecycle === null || byLifecycle.size === 0
-            ? fact('lifecyclesWithoutTransitions')
-            : fact('lifecycles', {
-                count: byLifecycle.size,
-                names: [...byLifecycle.keys()],
-                transitions: transitions ?? 0,
-              }),
-        ],
+        facts:
+          byLifecycle === null
+            ? []
+            : [
+                byLifecycle.size === 0
+                  ? fact('lifecyclesWithoutTransitions')
+                  : fact('lifecycles', {
+                      count: byLifecycle.size,
+                      names: [...byLifecycle.keys()],
+                      transitions: transitions ?? 0,
+                    }),
+              ],
         metrics: [
           metric('transitions', transitions),
           metric('lifecycles', byLifecycle?.size ?? null),
@@ -67,19 +70,20 @@ export const workflows: CapabilityCollector = {
         : null;
       const active = (enabled ?? 0) > 0;
       parts.push(
-        active
-          ? { key: 'schedules', status: 'active' }
-          : { key: 'schedules', status: 'unused', reason: 'noSchedules' },
+        enabled === null
+          ? { key: 'schedules', status: null }
+          : active
+            ? { key: 'schedules', status: 'active' }
+            : { key: 'schedules', status: 'unused', reason: 'noSchedules' },
       );
-      if (active)
-        findings.push({
-          status: 'active',
-          facts: [fact('schedules', { count: enabled ?? 0 })],
-          metrics: [
-            metric('schedules', enabled),
-            metric('scheduleOccurrences', occurrences),
-          ],
-        });
+      findings.push({
+        status: active ? 'active' : enabled === null ? null : 'unused',
+        facts: active ? [fact('schedules', { count: enabled ?? 0 })] : [],
+        metrics: [
+          metric('schedules', enabled),
+          metric('scheduleOccurrences', occurrences),
+        ],
+      });
     } else {
       parts.push({
         key: 'schedules',
@@ -88,10 +92,11 @@ export const workflows: CapabilityCollector = {
       });
     }
 
-    if (findings.length === 0)
-      return { status: 'unused', reason: 'noWorkflows', parts };
+    const active = findings.some((finding) => finding.status === 'active');
+    const unknown = parts.some((part) => part.status === null);
     return {
-      status: 'active',
+      status: active ? 'active' : unknown ? null : 'unused',
+      ...(active || unknown ? {} : { reason: 'noWorkflows' }),
       facts: findings.flatMap((finding) => finding.facts ?? []),
       metrics: findings.flatMap((finding) => finding.metrics ?? []),
       parts,

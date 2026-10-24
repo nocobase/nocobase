@@ -102,21 +102,25 @@ export const permissions: CapabilityCollector = {
     const parts: FoundationPart[] = [
       {
         key: 'permissionSets',
-        status: (grants ?? 0) > 0 ? 'active' : 'needsSetup',
+        status: grants === null ? null : grants > 0 ? 'active' : 'needsSetup',
       },
       ...rules.map(({ part, count }): FoundationPart =>
         count === undefined
           ? { key: part, status: 'unused', reason: 'notRegistered' }
-          : (count ?? 0) > 0
-            ? { key: part, status: 'active' }
-            : { key: part, status: 'unused' },
+          : count === null
+            ? { key: part, status: null }
+            : count > 0
+              ? { key: part, status: 'active' }
+              : { key: part, status: 'unused' },
       ),
     ];
     const ruleCount = rules.reduce((sum, rule) => sum + (rule.count ?? 0), 0);
     const active = (grants ?? 0) > 0 || ruleCount > 0;
+    const unknown =
+      grants === null || rules.some((rule) => rule.count === null);
     return {
-      status: active ? 'active' : 'needsSetup',
-      ...(active ? {} : { reason: 'onlyUnrestrictedAccess' }),
+      status: active ? 'active' : unknown ? null : 'needsSetup',
+      ...(active || unknown ? {} : { reason: 'onlyUnrestrictedAccess' }),
       facts: [
         ...(grantedSets === undefined
           ? []
@@ -126,7 +130,9 @@ export const permissions: CapabilityCollector = {
                 names: grantedSets.map((set) => text(set.title, set.key)),
               }),
             ]),
-        ...(ruleCount > 0 ? [fact('accessRules', { count: ruleCount })] : []),
+        ...(ruleCount > 0 && !rules.some((rule) => rule.count === null)
+          ? [fact('accessRules', { count: ruleCount })]
+          : []),
       ],
       metrics: [
         metric('grants', grants),

@@ -117,7 +117,7 @@ it.each(['missing', 'throwing'] as const)(
 );
 
 it.each(['missing', 'throwing'] as const)(
-  'withholds schema totals when every definition is %s and recovers on refresh',
+  'retains schema totals with their original date when every definition is %s and recovers',
   async (mode) => {
     const { get, createService } = await application();
     const service = createService();
@@ -138,13 +138,15 @@ it.each(['missing', 'throwing'] as const)(
         }),
         expect.objectContaining({
           key: 'fields',
-          value: null,
-          complete: false,
+          value: 1,
+          complete: true,
+          checkedAt: first.checkedAt,
         }),
         expect.objectContaining({
           key: 'relations',
-          value: null,
-          complete: false,
+          value: 1,
+          complete: true,
+          checkedAt: first.checkedAt,
         }),
         expect.objectContaining({
           key: 'businessRecords',
@@ -232,7 +234,12 @@ it('keeps catalog totals and the last count through a definition deadline and re
         value: 1,
         complete: true,
       }),
-      expect.objectContaining({ key: 'fields', value: null, complete: false }),
+      expect.objectContaining({
+        key: 'fields',
+        value: 1,
+        complete: true,
+        checkedAt: first.checkedAt,
+      }),
       expect.objectContaining({
         key: 'businessRecords',
         value: 7,

@@ -32,8 +32,12 @@ export const integrations: CapabilityCollector = {
     ]);
     const active = (used ?? 0) > 0;
     return {
-      status: active ? 'active' : 'unused',
-      ...(active
+      status: active
+        ? 'active'
+        : used === null || enabled === null
+          ? null
+          : 'unused',
+      ...(active || used === null || enabled === null
         ? {}
         : { reason: (enabled ?? 0) > 0 ? 'noUsedApiKey' : 'noApiKey' }),
       facts: active ? [fact('usedApiKeys', { count: used ?? 0 })] : [],

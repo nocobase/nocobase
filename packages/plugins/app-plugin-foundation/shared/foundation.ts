@@ -53,6 +53,8 @@ export type FoundationFactParam = string | number | readonly FoundationText[];
 export interface FoundationFact {
   readonly code: string;
   readonly params?: Readonly<Record<string, FoundationFactParam>>;
+  /** Original observation time, present only when this fact is retained from an earlier collection. */
+  readonly checkedAt?: string;
 }
 
 export type FoundationMetricUnit = 'count' | 'bytes' | 'tokens';
@@ -64,13 +66,16 @@ export interface FoundationMetric {
   readonly unit: FoundationMetricUnit;
   /** False when some of the sources it adds up could not be read, so the value is a lower bound. */
   readonly complete: boolean;
+  /** Original observation time of a retained complete value, never the latest refresh time. */
+  readonly checkedAt?: string;
 }
 
 /** A part of a composite capability, such as accounts and organizations under users and organizations. */
 export interface FoundationPart {
   readonly key: string;
-  readonly status: FoundationStatus;
+  readonly status: FoundationStatus | null;
   readonly reason?: string;
+  readonly checkedAt?: string;
 }
 
 export interface FoundationPackage {
@@ -93,6 +98,8 @@ export interface FoundationCapability {
   readonly title?: FoundationText;
   readonly description?: string;
   readonly status: FoundationStatus | null;
+  /** Original observation time when the displayed status is historical. */
+  readonly checkedAt?: string;
   /** Why the capability needs setup or is unused, such as `noChannel`. */
   readonly reason?: string;
   readonly facts: readonly FoundationFact[];

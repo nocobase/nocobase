@@ -161,17 +161,28 @@ export const files: CapabilityCollector = {
       ),
       async (collection) => {
         const names = await probe.fieldNames(collection.name);
-        return names !== null &&
-          FILE_COLUMNS.every((column) => names.includes(column))
+        if (names === null) return null;
+        return FILE_COLUMNS.every((column) => names.includes(column))
           ? collection
           : undefined;
       },
     );
+    const discoveryComplete = candidates.every((item) => item !== null);
     const fileCollections = candidates.filter(
-      (collection): collection is CollectionSummary => collection !== undefined,
+      (collection): collection is CollectionSummary => collection != null,
     );
     if (fileCollections.length === 0)
-      return { status: 'unused', reason: 'noFileCollection' };
+      return {
+        status: discoveryComplete ? 'unused' : null,
+        ...(discoveryComplete ? { reason: 'noFileCollection' } : {}),
+        metrics: [
+          metric('files', discoveryComplete ? 0 : null),
+          metric('storedBytes', discoveryComplete ? 0 : null, {
+            unit: 'bytes',
+          }),
+          metric('fileCollections', discoveryComplete ? 0 : null),
+        ],
+      };
     const counts = total(
       await probe.map(fileCollections, (collection) =>
         probe.count(collection.name),
@@ -187,7 +198,7 @@ export const files: CapabilityCollector = {
       status: hasDrive ? 'active' : 'needsSetup',
       ...(hasDrive ? {} : { reason: 'noDrive' }),
       facts: [
-        fact('fileCollections', {
+        fact(discoveryComplete ? 'fileCollections' : 'fileCollectionsPartial', {
           count: fileCollections.length,
           names: fileCollections
             .slice(0, 5)
@@ -195,12 +206,16 @@ export const files: CapabilityCollector = {
         }),
       ],
       metrics: [
-        metric('files', counts.value, { complete: counts.complete }),
+        metric('files', counts.value, {
+          complete: discoveryComplete && counts.complete,
+        }),
         metric('storedBytes', bytes.value, {
           unit: 'bytes',
-          complete: bytes.complete,
+          complete: discoveryComplete && bytes.complete,
         }),
-        metric('fileCollections', fileCollections.length),
+        metric('fileCollections', fileCollections.length, {
+          complete: discoveryComplete,
+        }),
       ],
     };
   },

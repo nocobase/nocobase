@@ -50,6 +50,9 @@ const FactSchema = z
       description:
         'What was established, such as `applicationCollections`; the page words it.',
     }),
+    checkedAt: z.string().optional().meta({
+      description: 'Original collection time of a retained historical fact.',
+    }),
     params: z
       .record(
         z.string(),
@@ -82,6 +85,10 @@ const MetricSchema = z
       description:
         'False when part of what it adds up could not be read, so the value is a lower bound.',
     }),
+    checkedAt: z.string().optional().meta({
+      description:
+        'Original collection time of a retained complete metric; absent for current values.',
+    }),
   })
   .meta({ ref: 'FoundationMetric' });
 
@@ -96,6 +103,10 @@ const CapabilitySchema = z
       description:
         '`active`, `needsSetup` or `unused`; null when usage is not recognized or its evidence could not be read.',
     }),
+    checkedAt: z.string().optional().meta({
+      description:
+        'Original collection time when the displayed in-use status is historical.',
+    }),
     title: z
       .union([z.string(), z.object({ key: z.string(), ns: z.string() })])
       .optional(),
@@ -108,7 +119,8 @@ const CapabilitySchema = z
     parts: z.array(
       z.object({
         key: z.string(),
-        status: StatusSchema,
+        status: StatusSchema.nullable(),
+        checkedAt: z.string().optional(),
         reason: z.string().optional(),
       }),
     ),

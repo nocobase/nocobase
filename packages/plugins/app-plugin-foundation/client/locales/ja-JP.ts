@@ -6,6 +6,8 @@ const jaJP: FoundationResource = {
     foundation: 'アプリ基盤',
   },
   page: {
+    counted: '集計済み {{value}}',
+    partial: '一部のデータは更新待ちです',
     title: 'アプリ基盤',
     description:
       'アプリは業務に集中できます。データ、権限、ワークフローは、NocoBase が継続的に開発・テスト・保守し、公式リリースで更新する NocoBase Core の共通機能が支えます。',
@@ -16,17 +18,17 @@ const jaJP: FoundationResource = {
     scoreCaption: '件の基盤機能がアプリを支えています',
     refresh: '更新',
     refreshing: '収集中…',
-    updatedAt: '収集日時 {{time}}',
+    updatedAt: '最終確認 {{time}}',
     loading: '機能情報を収集中…',
     refreshFailed:
       '更新に失敗しました。最後に正常に取得した結果を表示しています。',
-    loadFailed: '概要を読み込めませんでした。',
+    loadFailed: '情報の更新待ち',
     forbidden: '無制限のアクセス権を持つ管理者のみ閲覧できます。',
     retry: '再試行',
-    undetermined_one: '{{count}} 件の機能を確認できません',
-    undetermined_other: '{{count}} 件の機能を確認できません',
+    undetermined_one: '情報の更新待ち ({{count}})',
+    undetermined_other: '情報の更新待ち ({{count}})',
     highlightsLabel: '主要な数値',
-    unavailable: '取得不可',
+    unavailable: '情報の更新待ち',
     lowerBound: '一部を読み取れないため下限値です。',
   },
   matrix: {
@@ -99,12 +101,14 @@ const jaJP: FoundationResource = {
     active: '使用中',
     needsSetup: '利用可能・設定待ち',
     unused: '未使用',
-    undetermined: '未確認',
+    undetermined: '情報の更新待ち',
     legendActive: '使用中 {{count}}',
     legendNeedsSetup: '設定待ち {{count}}',
     legendUnused: '未使用 {{count}}',
   },
   detail: {
+    retainedAt: '前回確認 {{time}}',
+    readNotes: '読み取りの詳細',
     collectionCount: 'データテーブル {{count}} 件',
     collectionPreview: 'データテーブルのプレビュー',
     collectionsTitle: 'データテーブル',
@@ -127,13 +131,13 @@ const jaJP: FoundationResource = {
     withoutFoundation: '基盤がない場合',
     onceInUse: '使用すると',
     whyNot: '未使用の理由',
-    liveData: '実際のデータ',
+    liveData: '統計',
     parts: '構成要素',
     packages: 'NocoBase 提供パッケージ',
     noPackages: '該当パッケージは未インストールです。',
     noFacts: '確認済みの情報はありません。',
-    partial: '一部の根拠を読み取れません。下限表示は読み取れた値のみです。',
-    failed: '今回は確認できず状態は不明です。更新して再試行してください。',
+    partial: '一部のデータは更新待ちです.',
+    failed: '情報の更新待ち.',
     unreadable: '読み取り不可：{{sources}}',
     timeout: '確認がタイムアウトしました。',
   },
@@ -262,6 +266,8 @@ const jaJP: FoundationResource = {
     notConfigured: '未設定です。',
   },
   facts: {
+    fileCollectionsPartial:
+      '集計済みのファイルコレクション {{count}} 件：{{names}}。',
     collectionOwnershipUnknown:
       '未分類の実行時拡張があるためコレクションの所有元が不明です。業務統計は表示しません。',
     noApplicationCollections:

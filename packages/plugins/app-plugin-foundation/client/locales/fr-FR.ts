@@ -6,6 +6,8 @@ const frFR: FoundationResource = {
     foundation: 'Socle de l’application',
   },
   page: {
+    counted: 'Comptabilisé : {{value}}',
+    partial: 'Certaines données attendent une mise à jour',
     title: 'Socle de l’application',
     description:
       'Votre application se concentre sur le métier. NocoBase Core soutient les données, permissions et processus avec des capacités communes développées, testées et maintenues par NocoBase, puis mises à jour avec les versions officielles.',
@@ -16,19 +18,19 @@ const frFR: FoundationResource = {
     scoreCaption: 'capacités soutiennent l’application',
     refresh: 'Actualiser',
     refreshing: 'Collecte…',
-    updatedAt: 'Collecté le {{time}}',
+    updatedAt: 'Dernière vérification {{time}}',
     loading: 'Collecte des capacités…',
     refreshFailed:
       'L’actualisation a échoué. Le dernier résultat collecté avec succès est affiché.',
-    loadFailed: 'Impossible de charger la vue d’ensemble.',
+    loadFailed: 'Informations en attente de mise à jour',
     forbidden:
       'Seuls les administrateurs avec accès illimité peuvent consulter cette page.',
     retry: 'Réessayer',
-    undetermined_one: '{{count}} capacité indéterminée',
-    undetermined_many: '{{count}} capacités indéterminées',
-    undetermined_other: '{{count}} capacités indéterminées',
+    undetermined_one: 'Informations en attente de mise à jour ({{count}})',
+    undetermined_many: 'Informations en attente de mise à jour ({{count}})',
+    undetermined_other: 'Informations en attente de mise à jour ({{count}})',
     highlightsLabel: 'Chiffres clés',
-    unavailable: 'Indisponible',
+    unavailable: 'Informations en attente de mise à jour',
     lowerBound: 'Valeur minimale : une partie des données est illisible.',
   },
   matrix: {
@@ -103,12 +105,14 @@ const frFR: FoundationResource = {
     active: 'Utilisé',
     needsSetup: 'Disponible, à configurer',
     unused: 'Non utilisé',
-    undetermined: 'Indéterminé',
+    undetermined: 'Informations en attente de mise à jour',
     legendActive: 'Utilisé {{count}}',
     legendNeedsSetup: 'À configurer {{count}}',
     legendUnused: 'Non utilisé {{count}}',
   },
   detail: {
+    retainedAt: 'Dernière confirmation {{time}}',
+    readNotes: 'Détails de lecture',
     collectionCount: '{{count}} tables',
     collectionPreview: 'Aperçu des tables',
     collectionsTitle: 'Tables',
@@ -131,14 +135,13 @@ const frFR: FoundationResource = {
     withoutFoundation: 'Sans le socle',
     onceInUse: 'Après activation',
     whyNot: 'Pourquoi cette capacité n’est pas utilisée',
-    liveData: 'Données réelles',
+    liveData: 'Statistiques',
     parts: 'Composants',
     packages: 'Fourni par les paquets NocoBase',
     noPackages: 'Aucun paquet de cette capacité n’est installé.',
     noFacts: 'Aucun fait établi.',
-    partial:
-      'Certaines preuves sont illisibles ; les minima incluent uniquement les données lues.',
-    failed: 'Impossible d’examiner cette capacité. Actualisez pour réessayer.',
+    partial: 'Certaines données attendent une mise à jour.',
+    failed: 'Informations en attente de mise à jour.',
     unreadable: 'Lecture impossible : {{sources}}',
     timeout: 'Le délai d’examen est dépassé.',
   },
@@ -275,6 +278,8 @@ const frFR: FoundationResource = {
     notConfigured: 'Non configuré.',
   },
   facts: {
+    fileCollectionsPartial:
+      'Collections de fichiers comptabilisées : {{count}} : {{names}}.',
     collectionOwnershipUnknown:
       'Une extension active non classée a été trouvée. L’appartenance des collections est incertaine ; les chiffres métier sont masqués.',
     noApplicationCollections:
