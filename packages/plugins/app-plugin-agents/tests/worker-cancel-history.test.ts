@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { claim, createHarness, type Harness } from './harness.js';
+import { chatMessageSegments } from '../client/chat/message-model.js';
 import { RunWorker } from '../../../app/agent-runner/src/agent/worker.ts';
 import { ClaudeAdapter } from '../../../app/agent-runner/src/agent/adapters/claude.ts';
 import { CodexAdapter } from '../../../app/agent-runner/src/agent/adapters/codex.ts';
@@ -289,6 +290,17 @@ it.each(['codex', 'claude'] as const)(
       sessionId: f.agent.sessionId,
     });
     const history = await reloaded.history();
+    const answers = chatMessageSegments(history).filter(
+      (segment) => segment.message.role === 'assistant',
+    );
+    expect(answers).toHaveLength(1);
+    expect(answers[0].partIndexes).toEqual([0, 1]);
+    const savedPage = await reloaded.messages!({ limit: 1 });
+    expect(
+      chatMessageSegments(savedPage.items).filter(
+        (segment) => segment.message.role === 'assistant',
+      ),
+    ).toEqual(answers);
     expect(
       history
         .filter((m) => m.role === 'assistant')

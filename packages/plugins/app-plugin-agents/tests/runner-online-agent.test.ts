@@ -1,4 +1,5 @@
 import type { Knex } from 'knex';
+import { chatMessageSegments } from '../client/chat/message-model.js';
 import { writeFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
@@ -1785,6 +1786,33 @@ it('restores ordered reasoning in streamed and paged history with one batched re
   expect(answers.map(appUIMessageText)).toEqual(['Answer 0', 'Answer 1']);
   const page = await f.agent.messages!({ limit: 50 });
   expect(page.items).toEqual(history);
+  const paged: typeof history = [];
+  let before: number | undefined;
+  for (;;) {
+    const slice = await f.agent.messages!({
+      limit: 1,
+      ...(before ? { before } : {}),
+    });
+    paged.unshift(...slice.items);
+    for (const answer of slice.items.filter(
+      (item) => item.role === 'assistant',
+    )) {
+      const segments = chatMessageSegments([answer]);
+      expect(segments).toHaveLength(1);
+      expect(segments[0].partIndexes).toEqual([0, 1]);
+    }
+    if (!slice.hasMore) break;
+    before = Math.min(
+      ...slice.items.flatMap((item) =>
+        item.metadata!.sourceRecords!.map((source) => source.seq),
+      ),
+    );
+  }
+  expect(paged).toEqual(history);
+  expect(
+    new Set(chatMessageSegments(paged).map((segment) => segment.key)).size,
+  ).toBe(history.length);
+
   expect(
     (
       await h.services.runs.events(answers[0].metadata!.executionId!, 0, 100)

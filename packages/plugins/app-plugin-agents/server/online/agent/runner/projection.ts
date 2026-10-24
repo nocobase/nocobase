@@ -270,7 +270,10 @@ export async function runnerUIPage(
   const runIds = [
     ...new Set(
       selected
-        .filter((row) => row.role === 'assistant' && row.runId)
+        .filter(
+          (row) =>
+            (row.role === 'assistant' || row.role === 'user') && row.runId,
+        )
         .map((row) => row.runId!),
     ),
   ];
@@ -279,7 +282,10 @@ export async function runnerUIPage(
         filter: (f) =>
           f.and([
             f.string('conversationId').eq(id),
-            f.string('role').eq('assistant'),
+            f.or([
+              f.string('role').eq('assistant'),
+              f.string('role').eq('user'),
+            ]),
             f.or(runIds.map((runId) => f.string('runId').eq(runId))),
           ]),
         sort: (s) => s.field('seq').asc(),
