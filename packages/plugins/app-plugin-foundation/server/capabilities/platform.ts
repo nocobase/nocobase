@@ -130,12 +130,12 @@ export const operations: CapabilityCollector = {
     return {
       status: 'active',
       facts: [
-        ...(migrations === null
+        ...(migrations === null || ownMigrations === null
           ? []
           : [
               fact('migrations', {
                 count: migrations,
-                own: ownMigrations ?? 0,
+                own: ownMigrations,
               }),
             ]),
         ...(latestAt === undefined

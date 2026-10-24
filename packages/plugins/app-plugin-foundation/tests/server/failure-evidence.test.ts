@@ -6,7 +6,10 @@ import { files } from '../../server/capabilities/data.js';
 import { knowledge } from '../../server/capabilities/intelligence.js';
 import { mail } from '../../server/capabilities/messaging.js';
 import { permissions } from '../../server/capabilities/people.js';
-import { integrations } from '../../server/capabilities/platform.js';
+import {
+  integrations,
+  operations,
+} from '../../server/capabilities/platform.js';
 import { workflows } from '../../server/capabilities/processes.js';
 import type { CapabilityCollector } from '../../server/capabilities/types.js';
 import { Inventory, Probe } from '../../server/inventory.js';
@@ -23,9 +26,27 @@ async function collect(
     fail?: string[];
     count?: number;
     definition?: (name: string) => Promise<unknown>;
+    failOwnMigrations?: boolean;
   } = {},
 ) {
   const database = {
+    query: () => ({
+      selectFrom: () => {
+        let own = false;
+        const query = {
+          select: () => query,
+          where: () => {
+            own = true;
+            return query;
+          },
+          executeTakeFirst: async () => {
+            if (own && options.failOwnMigrations) return unavailable();
+            return { count: options.count ?? 0, latest: null };
+          },
+        };
+        return query;
+      },
+    }),
     collections: () => ({
       list: async () => ({
         items: names.map((name) => ({ name, kind: 'table', tableName: name })),
@@ -56,6 +77,21 @@ async function collect(
 }
 
 describe('evidence failures are not negative conclusions', () => {
+  it('does not claim zero application migrations when their independent read fails', async () => {
+    const { result, issues } = await collect(operations, [], {
+      count: 8,
+      failOwnMigrations: true,
+    });
+    expect(issues.length).toBeGreaterThan(0);
+    expect(result.status).toBe('active');
+    expect(result.facts).toEqual([]);
+    expect(result.metrics).toContainEqual(
+      expect.objectContaining({ key: 'migrations', value: 8 }),
+    );
+    expect(result.metrics).toContainEqual(
+      expect.objectContaining({ key: 'applicationMigrations', value: null }),
+    );
+  });
   it.each([
     [mail, ['mailAccounts']],
     [integrations, ['apikey']],
