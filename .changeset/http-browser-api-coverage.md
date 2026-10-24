@@ -4,6 +4,7 @@
 '@nocobase/app-plugin-demo-mode': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-repository-example': patch
+'@nocobase/app-plugin-lifecycle-example': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
 ---
