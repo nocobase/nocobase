@@ -44,7 +44,7 @@ const idID: FoundationResource = {
     legend:
       '✓ Integrasi dikenali; · hubungan belum dikenali. Referensi kode menunjukkan dependensi, bukan jumlah eksekusi.',
     partial:
-      'Beberapa dependensi halaman tidak dapat dibaca. Hubungan yang terkonfirmasi tetap ditampilkan.',
+      'Beberapa dependensi halaman belum dapat dipastikan; hanya hubungan yang telah dikonfirmasi yang ditampilkan.',
     evidence: {
       page: 'Halaman terdaftar di aplikasi',
       authentication: 'Halaman memerlukan login',

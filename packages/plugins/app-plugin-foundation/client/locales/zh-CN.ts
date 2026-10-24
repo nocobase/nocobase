@@ -40,7 +40,7 @@ const zhCN: FoundationResource = {
     empty: '暂未发现业务模块，添加页面和菜单后会自动出现在这里。',
     legend:
       '✓ 表示已识别的接入关系；· 表示尚未识别。代码引用说明依赖关系，不代表实际执行次数。',
-    partial: '部分页面依赖暂时无法读取，已确认的关联仍会展示。',
+    partial: '部分页面依赖尚无法确认；这里只显示已确认的关联。',
     evidence: {
       page: '已注册应用页面',
       authentication: '页面要求登录',
