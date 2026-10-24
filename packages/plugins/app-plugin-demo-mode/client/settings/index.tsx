@@ -32,11 +32,7 @@ export type {
   DemoSettingsHeaderProps,
 } from './components.js';
 
-export type {
-  DemoChatTool,
-  DemoLabelKind,
-  DemoSettingsOptions,
-} from './context.js';
+export type { DemoLabelKind, DemoSettingsOptions } from './context.js';
 
 const TABS = ['overview', 'schedule'] as const;
 type Tab = (typeof TABS)[number];

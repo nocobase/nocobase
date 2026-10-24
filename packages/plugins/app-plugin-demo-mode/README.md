@@ -193,7 +193,7 @@ import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings
 />;
 ```
 
-`label` receives `count` (a key of the dataset's `counts`) with its id. The former `adapter` and `chatTool` label kinds and the `chatTools` prop remain accepted for source compatibility but are no longer used. `onDataChange` is called when a clear answers or a watched import or reset finishes, for the application to refresh what it caches. The data language defaults to the reader's interface language when the dataset is written in it.
+`label` receives `count` (a key of the dataset's `counts`) with its id. `onDataChange` is called when a clear answers or a watched import or reset finishes, for the application to refresh what it caches. The data language defaults to the reader's interface language when the dataset is written in it.
 
 ### Host presentation components
 

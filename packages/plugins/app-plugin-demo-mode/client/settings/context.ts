@@ -12,25 +12,14 @@ import type { DemoConfigurationView } from '../../shared/configuration.js';
 import type { DemoSettingsComponents } from './components.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
-/** What a registered item is called in the application's language. */
-export type DemoLabelKind = 'count' | 'adapter' | 'chatTool';
-
-/** @deprecated Simulation settings are no longer displayed; adapt tools through the server's runChatTool. */
-export interface DemoChatTool {
-  readonly id: string;
-  readonly policies: readonly ('read' | 'mock')[];
-}
+/** A dataset count label in the application's language. */
+export type DemoLabelKind = 'count';
 
 export interface DemoSettingsOptions {
   /** Optional host page chrome and primitives; keep component identities stable across renders. */
   readonly components?: DemoSettingsComponents;
-  /**
-   * The application's name for a dataset count (`count`, `companies`); undefined falls back to its id.
-   * The legacy adapter and chatTool kinds are retained for source compatibility and are no longer displayed.
-   */
+  /** The application's name for a dataset count (`count`, `companies`); undefined falls back to its id. */
   readonly label?: (kind: DemoLabelKind, id: string) => string | undefined;
-  /** @deprecated Ignored. Simulation settings are no longer displayed; adapt tools through the server's runChatTool. */
-  readonly chatTools?: readonly DemoChatTool[];
   /**
    * Called when the demo data changed under the page: a clear answered, or an import or reset it watched finished.
    * An application refreshes what it caches, such as its query cache.
