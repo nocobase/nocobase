@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/document-extractor",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "description": "Worker-isolated local document text extraction without application or model dependencies.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

@@ -1,5 +1,20 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- ef9ae6f: Simplify the demo settings page to Overview and Daily reset by removing visitor write, simulation and AI controls. Remove the obsolete chatTools option and DemoChatTool type, and restrict label kinds to count. Preserve existing write policies and their configuration APIs. Enable registered simulation adapters and integrated demo chat by default, deriving tool behavior from application-provided mocks or explicit local reads while preserving saved overrides. Keep application integration optional and leave ordinary Agent model selection unchanged.
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [4c98f67]
+- Updated dependencies [01e03b7]
+  - @nocobase/app-plugin-agents@1.0.0-beta.22
+
 ## 0.1.0-beta.0
 
 ### Minor Changes
