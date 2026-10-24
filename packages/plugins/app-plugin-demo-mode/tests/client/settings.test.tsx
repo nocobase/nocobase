@@ -65,7 +65,7 @@ const view = (patch: Partial<DemoConfigurationView> = {}) => ({
     timezone: 'Asia/Shanghai',
     language: 'zh-CN',
   },
-  chat: { enabled: false, tools: {} },
+  chat: { enabled: true, tools: {} },
   busy: false,
   enabled: true,
   fixedCollections: ['session', 'verification'],
@@ -155,11 +155,6 @@ function demoApi({
           },
         ],
       };
-    if (
-      call.method === 'GET' &&
-      call.path === 'demoMode/configuration/collections'
-    )
-      return { data: [{ name: 'userPreferences', title: 'View preferences' }] };
     if (call.method === 'GET' && call.path === 'demoMode/configuration')
       return { data: configuration };
     if (call.method === 'PUT' && onPut) return onPut(call);
@@ -349,11 +344,10 @@ describe.each(['default', 'host'] as const)(
             actions: ['read'],
           })),
         }),
-        '/?tab=simulation',
+        '/?tab=schedule',
       );
-      expect(await screen.findByText('在线聊天')).toBeInTheDocument();
       expect(
-        screen.getByRole('switch', { name: '允许访客聊天' }),
+        await screen.findByRole('switch', { name: '每天重置' }),
       ).toHaveAttribute('data-disabled');
       expect(
         screen.queryByRole('button', { name: '保存' }),
@@ -363,6 +357,25 @@ describe.each(['default', 'host'] as const)(
         screen.queryByRole('button', { name: '重置' }),
       ).not.toBeInTheDocument();
     });
+
+    it.each(['simulation', 'writes'])(
+      'opens a usable overview for legacy %s links',
+      async (tab) => {
+        await render(demoApi(), `/?tab=${tab}&filter=retained`);
+        expect(await screen.findByText('公司')).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: '概览' })).toHaveAttribute(
+          'aria-selected',
+          'true',
+        );
+        fireEvent.click(screen.getByRole('tab', { name: '每日重置' }));
+        expect(
+          await screen.findByRole('switch', { name: '每天重置' }),
+        ).toBeEnabled();
+        expect(screen.getByTestId('location')).toHaveTextContent(
+          'tab=schedule&filter=retained',
+        );
+      },
+    );
 
     it('clears after confirming and tells the application its data changed', async () => {
       const onDataChange = vi.fn();

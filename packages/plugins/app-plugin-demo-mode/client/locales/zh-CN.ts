@@ -38,15 +38,9 @@ const resource: DemoModeResource = {
     apply: '确认修改',
     unsaved: '有未保存的修改',
     discardAndReload: '放弃我的修改并重新加载',
-    switch: {
-      on: '开启',
-      off: '关闭',
-    },
     tabs: {
       overview: '概览',
       schedule: '每日重置',
-      writes: '访客写入',
-      simulation: '模拟与 AI',
     },
     leave: {
       title: '不保存就离开？',
@@ -138,54 +132,6 @@ const resource: DemoModeResource = {
       noTimezone: '没有匹配的时区',
       invalidTimezone: '请从列表中选择时区。',
       next: '下次重置：{{time}}',
-    },
-    writes: {
-      intro:
-        '开启演示后，默认拒绝写入。请选择访客需要写入的数据表；操作权限和记录范围由应用的业务权限控制。',
-      allow: '放开',
-      revoke: '恢复拒绝',
-      confirmTitle: '修改访客可以写入的内容？',
-      confirmDescription: '访客对这些内容的改动会真实保存，直到下次重置。',
-      collections: {
-        title: '数据表',
-        description: '允许通过业务权限检查的请求写入这些数据表。',
-        label: '访客可以写入的数据表',
-        placeholder: '搜索数据表',
-        noMatch: '没有匹配的数据表',
-        fixed: '始终可写',
-      },
-    },
-    simulation: {
-      kind: {
-        model: '模型',
-        tool: '工具',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: '模拟服务',
-        description: '在演示中替代外部服务作答的模拟。',
-        confirmTitle: '修改模拟服务？',
-        confirmDescription: '关闭的模拟会让对应工作失败，绝不会转给真实服务。',
-        empty: '没有注册模拟服务',
-        emptyHelp: '这个应用没有注册模拟服务。',
-        onHelp: '返回模拟结果。',
-        offHelp: '已关闭：对应工作会被拒绝。',
-      },
-      chat: {
-        title: '在线聊天',
-        description: '让访客和应用的 AI 对话。',
-        confirmTitle: '保存在线聊天设置？',
-        confirmDescription: '访客的对话从下一条消息起按新设置执行。',
-        enabled: '允许访客聊天',
-        enabledHelp: '关闭后会拒绝访客的消息。',
-        tools: '工具',
-        noTools: '这个应用没有声明聊天工具。',
-        policy: {
-          deny: '拒绝',
-          read: '读取数据',
-          mock: '模拟',
-        },
-      },
     },
   },
 };

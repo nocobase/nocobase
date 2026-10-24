@@ -39,15 +39,9 @@ const resource = {
     apply: 'Apply changes',
     unsaved: 'Unsaved changes',
     discardAndReload: 'Discard my changes and reload',
-    switch: {
-      on: 'On',
-      off: 'Off',
-    },
     tabs: {
       overview: 'Overview',
       schedule: 'Daily reset',
-      writes: 'Visitor writes',
-      simulation: 'Simulation & AI',
     },
     leave: {
       title: 'Leave without saving?',
@@ -144,58 +138,6 @@ const resource = {
       noTimezone: 'No matching time zone',
       invalidTimezone: 'Choose a time zone from the list.',
       next: 'Next reset: {{time}}',
-    },
-    writes: {
-      intro:
-        'When Demo Mode is enabled, writes are refused by default. Select the collections visitors need to write; application permissions control operations and record access.',
-      allow: 'Allow',
-      revoke: 'Refuse again',
-      confirmTitle: 'Change what visitors may write?',
-      confirmDescription:
-        'Visitors’ changes to these become real and stay until the next reset.',
-      collections: {
-        title: 'Collections',
-        description:
-          'Requests authorized by the application may write these collections.',
-        label: 'Collections visitors may write',
-        placeholder: 'Search collections',
-        noMatch: 'No matching collection',
-        fixed: 'Always writable',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'Model',
-        tool: 'Tool',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'Simulations',
-        description: 'What answers instead of outside services in this demo.',
-        confirmTitle: 'Change the simulations?',
-        confirmDescription:
-          'A simulation turned off makes that work fail; it is never sent to the real service.',
-        empty: 'No simulations registered',
-        emptyHelp: 'The application has not registered any simulated service.',
-        onHelp: 'Answers with simulated results.',
-        offHelp: 'Turned off: the work is refused.',
-      },
-      chat: {
-        title: 'Online chat',
-        description: 'Lets visitors talk to the application’s AI.',
-        confirmTitle: 'Save the online chat settings?',
-        confirmDescription:
-          'Visitors’ conversations follow these settings from their next message.',
-        enabled: 'Visitors can chat',
-        enabledHelp: 'Off: the chat refuses visitors’ messages.',
-        tools: 'Tools',
-        noTools: 'The application declares no chat tools.',
-        policy: {
-          deny: 'Refuse',
-          read: 'Read data',
-          mock: 'Simulate',
-        },
-      },
     },
   },
 };

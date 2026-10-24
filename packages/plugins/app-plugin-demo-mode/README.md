@@ -173,12 +173,12 @@ Set `showFloatingAccountSwitcher: false` in the client registration to hide the 
 
 ## Administration page
 
-`DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is the whole demo administration: an application mounts it on a route of its own, inside its own page layout, and protects that route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`. Management uses the settings grants below, without an additional page grant. It has four tabs, the current one kept in `?tab=`:
+`DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is the whole demo administration: an application mounts it on a route of its own, inside its own page layout, and protects that route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`. Management uses the settings grants below, without an additional page grant. It has two tabs, the current one kept in `?tab=`:
 
 - **Overview** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence), and demo accounts, their credentials and a copyable sign-in link for each.
 - **Daily reset** — on or off, the time, a searchable IANA time zone, the dataset language and the next run.
-- **Visitor writes** — collection exceptions with the deployment's fixed collections.
-- **Simulation & AI** — simulated online chat (on or off, a policy per tool) and the registered simulations.
+
+Visitor write policies, simulation and AI controls are not displayed. Existing collection exceptions remain effective and can be managed through deployment configuration or the configuration API. Registered simulations and integrated demo chat are enabled by default; the application decides which flows to integrate. Existing `?tab=writes` and `?tab=simulation` links display the first accessible tab.
 
 Each card saves on its own with the revision it was started from and says when another administrator saved first; leaving with unsaved changes asks first. What the viewer lacks the grant for is shown without its actions.
 
@@ -186,19 +186,14 @@ Each card saves on its own with the revision it was started from and says when a
 import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings';
 
 <DemoModeSettings
-  // The application's names for what it registered; undefined falls back to the registered title or id.
+  // The application's names for its dataset counts; undefined falls back to the id.
   label={(kind, id) =>
     t(`demo.${kind}.${id}`, { defaultValue: '' }) || undefined
   }
-  // The chat tools the application serves through runChatTool, and the policies each supports.
-  chatTools={[
-    { id: 'task_list', policies: ['read'] },
-    { id: 'read_page', policies: ['mock'] },
-  ]}
 />;
 ```
 
-`label` receives `count` (a key of the dataset's `counts`), `adapter` or `chatTool` with its id. `onDataChange` is called when a clear answers or a watched import or reset finishes, for the application to refresh what it caches. The data language defaults to the reader's interface language when the dataset is written in it.
+`label` receives `count` (a key of the dataset's `counts`) with its id. The former `adapter` and `chatTool` label kinds and the `chatTools` prop remain accepted for source compatibility but are no longer used. `onDataChange` is called when a clear answers or a watched import or reset finishes, for the application to refresh what it caches. The data language defaults to the reader's interface language when the dataset is written in it.
 
 ### Host presentation components
 
@@ -229,9 +224,9 @@ The command waits for completion. `--dry-run` previews only the operation and ar
 
 ## Demo configuration
 
-When Demo Mode is enabled, administrators adjust it from the plugin's administration page, through `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/collections|mocks|schedule|chat` (`settings:demoMode.configuration`: `read` / `configure`). Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first.
+When Demo Mode is enabled, administrators adjust scheduling from the plugin's administration page. `GET /api/demoMode/configuration` and `PUT /api/demoMode/configuration/collections|mocks|schedule|chat` remain available (`settings:demoMode.configuration`: `read` / `configure`); collections, mocks and chat have no settings UI. Every save carries `expectedRevision` and is refused with `DEMO_CONFIGURATION_CONFLICT` when another administrator saved first. Explicit saved overrides, including disabled chat or adapters, remain effective; defaults apply when no override exists.
 
-- **Simulations.** `registerMock` registers model/tool/Runner adapters. `registerAgent({ id, title, defaultEnabled, execute })` supplies an environment-wide Agent proxy: demo mode always uses the application’s replacement, while `NOCOBASE_DEMO_MODE=false` uses the normal Agent. Disabled adapters fail closed; unmarked or visitor-created business records never fall through to a real Agent in demo mode.
+- **Simulations.** `registerMock` registers model/tool/Runner adapters, enabled by default unless `defaultEnabled: false` or a saved override disables them. `registerAgent({ id, title, defaultEnabled, execute })` supplies an environment-wide Agent proxy with the same default: demo mode always uses the application’s replacement when the proxy is called, while `NOCOBASE_DEMO_MODE=false` uses the normal Agent. Registration alone does not execute or intercept anything. Disabled adapters fail closed; unmarked or visitor-created business records never fall through to a real Agent in demo mode.
 - **Daily reset.** A recurring job on the application's jobs service triggers resets independently of HTTP traffic. Normal request policy checks do not calculate the next reset time; `nextRun` is only a management-view preview. Configure `{ enabled, hour, minute, timezone, language }` through the management API/UI. This is the only schedule source; there is no deployment-cron override. A durable claim permits one reset per local day, including across processes and repeated DST minutes. Resets run as the administrator who generated the data last, so nothing resets before the first generation. The host composes `JobExecutorServiceProvider`, as generated applications do: Demo Mode keeps one `daily-reset` cron rule in its `@nocobase/app-plugin-demo-mode` jobs scope at the configured local time, updated when the schedule is saved or a data operation changes the default; applications supply only the dataset adapter. Until an administrator saves a schedule, the default resets every night at 03:00 in the dataset's last generated language and its time zone; saving `enabled: false` turns it off. Expose `nextRun` from the saved configuration; a failed reset is reported in the data status and the `demo-mode` log. A firing missed during downtime is skipped; a failed claimed run is not retried automatically that day.
 
 `pnpm nocobase demo-mode data <status|import|clear|reset>` drives the same lifecycle from a shell (`--actor`, `--language`; changes need `--force`, and `--dry-run` only prints what would happen).
@@ -247,11 +242,11 @@ pnpm --filter @nocobase/app-plugin-demo-mode build
 
 ## Runtime configuration
 
-The administration page is built on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Configure writable collections through the administration page and register mock adapters through `demoConfigurationToken`; the writable collection list starts empty. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents collection exceptions, scheduling and application-owned adapters.
+The administration page is built on `/api/demoMode/configuration`, with independent `demoMode.configuration` read/configure permissions. Configure writable collections through deployment configuration or the configuration API and register mock adapters through `demoConfigurationToken`; the writable collection list starts empty. Configuration uses optimistic revisions, daily reset supports IANA timezones, and disabled mocks fail closed. The published [integration Skill](skills/nocobase-app-plugin-demo-mode/SKILL.md) documents collection exceptions, scheduling and application-owned adapters.
 
 ### Collection exceptions
 
-The authenticated GET `/api/demoMode/configuration/collections` lists collections in the default application database (objects with `name` and optional `title`) for a searchable multi-select. It excludes views and deployment-owned exceptions. Keep saved selections visible even when absent from the catalog, so administrators can remove stale entries.
+The authenticated GET `/api/demoMode/configuration/collections` lists collections in the default application database (objects with `name` and optional `title`) for application-owned configuration clients. It excludes views and deployment-owned exceptions. The built-in administration page does not display a collection selector. Custom clients should preserve saved selections even when absent from the catalog, so administrators can remove stale entries.
 
 Administrators can PUT `/api/demoMode/configuration/collections` with `{ expectedRevision, value: ["orderItems"] }`. Each entry is a logical collection name, such as `orderItems`, exactly as used in migrations. The plugin resolves physical names from collection metadata, including naming strategies and table prefixes. Exceptions apply only to the default database connection; an identically named table on another connection stays guarded. Adding a collection allows its INSERT, UPDATE and DELETE statements; removing it restores read-only protection unless another exception still grants access. The list defaults to empty, persists across restarts and applies to subsequent HTTP requests, including implicit writes from GET routes. Each process caches the saved policy for a few seconds, so a save made on another instance reaches it shortly after. Normal application authorization remains in force.
 
@@ -269,13 +264,13 @@ The plugin supports Agents 1.0 only and provisions the model through `agents.mod
 
 ### Online demo chat
 
-Administrators configure `chat` through `PUT /api/demoMode/configuration/chat` using the same permissions and optimistic revision as other settings. It defaults to `{ enabled: false, tools: {} }`. Online chat uses the host's simulated model. The environment's simulated model remains available to scripted dataset operations.
+Demo chat defaults to `{ enabled: true, tools: {} }`, with no administration-page switch. The application opts in by calling the integration methods below; these defaults do not redirect standard Online Agent chat or change its model selection. Applications that do not integrate demo chat keep their existing behavior. Explicit overrides remain available through `PUT /api/demoMode/configuration/chat` using the same permissions and optimistic revision as other settings, and existing saved values remain effective. The environment's simulated model remains available to scripted dataset operations.
 
-The host calls `chatModel(simulatedModel)` before admission and every model request, and `runChatTool(id, { readOnly, run, mock })` after normal business authorization. Policies are read at each call, from a per-process cache of a few seconds, including background work and restored sessions. Unknown tools are denied. `read` only invokes a host-declared local read; `mock` only invokes an explicit adapter; missing adapters never fall back to real execution. Mark neither outbound network reads nor business mutations as local reads. Disabled demo mode returns normal host behavior.
+The host calls `chatModel(simulatedModel)` before admission and every model request, and `runChatTool(id, { readOnly, run, mock })` after normal business authorization. Policies are read at each call, from a per-process cache of a few seconds, including background work and restored sessions. Without a saved tool override, a supplied `mock` runs first; otherwise `run` is allowed only when the host explicitly marks it `readOnly: true`. Unadapted operations are denied. Explicit `read`, `mock` or `deny` policies override these defaults: `read` still requires a host-declared local read and `mock` requires an adapter. Missing adapters never fall back to real execution. Mark neither outbound network reads nor business mutations as local reads. Disabled demo mode returns normal host behavior.
 
 For an application chatting through the Agents OnlineAgent service, `runOnlineConversation(callback)` provides a narrow persistence boundary: when chat is enabled, it permits conversation and message inserts and updates only inside that callback and the session continuation it starts. Verify ownership and the agent scope first, then call only the public session operation (create, send, abort, finalize, configure, rename, mark read). Refuse other agents, runner conversations, attachments, approvals and configuration overrides. Never wrap dispatchers, model/tool execution, uploads, agent configuration or arbitrary database work. Other requests remain guarded unless an administrator adds these tables as collection exceptions. Keep fixture import outside the HTTP boundary, independent of visitor chat enablement. This boundary is deliberately separate from `runChatTool` and is unnecessary for applications with their own conversation persistence.
 
-This policy does not intercept Agents, grant permissions, or open internal tables. Hosts use `runOnlineConversation` for the session operation. Application adapters must guard every external side effect, including queued work. Model/tool policy and persistence permissions are independent; both must be configured to enable a read-only demo chat.
+This policy does not intercept Agents, grant permissions, or open internal tables. Hosts use `runOnlineConversation` for the session operation. Application adapters must guard every external side effect, including queued work. Model/tool adaptation and conversation persistence are independent integration points; both must be connected for a working demo chat, without an additional UI setting.
 
 ## Integration contracts
 

@@ -1,6 +1,8 @@
 /** Visitor chat through the application's simulated model. */
 export interface DemoChatConfiguration {
+  /** Enabled by default; only applications that call the integration methods use demo chat. */
   enabled: boolean;
+  /** Explicit overrides; otherwise use the supplied mock or an explicitly marked local read. */
   tools: Record<string, 'read' | 'mock' | 'deny'>;
 }
 export interface DemoMockAdapter {
@@ -8,7 +10,7 @@ export interface DemoMockAdapter {
   readonly title: string;
   readonly kind: 'model' | 'tool' | 'runner';
   readonly scope: string;
-  /** Existing integrations may opt in initially; disabling never enables real calls. */
+  /** Defaults to true for registered adapters; disabling never enables real calls. */
   readonly defaultEnabled?: boolean;
   invoke(input: unknown): Promise<unknown>;
 }

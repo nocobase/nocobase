@@ -39,15 +39,9 @@ const resource: DemoModeResource = {
     apply: 'Aplicar cambios',
     unsaved: 'Cambios sin guardar',
     discardAndReload: 'Descartar mis cambios y recargar',
-    switch: {
-      on: 'Activado',
-      off: 'Desactivado',
-    },
     tabs: {
       overview: 'Resumen',
       schedule: 'Restablecimiento diario',
-      writes: 'Escrituras de visitantes',
-      simulation: 'Simulación e IA',
     },
     leave: {
       title: '¿Salir sin guardar?',
@@ -151,61 +145,6 @@ const resource: DemoModeResource = {
       noTimezone: 'Ninguna zona horaria coincide',
       invalidTimezone: 'Elige una zona horaria de la lista.',
       next: 'Próximo restablecimiento: {{time}}',
-    },
-    writes: {
-      intro:
-        'Cuando la demo está activada, las escrituras se rechazan de forma predeterminada. Selecciona las colecciones que los visitantes necesitan modificar; los permisos de la aplicación controlan las operaciones y el acceso a los registros.',
-      allow: 'Permitir',
-      revoke: 'Volver a rechazar',
-      confirmTitle: '¿Cambiar lo que pueden escribir los visitantes?',
-      confirmDescription:
-        'Los cambios de los visitantes en esto se guardan de verdad hasta el próximo restablecimiento.',
-      collections: {
-        title: 'Colecciones',
-        description:
-          'Las solicitudes autorizadas por la aplicación pueden escribir en estas colecciones.',
-        label: 'Colecciones que pueden escribir los visitantes',
-        placeholder: 'Buscar colecciones',
-        noMatch: 'Ninguna colección coincide',
-        fixed: 'Siempre escribibles',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'Modelo',
-        tool: 'Herramienta',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'Simulaciones',
-        description:
-          'Lo que responde en lugar de los servicios externos en esta demostración.',
-        confirmTitle: '¿Cambiar las simulaciones?',
-        confirmDescription:
-          'Una simulación desactivada hace que ese trabajo falle; nunca se envía al servicio real.',
-        empty: 'No hay simulaciones registradas',
-        emptyHelp: 'La aplicación no ha registrado ningún servicio simulado.',
-        onHelp: 'Responde con resultados simulados.',
-        offHelp: 'Desactivada: el trabajo se rechaza.',
-      },
-      chat: {
-        title: 'Chat en línea',
-        description:
-          'Permite a los visitantes hablar con la IA de la aplicación.',
-        confirmTitle: '¿Guardar los ajustes del chat en línea?',
-        confirmDescription:
-          'Las conversaciones de los visitantes siguen estos ajustes desde su próximo mensaje.',
-        enabled: 'Los visitantes pueden chatear',
-        enabledHelp:
-          'Desactivado: el chat rechaza los mensajes de los visitantes.',
-        tools: 'Herramientas',
-        noTools: 'La aplicación no declara herramientas de chat.',
-        policy: {
-          deny: 'Rechazar',
-          read: 'Leer datos',
-          mock: 'Simular',
-        },
-      },
     },
   },
 };

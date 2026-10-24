@@ -87,21 +87,35 @@ it('configures exception collections without application registration and revoke
   expect((await app.request('/notes', { method: 'POST' })).status).toBe(400);
   expect((await other.read()).collections).toEqual([]);
 });
-it('never falls through disabled or missing mock adapters', async () => {
+it('enables registered mocks by default without invoking them and honors explicit disabling', async () => {
   const { config } = await setup();
+  const invoke = vi.fn(async () => 'fake');
   config.registerMock({
     id: 'tool',
     title: 'Tool',
     kind: 'tool',
     scope: 'demo',
-    invoke: async () => 'fake',
+    invoke,
   });
-  await expect(config.invokeMock('tool', {})).rejects.toMatchObject({
+  config.registerMock({
+    id: 'disabled',
+    title: 'Disabled tool',
+    kind: 'tool',
+    scope: 'demo',
+    defaultEnabled: false,
+    invoke,
+  });
+  expect((await config.read()).mocks).toMatchObject({
+    tool: true,
+    disabled: false,
+  });
+  expect(invoke).not.toHaveBeenCalled();
+  expect(await config.invokeMock('tool', {})).toBe('fake');
+  await expect(config.invokeMock('disabled', {})).rejects.toMatchObject({
     reason: 'DEMO_MOCK_UNAVAILABLE',
   });
-  await config.save('mocks', 0, { tool: true });
-  expect(await config.invokeMock('tool', {})).toBe('fake');
-  await config.save('mocks', 1, { tool: false });
+  await config.save('mocks', 0, { tool: false, disabled: true });
+  expect(await config.invokeMock('disabled', {})).toBe('fake');
   await expect(config.invokeMock('tool', {})).rejects.toMatchObject({
     reason: 'DEMO_MOCK_UNAVAILABLE',
   });
@@ -220,7 +234,6 @@ it('proxies every Agent call in the demo environment and rechecks disabled proxi
   const proxy = config.registerAgent({
     id: 'test.agent',
     title: 'Demo Agent',
-    defaultEnabled: true,
     execute: async () => 'simulated',
   });
   const real = async () => {
@@ -257,20 +270,55 @@ it('uses the real Agent only in an off deployment and refuses direct queued demo
   });
   expect(await proxy.prepare()).toBe(false);
   expect(await proxy.run({}, async () => 'live')).toBe('live');
+  expect(
+    await config.chatModel({ modelService: 'demo', model: 'demo-chat' }),
+  ).toBeUndefined();
+  expect(
+    await config.runChatTool('normal', {
+      run: async () => 'live',
+      mock: async () => 'simulated',
+    }),
+  ).toBe('live');
   await expect(proxy.execute({})).rejects.toMatchObject({
     reason: 'DEMO_MODE_REQUIRED',
   });
 });
 
-it('keeps simulated chat opt-in and rechecks admission and tool policies', async () => {
+it('makes integrated chat and adapted tools available without saving settings', async () => {
   const { config } = await setup();
   const simulated = { modelService: 'demo', model: 'demo-chat' };
-  await expect(config.chatModel(simulated)).rejects.toMatchObject({
-    reason: 'DEMO_CHAT_DISABLED',
-  });
+  // Existing configuration rows without a chat section use the new defaults too.
+  expect((await config.read()).chat).toEqual({ enabled: true, tools: {} });
+  expect(await config.chatModel(simulated)).toEqual(simulated);
+  expect(
+    await config.runChatTool('query', {
+      readOnly: true,
+      run: async () => 'records',
+    }),
+  ).toBe('records');
+  const real = vi.fn(async () => 'external');
+  expect(
+    await config.runChatTool('send', { run: real, mock: async () => 'demo' }),
+  ).toBe('demo');
+  expect(
+    await config.runChatTool('mockedRead', {
+      readOnly: true,
+      run: real,
+      mock: async () => 'demo',
+    }),
+  ).toBe('demo');
+  await expect(
+    config.runChatTool('unadapted', { run: real }),
+  ).rejects.toMatchObject({ reason: 'DEMO_TOOL_UNAVAILABLE' });
+  expect(real).not.toHaveBeenCalled();
+});
+
+it('rechecks explicit chat and tool policy overrides', async () => {
+  const { config } = await setup();
+  const simulated = { modelService: 'demo', model: 'demo-chat' };
   await config.save('chat', 0, {
     enabled: true,
-    tools: { query: 'read', send: 'mock', unsafe: 'read' },
+    tools: { query: 'read', send: 'mock', unsafe: 'read', denied: 'deny' },
   });
   const saved = await config.read();
   // Existing deployments may still have a model selection in their stored policy.
@@ -294,6 +342,7 @@ it('keeps simulated chat opt-in and rechecks admission and tool policies', async
     await config.runChatTool('query', {
       readOnly: true,
       run: async () => 'records',
+      mock: async () => 'mocked records',
     }),
   ).toBe('records');
   expect(await config.runChatTool('send', { run, mock: async () => 42 })).toBe(
@@ -303,6 +352,9 @@ it('keeps simulated chat opt-in and rechecks admission and tool policies', async
     await expect(config.runChatTool(id, { run })).rejects.toMatchObject({
       reason: 'DEMO_TOOL_UNAVAILABLE',
     });
+  await expect(
+    config.runChatTool('denied', { readOnly: true, run, mock: run }),
+  ).rejects.toMatchObject({ reason: 'DEMO_TOOL_UNAVAILABLE' });
   expect(writes).toBe(0);
   await config.runWithPolicy(async () => {
     await config.save('chat', 1, { enabled: false, tools: {} });
@@ -320,7 +372,7 @@ it('keeps simulated chat opt-in and rechecks admission and tool policies', async
   expect(await config.chatModel(simulated)).toEqual(simulated);
 });
 
-it('limits online chat persistence to the callback and requires enabled chat', async () => {
+it('permits integrated conversation persistence by default only inside its callback', async () => {
   const { config, guard } = await setup();
   for (const name of ['agConversations', 'agConversationMessages']) {
     await app.connection.builder.createCollection(name, (collection) => {
@@ -340,10 +392,11 @@ it('limits online chat persistence to the callback and requires enabled chat', a
   );
   const request = <T>(run: () => T) =>
     guard.run({ method: 'POST', path: '/chat', blocked: [] }, run);
-  await expect(
-    request(() => config.runOnlineConversation(async () => {})),
-  ).rejects.toMatchObject({ reason: 'DEMO_CHAT_DISABLED' });
-  await config.save('chat', 0, { enabled: true, tools: {} });
+  request(() =>
+    expect(() =>
+      inspect({ sql: 'insert into ag_conversations (id) values (1)' }),
+    ).toThrow(),
+  );
   await request(() =>
     config.runOnlineConversation(async () => {
       expect(() =>
@@ -381,9 +434,13 @@ it('limits online chat persistence to the callback and requires enabled chat', a
   );
   request(() =>
     expect(() =>
-      inspect({ sql: 'insert into ag_runs (id) values (1)' }),
+      inspect({ sql: 'insert into ag_conversations (id) values (1)' }),
     ).toThrow(),
   );
+  await config.save('chat', 0, { enabled: false, tools: {} });
+  await expect(
+    request(() => config.runOnlineConversation(async () => {})),
+  ).rejects.toMatchObject({ reason: 'DEMO_CHAT_DISABLED' });
 });
 
 it('lists physical table choices without deployment-managed collections', async () => {
