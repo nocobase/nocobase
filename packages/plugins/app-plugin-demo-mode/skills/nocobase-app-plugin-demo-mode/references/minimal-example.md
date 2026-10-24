@@ -43,24 +43,30 @@ Every page declares `authz`: a protected page without it is open only to unrestr
 },
 ```
 
-Add the management page to the application's existing System management group, not as a top-level business entry. In the template that group is the `settings` route in `client/pages/settings/routes.ts`; register that contribution in `client/routes.ts` if the application has not yet done so. Add a child that checks the settings item:
+Add the management page to the application's existing System management group, not as a top-level business entry. In the template that group is the `settings` route in `client/pages/settings/routes.ts`; register that contribution in `client/routes.ts` if the application has not yet done so. Build its demo children with the plugin's helper and spread `...demoManagementRoutes` into the existing group's `children`:
 
 ```ts
-{
-  name: 'settingsDemoMode',
-  path: '/demo-mode',
-  auth: 'required',
-  authz: {
-    resource: { type: 'settings', id: 'demoMode.data' },
-    action: 'read',
+import { demoModeRoutes } from '@nocobase/app-plugin-demo-mode/client';
+
+const demoManagementRoutes = demoModeRoutes([
+  {
+    name: 'settingsDemoMode',
+    path: '/demo-mode',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'demoMode.data' },
+      action: 'read',
+    },
+    navigation: { title: 'exampleDemo.management' },
+    breadcrumb: { title: 'exampleDemo.management' },
+    componentLoader: () => import('./demo-mode.js'),
   },
-  navigation: { title: 'exampleDemo.management' },
-  breadcrumb: { title: 'exampleDemo.management' },
-  componentLoader: () => import('./demo-mode.js'),
-},
+]);
 ```
 
-The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give the administrator `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not add a page grant for the management route: it uses settings authorization. Outside Demo Mode these settings items are not registered, so only unrestricted administrators open the page, which reports that Demo Mode is off; see [management access](../SKILL.md#management-access). A reader with only the data read action can inspect data status but cannot generate, clear or reset.
+`defineDemoModeConfig()` publishes `demoMode.enabled` to the browser. `demoModeRoutes()` includes these routes only when that flag is `true`, so ordinary deployments have neither the menu nor a directly accessible management route, even for root. Existing applications must wrap their own demo route declarations with this helper; registering the plugin alone cannot change application-owned menus. Verify both enabled and disabled deployments after integration.
+
+The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give the administrator `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not add a page grant for the management route: it uses settings authorization. Outside Demo Mode these settings items are not registered; see [management access](../SKILL.md#management-access). A reader with only the data read action can inspect data status but cannot generate, clear or reset.
 
 Create `client/pages/settings/demo-mode.tsx` using the public component:
 
