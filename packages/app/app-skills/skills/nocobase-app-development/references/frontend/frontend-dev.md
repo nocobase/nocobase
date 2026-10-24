@@ -34,6 +34,22 @@ Conventions every page follows, each explained in its home:
 - Toasts with `useToaster()` from `@nocobase/app-client`, never a second `Toaster` (["Toasts" in `references/api.md`](references/api.md#toasts)).
 - Every user-visible string through a translation key ([`references/i18n.md`](references/i18n.md)).
 
+## Browser API compatibility
+
+Plain HTTP, including access through a LAN IP, is a required compatibility baseline for all frontend browser APIs. Before choosing an API, check its browser support and secure-context requirements. Do not introduce APIs that only work in secure contexts or require HTTPS for a frontend feature. This applies to every client interaction, including optional features, and to APIs called indirectly by third-party libraries. Choose an HTTP-compatible implementation; feature detection followed by disabling the action or asking the user to enable HTTPS does not meet this requirement. If a requested capability has no HTTP-compatible implementation, explain the constraint before implementing it rather than introducing an HTTPS-only dependency.
+
+For example, use an HTTP-compatible ID utility or a shared helper based on `crypto.getRandomValues(new Uint8Array(16))` instead of `crypto.randomUUID()` in browser code. Preserve the ID contract: when a UUID v4 is required, set its version and variant bits and encode its standard format; arbitrary hex is not a UUID. UUID generation is one example of the general rule, which applies to all browser APIs. Server-side `node:crypto` is unaffected.
+
+For each new or changed browser API integration, check its behavior with secure-context-only APIs unavailable and cover the affected interaction in regression tests. Verify the complete action on an ordinary HTTP origin where `window.isSecureContext` is `false`, as well as the intended deployment origin if different. Localhost is treated as trustworthy and cannot establish this compatibility. Check the visible result and browser errors: loading the page or receiving a successful health check is not enough. Report any browser verification that could not be performed.
+
+### Copy and clipboard actions
+
+Copy buttons must work on ordinary HTTP too. Do not implement them with direct `navigator.clipboard.writeText()` calls or optional chaining that silently does nothing when `navigator.clipboard` is absent. The [Clipboard API requires a secure context](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText); use one shared HTTP-compatible copy helper for commands, links, tokens and other text.
+
+Where the supported browsers still provide it, a helper can use a temporarily selected text field and `document.execCommand('copy')` synchronously inside the user's click handler. This is a [deprecated compatibility mechanism](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand), so check its boolean result and exceptions, verify support in the target browsers, and keep a manual-copy fallback. Respect dialog focus traps when placing the temporary field, remove it afterwards, and restore the previous focus and selection. If programmatic copying is denied or unsupported, present the exact text in a selectable field with localized instructions for manual copying. Show a copied confirmation only after successful copying; displaying or selecting text alone is not success.
+
+Test missing clipboard APIs, copy failure and copying from inside a dialog. On non-secure HTTP, verify the result by pasting into a normal input, including multiline and non-ASCII content; do not use another secure-context-only API such as `navigator.clipboard.readText()` as the only assertion.
+
 ## Look up by task
 
 | Task                                                                                     | Read                                                                                                                                                                                                                                                                                           |

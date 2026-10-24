@@ -119,6 +119,10 @@ Bind-mount the complete runtime configuration read-only at `/app/config.yml` and
 
 ## Verify the deployed application
 
+Use the intended public origin for browser checks, including its scheme, host and base path. All frontend browser APIs must meet the [HTTP compatibility requirement](../nocobase-app-development/references/frontend/frontend-dev.md#browser-api-compatibility), including APIs called by dependencies and optional features. Verify affected interactions on an ordinary HTTP origin where `window.isSecureContext` is `false`; localhost and HTTPS can mask incompatibilities. Exercise actions through completion and inspect browser errors. A loaded page, a healthy server, or requiring the user to switch to HTTPS does not establish HTTP compatibility.
+
+When the application offers copy buttons, include [copy and clipboard verification](../nocobase-app-development/references/frontend/frontend-dev.md#copy-and-clipboard-actions): copy from a representative page or dialog and paste into a normal input on HTTP. A success toast alone is not evidence that the clipboard changed.
+
 Collect evidence for each item:
 
 1. The process or container reports ready. The application answers `GET <APP_BASE_PATH>/api/healthz` with a JSON object whose `ok` is `true` (alongside the app name and base path).
