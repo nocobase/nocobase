@@ -75,12 +75,12 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@nocobase/app-cli": "workspace:^",
-    "@nocobase/app-client": "workspace:^",
-    "@nocobase/app-plugin-authentication": "workspace:^",
-    "@nocobase/app-plugin-authorization": "workspace:^",
-    "@nocobase/app-server": "workspace:^",
-    "@nocobase/db": "workspace:^",
+    "@nocobase/app-cli": "workspace:^1.0.0-beta.26",
+    "@nocobase/app-client": "workspace:^4.0.0-beta.1",
+    "@nocobase/app-plugin-authentication": "workspace:^2.0.0-beta.12",
+    "@nocobase/app-plugin-authorization": "workspace:^1.0.0-beta.30",
+    "@nocobase/app-server": "workspace:^3.0.0-beta.2",
+    "@nocobase/db": "workspace:^1.0.0-beta.21",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
