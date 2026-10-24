@@ -538,6 +538,11 @@ it('accepts declared business variables but rejects browser policy overrides on 
     tool: ['business'],
     thinking: 'unregistered-level',
   });
+  const savedBeforeRefusals = (await (await f.request(path)).json()).data;
+  const conversationsBeforeRefusals = await h.database
+    .connection()
+    .repository('agConversations')
+    .count();
   for (const config of [
     { tool: [] },
     { model: ['fixture/forged'] },
@@ -559,6 +564,12 @@ it('accepts declared business variables but rejects browser policy overrides on 
     );
     expect((await f.request(path, 'PATCH', { config })).status).toBe(400);
   }
+  expect((await (await f.request(path)).json()).data).toEqual(
+    savedBeforeRefusals,
+  );
+  expect(
+    await h.database.connection().repository('agConversations').count(),
+  ).toBe(conversationsBeforeRefusals);
   const denied = await f.request(
     path,
     'PATCH',
