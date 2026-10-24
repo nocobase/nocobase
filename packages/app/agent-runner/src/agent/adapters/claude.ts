@@ -18,7 +18,7 @@
  *   so a runner without a recent enough `claude` reports Claude Code
  *   unavailable and is offered no Claude runs.
  */
-import { StreamOutput } from './stream-output.ts';
+import { boundedOutputText, StreamOutput } from './stream-output.ts';
 import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
@@ -27,7 +27,7 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { AbortError, query } from '@anthropic-ai/claude-agent-sdk';
 import type {
   ModelInfo,
   Options,
@@ -611,7 +611,8 @@ class ClaudeRun {
       this.input.close();
     }
     const result = this.outcome(thrown);
-    if (this.session.outputBlocks) this.streaming.end();
+    if (this.session.outputBlocks)
+      this.streaming.end(this.stopping && thrown instanceof AbortError);
     if (result.error)
       this.emit({
         type: 'error',
@@ -717,16 +718,24 @@ class ClaudeRun {
     string,
     {
       id: string;
-      blocks: Map<number, { type: string; text: string; assigned: boolean }>;
+      blocks: Map<
+        number,
+        { type: string; text: string; assigned: boolean; truncated: boolean }
+      >;
     }
   >();
   private readonly completedEnvelopes = new Set<string>();
+  private partialBlockCount = 0;
   private onPartial(
     message: Extract<SDKMessage, { type: 'stream_event' }>,
   ): void {
     const parent = message.parent_tool_use_id ?? '';
     const event = message.event;
     if (event.type === 'message_start') {
+      if (!this.partialMessages.has(parent) && this.partialMessages.size >= 64)
+        return;
+      this.partialBlockCount -=
+        this.partialMessages.get(parent)?.blocks.size ?? 0;
       this.partialMessages.set(parent, {
         id: event.message.id,
         blocks: new Map(),
@@ -736,6 +745,21 @@ class ClaudeRun {
     const state = this.partialMessages.get(parent);
     if (!state) return;
     const meta = parent ? { parentToolUseId: parent } : {};
+    if (
+      event.type === 'message_delta' &&
+      event.delta.stop_reason === 'max_tokens'
+    ) {
+      for (const index of state.blocks.keys())
+        this.streaming.finishPartial(`${parent}:${state.id}:${index}`);
+      return;
+    }
+    if (
+      (event.type === 'content_block_start' ||
+        event.type === 'content_block_delta') &&
+      !state.blocks.has(event.index) &&
+      this.partialBlockCount >= 64
+    )
+      return;
     if (event.type === 'content_block_start') {
       const block = event.content_block;
       const text =
@@ -744,9 +768,11 @@ class ClaudeRun {
           : block.type === 'thinking'
             ? block.thinking
             : '';
+      if (!state.blocks.has(event.index)) this.partialBlockCount++;
       state.blocks.set(event.index, {
         type: block.type,
-        text,
+        text: boundedOutputText(text),
+        truncated: Buffer.byteLength(text) > MAX_EVENT_TEXT_BYTES,
         assigned: false,
       });
       if (text && (block.type === 'text' || block.type === 'thinking'))
@@ -765,9 +791,15 @@ class ClaudeRun {
       const block = state.blocks.get(event.index) ?? {
         type,
         text: '',
+        truncated: false,
         assigned: false,
       };
-      block.text += text;
+      if (!state.blocks.has(event.index)) this.partialBlockCount++;
+      if (!block.truncated) {
+        const candidate = block.text + text;
+        block.text = boundedOutputText(candidate);
+        block.truncated = block.text.length < candidate.length;
+      }
       state.blocks.set(event.index, block);
       this.streaming.delta(
         `${parent}:${state.id}:${event.index}`,
@@ -804,7 +836,9 @@ class ClaudeRun {
       state?.id === message.message.id &&
       [...state.blocks.values()].some(
         (item) =>
-          item.assigned && item.type === block.type && item.text === text,
+          item.assigned &&
+          item.type === block.type &&
+          text.startsWith(item.text),
       )
     )
       return;

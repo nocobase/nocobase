@@ -712,6 +712,8 @@ class CodexRun {
   };
 
   private onTurnCompleted(turn: Turn): void {
+    if (this.session.outputBlocks && turn.status === 'interrupted')
+      this.streaming.end(true);
     this.lastTurn = turn;
     this.turnRunning = false;
     this.activeTurnId = undefined;

@@ -52,3 +52,39 @@ it('does not invent empty thinking when a model provides no summary', () => {
   stream.end();
   expect(events).toEqual([]);
 });
+
+it('saves an acknowledged partial block once, bounded in UTF-8 bytes, and releases its buffer', () => {
+  const events: Omit<AdapterEvent, 'at'>[] = [];
+  const stream = new StreamOutput((e) => events.push(e));
+  for (let i = 0; i < 65; i++)
+    stream.delta(String(i), 'text', '界'.repeat(30_000));
+  stream.end(true);
+  stream.end(true);
+  const ends = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(ends).toHaveLength(65);
+  expect(ends.filter((e) => e.content !== undefined)).toHaveLength(64);
+  for (const end of ends.slice(0, 64)) {
+    expect(Buffer.byteLength(end.content!, 'utf8')).toBe(65_535);
+    expect(end.content).not.toContain('\ufffd');
+    expect(end.meta?.truncated).toBe(true);
+  }
+  stream.delta('next', 'text', 'Next response');
+  stream.end(true);
+  expect(events.at(-1)?.content).toBe('Next response');
+});
+
+it('does not persist an unacknowledged interruption or duplicate a completed snapshot', () => {
+  const events: Omit<AdapterEvent, 'at'>[] = [];
+  const stream = new StreamOutput((e) => events.push(e));
+  stream.delta('failed', 'text', 'Not confirmed');
+  stream.end();
+  stream.complete('done', 'text', 'Complete');
+  stream.end(true);
+  const ends = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(ends.map((e) => e.content)).toEqual([undefined, 'Complete']);
+  expect(ends[1]?.meta?.truncated).toBeUndefined();
+});

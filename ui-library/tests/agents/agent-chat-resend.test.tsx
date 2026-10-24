@@ -290,14 +290,26 @@ it('disables mutation on archived conversations but still copies public body onl
   );
 });
 
-it('renders only one action group for a segmented logical assistant and copies its public text', async () => {
+it('renders one bubble and action group for a multi-part logical assistant and copies its public text', async () => {
   control.splitAssistant = true;
   const user = userEvent.setup();
   const copy = vi.spyOn(navigator.clipboard, 'writeText').mockClear();
   panel();
   const first = await screen.findByText('First segment');
   const second = screen.getByText('Second segment');
-  expect(first.closest('li')).not.toBe(second.closest('li'));
+  const bubble = first.closest('li')!;
+  expect(bubble).toBe(second.closest('li'));
+  const reasoning = bubble.querySelector('[data-chat-part="reasoning"]')!;
+  expect(reasoning).toBeInTheDocument();
+  expect(
+    reasoning.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    within(bubble).getAllByRole('button', { name: 'Copy', exact: true }),
+  ).toHaveLength(1);
+  expect(
+    within(bubble).getAllByRole('button', { name: 'Regenerate', exact: true }),
+  ).toHaveLength(1);
   expect(
     screen.getAllByRole('button', { name: 'Copy', exact: true }),
   ).toHaveLength(2);
@@ -313,6 +325,7 @@ it('renders only one action group for a segmented logical assistant and copies i
   expect(copy).toHaveBeenCalledTimes(1);
   expect(copy.mock.calls[0][0]).toContain('First segment');
   expect(copy.mock.calls[0][0]).toContain('Second segment');
+  expect(copy.mock.calls[0][0]).toBe('First segment\nSecond segment');
   expect(copy.mock.calls[0][0]).not.toContain('Private reasoning');
 });
 

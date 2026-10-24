@@ -1,4 +1,5 @@
 import type { Knex } from 'knex';
+import { chatMessageSegments } from '../client/chat/message-model.js';
 import { writeFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
@@ -1701,4 +1702,165 @@ it('does not create assistant history rows for empty completed blocks', async ()
   expect(
     (await f.agent.history()).filter((m) => m.role === 'assistant'),
   ).toEqual([]);
+});
+
+it('restores ordered reasoning in streamed and paged history with one batched read and no model replay changes', async () => {
+  const f = await fixture({ outputFeature: true });
+  for (let turn = 0; turn < 2; turn++) {
+    await f.agent.send([
+      { role: 'user', content: `Original question ${turn}` },
+    ]);
+    const chunks: NativeUIChunk[] = [];
+    const reader = (await f.agent.receive())!.getReader();
+    const reading = (async () => {
+      for (;;) {
+        const next = await reader.read();
+        if (next.done) break;
+        chunks.push(next.value);
+      }
+    })();
+    const [payload] = await claim(h, f.runner);
+    expect(JSON.stringify(payload.prompt)).not.toContain(
+      'Private display summary',
+    );
+    if (turn)
+      expect(JSON.stringify(payload.prompt)).toContain('Original question 0');
+    await f.report(payload.run.id, 'start', {
+      workDir: '/work/reasoning',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    await f.report(payload.run.id, 'events', {
+      events: [
+        {
+          seq: payload.run.firstSeq,
+          type: 'thinking',
+          content: `Private display summary ${turn}`,
+          at: h.clock.now().toISOString(),
+          meta: { output: { blockId: 'thought', phase: 'end' } },
+        },
+        {
+          seq: payload.run.firstSeq + 1,
+          type: 'text',
+          content: `Answer ${turn}`,
+          at: h.clock.now().toISOString(),
+          meta: { output: { blockId: 'body', phase: 'end' } },
+        },
+      ],
+    });
+    await f.report(payload.run.id, 'complete', {
+      summary: 'Done',
+      handledInputIds: payload.inputs.map((input) => input.id),
+    });
+    await reading;
+    expect(
+      chunks.filter((chunk) => chunk.type === 'reasoning-start'),
+    ).toHaveLength(1);
+    expect(
+      chunks.filter((chunk) => chunk.type === 'reasoning-end'),
+    ).toHaveLength(1);
+  }
+  const client = await h.database.connection().client<Knex>();
+  const queries: string[] = [];
+  const record = (query: { sql: string }) => queries.push(query.sql);
+  client.on('query', record);
+  const history = await f.agent.history();
+  client.off('query', record);
+  expect(queries.filter((sql) => /ag_?run_?events/iu.test(sql))).toHaveLength(
+    1,
+  );
+  expect(
+    queries.some((sql) => /^(update|insert|delete|begin)/iu.test(sql)),
+  ).toBe(false);
+  const answers = history.filter((message) => message.role === 'assistant');
+  expect(answers.map((message) => message.parts)).toEqual(
+    [0, 1].map((turn) => [
+      {
+        type: 'reasoning',
+        text: `Private display summary ${turn}`,
+        state: 'done',
+      },
+      { type: 'text', text: `Answer ${turn}`, state: 'done' },
+    ]),
+  );
+  expect(answers.map(appUIMessageText)).toEqual(['Answer 0', 'Answer 1']);
+  const page = await f.agent.messages!({ limit: 50 });
+  expect(page.items).toEqual(history);
+  const paged: typeof history = [];
+  let before: number | undefined;
+  for (;;) {
+    const slice = await f.agent.messages!({
+      limit: 1,
+      ...(before ? { before } : {}),
+    });
+    paged.unshift(...slice.items);
+    for (const answer of slice.items.filter(
+      (item) => item.role === 'assistant',
+    )) {
+      const segments = chatMessageSegments([answer]);
+      expect(segments).toHaveLength(1);
+      expect(segments[0].partIndexes).toEqual([0, 1]);
+    }
+    if (!slice.hasMore) break;
+    before = Math.min(
+      ...slice.items.flatMap((item) =>
+        item.metadata!.sourceRecords!.map((source) => source.seq),
+      ),
+    );
+  }
+  expect(paged).toEqual(history);
+  expect(
+    new Set(chatMessageSegments(paged).map((segment) => segment.key)).size,
+  ).toBe(history.length);
+
+  expect(
+    (
+      await h.services.runs.events(answers[0].metadata!.executionId!, 0, 100)
+    ).events.filter((event) => event.type === 'thinking'),
+  ).toHaveLength(1);
+});
+
+it('restores a reasoning-only response from its accepted user record without inventing a history cursor', async () => {
+  const f = await fixture({ outputFeature: true });
+  await f.agent.send([{ role: 'user', content: 'Think before replying' }]);
+  const [payload] = await claim(h, f.runner);
+  await f.report(payload.run.id, 'start', {
+    workDir: '/work/reasoning-only',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  });
+  await f.report(payload.run.id, 'events', {
+    events: [
+      {
+        seq: payload.run.firstSeq,
+        type: 'thinking',
+        content: 'Retained summary',
+        at: h.clock.now().toISOString(),
+        meta: { output: { blockId: 'thought', phase: 'end' } },
+      },
+    ],
+  });
+  await f.report(payload.run.id, 'complete', {
+    summary: '',
+    handledInputIds: payload.inputs.map((input) => input.id),
+  });
+  const history = await f.agent.history();
+  expect(history.map((message) => message.role)).toEqual(['user', 'assistant']);
+  expect(history[1].parts).toEqual([
+    { type: 'reasoning', text: 'Retained summary', state: 'done' },
+  ]);
+  const page = await f.agent.messages!({ limit: 50 });
+  expect(page.lastSeq).toBe(1);
+  expect(page.items).toEqual(history);
+  expect(
+    (await f.agent.messages!({ limit: 50, ids: [`runner:${payload.run.id}`] }))
+      .items,
+  ).toEqual([history[1]]);
+  expect(
+    (
+      await h.services.conversations.messages('alice', f.agent.sessionId, {
+        limit: 50,
+      })
+    ).items,
+  ).toHaveLength(1);
 });

@@ -4,11 +4,7 @@ import type {
   RealtimeOnlineAgent,
   OnlineAgentBackend,
 } from '../contracts.js';
-import {
-  runnerUIMessages,
-  runnerUIPage,
-  runnerMessageId,
-} from './projection.js';
+import { runnerMessages, runnerUIPage, runnerMessageId } from './projection.js';
 import type { UIStreamChannel } from '../transport/streams.js';
 import type { AppUIMessage } from '../../../../shared/online-agent.js';
 import { isDeepStrictEqual } from 'node:util';
@@ -145,7 +141,10 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
       filter: { conversationId: this.sessionId },
       sort: (s) => s.field('seq').asc(),
     });
-    return runnerUIMessages(rows.map((row) => toMessage(row, deps.basePath())));
+    return runnerMessages(
+      deps.tx,
+      rows.map((row) => toMessage(row, deps.basePath())),
+    );
   }
   async messages(
     query: NativeHistoryQuery,
@@ -718,8 +717,11 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         },
         sort: (s) => s.field('seq').asc(),
       });
-      const message = runnerUIMessages(
-        records.map((record) => toMessage(record, this.deps.basePath())),
+      const message = (
+        await runnerMessages(
+          this.deps.tx,
+          records.map((record) => toMessage(record, this.deps.basePath())),
+        )
       )[0];
       if (message) {
         const sourceParts = new Map(
@@ -732,7 +734,13 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         for (const source of message.metadata!.sourceRecords!) {
           let part = execution.previewParts.get(source.partId);
           if (!part) {
-            part = { index: execution.previewParts.size, type: 'text' };
+            part = {
+              index: execution.previewParts.size,
+              type:
+                sourceParts.get(source.partId)?.type === 'reasoning'
+                  ? 'reasoning'
+                  : 'text',
+            };
             execution.previewParts.set(source.partId, part);
           }
           source.partIndex = part.index;
@@ -774,7 +782,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         for (const source of canonicalSources) {
           if (execution.published.has(source.partId)) continue;
           const part = sourceParts.get(source.partId)!;
-          if (part.type === 'text') {
+          if (part.type === 'text' || part.type === 'reasoning') {
             const length = this.prefixLength(
               execution,
               source.partId,
@@ -782,17 +790,23 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
             );
             if (length === undefined) continue;
             if (!execution.textLengths.has(source.partId))
-              execution.writer.write({ type: 'text-start', id: source.partId });
+              execution.writer.write({
+                type: part.type === 'text' ? 'text-start' : 'reasoning-start',
+                id: source.partId,
+              });
             const delta = part.text.slice(length ?? 0);
             if (delta)
               execution.writer.write({
-                type: 'text-delta',
+                type: part.type === 'text' ? 'text-delta' : 'reasoning-delta',
                 id: source.partId,
                 delta,
               });
             execution.textLengths.set(source.partId, part.text.length);
             if (part.state !== 'streaming') {
-              execution.writer.write({ type: 'text-end', id: source.partId });
+              execution.writer.write({
+                type: part.type === 'text' ? 'text-end' : 'reasoning-end',
+                id: source.partId,
+              });
               execution.published.add(source.partId);
               execution.previewDigests.delete(source.partId);
             }
@@ -803,7 +817,8 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
               mediaType: part.mediaType,
               ...(part.filename ? { filename: part.filename } : {}),
             });
-          if (part.type !== 'text') execution.published.add(source.partId);
+          if (part.type !== 'text' && part.type !== 'reasoning')
+            execution.published.add(source.partId);
         }
         execution.snapshot = message;
       }

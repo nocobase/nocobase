@@ -922,3 +922,44 @@ it.each([false, true])(
     expect((await handle.result).exit).toBe('completed');
   },
 );
+
+it.each([true, false])(
+  'retains a partial response only on native interruption confirmation=%s',
+  async (confirmed) => {
+    let ready!: () => void;
+    const started = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    const { adapter } = adapterWith(async (fake) => {
+      await handshake(fake);
+      fake.notify('item/agentMessage/delta', {
+        threadId: 'thread-1',
+        turnId: 'turn-1',
+        itemId: 'partial',
+        delta: 'Partial **reply**',
+      });
+      ready();
+      const interrupt = await fake.nextRequest('turn/interrupt');
+      fake.respond(interrupt, {});
+      if (confirmed)
+        fake.notify('turn/completed', {
+          threadId: 'thread-1',
+          turn: { id: 'turn-1', status: 'interrupted', error: null },
+        });
+      else fake.exit(1);
+    });
+    const handle = adapter.start(session({ outputBlocks: true }));
+    const reading = drain(handle);
+    await started;
+    await handle.stop();
+    const events = await reading;
+    const ends = events.filter(
+      (e) =>
+        e.type === 'text' &&
+        (e.meta?.output as { phase?: string })?.phase === 'end',
+    );
+    expect(ends).toHaveLength(1);
+    expect(ends[0]?.content).toBe(confirmed ? 'Partial **reply**' : undefined);
+    expect((await handle.result).exit).toBe('aborted');
+  },
+);
