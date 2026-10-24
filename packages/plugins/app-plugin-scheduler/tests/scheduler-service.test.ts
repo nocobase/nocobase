@@ -1,6 +1,9 @@
 import type { DatabaseManager } from '@nocobase/db';
 import { type TestDatabase } from '@nocobase/app-testing/server';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ScheduleOccurrenceStore } from '../server/occurrences.js';
+import type { ScheduleTargetRegistry } from '../server/schedules/registry.js';
+import { scheduleId } from '../server/store.js';
 
 import type { ScheduleDefinition } from '../server/schedules/define.js';
 import { DefaultSchedulerService } from '../server/services/scheduler.js';
@@ -16,6 +19,8 @@ describe('DefaultSchedulerService.defineSchedule', () => {
   let database: DatabaseManager;
   let harness: ScheduleServiceHarness;
   let scheduler: DefaultSchedulerService;
+  let occurrenceStore: ScheduleOccurrenceStore;
+  let targetRegistry: ScheduleTargetRegistry;
 
   beforeEach(async () => {
     testDatabase = await createSchedulerDatabase();
@@ -25,6 +30,8 @@ describe('DefaultSchedulerService.defineSchedule', () => {
       database,
       harness.executor(),
     );
+    occurrenceStore = occurrences;
+    targetRegistry = targets;
     targets.register({
       type: 'report',
       title: 'Report',
@@ -35,8 +42,51 @@ describe('DefaultSchedulerService.defineSchedule', () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await harness.dispose();
     await testDatabase.destroy();
+  });
+
+  it('reports a reconciliation completion write failure after other rows finish', async () => {
+    scheduler.defineSchedule(baseDefinition());
+    await scheduler.sync();
+    for (const id of ['one', 'two']) {
+      await occurrenceStore.start(
+        { scheduleId: scheduleId('main', 'daily'), occurrenceId: id },
+        'hash',
+        'report',
+      );
+      await occurrenceStore.wait(id, { type: 'report', id });
+    }
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    vi.spyOn(targetRegistry, 'inspect').mockImplementation(async () => {
+      entered.resolve();
+      await release.promise;
+      return { state: 'completed', completion: { status: 'succeeded' } };
+    });
+    const error = new Error('terminal persistence failed');
+    const complete = vi
+      .spyOn(occurrenceStore, 'complete')
+      .mockRejectedValueOnce(error);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const inspection = scheduler.reconcileOccurrences();
+    await entered.promise;
+    const drain = scheduler.drain();
+    const outcome = drain.catch((cause) => cause);
+    release.resolve();
+    await expect(inspection).resolves.toBe(1);
+    expect(await outcome).toBe(error);
+    expect(complete).toHaveBeenCalledTimes(2);
+    const rows = await database
+      .query()
+      .selectFrom('schedule_occurrences')
+      .select('status')
+      .execute();
+    expect(rows.map((row) => row.status).sort()).toEqual([
+      'succeeded',
+      'waiting',
+    ]);
   });
 
   it('registers a definition directly and reconciles it on sync', async () => {

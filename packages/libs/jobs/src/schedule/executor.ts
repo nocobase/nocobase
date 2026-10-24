@@ -243,14 +243,29 @@ export class BackendScheduleExecutor implements ScheduleExecutor {
     const setup = this.setupPromise;
     this.state = 'closed';
     if (setup) await setup.catch(() => undefined);
+    const errors: unknown[] = [];
     if (this.opened) {
       this.opened = false;
-      await this.backend.close();
+      try {
+        await this.backend.close();
+      } catch (error) {
+        errors.push(error);
+      }
     }
     this.pending.clear();
     this.handlers.clear();
-    await this.delivery;
-    this.subscribers.clear();
+    try {
+      // Closing can fail while previously emitted events are still queued.
+      await this.delivery;
+    } catch (error) {
+      errors.push(error);
+    } finally {
+      this.subscribers.clear();
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) {
+      throw new AggregateError(errors, 'Schedule executor shutdown failed.');
+    }
   }
 
   private async upsert(
