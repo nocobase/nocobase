@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type {
   BackgroundOnlineAgent,
   RealtimeOnlineAgent,
@@ -289,6 +290,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
       writer,
       published: new Set(),
       textLengths: new Map(),
+      previewDigests: new Map(),
       previewParts: new Map(),
       ready: false,
       started: false,
@@ -566,6 +568,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         id,
       });
       execution.textLengths.set(id, 0);
+      execution.previewDigests.set(id, createHash('sha256'));
     }
     const sources = [...execution.previewParts].map(([partId, part]) => ({
       recordId: partId,
@@ -592,15 +595,22 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         turnId: runId,
       },
     });
-    if (event.content) {
+    let content = event.content ?? '';
+    if (output.phase === 'end' && event.content !== undefined) {
+      const length = this.prefixLength(execution, id, content);
+      if (length === undefined) return;
+      content = content.slice(length);
+    }
+    if (content) {
       execution.writer.write({
         type: type === 'text' ? 'text-delta' : 'reasoning-delta',
         id,
-        delta: event.content,
+        delta: content,
       });
+      execution.previewDigests.get(id)?.update(content);
       execution.textLengths.set(
         id,
-        (execution.textLengths.get(id) ?? 0) + event.content.length,
+        (execution.textLengths.get(id) ?? 0) + content.length,
       );
     }
     if (output.phase === 'end') {
@@ -609,7 +619,40 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         id,
       });
       execution.published.add(id);
+      execution.previewDigests.delete(id);
     }
+  }
+  /** Check the actual prefix, without retaining response text or treating its length as evidence. */
+  private prefixLength(
+    execution: Execution,
+    id: string,
+    canonical: string,
+  ): number | undefined {
+    const length = execution.textLengths.get(id) ?? 0;
+    const digest = execution.previewDigests.get(id);
+    if (
+      digest &&
+      (length > canonical.length ||
+        digest.copy().digest('hex') !==
+          createHash('sha256').update(canonical.slice(0, length)).digest('hex'))
+    ) {
+      for (const [partId, part] of execution.previewParts)
+        if (!execution.published.has(partId)) {
+          execution.writer.write({
+            type: part.type === 'text' ? 'text-end' : 'reasoning-end',
+            id: partId,
+          });
+          execution.published.add(partId);
+        }
+      execution.previewDigests.clear();
+      execution.writer.fail(
+        new Error(
+          'A preview differed from its canonical snapshot; reconcile saved history.',
+        ),
+      );
+      return undefined;
+    }
+    return length;
   }
   private refresh(execution: Execution): Promise<void> {
     if (this.state.detaching) return execution.pending ?? Promise.resolve();
@@ -665,6 +708,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
             id,
           });
           execution.published.add(id);
+          execution.previewDigests.delete(id);
         }
     // Synchronization commits first. Independent notices are delivered by durable business rereads.
     const row = await owned(this.deps, execution.userId, execution.id);
@@ -734,8 +778,13 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
           if (execution.published.has(source.partId)) continue;
           const part = sourceParts.get(source.partId)!;
           if (part.type === 'text') {
-            const length = execution.textLengths.get(source.partId);
-            if (length === undefined)
+            const length = this.prefixLength(
+              execution,
+              source.partId,
+              part.text,
+            );
+            if (length === undefined) continue;
+            if (!execution.textLengths.has(source.partId))
               execution.writer.write({ type: 'text-start', id: source.partId });
             const delta = part.text.slice(length ?? 0);
             if (delta)
@@ -748,6 +797,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
             if (part.state !== 'streaming') {
               execution.writer.write({ type: 'text-end', id: source.partId });
               execution.published.add(source.partId);
+              execution.previewDigests.delete(source.partId);
             }
           } else if (part.type === 'file')
             execution.writer.write({

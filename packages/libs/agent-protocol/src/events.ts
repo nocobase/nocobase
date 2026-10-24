@@ -27,7 +27,7 @@ export const MAX_EVENTS_PER_BATCH = 200;
 /** `content` and `output` are cut to this many bytes, and `truncated` set. */
 export const MAX_EVENT_CONTENT_BYTES = 65_536;
 
-/** An append-only fragment of one text/thinking block; ids are unique within a run. */
+/** Identity of realtime deltas and the completed snapshot of one text/thinking block; ids are unique within a run. */
 export interface OutputBlock {
   readonly blockId: string;
   readonly phase: 'delta' | 'end';

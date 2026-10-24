@@ -1347,3 +1347,300 @@ it('closes a reclaimed preview and accepts a fresh preview sequence on the next 
       .map(appUIMessageText),
   ).toEqual(['New attempt']);
 });
+
+for (const type of ['text', 'thinking'] as const)
+  for (const mode of ['server', 'writer'] as const)
+    it.each([
+      'npm_' + 'a'.repeat(37) + ' finished.',
+      'ghp_' + 'a'.repeat(36) + '. Next sentence.',
+      'ordinaryprefixghp_' + 'a'.repeat(36) + ' done.',
+    ])(
+      `preserves reviewed ${type} boundaries through ${mode}, routes, storage and UI: %s`,
+      async (text) => {
+        const { createRedactor } = await import('@nocobase/agent-protocol');
+        const { OutputWriter } =
+          await import('../../../app/agent-runner/src/agent/output-writer.ts');
+        const f = await fixture({ outputFeature: true });
+        await f.agent.send([{ role: 'user', content: 'Boundary contract' }]);
+        const reader = (await f.agent.receive())!.getReader();
+        const chunks: NativeUIChunk[] = [];
+        let streamError: unknown;
+        const reading = (async () => {
+          for (;;) {
+            const next = await reader.read();
+            if (next.done) break;
+            chunks.push(next.value);
+          }
+        })().catch((error) => {
+          streamError = error;
+        });
+        const [payload] = await claim(h, f.runner);
+        const id = payload.run.id;
+        await f.report(id, 'start', {
+          workDir: '/work/boundary',
+          adapter: { kind: 'claude' },
+          acceptsInput: true,
+        });
+        const expected = createRedactor().text(text);
+        let previewSeq = 0,
+          canonicalSeq = payload.run.firstSeq;
+        const live = (blockId: string) =>
+          chunks
+            .filter(
+              (e) =>
+                e.type ===
+                  (type === 'text' ? 'text-delta' : 'reasoning-delta') &&
+                e.id === `output:${blockId}`,
+            )
+            .map((e) => e.delta)
+            .join('');
+        const pieces = [
+          ...Array.from({ length: text.length + 1 }, (_, i) => [
+            text.slice(0, i),
+            text.slice(i),
+          ]),
+          [...text],
+        ];
+        for (const [index, parts] of pieces.entries()) {
+          const blockId = `case-${index}`;
+          const meta = (phase: 'delta' | 'end') => ({
+            output: { blockId, phase },
+          });
+          const previews: Record<string, unknown>[] = [];
+          const saved: Record<string, unknown>[] = [];
+          const writer = new OutputWriter(
+            (e) => {
+              saved.push(e);
+            },
+            createRedactor(),
+            true,
+            (e) => {
+              previews.push(e);
+            },
+          );
+          const sendPreviews = async () => {
+            for (const event of previews.splice(0))
+              expect(
+                (
+                  await f.report(id, 'events', {
+                    events: [
+                      {
+                        ...event,
+                        seq: ++previewSeq,
+                        at: h.clock.now().toISOString(),
+                      },
+                    ],
+                  })
+                ).status,
+              ).toBe(200);
+          };
+          for (const content of parts) {
+            if (mode === 'writer') {
+              writer.write({ type, content, meta: meta('delta') });
+              writer.flush();
+              await sendPreviews();
+            } else
+              expect(
+                (
+                  await f.report(id, 'events', {
+                    events: [
+                      {
+                        seq: ++previewSeq,
+                        at: h.clock.now().toISOString(),
+                        type,
+                        content,
+                        meta: meta('delta'),
+                      },
+                    ],
+                  })
+                ).status,
+              ).toBe(200);
+            expect(expected.startsWith(live(blockId))).toBe(true);
+          }
+          let complete: Record<string, unknown> = {
+            type,
+            content: text,
+            meta: meta('end'),
+          };
+          if (mode === 'writer') {
+            writer.write({ type, content: text, meta: meta('end') });
+            writer.end();
+            await sendPreviews();
+            expect(saved).toHaveLength(1);
+            complete = saved[0];
+          }
+          expect(
+            (
+              await f.report(id, 'events', {
+                events: [
+                  {
+                    ...complete,
+                    seq: canonicalSeq++,
+                    at: h.clock.now().toISOString(),
+                  },
+                ],
+              })
+            ).status,
+          ).toBe(200);
+          await vi.waitFor(() => expect(live(blockId)).toBe(expected));
+          const stored = (
+            await h.services.runs.events(id, 0, 1000)
+          ).events.find((e) => e.meta?.output?.blockId === blockId);
+          expect(stored?.content).toBe(expected);
+          if (type === 'text') {
+            const history = await f.agent.history();
+            const message = history.find((m) => m.role === 'assistant');
+            const source = message?.metadata?.sourceRecords?.find(
+              (s) => s.partId === `output:${blockId}`,
+            );
+            expect(message?.parts[source!.partIndex]).toMatchObject({
+              type: 'text',
+              text: expected,
+            });
+          }
+        }
+        await f.report(id, 'complete', {
+          summary: 'Complete',
+          handledInputIds: payload.inputs.map((i) => i.id),
+        });
+        await reading;
+        expect(streamError).toBeUndefined();
+        expect(chunks.filter((e) => e.type === 'error')).toHaveLength(0);
+      },
+    );
+
+it.each(['text', 'thinking'] as const)(
+  'checks the complete %s prefix and fails the existing UI channel on a divergent snapshot',
+  async (type) => {
+    const f = await fixture({ outputFeature: true });
+    await f.agent.send([{ role: 'user', content: 'Mismatch guard' }]);
+    const reader = (await f.agent.receive())!.getReader();
+    const chunks: NativeUIChunk[] = [];
+    const reading = (async () => {
+      for (;;) {
+        const next = await reader.read();
+        if (next.done) break;
+        chunks.push(next.value);
+      }
+    })();
+    const [payload] = await claim(h, f.runner);
+    const id = payload.run.id;
+    await f.report(id, 'start', {
+      workDir: '/work/guard',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    const base = { at: h.clock.now().toISOString(), type };
+    await f.report(id, 'events', {
+      events: [
+        {
+          ...base,
+          seq: 1,
+          content: 'visible reply.',
+          meta: { output: { blockId: 'guard', phase: 'delta' } },
+        },
+      ],
+    });
+    await vi.waitFor(() =>
+      expect(
+        chunks.some(
+          (e) =>
+            e.type === (type === 'text' ? 'text-delta' : 'reasoning-delta'),
+        ),
+      ).toBe(true),
+    );
+    expect(
+      (
+        await f.report(id, 'events', {
+          events: [
+            {
+              ...base,
+              seq: payload.run.firstSeq,
+              content: 'changed reply.',
+              meta: { output: { blockId: 'guard', phase: 'end' } },
+            },
+          ],
+        })
+      ).status,
+    ).toBe(200);
+    await reading;
+    expect(chunks.filter((e) => e.type === 'error')).toHaveLength(1);
+    expect(
+      chunks
+        .filter(
+          (e) =>
+            e.type === (type === 'text' ? 'text-delta' : 'reasoning-delta'),
+        )
+        .map((e) => e.delta)
+        .join(''),
+    ).toBe('visible reply.');
+    expect((await h.services.runs.events(id, 0, 1000)).events[0].content).toBe(
+      'changed reply.',
+    );
+    await f.report(id, 'complete', {
+      summary: 'Complete',
+      handledInputIds: payload.inputs.map((i) => i.id),
+    });
+  },
+);
+it.each(['text', 'thinking'] as const)(
+  'finishes %s from its canonical snapshot after an oversized candidate stopped previews',
+  async (type) => {
+    const { createRedactor } = await import('@nocobase/agent-protocol');
+    const f = await fixture({ outputFeature: true });
+    await f.agent.send([{ role: 'user', content: 'Long candidate' }]);
+    const reader = (await f.agent.receive())!.getReader();
+    const chunks: NativeUIChunk[] = [];
+    const reading = (async () => {
+      for (;;) {
+        const next = await reader.read();
+        if (next.done) break;
+        chunks.push(next.value);
+      }
+    })();
+    const [payload] = await claim(h, f.runner);
+    const id = payload.run.id;
+    await f.report(id, 'start', {
+      workDir: '/work/candidate',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    const text = 'sk-' + 'a1'.repeat(2000) + ' after.';
+    const base = { at: h.clock.now().toISOString(), type };
+    await f.report(id, 'events', {
+      events: [
+        {
+          ...base,
+          seq: 1,
+          content: text,
+          meta: { output: { blockId: 'long-candidate', phase: 'delta' } },
+        },
+      ],
+    });
+    await f.report(id, 'events', {
+      events: [
+        {
+          ...base,
+          seq: payload.run.firstSeq,
+          content: text,
+          meta: { output: { blockId: 'long-candidate', phase: 'end' } },
+        },
+      ],
+    });
+    await f.report(id, 'complete', {
+      summary: 'Complete',
+      handledInputIds: payload.inputs.map((i) => i.id),
+    });
+    await reading;
+    expect(
+      chunks
+        .filter(
+          (e) =>
+            e.type === (type === 'text' ? 'text-delta' : 'reasoning-delta'),
+        )
+        .map((e) => e.delta)
+        .join(''),
+    ).toBe(createRedactor().text(text));
+    expect(chunks.filter((e) => e.type === 'error')).toHaveLength(0);
+  },
+);

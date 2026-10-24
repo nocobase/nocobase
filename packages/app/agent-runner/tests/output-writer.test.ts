@@ -183,3 +183,70 @@ it('spools one complete body and retains the complete fallback summary', async (
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+it('does not reclassify a word at a preview packet boundary', () => {
+  const redactor = createRedactor();
+  const text = 'x'.repeat(4096) + 'ghp_' + 'a'.repeat(36) + '.';
+  const live: SpoolEvent[] = [];
+  const writer = new OutputWriter(
+    () => {},
+    redactor,
+    true,
+    (e) => {
+      live.push(e);
+    },
+  );
+  for (let at = 0; at < text.length; at += 20)
+    writer.write(event(text.slice(at, at + 20)));
+  writer.write(event(text, 'end'));
+  expect(live.map((e) => e.content).join('')).toBe(redactor.text(text));
+});
+it('never cuts a candidate at the byte cap where a later redactor could invent a token ending', () => {
+  const redactor = createRedactor();
+  const text = 'x'.repeat(65495) + ' npm_' + 'a'.repeat(37) + ' after';
+  const live: SpoolEvent[] = [];
+  const saved: SpoolEvent[] = [];
+  const writer = new OutputWriter(
+    (e) => {
+      saved.push(e);
+    },
+    redactor,
+    true,
+    (e) => {
+      live.push(e);
+    },
+  );
+  for (let at = 0; at < text.length; at += 20)
+    writer.write(event(text.slice(at, at + 20)));
+  writer.write(event(text, 'end'));
+  const canonical = redactor.text(saved[0]!.content!);
+  expect(canonical.startsWith(live.map((e) => e.content).join(''))).toBe(true);
+  expect(saved).toHaveLength(1);
+});
+
+it('withholds buffered previews when credentials change before transmission', () => {
+  const redactor = new GrowingRedactor(createRedactor());
+  const secret = 'newly registered credential 123456';
+  const live: SpoolEvent[] = [];
+  const saved: SpoolEvent[] = [];
+  const writer = new OutputWriter(
+    (e) => {
+      saved.push(e);
+    },
+    redactor,
+    true,
+    (e) => {
+      live.push(e);
+    },
+  );
+  writer.write(event('before ' + secret));
+  redactor.add([secret]);
+  writer.flush();
+  writer.write(event(' after'));
+  writer.write(event('before ' + secret + ' after', 'end'));
+  expect(saved[0]?.content).toBe('before ' + REDACTED + ' after');
+  expect(
+    saved[0]!.content!.startsWith(live.map((e) => e.content).join('')),
+  ).toBe(true);
+  expect(live.map((e) => e.content).join('')).not.toContain(secret);
+});

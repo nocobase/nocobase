@@ -384,6 +384,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
 
     events: async (runner, runId, reported) => {
       let previewKey = runId;
+      const completed: RunEvent[] = [];
+      if (reported.events.some((event) => outputBlock(event.meta)))
+        reported = withoutNul(reported);
       const transient = reported.events.filter((event) => {
         const output = outputBlock(event.meta);
         return (
@@ -515,6 +518,12 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
               createdAt: now,
             },
           });
+          if (outputBlock(event.meta)?.phase === 'end')
+            completed.push({
+              ...event,
+              content: content?.text,
+              meta: redact.value(event.meta),
+            });
           accepted += 1;
           if (event.type === 'usage') {
             const usage = UsageSchema.array().safeParse(
@@ -547,14 +556,10 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           cancelRequested: run.cancelRequestedAt !== null,
         };
       });
-      if (
-        durable.events.some((event) => outputBlock(event.meta)?.phase === 'end')
-      )
+      if (completed.length)
         previews.accept(
           previewKey,
-          durable.events.filter(
-            (event) => outputBlock(event.meta)?.phase === 'end',
-          ),
+          completed,
           () => redactorOf(runId),
           (event) => deps.onOutput?.(runId, event),
         );

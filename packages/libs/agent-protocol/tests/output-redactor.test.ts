@@ -70,3 +70,52 @@ it('preserves surrogate pairs across provider and internal scan boundaries', () 
     ).toBe(text);
   }
 });
+
+const reviewed = [
+  'npm_' + 'a'.repeat(37) + ' finished.',
+  'ghp_' + 'a'.repeat(36) + '. Next sentence.',
+  'ordinaryprefixghp_' + 'a'.repeat(36) + ' done.',
+];
+it.each(reviewed)(
+  'preserves every reviewed boundary and only emits canonical prefixes: %s',
+  (text) => {
+    const redactor = createRedactor();
+    const expected = redactor.text(text);
+    const splits = [
+      ...Array.from({ length: text.length + 1 }, (_, i) => [
+        text.slice(0, i),
+        text.slice(i),
+      ]),
+      [...text],
+    ];
+    for (const pieces of splits) {
+      const stream = createOutputRedactor(() => redactor);
+      let actual = '';
+      for (const piece of pieces) {
+        actual += stream.write(piece);
+        expect(expected.startsWith(actual)).toBe(true);
+      }
+      actual += stream.end();
+      expect(actual).toBe(expected);
+    }
+  },
+);
+
+it('retains word boundaries across scan windows and boundaries introduced by known-value replacement', () => {
+  const secret = 'knownvalue123';
+  const redactor = createRedactor([secret]);
+  for (const text of [
+    'x'.repeat(256) + 'ghp_' + 'a'.repeat(36) + '.',
+    secret + 'ghp_' + 'a'.repeat(36) + '.',
+  ]) {
+    for (const size of [1, 20, 256]) {
+      const stream = createOutputRedactor(() => redactor);
+      let live = '';
+      for (let at = 0; at < text.length; at += size) {
+        live += stream.write(text.slice(at, at + size));
+        expect(redactor.text(text).startsWith(live)).toBe(true);
+      }
+      expect(live + stream.end()).toBe(redactor.text(text));
+    }
+  }
+});

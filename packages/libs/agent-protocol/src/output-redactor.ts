@@ -84,7 +84,12 @@ export interface OutputRedactor {
 export function createOutputRedactor(current: () => Redactor): OutputRedactor {
   let held = '';
   let peak = 0;
-  let dropping: RegExp | 'key' | 'rest' | undefined;
+  let dropping: 'key' | 'rest' | undefined;
+  let left = ' ';
+  const publish = (text: string): string => {
+    if (text) left = text.slice(-1);
+    return text;
+  };
   function scan(piece: string): string {
     let text = held + piece;
     held = '';
@@ -93,53 +98,43 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
       const end = keyEnd.exec(text);
       if (!end) {
         held = text.slice(-80);
+        peak = Math.max(peak, held.length);
         return '';
       }
       text = text.slice(end.index + end[0].length);
       dropping = undefined;
-    } else if (dropping) {
-      const at = text.search(dropping);
-      if (at < 0) return '';
-      text = text.slice(at);
-      dropping = undefined;
     }
     const redactor = current();
     // A URL's public scheme may already have been emitted; retain recognition of its credentials.
-    const redact = (value: string) =>
-      value.startsWith('://')
-        ? redactor.text('x' + value).slice(1)
-        : redactor.text(value);
+    const redact = (value: string): string =>
+      redactor.text((value.startsWith('://') ? 'x' : left) + value).slice(1);
     const key = begin.exec(text);
     if (key && !keyEnd.test(text.slice(key.index))) {
       dropping = 'key';
       held = text.slice(-80);
-      return redact(text.slice(0, key.index)) + REDACTED;
+      peak = Math.max(peak, held.length);
+      return publish(redact(text.slice(0, key.index)) + REDACTED);
     }
-    // Once a complete variable-length credential is recognized, emit its replacement and discard its continuation.
-    for (const { name, pattern } of SECRET_PATTERNS) {
-      const match = [...text.matchAll(pattern)].at(-1);
-      if (
-        !match ||
-        match.index + match[0].length !== text.length ||
-        name === 'URL credentials' ||
-        name === 'private key'
-      )
-        continue;
-      dropping =
-        name === 'secret URL parameter'
-          ? /[&\s"'#<>]/u
-          : name === 'password assignment'
-            ? /[\s&"'#;,<>]/u
-            : name === 'x-api-key value'
-              ? /[\s"',;}]/u
-              : /[^A-Za-z0-9._~+/=-]/u;
-      return redact(text);
-    }
+    // A write boundary is not a token boundary. Retain the complete candidate until its real delimiter arrives.
+    const contexts = [{ value: left + text, offset: -1 }];
+    const known: { start: number; end: number }[] = [];
+    for (const secret of redactor.secrets)
+      for (
+        let at = text.indexOf(secret);
+        at >= 0;
+        at = text.indexOf(secret, at + 1)
+      ) {
+        const end = at + secret.length;
+        known.push({ start: at, end });
+        // Known-value replacement can introduce a word boundary before a following token.
+        contexts.push({ value: ']' + text.slice(end), offset: end - 1 });
+      }
     let cut = text.length;
-    for (const pattern of [token, label, password, url]) {
-      const match = pattern.exec(text);
-      if (match) cut = Math.min(cut, match.index);
-    }
+    for (const { value, offset } of contexts)
+      for (const pattern of [token, label, password, url]) {
+        const match = pattern.exec(value);
+        if (match) cut = Math.min(cut, Math.max(0, match.index + offset));
+      }
     const header = text.lastIndexOf('-----BEGIN');
     if (header >= 0 && !keyEnd.test(text.slice(header)))
       cut = Math.min(cut, header);
@@ -164,23 +159,21 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
           break;
         }
       }
-      const at = text.indexOf(secret);
-      if (at >= 0 && at < cut && at + secret.length > cut) cut = at;
     }
-    // Never split the recognition context of a complete match across the safe/held boundary.
-    const ranges = SECRET_PATTERNS.flatMap(({ pattern }) => [
-      ...text.matchAll(pattern),
-    ]).sort((a, b) => b.index - a.index);
+    // Keep whole matches on one side of the output boundary, including newly introduced word boundaries.
+    const ranges = [
+      ...known,
+      ...contexts.flatMap(({ value, offset }) =>
+        SECRET_PATTERNS.flatMap(({ pattern }) =>
+          [...value.matchAll(pattern)].map((match) => ({
+            start: Math.max(0, match.index + offset),
+            end: match.index + offset + match[0].length,
+          })),
+        ),
+      ),
+    ].sort((a, b) => b.start - a.start);
     for (const match of ranges)
-      if (match.index < cut && match.index + match[0].length > cut)
-        cut = match.index;
-    if (text.startsWith('://')) {
-      const match = new RegExp(
-        SECRET_PATTERNS.find((item) => item.name === 'URL credentials')!
-          .pattern,
-      ).exec('x' + text);
-      if (match && match[0].length - 1 > cut) cut = 0;
-    }
+      if (match.start < cut && match.end > cut) cut = match.start;
     if (cut === text.length && /[\uD800-\uDBFF]$/.test(text)) cut--;
     const safe = redact(text.slice(0, cut));
     held = text.slice(cut);
@@ -190,7 +183,7 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
       dropping = 'rest';
     }
     peak = Math.max(peak, held.length);
-    return safe;
+    return publish(safe);
   }
   return {
     get heldSize(): number {
@@ -219,11 +212,11 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
             break;
           }
         }
-      return text.startsWith('://')
-        ? current()
-            .text('x' + text)
-            .slice(1)
-        : current().text(text);
+      return publish(
+        current()
+          .text((text.startsWith('://') ? 'x' : left) + text)
+          .slice(1),
+      );
     },
   };
 }

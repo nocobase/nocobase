@@ -11,12 +11,13 @@ type Block = {
   redactor: ReturnType<typeof createOutputRedactor>;
   ended: boolean;
   previewBytes: number;
+  previewStopped: boolean;
 };
 /** Conversation previews never enter the durable spool. Completed snapshots retain one canonical event. */
 export class OutputWriter {
   private readonly blocks = new Map<string, Block>();
   private readonly completed = new Set<string>();
-  private pending?: { id: string; content: string };
+  private pending?: { id: string; content: string; secrets: readonly string[] };
   private timer?: ReturnType<typeof setTimeout>;
   private readonly emit: (event: Event) => void;
   private readonly preview: (event: Event) => void;
@@ -31,7 +32,13 @@ export class OutputWriter {
     this.emit = emit;
     this.redactor = redactor;
     this.enabled = enabled;
-    this.preview = (event) => preview(this.redactor.value(event));
+    this.preview = (event) =>
+      preview({
+        ...event,
+        meta: this.redactor.value(event.meta),
+        input: this.redactor.value(event.input),
+        output: this.redactor.optional(event.output),
+      });
   }
   write(event: Event): void {
     if (!this.enabled) {
@@ -57,6 +64,7 @@ export class OutputWriter {
         redactor: createOutputRedactor(() => this.redactor),
         ended: false,
         previewBytes: 0,
+        previewStopped: false,
       };
       this.blocks.set(output.blockId, block);
     }
@@ -96,15 +104,22 @@ export class OutputWriter {
   private append(id: string, content: string): void {
     if (!content) return;
     const block = this.blocks.get(id)!;
-    const all = Buffer.from(content, 'utf8');
-    let limit = Math.min(all.length, 64 * 1024 - block.previewBytes);
-    while (limit < all.length && limit > 0 && (all[limit] & 0xc0) === 0x80)
-      limit--;
-    content = all.subarray(0, limit).toString('utf8');
-    block.previewBytes += limit;
-    if (!content) return;
+    if (
+      this.pending?.id === id &&
+      this.pending.secrets !== this.redactor.secrets
+    )
+      this.flush();
+    if (block.previewStopped) return;
+    const bytesLeft = 64 * 1024 - block.previewBytes;
+    const size = Buffer.byteLength(content, 'utf8');
+    // Never cut a released candidate: truncation could invent a token boundary in the durable snapshot.
+    if (size > bytesLeft) {
+      block.previewStopped = true;
+      return;
+    }
+    block.previewBytes += size;
     if (this.pending?.id !== id) this.flush();
-    this.pending ??= { id, content: '' };
+    this.pending ??= { id, content: '', secrets: this.redactor.secrets };
     // The redactor produces bounded pieces; split safe text without cutting a UTF-8 sequence.
     const bytes = Buffer.from(this.pending.content + content, 'utf8');
     let at = 0;
@@ -122,7 +137,7 @@ export class OutputWriter {
     const event = this.blocks.get(id)!.event;
     this.preview({
       ...event,
-      content: this.redactor.text(content),
+      content,
       meta: { ...event.meta, output: { blockId: id, phase: 'delta' } },
     });
   }
@@ -131,7 +146,12 @@ export class OutputWriter {
     this.timer = undefined;
     const pending = this.pending;
     this.pending = undefined;
-    if (pending?.content) this.send(pending.id, pending.content);
+    if (pending?.content) {
+      if (pending.secrets !== this.redactor.secrets) {
+        // Newly registered credentials may affect already buffered text. Await the canonical snapshot.
+        this.blocks.get(pending.id)!.previewStopped = true;
+      } else this.send(pending.id, pending.content);
+    }
   }
   end(): void {
     this.flush();
