@@ -410,6 +410,24 @@ describe('static module dependencies', () => {
     },
   );
 
+  it('does not replace an explicitly unknown object or loader with a factory default', async () => {
+    const root = await fixture({
+      'client/routes.ts': `const factory=({name='invented',list=()=>import('./mail.js'),detail=list}={})=>({name,componentLoader:detail});export default [{name:'known',componentLoader:()=>import('./quiet.js')},factory(unknownFactory()),factory({name:'unsafe',list:()=>import('./mail.js'),detail:unknownFactory()}),factory({name:'unsafe',name:'duplicate',list:()=>import('./mail.js')}),factory({name:'unsafe',list:()=>import('./mail.js'),[unknown]:'value'}),(async()=>({name:'unsafe',componentLoader:()=>import('./mail.js')}))()];`,
+      'client/quiet.ts': `export default ()=>null;`,
+      'client/mail.ts': `import {send} from '@nocobase/app-plugin-mail/client';export default ()=>send();`,
+    });
+    const result = await collectModuleSources(root);
+    expect(result.routes).toEqual([
+      {
+        packageName: 'arbitrary-app',
+        routeName: 'known',
+        providers: [],
+        complete: true,
+      },
+    ]);
+    expect(result.complete).toBe(false);
+  });
+
   it('invokes router factories in export order and snapshots each contribution before the next factory', async () => {
     const root = await fixture({
       'client/routes.ts':

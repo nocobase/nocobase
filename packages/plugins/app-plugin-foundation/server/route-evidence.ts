@@ -67,11 +67,20 @@ export class RouteEvidence {
           ? this.property(container, name.text, nextSeen)
           : [];
       });
-      return result.length
-        ? result
-        : node.initializer
-          ? next(node.initializer)
-          : [];
+      if (result.length) return result;
+      const absent =
+        containers.length === 1 &&
+        ts.isObjectLiteralExpression(containers[0].node) &&
+        !containers[0].node.properties.some(ts.isSpreadAssignment) &&
+        (ts.isIdentifier(name) || ts.isStringLiteralLike(name)) &&
+        !containers[0].node.properties.some(
+          (property) =>
+            property.name &&
+            (ts.isIdentifier(property.name) ||
+              ts.isStringLiteralLike(property.name)) &&
+            property.name.text === name.text,
+        );
+      return absent && node.initializer ? next(node.initializer) : [];
     }
     if (
       ts.isParenthesizedExpression(node) ||
@@ -114,7 +123,7 @@ export class RouteEvidence {
           objects.length !== 1 ||
           !ts.isObjectLiteralExpression(objects[0].node) ||
           objects[0].node.properties.length > 32 ||
-          duplicateProperties(objects[0].node) ||
+          unsupportedObject(objects[0].node) ||
           objects[0].node.properties.some(
             (p) =>
               !ts.isPropertyAssignment(p) &&
@@ -169,7 +178,12 @@ export class RouteEvidence {
           arrays.length !== 1 ||
           !ts.isArrayLiteralExpression(arrays[0].node) ||
           !callback ||
-          !(ts.isArrowFunction(callback) || ts.isFunctionExpression(callback))
+          !(
+            ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)
+          ) ||
+          ts
+            .getModifiers(callback)
+            ?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword)
         ) {
           this.complete = false;
           return [];
@@ -213,11 +227,26 @@ export class RouteEvidence {
         return [];
       }
       const context = new Map(bindings);
+      let unknownObject = false;
       fn.parameters.forEach((parameter, index) => {
         const argument = node.arguments[index];
         const args = argument
           ? this.values({ node: argument, bindings }, nextSeen)
           : [];
+        if (ts.isObjectBindingPattern(parameter.name)) {
+          const containers = argument
+            ? args
+            : parameter.initializer
+              ? this.values({ node: parameter.initializer, bindings }, nextSeen)
+              : [];
+          if (
+            containers.length !== 1 ||
+            !ts.isObjectLiteralExpression(containers[0].node) ||
+            containers[0].node.properties.some(ts.isSpreadAssignment) ||
+            unsupportedObject(containers[0].node)
+          )
+            unknownObject = true;
+        }
         // Retain caller bindings when the argument is an object containing references to outer parameters.
         for (const arg of args)
           for (const [key, values] of arg.bindings) context.set(key, values);
@@ -232,6 +261,10 @@ export class RouteEvidence {
                 : [],
         );
       });
+      if (unknownObject) {
+        this.complete = false;
+        return [];
+      }
       return this.returned(fn, context, new Set(nextSeen).add(fn));
     }
     return [value];
@@ -242,6 +275,17 @@ export class RouteEvidence {
     bindings: Bindings,
     seen: Set<ts.Node>,
   ): Value[] {
+    if (
+      (ts.canHaveModifiers(fn) &&
+        ts
+          .getModifiers(fn)
+          ?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword)) ||
+      ((ts.isFunctionDeclaration(fn) || ts.isFunctionExpression(fn)) &&
+        fn.asteriskToken)
+    ) {
+      this.complete = false;
+      return [];
+    }
     if (!('body' in fn) || !fn.body) {
       this.complete = false;
       return [];
@@ -279,7 +323,7 @@ export class RouteEvidence {
     if (
       !ts.isObjectLiteralExpression(value.node) ||
       value.node.properties.some(ts.isSpreadAssignment) ||
-      duplicateProperties(value.node)
+      unsupportedObject(value.node)
     )
       return [];
     const entry = value.node.properties.find(
@@ -397,7 +441,7 @@ export class RouteEvidence {
     if (ts.isObjectLiteralExpression(node)) {
       if (
         node.properties.some(ts.isSpreadAssignment) ||
-        duplicateProperties(node)
+        unsupportedObject(node)
       ) {
         this.complete = false;
         return;
@@ -515,7 +559,23 @@ function containsCall(node: ts.Node): boolean {
   return found;
 }
 
-function duplicateProperties(node: ts.ObjectLiteralExpression): boolean {
+function unsupportedObject(node: ts.ObjectLiteralExpression): boolean {
+  if (
+    node.properties.some(
+      (property) =>
+        !(
+          ts.isPropertyAssignment(property) ||
+          ts.isShorthandPropertyAssignment(property)
+        ) ||
+        !property.name ||
+        !(
+          ts.isIdentifier(property.name) ||
+          ts.isStringLiteralLike(property.name)
+        ) ||
+        property.name.text === '__proto__',
+    )
+  )
+    return true;
   const names = node.properties.flatMap((p) =>
     p.name && (ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name))
       ? [p.name.text]
