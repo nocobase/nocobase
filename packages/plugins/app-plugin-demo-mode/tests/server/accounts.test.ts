@@ -132,21 +132,21 @@ it('gives a new account its role scopes and applies them again when an import re
   await demo.clear('admin');
 });
 
-it('disables and revokes sessions of a demo account that initiates cleanup', async () => {
+it('keeps the initiating demo account usable and tracked for reuse', async () => {
   const demo = service();
   demo.register(dataset());
   await demo.importNow('admin');
   calls = [];
   await demo.clear('u1');
-  expect(calls).toEqual(['disable u1']);
-  expect(disabled.has('u1')).toBe(true);
-  expect(revokedSessions).toEqual(['u1']);
+  expect(calls).toEqual([]);
+  expect(disabled.has('u1')).toBe(false);
+  expect(revokedSessions).toEqual([]);
   expect(
     await app.connection.query
       .selectFrom('demoModeRecords')
-      .selectAll()
+      .select(['collection', 'recordId'])
       .execute(),
-  ).toEqual([]);
+  ).toEqual([{ collection: '@user', recordId: 'u1' }]);
   // Clearing as a demo user must not disable the real administrator or prevent account reuse.
   expect(await demo.importNow('admin')).toMatchObject({ state: 'ready' });
   expect(disabled.has('u1')).toBe(false);
@@ -226,7 +226,6 @@ it('keeps the accounts a reset creates again signed in and permitted, and releas
   demo.register({
     id: 'accounts',
     languages: ['en-US'],
-    preserveAccounts: ['ann'],
     clear: async () => {
       // The cleanup runs while the carried account may still do what it did.
       during.push(
@@ -296,10 +295,9 @@ it('keeps the accounts a reset creates again signed in and permitted, and releas
   ]);
   expect(roles.assignments().map((item) => item.id)).toEqual(['a1']);
   calls = [];
-  await demo.clear('admin');
+  await demo.clear('u1');
   expect(calls).toEqual([]);
   expect(roles.assignments().map((item) => item.id)).toEqual(['a1']);
-  demo.register({ ...dataset(), preserveAccounts: [] });
   await demo.clear('admin');
   expect(disabled.has('u1')).toBe(true);
   expect(roles.assignments()).toEqual([]);

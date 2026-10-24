@@ -182,7 +182,7 @@ export const dataRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Clear the demo data',
         operationId: 'demoModeClearData',
         description: description(
-          'Runs the required application-wide business cleanup, including visitor additions, and disables tracked demo accounts for reuse except the dataset’s preserveAccounts and their permissions. Preserves system configuration and the environment model. Requires enabled demo mode; cleanup also runs before the first import.',
+          'Runs the required application-wide business cleanup, including visitor additions, and disables tracked demo accounts for reuse except the executing administrator and their existing permissions. Preserves system configuration and the environment model. Requires enabled demo mode; cleanup also runs before the first import.',
         ),
         responses: {
           200: dataResponse(DemoDataStatusSchema),

@@ -36,27 +36,17 @@ export class DemoIdentities {
       operationId: string,
     ) => Promise<void>,
   ) {}
-  /** Releases identities except declared accounts and their permissions; returns the tracking that must stay. */
+  /** Releases identities except the operation's actor and permissions; returns the tracking that must stay. */
   public async release(
     datasetId: string,
     operationId: string,
     records: readonly DemoTrackedRecord[],
-    preserveAccounts: readonly string[] = [],
+    actorId: string,
     touched?: ReadonlySet<string>,
   ): Promise<readonly DemoTrackedRecord[]> {
-    const kept = new Set<string>();
+    const kept = new Set([carriedKey(USER, actorId)]);
     const sets = this.deps.authorization?.()?.permissionSets;
-    if (preserveAccounts.length) {
-      const accounts = await this.deps.database
-        .query()
-        .selectFrom('demoModeAccounts')
-        .innerJoin('user', 'user.id', 'demoModeAccounts.userId')
-        .select(['demoModeAccounts.userId'])
-        .where('demoModeAccounts.datasetId', '=', datasetId)
-        .where('user.username', 'in', preserveAccounts)
-        .execute<{ userId: string }>();
-      const users = new Set(accounts.map(({ userId }) => String(userId)));
-      for (const id of users) kept.add(carriedKey(USER, id));
+    if (actorId) {
       const releasing = new Set(
         records
           .filter((r) => r.collection === ASSIGNMENT)
@@ -65,10 +55,10 @@ export class DemoIdentities {
       for (const assignment of (await sets?.listAssignments()) ?? []) {
         if (
           assignment.subject.type !== 'user' ||
-          !users.has(String(assignment.subject.id))
+          String(assignment.subject.id) !== actorId
         )
           continue;
-        // A regenerated account loses obsolete tracked grants; an omitted retained account keeps its access.
+        // Successful regeneration reconciles obsolete grants; cleanup otherwise preserves the actor's access.
         if (
           touched?.has(carriedKey(USER, String(assignment.subject.id))) &&
           releasing.has(String(assignment.id))

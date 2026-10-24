@@ -71,11 +71,14 @@ it('runs the published non-AI example through authorized HTTP, visitor entry and
       password: 'Keeper123!',
     };
     let keeperId: string | undefined;
-    let fail = false;
+    let fail: 'clear' | 'generate' | undefined;
     demo.register({
       ...dataset,
       languages: ['en-US', 'zh-CN'],
-      preserveAccounts: [keeper.username],
+      async clear(context) {
+        await dataset.clear(context);
+        if (fail === 'clear') throw new Error('cleanup failed');
+      },
       async generate(context) {
         await dataset.generate!(context);
         // The retained account remains available even in a language that does not generate it.
@@ -90,7 +93,7 @@ it('runs the published non-AI example through authorized HTTP, visitor entry and
             roleScopes: { app: ['demo.members'] },
           });
         }
-        if (fail) throw new Error('generation failed');
+        if (fail === 'generate') throw new Error('generation failed');
       },
     });
     expect(
@@ -187,10 +190,6 @@ it('runs the published non-AI example through authorized HTTP, visitor entry and
       403,
     );
     expect(
-      (await app.request('/auth/get-session', { headers: visitorHeaders }))
-        .status,
-    ).toBe(200);
-    expect(
       await (
         await app.request('/auth/get-session', { headers: visitorHeaders })
       ).json(),
@@ -229,16 +228,21 @@ it('runs the published non-AI example through authorized HTTP, visitor entry and
         .where('username', '=', keeper.username)
         .execute(),
     ).toEqual([{ id: retainedId }]);
-    fail = true;
+    // A different administrator initiates reset; failure before generation must persist that actor for scheduled retries.
+    fail = 'clear';
     await expect(
-      demo.reset(String(admin.id), 'en-US', { wait: true }),
+      demo.reset(retainedId, 'en-US', { wait: true }),
+    ).rejects.toThrow('cleanup failed');
+    fail = 'generate';
+    await expect(
+      demo.reset(undefined, 'en-US', { wait: true }),
     ).rejects.toThrow('generation failed');
     expect(
       await app.connection.query.selectFrom('demotasks').selectAll().execute(),
     ).toEqual([]);
     expect(await keeperAssignments()).toEqual(assignments);
     expect((await signInAs(keeper.email, keeper.password)).status).toBe(200);
-    fail = false;
+    fail = undefined;
     expect(
       (
         await app.request('/demoMode/data/import', {

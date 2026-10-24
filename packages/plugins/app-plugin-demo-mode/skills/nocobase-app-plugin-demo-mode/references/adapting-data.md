@@ -33,13 +33,11 @@ Keep `accounts(language)` and `createAccount()` on one shared definition with ex
 
 Create demo-owned Permission Sets rather than assigning a built-in administrator role, whose last active assignment may prevent account cleanup. Supply any `roleScopes` marked `requiredOnCreate`. Assign a Permission Set through either `permissionSets` or its role scope, not both.
 
-### Preserve demo administrators
+### Keep the executing administrator available
 
-Declare `preserveAccounts: ['demo_manager']` on the `DemoDataset` registered with `demoDataToken` when a dataset-created administrator must remain usable after clearing business data. Supply stable usernames across languages, including any language-specific administrator usernames that must survive. The list applies only to accounts owned by this dataset through `context.createAccount()`; it neither adopts an unrelated account nor grants management access. Give the account its intended grants during generation as usual.
+Clear and failed-import cleanup automatically preserve the executing administrator's current enabled state, password, sessions, assignments and required Permission Sets, including role scopes. HTTP operations use the authenticated, authorized user ID; scheduled reset uses the dataset's recorded actor ID. CLI import and clear still require `--actor`; reset may reuse the recorded actor and fails if none exists. No new permissions are granted. Ordinary demo accounts are disabled and lose their assignments, while all business data is cleared.
 
-Clear and failed-import cleanup retain these accounts' current enabled state, password, sessions, Permission Set assignments and required Permission Sets, including role-scope assignments. Ownership and necessary tracking remain for subsequent clear, generation and reset. Shared Permission Sets stay while ordinary demo accounts are disabled and lose their assignments; all business data is still cleared. Write protection and endpoint authorization are unchanged. A retained administrator can use normal password sign-in after clear; quick sign-in lists accounts only while a dataset is ready.
-
-Generation reuses the same account ID and tracked Permission Sets. Keep the username and email stable; changed passwords still revoke sessions. Regenerating an account reconciles its tracked grants, removing assignments no longer declared; an administrator omitted by another language stays available. Remove a username from `preserveAccounts` and clear again to apply ordinary cleanup. This option preserves existing access; it does not repair an account already disabled or stripped of grants by an earlier clear. An enabled administrator can regenerate the dataset to restore its declared credentials and permissions.
+Necessary tracking and ownership remain so generation/reset can reuse the same account and Permission Sets. Successful regeneration reconciles obsolete tracked grants. A later clear by a different administrator applies ordinary cleanup to the previous dataset-owned actor; accounts outside the dataset are never disabled or adopted. After clear, use normal password sign-in; quick sign-in lists accounts only while a dataset is ready.
 
 ### Update demo accounts
 

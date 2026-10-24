@@ -56,7 +56,7 @@ export interface DemoDataService {
   start(actorId: string, language?: string): Promise<DemoDataStatus>;
   /** Imports and waits, for commands, schedules and tests. */
   importNow(actorId: string, language?: string): Promise<DemoDataStatus>;
-  /** Clears business data and disables demo accounts except preserveAccounts; environment configuration stays. */
+  /** Clears business data and disables demo accounts except the trusted actor and their permissions. */
   clear(actorId: string): Promise<DemoDataStatus>;
   /**
    * Clears the business data and imports again, answering once the reset is claimed; waits when `wait` is set. Demo
@@ -354,7 +354,7 @@ export class DefaultDemoDataService implements DemoDataService {
         row ?? (await this.claimEmptyClear(dataset, actor, chosen, 'reset'));
       return {
         current,
-        operationId: await this.claimRemoval(dataset, current, 'reset'),
+        operationId: await this.claimRemoval(dataset, current, actor, 'reset'),
       };
     })();
     const job = claiming.then(({ current, operationId }) =>
@@ -735,7 +735,7 @@ export class DefaultDemoDataService implements DemoDataService {
         dataset.id,
         operationId,
         left,
-        dataset.preserveAccounts,
+        actorId,
         carried.touched,
       );
       for (const record of left.filter((record) => !kept.includes(record))) {
@@ -767,7 +767,7 @@ export class DefaultDemoDataService implements DemoDataService {
     row: DatasetRow,
     actorId: string,
   ): Promise<void> {
-    const operationId = await this.claimRemoval(dataset, row);
+    const operationId = await this.claimRemoval(dataset, row, actorId);
     await this.clearClaimed(dataset, row, actorId, operationId);
     const removed = await this.deps.database
       .query()
@@ -783,6 +783,7 @@ export class DefaultDemoDataService implements DemoDataService {
   private async claimRemoval(
     dataset: DemoDataset,
     row: DatasetRow,
+    actorId: string,
     operation: DemoDataOperation = 'clear',
   ): Promise<string> {
     const operationId = randomUUID();
@@ -793,6 +794,8 @@ export class DefaultDemoDataService implements DemoDataService {
         state: 'clearing',
         operation,
         operationId,
+        // A scheduled retry must use this actor even if business cleanup fails before generation starts.
+        actorId,
         percent: 0,
         updatedAt: new Date(),
       })
@@ -881,7 +884,7 @@ export class DefaultDemoDataService implements DemoDataService {
       dataset.id,
       operationId,
       records,
-      dataset.preserveAccounts,
+      actorId,
     );
     await this.lease.assertLease(dataset.id, operationId);
     let removing = this.deps.database

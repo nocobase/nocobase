@@ -2,4 +2,4 @@
 "@nocobase/app-plugin-demo-mode": patch
 ---
 
-Add DemoDataset.preserveAccounts to retain explicitly declared dataset-owned administrators, credentials and permissions through business-data cleanup. Reuse retained identities and Permission Sets on generation and reset while continuing to clean ordinary demo accounts and obsolete grants.
+Preserve the executing administrator's account and existing permissions during demo business-data cleanup, including failed resets. Reuse retained identities on regeneration, continue cleaning ordinary demo accounts, and persist the operation's actor for scheduled retries.
