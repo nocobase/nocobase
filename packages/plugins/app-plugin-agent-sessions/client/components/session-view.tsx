@@ -3,6 +3,7 @@
  * choices, and beside it that work in detail, where the session runs and what it has used. A session whose computer is
  * offline, or that is archived, reads as before and takes no new messages.
  */
+import { createUuid } from '@nocobase/app-client';
 import { useNavigate } from 'react-router';
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -432,7 +433,7 @@ function Conversation({
                 edit: (item) =>
                   setEditor({
                     item,
-                    key: `reedit:${session.id}:${crypto.randomUUID()}`,
+                    key: `reedit:${session.id}:${createUuid()}`,
                   }),
                 answer: (requestId, optionId) =>
                   answer.mutate({ requestId, optionId }, { onError: fail }),

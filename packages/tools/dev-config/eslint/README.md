@@ -76,3 +76,7 @@ application adds registry components eventually, including the ones generated
 from the templates — each would otherwise discover the same failure and write the
 same exception. Everything outside those paths, `client/components/` included,
 is held to the full rule set.
+
+## HTTP-compatible browser APIs
+
+Client libraries restrict browser source in `src/`, `client/`, `shared/`, `registry/` and `website/`; applications restrict `client/`, `shared/` and `registry/`. Direct `randomUUID` and `clipboard` property access, including optional chains and computed literal properties, is rejected. Use `createUuid()` and `copyText()` from `@nocobase/app-client` and handle the copy result. Server, CLI, scripts and tests keep their Node APIs. The shared clipboard helper alone documents its platform access with a local rule exception.

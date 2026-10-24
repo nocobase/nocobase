@@ -9,6 +9,7 @@
  * browser. Without a connected computer it says how to connect one. In a panel it starts with the panel's project and
  * shows the new session in place of opening its page.
  */
+import { createUuid } from '@nocobase/app-client';
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
@@ -111,7 +112,7 @@ export function NewSession({
     else void navigate(`/agent-sessions/${session.id}`);
   });
   // The id the next session is created with (its `submissionId`), replaced once a message was sent with it.
-  const [freshSessionId] = useState(() => crypto.randomUUID());
+  const [freshSessionId] = useState(() => createUuid());
   const [sessionId, setSessionId] = useSessionMemory(
     SESSION_ID,
     freshSessionId,
@@ -123,7 +124,7 @@ export function NewSession({
       mountedRef.current = false;
       // Replaced only once this page is gone, so the next draft does not discover while the session opens.
       if (createdRef.current)
-        client.setQueryData(sessionMemoryKey(SESSION_ID), crypto.randomUUID());
+        client.setQueryData(sessionMemoryKey(SESSION_ID), createUuid());
     };
   }, [client]);
   const [computersOpen, setComputersOpen] = useState(false);
@@ -524,10 +525,10 @@ export function NewSession({
                   sessionId,
                 );
                 if (mountedRef.current) createdRef.current = true;
-                else setSessionId(crypto.randomUUID());
+                else setSessionId(createUuid());
               } catch (error) {
                 // The id belongs to that submission now, which Retry sends again.
-                setSessionId(crypto.randomUUID());
+                setSessionId(createUuid());
                 toaster.show({
                   type: 'error',
                   title:

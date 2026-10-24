@@ -505,6 +505,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       hide: '隱藏密碼',
       copy: '複製密碼',
       copied: '密碼已複製。',
+      copyFailed: '無法複製密碼，請顯示密碼後手動複製。',
       dismiss: '我儲存了',
       dismissed: '第一個管理員已從發布管理器中刪除。',
     },

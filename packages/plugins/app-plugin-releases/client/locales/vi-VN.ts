@@ -546,6 +546,8 @@ const viVN: LocaleResource<typeof enUS> = {
       hide: 'Ẩn mật khẩu',
       copy: 'Sao chép mật khẩu',
       copied: 'Đã sao chép mật khẩu.',
+      copyFailed:
+        'Không thể sao chép mật khẩu. Hãy hiển thị và sao chép thủ công.',
       dismiss: 'Tôi đã lưu nó rồi',
       dismissed:
         'Quản trị viên đầu tiên đã bị xóa khỏi trình quản lý phát hành.',

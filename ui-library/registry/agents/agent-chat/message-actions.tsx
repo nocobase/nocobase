@@ -1,4 +1,6 @@
 /** Message-local controls; the conversation owns editing and resend admission. */
+import { copyText } from '@nocobase/app-client';
+
 import { CopyIcon, PencilIcon, RefreshCwIcon } from 'lucide-react';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { Button } from '#components/ui/button';
@@ -55,12 +57,7 @@ export function MessageActions({
   const { t } = useChatTranslation();
   const [copyError, setCopyError] = useState(false);
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopyError(false);
-    } catch {
-      setCopyError(true);
-    }
+    setCopyError(!(await copyText(text)));
   };
   return (
     <div

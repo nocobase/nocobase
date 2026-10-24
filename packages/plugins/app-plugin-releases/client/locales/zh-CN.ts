@@ -367,6 +367,7 @@ const zhCN: typeof enUS = {
       hide: '隐藏密码',
       copy: '复制密码',
       copied: '密码已复制。',
+      copyFailed: '无法复制密码，请显示密码后手动复制。',
       dismiss: '我已保存',
       dismissed: '初始管理员已从发布管理中删除。',
     },
