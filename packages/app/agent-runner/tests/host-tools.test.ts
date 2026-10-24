@@ -48,7 +48,7 @@ async function fakeTool(dir: string, name: string): Promise<string> {
   const file = path.join(dir, name);
   await writeFile(
     file,
-    `#!/bin/sh\necho "args=$*"\necho "token=$GITLAB_TOKEN$GH_TOKEN"\necho "user=$GITLAB_USER"\necho "host=$GITLAB_HOST"\necho "protocol=$API_PROTOCOL"\n`,
+    `#!/bin/sh\necho "args=$*"\necho "token=$GITLAB_TOKEN$GH_TOKEN$GITEE_TOKEN"\necho "user=$GITLAB_USER"\necho "host=$GITLAB_HOST"\necho "protocol=$API_PROTOCOL"\n`,
   );
   await chmod(file, 0o755);
   return file;
@@ -100,6 +100,7 @@ describe('code host CLI wrappers', () => {
     const realDir = path.join(root, 'real');
     await fakeTool(realDir, 'glab');
     await fakeTool(realDir, 'gh');
+    await fakeTool(realDir, 'gitee');
     const broker = new GitCredentialBroker({
       client,
       runId: 'r1',
@@ -126,6 +127,150 @@ describe('code host CLI wrappers', () => {
     };
     return { binDir, realDir, env, result };
   }
+
+  it('reports how to install a missing official Gitee CLI', async () => {
+    const messages: string[] = [];
+    const result = await writeHostTools({
+      binDir: path.join(root, 'bin'),
+      helpersDir: path.join(root, 'helpers'),
+      searchPath: path.join(root, 'empty'),
+      tools: [
+        {
+          bin: 'gitee',
+          url: REPO,
+          env: { GITEE_TOKEN: { credential: 'password' } },
+        },
+      ],
+      log: (message) => messages.push(message),
+    });
+    expect(result.wrapped).not.toContain('gitee');
+    expect(messages.join(' ')).toContain('npm install -g @gitee/gitee-cli');
+  });
+
+  it('injects the Gitee credential, denies fallback and blocks credential persistence with global flags', async () => {
+    answers = [
+      () => ({
+        username: 'oauth2',
+        password: 'gitee-fixture',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
+    const { binDir, env } = await setUp([
+      {
+        bin: 'gitee',
+        url: REPO,
+        env: { GITEE_TOKEN: { credential: 'password' } },
+      },
+    ]);
+    const result = await run(
+      path.join(binDir, 'gitee'),
+      ['pr', 'create', '--json', '--no-tui'],
+      env,
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('token=gitee-fixture');
+    expect(result.stdout).toContain(
+      'args=--hostname gitee.com pr create --json --no-tui',
+    );
+    for (const args of [
+      ['auth', 'token'],
+      ['auth', '--no-tui', 'token'],
+      ['config', '--no-tui', 'set', 'tui', 'false'],
+      ['--json', 'auth', 'login'],
+      ['config', 'set', 'ai.token', 'fixture'],
+      ['--no-tui', 'config', 'set', 'tui', 'false'],
+      ['--hostname', 'elsewhere.test', 'pr', 'list'],
+    ]) {
+      const denied = await run(path.join(binDir, 'gitee'), args, env);
+      expect(denied.code).toBe(1);
+      expect(denied.stdout).not.toContain('gitee-fixture');
+    }
+  });
+
+  it('pins effective Gitee API destinations over inherited and saved settings', async () => {
+    answers = [
+      () => ({
+        username: 'oauth2',
+        password: 'gitee-fixture',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
+    const { binDir, realDir, env } = await setUp([
+      {
+        bin: 'gitee',
+        url: REPO,
+        env: { GITEE_TOKEN: { credential: 'password' } },
+      },
+    ]);
+    const configDir = path.join(root, 'gitee-config');
+    await mkdir(configDir);
+    // No credentials: mirror official config.APIPrefix/GoAPIHost precedence.
+    await writeFile(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({
+        api_prefix: 'https://saved.invalid/api/v5',
+        go_api_host: 'saved.invalid',
+      }),
+    );
+    await writeFile(
+      path.join(realDir, 'gitee'),
+      `#!${process.execPath}
+const fs = require('node:fs');
+const config = JSON.parse(fs.readFileSync(process.env.GITEE_CONFIG_DIR + '/config.json', 'utf8'));
+console.log(JSON.stringify({api: process.env.GITEE_API_PREFIX || config.api_prefix, go: process.env.GITEE_GO_API_HOST || config.go_api_host}));
+`,
+    );
+    for (const inherited of [
+      {},
+      {
+        GITEE_API_PREFIX: 'http://inherited.invalid/api/v5',
+        GITEE_GO_API_HOST: 'inherited.invalid',
+      },
+    ]) {
+      const result = await run(
+        path.join(binDir, 'gitee'),
+        ['api', '/user', '--no-tui'],
+        {
+          ...env,
+          ...inherited,
+          GITEE_CONFIG_DIR: configDir,
+        },
+      );
+      expect(result.stderr).toBe('');
+      expect(result.code).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({
+        api: 'https://gitee.com/api/v5',
+        go: 'go-api.gitee.com',
+      });
+    }
+    const bodyURL = await run(
+      path.join(binDir, 'gitee'),
+      ['pr', 'create', '--body', 'https://ci.example/build/1'],
+      { ...env, GITEE_CONFIG_DIR: configDir },
+    );
+    expect(bodyURL.code).toBe(0);
+    const pipeline = await run(
+      path.join(binDir, 'gitee'),
+      ['pipeline', 'request', 'https://elsewhere.test/log'],
+      env,
+    );
+    expect(pipeline.code).toBe(1);
+    for (const endpoint of [
+      'http://127.0.0.1/user',
+      'https://elsewhere.test/user',
+      'https://gitee.com.elsewhere.test/user',
+      'https://gitee.com@elsewhere.test/user',
+      'https://gitee.com:8443/user',
+    ]) {
+      const result = await run(
+        path.join(binDir, 'gitee'),
+        ['api', endpoint, '--no-tui'],
+        env,
+      );
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain('only public Gitee API URLs');
+    }
+  });
 
   it('runs the real tool with the run’s current credential and the literal variables, asking anew as it expires', async () => {
     answers = [
