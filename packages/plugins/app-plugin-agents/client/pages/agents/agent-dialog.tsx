@@ -199,18 +199,16 @@ function AgentForm({
               </FieldDescription>
             </Field>
           ) : null}
-          {
-            <Field orientation='horizontal'>
-              <Switch
-                id='agent-enabled'
-                checked={enabled}
-                onCheckedChange={(checked: boolean) => setEnabled(checked)}
-              />
-              <FieldLabel htmlFor='agent-enabled'>
-                {t('agents.edit.enabled')}
-              </FieldLabel>
-            </Field>
-          }
+          <Field orientation='horizontal'>
+            <Switch
+              id='agent-enabled'
+              checked={enabled}
+              onCheckedChange={(checked: boolean) => setEnabled(checked)}
+            />
+            <FieldLabel htmlFor='agent-enabled'>
+              {t('agents.edit.enabled')}
+            </FieldLabel>
+          </Field>
           {agent.personalOnly ? (
             <p className='rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground'>
               {t('agents.enable.personalOnly')}
