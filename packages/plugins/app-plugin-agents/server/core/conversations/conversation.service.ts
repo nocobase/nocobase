@@ -782,7 +782,7 @@ export function createConversationService(
         const text = event.type === 'text' ? (event.content ?? '') : '';
         const meta = jsonObject(event.meta);
         const output = event.type === 'text' ? outputBlock(meta) : undefined;
-        if (!output && text.trim() === '') continue;
+        if (text.trim() === '') continue;
         const metadata = {
           agentId: run.agentId,
           runEventSeq: Number(event.seq),

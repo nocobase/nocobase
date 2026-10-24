@@ -589,8 +589,7 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
             },
           ]
         : [];
-      if (session.outputBlocks)
-        flushStreamChunk(cancelled || response.stopReason !== 'end_turn');
+      if (session.outputBlocks) flushStreamChunk();
       else flushLegacyChunk();
       if (usage.length) emit({ type: 'usage', meta: { usage } });
       if (cancelled || response.stopReason === 'cancelled')
@@ -610,6 +609,7 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
         };
       return { exit: 'completed', usage, sessionId, summary };
     } catch (error) {
+      if (session.outputBlocks && cancelled) flushStreamChunk();
       return {
         exit: cancelled ? 'aborted' : 'error',
         usage: [],

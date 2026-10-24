@@ -246,3 +246,45 @@ it.each(tokenFamilies)(
         }
   },
 );
+
+it('redacts labelled values adjacent to private keys before publishing them', () => {
+  for (const suffix of ['', 'tail', '. Done.']) {
+    const text =
+      'x-api-key: zzzzzz-----BEGIN PRIVATE KEY-----\nBODY123456\n-----END PRIVATE KEY-----' +
+      suffix;
+    const redactor = createRedactor();
+    for (let split = 1; split < text.length; split++) {
+      const stream = createOutputRedactor(() => redactor);
+      let live = stream.write(text.slice(0, split));
+      expect(live).not.toContain('zzzzzz');
+      live += stream.write(text.slice(split));
+      expect(live).not.toContain('zzzzzz');
+      expect(live + stream.end()).toBe(redactor.text(text));
+    }
+  }
+});
+it('bounds a long private key without releasing its adjacent labelled value', () => {
+  const redactor = createRedactor();
+  const text =
+    'x-api-key: zzzzzz-----BEGIN PRIVATE KEY-----\n' +
+    'A'.repeat(1_000_000) +
+    '\n-----END PRIVATE KEY----- tail';
+  const stream = createOutputRedactor(() => redactor);
+  let live = '';
+  for (let at = 0; at < text.length; at += 20) {
+    live += stream.write(text.slice(at, at + 20));
+    expect(stream.heldSize).toBeLessThanOrEqual(MAX_OUTPUT_HELD);
+    expect(live).not.toContain('zzzzzz');
+  }
+  expect(live + stream.end()).toBe(redactor.text(text));
+});
+
+it('does not close a private key at a different key type', () => {
+  const text =
+    'x-api-key: zzzzzz-----BEGIN RSA PRIVATE KEY-----\nBODY123456\n-----END EC PRIVATE KEY-----\nSTILLPRIVATE';
+  const redactor = createRedactor();
+  const stream = createOutputRedactor(() => redactor);
+  let live = '';
+  for (const char of text) live += stream.write(char);
+  expect(live + stream.end()).toBe(redactor.text(text));
+});

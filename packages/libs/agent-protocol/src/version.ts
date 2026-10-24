@@ -88,8 +88,10 @@ import { AGENTS, type CatalogAgentId } from '@nocobase/acp-bridge/catalog';
  * status is what it is, beyond the status itself, and the tool's own redacted words about it. Older servers ignore
  * them; a runner that does not send them is shown by status alone, as before.
  */
-/** Version 13 expands tool identities to the shared ACP catalog and adds server-selected detection. Update servers first. */
-export const PROTOCOL_VERSION = 13;
+/** Version 14 adds conversation output-block previews. Update applications before runners. */
+// Version 14 announces outputBlocks. Upgrade applications before runners: older servers reject
+// this version through compatibility handling before parsing the expanded feature enum. Older runners remain supported.
+export const PROTOCOL_VERSION = 14;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;

@@ -890,3 +890,35 @@ it.each([false, true])(
       ).toEqual(['Thinking\n\nOriginal content']);
   },
 );
+
+it.each([false, true])(
+  'subscribes to content deltas only with outputBlocks=%s',
+  async (outputBlocks) => {
+    const { adapter } = adapterWith(async (fake) => {
+      const init = await fake.nextRequest('initialize');
+      const capabilities = init.params?.capabilities as {
+        optOutNotificationMethods: string[];
+      };
+      for (const method of [
+        'item/agentMessage/delta',
+        'item/reasoning/summaryTextDelta',
+      ])
+        expect(capabilities.optOutNotificationMethods.includes(method)).toBe(
+          !outputBlocks,
+        );
+      fake.respond(init, {});
+      await fake.next((m) => m.method === 'initialized');
+      fake.respond(await fake.nextRequest('thread/start'), {
+        thread: { id: 'thread-1' },
+        model: 'gpt-test',
+      });
+      fake.respond(await fake.nextRequest('turn/start'), {
+        turn: { id: 'turn-1', status: 'inProgress', error: null },
+      });
+      completeTurn(fake);
+    });
+    const handle = adapter.start(session({ outputBlocks }));
+    await drain(handle);
+    expect((await handle.result).exit).toBe('completed');
+  },
+);

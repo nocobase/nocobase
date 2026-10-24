@@ -350,20 +350,31 @@ it('merges a turn’s small consecutive text chunks into about one event instead
   );
 });
 
-it('cancels a running turn before reaping its process', async () => {
-  const f = await fixture('hang');
-  const handle = f.adapter.start(f.session);
-  for await (const event of handle.events) {
-    if (event.type === 'text') {
-      await handle.stop();
-      break;
+it.each([false, true])(
+  'cancels a running turn before reaping its process (outputBlocks=%s)',
+  async (outputBlocks) => {
+    const f = await fixture('hang');
+    const handle = f.adapter.start({ ...f.session, outputBlocks });
+    const events: AdapterEvent[] = [];
+    for await (const event of handle.events) {
+      events.push(event);
+      if (
+        event.type === 'text' &&
+        (!outputBlocks || event.meta?.output?.phase === 'delta')
+      )
+        await handle.stop();
     }
-  }
-  expect(await handle.result).toMatchObject({ exit: 'aborted' });
-  expect((await f.messages()).map((message) => message.method)).toContain(
-    'session/cancel',
-  );
-});
+    expect(await handle.result).toMatchObject({ exit: 'aborted' });
+    if (outputBlocks)
+      expect(
+        events.find((e) => e.type === 'text' && e.meta?.output?.phase === 'end')
+          ?.content,
+      ).toBe('running');
+    expect((await f.messages()).map((message) => message.method)).toContain(
+      'session/cancel',
+    );
+  },
+);
 
 it('declines permissions during detection', async () => {
   const f = await fixture('permission');
@@ -465,3 +476,21 @@ it('retains canonical ACP blocks behind the conversation flag', async () => {
     true,
   );
 });
+
+it.each(['max_tokens', 'refusal', 'cancelled', 'crash'])(
+  'retains ACP partial snapshots on %s except process failure',
+  async (variant) => {
+    const f = await fixture(variant);
+    const handle = f.adapter.start({ ...f.session, outputBlocks: true });
+    const events: AdapterEvent[] = [];
+    for await (const event of handle.events) events.push(event);
+    await handle.result;
+    const ends = events.filter(
+      (e) => e.type === 'text' && e.meta?.output?.phase === 'end',
+    );
+    expect(ends).toHaveLength(1);
+    expect(ends[0].content).toBe(
+      variant === 'crash' ? undefined : 'Partial safe answer.',
+    );
+  },
+);

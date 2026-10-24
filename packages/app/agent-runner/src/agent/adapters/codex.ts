@@ -1068,7 +1068,13 @@ class CodexRun {
       capabilities: {
         experimentalApi: false,
         requestAttestation: false,
-        optOutNotificationMethods: OPTED_OUT_NOTIFICATIONS,
+        optOutNotificationMethods: session.outputBlocks
+          ? OPTED_OUT_NOTIFICATIONS
+          : [
+              ...OPTED_OUT_NOTIFICATIONS,
+              'item/agentMessage/delta',
+              'item/reasoning/summaryTextDelta',
+            ],
       },
     });
     rpc.notify('initialized');

@@ -1108,55 +1108,75 @@ it('keeps a 25-second preview out of storage and preserves prior users in the ne
     );
 });
 
-it('closes an unfinished preview when its run fails and persists no partial row', async () => {
-  const f = await fixture({ outputFeature: true });
-  await f.agent.send([{ role: 'user', content: 'Will fail' }]);
-  const reader = (await f.agent.receive())!.getReader();
-  const chunks: NativeUIChunk[] = [];
-  const reading = (async () => {
-    for (;;) {
-      const next = await reader.read();
-      if (next.done) break;
-      chunks.push(next.value);
+it.each([false, true])(
+  'closes failed previews and retains only supplied snapshots (snapshot=%s)',
+  async (snapshot) => {
+    const f = await fixture({ outputFeature: true });
+    await f.agent.send([{ role: 'user', content: 'Will fail' }]);
+    const reader = (await f.agent.receive())!.getReader();
+    const chunks: NativeUIChunk[] = [];
+    const reading = (async () => {
+      for (;;) {
+        const next = await reader.read();
+        if (next.done) break;
+        chunks.push(next.value);
+      }
+    })();
+    const [payload] = await claim(h, f.runner);
+    const id = payload.run.id;
+    await f.report(id, 'start', {
+      workDir: '/work/preview',
+      adapter: { kind: 'codex' },
+      acceptsInput: true,
+    });
+    await f.report(id, 'events', {
+      events: [
+        {
+          seq: 1,
+          at: h.clock.now().toISOString(),
+          type: 'text',
+          content: 'Partial reply',
+          meta: { output: { blockId: 'partial', phase: 'delta' } },
+        },
+      ],
+    });
+    await vi.waitFor(() =>
+      expect(chunks.some((e) => e.type === 'text-delta')).toBe(true),
+    );
+    if (snapshot)
+      await f.report(id, 'events', {
+        events: [
+          {
+            seq: payload.run.firstSeq,
+            at: h.clock.now().toISOString(),
+            type: 'text',
+            content: 'Partial reply',
+            meta: { output: { blockId: 'partial', phase: 'end' } },
+          },
+        ],
+      });
+    expect(
+      (
+        await f.report(id, 'fail', {
+          reason: 'toolProcess',
+          detail: 'Fixture failure',
+          handledInputIds: payload.inputs.map((i) => i.id),
+        })
+      ).status,
+    ).toBe(200);
+    await reading;
+    expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(1);
+    expect(chunks.at(-1)?.type).toBe('finish');
+    expect(
+      (await f.agent.history()).filter((m) => m.role === 'assistant'),
+    ).toHaveLength(snapshot ? 1 : 0);
+    if (snapshot) {
+      await f.agent.send([{ role: 'user', content: 'Continue' }]);
+      const [next] = await claim(h, f.runner);
+      expect(JSON.stringify(next.prompt)).toContain('Partial reply');
     }
-  })();
-  const [payload] = await claim(h, f.runner);
-  const id = payload.run.id;
-  await f.report(id, 'start', {
-    workDir: '/work/preview',
-    adapter: { kind: 'codex' },
-    acceptsInput: true,
-  });
-  await f.report(id, 'events', {
-    events: [
-      {
-        seq: 1,
-        at: h.clock.now().toISOString(),
-        type: 'text',
-        content: 'Partial reply',
-        meta: { output: { blockId: 'partial', phase: 'delta' } },
-      },
-    ],
-  });
-  await vi.waitFor(() =>
-    expect(chunks.some((e) => e.type === 'text-delta')).toBe(true),
-  );
-  expect(
-    (
-      await f.report(id, 'fail', {
-        reason: 'toolProcess',
-        detail: 'Fixture failure',
-        handledInputIds: payload.inputs.map((i) => i.id),
-      })
-    ).status,
-  ).toBe(200);
-  await reading;
-  expect(chunks.filter((e) => e.type === 'text-end')).toHaveLength(1);
-  expect(chunks.at(-1)?.type).toBe('finish');
-  expect(
-    (await f.agent.history()).filter((m) => m.role === 'assistant'),
-  ).toHaveLength(0);
-});
+  },
+);
 
 it('never enables previews for tasks and rejects forged task output metadata', async () => {
   const f = await fixture({ outputFeature: true });
@@ -1355,6 +1375,8 @@ for (const type of ['text', 'thinking'] as const)
       'ghp_' + 'a'.repeat(36) + '. Next sentence.',
       'ordinaryprefixghp_' + 'a'.repeat(36) + ' done.',
       'AKIA' + 'A'.repeat(16) + 'x',
+      'x=1https://user:pass@host',
+      'x-api-key: zzzzzz-----BEGIN PRIVATE KEY-----',
     ])(
       `preserves reviewed ${type} boundaries through ${mode}, routes, storage and UI: %s`,
       async (text) => {
@@ -1456,7 +1478,8 @@ for (const type of ['text', 'thinking'] as const)
                   })
                 ).status,
               ).toBe(200);
-            expect(expected.startsWith(live(blockId))).toBe(true);
+            if (text !== 'x=1https://user:pass@host')
+              expect(expected.startsWith(live(blockId))).toBe(true);
           }
           let complete: Record<string, unknown> = {
             type,
@@ -1483,7 +1506,8 @@ for (const type of ['text', 'thinking'] as const)
               })
             ).status,
           ).toBe(200);
-          await vi.waitFor(() => expect(live(blockId)).toBe(expected));
+          if (text !== 'x=1https://user:pass@host')
+            await vi.waitFor(() => expect(live(blockId)).toBe(expected));
           const stored = (
             await h.services.runs.events(id, 0, 1000)
           ).events.find((e) => e.meta?.output?.blockId === blockId);
@@ -1511,7 +1535,7 @@ for (const type of ['text', 'thinking'] as const)
     );
 
 it.each(['text', 'thinking'] as const)(
-  'checks the complete %s prefix and fails the existing UI channel on a divergent snapshot',
+  'closes a divergent %s preview and finishes normally for history reconciliation',
   async (type) => {
     const f = await fixture({ outputFeature: true });
     await f.agent.send([{ role: 'user', content: 'Mismatch guard' }]);
@@ -1564,8 +1588,13 @@ it.each(['text', 'thinking'] as const)(
         })
       ).status,
     ).toBe(200);
+    await f.report(id, 'complete', {
+      summary: 'Complete',
+      handledInputIds: payload.inputs.map((i) => i.id),
+    });
     await reading;
-    expect(chunks.filter((e) => e.type === 'error')).toHaveLength(1);
+    expect(chunks.filter((e) => e.type === 'error')).toHaveLength(0);
+    expect(chunks.some((e) => e.type === 'finish')).toBe(true);
     expect(
       chunks
         .filter(
@@ -1645,3 +1674,31 @@ it.each(['text', 'thinking'] as const)(
     expect(chunks.filter((e) => e.type === 'error')).toHaveLength(0);
   },
 );
+
+it('does not create assistant history rows for empty completed blocks', async () => {
+  const f = await fixture({ outputFeature: true });
+  await f.agent.send([{ role: 'user', content: 'Empty response' }]);
+  const [payload] = await claim(h, f.runner);
+  const id = payload.run.id;
+  await f.report(id, 'start', {
+    workDir: '/work/empty',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  });
+  await f.report(id, 'events', {
+    events: ['', '   '].map((content, index) => ({
+      seq: payload.run.firstSeq + index,
+      at: h.clock.now().toISOString(),
+      type: 'text',
+      content,
+      meta: { output: { blockId: 'empty-' + index, phase: 'end' } },
+    })),
+  });
+  await f.report(id, 'complete', {
+    summary: '',
+    handledInputIds: payload.inputs.map((i) => i.id),
+  });
+  expect(
+    (await f.agent.history()).filter((m) => m.role === 'assistant'),
+  ).toEqual([]);
+});

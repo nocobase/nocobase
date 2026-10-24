@@ -86,34 +86,59 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
   let peak = 0;
   let dropping: 'key' | 'rest' | undefined;
   let left = ' ';
+  let keyTail = '';
+  let keyClose = '';
   const publish = (text: string): string => {
     if (text) left = text.slice(-1);
     return text;
   };
   function scan(piece: string): string {
     let text = held + piece;
-    held = '';
     if (dropping === 'rest') return '';
     if (dropping === 'key') {
-      const end = keyEnd.exec(text);
-      if (!end) {
-        held = text.slice(-80);
-        peak = Math.max(peak, held.length);
+      const keyText = keyTail + piece;
+      const end = keyText.indexOf(keyClose);
+      if (end < 0) {
+        keyTail = keyText.slice(-80);
+        if (held.length + keyTail.length >= MAX_OUTPUT_HELD) {
+          held = keyTail = '';
+          dropping = 'rest';
+        }
+        peak = Math.max(peak, held.length + keyTail.length);
         return '';
       }
-      text = text.slice(end.index + end[0].length);
+      text = held + keyText.slice(end + keyClose.length);
+      keyTail = '';
       dropping = undefined;
     }
+    held = '';
     const redactor = current();
     // A URL's public scheme may already have been emitted; retain recognition of its credentials.
     const redact = (value: string): string =>
       redactor.text((value.startsWith('://') ? 'x' : left) + value).slice(1);
+    if (begin.test(text)) {
+      for (const secret of redactor.secrets)
+        text = text.split(secret).join(REDACTED);
+      // Normalize complete keys before looking for token delimiters: their embedded newlines
+      // disappear in canonical redaction and must not release an adjacent labelled value.
+      text = text.replace(
+        /-----BEGIN ([A-Z0-9 ]*?)PRIVATE KEY( BLOCK)?-----[\s\S]*?-----END \1PRIVATE KEY\2-----/gu,
+        REDACTED,
+      );
+    }
     const key = begin.exec(text);
-    if (key && !keyEnd.test(text.slice(key.index))) {
+    if (key) {
       dropping = 'key';
-      held = text.slice(-80);
-      peak = Math.max(peak, held.length);
-      return publish(redact(text.slice(0, key.index)) + REDACTED);
+      // An unusually long header cannot fit the bounded terminator window; defer to the snapshot.
+      if (key[0].length > 80) {
+        dropping = 'rest';
+        return '';
+      }
+      keyClose = key[0].replace('BEGIN', 'END');
+      keyTail = text.slice(-80);
+      // Apply later patterns to the private-key replacement in the same order as canonical redaction.
+      // In particular a short labelled value can become sensitive when adjacent to this marker.
+      text = text.slice(0, key.index) + REDACTED;
     }
     // A write boundary is not a token boundary. Retain the complete candidate until its real delimiter arrives.
     const contexts = [{ value: left + text, offset: -1 }];
@@ -184,17 +209,18 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
       safe = '';
     }
     held = text.slice(cut);
-    if (held.length >= MAX_OUTPUT_HELD) {
+    if (held.length + keyTail.length >= MAX_OUTPUT_HELD) {
       // An overlong unresolved credential is omitted rather than retaining or releasing an unsafe suffix.
       held = '';
+      keyTail = '';
       dropping = 'rest';
     }
-    peak = Math.max(peak, held.length);
+    peak = Math.max(peak, held.length + keyTail.length);
     return publish(safe);
   }
   return {
     get heldSize(): number {
-      return held.length;
+      return held.length + keyTail.length;
     },
     get peakHeld(): number {
       return peak;
@@ -208,10 +234,10 @@ export function createOutputRedactor(current: () => Redactor): OutputRedactor {
     end(interrupted = false): string {
       let text = held;
       held = '';
-      if (dropping) {
-        dropping = undefined;
-        return '';
-      }
+      const stopped = dropping === 'rest';
+      dropping = undefined;
+      keyTail = '';
+      if (stopped) return '';
       if (interrupted)
         for (const secret of current().secrets) {
           if (text.length >= 6 && secret.startsWith(text)) {

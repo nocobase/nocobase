@@ -645,11 +645,8 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
           execution.published.add(partId);
         }
       execution.previewDigests.clear();
-      execution.writer.fail(
-        new Error(
-          'A preview differed from its canonical snapshot; reconcile saved history.',
-        ),
-      );
+      // Preview is best effort. Finish normally so the existing onFinish history refresh
+      // replaces it with committed content, without turning a successful run into a UI error.
       return undefined;
     }
     return length;
