@@ -7,6 +7,7 @@
   "Optional. Sent as the \"HTTP-Referer\" header for app attribution.": "可选。作为 \"HTTP-Referer\" 请求头发送，用于应用来源标识。",
   "Optional. Sent as the \"X-Title\" header for app attribution.": "可选。作为 \"X-Title\" 请求头发送，用于应用来源标识。",
   "OrcaRouter (model routing gateway)": "OrcaRouter（模型路由网关）",
+  "Atlas Cloud (OpenAI-compatible model gateway)": "Atlas Cloud（OpenAI 兼容模型网关）",
   "AI employee": "AI 员工",
   "AI employee event": "AI employee 事件",
   "AI employee permissions": "AI 员工权限",
