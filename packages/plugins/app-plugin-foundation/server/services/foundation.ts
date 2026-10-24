@@ -249,18 +249,25 @@ export class DefaultFoundationService implements FoundationService {
           ],
         };
     }
-    const signature = JSON.stringify(
-      inventory?.collections
-        .filter((item) => item.kind === 'table')
-        .map((item) => item.name)
-        .sort(),
-    );
+    const signature = inventory
+      ? JSON.stringify(
+          inventory.collections
+            .filter((item) => item.kind === 'table')
+            .map((item) => item.name)
+            .sort(),
+        )
+      : this.recordCount?.signature;
     const data = capabilities.find((item) => item.key === 'dataModeling');
     const recordMetric = data?.metrics.find(
       (item) => item.key === 'businessRecords',
     );
     if (this.recordCount?.signature !== signature) this.recordCount = undefined;
-    if (countRecords && recordMetric?.complete && recordMetric.value !== null) {
+    if (
+      countRecords &&
+      signature !== undefined &&
+      recordMetric?.complete &&
+      recordMetric.value !== null
+    ) {
       this.recordCount = {
         signature,
         metric: recordMetric,
@@ -268,7 +275,6 @@ export class DefaultFoundationService implements FoundationService {
       };
     } else if (
       this.recordCount &&
-      data?.completeness !== 'failed' &&
       !data?.facts.some((item) => item.code === 'collectionOwnershipUnknown')
     ) {
       const index = capabilities.findIndex(
@@ -277,9 +283,22 @@ export class DefaultFoundationService implements FoundationService {
       if (data)
         capabilities[index] = {
           ...data,
-          metrics: data.metrics.map((item) =>
-            item.key === 'businessRecords' ? this.recordCount!.metric : item,
-          ),
+          metrics: data.metrics.some((item) => item.key === 'businessRecords')
+            ? data.metrics.map((item) =>
+                item.key === 'businessRecords'
+                  ? {
+                      ...this.recordCount!.metric,
+                      checkedAt: this.recordCount!.checkedAt,
+                    }
+                  : item,
+              )
+            : [
+                {
+                  ...this.recordCount.metric,
+                  checkedAt: this.recordCount.checkedAt,
+                },
+                ...data.metrics,
+              ],
         };
     }
     const moduleSources = await collectModuleSources(

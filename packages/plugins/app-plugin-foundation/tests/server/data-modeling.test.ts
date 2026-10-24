@@ -185,6 +185,26 @@ it('records missing definitions as unreadable for field inspection too', async (
   ]);
 });
 
+it('retains the explicit row count and its original date when the catalog cannot be read', async () => {
+  const { database, createService } = await application();
+  const service = createService();
+  const first = await service.overview({ countRecords: true });
+  const catalog = vi.spyOn(database, 'collections').mockImplementation(() => {
+    throw new Error('private catalog detail');
+  });
+  const failed = await service.overview({ refresh: true });
+  expect(failed.recordCountCheckedAt).toBe(first.recordCountCheckedAt);
+  expect(failed.capabilities[0]?.metrics).toContainEqual(
+    expect.objectContaining({
+      key: 'businessRecords',
+      value: 7,
+      checkedAt: first.recordCountCheckedAt,
+    }),
+  );
+  expect(JSON.stringify(failed)).not.toContain('private');
+  catalog.mockRestore();
+});
+
 it('treats a present definition with omitted optional fields as an exact empty definition', async () => {
   const { get, createService } = await application();
   get.mockImplementation(async (name) => ({ name }));
