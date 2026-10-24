@@ -10,6 +10,10 @@ The homepage links to article management, repository queries, CRM, orders, file 
 
 Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories. As an already built application, Examples registers the prepared Users and Roles and permissions pages that Default can enable as business capabilities are developed. Used configurable capabilities include their administration surfaces as part of feature delivery. Keep these product integrations aligned with Default.
 
+## App foundation
+
+Open **App foundation** in the sidebar, or `/foundation` relative to this application's mount path, to inspect its Core capabilities, usage evidence and statistics. Examples registers the Foundation Client and Server plugins as a deployment dependency, alongside its demonstrations. The page and its `/api/foundation/overview` endpoint require unrestricted administrator access, such as the root Permission Set; ordinary users cannot see the menu entry or read the evidence. A mounted application at `/my-examples/` exposes the page at `/my-examples/foundation`.
+
 ## Create an examples application
 
 After this template and the updated scaffolder have been published:
