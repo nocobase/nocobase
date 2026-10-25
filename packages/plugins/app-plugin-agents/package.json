@@ -286,7 +286,7 @@
     "@ai-sdk/moonshotai": "catalog:",
     "@ai-sdk/openai": "catalog:",
     "@ai-sdk/openai-compatible": "catalog:",
-    "@ai-sdk/provider-utils": "5.0.54",
+    "@ai-sdk/provider-utils": "catalog:",
     "@nocobase/agent-protocol": "workspace:^",
     "@nocobase/app-cli-client": "workspace:^",
     "@nocobase/cli-envelope": "workspace:^",
