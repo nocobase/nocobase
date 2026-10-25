@@ -378,13 +378,13 @@ const deDE: LocaleResource<typeof enUS> = {
         none: 'Kein Zugang',
       },
       title: 'Weltraumzugriff',
-      description: 'Wer darf in {{space}} lesen, vorschlagen und bearbeiten?',
+      description: 'Wer darf auf {{space}} zugreifen?',
       yours: 'Ihr Zugang',
       actions: {
         read: 'Lesen Sie die Dokumente und durchsuchen Sie sie',
         propose:
           'Schlagen Sie Änderungen vor, damit jemand, der sie bearbeiten kann, darüber entscheiden kann',
-        edit: 'Bearbeiten, organisieren und überprüfen Sie Dokumente und entscheiden Sie über Vorschläge',
+        edit: 'Dokumente bearbeiten, organisieren und überprüfen',
         manage: 'Ändern Sie, wer auf jeden Ordner und Artikel zugreifen darf',
       },
       allowed: 'Erlaubt',

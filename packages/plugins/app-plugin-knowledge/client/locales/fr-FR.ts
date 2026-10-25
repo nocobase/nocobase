@@ -389,13 +389,13 @@ const frFR: LocaleResource<typeof enUS> = {
         none: "Pas d'accès",
       },
       title: "Accès à l'espace",
-      description: 'Qui peut lire, proposer et éditer dans {{space}}.',
+      description: 'Qui peut accéder à {{space}}.',
       yours: 'Votre accès',
       actions: {
         read: 'Lire les documents et les rechercher',
         propose:
           "Proposer des modifications à quelqu'un qui peut modifier pour décider",
-        edit: 'Modifier, organiser et vérifier les documents et décider des propositions',
+        edit: 'Modifier, organiser et vérifier les documents',
         manage: 'Changer qui peut accéder à chaque dossier et article',
       },
       allowed: 'Autorisé',

@@ -1425,5 +1425,15 @@ it.each([true, false])(
         request.path.startsWith('knowledge/proposals'),
       ),
     ).toEqual([]);
+    const group = await screen.findByTestId('knowledge-space-project');
+    await press(within(group).getByRole('button', { name: 'Space actions' }));
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Space access' }),
+    );
+    const sheet = await screen.findByTestId('knowledge-space-access');
+    expect(within(sheet).queryByText(/propos/i)).not.toBeInTheDocument();
+    expect(
+      within(sheet).queryByText(/read and propose at most/),
+    ).not.toBeInTheDocument();
   },
 );

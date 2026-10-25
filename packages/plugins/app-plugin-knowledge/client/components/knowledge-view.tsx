@@ -1023,6 +1023,7 @@ export function KnowledgeView({
       ) : null}
       {dialog?.kind === 'spaceAccess' && own ? (
         <SpaceAccessSheet
+          proposalsEnabled={proposalsEnabled}
           open
           onOpenChange={(next) => !next && setDialog(null)}
           access={access}
