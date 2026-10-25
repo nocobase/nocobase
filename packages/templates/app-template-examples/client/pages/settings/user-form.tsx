@@ -174,6 +174,11 @@ export function RoleSelection({
           </ComboboxList>
         </ComboboxContent>
       </Combobox>
+      {scope.key === 'app' && selected.length === 0 && (
+        <p className='text-sm text-muted-foreground'>
+          {t('settings.noRoleAccess')}
+        </p>
+      )}
     </div>
   );
 }
@@ -223,7 +228,14 @@ function UserEditor(): ReactElement {
     password: '',
   };
   const [roleDraft, setRoleDraft] = useState<Record<string, UserRoleValue>>({});
-  const roles = { ...(initial?.roleScopes ?? {}), ...roleDraft };
+  const defaults = creating
+    ? Object.fromEntries(
+        (options.data?.data.roleScopes ?? [])
+          .filter((scope) => scope.defaultValue !== undefined)
+          .map((scope) => [scope.key, scope.defaultValue!]),
+      )
+    : {};
+  const roles = { ...defaults, ...(initial?.roleScopes ?? {}), ...roleDraft };
   const changedRoles = Object.fromEntries(
     Object.entries(roleDraft).filter(
       ([key, value]) =>

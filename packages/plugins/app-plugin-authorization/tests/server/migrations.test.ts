@@ -42,6 +42,7 @@ describe('@nocobase/app-plugin-authorization database', () => {
       {
         name: '202608250002_authorization_create_member_set',
       },
+      { name: '202611010001_authorization_explicit_member_assignments' },
     ]);
   });
 

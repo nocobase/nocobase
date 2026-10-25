@@ -148,3 +148,7 @@ Batch invitations send at most five emails concurrently with a shared 30-second 
 Management clients can retrieve the latest account and role scopes with `UsersClient.get(userId)` (`GET /api/users/:userId`), protected by the same authenticated `user/read` boundary as the list. List requests accept `sort: 'name'` and `order: 'asc' | 'desc'`; sorting occurs before pagination and IDs break ties. Omitting sorting preserves the existing creation-time order.
 
 A user editor can submit profile fields and `roleScopes` together through `PATCH /api/users/:userId`. Profile fields require `update`, scopes require `assign-role`, and a combined update requires both. Every submitted change commits in one transaction; any failure rolls the whole update back. Omitted scopes remain unchanged, and profile-only payloads retain their existing behavior.
+
+## Explicit Member assignments
+
+New accounts default to a saved, editable Member role. Omitted creation scopes use the default; an explicit empty role list stays empty. See [Member roles and the upgrade checklist](MEMBER-ROLES.md) for existing-user preservation, account basics, and the required package and application-page updates.

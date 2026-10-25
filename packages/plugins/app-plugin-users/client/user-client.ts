@@ -20,6 +20,7 @@ export interface UserRoleScopeOption {
   readonly selection: 'single' | 'multiple';
   readonly requiredOnCreate: boolean;
   readonly hasAuthenticatedDefaultAccess?: boolean;
+  readonly defaultValue?: UserRoleValue;
   readonly options: readonly UserRoleOption[];
 }
 

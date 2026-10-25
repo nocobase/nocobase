@@ -11,14 +11,7 @@ type Assignment = {
 function unexpectedGlobalAssignments(
   assignments: readonly Assignment[],
 ): Assignment[] {
-  return assignments.filter(
-    (assignment) =>
-      assignment.subjectId === '*' &&
-      !(
-        assignment.subjectType === 'authenticated' &&
-        assignment.permissionSetKey === 'member'
-      ),
-  );
+  return assignments.filter((assignment) => assignment.subjectId === '*');
 }
 
 const test = createAppTest({
@@ -76,5 +69,13 @@ it('detects wildcard recipients regardless of the role name, while preserving ex
       global,
       { ...global, subjectType: 'everyone' },
     ]),
-  ).toEqual([global, { ...global, subjectType: 'everyone' }]);
+  ).toEqual([
+    {
+      subjectType: 'authenticated',
+      subjectId: '*',
+      permissionSetKey: 'member',
+    },
+    global,
+    { ...global, subjectType: 'everyone' },
+  ]);
 });
