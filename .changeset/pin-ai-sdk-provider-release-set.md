@@ -1,6 +1,5 @@
 ---
 "@nocobase/app-plugin-agents": patch
-"@nocobase/app-plugin-demo-mode": patch
 ---
 
-Pin AI SDK providers to the tested release set so fresh installations and Pro release builds do not mix incompatible provider-utils schema types.
+Pin official AI SDK providers to the compatible ai/provider-utils release set to prevent independent provider patch upgrades from breaking Agents builds. The workspace also constrains Ollama's provider-utils dependency; independently installed applications must manage Ollama's transitive dependency alignment themselves.

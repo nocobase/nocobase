@@ -30,6 +30,9 @@ catalogs:
     '@ai-sdk/openai-compatible':
       specifier: 3.0.63
       version: 3.0.63
+    '@ai-sdk/provider-utils':
+      specifier: 5.0.54
+      version: 5.0.54
     '@ai-sdk/react':
       specifier: 4.0.131
       version: 4.0.131
@@ -244,7 +247,7 @@ catalogs:
       specifier: ^12.0.0
       version: 12.1.0
     ollama-ai-provider-v2:
-      specifier: 4.0.1
+      specifier: ^4.0.1
       version: 4.0.1
     oracledb:
       specifier: ^6.10.0
@@ -332,6 +335,7 @@ catalogs:
       version: 4.6.5
 
 overrides:
+  ollama-ai-provider-v2>@ai-sdk/provider-utils: 5.0.54
   '@anthropic-ai/sdk>zod': 3.25.76
   '@langchain/anthropic>zod': 3.25.76
   '@langchain/classic>zod': 3.25.76
@@ -3295,7 +3299,7 @@ importers:
         specifier: 'catalog:'
         version: 3.0.63(zod@4.6.5)
       '@ai-sdk/provider-utils':
-        specifier: 5.0.54
+        specifier: 'catalog:'
         version: 5.0.54(zod@4.6.5)
       '@ai-sdk/react':
         specifier: 'catalog:'

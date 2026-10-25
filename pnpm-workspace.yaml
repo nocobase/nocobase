@@ -10,8 +10,12 @@ packages:
 verifyDepsBeforeRun: false
 
 catalog:
-  # Keep the AI SDK providers on the tested ai/provider-utils release set.
-  # Independent patch updates can split Schema's unique-symbol identity.
+  # Upgrade this AI SDK release set together; Agents tests/ai-sdk-dependencies.test.ts
+  # checks every installed provider against ai and provider-utils (Schema uses a unique symbol).
+  # Exact official provider versions also constrain published dependencies; workspace overrides do not.
+  ai: 7.0.128
+  '@ai-sdk/react': 4.0.131
+  '@ai-sdk/provider-utils': 5.0.54
   '@ai-sdk/alibaba': 2.0.61
   '@ai-sdk/anthropic': 4.0.72
   '@ai-sdk/cohere': 4.0.55
@@ -20,6 +24,7 @@ catalog:
   '@ai-sdk/moonshotai': 3.0.63
   '@ai-sdk/openai': 4.0.84
   '@ai-sdk/openai-compatible': 3.0.63
+  ollama-ai-provider-v2: ^4.0.1
   '@arethetypeswrong/cli': ^0.18.5
   '@base-ui/react': ^1.6.0
   '@better-auth/api-key': 1.7.5
@@ -64,8 +69,6 @@ catalog:
   '@vitejs/plugin-react': ^4.4.1
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/eslint-plugin': ^1.6.27
-  ai: 7.0.128
-  '@ai-sdk/react': 4.0.131
   ajv: ^8.20.0
   better-auth: 1.7.5
   better-sqlite3: ^13.0.3
@@ -93,7 +96,6 @@ catalog:
   lint-staged: ^17.3.0
   lucide-react: ^0.487.0
   mermaid: ^12.0.0
-  ollama-ai-provider-v2: 4.0.1
   oracledb: ^6.10.0
   pino: ^10.3.1
   pino-pretty: ^13.0.0
@@ -131,6 +133,9 @@ catalog:
 # part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
 # LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
 overrides:
+  # Ollama declares a provider-utils range; constrain workspace builds to the same release set.
+  # This root override does not constrain an application's independent installation of Agents.
+  'ollama-ai-provider-v2>@ai-sdk/provider-utils': 'catalog:'
   '@anthropic-ai/sdk>zod': 3.25.76
   '@langchain/anthropic>zod': 3.25.76
   '@langchain/classic>zod': 3.25.76
