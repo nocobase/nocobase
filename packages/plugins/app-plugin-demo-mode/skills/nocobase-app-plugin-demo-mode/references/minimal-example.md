@@ -68,7 +68,7 @@ const demoManagementRoutes = demoModeRoutes([
 
 `defineDemoModeConfig()` publishes `demoMode.enabled` to the browser. `demoModeRoutes()` includes these routes only when that flag is `true`, so ordinary deployments have neither the menu nor a directly accessible management route, even for root. Existing applications must wrap their own demo route declarations with this helper; registering the plugin alone cannot change application-owned menus. Verify both enabled and disabled deployments after integration.
 
-The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give the administrator `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not add a page grant for the management route: it uses settings authorization. Outside Demo Mode these settings items are not registered; see [management access](../SKILL.md#management-access). A reader with only the data read action can inspect data status but cannot generate, clear or reset.
+The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give page viewers `settings:demoMode.data/read` and `settings:demoMode.configuration/read` through the host's authorization mechanism. API mutations additionally need the corresponding `manage` or `configure` action. Do not add a page grant for the management route: it uses settings authorization. Outside Demo Mode these settings items are not registered; see [management access](../SKILL.md#management-access). The page is read-only for every account and has no generation, clear, reset or dataset language controls.
 
 Create `client/pages/settings/demo-mode.tsx` using the public component:
 
@@ -85,12 +85,12 @@ Wrap each top-level page in the application's existing `PageContainer`, followin
 ## 3. Generate and verify
 
 1. Run the application's normal migrations/startup and open its printed application entry URL. Sign in as the initial administrator described in [confirm the dedicated deployment](../SKILL.md#confirm-the-dedicated-deployment) and open `/demo-mode` under System management.
-2. Generate `en-US`. Expect one project, two tasks and two visitor accounts. Open `/demo-sign-in?as=demo_alex&redirect=/demo-projects`: Alex sees “Review the first issue”. Sam sees “Prepare the next issue”. The server filters by assignee even if the caller changes the URL.
+2. Generate `en-US` through the CLI or API described below, then refresh the page. Expect one project, two tasks and two visitor accounts. Open `/demo-sign-in?as=demo_alex&redirect=/demo-projects`: Alex sees “Review the first issue”. Sam sees “Prepare the next issue”. The server filters by assignee even if the caller changes the URL.
 3. Open the header’s “Demo mode · Switch account” menu. Check the notice, account roles and current-account check, switch between Alex and Sam, and verify that each sees their assigned task.
-4. Reset as the administrator. Expect one project and two tasks again, with no duplicates; an existing visitor session remains valid. Clear, then generate again to exercise account disable/reuse separately.
+4. Reset through the CLI or API as the administrator. Expect one project and two tasks again, with no duplicates; an existing visitor session remains valid. Clear, then generate again to exercise account disable/reuse separately.
 5. For a writable demo, add an authorized business mutation through the application's normal API workflow, enable only its collection, create visitor content and verify reset removes it. The minimal example intentionally exposes only reading.
 
-Alternatively use `pnpm nocobase demo-mode data import --actor <existing-admin-id> --language en-US --dry-run`, then replace `--dry-run` with `--force` after reviewing the target deployment. `--actor` takes the administrator's user ID, the `id` of its row in the `user` table, not its username. Dry-run prints the requested operation without starting or validating the application. Prefer the management page when the ID is not already known.
+Use `pnpm nocobase demo-mode data import --actor <existing-admin-id> --language en-US --dry-run`, then replace `--dry-run` with `--force` after reviewing the target deployment. `--actor` takes the administrator's user ID, the `id` of its row in the `user` table, not its username. Dry-run prints the requested operation without starting or validating the application. The management page displays the resulting status; it does not start data operations.
 
 Only after this path works, read [write policies](policies.md) for exceptions/scheduling or [simulation](simulation.md) for AI. Keep those integrations out of a demo that does not need them.
 

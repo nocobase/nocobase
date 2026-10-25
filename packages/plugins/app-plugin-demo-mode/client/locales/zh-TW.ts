@@ -34,22 +34,16 @@ const resource: DemoModeResource = {
     refresh: '重新整理',
     retry: '重試',
     busy: '正在產生或清除示範資料',
-    busyHelp: '請等待目前的資料操作完成後再開始其他操作。',
+    busyHelp: '請等待目前的資料操作完成。',
     disabled: {
       title: '這個應用不是示範環境',
       help: '示範模式未開啟，部署時以 NOCOBASE_DEMO_MODE=true 開啟。',
     },
-    cancel: '取消',
     errors: {
       failed: '請求沒有完成，請重試。',
-      conflict: '其他管理員先儲存了這項設定。',
-      busy: '正在產生或清除示範資料，完成後再試。',
-      exists: '示範資料已經產生，請使用重設。',
       demoModeRequired: '只有開啟示範模式時才能這樣做。',
-      accountConflict: '某個示範使用者名稱屬於不歸示範所有的帳號。',
-      unavailable: '這個應用沒有提供示範資料。',
       signedOut: '登入已逾期，請重新登入。',
-      denied: '你沒有管理示範環境的權限。',
+      denied: '你沒有檢視示範設定的權限。',
     },
     data: {
       title: '示範資料',
@@ -67,34 +61,10 @@ const resource: DemoModeResource = {
         clearing: '清除現有資料',
         generating: '重新產生',
       },
-      absentSummary: '產生示範資料後，訪客就能在完整的業務情境中體驗應用。',
-      language: '語言',
-      clear: '清除',
-      reset: '重設',
-      generate: '產生',
+      absentSummary: '尚未產生示範資料。',
       failed: '上一次沒有完成',
-      readOnly: '你可以檢視示範資料；產生、重設和清除需要管理權限。',
       unavailable: '沒有示範資料',
       unavailableHelp: '這個應用沒有註冊示範資料集。',
-      cleared: '已清除示範資料',
-      resetStarted: '正在重設示範資料',
-      importStarted: '正在產生示範資料',
-      confirm: {
-        import: {
-          title: '產生示範資料？',
-          description: '以{{language}}產生示範資料，並啟用其中的示範帳號。',
-        },
-        reset: {
-          title: '重設示範資料？',
-          description:
-            '會刪除這個執行個體中的全部業務資料（包括訪客新增的內容），然後以{{language}}重新產生示範資料。',
-        },
-        clear: {
-          title: '清除示範資料？',
-          description:
-            '會刪除這個執行個體中的全部業務資料（包括訪客新增的內容），並停用示範帳號。設定和管理員保留。',
-        },
-      },
     },
     visitors: {
       unavailable: '目前沒有可進入的帳號。',

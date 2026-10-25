@@ -38,27 +38,18 @@ const resource: DemoModeResource = {
     refresh: 'Actualiser',
     retry: 'Réessayer',
     busy: 'Les données de démonstration sont en cours de génération ou d’effacement',
-    busyHelp:
-      'Attendez la fin de l’opération en cours avant d’en lancer une autre.',
+    busyHelp: 'Veuillez attendre la fin de l’opération de données en cours.',
     disabled: {
       title: 'Cette application n’est pas une démonstration',
       help: 'Le mode démonstration est désactivé. Le déploiement l’active avec NOCOBASE_DEMO_MODE=true.',
     },
-    cancel: 'Annuler',
     errors: {
       failed: 'La requête n’a pas abouti. Réessayez.',
-      conflict: 'Un autre administrateur a enregistré ce réglage en premier.',
-      busy: 'Les données de démonstration sont en cours de génération ou d’effacement. Réessayez une fois terminé.',
-      exists:
-        'Les données de démonstration sont déjà générées. Réinitialisez-les plutôt.',
       demoModeRequired:
         'Possible uniquement lorsque le mode démonstration est activé.',
-      accountConflict:
-        'Un nom d’utilisateur de démonstration appartient à un compte que la démonstration ne possède pas.',
-      unavailable:
-        'Cette application ne fournit pas de données de démonstration.',
       signedOut: 'Votre session a expiré. Reconnectez-vous.',
-      denied: 'Vous n’avez pas l’autorisation de gérer la démonstration.',
+      denied:
+        'Vous n’avez pas l’autorisation de consulter les paramètres de démonstration.',
     },
     data: {
       title: 'Données de démonstration',
@@ -77,38 +68,11 @@ const resource: DemoModeResource = {
         clearing: 'Effacement',
         generating: 'Nouvelle génération',
       },
-      absentSummary:
-        'Générez les données de démonstration pour que les visiteurs explorent l’application à travers une histoire complète.',
-      language: 'Langue',
-      clear: 'Effacer',
-      reset: 'Réinitialiser',
-      generate: 'Générer',
+      absentSummary: 'Aucune donnée de démonstration n’a encore été générée.',
       failed: 'La dernière exécution n’a pas abouti',
-      readOnly:
-        'Vous pouvez consulter les données de démonstration ; générer, réinitialiser et effacer demandent l’autorisation de gestion.',
       unavailable: 'Aucune donnée de démonstration',
       unavailableHelp:
         'Cette application n’enregistre pas de jeu de données de démonstration.',
-      cleared: 'Données de démonstration effacées',
-      resetStarted: 'Réinitialisation des données de démonstration',
-      importStarted: 'Génération des données de démonstration',
-      confirm: {
-        import: {
-          title: 'Générer les données de démonstration ?',
-          description:
-            'Les données sont générées en {{language}} et leurs comptes de démonstration sont activés.',
-        },
-        reset: {
-          title: 'Réinitialiser les données de démonstration ?',
-          description:
-            'Toutes les données métier de cette instance sont supprimées, y compris ce que les visiteurs ont ajouté, puis régénérées en {{language}}.',
-        },
-        clear: {
-          title: 'Effacer les données de démonstration ?',
-          description:
-            'Toutes les données métier de cette instance sont supprimées, y compris ce que les visiteurs ont ajouté, et les comptes de démonstration sont désactivés. Les réglages et les administrateurs sont conservés.',
-        },
-      },
     },
     visitors: {
       unavailable: 'Aucun compte n’est disponible pour le moment.',

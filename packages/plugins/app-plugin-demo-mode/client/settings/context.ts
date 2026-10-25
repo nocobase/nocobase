@@ -14,7 +14,7 @@ export interface DemoSettingsOptions {
   /** The application's name for a dataset count (`count`, `companies`); undefined falls back to its id. */
   readonly label?: (kind: DemoLabelKind, id: string) => string | undefined;
   /**
-   * Called when the demo data changed under the page: a clear answered, or an import or reset it watched finished.
+   * Called when a data operation this page watched finishes.
    * An application refreshes what it caches, such as its query cache.
    */
   readonly onDataChange?: () => void;
@@ -56,16 +56,8 @@ export function useErrorText(): (error: unknown) => string {
   const t = useT();
   return (error) => {
     if (!(error instanceof ApiClientError)) return t('errors.failed');
-    const known: Record<string, string> = {
-      DEMO_CONFIGURATION_CONFLICT: 'errors.conflict',
-      DEMO_DATA_BUSY: 'errors.busy',
-      DEMO_DATA_EXISTS: 'errors.exists',
-      DEMO_MODE_REQUIRED: 'errors.demoModeRequired',
-      DEMO_DATA_ACCOUNT_CONFLICT: 'errors.accountConflict',
-      DEMO_DATA_UNAVAILABLE: 'errors.unavailable',
-    };
-    const reason = error.reason ? known[error.reason] : undefined;
-    if (reason) return t(reason);
+    if (error.reason === 'DEMO_MODE_REQUIRED')
+      return t('errors.demoModeRequired');
     if (error.status === 401) return t('errors.signedOut');
     if (error.status === 403) return t('errors.denied');
     const localized = (

@@ -37,25 +37,17 @@ const resource: DemoModeResource = {
     refresh: 'Atualizar',
     retry: 'Tentar novamente',
     busy: 'Os dados de demonstração estão sendo gerados ou limpos',
-    busyHelp:
-      'Aguarde a conclusão da operação de dados atual antes de iniciar outra.',
+    busyHelp: 'Aguarde a conclusão da operação de dados atual.',
     disabled: {
       title: 'Este aplicativo não é uma demonstração',
       help: 'O modo de demonstração está desligado. A implantação o liga com NOCOBASE_DEMO_MODE=true.',
     },
-    cancel: 'Cancelar',
     errors: {
       failed: 'A solicitação não foi concluída. Tente novamente.',
-      conflict: 'Outro administrador salvou esta configuração primeiro.',
-      busy: 'Os dados de demonstração estão sendo gerados ou limpos. Tente quando terminar.',
-      exists:
-        'Os dados de demonstração já foram gerados. Redefina-os em vez disso.',
       demoModeRequired: 'Isso só funciona com o modo de demonstração ligado.',
-      accountConflict:
-        'Um nome de usuário da demonstração pertence a uma conta que ela não possui.',
-      unavailable: 'Este aplicativo não oferece dados de demonstração.',
       signedOut: 'Sua sessão terminou. Entre novamente.',
-      denied: 'Você não tem permissão para gerenciar a demonstração.',
+      denied:
+        'Você não tem permissão para visualizar as configurações da demonstração.',
     },
     data: {
       title: 'Dados de demonstração',
@@ -74,38 +66,11 @@ const resource: DemoModeResource = {
         clearing: 'Limpando',
         generating: 'Gerando novamente',
       },
-      absentSummary:
-        'Gere os dados de demonstração para que os visitantes explorem o aplicativo com uma história completa.',
-      language: 'Idioma',
-      clear: 'Limpar',
-      reset: 'Redefinir',
-      generate: 'Gerar',
+      absentSummary: 'Nenhum dado de demonstração foi gerado ainda.',
       failed: 'A última execução não terminou',
-      readOnly:
-        'Você pode ver os dados de demonstração; gerar, redefinir e limpar exige a permissão de gerenciamento.',
       unavailable: 'Sem dados de demonstração',
       unavailableHelp:
         'Este aplicativo não registra um conjunto de dados de demonstração.',
-      cleared: 'Dados de demonstração limpos',
-      resetStarted: 'Redefinindo os dados de demonstração',
-      importStarted: 'Gerando os dados de demonstração',
-      confirm: {
-        import: {
-          title: 'Gerar os dados de demonstração?',
-          description:
-            'Os dados são gerados em {{language}} e suas contas de demonstração são ativadas.',
-        },
-        reset: {
-          title: 'Redefinir os dados de demonstração?',
-          description:
-            'Todos os dados de negócio desta instância são excluídos, inclusive o que os visitantes adicionaram, e gerados novamente em {{language}}.',
-        },
-        clear: {
-          title: 'Limpar os dados de demonstração?',
-          description:
-            'Todos os dados de negócio desta instância são excluídos, inclusive o que os visitantes adicionaram, e as contas de demonstração são desativadas. Configurações e administradores permanecem.',
-        },
-      },
     },
     visitors: {
       unavailable: 'Nenhuma conta está disponível no momento.',
