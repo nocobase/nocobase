@@ -305,6 +305,7 @@ async function bodyFile(
  */
 export function createKnowledgeTicketRoutes(knowledge: Knowledge): Hono {
   const routes = new Hono();
+  if (!knowledge.proposals.enabled()) return routes;
   routes.onError(knowledgeErrorHandler);
   routes.post(
     '/:ticketId/redeem',
@@ -446,7 +447,7 @@ export function createKnowledgeRoutes(
       summary: 'Get the knowledge base capabilities',
       operationId: 'knowledgeGetCapabilities',
       description:
-        'For signed-in callers. Availability depends only on whether the application registered a knowledge indexer.',
+        'For signed-in callers. Availability reflects proposal configuration and whether the application registered a knowledge indexer.',
       responses: {
         200: dataResponse(KnowledgeCapabilitiesSchema),
         401: apiErrorResponse(401),
@@ -454,7 +455,13 @@ export function createKnowledgeRoutes(
       },
       ...cliRoute(false),
     }),
-    (c) => c.json({ data: { semanticSearch: knowledge.indexing.enabled() } }),
+    (c) =>
+      c.json({
+        data: {
+          semanticSearch: knowledge.indexing.enabled(),
+          proposals: knowledge.proposals.enabled(),
+        },
+      }),
   );
 
   routes.get(
@@ -1192,6 +1199,7 @@ export function createKnowledgeRoutes(
       }),
   );
 
+  if (!proposals.enabled()) return routes;
   // Fixed segments before `/proposals/:proposalId`.
   routes.get(
     '/proposals',

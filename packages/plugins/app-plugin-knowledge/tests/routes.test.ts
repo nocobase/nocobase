@@ -221,7 +221,9 @@ describe('knowledge routes', () => {
   it('reports indexer registration and rejects semantic tools while preserving keyword search', async () => {
     const capabilities = async () =>
       (await call('lead', 'GET', '/capabilities')).json();
-    expect(await capabilities()).toEqual({ data: { semanticSearch: false } });
+    expect(await capabilities()).toEqual({
+      data: { semanticSearch: false, proposals: true },
+    });
     const register = () =>
       h.knowledge.registerIndexer({
         // Registration alone determines availability, even before any state exists.
@@ -230,9 +232,13 @@ describe('knowledge routes', () => {
         reindex: async () => {},
       });
     const unregister = register();
-    expect(await capabilities()).toEqual({ data: { semanticSearch: true } });
+    expect(await capabilities()).toEqual({
+      data: { semanticSearch: true, proposals: true },
+    });
     unregister();
-    expect(await capabilities()).toEqual({ data: { semanticSearch: false } });
+    expect(await capabilities()).toEqual({
+      data: { semanticSearch: false, proposals: true },
+    });
     await call('lead', 'POST', '/docs', {
       scope: 'project',
       scopeId: 'p1',

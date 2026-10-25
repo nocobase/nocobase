@@ -371,14 +371,13 @@ const idID: LocaleResource<typeof enUS> = {
         none: 'Tidak ada akses',
       },
       title: 'Akses luar angkasa',
-      description:
-        'Siapa yang boleh membaca, mengusulkan dan mengedit di {{space}}.',
+      description: 'Siapa yang dapat mengakses {{space}}.',
       yours: 'Akses Anda',
       actions: {
         read: 'Baca dokumen dan cari',
         propose:
           'Usulkan perubahan bagi seseorang yang dapat mengedit untuk memutuskan',
-        edit: 'Mengedit, mengatur dan memverifikasi dokumen, dan memutuskan proposal',
+        edit: 'Mengedit, mengatur, dan memverifikasi dokumen',
         manage: 'Ubah siapa yang dapat mengakses setiap folder dan artikel',
       },
       allowed: 'Diizinkan',
