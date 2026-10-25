@@ -1,4 +1,5 @@
 import path from 'node:path';
+import type { Knex } from 'knex';
 import { describeMigration } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
 import { classifyPendingRunnerAgents } from '../database/migrations/202610310001_ag_retire_pending_runner_agents.js';
@@ -54,7 +55,7 @@ const references: [string, string, Record<string, unknown>][] = [
   [
     'agAgentChanges',
     'agentId',
-    { revision: 1, action: 'created', changes: [], actorUserId: null },
+    { revision: 1, action: 'created', changes: [], actorUserId: 'u' },
   ],
   [
     'agSecrets',
@@ -89,6 +90,8 @@ const jsonReferences: [string, string][] = [
 const expected = [
   ...references.map(([t, c]) => `${t}-${c}`),
   ...jsonReferences.map(([t, c]) => `${t}-${c}`),
+  'system-updated',
+  'auto-business',
   ...[
     'queued',
     'dispatched',
@@ -126,7 +129,13 @@ describeMigration(name, {
           updatedAt: now,
         },
       });
-    for (const id of ['unused', 'parent-agent', 'wrong-kind', ...expected])
+    for (const id of [
+      'unused',
+      'auto-only',
+      'parent-agent',
+      'wrong-kind',
+      ...expected,
+    ])
       await agent(id);
     await agent('enabled', 'runner', 'enabled');
     await agent('disabled', 'runner', 'disabled');
@@ -245,9 +254,79 @@ describeMigration(name, {
         at: now,
       },
     });
-    const before = await classifyPendingRunnerAgents(conn);
-    expect(before.remove.sort()).toEqual(['unused', 'wrong-kind']);
+    const automaticAudits = [
+      { id: 'auto-initial', agentId: 'auto-only', revision: 1, changes: [] },
+      // Neither a later revision nor nonempty changes makes a system creation audit a reference.
+      {
+        id: 'auto-later',
+        agentId: 'auto-only',
+        revision: 7,
+        changes: [{ field: 'name', before: 'Old', after: 'New' }],
+      },
+      {
+        id: 'auto-before-update',
+        agentId: 'system-updated',
+        revision: 1,
+        changes: [],
+      },
+      {
+        id: 'auto-before-business',
+        agentId: 'auto-business',
+        revision: 1,
+        changes: [],
+      },
+    ];
+    for (const audit of automaticAudits)
+      await conn.repository('agAgentChanges').createOne({
+        values: {
+          ...audit,
+          action: 'created',
+          actorUserId: null,
+          createdAt: now,
+        },
+      });
+    await conn.repository('agAgentChanges').createOne({
+      values: {
+        id: 'system-update',
+        agentId: 'system-updated',
+        revision: 2,
+        action: 'updated',
+        actorUserId: null,
+        changes: [],
+        createdAt: now,
+      },
+    });
+    await conn.repository('pmIssues').createOne({
+      values: {
+        id: 'business-use',
+        executorType: 'agent',
+        executorId: 'auto-business',
+      },
+    });
+    const audits = await conn.repository('agAgentChanges').findMany();
+    const client = await conn.client<Knex>();
+    const sql: string[] = [];
+    const listen = (query: { sql: string }) => sql.push(query.sql);
+    client.on('query', listen);
+    let before;
+    try {
+      before = await classifyPendingRunnerAgents(conn);
+    } finally {
+      client.off('query', listen);
+    }
+    expect(sql.length).toBeGreaterThan(0);
+    expect(
+      sql.filter((statement) =>
+        /^(insert|update|delete)|for update/i.test(statement),
+      ),
+    ).toEqual([]);
+    expect(await conn.repository('agAgentChanges').findMany()).toEqual(audits);
+    expect(before.remove.sort()).toEqual(['auto-only', 'unused', 'wrong-kind']);
     expect(before.disable.sort()).toEqual(['parent-agent', ...expected].sort());
+    expect(before.reasons['agAgentChanges.agentId']).toBe(2);
+    expect(before.candidates.length).toBe(
+      before.remove.length + before.disable.length,
+    );
     await conn.repository('agSettings').createOne({
       values: { key: 'malformed', value: '{invalid', updatedAt: now },
     });
@@ -265,6 +344,7 @@ describeMigration(name, {
     const rows = await conn.repository('agAgents').findMany();
     const byId = new Map(rows.map((row) => [row.id, row]));
     expect(byId.has('unused')).toBe(false);
+    expect(byId.has('auto-only')).toBe(false);
     expect(byId.has('wrong-kind')).toBe(false);
     for (const id of ['parent-agent', ...expected])
       expect(byId.get(id)).toMatchObject({
@@ -277,7 +357,27 @@ describeMigration(name, {
       status: 'pending',
       source: 'system',
     });
-    expect(await conn.repository('agAgentChanges').findMany()).toHaveLength(1);
+    const audits = await conn.repository('agAgentChanges').findMany();
+    expect(audits.map((audit) => audit.id).sort()).toEqual([
+      'agAgentChanges-agentId',
+      'auto-before-business',
+      'auto-before-update',
+      'system-update',
+    ]);
+    expect(
+      audits.find((audit) => audit.id === 'agAgentChanges-agentId'),
+    ).toMatchObject({
+      action: 'created',
+      actorUserId: 'u',
+      revision: 1,
+      changes: [],
+    });
+    expect(audits.find((audit) => audit.id === 'system-update')).toMatchObject({
+      action: 'updated',
+      actorUserId: null,
+      revision: 2,
+      changes: [],
+    });
     expect(await classifyPendingRunnerAgents(conn)).toMatchObject({
       candidates: [],
       remove: [],
@@ -285,6 +385,16 @@ describeMigration(name, {
     });
   },
   down: async ({ connection }) => {
+    expect(
+      await connection
+        .repository('agAgents')
+        .findOne({ filter: { id: 'auto-only' } }),
+    ).toBeUndefined();
+    expect(
+      await connection
+        .repository('agAgentChanges')
+        .findOne({ filter: { id: 'auto-later' } }),
+    ).toBeUndefined();
     expect(
       await connection
         .repository('agAgents')

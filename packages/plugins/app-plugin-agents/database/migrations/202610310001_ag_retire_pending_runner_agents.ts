@@ -89,6 +89,14 @@ export async function classifyPendingRunnerAgents({
         .select(column)
         .where(column, 'in', candidates.slice(offset, offset + 200));
       if (kindColumn) selection = selection.where(kindColumn, '=', kind);
+      // Only automatic creation audits are non-references, regardless of revision or changes.
+      if (table === 'agAgentChanges')
+        selection = selection.where((eb) =>
+          eb.or([
+            eb('action', '!=', 'created'),
+            eb('actorUserId', 'is not', null),
+          ]),
+        );
       for (const row of await selection.execute())
         protect(String(row[column]), `${table}.${column}`);
     }
@@ -175,7 +183,8 @@ const migration: MigrationDefinition = defineMigration({
       }
     }
   },
-  // Irreversible: deleted rows have no backup here, and disabled rows must not regain the retired state.
+  // Irreversible: deleted agents and their cascaded automatic creation audits have no backup here.
+  // Disabled rows must not regain the retired state.
   // Restore from an operator's database backup if the deleted records are needed after a deployment rollback.
   async down(): Promise<void> {},
 });

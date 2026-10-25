@@ -1,6 +1,6 @@
 # Retiring legacy runner discoveries
 
-Upgrade preserves every known reference, including automatic creation audits. Only runner records with the retired `pending` status and no run or reference are deleted; referenced candidates become disabled. There may be zero deletions when every discovered record has its creation audit. Existing enabled/disabled agents and other sources are unchanged. Deployment rollback does not restore deleted data or the retired state; restoration needs an operator’s existing database backup.
+Upgrade deletes runner records with the retired `pending` status only when they have no run or known reference other than automatic creation audits. An audit is ignored exactly when `agAgentChanges.action = 'created' AND actorUserId IS NULL`, regardless of its revision or change contents. Those audits are deleted by the existing foreign-key cascade with their agent. Any other audit, run or business reference keeps the agent disabled and its history intact. Existing enabled/disabled agents and other sources are unchanged. Deployment rollback does not restore deleted agents, their cascaded audits or the retired state; restoration needs an operator’s existing database backup.
 
 ## Read-only preflight
 
@@ -30,7 +30,7 @@ The management Studio CLI does not currently expose this full classification. It
 ## Frozen reference boundary
 
 - Runs in every status, resumable sessions, run tokens and run requests; Agent actors of run inputs and requests.
-- Conversations and fallback agents, personal/team default chat choices, agent users and every configuration audit, including empty system creation audits.
+- Conversations and fallback agents, personal/team default chat choices, agent users and configuration audits other than system creation audits (`action = 'created' AND actorUserId IS NULL`). Human creation audits and all non-creation audits, including system ones, retain the agent. Ignoring a system creation audit never overrides another reference.
 - Agent-scoped variables, variable audits and skill attachments; only scope identifiers are selected, never encrypted values.
 - Optional Projects executors, comment authors/deleters, activity actors and structured origins/details, plan creators/executors/proposers/source data and row parameters/results.
 - Optional Studio project initializations, delegations, stage guards and their structured configuration, saved settings (including manager first/fallback choices), and inbox actors/data.
