@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- b51bc80: Reuse validated compiled page associations within each application instance while refreshing dynamic evidence normally. Show a lightweight initial collecting placeholder, retain known counts during refresh, and group the Examples Foundation menu with system management.
+- b51bc80: Preserve proven normal-success API dependencies with explicit database and framework middleware conditions in Foundation details and source-free builds. Retain unknown and terminating path barriers, and cover the Examples Articles build and request rejection behavior.
+- b51bc80: Verify resolved import provenance before applying framework success-path contracts, keeping local overrides and unresolved local aliases from creating false capability associations.
+- b51bc80: Keep reliable Foundation observations with their original dates when reads fail, show pending information instead of unsupported negative conclusions, and distinguish partial file statistics from complete totals. Use the top Refresh button for capability updates and retain page retry when the initial overview request fails.
+
 ## 0.1.0-beta.5
 
 ### Patch Changes
