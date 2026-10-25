@@ -1,3 +1,4 @@
+import { createAppAuthorization } from '../../server/authorization.js';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
 import { createTestDatabase } from '@nocobase/app-testing/server';
@@ -76,6 +77,30 @@ it('preserves legacy grants and users atomically, and never restores later remov
         updatedAt: now,
       })
       .execute();
+    const authorization = createAppAuthorization({ connection });
+    await authorization.permissionSets.create({
+      key: 'other',
+      grants: [
+        {
+          resource: { type: 'other-business', id: '*' },
+          actions: [{ action: 'read' }],
+        },
+      ],
+    });
+    await authorization.permissionSets.assign({
+      subject: { type: 'user', id: 'disabled' },
+      permissionSet: 'member',
+    });
+    const effective = async () =>
+      (
+        await authorization.permissionSets.getEffective({
+          principal: { type: 'user', id: 'ordinary' },
+          subjects: [{ type: 'authenticated', id: '*' }],
+        })
+      )
+        .map(({ key, grants }) => ({ key, grants }))
+        .sort((a, b) => a.key.localeCompare(b.key));
+    const beforeEffective = await effective();
     const assignments = () =>
       connection.query
         .selectFrom('authorizationPermissionSetAssignments')
@@ -116,6 +141,7 @@ it('preserves legacy grants and users atomically, and never restores later remov
     });
     await seeder.run();
     const after = await assignments();
+    expect(await effective()).toEqual(beforeEffective);
     expect(
       after
         .filter((row) => row.permissionSetKey === 'member')
