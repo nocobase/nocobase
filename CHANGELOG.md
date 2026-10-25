@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.33](https://github.com/nocobase/nocobase/compare/v2.2.32...v2.2.33) - 2026-10-25
+
+### 🐛 Bug Fixes
+
+- **[Workflow: CC]** Restrict workflow task reads to assigned users and supported associations. ([#11097](https://github.com/nocobase/nocobase/pull/11097)) by @mytharcher
+
 ## [v2.2.32](https://github.com/nocobase/nocobase/compare/v2.2.31...v2.2.32) - 2026-10-25
 
 ### 🚀 Improvements

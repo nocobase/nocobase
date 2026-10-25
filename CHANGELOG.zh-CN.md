@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.33](https://github.com/nocobase/nocobase/compare/v2.2.32...v2.2.33) - 2026-10-25
+
+### 🐛 修复
+
+- **[工作流：抄送]** 限制工作流任务读取范围，仅允许读取本人任务及支持的关联数据。 ([#11097](https://github.com/nocobase/nocobase/pull/11097)) by @mytharcher
+
 ## [v2.2.32](https://github.com/nocobase/nocobase/compare/v2.2.31...v2.2.32) - 2026-10-25
 
 ### 🚀 优化
