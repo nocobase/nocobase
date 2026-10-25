@@ -405,6 +405,58 @@ async function fixture(
 }
 
 describe('Native Sandbox without application CLI wiring', () => {
+  it('exposes default tools without selected Skills and creates the Sandbox only on the first bash call', async () => {
+    let step = 0;
+    const model = new MockLanguageModelV4({
+      doStream: async ({ tools, prompt }) => {
+        expect(tools).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ name: 'bash' }),
+            expect.objectContaining({ name: 'skill' }),
+          ]),
+        );
+        if (step++ === 0) {
+          expect(f.allocated).toHaveLength(0);
+          return stream([
+            {
+              type: 'tool-call',
+              toolCallId: 'empty-skill',
+              toolName: 'skill',
+              input: '{"name":"missing"}',
+            },
+            finish('tool-calls'),
+          ]);
+        }
+        if (step === 2) {
+          expect(f.allocated).toHaveLength(0);
+          expect(JSON.stringify(prompt)).toContain('Unknown selected skill.');
+          return stream([
+            {
+              type: 'tool-call',
+              toolCallId: 'default-bash',
+              toolName: 'bash',
+              input: '{"command":"echo DEFAULT_BASH_OK"}',
+            },
+            finish('tool-calls'),
+          ]);
+        }
+        expect(f.allocated).toHaveLength(1);
+        expect(JSON.stringify(prompt)).toContain('DEFAULT_BASH_OK');
+        return answer('Default tools worked.');
+      },
+    });
+    const f = await fixture(model);
+    const agent = await f.service.realtime(f.alice.context);
+    expect(
+      (await f.service.configuration(f.alice.context, agent.sessionId)).tool,
+    ).toEqual(['bash', 'skill']);
+    await f.send(agent, f.alice.cookie);
+    expect(f.errors).toEqual([]);
+    expect(step).toBe(3);
+    await expect(
+      f.allocated[0].exec('echo late', { toolCallId: 'late' }),
+    ).rejects.toThrow('closed');
+  });
   it('assembles one internal Sandbox provider with its own Skills and resolves CLI dependencies only on creation', async () => {
     const f = await fixture(
       new MockLanguageModelV4({ doStream: async () => answer('unused') }),

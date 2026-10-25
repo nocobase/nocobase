@@ -5,5 +5,7 @@ export default createReactVitestConfig({
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
     passWithNoTests: true,
+    // Background jobs and real database I/O can outlive Vitest's 1s poll default on CI.
+    expect: { poll: { timeout: 15000 } },
   },
 });

@@ -10,6 +10,7 @@ import { NativeFileInputs } from '../server/online/files/service.js';
 import { OnlineAgentService } from '../server/online/agent/service.js';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { createHarness, type Harness } from './harness.js';
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 
@@ -97,6 +98,7 @@ async function fixture(extract: TextExtractor = local) {
   });
   const errors: unknown[] = [];
   service = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions,
     ids,
     fileInputs,

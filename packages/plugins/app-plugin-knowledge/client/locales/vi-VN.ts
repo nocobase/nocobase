@@ -3,6 +3,155 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  indexing: {
+    failedDocumentCount: 'Tài liệu thất bại: {{count}}',
+    enabled: 'Bật lập chỉ mục',
+    enabledHint:
+      'Tắt để chỉ tìm kiếm văn bản. Thay đổi có hiệu lực sau khi lưu.',
+    chooseInstance: 'Chọn phiên bản chỉ mục',
+    documentProgress: 'Tài liệu đã lập chỉ mục',
+    pendingDocuments: 'Tài liệu đang chờ',
+    failedDocuments: 'Tài liệu thất bại',
+    preparedChunks: 'Đoạn đã chuẩn bị',
+    committedChunks: 'Đoạn đã ghi nhận',
+    agentPrompt:
+      'Hãy giúp tôi cấu hình chỉ mục cơ sở tri thức cho ứng dụng NocoBase 3 này.\n\nĐọc AGENTS.md và kiểm tra các loại chỉ mục (type) thực sự khả dụng. Có hai phương án cơ sở dữ liệu vector: SQLite với sqlite-vec (type sqlite-vec, tệp cục bộ) và PostgreSQL với pgvector (type pgvector, cần bật phần mở rộng vector). Giải thích các lựa chọn cùng yêu cầu trong môi trường này và để tôi chọn trước khi tiếp tục.\n\nSau khi tôi chọn, hỏi vị trí tệp cho SQLite hoặc thông tin kết nối và trạng thái phần mở rộng vector cho PostgreSQL. Không hiển thị mật khẩu hoặc khóa API.\n\nĐưa ra cấu hình dự kiến và chờ tôi xác nhận trước khi ghi vào knowledge.indexing trong config.yaml. Giữ nguyên các cấu hình khác. Nếu ứng dụng đã dùng config.yml, hãy sửa tệp đó thay vì tạo tệp khác.\n\nKiểm tra cấu hình an toàn và hướng dẫn khởi động lại. Hỏi ý kiến trước khi khởi động lại hoặc cài phụ thuộc. Sau đó hướng dẫn tôi mở lại cài đặt, bật chỉ mục, chọn phiên bản cùng mô hình embedding rồi lưu. Các cuộc gọi mô hình trả phí và tạo lại chỉ mục cũng cần tôi xác nhận.',
+    databases: {
+      sqlite: {
+        name: 'Cơ sở dữ liệu vector SQLite',
+        description:
+          'Dùng phần mở rộng vector sqlite-vec để lưu chỉ mục trong tệp SQLite cục bộ trên máy chủ ứng dụng. Không cần dịch vụ cơ sở dữ liệu riêng; phù hợp triển khai trên một máy chủ.',
+      },
+      pgvector: {
+        name: 'Cơ sở dữ liệu vector PostgreSQL',
+        description:
+          'Dùng pgvector để lưu và tìm kiếm vector trong PostgreSQL. Cần kết nối cơ sở dữ liệu và bật phần mở rộng vector. Phù hợp khi đã có PostgreSQL hoặc cần chia sẻ chỉ mục giữa nhiều máy chủ.',
+      },
+    },
+    setupTitle: 'Các bước cấu hình',
+    setup: {
+      instance:
+        'Mở config.yaml, thêm một phiên bản chỉ mục trong knowledge.indexing với tên, loại và đường dẫn tệp cục bộ hoặc thông tin kết nối.',
+      restart: 'Lưu tệp rồi khởi động lại ứng dụng để tải cấu hình.',
+      enable:
+        'Mở lại cài đặt chỉ mục, bật chỉ mục, chọn phiên bản vừa thêm và mô hình embedding rồi lưu.',
+    },
+    agentHandoff:
+      'Nếu chưa quen với tệp cấu hình, hãy sao chép lời nhắc bên dưới cho Agent phát triển hỗ trợ.',
+    global: 'Tất cả không gian tri thức',
+    back: 'Quay lại tri thức',
+    configuration: 'Cấu hình chỉ mục',
+    typeHint:
+      'Các phiên bản được nhóm theo type. Mỗi loại xác định biểu mẫu và việc có cần mô hình Embedding hay không.',
+    typeForm: 'Biểu mẫu động của loại này',
+    openPage: 'Mở trang cấu hình riêng',
+    emptyTitle: 'Cấu hình cơ sở dữ liệu vector trước',
+    emptyDescription:
+      'Chỉ mục cần cơ sở dữ liệu vector để lưu trữ và tìm kiếm vector tài liệu. Chọn một phương án dưới đây và thêm vào config.yaml của ứng dụng:',
+    agentTitle: 'Lời nhắc cấu hình',
+    copyPrompt: 'Sao chép hướng dẫn',
+    promptCopied: 'Đã sao chép hướng dẫn. Chưa thực hiện thao tác nào.',
+    promptCopyFallback:
+      'Không thể tự động sao chép. Văn bản đã được chọn để sao chép thủ công.',
+    promptLabel: 'Hướng dẫn cho Agent phát triển',
+    rebuildHint: 'Thay đổi cần xây dựng lại chỉ mục',
+    editHint: 'Thay đổi cấu hình để lưu',
+    confirmRetryEmbedding:
+      'Chỉ thử lại tài liệu lỗi trong mọi không gian. Không lặp lại phần đã xong; có thể phát sinh phí Embedding.',
+    confirmRetry:
+      'Chỉ thử lại tài liệu lỗi trong mọi không gian. Không lặp lại phần đã xong nhưng sẽ sử dụng tài nguyên dịch vụ.',
+    confirmResources:
+      'Xây dựng lại chỉ mục của mọi không gian. Loại này không gọi Embedding nhưng dùng lưu trữ và tài nguyên dịch vụ. Chỉ mục đã công bố vẫn hoạt động đến khi có bản thay thế.',
+    deploymentPg:
+      'Kết nối, Schema và tiền tố bảng được quản lý trong cấu hình triển khai.',
+    deploymentFile:
+      'Đường dẫn tệp chỉ mục được quản lý trong cấu hình triển khai.',
+    errors: {
+      configurationChanged:
+        'Cấu hình chỉ mục hoặc mô hình đã thay đổi. Không thể thử lại thế hệ cũ bằng cấu hình mới. Kiểm tra cấu hình và xây dựng lại tất cả không gian nếu cần (có thể phát sinh phí Embedding).',
+      modelAuth:
+        'Xác thực dịch vụ Embedding thất bại. Kiểm tra API Key, quyền truy cập và khu vực endpoint.',
+      modelQuota:
+        'Đã hết hạn mức hoặc số dư Embedding. Kiểm tra tài khoản trước khi thử lại.',
+      modelRateLimit:
+        'Dịch vụ Embedding đang giới hạn yêu cầu. Hãy đợi trước khi thử lại.',
+      modelConfig:
+        'Mô hình Embedding đã lưu không khả dụng, đã thay đổi hoặc không được hỗ trợ. Kiểm tra dịch vụ và mô hình.',
+      modelInput:
+        'Đầu vào Embedding quá dài. Kiểm tra kích thước các đoạn tài liệu.',
+      modelPolicy:
+        'Dịch vụ Embedding từ chối đầu vào theo chính sách nội dung. Kiểm tra nội dung liên quan.',
+      modelResponse:
+        'Dịch vụ Embedding trả về vectơ không hợp lệ. Kiểm tra tính tương thích và số chiều.',
+      modelUnavailable:
+        'Không thể kết nối dịch vụ Embedding hoặc dịch vụ tạm thời không khả dụng. Kiểm tra endpoint và mạng.',
+      storageAuth:
+        'Xác thực kho lưu trữ chỉ mục thất bại. Kiểm tra người dùng, mật khẩu và kết nối cơ sở dữ liệu.',
+      storagePermission:
+        'Kho chỉ mục từ chối thao tác hoặc ở chế độ chỉ đọc. Kiểm tra quyền schema và bảng.',
+      storageSchema:
+        'Cơ sở dữ liệu, schema hoặc bảng cần thiết của chỉ mục không khả dụng. Kiểm tra triển khai và schema.',
+      storageUnavailable:
+        'Không thể kết nối kho chỉ mục hoặc kết nối bị gián đoạn. Kiểm tra địa chỉ, cổng và mạng.',
+      storageBusy:
+        'Kho chỉ mục đang bận hoặc có xung đột giao dịch. Hãy đợi chính sách thử lại của host.',
+      timeout:
+        'Thao tác lập chỉ mục đã hết thời gian chờ. Kiểm tra kho lưu trữ và dịch vụ mô hình trước khi thử lại.',
+      vectorExtension:
+        'PostgreSQL chưa cài tiện ích vector. Hãy nhờ quản trị viên cơ sở dữ liệu cài đặt.',
+      ownership:
+        'Quyền sở hữu hoặc cấu trúc đích chỉ mục không khớp. Kiểm tra tài nguyên; không xóa bảng không liên quan.',
+      dependencies:
+        'Instance, tiện ích hoặc cấu hình jobs của host không khả dụng. Kiểm tra triển khai và khởi động lại nếu cần.',
+    },
+    invalidValue: 'Hãy kiểm tra giá trị này.',
+    title: 'Cài đặt chỉ mục tri thức',
+    description: 'Cấu hình chỉ mục tìm kiếm cho tất cả không gian kiến thức.',
+    progress: 'Tiến độ lập chỉ mục',
+    instance: 'Phiên bản lập chỉ mục',
+    off: 'Tắt — chỉ tìm kiếm văn bản',
+    missingForm:
+      'Biểu mẫu cấu hình không khả dụng. Các tùy chọn đã lưu được giữ nguyên.',
+    statusFailed: 'Không thể cập nhật trạng thái chỉ mục.',
+    loadFailed:
+      'Không thể tải cài đặt chỉ mục. Hãy kiểm tra quyền truy cập rồi thử lại.',
+    saveFailed:
+      'Yêu cầu chưa được chấp nhận. Bản nháp của bạn vẫn được giữ lại.',
+    conflict:
+      'Cài đặt đã được thay đổi ở nơi khác. Tải lại phiên bản mới nhất mà không bỏ bản nháp, kiểm tra rồi lưu lại.',
+    saved: 'Yêu cầu đã được chấp nhận. Việc lập chỉ mục tiếp tục trong nền.',
+    workFailed:
+      'Một số công việc thất bại. Kiểm tra phiên bản và dịch vụ mô hình rồi thử lại.',
+    rebuild: 'Dựng lại mọi không gian',
+    retry: 'Thử lại công việc thất bại',
+    confirmTitle: 'Xác nhận thay đổi chỉ mục toàn cục',
+    confirmRebuild:
+      'Thao tác ảnh hưởng đến mọi không gian và có thể tính lại véc-tơ cho toàn bộ tài liệu, phát sinh phí mô hình và cần thêm dung lượng. Chỉ mục hiện tại vẫn khả dụng đến khi chỉ mục mới sẵn sàng.',
+    confirmDisable:
+      'Thao tác tắt tìm kiếm bằng chỉ mục cho mọi không gian. Tìm kiếm văn bản vẫn khả dụng. Việc dọn dẹp chạy trong nền.',
+    discardTitle: 'Bỏ thay đổi chưa lưu?',
+    discardDescription: 'Các cài đặt chỉ mục chưa lưu sẽ bị mất.',
+    discard: 'Bỏ thay đổi',
+    confirm: 'Xác nhận',
+    documents:
+      'Tài liệu: {{done}} / {{total}} · Đang chờ: {{pending}} · Thất bại: {{failed}}',
+    chunks: 'Đoạn đã chuẩn bị: {{prepared}} · Đã ghi: {{committed}}',
+    availability: {
+      disabled: 'Đã tắt — chỉ tìm kiếm văn bản',
+      unavailable: 'Chỉ mục không khả dụng — vẫn tìm được văn bản',
+      building: 'Đang dựng chỉ mục',
+      ready: 'Chỉ mục đã sẵn sàng',
+      degraded: 'Chỉ mục suy giảm — vẫn tìm được văn bản',
+    },
+    table: 'Tên bảng',
+    modelService: 'Dịch vụ mô hình',
+    model: 'Mô hình nhúng',
+    chooseService: 'Chọn dịch vụ mô hình',
+    chooseModel: 'Chọn hoặc nhập tên mô hình',
+    loadingModels: 'Đang tải mô hình nhúng…',
+    modelsUnavailable:
+      'Không có mô hình nhúng. Hãy kiểm tra dịch vụ mô hình rồi thử lại.',
+  },
   access: {
     businessSection: 'Kiến thức',
     businesses: {

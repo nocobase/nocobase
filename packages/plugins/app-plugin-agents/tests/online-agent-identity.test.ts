@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
@@ -87,7 +88,9 @@ async function fixture() {
     onError: () => {},
   });
   const resolveModel = vi.fn(async () => new MockLanguageModelV4());
+
   const deps = {
+    sandboxProvider: createSandboxProvider({ skills: harness.services.skills }),
     sessions,
     ids,
     configurator,

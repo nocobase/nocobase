@@ -34,6 +34,7 @@ import fileExample from '@nocobase/app-plugin-file-example/server';
 import apiKeys from '@nocobase/app-plugin-api-keys/server';
 import agents from '@nocobase/app-plugin-agents/server';
 import foundation from '@nocobase/app-plugin-foundation/server';
+import knowledge from '@nocobase/app-plugin-knowledge/server';
 
 const serverPlugins: AppServerPlugins = defineServerPlugins([
   authentication,
@@ -68,6 +69,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   mailExample,
   agents,
   foundation,
+  knowledge,
 ]);
 
 export default serverPlugins;

@@ -8,9 +8,13 @@ describe('Sandbox tool descriptions', () => {
     const configurator = new OnlineAgentConfigurator();
     const register = vi.spyOn(configurator, 'registerTool');
     registerSandboxTools(configurator);
+    expect(register).not.toHaveBeenCalled();
 
     const definitions = new Map(
-      register.mock.calls.map(([name, options]) => [name, options.definition]),
+      ['bash', 'skill'].map((name) => [
+        name,
+        configurator.toolDefinition(name),
+      ]),
     );
     expect(definitions.get('skill')).toMatchObject({
       description:

@@ -18,6 +18,18 @@
       "types": "./server/tokens.ts",
       "import": "./server/tokens.ts"
     },
+    "./config": {
+      "types": "./config.ts",
+      "import": "./config.ts"
+    },
+    "./server/indexing": {
+      "types": "./server/indexing/index.ts",
+      "import": "./server/indexing/index.ts"
+    },
+    "./shared/indexing": {
+      "types": "./shared/indexing.ts",
+      "import": "./shared/indexing.ts"
+    },
     "./shared/access": {
       "types": "./shared/access.ts",
       "import": "./shared/access.ts"
@@ -29,6 +41,10 @@
     "./client": {
       "types": "./client/index.ts",
       "import": "./client/index.ts"
+    },
+    "./client/indexing": {
+      "types": "./client/indexing/index.ts",
+      "import": "./client/indexing/index.ts"
     },
     "./client/plugin": {
       "types": "./client/plugin.ts",
@@ -50,6 +66,8 @@
   },
   "files": [
     "dist",
+    "docs",
+    "database/README.md",
     "README.md",
     "CHANGELOG.md"
   ],
@@ -64,6 +82,18 @@
         "types": "./dist/server/tokens.d.ts",
         "import": "./dist/server/tokens.js"
       },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "import": "./dist/config.js"
+      },
+      "./server/indexing": {
+        "types": "./dist/server/indexing/index.d.ts",
+        "import": "./dist/server/indexing/index.js"
+      },
+      "./shared/indexing": {
+        "types": "./dist/shared/indexing.d.ts",
+        "import": "./dist/shared/indexing.js"
+      },
       "./shared/access": {
         "types": "./dist/shared/access.d.ts",
         "import": "./dist/shared/access.js"
@@ -75,6 +105,10 @@
       "./client": {
         "types": "./dist/client/index.d.ts",
         "import": "./dist/client/index.js"
+      },
+      "./client/indexing": {
+        "types": "./dist/client/indexing/index.d.ts",
+        "import": "./dist/client/indexing/index.js"
       },
       "./client/plugin": {
         "types": "./dist/client/plugin.d.ts",
@@ -107,6 +141,9 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
+    "better-sqlite3": "catalog:",
+    "pg": "^8.23.0",
+    "sqlite-vec": "^0.1.9",
     "hono": "catalog:",
     "@nocobase/document-extractor": "workspace:^",
     "zod": "catalog:"
@@ -114,6 +151,7 @@
   "peerDependencies": {
     "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-plugin-file": "workspace:^",
@@ -121,6 +159,7 @@
     "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
     "@nocobase/markdown-mermaid": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@silurus/ooxml": "0.85.1",
@@ -135,6 +174,11 @@
     "react-router": "catalog:",
     "remark-gfm": "catalog:"
   },
+  "peerDependenciesMeta": {
+    "@nocobase/app-plugin-agents": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
@@ -142,6 +186,8 @@
     "@nocobase/drive": "workspace:*",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/pg": "^8.15.5",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",

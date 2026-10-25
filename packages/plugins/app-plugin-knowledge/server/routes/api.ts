@@ -414,11 +414,19 @@ const docActions = {
 } as const;
 
 /** The knowledge API on a router of its own; `viewerOf` names the caller. */
+export interface KnowledgeRouteOptions {
+  readonly acceptOnlineAgent?: boolean;
+}
 export function createKnowledgeRoutes(
   knowledge: Knowledge,
   viewerOf: (context: Context) => KnowledgeReader,
   spaces: (space: SpaceRef) => SpaceRef | null,
+  options: KnowledgeRouteOptions = {},
 ): Hono {
+  const readSecurity: Pick<Parameters<typeof describeRoute>[0], 'security'> =
+    options.acceptOnlineAgent
+      ? { security: [{ cookieAuth: [] }, { apiKeyAuth: [] }, { runToken: [] }] }
+      : {};
   const spaceOf = (space: SpaceRef): SpaceRef => check.space(space, spaces);
   const routes = new Hono();
   routes.onError(knowledgeErrorHandler);
@@ -498,7 +506,8 @@ export function createKnowledgeRoutes(
     '/search',
     describeRoute({
       tags,
-      summary: 'Search the documents of a space',
+      summary: 'Search readable knowledge sections',
+      ...readSecurity,
       operationId: 'knowledgeSearchDocs',
       description:
         'Search over the space and the spaces it inherits, in what the caller may read: every search provider’s ranking (keywords, and meaning where the application adds it) fused, cut at the application’s minimum relevance and reranked when it sets a rerank model; the best `pageSize` sections, each with an excerpt. `explain=true` requires a registered knowledge indexer and adds how each was ranked for someone who manages the space or the search settings. A ranking has no next page, so `meta` is empty.',
@@ -511,8 +520,12 @@ export function createKnowledgeRoutes(
         ),
         404: spaceNotFound,
       },
-      // The knowledge page's search; `kb search` searches the caller's spaces.
-      ...cliRoute(false),
+      ...cliRoute({
+        command: 'kb search',
+        identities: ['person'],
+        flags: { scopeId: OWNER_FLAG, pageSize: { name: 'limit' } },
+        columns: ['docId', 'title', 'excerpt'],
+      }),
     }),
     apiValidator('query', SearchQuery),
     async (c) => {
@@ -520,10 +533,20 @@ export function createKnowledgeRoutes(
       if (query.explain === 'true') requireSemanticSearch();
       // The best `pageSize` hits by rank; a ranking has no next page.
       return c.json({
-        data: await docs.search(viewer(c), spaceOf(query), query.q, {
-          ...(query.pageSize ? { limit: query.pageSize } : {}),
-          explain: query.explain === 'true',
-        }),
+        data: await (query.scope === undefined
+          ? docs.searchAll(viewer(c), query.q, {
+              limit: query.pageSize,
+              explain: query.explain === 'true',
+            })
+          : docs.search(
+              viewer(c),
+              spaceOf({ scope: query.scope, scopeId: query.scopeId }),
+              query.q,
+              {
+                limit: query.pageSize,
+                explain: query.explain === 'true',
+              },
+            )),
         meta: {},
       });
     },
@@ -750,13 +773,17 @@ export function createKnowledgeRoutes(
       tags,
       summary: 'Get a document at its current version',
       operationId: 'knowledgeGetDoc',
+      ...readSecurity,
       responses: {
         200: dataResponse(KnowledgeDocSchema),
         ...apiErrorResponses,
         404: docNotFoundResponse,
       },
-      // The knowledge page's reader; `kb read` reads a document by slug or id.
-      ...cliRoute(false),
+      ...cliRoute({
+        command: 'kb read',
+        args: ['docId'],
+        identities: ['person'],
+      }),
     }),
     docParam,
     async (c) =>
