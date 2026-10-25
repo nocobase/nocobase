@@ -57,36 +57,38 @@ function EnabledDemoModeMenu(): ReactElement {
             ? `${t('menu.label')} · ${t('menu.switchAccount')}`
             : t('menu.label')
         }
-        className='inline-flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-current/25 bg-(--status-success-background) px-2.5 text-sm text-(--status-success) outline-none transition-colors hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50'
+        className='inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 text-xs font-medium text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/50'
       >
         <span
           aria-hidden
-          className='size-1.5 shrink-0 rounded-full bg-current'
+          className='size-1.5 shrink-0 rounded-full bg-primary'
         />
         <span className='font-medium'>{t('menu.label')}</span>
         {accounts?.length ? (
-          <span className='hidden sm:inline'>· {t('menu.switchAccount')}</span>
+          <span className='hidden font-normal text-primary/80 sm:inline'>
+            · {t('menu.switchAccount')}
+          </span>
         ) : null}
-        <ChevronDown aria-hidden className='size-3.5 shrink-0' />
+        <ChevronDown aria-hidden className='size-3.5 shrink-0 opacity-70' />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align='end'
         aria-describedby={descriptionId}
-        // Keep the panel readable independently of theme density, while fitting small viewports.
-        className='w-80 max-w-[calc(100vw-2rem)] duration-0'
+        className='w-72 max-w-[calc(100vw-2rem)] duration-0'
       >
-        <div className='px-2.5 py-2'>
-          <p className='font-medium'>{t('menu.title')}</p>
-          <p id={descriptionId} className='mt-1 text-sm text-muted-foreground'>
+        <div className='px-2 py-1.5'>
+          <p className='text-sm font-medium'>{t('menu.title')}</p>
+          <p
+            id={descriptionId}
+            className='mt-0.5 text-xs text-muted-foreground'
+          >
             {t('menu.description')}
             {accounts?.length ? <> {t('menu.accountsDescription')}</> : null}
           </p>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuLabel className='px-2.5'>
-            {t('menu.switchAccount')}
-          </DropdownMenuLabel>
+          <DropdownMenuLabel>{t('menu.switchAccount')}</DropdownMenuLabel>
           {accounts?.length ? (
             <DropdownMenuRadioGroup
               value={current?.username ?? ''}
@@ -100,7 +102,6 @@ function EnabledDemoModeMenu(): ReactElement {
                   value={account.username}
                   disabled={pending !== null}
                   closeOnClick={false}
-                  className='py-1.5 pl-2.5'
                 >
                   <span className='min-w-0'>
                     <span className='block truncate'>{account.name}</span>
@@ -124,7 +125,7 @@ function EnabledDemoModeMenu(): ReactElement {
           ) : (
             <p
               role='status'
-              className='px-2.5 py-2 text-sm text-muted-foreground'
+              className='px-2 py-1.5 text-xs text-muted-foreground'
             >
               {accounts === null
                 ? t('menu.loading')
