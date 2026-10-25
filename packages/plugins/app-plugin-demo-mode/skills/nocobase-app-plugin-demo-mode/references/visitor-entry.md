@@ -2,18 +2,31 @@
 
 ## Default entry
 
-The Client plugin automatically signs anonymous home-page visitors in as an existing Super Admin and provides `/demo-sign-in` and a floating account switcher. Existing sessions are retained. All enabled person accounts are offered together, including existing administrators and accounts created outside the dataset. No generation or password sign-in setup is required. Super Admin is identified by its unrestricted Permission Set, not by a fixed username. Disabled, deleted and service accounts are excluded.
+The Client plugin automatically signs anonymous home-page visitors in as an existing Super Admin and provides `/demo-sign-in`. Existing sessions are retained. All enabled person accounts are offered together, including existing administrators and accounts created outside the dataset. No generation or password sign-in setup is required. Super Admin is identified by its unrestricted Permission Set, not by a fixed username. Disabled, deleted and service accounts are excluded.
 
 For a direct link, use `<base path>/demo-sign-in?as=<username>&redirect=/path`. The redirect is application-relative: under `/main`, `/tasks` opens `/main/tasks`. Sign-in reloads the page to discard the previous account's client state.
 
 When Authentication uses partitioned cookies for iframe embedding, quick sign-in expires matching legacy unpartitioned authentication cookies automatically, preserving the configured names, domains and paths. Automatic home entry verifies that the browser sends a usable session before reloading; rejected cookies fall back to normal entry instead of repeated reloads.
 
-## Customize only when needed
+## Required header entry
+
+Register `demoMode()` without presentation options and mount `DemoModeMenu` from `@nocobase/app-plugin-demo-mode/client/menu` in the application's top header action area, before the assistant, appearance and avatar controls:
+
+```tsx
+import { DemoModeMenu } from '@nocobase/app-plugin-demo-mode/client/menu';
+
+// Inside the existing header action row, alongside the other controls.
+<DemoModeMenu />;
+```
+
+Use one instance of this standalone component in each application header. The application owns header placement and mounts the component explicitly. If the application has a guest header, mount the same component there too; otherwise `/demo-sign-in` remains available to guests.
+
+The button reads “Demo mode · Switch account”. Its single dropdown explains the demo environment and daily resets, then lists account names and roles with a check beside the current account. Hover, click and keyboard interaction open it. Account lists preload on page entry and refresh after navigation or dataset changes; no application prefetch code is needed. Selecting another account reloads the current location. Pending switches disable repeated actions, and failed switches report an error and can be retried. The component renders nothing outside Demo Mode, and keeps the notice available with an empty-state message when quick sign-in offers no accounts.
+
+## Quick sign-in configuration
 
 - Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in and automatic home-page sign-in.
-- For an existing account menu, register `demoMode({ accountSwitcher: 'menu' })` and place `DemoAccountMenu` from `@nocobase/app-plugin-demo-mode/client/account-menu` inside its Base UI menu content, before sign-out. Guests retain the floating entry. Account lists preload on page entry even when the floating entry is hidden, and the submenu opens immediately on hover; no application prefetch code is needed.
-- Set the Client option `showFloatingAccountSwitcher: false` to hide the floating entry. This changes presentation; it does not disable the sign-in route.
-- For a custom entry UI, use `useDemoAccounts` from `@nocobase/app-plugin-demo-mode/client/accounts`; it supplies the public account list and `signIn(username, redirect?)`.
+- `useDemoAccounts` from `@nocobase/app-plugin-demo-mode/client/accounts` remains available for application integrations that need the public account list or `signIn(username, redirect?)`; the visitor entry uses the shared header component.
 
 ## Management presentation
 

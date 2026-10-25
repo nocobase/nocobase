@@ -51,13 +51,13 @@
       "types": "./client/settings/index.tsx",
       "import": "./client/settings/index.tsx"
     },
-    "./client/account-menu": {
-      "types": "./client/account-menu.ts",
-      "import": "./client/account-menu.ts"
-    },
     "./config": {
       "types": "./server/config.ts",
       "import": "./server/config.ts"
+    },
+    "./client/menu": {
+      "types": "./client/menu.ts",
+      "import": "./client/menu.ts"
     }
   },
   "imports": {
@@ -128,13 +128,13 @@
         "types": "./dist/client/settings/index.d.ts",
         "import": "./dist/client/settings/index.js"
       },
-      "./client/account-menu": {
-        "types": "./dist/client/account-menu.d.ts",
-        "import": "./dist/client/account-menu.js"
-      },
       "./config": {
         "types": "./dist/server/config.d.ts",
         "import": "./dist/server/config.js"
+      },
+      "./client/menu": {
+        "types": "./dist/client/menu.d.ts",
+        "import": "./dist/client/menu.js"
       }
     },
     "imports": {

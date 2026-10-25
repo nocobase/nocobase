@@ -7,13 +7,21 @@ const resource: DemoModeResource = {
     configuration: 'Cấu hình demo',
     configure: 'Cấu hình',
   },
+  menu: {
+    label: 'Chế độ dùng thử',
+    switchAccount: 'Chuyển tài khoản',
+    title: 'Đây là môi trường dùng thử',
+    description:
+      'Dữ liệu tự động được đặt lại hằng ngày. Các thay đổi sẽ không được lưu.',
+    accountsDescription:
+      'Chuyển sang một tài khoản bên dưới để xem nội dung mà từng vai trò có thể truy cập.',
+    loading: 'Đang tải tài khoản…',
+  },
   accounts: {
-    menu: 'Tài khoản: {{name}}',
     title: 'Tài khoản',
     description:
       'Vào bản demo bằng bất kỳ tài khoản nào dưới đây để xem mỗi vai trò thấy gì.',
     enter: 'Vào',
-    signedInAs: 'Đang dùng {{name}} · Chuyển',
     current: 'Hiện tại',
     entering: 'Đang vào…',
     failed: 'Không thể đăng nhập vào tài khoản này.',

@@ -7,13 +7,20 @@ const resource: DemoModeResource = {
     configuration: 'デモ設定',
     configure: '設定',
   },
+  menu: {
+    label: 'デモモード',
+    switchAccount: 'アカウントを切り替え',
+    title: 'これはデモ環境です',
+    description: 'データは毎日自動的にリセットされ、変更は保存されません。',
+    accountsDescription:
+      '以下のアカウントに切り替えて、各ロールで表示される内容を確認できます。',
+    loading: 'アカウントを読み込み中…',
+  },
   accounts: {
-    menu: 'アカウント：{{name}}',
     title: 'アカウント',
     description:
       'いずれかのアカウントでデモに入り、それぞれの役割から見た画面を確認できます。',
     enter: '入る',
-    signedInAs: '{{name}} でサインイン中 · 切り替え',
     current: '現在',
     entering: '入っています…',
     failed: 'このアカウントにログインできませんでした。',
