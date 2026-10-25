@@ -77,12 +77,10 @@ const FactSchema = z
 
 const MetricSchema = z
   .object({
-    key: z
-      .string()
-      .meta({
-        description:
-          'Data-modeling keys businessCollections and businessRecords retain their legacy names. They count observed tables outside the known system catalog, not proven business ownership or application-wide totals.',
-      }),
+    key: z.string().meta({
+      description:
+        'Data-modeling keys businessCollections and businessRecords retain their legacy names. They count observed tables outside the known system catalog, not proven business ownership or application-wide totals.',
+    }),
     value: z.number().nullable().meta({
       description: 'Null when it could not be read; never a stand-in zero.',
     }),
