@@ -1,5 +1,16 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.64
+
+### Patch Changes
+
+- 0c34e7e: Organize application tests by client, server, database, CLI and project source domains, with separate jsdom and Node Vitest projects. Keep browser tests in Playwright, run Node suites sequentially, use real application fixtures in home, inbox, sidebar permission and layout tests, and update the bundled testing guidance and commands.
+
+  Replace mocked authentication, permission hooks and article/numeric API clients in existing template tests with real application, cookie and database fixtures. Verify actual session revocation, persisted permission changes, successful retries and saved article contents. Keep deliberate network failures and delayed responses at the transport boundary.
+
+- Updated dependencies [9de4995]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.7
+
 ## 1.0.0-beta.63
 
 ### Minor Changes
