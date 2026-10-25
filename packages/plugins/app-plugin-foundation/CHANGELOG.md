@@ -1,5 +1,29 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- 7085345: Recognize explicitly declared package-local TypeScript path aliases and finite local route constructors when collecting page capability associations. Keep unresolved aliases and unsupported route computation incomplete, preserve package boundaries and source limits, and retain the existing build artifact format.
+- Updated dependencies [756f3df]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+
+## 0.1.0-beta.4
+
+### Patch Changes
+
+- c69d6e5: Follow proven Hono handler order when associating API dependencies with business modules. Preserve middleware and explicit continuation, omit unreachable or uncertain downstream contributions, and retain other confirmed evidence when analysis is incomplete. Respect registration exits and class initialization boundaries, and avoid certain matches for unsupported wildcard suffixes. Rebuild and deploy consuming applications to regenerate their module association artifacts.
+- 5edb056: Read the application's package inventory and built page associations from its server package when an embedded host points the application root at the archive extraction directory.
+- Updated dependencies [58531da]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-cli@1.0.0-beta.27
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+
 ## 0.1.0-beta.3
 
 ### Patch Changes

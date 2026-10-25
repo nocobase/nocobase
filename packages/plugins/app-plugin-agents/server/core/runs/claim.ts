@@ -1231,6 +1231,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       createdAt: nowText,
     });
     const payload: RunPayload = {
+      ...(run.subjectKind === 'conversation' &&
+      runner.features.includes('outputBlocks')
+        ? { outputBlocks: true }
+        : {}),
       run: {
         id: run.id,
         attempt: Number(run.attempt),

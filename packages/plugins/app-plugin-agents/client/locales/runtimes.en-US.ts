@@ -6,14 +6,6 @@ const runtimesEnUS = {
       checking: 'Checking…',
       restart: 'Please restart the runner to refresh its status.',
     },
-    capacity: {
-      actual: 'Last effective slots: {{slots}}',
-      online: 'Effective slots · online settings',
-      pending: 'Waiting for runner to sync online settings',
-      legacy: 'Legacy local slots · upgrade the application server',
-      upgrade: 'Sync status unavailable · upgrade the runner',
-      lastReported: 'Last reported: {{time}}',
-    },
     quota: {
       workspaceStatus: {
         active: 'Work continues',

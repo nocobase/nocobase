@@ -14,6 +14,8 @@ export class SourceEvidence {
   public constructor(
     sources: readonly EvidenceSource[],
     private readonly resolutions: ReadonlyMap<string, string>,
+    private readonly isLocal: (specifier: string) => boolean = (specifier) =>
+      /^[.#/]/.test(specifier),
   ) {
     this.sources = new Map(sources.map((source) => [source.file, source]));
     const options: ts.CompilerOptions = {
@@ -121,7 +123,7 @@ export class SourceEvidence {
         `${statement.getSourceFile().fileName}\0${specifier}`,
       );
       if (!target) {
-        if (/^[.#/]/.test(specifier)) complete = false;
+        if (this.isLocal(specifier)) complete = false;
         else references.add(specifier);
       } else if (name) exported(target, name);
       else complete = false;
@@ -135,7 +137,12 @@ export class SourceEvidence {
           ts.isImportSpecifier(declaration) ||
           ts.isExportSpecifier(declaration)
         ) {
-          if (declaration.isTypeOnly) continue;
+          if (
+            declaration.isTypeOnly ||
+            (ts.isExportSpecifier(declaration) &&
+              declaration.parent.parent.isTypeOnly)
+          )
+            continue;
           if (
             imported(
               declaration,
@@ -143,6 +150,13 @@ export class SourceEvidence {
             )
           )
             continue;
+          if (ts.isExportSpecifier(declaration)) {
+            const local =
+              this.checker.getExportSpecifierLocalTargetSymbol(declaration);
+            if (local) follow(local);
+            else complete = false;
+            continue;
+          }
           if (symbol.flags & ts.SymbolFlags.Alias)
             follow(this.checker.getAliasedSymbol(symbol));
         } else if (ts.isImportClause(declaration)) {
@@ -207,7 +221,7 @@ export class SourceEvidence {
             `${sourceFile.fileName}\0${argument.text}`,
           );
           if (target) exported(target, 'default');
-          else if (/^[.#/]/.test(argument.text)) complete = false;
+          else if (this.isLocal(argument.text)) complete = false;
           else references.add(argument.text);
         } else complete = false;
       }
@@ -219,6 +233,39 @@ export class SourceEvidence {
     if (roots) roots.forEach(visit);
     else exported(file, 'default');
     return { references, nodes, complete };
+  }
+
+  /** External contracts cannot describe resolved local overrides or unresolved local declarations. */
+  public isExternalImport(node: ts.ImportDeclaration): boolean {
+    if (!ts.isStringLiteralLike(node.moduleSpecifier)) return false;
+    const specifier = node.moduleSpecifier.text;
+    return (
+      !this.isLocal(specifier) &&
+      !this.resolutions.has(`${node.getSourceFile().fileName}\0${specifier}`)
+    );
+  }
+
+  public importedSource(
+    node: ts.ImportDeclaration | ts.ExportDeclaration,
+  ): ts.SourceFile | undefined {
+    if (ts.isExportDeclaration(node) && node.isTypeOnly) return undefined;
+    const clause = ts.isImportDeclaration(node) ? node.importClause : undefined;
+    if (clause?.isTypeOnly) return undefined;
+    const named = clause?.namedBindings;
+    if (
+      named &&
+      ts.isNamedImports(named) &&
+      !clause?.name &&
+      named.elements.length &&
+      named.elements.every((item) => item.isTypeOnly)
+    )
+      return undefined;
+    if (!node.moduleSpecifier || !ts.isStringLiteralLike(node.moduleSpecifier))
+      return undefined;
+    const file = this.resolutions.get(
+      `${node.getSourceFile().fileName}\0${node.moduleSpecifier.text}`,
+    );
+    return file ? this.sources.get(file)?.ast : undefined;
   }
 
   public symbol(node: ts.Node): ts.Symbol | undefined {

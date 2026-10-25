@@ -1,5 +1,36 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.19
+
+### Patch Changes
+
+- e5e7498: Normalize shared client imports in session, invitation and release components without changing their behavior.
+- Updated dependencies [756f3df]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
+- Updated dependencies [58531da]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@2.0.0-beta.0
+  - @nocobase/app-plugin-users@2.0.0-beta.9
+
 ## 0.1.0-beta.17
 
 ### Minor Changes

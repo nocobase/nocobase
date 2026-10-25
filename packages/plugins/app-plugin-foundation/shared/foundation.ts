@@ -53,6 +53,8 @@ export type FoundationFactParam = string | number | readonly FoundationText[];
 export interface FoundationFact {
   readonly code: string;
   readonly params?: Readonly<Record<string, FoundationFactParam>>;
+  /** Original observation time, present only when this fact is retained from an earlier collection. */
+  readonly checkedAt?: string;
 }
 
 export type FoundationMetricUnit = 'count' | 'bytes' | 'tokens';
@@ -64,13 +66,16 @@ export interface FoundationMetric {
   readonly unit: FoundationMetricUnit;
   /** False when some of the sources it adds up could not be read, so the value is a lower bound. */
   readonly complete: boolean;
+  /** Original observation time of a retained complete value, never the latest refresh time. */
+  readonly checkedAt?: string;
 }
 
 /** A part of a composite capability, such as accounts and organizations under users and organizations. */
 export interface FoundationPart {
   readonly key: string;
-  readonly status: FoundationStatus;
+  readonly status: FoundationStatus | null;
   readonly reason?: string;
+  readonly checkedAt?: string;
 }
 
 export interface FoundationPackage {
@@ -93,6 +98,8 @@ export interface FoundationCapability {
   readonly title?: FoundationText;
   readonly description?: string;
   readonly status: FoundationStatus | null;
+  /** Original observation time when the displayed status is historical. */
+  readonly checkedAt?: string;
   /** Why the capability needs setup or is unused, such as `noChannel`. */
   readonly reason?: string;
   readonly facts: readonly FoundationFact[];
@@ -130,12 +137,37 @@ export interface FoundationCollectionPage {
   readonly total: number;
 }
 
+export const FOUNDATION_API_CONDITIONS = [
+  'databaseAvailable',
+  'authenticated',
+  'bodyWithinLimit',
+  'validInput',
+] as const;
+
+/** A proven framework success contract, never an assumption about an arbitrary middleware. */
+export interface FoundationApiCondition {
+  readonly kind: (typeof FOUNDATION_API_CONDITIONS)[number];
+  /** Public package/export identity; never a filesystem path or business source text. */
+  readonly source: string;
+}
+
+export interface FoundationApiEvidence {
+  readonly method: string;
+  /** Matched API route pattern, excluding literal query strings and dynamic request values. */
+  readonly path: string;
+  readonly providers: readonly string[];
+  /** Empty for a proven unconditional prefix; otherwise all these conditions must hold. */
+  readonly conditions: readonly FoundationApiCondition[];
+}
+
 export interface FoundationModuleSource {
   readonly packageName: string;
   readonly routeName: string;
   /** Value imports reachable from the page; type-only imports and installed-only packages are excluded. */
   readonly providers: readonly string[];
   readonly apiProviders?: readonly string[];
+  /** Request provenance and conditions for API dependencies, including proven normal-success paths. */
+  readonly apiEvidence?: readonly FoundationApiEvidence[];
   readonly collections?: readonly string[];
   readonly complete: boolean;
 }
@@ -157,6 +189,7 @@ export interface FoundationModuleLink {
   )[];
   readonly providers: readonly string[];
   readonly collections?: readonly string[];
+  readonly apiEvidence?: readonly FoundationApiEvidence[];
 }
 
 export interface FoundationBusinessModule {

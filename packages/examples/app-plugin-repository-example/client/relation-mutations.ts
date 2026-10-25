@@ -1,3 +1,4 @@
+import { createUuid } from '@nocobase/app-client';
 import type { ApiClient, RemoteRepository } from '@nocobase/app-client';
 import type { RemoteSelectAst } from '@nocobase/api-client';
 
@@ -160,7 +161,7 @@ export async function loadRelationProjectState(
 
 export async function runRelationMutationScenario(
   api: ApiClient,
-  requestedRunId: string = globalThis.crypto.randomUUID(),
+  requestedRunId: string = createUuid(),
 ): Promise<RelationMutationScenario> {
   const runId = requestedRunId.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36);
   if (!runId) throw new Error('A relation mutation run ID is required.');

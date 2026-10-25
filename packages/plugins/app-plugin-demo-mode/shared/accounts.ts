@@ -1,4 +1,4 @@
-/** A demo account a visitor may enter without typing its password. */
+/** A system account a visitor may enter in Demo Mode without typing its password. */
 export interface DemoSignInAccount {
   readonly username: string;
   readonly name: string;

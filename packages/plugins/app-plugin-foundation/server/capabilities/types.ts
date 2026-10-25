@@ -22,6 +22,8 @@ export interface CollectorContext {
   readonly hasClient: boolean;
   /** Exact business row counts are opt-in because every business table must be queried. */
   readonly countRecords?: boolean;
+  /** Publish completed evidence so a later timeout cannot discard it. Does not start any additional reads. */
+  readonly report?: (findings: CapabilityFindings) => void;
 }
 
 /** What one capability's collector established. The service adds packages, completeness and issues. */

@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from '#components/ui/alert-dialog';
 import { useRef, useState } from 'react';
-import { useApiClient } from '@nocobase/app-client';
+import { createUuid, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useBeforeUnload, useLocation, useParams } from 'react-router';
 import {
@@ -257,7 +257,7 @@ export function WorkflowParametersForm({
                         kind: 'lifecycle',
                         values,
                         expectedRevision: revision,
-                        requestId: crypto.randomUUID(),
+                        requestId: createUuid(),
                       },
                     });
                     if (inline) {

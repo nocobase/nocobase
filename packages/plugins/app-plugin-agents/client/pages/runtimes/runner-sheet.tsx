@@ -160,7 +160,7 @@ function RunnerDetail({
           ) : null}
         </SheetDescription>
         <div className='flex flex-wrap items-center gap-2'>
-          <RunnerStatusCell runner={runner} />
+          <RunnerStatusCell runner={runner} badgeOnly />
           {marks.length ? (
             <Badge
               variant='secondary'

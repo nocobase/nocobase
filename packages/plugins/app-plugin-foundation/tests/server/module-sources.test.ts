@@ -1,9 +1,20 @@
-import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  rm,
+  symlink,
+  readFile,
+  stat,
+} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import ts from 'typescript';
 
+import { businessModules } from '../../client/business-modules.js';
+import { writeModuleManifest } from '../../server/module-manifest.js';
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { collectModuleSources } from '../../server/module-sources.js';
 
 const directories: string[] = [];
@@ -42,6 +53,596 @@ afterEach(async () => {
 });
 
 describe('static module dependencies', () => {
+  it.each(['local', 'property', 'parameter', 'nested', 'imported'])(
+    'resolves %s child route references with invocation-local bindings',
+    async (kind) => {
+      const child = `{name:\`\${name}-child\`,componentLoader:loader}`;
+      const bodies: Record<string, string> = {
+        local: `const children=[${child}];return {name,componentLoader:list,children};`,
+        property: `const config={children:[${child}]};return {name,componentLoader:list,children:config.children};`,
+        parameter: `return {name,componentLoader:list,children:options.children};`,
+        nested: `const leaf=${child};const children=[{name:\`\${name}-group\`,children:[leaf]}];return {name,componentLoader:list,children};`,
+        imported: `return {name,componentLoader:list,children:children(name,loader)};`,
+      };
+      const root = await fixture({
+        'client/routes.ts': `import {children} from './children.js';function master({name,list,loader,options}){${bodies[kind]}}export default [master({name:'one',list:()=>import('./quiet.js'),loader:()=>import('./page.js')${kind === 'parameter' ? ",options:{children:[{name:'one-child',componentLoader:()=>import('./page.js')}]}" : ''}}),master({name:'two',list:()=>import('./quiet.js'),loader:()=>import('./quiet.js')${kind === 'parameter' ? ",options:{children:[{name:'two-child',componentLoader:()=>import('./quiet.js')}]}" : ''}})];`,
+        'client/children.ts': `export const children=(name,loader)=>[{name:\`\${name}-child\`,componentLoader:loader}];`,
+        'client/page.ts': `import {read} from '@nocobase/db';export default ()=>read();`,
+        'client/quiet.ts': `export default ()=>null;`,
+      });
+      const result = await collectModuleSources(root);
+      expect(result.routes.map((route) => route.routeName)).toEqual([
+        'one',
+        'one-child',
+        'two',
+        'two-child',
+      ]);
+      expect(result.routes[1]?.providers).toEqual(['@nocobase/db']);
+      expect(result.routes[3]?.providers).toEqual([]);
+      expect(result.complete).toBe(true);
+      const modules = businessModules(
+        result.routes.map(({ routeName: name }) => ({
+          id: `app:${name}`,
+          name,
+          packageName: 'arbitrary-app',
+          source: 'application',
+          path: `/${name}`,
+          auth: 'required',
+          authz: 'skip',
+          navigation: { title: name },
+          componentLoader: async () => ({ default: () => null }),
+        })),
+        {
+          complete: true,
+          unreadable: [],
+          entries: [
+            {
+              name: '@nocobase/db',
+              version: 'fixture',
+              installed: true,
+              kind: 'core',
+              origin: 'nocobase',
+              categories: ['dataModeling'],
+              registration: 'observed',
+              evidence: ['serverRegistration'],
+            },
+          ],
+        },
+        result,
+        ['interface', 'dataModeling'],
+      );
+      expect(
+        modules
+          .filter((module) =>
+            module.links.some((link) => link.capability === 'dataModeling'),
+          )
+          .map((module) => module.id),
+      ).toEqual(['app:one-child']);
+    },
+  );
+
+  it.each(['children', 'returned', 'property', 'cycle', 'noReturn'])(
+    'keeps proven routes and marks unknown %s route values incomplete',
+    async (kind) => {
+      const calls: Record<string, string> = {
+        children: `const master=({children})=>({name:'parent',componentLoader:()=>import('./quiet.js'),children});export default [master({children:[{name:'child',componentLoader:()=>import('./page.js')},unknown]})];`,
+        returned: `const master=()=>unknown;export default [{name:'parent',componentLoader:()=>import('./quiet.js')},master()];`,
+        property: `const master=()=>unknown.routes;export default [{name:'parent',componentLoader:()=>import('./quiet.js')},master()];`,
+        cycle: `const children=[children];const master=()=>({name:'parent',componentLoader:()=>import('./quiet.js'),children});export default [master()];`,
+        noReturn: `const master=()=>{};export default [{name:'parent',componentLoader:()=>import('./quiet.js')},master()];`,
+      };
+      const root = await fixture({
+        'client/routes.ts': calls[kind],
+        'client/page.ts': `import {read} from '@nocobase/db';export default ()=>read();`,
+        'client/quiet.ts': `export default ()=>null;`,
+      });
+      const result = await collectModuleSources(root);
+      expect(result.routes.map((route) => route.routeName)).toEqual(
+        kind === 'children' ? ['parent', 'child'] : ['parent'],
+      );
+      expect(result.complete).toBe(false);
+    },
+  );
+
+  it.each([
+    'own',
+    'decoy',
+    'missing',
+    'inherited',
+    'baseUrl',
+    'renamed',
+    'typeElement',
+    'typeStatement',
+  ])(
+    'uses the declared paths directory with %s inherited configuration',
+    async (kind) => {
+      const root = await fixture({
+        'tsconfig.json': JSON.stringify({
+          extends: './config/base.json',
+          ...(kind === 'inherited'
+            ? {}
+            : { compilerOptions: { paths: { '@/*': ['./client/*'] } } }),
+        }),
+        'config/base.json': JSON.stringify({
+          compilerOptions: {
+            strict: true,
+            ...(kind === 'inherited'
+              ? { paths: { '@/*': ['../client/*'] } }
+              : {}),
+            ...(kind === 'baseUrl' ? { baseUrl: '..' } : {}),
+          },
+        }),
+        'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,
+        'client/page.ts': `import {${kind === 'renamed' ? 'selected as read' : 'read'}} from '@/helper';export default ()=>read();`,
+        ...(kind === 'missing'
+          ? {}
+          : {
+              'client/helper.ts': `import {read} from '@nocobase/db';import {send} from '@nocobase/app-plugin-mail/client';export ${kind === 'typeStatement' ? 'type ' : ''}{${kind === 'typeElement' ? 'type ' : ''}read${kind === 'renamed' ? ' as selected' : ''}};`,
+            }),
+        ...(kind === 'decoy' || kind === 'missing'
+          ? {
+              'config/client/helper.ts': `import {send} from '@nocobase/app-plugin-mail/client';export const read=()=>send();`,
+            }
+          : {}),
+      });
+      const result = await collectModuleSources(root);
+      expect(result.routes[0]?.providers).toEqual(
+        kind === 'missing' || kind.startsWith('type') ? [] : ['@nocobase/db'],
+      );
+      expect(result.complete).toBe(kind !== 'missing');
+      const parsed = ts.getParsedCommandLineOfConfigFile(
+        path.join(root, 'tsconfig.json'),
+        {},
+        { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} },
+      );
+      const resolved = ts.resolveModuleName(
+        '@/helper',
+        path.join(root, 'client/page.ts'),
+        parsed!.options,
+        ts.sys,
+      ).resolvedModule;
+      expect(resolved?.resolvedFileName).toBe(
+        kind === 'missing' ? undefined : path.join(root, 'client/helper.ts'),
+      );
+    },
+  );
+
+  it('resolves explicitly configured package-local aliases through request hooks', async () => {
+    const root = await fixture({
+      'tsconfig.json': JSON.stringify({
+        compilerOptions: { baseUrl: '.', paths: { '@/*': ['./client/*'] } },
+      }),
+      'client/routes.ts': `export default [{name:'items',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {useItems,ITEMS} from '@/lib/helper'; export default ()=>useItems(ITEMS);`,
+      'client/lib/helper.ts': `import {useService,apiClientToken} from '@nocobase/app-client'; import {useQuery} from '@tanstack/react-query'; export const ITEMS='items';export function useItems(path){const api=useService(apiClientToken);return useQuery({queryKey:[path],queryFn:()=>api.request({path})});}`,
+      'server/routes/index.ts': `import {Hono} from 'hono';import {read} from '@nocobase/db';export default new Hono().get('/items',()=>read());`,
+    });
+    expect((await collectModuleSources(root)).routes[0]).toMatchObject({
+      apiProviders: ['@nocobase/db'],
+      complete: true,
+    });
+    expect(
+      (await collectModuleSources(root)).routes[0]?.providers,
+    ).not.toContain('@/lib');
+  });
+
+  it.each(['', 'dist/'])(
+    'instantiates %s finite local master factories and keeps each loader paired with its name',
+    async (prefix) => {
+      const root = await fixture({
+        [prefix + 'client/routes.js']:
+          `import {defineAppRoutes as routes} from '@nocobase/app-client/plugins';import {master} from './master.js';export default routes([master({file:'items',list:()=>import('./items.js'),detail:()=>import('./detail.js'),tabs:[{path:'audit',loader:()=>import('./audit.js') }]}),master({file:'other',list:()=>import('./other.js')})]);`,
+        [prefix + 'client/master.js']:
+          `const history=()=>import('./history.js');const landing=(name,loader)=>loader?[{name:\`\${name}-landing\`,componentLoader:loader}]:[];export const master=({file,list,detail=list,tabs=[]})=>({name:file,componentLoader:list,children:[{name:\`\${file}-detail\`,componentLoader:detail,children:[...landing(file,history),...tabs.map(tab=>({name:\`\${file}-\${tab.path}\`,componentLoader:tab.loader}))]}]});`,
+        [prefix + 'client/items.js']:
+          `import {read} from '@nocobase/db';export default ()=>read();`,
+        [prefix + 'client/detail.js']:
+          `import {read} from '@nocobase/db';export default ()=>read();`,
+        [prefix + 'client/history.js']: `export default ()=>null;`,
+        [prefix + 'client/audit.js']:
+          `import {send} from '@nocobase/app-plugin-mail/client';export default ()=>send();`,
+        [prefix + 'client/other.js']: `export default ()=>null;`,
+      });
+      const result = await collectModuleSources(root);
+      expect(result.routes.map((r) => r.routeName)).toEqual([
+        'items',
+        'items-detail',
+        'items-landing',
+        'items-audit',
+        'other',
+        'other-detail',
+        'other-landing',
+      ]);
+      expect(
+        result.routes.find((r) => r.routeName === 'items-audit')?.providers,
+      ).toEqual(['@nocobase/app-plugin-mail']);
+      expect(
+        result.routes.find((r) => r.routeName === 'other')?.providers,
+      ).toEqual([]);
+      expect(result.complete).toBe(true);
+    },
+  );
+
+  it.each(['relative', 'hash', 'configured', 'inherited'])(
+    'keeps %s request method/path pairs, unused imports and final matrix links precise',
+    async (kind) => {
+      const specifier =
+        kind === 'relative'
+          ? './helper.js'
+          : kind === 'hash'
+            ? '#helper'
+            : '@/helper';
+      const root = await fixture({
+        'package.json': JSON.stringify({
+          name: 'arbitrary-app',
+          imports: { '#helper': './client/helper.js' },
+        }),
+        'tsconfig.json': JSON.stringify(
+          kind === 'inherited'
+            ? { extends: './config/base.json' }
+            : { compilerOptions: { paths: { '@/*': ['./client/*'] } } },
+        ),
+        'config/base.json': JSON.stringify({
+          compilerOptions: { baseUrl: '..', paths: { '@/*': ['./client/*'] } },
+        }),
+        'client/routes.ts': `const master=({file,list})=>({name:file,componentLoader:list});export default [master({file:'items',list:()=>import('./page.js')}),{name:'quiet',componentLoader:()=>import('./quiet.js')}];`,
+        'client/page.ts': `import {useRead} from '${specifier}';import {unused} from '@vendor/unused';export default ()=>{useRead('items');useRead('audit','POST');};`,
+        'client/quiet.ts': `export default ()=>null;`,
+        'client/helper.ts': `import {useService,apiClientToken} from '@nocobase/app-client';import {useQuery} from '@tanstack/react-query';import {read} from '@vendor/extra';export const unused=()=>read();export function useRead(path,method='GET'){const api=useService(apiClientToken);return useQuery({queryKey:[path,method],queryFn:()=>api.request({path,method})});}`,
+        'server/routes/index.ts': `import {Hono} from 'hono';import {read} from '@nocobase/db';import {send} from '@nocobase/app-plugin-mail/server';export default new Hono().get('/items',()=>read()).post('/items',()=>send()).post('/audit',()=>read());`,
+      });
+      const sources = await collectModuleSources(root);
+      expect(sources.routes[0]).toMatchObject({
+        apiProviders: ['@nocobase/db'],
+        complete: true,
+      });
+      expect(sources.routes[0]?.providers).not.toContain('@vendor/unused');
+      expect(sources.routes[0]?.providers).not.toContain('@vendor/extra');
+      const navigation = (name: string): AppClientRegisteredRoute => ({
+        id: `app:${name}`,
+        name,
+        packageName: 'arbitrary-app',
+        source: 'application',
+        path: `/${name}`,
+        auth: 'required',
+        authz: 'skip',
+        navigation: { title: name },
+        componentLoader: async () => ({ default: () => null }),
+      });
+      const modules = businessModules(
+        [navigation('items'), navigation('quiet')],
+        {
+          complete: true,
+          unreadable: [],
+          entries: [
+            {
+              name: '@nocobase/db',
+              version: '1',
+              installed: true,
+              kind: 'core',
+              origin: 'nocobase',
+              categories: ['dataModeling'],
+              registration: 'observed',
+              evidence: ['serverRegistration'],
+            },
+          ],
+        },
+        sources,
+        ['interface', 'dataModeling'],
+      );
+      expect(
+        modules[0]?.links.find((link) => link.capability === 'dataModeling'),
+      ).toMatchObject({ evidence: ['apiSource'], providers: ['@nocobase/db'] });
+      expect(modules[1]?.links.map((link) => link.capability)).toEqual([
+        'interface',
+      ]);
+      await writeModuleManifest(root);
+      const artifact = path.join(root, 'dist/server/foundation-modules.json');
+      const first = await readFile(artifact, 'utf8'),
+        mtime = (await stat(artifact)).mtimeMs;
+      await writeModuleManifest(root);
+      expect(await readFile(artifact, 'utf8')).toBe(first);
+      expect((await stat(artifact)).mtimeMs).toBe(mtime);
+      await writeFile(
+        path.join(root, 'dist/package.json'),
+        JSON.stringify({ name: 'arbitrary-app' }),
+      );
+      expect(await collectModuleSources(path.join(root, 'dist'))).toEqual(
+        sources,
+      );
+    },
+  );
+
+  it.each(['missing', 'multiple', 'escape', 'cycle', 'oversized', 'symlink'])(
+    'keeps an %s alias unresolved and incomplete without inventing a provider',
+    async (kind) => {
+      const root = await fixture({
+        'tsconfig.json': JSON.stringify({
+          ...(kind === 'cycle' ? { extends: './tsconfig.json' } : {}),
+          compilerOptions: {
+            paths: {
+              '@/*':
+                kind === 'multiple'
+                  ? ['./client/*', './else/*']
+                  : kind === 'escape'
+                    ? ['../*']
+                    : ['./client/*'],
+            },
+          },
+        }),
+        'client/routes.ts': `export default [{name:'items',componentLoader:()=>import('./page.js')}];`,
+        'client/page.ts': `import {read} from '@/helper';import {read as external} from '@vendor/pkg';export default ()=>{read();external();};`,
+        'client/helper.ts': `import {query} from '@nocobase/db';export function read(){return query();}`,
+      });
+      if (kind === 'missing') await rm(path.join(root, 'tsconfig.json'));
+      if (kind === 'oversized')
+        await writeFile(path.join(root, 'tsconfig.json'), ' '.repeat(512001));
+      if (kind === 'symlink') {
+        const other = await fixture({
+          'helper.ts': `import {query} from '@nocobase/db';export function read(){return query();}`,
+        });
+        await rm(path.join(root, 'client/helper.ts'));
+        await symlink(
+          path.join(other, 'helper.ts'),
+          path.join(root, 'client/helper.ts'),
+        );
+      }
+      const result = await collectModuleSources(root);
+      expect(result.routes[0]).toMatchObject({
+        providers: ['@vendor/pkg'],
+        complete: false,
+      });
+      expect(result.complete).toBe(false);
+    },
+  );
+
+  it('isolates alias configuration between an application and a registered plugin, including local import cycles', async () => {
+    const root = await fixture({
+      'tsconfig.json': JSON.stringify({
+        compilerOptions: { paths: { '@/*': ['./client/*'] } },
+      }),
+      'client/routes.ts': `export default [{name:'host',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {read} from '@/helper';export default ()=>read();`,
+      'client/helper.ts': `import {query} from '@nocobase/db';export function read(){return query();}`,
+    });
+    const plugin = await fixture({
+      'package.json': JSON.stringify({ name: 'other-plugin' }),
+      'client/routes.ts': `export default [{name:'plugin',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `import {read} from '@/helper';export default ()=>read();`,
+    });
+    const result = await collectModuleSources(root, [
+      { name: 'other-plugin', rootDir: plugin, evidence: 'serverRegistration' },
+    ]);
+    expect(result.routes.find((r) => r.routeName === 'host')).toMatchObject({
+      providers: ['@nocobase/db'],
+      complete: true,
+    });
+    expect(result.routes.find((r) => r.routeName === 'plugin')).toMatchObject({
+      providers: [],
+      complete: false,
+    });
+    await writeFile(
+      path.join(root, 'client/helper.ts'),
+      `import './page.js';import {query} from '@nocobase/db';export function read(){return query();}`,
+    );
+    expect((await collectModuleSources(root)).routes[0]).toMatchObject({
+      providers: ['@nocobase/db'],
+      complete: true,
+    });
+  });
+
+  it.each([
+    'opaque',
+    'recursive',
+    'sideEffect',
+    'constEffect',
+    'duplicates',
+    'loop',
+    'unknownMap',
+    'cyclicMap',
+    'tooMany',
+  ])(
+    'retains known routes beside an unsupported %s factory without executing it',
+    async (kind) => {
+      const expressions = {
+        cyclicMap: `cyclic.map(value=>({name:'invented',componentLoader:()=>import('./page.js')}))`,
+        opaque: `unknownFactory({})`,
+        recursive: `recurse({})`,
+        sideEffect: `effect({})`,
+        constEffect: `constEffect()`,
+        duplicates: `({name:'invented',name:'other',componentLoader:()=>import('./page.js')})`,
+        loop: `loop({})`,
+        unknownMap: `unknown.map(x=>({name:x,componentLoader:()=>import('./page.js')}))`,
+        tooMany: `Array.from({length:1000}).map(x=>({name:x,componentLoader:()=>import('./page.js')}))`,
+      };
+      const root = await fixture({
+        'client/routes.ts': `const cyclic=[...cyclic];function constEffect(){const x=(globalThis.__foundationSideEffect=true);return {name:'invented',componentLoader:()=>import('./page.js')}}function recurse(value){return recurse(value)}function effect(){globalThis.__foundationSideEffect=true;fetch('https://invalid.test');return {name:'invented',componentLoader:()=>import('./page.js')}}function loop(){while(true){}return {name:'invented',componentLoader:()=>import('./page.js')}}export default [{name:'known',componentLoader:()=>import('./page.js')},${expressions[kind as keyof typeof expressions]}];`,
+        'client/page.ts': `export default ()=>null;`,
+      });
+      const result = await collectModuleSources(root);
+      expect(result.routes.map((r) => r.routeName)).toEqual(['known']);
+      expect(result.routes[0]?.complete).toBe(true);
+      expect(result.complete).toBe(false);
+      expect(Reflect.get(globalThis, '__foundationSideEffect')).toBeUndefined();
+    },
+  );
+
+  it('evaluates finite object tabs, literal find and default landing helpers with per-call bindings', async () => {
+    const root = await fixture({
+      'client/routes.ts': `const landing=(name,loader)=>loader?[{name:\`\${name}-landing\`,componentLoader:loader}]:[];const master=({file,list,tabs=[],open})=>({name:file,componentLoader:list,children:[...landing(file,tabs.find(t=>t.path===open)?.loader),...tabs.map(t=>({name:\`\${file}-\${t.path}\`,componentLoader:t.loader}))]});const objectTabs=(name,tabs)=>({name,componentLoader:()=>import('./quiet.js'),children:Object.entries(tabs).map(([tab,loader])=>({name:\`\${name}-\${tab}\`,componentLoader:loader}))});export default [master({file:'one',list:()=>import('./quiet.js'),open:'audit',tabs:[{path:'audit',loader:()=>import('./mail.js')}]}),objectTabs('two',{audit:()=>import('./mail.js'),quiet:()=>import('./quiet.js')})];`,
+      'client/quiet.ts': `export default ()=>null;`,
+      'client/mail.ts': `import {send} from '@nocobase/app-plugin-mail/client';export default ()=>send();`,
+    });
+    const result = await collectModuleSources(root);
+    expect(result.routes.map((r) => r.routeName)).toEqual([
+      'one',
+      'one-landing',
+      'one-audit',
+      'two',
+      'two-audit',
+      'two-quiet',
+    ]);
+    expect(
+      result.routes
+        .filter((r) => r.providers.includes('@nocobase/app-plugin-mail'))
+        .map((r) => r.routeName),
+    ).toEqual(['one-landing', 'one-audit', 'two-audit']);
+    expect(result.complete).toBe(true);
+  });
+
+  it('bounds alias-driven source reads without completing a truncated graph', async () => {
+    const files: Record<string, string> = {
+      'tsconfig.json': JSON.stringify({
+        compilerOptions: { paths: { '@/*': ['./client/*'] } },
+      }),
+      'client/routes.ts': `export default [{name:'items',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts':
+        Array.from(
+          { length: 401 },
+          (_, i) => `import {v${i}} from '@/v${i}';`,
+        ).join('') +
+        `export default ()=>[${Array.from({ length: 401 }, (_, i) => `v${i}`).join(',')}];`,
+    };
+    for (let i = 0; i < 401; i++)
+      files[`client/v${i}.ts`] = `export const v${i}=${i};`;
+    const result = await collectModuleSources(await fixture(files));
+    expect(result.routes[0]).toMatchObject({ providers: [], complete: false });
+    expect(result.complete).toBe(false);
+  });
+
+  it.each([
+    'duplicates',
+    'configSymlink',
+    'inheritanceLimit',
+    'unknownBranch',
+    'spread',
+  ])(
+    'rejects %s ambiguity while retaining independent route evidence',
+    async (kind) => {
+      const files: Record<string, string> = {
+        'tsconfig.json':
+          kind === 'duplicates'
+            ? `{"compilerOptions":{"paths":{"@/*":["./client/*"],"@/*":["./other/*"]}}}`
+            : JSON.stringify({
+                compilerOptions: { paths: { '@/*': ['./client/*'] } },
+              }),
+        'client/routes.ts': `const master=({name='invented',list})=>({name,componentLoader:list});export default [{name:'known',componentLoader:()=>import('./quiet.js')},{name:'alias',componentLoader:()=>import('./page.js')},${kind === 'unknownBranch' ? `opaqueCondition?master({name:'maybe',list:()=>import('./quiet.js')}):[]` : kind === 'spread' ? `master({...unknown,list:()=>import('./quiet.js')})` : '[]'}];`,
+        'client/quiet.ts': `export default ()=>null;`,
+        'client/page.ts': `import {read} from '@/helper';export default ()=>read();`,
+        'client/helper.ts': `import {query} from '@nocobase/db';export const read=()=>query();`,
+      };
+      if (kind === 'inheritanceLimit') {
+        files['tsconfig.json'] = JSON.stringify({ extends: './config0.json' });
+        for (let i = 0; i < 9; i++)
+          files[`config${i}.json`] = JSON.stringify({
+            extends: `./config${i + 1}.json`,
+            compilerOptions: { paths: { '@/*': ['./client/*'] } },
+          });
+      }
+      const root = await fixture(files);
+      if (kind === 'configSymlink') {
+        const other = await fixture({
+          'tsconfig.json': files['tsconfig.json']!,
+        });
+        await rm(path.join(root, 'tsconfig.json'));
+        await symlink(
+          path.join(other, 'tsconfig.json'),
+          path.join(root, 'tsconfig.json'),
+        );
+      }
+      const result = await collectModuleSources(root);
+      expect(result.routes.find((r) => r.routeName === 'known')).toMatchObject({
+        providers: [],
+        complete: true,
+      });
+      expect(
+        result.routes.some(
+          (r) => r.routeName === 'invented' || r.routeName === 'maybe',
+        ),
+      ).toBe(false);
+      expect(result.complete).toBe(false);
+    },
+  );
+
+  it('does not replace an explicitly unknown object or loader with a factory default', async () => {
+    const root = await fixture({
+      'client/routes.ts': `const factory=({name='invented',list=()=>import('./mail.js'),detail=list}={})=>({name,componentLoader:detail});export default [{name:'known',componentLoader:()=>import('./quiet.js')},factory(unknownFactory()),factory({name:'unsafe',list:()=>import('./mail.js'),detail:unknownFactory()}),factory({name:'unsafe',name:'duplicate',list:()=>import('./mail.js')}),factory({name:'unsafe',list:()=>import('./mail.js'),[unknown]:'value'}),(async()=>({name:'unsafe',componentLoader:()=>import('./mail.js')}))()];`,
+      'client/quiet.ts': `export default ()=>null;`,
+      'client/mail.ts': `import {send} from '@nocobase/app-plugin-mail/client';export default ()=>send();`,
+    });
+    const result = await collectModuleSources(root);
+    expect(result.routes).toEqual([
+      {
+        packageName: 'arbitrary-app',
+        routeName: 'known',
+        providers: [],
+        complete: true,
+      },
+    ]);
+    expect(result.complete).toBe(false);
+  });
+
+  it('invokes router factories in export order and snapshots each contribution before the next factory', async () => {
+    const root = await fixture({
+      'client/routes.ts':
+        "export default [{name:'page',componentLoader:()=>import('./page.js')}];",
+      'client/page.ts':
+        "import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'items/export'});",
+      'server/routes/index.ts':
+        "import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {read} from '@nocobase/db';import {send} from '@nocobase/app-plugin-mail/server';const router=new Hono();const second=defineApiRoutes(()=>{router.get('/items/:id',c=>{read();return c.text('db');});return router;});const first=defineApiRoutes(()=>{router.get('/items/export',c=>{send();return c.text('mail');});return router;});export default [first,second];",
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/app-plugin-mail',
+    ]);
+    await writeFile(
+      path.join(root, 'server/routes/index.ts'),
+      "import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {read} from '@nocobase/db';import {send} from '@nocobase/app-plugin-mail/server';import {notify} from '@nocobase/app-plugin-notification/server';const router=new Hono().get('/items/:id',async(c,next)=>{read();await next();});const later=defineApiRoutes(()=>{router.get('/items/export',c=>{send();return c.text('mail');});return router;});export default [router,new Hono().get('/items/export',c=>{notify();return c.text('notification');}),later];",
+    );
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/app-plugin-notification',
+      '@nocobase/db',
+    ]);
+  });
+  it('respects side-effect registration modules without attributing unrelated router imports', async () => {
+    const root = await fixture({
+      'client/routes.ts':
+        "export default [{name:'page',componentLoader:()=>import('./page.js')}];",
+      'client/page.ts':
+        "import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'items/export'});",
+      'server/routes/index.ts':
+        "import router from './router.js';import './register.js'; import {send} from '@nocobase/app-plugin-mail/server';router.get('/items/export',c=>{send();return c.text('mail');});export default router;",
+      'server/routes/router.ts':
+        "import {Hono} from 'hono';export default new Hono();",
+      'server/routes/register.ts':
+        "import router from './router.js';import {read} from '@nocobase/db';router.get('/items/:id',c=>{read();return c.text('db');});",
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+  });
+  it('keeps imported router registration before importer additions and preserves ordered API exports', async () => {
+    const root = await fixture({
+      'client/routes.ts':
+        "export default [{name:'page',componentLoader:()=>import('./page.js')}];",
+      'client/page.ts':
+        "import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'items/export'});",
+      'server/routes/index.ts':
+        "import router from './child.js'; import {send} from '@nocobase/app-plugin-mail/server'; router.get('/items/export',c=>{send();return c.text('mail');}); export default router;",
+      'server/routes/child.ts':
+        "import {Hono} from 'hono';import {read} from '@nocobase/db';const router=new Hono();router.get('/items/:id',c=>{read();return c.text('db');});export default router;",
+    });
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/db',
+    ]);
+    await writeFile(
+      path.join(root, 'server/routes/index.ts'),
+      "import child from './child.js';import {Hono} from 'hono';import {send} from '@nocobase/app-plugin-mail/server';export default [new Hono().get('/items/export',c=>{send();return c.text('mail');}),child];",
+    );
+    expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
+      '@nocobase/app-plugin-mail',
+    ]);
+  });
+
   it.each(['server/routes/index.js', 'server/routes.js'])(
     'matches source and published %s entries for applications and registered plugins',
     async (router) => {

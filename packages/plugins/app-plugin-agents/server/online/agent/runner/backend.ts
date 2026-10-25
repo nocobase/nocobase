@@ -1,18 +1,16 @@
+import { createHash } from 'node:crypto';
 import type {
   BackgroundOnlineAgent,
   RealtimeOnlineAgent,
   OnlineAgentBackend,
 } from '../contracts.js';
-import {
-  runnerUIMessages,
-  runnerUIPage,
-  runnerMessageId,
-} from './projection.js';
+import { runnerMessages, runnerUIPage, runnerMessageId } from './projection.js';
 import type { UIStreamChannel } from '../transport/streams.js';
 import type { AppUIMessage } from '../../../../shared/online-agent.js';
 import { isDeepStrictEqual } from 'node:util';
 import type { ModelMessage } from 'ai';
 import type { Run } from '../../../../shared/runs.js';
+import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
 import type { ModelRef } from '../../../../shared/models.js';
 import {
   conversationsRepo,
@@ -143,7 +141,10 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
       filter: { conversationId: this.sessionId },
       sort: (s) => s.field('seq').asc(),
     });
-    return runnerUIMessages(rows.map((row) => toMessage(row, deps.basePath())));
+    return runnerMessages(
+      deps.tx,
+      rows.map((row) => toMessage(row, deps.basePath())),
+    );
   }
   async messages(
     query: NativeHistoryQuery,
@@ -287,6 +288,9 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
       cursor: Number(before.lastSeq),
       writer,
       published: new Set(),
+      textLengths: new Map(),
+      previewDigests: new Map(),
+      previewParts: new Map(),
       ready: false,
       started: false,
       again: false,
@@ -523,6 +527,129 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
     void this.refresh(execution).catch((error) => this.deps.onError(error));
     return true;
   }
+  /** Ephemeral previews are authorized/redacted by reports; history still comes only from completed snapshots. */
+  output(runId: string, event: RunEvent): void {
+    const execution = [...this.state.active.values()].find(
+      (item) => item.runId === runId,
+    );
+    const output = outputBlock(event.meta);
+    if (
+      !execution?.ready ||
+      !output ||
+      (event.type !== 'text' && event.type !== 'thinking')
+    )
+      return;
+    const id = `output:${output.blockId}`;
+    if (execution.published.has(id)) return;
+    const type = event.type === 'thinking' ? 'reasoning' : 'text';
+    if (!execution.started) {
+      execution.writer.write({
+        type: 'start',
+        messageId: runnerMessageId(runId),
+        messageMetadata: {
+          conversationId: execution.id,
+          revision: 0,
+          createdAt: this.deps.now(),
+          executionId: runId,
+          turnId: runId,
+        },
+      });
+      execution.started = true;
+    }
+    if (!execution.previewParts.has(id)) {
+      if (execution.previewParts.size >= 64) return;
+      execution.previewParts.set(id, {
+        index: execution.previewParts.size,
+        type,
+      });
+      execution.writer.write({
+        type: type === 'text' ? 'text-start' : 'reasoning-start',
+        id,
+      });
+      execution.textLengths.set(id, 0);
+      execution.previewDigests.set(id, createHash('sha256'));
+    }
+    const sources = [...execution.previewParts].map(([partId, part]) => ({
+      recordId: partId,
+      partId,
+      partIndex: part.index,
+      seq: execution.cursor + 1,
+      createdAt: this.deps.now(),
+      output: {
+        blockId: partId.slice(7),
+        phase: execution.published.has(partId)
+          ? ('end' as const)
+          : ('delta' as const),
+      },
+    }));
+    execution.writer.write({
+      type: 'message-metadata',
+      messageMetadata: {
+        ...execution.snapshot?.metadata,
+        revision: execution.snapshot?.metadata?.revision ?? 0,
+        conversationId: execution.id,
+        createdAt: execution.snapshot?.metadata?.createdAt ?? this.deps.now(),
+        sourceRecords: sources,
+        executionId: runId,
+        turnId: runId,
+      },
+    });
+    let content = event.content ?? '';
+    if (output.phase === 'end' && event.content !== undefined) {
+      const length = this.prefixLength(execution, id, content);
+      if (length === undefined) return;
+      content = content.slice(length);
+    }
+    if (content) {
+      execution.writer.write({
+        type: type === 'text' ? 'text-delta' : 'reasoning-delta',
+        id,
+        delta: content,
+      });
+      execution.previewDigests.get(id)?.update(content);
+      execution.textLengths.set(
+        id,
+        (execution.textLengths.get(id) ?? 0) + content.length,
+      );
+    }
+    if (output.phase === 'end') {
+      execution.writer.write({
+        type: type === 'text' ? 'text-end' : 'reasoning-end',
+        id,
+      });
+      execution.published.add(id);
+      execution.previewDigests.delete(id);
+    }
+  }
+  /** Check the actual prefix, without retaining response text or treating its length as evidence. */
+  private prefixLength(
+    execution: Execution,
+    id: string,
+    canonical: string,
+  ): number | undefined {
+    const length = execution.textLengths.get(id) ?? 0;
+    const digest = execution.previewDigests.get(id);
+    if (
+      digest &&
+      (length > canonical.length ||
+        digest.copy().digest('hex') !==
+          createHash('sha256').update(canonical.slice(0, length)).digest('hex'))
+    ) {
+      for (const [partId, part] of execution.previewParts)
+        if (!execution.published.has(partId)) {
+          execution.writer.write({
+            type: part.type === 'text' ? 'text-end' : 'reasoning-end',
+            id: partId,
+          });
+          execution.published.add(partId);
+        }
+      execution.previewDigests.clear();
+      // Preview is best effort. Finish normally so the existing onFinish history refresh
+      // replaces it with committed content, without turning a successful run into a UI error.
+      return undefined;
+    }
+    return length;
+  }
   private refresh(execution: Execution): Promise<void> {
     if (this.state.detaching) return execution.pending ?? Promise.resolve();
     if (
@@ -568,6 +695,17 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       run.subject.id !== execution.id
     )
       throw forbidden('This run does not belong to the conversation.');
+    // A reclaimed attempt can be queued again without finishing the conversation stream.
+    if (run.status === 'queued' || run.status === 'dispatched')
+      for (const [id, part] of execution.previewParts)
+        if (id.startsWith('output:') && !execution.published.has(id)) {
+          execution.writer.write({
+            type: part.type === 'text' ? 'text-end' : 'reasoning-end',
+            id,
+          });
+          execution.published.add(id);
+          execution.previewDigests.delete(id);
+        }
     // Synchronization commits first. Independent notices are delivered by durable business rereads.
     const row = await owned(this.deps, execution.userId, execution.id);
     if (Number(row.lastSeq) > execution.cursor) {
@@ -579,10 +717,56 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         },
         sort: (s) => s.field('seq').asc(),
       });
-      const message = runnerUIMessages(
-        records.map((record) => toMessage(record, this.deps.basePath())),
+      const message = (
+        await runnerMessages(
+          this.deps.tx,
+          records.map((record) => toMessage(record, this.deps.basePath())),
+        )
       )[0];
       if (message) {
+        const sourceParts = new Map(
+          message.metadata!.sourceRecords!.map((source) => [
+            source.partId,
+            message.parts[source.partIndex],
+          ]),
+        );
+        const canonicalSources = [...message.metadata!.sourceRecords!];
+        for (const source of message.metadata!.sourceRecords!) {
+          let part = execution.previewParts.get(source.partId);
+          if (!part) {
+            part = {
+              index: execution.previewParts.size,
+              type:
+                sourceParts.get(source.partId)?.type === 'reasoning'
+                  ? 'reasoning'
+                  : 'text',
+            };
+            execution.previewParts.set(source.partId, part);
+          }
+          source.partIndex = part.index;
+        }
+        const canonical = new Set(
+          message.metadata!.sourceRecords!.map((source) => source.partId),
+        );
+        for (const [partId, part] of execution.previewParts)
+          if (!canonical.has(partId))
+            message.metadata!.sourceRecords!.push({
+              recordId: partId,
+              partId,
+              partIndex: part.index,
+              seq: execution.cursor + 1,
+              createdAt: this.deps.now(),
+              ...(partId.startsWith('output:')
+                ? {
+                    output: {
+                      blockId: partId.slice(7),
+                      phase: execution.published.has(partId)
+                        ? ('end' as const)
+                        : ('delta' as const),
+                    },
+                  }
+                : {}),
+            });
         if (!execution.started) {
           execution.writer.write({
             type: 'start',
@@ -595,17 +779,37 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
           type: 'message-metadata',
           messageMetadata: message.metadata!,
         });
-        for (const source of message.metadata!.sourceRecords!) {
+        for (const source of canonicalSources) {
           if (execution.published.has(source.partId)) continue;
-          const part = message.parts[source.partIndex];
-          if (part.type === 'text') {
-            execution.writer.write({ type: 'text-start', id: source.partId });
-            execution.writer.write({
-              type: 'text-delta',
-              id: source.partId,
-              delta: part.text,
-            });
-            execution.writer.write({ type: 'text-end', id: source.partId });
+          const part = sourceParts.get(source.partId)!;
+          if (part.type === 'text' || part.type === 'reasoning') {
+            const length = this.prefixLength(
+              execution,
+              source.partId,
+              part.text,
+            );
+            if (length === undefined) continue;
+            if (!execution.textLengths.has(source.partId))
+              execution.writer.write({
+                type: part.type === 'text' ? 'text-start' : 'reasoning-start',
+                id: source.partId,
+              });
+            const delta = part.text.slice(length ?? 0);
+            if (delta)
+              execution.writer.write({
+                type: part.type === 'text' ? 'text-delta' : 'reasoning-delta',
+                id: source.partId,
+                delta,
+              });
+            execution.textLengths.set(source.partId, part.text.length);
+            if (part.state !== 'streaming') {
+              execution.writer.write({
+                type: part.type === 'text' ? 'text-end' : 'reasoning-end',
+                id: source.partId,
+              });
+              execution.published.add(source.partId);
+              execution.previewDigests.delete(source.partId);
+            }
           } else if (part.type === 'file')
             execution.writer.write({
               type: 'file',
@@ -613,13 +817,22 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
               mediaType: part.mediaType,
               ...(part.filename ? { filename: part.filename } : {}),
             });
-          execution.published.add(source.partId);
+          if (part.type !== 'text' && part.type !== 'reasoning')
+            execution.published.add(source.partId);
         }
         execution.snapshot = message;
       }
       execution.cursor = Number(row.lastSeq);
     }
     if (!this.terminal(run)) return;
+    for (const [id, part] of execution.previewParts)
+      if (!execution.published.has(id)) {
+        execution.writer.write({
+          type: part.type === 'text' ? 'text-end' : 'reasoning-end',
+          id,
+        });
+        execution.published.add(id);
+      }
     const started = performance.now();
     try {
       if (!execution.cleared)

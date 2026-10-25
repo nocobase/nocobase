@@ -22,3 +22,6 @@ const toaster: AppClient.Toaster = {
 
 // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix -- stands in for the hook of the same name
 export const useToaster: typeof AppClient.useToaster = () => toaster;
+
+// Reuse the real browser capability boundary; only application services are mocked.
+export { copyText } from '../../../../packages/app/app-client/src/copy-text.js';

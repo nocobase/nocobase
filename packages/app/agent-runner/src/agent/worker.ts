@@ -1,3 +1,5 @@
+import { OutputWriter } from './output-writer.ts';
+import { PreviewTransport } from './preview-transport.ts';
 import { existsSync } from 'node:fs';
 import { protectUpgradeWorkspace } from '../core/workspace-use.ts';
 import { taskSessionWorkDir } from '../core/run-worktrees.ts';
@@ -188,7 +190,7 @@ export function workspaceNotes(options: {
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : options.readOnly === true
             ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a shared workspace for a read-only run: change no tracked file, commit and push nothing).`
-            : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository after checking the current branch, with git push origin HEAD:refs/heads/<branch> (requested initial target: ${dir.repo.branch}). Never rewrite already-pushed history or force push. Open and update change requests (pull or merge requests) with the code host's command line, such as gh or glab, when one is available; ${options.cli} pr link and pr unlink manage the task's other associations. Check each command's --help for arguments.`,
+            : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository after checking the current branch, with git push origin HEAD:refs/heads/<branch> (requested initial target: ${dir.repo.branch}). Never rewrite already-pushed history or force push. Open and update change requests (pull or merge requests) with the code host's command line, such as gh, glab or gitee, when one is available; ${options.cli} pr link and pr unlink manage the task's other associations. Check each command's --help for arguments.`,
       );
     }
     for (const dir of dirs)
@@ -351,6 +353,8 @@ export class RunWorker {
   private readonly runId: string;
   private readonly record: RunRecord;
   private readonly spool: EventSpool;
+  private readonly output?: OutputWriter;
+  private readonly preview?: PreviewTransport;
   private readonly lease: LeaseKeeper;
   private readonly abort = new AbortController();
   private readonly inputs = new Map<string, RunInput>();
@@ -415,6 +419,17 @@ export class RunWorker {
           this.end({ kind: 'lost', code: error.reason });
       },
     });
+    if (payload.outputBlocks === true) {
+      this.preview = new PreviewTransport(this.client, this.runId);
+      this.output = new OutputWriter(
+        (event) => {
+          this.spool.push(event);
+        },
+        this.redactor,
+        payload.outputBlocks === true,
+        (event) => this.preview!.send(event),
+      );
+    }
     this.lease = new LeaseKeeper({
       client: this.client,
       runId: this.runId,
@@ -435,7 +450,7 @@ export class RunWorker {
             ...(git?.credentials ? { credentials: git.credentials } : {}),
             onSecret: (secret) => this.redactor.add([secret]),
             onLost: (code) => this.end({ kind: 'lost', code }),
-            event: (event) => this.spool.push(event),
+            event: (event) => this.writeEvent(event),
             log: this.deps.log,
           })
         : undefined;
@@ -507,7 +522,7 @@ export class RunWorker {
   ): void {
     for (const input of inputs) {
       this.delivered.add(input.id);
-      this.spool.push({
+      this.writeEvent({
         type: 'input',
         content: input.text,
         meta: { inputId: input.id, mode },
@@ -553,7 +568,12 @@ export class RunWorker {
         this.steered.delete(inputId);
       }
     }
-    this.spool.push(event);
+    this.writeEvent(event);
+  }
+
+  private writeEvent(event: Parameters<EventSpool['push']>[0]): void {
+    if (this.output) this.output.write(event);
+    else this.spool.push(event);
   }
 
   private undelivered(): RunInput[] {
@@ -641,6 +661,11 @@ export class RunWorker {
         await removeHostToolWrappers(this.hostToolsDir).catch(() => undefined);
       if (this.statusTimer !== undefined) clearInterval(this.statusTimer);
       if (this.idleTimer !== undefined) clearInterval(this.idleTimer);
+      try {
+        this.output?.end();
+      } catch (error) {
+        log(`Output cleanup failed: ${this.redactor.text(String(error))}`);
+      }
       this.spool.stop();
       if (this.credentialsFile !== undefined)
         await deleteRunCredentials(this.credentialsFile);
@@ -680,7 +705,7 @@ export class RunWorker {
       client: this.client,
       tool: payload.tool.kind,
       log: deps.log,
-      event: (event) => this.spool.push(event),
+      event: (event) => this.writeEvent(event),
       onRelease: (release) => this.releases.push(release),
       ...(this.broker === undefined ? {} : { gitAuth: this.broker }),
       dirs: [],
@@ -707,7 +732,7 @@ export class RunWorker {
         await step.run(context);
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
-        this.spool.push({
+        this.writeEvent({
           type: 'error',
           content: detail,
           meta: {
@@ -855,7 +880,7 @@ export class RunWorker {
     // Turns
     const init = workspaceInit(context.dirs);
     if (init !== '')
-      this.spool.push({
+      this.writeEvent({
         type: 'status',
         content:
           'Initialization prompts included for freshly prepared directories.',
@@ -892,6 +917,7 @@ export class RunWorker {
     for (;;) {
       this.lastActivity = Date.now();
       const handle = adapter.start({
+        ...(payload.outputBlocks ? { outputBlocks: true } : {}),
         workDir: cwd,
         prompt,
         systemPrompt: system,
@@ -915,8 +941,8 @@ export class RunWorker {
       this.handle = handle;
       // Inputs that arrived while no turn was running.
       for (const input of this.undelivered()) void this.steer(input);
-      // The run can end while the tool is mid-step; stop reading its events then rather than wait for it to close
-      // them, and let finishEnding() stop it.
+      // Cancellation snapshots arrive while the adapter stops. Keep the outstanding read so the event that
+      // loses the abort race is consumed exactly once, then drain within the tool's existing stop budget.
       const iterator = handle.events[Symbol.asyncIterator]();
       const ended = new Promise<'ended'>((resolve) => {
         if (this.abort.signal.aborted) resolve('ended');
@@ -926,8 +952,13 @@ export class RunWorker {
           });
       });
       for (;;) {
-        const next = await Promise.race([iterator.next(), ended]);
-        if (next === 'ended' || next.done === true) break;
+        const pending = iterator.next();
+        const next = await Promise.race([pending, ended]);
+        if (next === 'ended') {
+          await this.stopTool({ iterator, pending });
+          break;
+        }
+        if (next.done === true) break;
         this.lastActivity = Date.now();
         this.recordEvent(next.value);
       }
@@ -961,7 +992,7 @@ export class RunWorker {
             ],
           };
         }
-        this.spool.push({ type: 'error', content: detail, meta: { reason } });
+        this.writeEvent({ type: 'error', content: detail, meta: { reason } });
         return this.finishFailed(reason, detail);
       }
       if (result.exit === 'aborted')
@@ -1010,28 +1041,51 @@ export class RunWorker {
     }
   }
 
-  private async stopTool(): Promise<void> {
+  private async stopTool(events?: {
+    iterator: AsyncIterator<AdapterEvent>;
+    pending: Promise<IteratorResult<AdapterEvent>>;
+  }): Promise<void> {
     const handle = this.handle;
     if (handle === undefined) return;
     this.handle = undefined;
-    const settled = await Promise.race([
-      handle.stop().then(
-        () => true,
-        () => true,
-      ),
-      delay(this.timings.killGraceMs ?? 5_000).then(() => false),
-    ]);
-    if (settled) {
+    let active = true;
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        active = false;
+        this.deps.log(`run ${this.runId}: tool stop timed out`);
+        resolve();
+      }, this.timings.killGraceMs ?? 5_000);
+    });
+    const stopped = (async () => {
+      await handle.stop().catch(() => undefined);
       const result = await handle.result.catch(() => undefined);
-      if (result !== undefined) {
+      if (active && result !== undefined) {
         this.usage.push(...result.usage);
         this.sessionId = result.sessionId ?? this.sessionId;
         this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       }
+    })();
+    const drained = (async () => {
+      if (events === undefined || this.ending?.kind !== 'cancel') return;
+      let next = await events.pending;
+      while (active && !next.done) {
+        this.recordEvent(next.value);
+        next = await events.iterator.next();
+      }
+    })();
+    try {
+      // Stop, result and final events share one deadline. A late adapter cannot write after final reporting.
+      await Promise.race([Promise.all([stopped, drained]), timeout]);
+    } finally {
+      active = false;
+      clearTimeout(timer);
     }
   }
 
   private async drainEvents(): Promise<boolean> {
+    this.output?.end();
+    await this.preview?.drain();
     return this.spool.drain(this.timings.reportTimeoutMs ?? 10 * 60_000);
   }
 
@@ -1226,7 +1280,7 @@ export class RunWorker {
         return 'leaseLost';
       case 'cancel': {
         const saved = await this.saveLocal(true);
-        this.spool.push({
+        this.writeEvent({
           type: 'status',
           content: saved.includes('Recovery required:')
             ? `Cancelled. ${saved}`

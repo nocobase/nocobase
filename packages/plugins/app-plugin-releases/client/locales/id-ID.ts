@@ -545,6 +545,8 @@ const idID: LocaleResource<typeof enUS> = {
       hide: 'Sembunyikan kata sandi',
       copy: 'Salin kata sandi',
       copied: 'Kata sandi disalin.',
+      copyFailed:
+        'Kata sandi tidak dapat disalin. Tampilkan dan salin secara manual.',
       dismiss: 'Saya sudah menyimpannya',
       dismissed: 'Administrator pertama telah dihapus dari manajer rilis.',
     },

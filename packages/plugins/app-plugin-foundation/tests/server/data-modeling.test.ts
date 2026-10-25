@@ -117,7 +117,7 @@ it.each(['missing', 'throwing'] as const)(
 );
 
 it.each(['missing', 'throwing'] as const)(
-  'withholds schema totals when every definition is %s and recovers on refresh',
+  'retains schema totals with their original date when every definition is %s and recovers',
   async (mode) => {
     const { get, createService } = await application();
     const service = createService();
@@ -138,13 +138,15 @@ it.each(['missing', 'throwing'] as const)(
         }),
         expect.objectContaining({
           key: 'fields',
-          value: null,
-          complete: false,
+          value: 1,
+          complete: true,
+          checkedAt: first.checkedAt,
         }),
         expect.objectContaining({
           key: 'relations',
-          value: null,
-          complete: false,
+          value: 1,
+          complete: true,
+          checkedAt: first.checkedAt,
         }),
         expect.objectContaining({
           key: 'businessRecords',
@@ -181,6 +183,26 @@ it('records missing definitions as unreadable for field inspection too', async (
   expect(probe.issues).toEqual([
     { code: 'SOURCE_UNREADABLE', source: 'orders' },
   ]);
+});
+
+it('retains the explicit row count and its original date when the catalog cannot be read', async () => {
+  const { database, createService } = await application();
+  const service = createService();
+  const first = await service.overview({ countRecords: true });
+  const catalog = vi.spyOn(database, 'collections').mockImplementation(() => {
+    throw new Error('private catalog detail');
+  });
+  const failed = await service.overview({ refresh: true });
+  expect(failed.recordCountCheckedAt).toBe(first.recordCountCheckedAt);
+  expect(failed.capabilities[0]?.metrics).toContainEqual(
+    expect.objectContaining({
+      key: 'businessRecords',
+      value: 7,
+      checkedAt: first.recordCountCheckedAt,
+    }),
+  );
+  expect(JSON.stringify(failed)).not.toContain('private');
+  catalog.mockRestore();
 });
 
 it('treats a present definition with omitted optional fields as an exact empty definition', async () => {
@@ -232,7 +254,12 @@ it('keeps catalog totals and the last count through a definition deadline and re
         value: 1,
         complete: true,
       }),
-      expect.objectContaining({ key: 'fields', value: null, complete: false }),
+      expect.objectContaining({
+        key: 'fields',
+        value: 1,
+        complete: true,
+        checkedAt: first.checkedAt,
+      }),
       expect.objectContaining({
         key: 'businessRecords',
         value: 7,

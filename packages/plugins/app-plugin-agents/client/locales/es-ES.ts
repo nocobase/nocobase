@@ -661,14 +661,6 @@ const esES: LocaleResource<typeof enUS> = {
       restart: 'Reinicia el runner para actualizar su estado.',
     },
     pathHint: runtimesEnUS.runtimes.pathHint,
-    capacity: {
-      actual: 'Last effective slots: {{slots}}',
-      online: 'Effective slots · online settings',
-      pending: 'Waiting for runner to sync online settings',
-      legacy: 'Legacy local slots · upgrade the application server',
-      upgrade: 'Sync status unavailable · upgrade the runner',
-      lastReported: 'Last reported: {{time}}',
-    },
     quota: {
       workspaceStatus: {
         active: 'El trabajo continúa',

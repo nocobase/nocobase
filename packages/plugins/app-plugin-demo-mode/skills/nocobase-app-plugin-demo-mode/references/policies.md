@@ -1,6 +1,6 @@
 # Data operations and write policies
 
-Use the built-in management page for normal operation. The API details below are for custom integration; add the application's base path to each URL.
+Use the built-in management page for data operations and a read-only daily reset overview. Write policies are managed through deployment configuration or the configuration service/API, without a built-in settings tab. Add the application's base path to each URL below.
 
 ## Data operations
 
@@ -22,20 +22,29 @@ A refused request returns 400 with `error.reason: DEMO_READ_ONLY`. Branch on the
 
 Use logical collection names matching migrations, such as `orderItems`. An exception allows INSERT, UPDATE and DELETE together on that collection's own table in the default database connection. A write that also changes related rows, such as a many-to-many through collection, needs each of those collections too; the refusal log `Demo mode refused a write` names the tables. Keep operation and record restrictions in normal application authorization.
 
-The management page provides a collection selector. For a custom UI, GET `/api/demoMode/configuration/collections` returns selectable `{ name, title? }` entries. Preserve saved selections absent from the catalog so administrators can remove them. Unknown, malformed or duplicate names are rejected.
+The management page does not display collection exceptions; existing policies remain effective. For application-owned configuration clients, GET `/api/demoMode/configuration/collections` returns selectable `{ name, title? }` entries. Preserve saved selections absent from the catalog so administrators can remove them. Unknown, malformed or duplicate names are rejected.
 
-Deployment defaults come from `demoMode.allowCollections`, overridden by `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=orderItems,userPreferences`. Restart after changing deployment configuration. These `fixedCollections` combine with runtime selections and cannot be removed through the selector.
+Deployment defaults come from `demoMode.allowCollections`, overridden by `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=orderItems,userPreferences`. Restart after changing deployment configuration. These `fixedCollections` combine with runtime selections and cannot be removed through the runtime configuration API.
 
 ## Custom configuration clients
 
-Resolve the original `demoConfigurationToken` from `@nocobase/app-plugin-demo-mode/server/tokens` for application Server integration. Built-in UI components handle permissions and revisions; custom clients must do the same.
+Resolve the original `demoConfigurationToken` from `@nocobase/app-plugin-demo-mode/server/tokens` for application Server integration. The built-in page handles read permissions; custom configuration clients must also handle write permissions and revisions.
 
-GET `/api/demoMode/configuration` requires `settings:demoMode.configuration/read`. PUT `/collections`, `/mocks`, `/chat` and `/schedule` under that path require both `read` and `configure`, with `{ expectedRevision, value }`. For collections, `value` is the logical-name array. Read the current revision from the returned `data` object and wait for active data operations before saving. On 409 `DEMO_CONFIGURATION_CONFLICT`, re-fetch and review changes before retrying.
+GET `/api/demoMode/configuration` requires `settings:demoMode.configuration/read`. PUT `/collections`, `/mocks` and `/chat` under that path require both `read` and `configure`, with `{ expectedRevision, value }`. For collections, `value` is the logical-name array. Read the current revision from the returned `data` object and wait for active data operations before saving. On 409 `DEMO_CONFIGURATION_CONFLICT`, re-fetch and review changes before retrying.
 
 ## Daily reset
 
-Daily reset runs on the application's jobs service (`JobExecutorServiceProvider`, composed by generated applications) and is enabled automatically after the first generation. Use the defaults and preserve saved administrator choices. Without the jobs service, no automatic reset runs.
+Daily reset runs on the application's jobs service (`JobExecutorServiceProvider`, composed by generated applications) and is always enabled in Demo Mode. It starts resetting only after the first generation, which records the administrator to run as. Without the jobs service, no automatic reset runs.
 
-Only adjust or disable it when requested, using the management page. A custom API client reads the current configuration and saves the complete schedule as `{ expectedRevision: current.revision, value: { ...current.schedule, ...changes } }`. Register the dataset first if `schedule` is null.
+Register `defineDemoModeConfig()` and set these environment variables in the owning application. Restart after changing them. The page displays the effective schedule and the server's next run without editing controls.
+
+| Environment variable           | Default | Meaning                                        |
+| ------------------------------ | ------- | ---------------------------------------------- |
+| `NOCOBASE_DEMO_RESET_HOUR`     | `3`     | Local hour, 0–23                               |
+| `NOCOBASE_DEMO_RESET_MINUTE`   | `0`     | Minute, 0–59                                   |
+| `NOCOBASE_DEMO_RESET_TIMEZONE` | `UTC`   | IANA time zone                                 |
+| `NOCOBASE_DEMO_RESET_LANGUAGE` | `en-US` | A language supported by the registered dataset |
+
+The schedule does not follow manual generation's language or the dataset's time zone. Old saved schedules, including disabled schedules, are ignored. The configuration API/service no longer accepts schedule writes. Other saved policies retain their existing behavior.
 
 Use this integration instead of adding a second timer or cron. Automatic reset uses the same business cleanup as manual reset. A failed reset appears in the management page's data status and the `demo-mode` log; resolve it before retrying.

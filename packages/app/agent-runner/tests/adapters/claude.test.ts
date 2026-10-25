@@ -17,7 +17,8 @@ import type {
 import { calls, replay, setScript, setSupportedModels } from './fake-sdk.ts';
 import { SESSION_ID, assistant, init, result, toolResult } from './messages.ts';
 
-vi.mock('@anthropic-ai/claude-agent-sdk', async () => ({
+vi.mock('@anthropic-ai/claude-agent-sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@anthropic-ai/claude-agent-sdk')>()),
   query: (await import('./fake-sdk.ts')).fakeQuery,
 }));
 
@@ -825,4 +826,182 @@ describe('stopping', () => {
     expect(res.exit).toBe('aborted');
     expect(calls).toHaveLength(0);
   });
+});
+
+it('uses actual non-contiguous partial indexes and deduplicates completed snapshots', async () => {
+  const partial = (event: unknown) =>
+    ({
+      type: 'stream_event',
+      event,
+      parent_tool_use_id: null,
+      session_id: SESSION_ID,
+      uuid: randomUUID(),
+    }) as import('@anthropic-ai/claude-agent-sdk').SDKMessage;
+  setScript(async function* (ctx) {
+    await ctx.nextInput();
+    yield init();
+    yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+    yield partial({
+      type: 'content_block_start',
+      index: 2,
+      content_block: { type: 'thinking', thinking: '' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 2,
+      delta: { type: 'thinking_delta', thinking: 'Plan' },
+    });
+    yield partial({
+      type: 'content_block_start',
+      index: 7,
+      content_block: { type: 'text', text: 'Hello' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 7,
+      delta: { type: 'text_delta', text: ' world' },
+    });
+    yield assistant([{ type: 'thinking', thinking: 'Plan' }]);
+    yield assistant([{ type: 'text', text: 'Hello world' }]);
+    yield assistant([
+      { type: 'thinking', thinking: 'Plan' },
+      { type: 'text', text: 'Hello world' },
+    ]);
+    yield result();
+  });
+  const handle = adapterWith('9.0.0', dir).start(
+    session({ outputBlocks: true }),
+  );
+  const events = await collect(handle.events);
+  const deltas = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'delta',
+  );
+  expect(
+    deltas
+      .filter((e) => e.type === 'text')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Hello world');
+  expect(
+    deltas
+      .filter((e) => e.type === 'thinking')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Plan');
+  const ends = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(ends.map((e) => e.content)).toEqual(['Plan', 'Hello world']);
+  expect(calls[0]?.options.includePartialMessages).toBe(true);
+  expect((await handle.result).summary).toBeDefined();
+});
+
+it.each(['max_tokens', 'cancelled', 'crash'])(
+  'retains native partial output on %s without duplicate completion',
+  async (ending) => {
+    const partial = (event: unknown) =>
+      ({
+        type: 'stream_event',
+        event,
+        parent_tool_use_id: null,
+        session_id: SESSION_ID,
+        uuid: randomUUID(),
+      }) as import('@anthropic-ai/claude-agent-sdk').SDKMessage;
+    let ready!: () => void;
+    const started = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+      yield partial({
+        type: 'content_block_start',
+        index: 7,
+        content_block: { type: 'text', text: '' },
+      });
+      yield partial({
+        type: 'content_block_delta',
+        index: 7,
+        delta: { type: 'text_delta', text: 'Partial answer' },
+      });
+      ready();
+      if (ending === 'cancelled') {
+        await ctx.aborted;
+        await new Promise(() => {});
+      }
+      if (ending === 'crash') throw new Error('process failed');
+      yield partial({
+        type: 'message_delta',
+        delta: { stop_reason: 'max_tokens' },
+      });
+      yield assistant([{ type: 'text', text: 'Partial answer' }]);
+      yield result();
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ outputBlocks: true }),
+    );
+    const reading = collect(handle.events);
+    await started;
+    if (ending === 'cancelled') await handle.stop();
+    const events = await reading;
+    const ends = events.filter(
+      (e) =>
+        e.type === 'text' &&
+        (e.meta?.output as { phase?: string })?.phase === 'end',
+    );
+    expect(ends).toHaveLength(1);
+    expect(ends[0]?.content).toBe(
+      ending === 'crash' ? undefined : 'Partial answer',
+    );
+    expect(ends[0]?.meta?.truncated).toBe(
+      ending === 'crash' ? undefined : true,
+    );
+  },
+);
+
+it('matches a long UTF-8 reply using its bounded prefix and emits the native snapshot once', async () => {
+  const text = '界'.repeat(30_000) + 'final';
+  const partial = (event: unknown) =>
+    ({
+      type: 'stream_event',
+      event,
+      parent_tool_use_id: null,
+      session_id: SESSION_ID,
+      uuid: randomUUID(),
+    }) as import('@anthropic-ai/claude-agent-sdk').SDKMessage;
+  setScript(async function* (ctx) {
+    await ctx.nextInput();
+    yield init();
+    yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+    yield partial({
+      type: 'content_block_start',
+      index: 2,
+      content_block: { type: 'text', text: '' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 2,
+      delta: { type: 'text_delta', text: text.slice(0, -5) },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 2,
+      delta: { type: 'text_delta', text: 'final' },
+    });
+    yield assistant([{ type: 'text', text }]);
+    yield assistant([{ type: 'text', text }]);
+    yield result();
+  });
+  const handle = adapterWith('9.0.0', dir).start(
+    session({ outputBlocks: true }),
+  );
+  const events = await collect(handle.events);
+  const ends = events.filter(
+    (e) =>
+      e.type === 'text' &&
+      (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(ends.map((e) => e.content)).toEqual([text]);
+  expect(ends[0]?.meta?.truncated).toBeUndefined();
 });

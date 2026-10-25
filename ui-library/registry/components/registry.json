@@ -209,7 +209,12 @@
         "group": "Data entry",
         "iframeHeight": 680
       },
-      "dependencies": ["cn@^0.4.0", "date-fns@^4.4.0", "lucide-react@^0.487.0"],
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.2",
+        "cn@^0.4.0",
+        "date-fns@^4.4.0",
+        "lucide-react@^0.487.0"
+      ],
       "registryDependencies": [
         "avatar",
         "button",

@@ -9,6 +9,7 @@ import type {
   CreateKnowledgeDocRequest,
   KnowledgeAccess,
   KnowledgeAuthor,
+  KnowledgeCapabilities,
   KnowledgeChunking,
   KnowledgeChunkingConfig,
   KnowledgeDoc,
@@ -927,3 +928,12 @@ export const KnowledgeTotalMetaSchema: z.ZodType<KnowledgeTotalMeta> = z.object(
 /** `meta` of a ranking, which has no next page. */
 export const KnowledgeEmptyMetaSchema: z.ZodType<Record<string, never>> =
   z.object({});
+
+export const KnowledgeCapabilitiesSchema: z.ZodType<KnowledgeCapabilities> = z
+  .object({
+    semanticSearch: z.boolean().meta({
+      description:
+        'Whether the application has registered a knowledge indexer.',
+    }),
+  })
+  .meta({ ref: 'KnowledgeCapabilities' });

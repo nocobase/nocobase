@@ -146,10 +146,11 @@ it('refreshes stale detection before claiming even when the next heartbeat is no
   expect(detect).toHaveBeenCalledTimes(initial + 2);
 });
 
-// Protocol 12 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
+// Protocol 14 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
 const legacyFeatures = z.object({
   features: z.array(
     z.enum([
+      'outputBlocks',
       'workspaceKey',
       'gitCredentials',
       'gitTools',

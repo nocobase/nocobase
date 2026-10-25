@@ -1,3 +1,4 @@
+import { createUuid } from '@nocobase/app-client';
 import type { ApiClient } from '@nocobase/app-client';
 import type { JsonValue, RemoteSelectAst } from '@nocobase/api-client';
 import {
@@ -51,7 +52,7 @@ export interface LabMutationResult {
 }
 const targetRepository = (relation: LabRelation): string =>
   relationRepositories[relation === 'profile' ? 'profiles' : relation];
-const freshId = (): string => `lab-${globalThis.crypto.randomUUID()}`;
+const freshId = (): string => `lab-${createUuid()}`;
 function targetValues(
   relation: LabRelation,
   input: LabInput,

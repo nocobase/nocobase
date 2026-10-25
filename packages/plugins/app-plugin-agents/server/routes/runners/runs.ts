@@ -111,7 +111,7 @@ export function mountRunnerRunRoutes(
       'agentsRunnerReportRunEvents',
       "Report a run's events",
       EventsResponseSchema,
-      "Appends a batch of the run's transcript events, in order.",
+      'Appends canonical transcript events; negotiated conversation previews are delivered in memory without storage.',
     ),
     runParam,
     apiValidator('json', EventsRequestSchema),

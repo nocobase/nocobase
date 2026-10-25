@@ -27,7 +27,9 @@ const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   toasts: [] as { type: string; title: string }[],
 }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  copyText: (await importOriginal<typeof import('@nocobase/app-client')>())
+    .copyText,
   ApiClientError: class extends Error {
     public constructor(
       message: string,
@@ -495,3 +497,59 @@ describe('App variable alerts', () => {
     expect(container.querySelector('[data-slot=initial-admin]')).toBeNull();
   });
 });
+
+it.each([true, false])(
+  'reports the actual HTTP fallback result when copying an administrator password (%s)',
+  async (copied) => {
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    const execCommand = Object.getOwnPropertyDescriptor(
+      document,
+      'execCommand',
+    );
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: undefined,
+    });
+    const copy = vi.fn(() => {
+      expect(document.querySelector('textarea')?.value).toBe('test-copy-value');
+      return copied;
+    });
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: copy,
+    });
+    try {
+      serve([], {
+        deploymentId: 'd1',
+        username: 'nocobase',
+        email: 'admin@example.test',
+        password: 'test-copy-value',
+        expiresAt: null,
+      });
+      render(<InitialAdminAlert appId='shop' />);
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Copy password' }),
+      );
+      await waitFor(() =>
+        expect(mocks.toasts).toContainEqual({
+          type: copied ? 'success' : 'error',
+          title: copied
+            ? 'Password copied.'
+            : 'Could not copy the password. Show it and copy it manually.',
+        }),
+      );
+      expect(copy).toHaveBeenCalledWith('copy');
+      expect(document.querySelector('textarea')).toBeNull();
+      if (!copied)
+        expect(mocks.toasts.some((toast) => toast.type === 'success')).toBe(
+          false,
+        );
+    } finally {
+      if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+      if (execCommand)
+        Object.defineProperty(document, 'execCommand', execCommand);
+      else Reflect.deleteProperty(document, 'execCommand');
+    }
+  },
+);

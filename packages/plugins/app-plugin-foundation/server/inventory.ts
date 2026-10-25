@@ -15,6 +15,8 @@ export type CollectionSummary = Awaited<
 
 /** The Collections of the default connection, read once per overview and shared by every capability. */
 export class Inventory {
+  /** Shapes already read by collectors, used to invalidate history without issuing another schema query. */
+  public readonly definitionShapes: Map<string, string> = new Map();
   private readonly definitions = new Map<
     string,
     Promise<CollectionDefinition | undefined>
@@ -58,10 +60,15 @@ export class Inventory {
   ): Promise<CollectionDefinition | undefined> {
     let pending = this.definitions.get(name);
     if (!pending) {
-      pending = this.reads.run(
-        () => this.database.collections().get(name),
-        signal,
-      );
+      pending = this.reads.run(async () => {
+        const definition = await this.database.collections().get(name);
+        if (definition !== undefined)
+          this.definitionShapes.set(
+            name,
+            JSON.stringify(definition.fields ?? []),
+          );
+        return definition;
+      }, signal);
       this.definitions.set(name, pending);
     }
     return pending;

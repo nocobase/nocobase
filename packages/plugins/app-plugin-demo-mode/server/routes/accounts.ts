@@ -1,3 +1,4 @@
+import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import {
   authenticationToken,
   type AuthEnv,
@@ -16,32 +17,20 @@ import {
 } from '@nocobase/app-server/router';
 import { databaseManagerToken } from '@nocobase/db';
 import { Hono } from 'hono';
-import { z } from 'zod';
 
-import { DemoAccountSignIn, type DemoSignInAccount } from '../accounts.js';
+import { DemoAccountSignIn } from '../accounts.js';
 import { resolveDemoModeSettings } from '../config.js';
 import { demoDataToken, demoModeServiceToken } from '../tokens.js';
+import {
+  DemoDefaultSignInSchema,
+  DemoSignInAccountSchema,
+  UsernameParam,
+} from './schemas.js';
 
-const tags = ['Demo mode'];
-
-const DemoSignInAccountSchema: z.ZodType<DemoSignInAccount> = z
-  .object({
-    username: z.string(),
-    name: z.string(),
-    role: z.string().meta({
-      description: 'What the account does in the demo, such as its job title.',
-    }),
-    current: z.boolean().meta({
-      description: 'Whether the request is signed in as this account.',
-    }),
-  })
-  .meta({ ref: 'DemoModeSignInAccount' });
-
-const UsernameParam = z.object({ username: z.string().min(1).max(255) });
+const tags = ['DemoMode'];
 
 /**
- * Quick sign-in for visitors of a demo: the accounts the imported dataset lists, and signing in as one of them without
- * its password. Public, since a visitor has no account yet; offered only while demo mode is on and
+ * Quick sign-in for visitors of a demo: every enabled person account, entered without a password. Public, since a visitor has no account yet; offered only while demo mode is on and
  * `demoMode.quickSignIn` is not switched off.
  */
 export const accountRoutes: AppApiRouteContribution<AppPluginApplication> =
@@ -54,11 +43,15 @@ export const accountRoutes: AppApiRouteContribution<AppPluginApplication> =
     const service = new DemoAccountSignIn({
       auth,
       database: container.resolve(databaseManagerToken),
+      authorization: () =>
+        container.has(authorizationToken)
+          ? container.resolve(authorizationToken)
+          : undefined,
       enabled: () =>
         settings.quickSignIn && container.resolve(demoModeServiceToken).enabled,
       accounts: async () => {
         const status = await container.resolve(demoDataToken).status();
-        return { datasetId: status.datasetId, accounts: status.accounts };
+        return status.accounts;
       },
     });
     const accounts = new Hono<AuthEnv>();
@@ -69,35 +62,61 @@ export const accountRoutes: AppApiRouteContribution<AppPluginApplication> =
       '/',
       describeRoute({
         tags,
-        summary: 'List the demo accounts visitors may enter',
+        summary: 'List the system accounts visitors may enter',
         operationId: 'demoModeListAccounts',
         security: [],
         description:
-          'The accounts of the imported demo dataset a visitor may sign in as without a password, without their passwords. Empty when the application is not a demo, quick sign-in is switched off or no demo data is imported.',
+          'Enabled person accounts a visitor may enter without a password, including existing administrators and accounts created outside the dataset. Passwords are never returned. Empty outside Demo Mode or when quick sign-in is switched off.',
         responses: {
           200: listResponse(DemoSignInAccountSchema),
           500: apiErrorResponse(500),
         },
       }),
-      async (context) =>
-        context.json({
-          data: await service.list(context.req.raw.headers),
-        }),
+      async (context) => {
+        const data = await service.list(context.req.raw.headers);
+        return context.json({ data, meta: { total: data.length } });
+      },
+    );
+    accounts.post(
+      '/signInDefault',
+      describeRoute({
+        tags,
+        summary: 'Enter the demo as Super Admin',
+        operationId: 'demoModeSignInDefaultAccount',
+        security: [],
+        description:
+          'Creates an ordinary session for an existing enabled Super Admin when an anonymous visitor opens the home page in Demo Mode. Existing sessions are retained. Does nothing outside Demo Mode, with quick sign-in disabled or when no enabled Super Admin exists.',
+        responses: {
+          200: dataResponse(DemoDefaultSignInSchema),
+          400: apiErrorResponse(400),
+          403: apiErrorResponse(403),
+          500: apiErrorResponse(500),
+        },
+      }),
+      async (context) => {
+        const cookies = await service.signInDefault(
+          context.req.raw,
+          getClientAddress(context),
+        );
+        for (const cookie of cookies)
+          context.header('Set-Cookie', cookie, { append: true });
+        return context.json({ data: { signedIn: cookies.length > 0 } });
+      },
     );
     accounts.post(
       '/:username/signIn',
       describeRoute({
         tags,
-        summary: 'Sign in as a demo account',
+        summary: 'Sign in as a system account in Demo Mode',
         operationId: 'demoModeSignInAccount',
         security: [],
         description:
-          'Ends the request’s own session, if any, and signs in as the demo account with the password its dataset lists, setting the ordinary session cookie. Only for accounts the list offers.',
+          'Ends the request’s own session, if any, and creates an ordinary session for the selected enabled person account. Requires Demo Mode and quick sign-in. Neither dataset ownership nor a known password is required.',
         responses: {
           200: dataResponse(DemoSignInAccountSchema),
           400: apiErrorResponse(
             400,
-            'Better Auth refused the dataset’s password (`DEMO_ACCOUNT_SIGN_IN_FAILED`).',
+            'Authentication could not create the session (`DEMO_ACCOUNT_SIGN_IN_FAILED`).',
           ),
           403: apiErrorResponse(
             403,

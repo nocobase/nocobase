@@ -65,7 +65,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Get what the application uses of NocoBase Core',
         operationId: 'foundationGetOverview',
         description:
-          'Every NocoBase Core capability with its status, the evidence behind it, live statistics and the providing packages at their installed versions. Collected read-only by the plugin and cached for 30 seconds; `refresh=true` collects again. Requires unrestricted access, such as the root Permission Set.',
+          'Every NocoBase Core capability with its status, evidence, statistics and providing packages. Failed reads leave information pending or retain reliable observations with their original checkedAt; incomplete file discovery never produces exact current totals. Collected read-only and cached for 30 seconds; refresh=true collects again. History is application-service-local and cleared on restart or a changed scope. Requires unrestricted access, such as the root Permission Set.',
         responses: {
           200: dataResponse(OverviewSchema),
           ...apiErrorResponses,

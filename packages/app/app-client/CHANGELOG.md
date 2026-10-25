@@ -1,5 +1,18 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.3
+
+### Minor Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
+### Patch Changes
+
+- @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 4.0.0-beta.2
 
 ### Patch Changes

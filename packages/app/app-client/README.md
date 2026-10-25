@@ -2,6 +2,21 @@
 
 Browser application runtime for NocoBase v3. It provides the stateful `ClientApplication`, application-scoped services, static Client plugin composition, React tree composition, routes, locale resources, and public runtime configuration.
 
+## Browser utilities
+
+```ts
+import { copyText, createUuid } from '@nocobase/app-client';
+
+const requestId = createUuid();
+const copied = await copyText('Text to copy');
+```
+
+`createUuid(): string` generates a cryptographically random UUID v4 with `crypto.getRandomValues`, including on LAN HTTP origins where `crypto.randomUUID` is unavailable.
+
+Call `copyText(text, options?): Promise<boolean>` directly from a user action. It uses the Clipboard API when available, falling back to selection-based copying if the API is absent or rejects the write. The fallback runs synchronously on HTTP to preserve user activation, removes its temporary text field and restores focus and selection. Pass `{ container: dialogElement }` for a focus trap whose trigger does not take focus; otherwise the helper uses the active element's nearest dialog or the document body.
+
+Only show a copied confirmation when the result is `true`. A `false` result means browser policy or unsupported copying prevented the operation: show the original text and localized manual-copy instructions. The helper does not render UI or request permissions itself. Its HTTP fallback uses deprecated `document.execCommand('copy')`, so browser verification and a manual-copy path remain necessary.
+
 ## Architecture
 
 ```text

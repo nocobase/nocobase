@@ -10,9 +10,10 @@ import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 let app: TestApp;
 afterEach(async () => app?.close());
 
-async function setup() {
+async function setup(env: Record<string, string> = {}) {
   app = await createTestApp({
     createServer: createStandaloneServer,
+    server: { env },
     config: { demoMode: { enabled: true } },
   });
   const container = app.application.container;
@@ -42,35 +43,27 @@ it('schedules the default reset for a dataset registered after the plugin is rea
   const { rule } = await setup();
   await expect
     .poll(async () => (await rule())?.options)
-    .toEqual({ cron: '0 3 * * *', tz: 'America/New_York' });
+    .toEqual({ cron: '0 3 * * *', tz: 'UTC' });
 });
 
-it('fires once a day at the configured local time instead of every minute', async () => {
-  const { config, rule } = await setup();
-  const schedule = {
+it('uses the environment schedule independently of the last generated language', async () => {
+  const { config, data, rule } = await setup({
+    NOCOBASE_DEMO_RESET_HOUR: '4',
+    NOCOBASE_DEMO_RESET_MINUTE: '30',
+    NOCOBASE_DEMO_RESET_TIMEZONE: 'Asia/Shanghai',
+    NOCOBASE_DEMO_RESET_LANGUAGE: 'en-US',
+  });
+  await data.importNow('1', 'zh-CN');
+  await data.whenIdle();
+  expect((await rule())?.options).toEqual({
+    cron: '30 4 * * *',
+    tz: 'Asia/Shanghai',
+  });
+  expect((await config.read()).schedule).toEqual({
     enabled: true,
     hour: 4,
     minute: 30,
     timezone: 'Asia/Shanghai',
     language: 'en-US',
-  };
-  await config.save('schedule', 0, schedule);
-  expect((await rule())?.options).toEqual({
-    cron: '30 4 * * *',
-    tz: 'Asia/Shanghai',
   });
-  await config.save('schedule', 1, { ...schedule, enabled: false });
-  expect(await rule()).toBeUndefined();
-});
-
-it('follows the default schedule into the language the data was generated in', async () => {
-  const { data, rule } = await setup();
-  await data.importNow('1', 'zh-CN');
-  await data.whenIdle();
-  await expect
-    .poll(async () => (await rule())?.options)
-    .toEqual({
-      cron: '0 3 * * *',
-      tz: 'Asia/Shanghai',
-    });
 });

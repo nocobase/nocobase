@@ -43,24 +43,30 @@ Every page declares `authz`: a protected page without it is open only to unrestr
 },
 ```
 
-Add the management page to the application's existing System management group, not as a top-level business entry. In the template that group is the `settings` route in `client/pages/settings/routes.ts`; register that contribution in `client/routes.ts` if the application has not yet done so. Add a child that checks the settings item:
+Add the management page to the application's existing System management group, not as a top-level business entry. In the template that group is the `settings` route in `client/pages/settings/routes.ts`; register that contribution in `client/routes.ts` if the application has not yet done so. Build its demo children with the plugin's helper and spread `...demoManagementRoutes` into the existing group's `children`:
 
 ```ts
-{
-  name: 'settingsDemoMode',
-  path: '/demo-mode',
-  auth: 'required',
-  authz: {
-    resource: { type: 'settings', id: 'demoMode.data' },
-    action: 'read',
+import { demoModeRoutes } from '@nocobase/app-plugin-demo-mode/client';
+
+const demoManagementRoutes = demoModeRoutes([
+  {
+    name: 'settingsDemoMode',
+    path: '/demo-mode',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'demoMode.data' },
+      action: 'read',
+    },
+    navigation: { title: 'exampleDemo.management' },
+    breadcrumb: { title: 'exampleDemo.management' },
+    componentLoader: () => import('./demo-mode.js'),
   },
-  navigation: { title: 'exampleDemo.management' },
-  breadcrumb: { title: 'exampleDemo.management' },
-  componentLoader: () => import('./demo-mode.js'),
-},
+]);
 ```
 
-The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give the administrator `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not add a page grant for the management route: it uses settings authorization. Outside Demo Mode these settings items are not registered, so only unrestricted administrators open the page, which reports that Demo Mode is off; see [management access](../SKILL.md#management-access). A reader with only the data read action can inspect data status but cannot generate, clear or reset.
+`defineDemoModeConfig()` publishes `demoMode.enabled` to the browser. `demoModeRoutes()` includes these routes only when that flag is `true`, so ordinary deployments have neither the menu nor a directly accessible management route, even for root. Existing applications must wrap their own demo route declarations with this helper; registering the plugin alone cannot change application-owned menus. Verify both enabled and disabled deployments after integration.
+
+The generated visitor Permission Set grants `page:demoProjects/access`. Keep normal business-page authorization enabled. Give the administrator `settings:demoMode.data/read,manage` and `settings:demoMode.configuration/read,configure` through the host's authorization mechanism. Do not add a page grant for the management route: it uses settings authorization. Outside Demo Mode these settings items are not registered; see [management access](../SKILL.md#management-access). A reader with only the data read action can inspect data status but cannot generate, clear or reset.
 
 Create `client/pages/settings/demo-mode.tsx` using the public component:
 
@@ -94,12 +100,12 @@ Use the failing step to choose the next check; do not bypass permissions or add 
 | Management says demo mode is off            | Register `defineDemoModeConfig()` in the existing defaults map, set this deployment's `demoMode.enabled`, and restart. Installing or registering the Server plugin alone does not enable it.                         |
 | Status says no dataset is available         | Register `DemoProvider` in the application provider list and verify it reaches the original `demoDataToken`. Generation is an explicit action after registration.                                                    |
 | The CLI command is missing                  | Register `@nocobase/app-plugin-demo-mode/cli` in the CLI composition root; Server registration does not register commands.                                                                                           |
-| The visitor entry is empty or sign-in fails | Complete generation, enable password sign-in and `quickSignIn`, and use the same explicit passwords in `accounts()` and `createAccount()`. Inspect the generation failure before retrying.                           |
+| The visitor entry is empty or sign-in fails | Check that Demo Mode and `quickSignIn` are enabled and the person account is active. Existing accounts work before generation; automatic home entry also requires an active Super Admin.                             |
 | A page or management API returns 403        | Check that each client route declares `authz`, business-page access for visitor pages and settings actions for management, including the route's read check. Grant the settings actions only in the demo deployment. |
 | A seed fails with `Unknown settings item`   | The `demoMode.*` settings items exist only while Demo Mode is enabled. Move those grants out of shared seeds; see [management access](../SKILL.md#management-access).                                                |
 | Generated records do not appear on the page | Check the current account, assignee/owner filters, relationships and date ranges against the dataset; verify the page calls the intended business API.                                                               |
 | Generation fails with an identity conflict  | Check the username and email in the account definitions; do not adopt an unrelated account. See [failure handling](adapting-data.md#business-cleanup).                                                               |
 | Startup reports an unguarded connection     | Check each connection under `database.connections`; Demo Mode refuses to start when its probe write reaches a database. Do not remove the connection check to start.                                                 |
-| The daily reset never runs                  | Compose `JobExecutorServiceProvider` in the application, generate the data once and check the saved schedule and its time zone on the management page.                                                               |
+| The daily reset never runs                  | Compose `JobExecutorServiceProvider` in the application, generate the data once and check the environment-configured schedule and its time zone on the read-only management page.                                    |
 
 Report the application's real entry URL and checks performed, distinguishing browser validation from automated server checks.

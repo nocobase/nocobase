@@ -317,6 +317,11 @@ export interface KnowledgeVersion {
 }
 
 /** `GET /api/knowledge/spaces?scope=&scopeId=` answers `spaces` as its list: a space with the spaces it inherits, each with its documents. */
+export interface KnowledgeCapabilities {
+  /** Search test and chunking settings require a registered indexer. */
+  readonly semanticSearch: boolean;
+}
+
 export interface KnowledgeTree {
   readonly spaces: readonly {
     readonly space: KnowledgeSpace;

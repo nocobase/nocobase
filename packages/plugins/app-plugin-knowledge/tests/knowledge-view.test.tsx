@@ -125,6 +125,8 @@ function serve(
     const { path } = request;
     const answered = extra(request);
     if (answered !== undefined) return answered;
+    if (path === 'knowledge/capabilities')
+      return { data: { semanticSearch: true } };
     if (path === 'knowledge/spaces')
       return { data: treeOf(docs, viewSpace).spaces };
     if (path === 'knowledge/proposals')
@@ -1166,6 +1168,119 @@ describe('the knowledge view', () => {
       await within(home).findByText('Not fully indexed'),
     ).toBeInTheDocument();
     expect(within(home).getByText('2 failed · 1 waiting')).toBeInTheDocument();
+  });
+
+  it.each([true, false])(
+    'shows semantic search tools only with an indexer (registered: %s)',
+    async (semanticSearch) => {
+      serve([]);
+      extra = ({ path }) =>
+        path === 'knowledge/capabilities'
+          ? { data: { semanticSearch } }
+          : undefined;
+      await show();
+      const group = await screen.findByTestId('knowledge-space-project');
+      await press(within(group).getByRole('button', { name: 'Space actions' }));
+      await screen.findByRole('menuitem', { name: 'Space access' });
+      expect(
+        screen.queryByRole('menuitem', { name: 'Search test' }) !== null,
+      ).toBe(semanticSearch);
+      expect(
+        screen.queryByRole('menuitem', { name: 'Section settings' }) !== null,
+      ).toBe(semanticSearch);
+    },
+  );
+
+  it('hides semantic tools in unopened directory spaces without an indexer', async () => {
+    serve([]);
+    extra = ({ path }) =>
+      path === 'knowledge/capabilities'
+        ? { data: { semanticSearch: false } }
+        : undefined;
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () => [
+        {
+          space: treeOf([]).spaces[0]!.space,
+          documents: 0,
+          archivedDocuments: 0,
+        },
+      ],
+      search: async () => [],
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    await show('/', true, directory, { scope: 'system', scopeId: '' });
+    const group = await screen.findByTestId('knowledge-space-project');
+    await press(within(group).getByRole('button', { name: 'Space actions' }));
+    expect(
+      await screen.findByRole('menuitem', { name: 'Space access' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Search test' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Section settings' }),
+    ).not.toBeInTheDocument();
+    expect(
+      mocks.request.mock.calls.some(
+        ([request]) => request.path === 'knowledge/spaces',
+      ),
+    ).toBe(false);
+  });
+
+  it('waits for capabilities before showing semantic tools', async () => {
+    serve([]);
+    const pending = Promise.withResolvers<{
+      data: { semanticSearch: boolean };
+    }>();
+    extra = ({ path }) =>
+      path === 'knowledge/capabilities' ? pending.promise : undefined;
+    await show();
+    const group = await screen.findByTestId('knowledge-space-project');
+    await press(within(group).getByRole('button', { name: 'Space actions' }));
+    await screen.findByRole('menuitem', { name: 'Space access' });
+    expect(
+      screen.queryByRole('menuitem', { name: 'Search test' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Section settings' }),
+    ).not.toBeInTheDocument();
+    await act(async () => {
+      pending.resolve({ data: { semanticSearch: true } });
+    });
+    expect(
+      await screen.findByRole('menuitem', { name: 'Search test' }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('menuitem', { name: 'Section settings' }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps section settings restricted to space managers when semantic search is available', async () => {
+    serve([]);
+    extra = ({ path }) =>
+      path === 'knowledge/spaces'
+        ? {
+            data: [
+              {
+                ...treeOf([]).spaces[0],
+                space: {
+                  ...treeOf([]).spaces[0]!.space,
+                  access: { ...MANAGE, manage: false },
+                },
+              },
+            ],
+          }
+        : undefined;
+    await show();
+    const group = await screen.findByTestId('knowledge-space-project');
+    await press(within(group).getByRole('button', { name: 'Space actions' }));
+    expect(
+      await screen.findByRole('menuitem', { name: 'Search test' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Section settings' }),
+    ).not.toBeInTheDocument();
   });
 
   it('sets a space’s own chunking from its “…” menu', async () => {

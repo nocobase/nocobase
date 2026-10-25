@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { Queue } from 'bullmq';
+import { Queue, type Worker, type Job } from 'bullmq';
+import { defaultRedisFactories } from '../../../src/schedule/redis/backend.js';
+import { createRedisScheduleExecutor } from '../../../src/schedule/redis/index.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -460,6 +462,116 @@ describe('redis adapter against a real Redis', { timeout: 60_000 }, () => {
     expect(aborted).toBe(true);
     expect(finished).toBe(true);
   });
+
+  it.each([false, true])(
+    'waits for native terminal persistence after close fails (handler fails: %s)',
+    async (fails) => {
+      const namespace = newNamespace();
+      const terminal = Promise.withResolvers<void>();
+      const entered = Promise.withResolvers<void>();
+      const delivery = Promise.withResolvers<void>();
+      const delivered = Promise.withResolvers<void>();
+      const closeFailure = new Error('worker close failed');
+      const handlerFailure = new Error('handler failed');
+      let worker!: Worker;
+      let active!: Job;
+      const executor = createRedisScheduleExecutor(
+        {
+          adapter: 'redis',
+          key: 'test',
+          builtIn: false,
+          scope: SCOPE,
+          namespace,
+          connection,
+          concurrency: 1,
+          attempts: 1,
+          removeOnComplete: false,
+          removeOnFail: false,
+        },
+        {},
+        {
+          ...defaultRedisFactories,
+          worker: (config, processor) => {
+            worker = defaultRedisFactories.worker(config, processor) as Worker;
+            worker.on('active', (firing) => {
+              active = firing;
+              if (fails) {
+                const persist = firing.moveToFailed.bind(firing);
+                vi.spyOn(firing, 'moveToFailed').mockImplementation(
+                  async (...args) => {
+                    entered.resolve();
+                    await terminal.promise;
+                    return persist(...args);
+                  },
+                );
+              } else {
+                const persist = firing.moveToCompleted.bind(firing);
+                vi.spyOn(firing, 'moveToCompleted').mockImplementation(
+                  async (...args) => {
+                    entered.resolve();
+                    await terminal.promise;
+                    return persist(...args);
+                  },
+                );
+              }
+            });
+            return worker;
+          },
+        },
+      );
+      const events: ScheduleEvent[] = [];
+      executor.subscribe(async (event) => {
+        events.push(event);
+        if (event.name !== 'ScheduleStart') {
+          delivered.resolve();
+          await delivery.promise;
+        }
+      });
+      let close: ReturnType<typeof vi.spyOn> | undefined;
+      try {
+        await executor.addJob(
+          job(
+            async () => {
+              if (fails) throw handlerFailure;
+            },
+            { every: 60_000, immediately: true, limit: 1 },
+          ),
+        );
+        await executor.setup();
+        await entered.promise;
+        await worker.pause(true);
+        close = vi.spyOn(worker, 'close').mockRejectedValue(closeFailure);
+        let settled = false;
+        const outcome = executor.shutdown().catch((error) => {
+          settled = true;
+          return error;
+        });
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        const premature = settled;
+        expect(await active.getState()).toBe('active');
+        terminal.resolve();
+        await delivered.promise;
+        const beforeDelivery = settled;
+        delivery.resolve();
+        expect(await outcome).toBe(closeFailure);
+        expect(premature).toBe(false);
+        expect(beforeDelivery).toBe(false);
+        expect(await active.getState()).toBe(fails ? 'failed' : 'completed');
+        expect(events.map((event) => event.name)).toEqual([
+          'ScheduleStart',
+          fails ? 'ScheduleError' : 'ScheduleEnd',
+        ]);
+        if (fails) expect(events[1]?.error).toBe(handlerFailure);
+      } finally {
+        terminal.resolve();
+        delivery.resolve();
+        close?.mockRestore();
+        await worker?.close();
+        await executor.shutdown().catch(() => undefined);
+      }
+    },
+    30_000,
+  );
 
   it('stops after limit firings and restarts the count when the rule is rewritten', async () => {
     const namespace = newNamespace();

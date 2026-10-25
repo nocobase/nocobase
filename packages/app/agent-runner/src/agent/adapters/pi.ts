@@ -19,6 +19,7 @@
  *   the agent starts one turn more than allowed.
  * - Stop: `abort`, close stdin, SIGTERM after 2 s, SIGKILL after 4.5 s.
  */
+import { StreamOutput } from './stream-output.ts';
 import { programFingerprint } from './program-fingerprint.ts';
 import { spawn as nodeSpawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -361,6 +362,8 @@ class PiRun {
     };
   }
 
+  private readonly streaming = new StreamOutput((event) => this.emit(event));
+
   private emit(event: Omit<AdapterEvent, 'at'>): void {
     this.events.push({ at: new Date().toISOString(), ...event });
   }
@@ -445,6 +448,7 @@ class PiRun {
       await rm(this.tempDir, { recursive: true, force: true }).catch(() => {});
 
     const result = this.result();
+    if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',
@@ -782,6 +786,28 @@ class PiRun {
           this.send({ type: 'abort' });
         }
         return;
+      case 'message_start':
+        if (!this.session.outputBlocks) return;
+        if ((record.message as PiMessage | undefined)?.role === 'assistant')
+          this.streaming.reset();
+        return;
+      case 'message_update': {
+        if (!this.session.outputBlocks) return;
+        const delta = record.assistantMessageEvent as
+          { type?: string; contentIndex?: number; delta?: string } | undefined;
+        if (typeof delta?.delta !== 'string') return;
+        const type =
+          delta.type === 'text_delta'
+            ? 'text'
+            : delta.type === 'thinking_delta'
+              ? 'thinking'
+              : undefined;
+        if (type && typeof delta.contentIndex === 'number') {
+          const key = `pi:${delta.contentIndex}`;
+          this.streaming.delta(key, type, delta.delta);
+        }
+        return;
+      }
       case 'message_end':
         this.onMessageEnd(record.message as PiMessage | undefined);
         return;
@@ -906,22 +932,31 @@ class PiRun {
     this.lastAssistant = message;
     this.addUsage(message);
     if (!Array.isArray(message.content)) return;
-    for (const block of message.content) {
-      if (block.type === 'text' && block.text) {
-        const capped = capText(block.text);
-        this.emit({
-          type: 'text',
-          content: capped.text,
-          meta: capped.truncated ? { truncated: true } : {},
-        });
-      } else if (block.type === 'thinking' && block.thinking) {
-        const capped = capText(block.thinking);
-        this.emit({
-          type: 'thinking',
-          content: capped.text,
-          meta: capped.truncated ? { truncated: true } : {},
-        });
+    if (!this.session.outputBlocks) {
+      for (const block of message.content) {
+        if (block.type === 'text' && block.text) {
+          const capped = capText(block.text);
+          this.emit({
+            type: 'text',
+            content: capped.text,
+            meta: capped.truncated ? { truncated: true } : {},
+          });
+        } else if (block.type === 'thinking' && block.thinking) {
+          const capped = capText(block.thinking);
+          this.emit({
+            type: 'thinking',
+            content: capped.text,
+            meta: capped.truncated ? { truncated: true } : {},
+          });
+        }
       }
+      return;
+    }
+    for (const [index, block] of message.content.entries()) {
+      if (block.type === 'text')
+        this.streaming.complete(`pi:${index}`, 'text', block.text);
+      else if (block.type === 'thinking')
+        this.streaming.complete(`pi:${index}`, 'thinking', block.thinking);
     }
   }
 

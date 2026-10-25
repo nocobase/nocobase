@@ -6,31 +6,41 @@ const enUS = {
     foundation: 'App foundation',
   },
   page: {
+    counted: 'Counted {{value}}',
+    partial: 'Some data is pending update',
     title: 'App foundation',
     description:
       'Your application focuses on business. Data, permissions and workflows are supported by NocoBase Core: common capabilities developed, tested and maintained by NocoBase, and upgraded with official releases.',
     bandTitle: 'NocoBase Core',
     bandDescription:
-      'The capabilities this application uses light up in turn. Select one to see what it does here.',
+      'Select a capability to see how it supports this application.',
     score: '{{active}} / {{total}}',
     scoreCaption: 'capabilities support this application',
     refresh: 'Refresh',
     refreshing: 'Collecting…',
-    updatedAt: 'Collected {{time}}',
+    updatedAt: 'Last check {{time}}',
     loading: 'Collecting what this application uses…',
     refreshFailed:
       'The latest refresh failed. Showing the last successfully collected result.',
-    loadFailed: 'The overview could not be loaded.',
+    loadFailed: 'Information pending update',
     forbidden:
       'Only an administrator with unrestricted access can view the App foundation.',
     retry: 'Try again',
-    undetermined_one: '{{count}} capability could not be determined',
-    undetermined_other: '{{count}} capabilities could not be determined',
+    undetermined_one: 'Information pending update ({{count}})',
+    undetermined_other: 'Information pending update ({{count}})',
     highlightsLabel: 'Key numbers',
-    unavailable: 'Not available',
+    unavailable: 'Information pending update',
     lowerBound: 'At least this many: part of it could not be read.',
   },
   matrix: {
+    apiPath: 'API request: {{method}} {{path}}',
+    successPath: 'Successful API request: {{method}} {{path}}',
+    conditions: {
+      databaseAvailable: 'Database is available',
+      authenticated: 'Authentication is accepted',
+      bodyWithinLimit: 'Request body is within the limit',
+      validInput: 'Input validation succeeds',
+    },
     collections: 'Data collections: {{names}}',
     title: 'Business modules and foundation capabilities',
     description:
@@ -44,7 +54,7 @@ const enUS = {
     legend:
       '✓ Identified integration; · no connection identified. Code references describe dependencies, not execution counts.',
     partial:
-      'Some page dependencies could not be read; their confirmed connections are still shown.',
+      'Some page dependencies could not be established; only confirmed connections are shown.',
     evidence: {
       page: 'Page registered in the application',
       authentication: 'Sign-in required by the page',
@@ -102,12 +112,14 @@ const enUS = {
     active: 'In use',
     needsSetup: 'Ready, needs setup',
     unused: 'Not used yet',
-    undetermined: 'Undetermined',
+    undetermined: 'Information pending update',
     legendActive: 'In use here {{count}}',
     legendNeedsSetup: 'Ready, needs setup {{count}}',
     legendUnused: 'Not used yet {{count}}',
   },
   detail: {
+    retainedAt: 'Last confirmed {{time}}',
+    readNotes: 'Read details',
     collectionCount: '{{count}} collections',
     collectionPreview: 'Collection preview',
     collectionsTitle: 'Collections',
@@ -130,15 +142,13 @@ const enUS = {
     withoutFoundation: 'Without the foundation',
     onceInUse: 'Once in use',
     whyNot: 'Why it is not in use',
-    liveData: 'Live data',
+    liveData: 'Statistics',
     parts: 'What it consists of',
     packages: 'Provided by NocoBase packages',
     noPackages: 'No package of this capability is installed.',
     noFacts: 'Nothing established yet.',
-    partial:
-      'Part of the evidence could not be read; the values marked as lower bounds count only what was read.',
-    failed:
-      'This capability could not be examined this time, so it has no status. Refresh to try again.',
+    partial: 'Some data is pending update.',
+    failed: 'Information pending update.',
     unreadable: 'Could not read: {{sources}}',
     timeout: 'Examining it took too long.',
   },
@@ -277,6 +287,7 @@ const enUS = {
     notConfigured: 'Not configured.',
   },
   facts: {
+    fileCollectionsPartial: 'Counted {{count}} file collections: {{names}}.',
     collectionOwnershipUnknown:
       'An unclassified runtime extension was found. Collection ownership is unconfirmed, so business counts are withheld.',
     noApplicationCollections:
