@@ -1391,3 +1391,39 @@ describe('the knowledge view', () => {
     await waitFor(() => expect(url.search).toBe('?doc=d1&lines=3-5'));
   });
 });
+
+it.each([true, false])(
+  'proposal availability preserves direct edit access: editor=%s',
+  async (editor) => {
+    serve([
+      summary('d1', 'Availability guide', {
+        access: { ...MANAGE, edit: editor, manage: editor },
+        pendingProposals: 2,
+      }),
+    ]);
+    extra = ({ path }) =>
+      path === 'knowledge/capabilities'
+        ? { data: { semanticSearch: false, proposals: false } }
+        : undefined;
+    await show();
+    const tree = await screen.findByRole('tree', { name: 'Acme' });
+    fireEvent.click(
+      within(tree).getByRole('button', { name: 'Availability guide' }),
+    );
+    await screen.findByRole('heading', {
+      name: 'Availability guide',
+      level: 1,
+    });
+    expect(!!screen.queryByRole('button', { name: 'Edit', exact: true })).toBe(
+      editor,
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Propose changes', exact: true }),
+    ).not.toBeInTheDocument();
+    expect(
+      mocks.request.mock.calls.filter(([request]) =>
+        request.path.startsWith('knowledge/proposals'),
+      ),
+    ).toEqual([]);
+  },
+);

@@ -84,6 +84,7 @@ export interface KnowledgeHarness {
 }
 
 export interface HarnessOptions {
+  readonly proposals?: boolean;
   /** The largest file stored. */
   readonly maxBytes?: number;
   readonly extract?: import('../server/index.js').TextExtractor;
@@ -172,6 +173,7 @@ export async function createKnowledgeHarness(
   });
   const files = new ServerFileRepositoryManager(database, drive);
   const knowledge = createKnowledge({
+    proposals: options.proposals,
     database,
     access,
     newId: () => `k${String((next += 1)).padStart(5, '0')}`,

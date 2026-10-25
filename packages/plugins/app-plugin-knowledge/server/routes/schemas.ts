@@ -931,6 +931,7 @@ export const KnowledgeEmptyMetaSchema: z.ZodType<Record<string, never>> =
 
 export const KnowledgeCapabilitiesSchema: z.ZodType<KnowledgeCapabilities> = z
   .object({
+    proposals: z.boolean().optional(),
     semanticSearch: z.boolean().meta({
       description:
         'Whether the application has registered a knowledge indexer.',

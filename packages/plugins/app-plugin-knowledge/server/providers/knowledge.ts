@@ -32,6 +32,8 @@ import { knowledgeAccessToken, knowledgeToken } from '../tokens.js';
 
 /** What the application configures under `knowledge`. */
 export interface KnowledgeConfig {
+  /** Disable proposal APIs and UI without changing document editing or historical data. */
+  readonly proposals?: boolean;
   /** The Drive disk files go to. */
   readonly disk?: string;
   /** The largest file stored, in bytes. */
@@ -73,6 +75,7 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(knowledgeToken, (resolver) =>
       createKnowledge({
         database: resolver.resolve(databaseManagerToken),
+        proposals: config().proposals !== false,
         // Resolved on each question, so an application binding it after this plugin registers is still asked.
         access: {
           space: (space) => this.access().space(space),

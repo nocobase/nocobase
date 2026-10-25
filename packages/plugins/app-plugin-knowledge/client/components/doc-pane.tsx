@@ -79,6 +79,7 @@ import {
   knowledgeKeys,
   useKnowledgeApi,
   useKnowledgeDoc,
+  useKnowledgeCapabilities,
   useKnowledgeVersion,
   useKnowledgeVersions,
 } from '../api.js';
@@ -447,6 +448,7 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const { docId, inherited, mode, version } = props;
   const doc = useKnowledgeDoc(docId);
+  const proposalsEnabled = useKnowledgeCapabilities().data?.proposals !== false;
   const old = useKnowledgeVersion(docId, version);
   const api = useKnowledgeApi();
   const notify = useNotify();
@@ -492,7 +494,13 @@ export function DocPane(props: DocPaneProps): ReactElement {
         <Skeleton className='h-40 w-full' />
       </div>
     );
-  const current = doc.data;
+  const current = proposalsEnabled
+    ? doc.data
+    : {
+        ...doc.data,
+        pendingProposals: 0,
+        access: { ...doc.data.access, propose: false },
+      };
   const live = !current.archivedAt;
   const editable = current.access.edit && !inherited;
   // Someone who may propose but not edit proposes changes instead.
