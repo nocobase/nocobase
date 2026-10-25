@@ -74,7 +74,9 @@ export class OutputWriter {
     else {
       this.append(
         output.blockId,
-        block.redactor.end(event.content === undefined),
+        block.redactor.end(
+          event.content === undefined || event.meta?.truncated === true,
+        ),
       );
       this.flush();
       block.ended = true;
@@ -88,7 +90,14 @@ export class OutputWriter {
     }
   }
   private save(event: Event): void {
-    const safe = this.redactor.text(event.content ?? '');
+    // An interrupted, bounded snapshot may end inside a credential. Withhold its unresolved tail.
+    const scanner =
+      event.meta?.truncated === true
+        ? createOutputRedactor(() => this.redactor)
+        : undefined;
+    const safe = scanner
+      ? scanner.write(event.content ?? '') + scanner.end(true)
+      : this.redactor.text(event.content ?? '');
     const bytes = Buffer.from(safe, 'utf8');
     let cut = Math.min(64 * 1024, bytes.length);
     while (cut < bytes.length && (bytes[cut] & 0xc0) === 0x80) cut--;

@@ -243,6 +243,30 @@ export function chatMessageSegments(
             last: true,
           },
         ];
+      if (message.role === 'assistant') {
+        // Runner history and previews already share one logical SDK message per response. Source records
+        // position its parts; they must not turn opening text, reasoning and the answer into separate bubbles.
+        const visible = new Set(partIndexes);
+        const ordered = [...sources]
+          .sort((a, b) => a.seq - b.seq)
+          .filter((source) => visible.has(source.partIndex));
+        return [
+          {
+            key: message.id,
+            message,
+            partIndexes: [
+              ...new Set([
+                ...ordered.map((source) => source.partIndex),
+                ...partIndexes,
+              ]),
+            ],
+            seq: ordered[0]?.seq ?? message.metadata?.seq,
+            at: ordered[0]?.createdAt ?? message.metadata?.createdAt ?? '',
+            first: true,
+            last: true,
+          },
+        ];
+      }
       const groups = new Map<
         string,
         { indexes: number[]; seq: number; at: string }
