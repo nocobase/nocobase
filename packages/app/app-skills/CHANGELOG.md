@@ -1,5 +1,11 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.49
+
+### Patch Changes
+
+- 2e5823a: Register Knowledge indexing configuration and both vector database types in the application templates, document their deployment settings, and guide application development through the supported configuration contract.
+
 ## 0.1.0-beta.48
 
 ### Patch Changes
