@@ -2,7 +2,7 @@
   "name": "@nocobase/plugin-kanban",
   "version": "2.4.0-alpha.13",
   "main": "dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/handbook/block-kanban",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/block-kanban",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-kanban",
   "license": "Apache-2.0",
   "displayName": "Block: Kanban",

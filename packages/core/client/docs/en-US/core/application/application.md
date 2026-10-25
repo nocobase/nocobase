@@ -25,7 +25,7 @@ export interface ApplicationOptions {
 ```
 
 ## Details
-- `apiClient`: API request instance. For more details, refer to: [NocoBase API SDK Documentation](https://docs.nocobase.com/api/sdk)
+- `apiClient`: API request instance. For more details, refer to: [NocoBase API SDK Documentation](https://nocode.docs.nocobase.com/api/sdk)
 - `i18n`: Internationalization. For specifics, see: [i18next API Documentation](https://www.i18next.com/overview/api#createinstance)
 - `providers`: Context providers
 - `components`: Global components
@@ -94,7 +94,7 @@ class Application {
 }
 ```
 
-For a detailed introduction, please refer to: [APIClient](https://docs.nocobase.com/api/sdk)
+For a detailed introduction, please refer to: [APIClient](https://nocode.docs.nocobase.com/api/sdk)
 
 ### app.router
 

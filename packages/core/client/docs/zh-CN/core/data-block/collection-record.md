@@ -88,7 +88,7 @@ const usersCollection = new Collection({
 
 ### 父子关系和关系字段
 
-对于[关系字段](https://docs.nocobase.com/development/server/collections/association-fields)，例如用户和角色的关系，在用户表中会有一个 `roleId` 字段，其值为角色表中的 `id`，当我们通过 `users.roleId` 字段查询用户的角色时：
+对于[关系字段](https://nocode.docs.nocobase.com/development/server/collections/association-fields)，例如用户和角色的关系，在用户表中会有一个 `roleId` 字段，其值为角色表中的 `id`，当我们通过 `users.roleId` 字段查询用户的角色时：
 
 ```bash | pure
 GET /api/users/1/roles:get/10

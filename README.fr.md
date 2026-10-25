@@ -25,7 +25,7 @@ Démo en ligne :
 https://demo.nocobase.com/new
 
 Documentation :  
-https://docs.nocobase.com/fr/
+https://nocode.docs.nocobase.com/fr/
 
 Forum :  
 https://forum.nocobase.com/
@@ -49,8 +49,8 @@ codex # claude, opencode
 
 Étapes détaillées :
 
-- <a target="_blank" href="https://docs.nocobase.com/fr/ai/install-nocobase-app">Installer une application NocoBase</a>
-- <a target="_blank" href="https://docs.nocobase.com/fr/ai/quick-start">Guide de connexion d'un agent IA</a>
+- <a target="_blank" href="https://nocode.docs.nocobase.com/fr/ai/install-nocobase-app">Installer une application NocoBase</a>
+- <a target="_blank" href="https://nocode.docs.nocobase.com/fr/ai/quick-start">Guide de connexion d'un agent IA</a>
 
 ## Notes de version
 

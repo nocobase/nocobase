@@ -9,7 +9,7 @@
   "devDependencies": {
     "joi": "^17.13.6"
   },
-  "homepage": "https://docs.nocobase.com/handbook/workflow-custom-action-trigger",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/workflow-custom-action-trigger",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-custom-action-trigger",
   "peerDependencies": {
     "@nocobase/client": "2.x",

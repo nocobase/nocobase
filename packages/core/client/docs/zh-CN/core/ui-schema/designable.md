@@ -43,7 +43,7 @@ class Designable {
 - 参数讲解
 
   - `current`：需要操作的 Schema 节点
-  - `api`：用于发起后端请求的 [APIClient](https://docs.nocobase.com/api/sdk) 实例
+  - `api`：用于发起后端请求的 [APIClient](https://nocode.docs.nocobase.com/api/sdk) 实例
   - `onSuccess`：后端接口请求成功后的回调
   - `refresh`：用于更新节点后，刷新页面
   - `t`：`useTranslation()` 的返回值

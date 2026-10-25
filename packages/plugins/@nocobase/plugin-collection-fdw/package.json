@@ -9,7 +9,7 @@
   "displayName.zh-CN": "数据表：连接外部数据（FDW）",
   "description": "Database-based foreign data wrapper (FDW) implementation for connecting to remote data tables, currently supports MySQL and PostgreSQL databases.",
   "description.zh-CN": "基于数据库的 foreign data wrapper（FDW） 实现的连接远程数据表，目前支持 MySQL 和 PostgreSQL 数据库。",
-  "homepage": "https://docs.nocobase.com/handbook/collection-fdw",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/collection-fdw",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/collection-fdw",
   "nocobase": {
     "supportedVersions": [

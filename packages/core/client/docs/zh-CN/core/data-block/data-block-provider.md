@@ -63,7 +63,7 @@ const DataBlockProvider = (props) => {
 
 ### 使用方式
 
-其主要使用在区块的 schema [x-decorator](https://docs.nocobase.com/development/client/ui-schema/what-is-ui-schema#x-decorator) 中，例如：
+其主要使用在区块的 schema [x-decorator](https://nocode.docs.nocobase.com/development/client/ui-schema/what-is-ui-schema#x-decorator) 中，例如：
 
 ```js {5}| pure
 {
@@ -114,7 +114,7 @@ interface AllDataBlockProps {
 
 - collection（`x-decorator-props`）：区块的 collection 表名，用于获取区块的字段信息和区块数据
 - association（`x-decorator-props`）：区块的关系字段名，用于获取区块的关系字段信息和关系字段数据
-- dataSource(`x-decorator-props`): 数据源，具体可参考 [Data Modeling](https://docs.nocobase.com/manual/data-modeling)
+- dataSource(`x-decorator-props`): 数据源，具体可参考 [Data Modeling](https://nocode.docs.nocobase.com/manual/data-modeling)
 - action（`x-decorator-props`）：区块的请求类型，`list` 或 `get`
 - params（`x-decorator-props` 和 `x-use-decorator-props`）：区块的请求参数，同时存在于
 - filterByTk（`x-use-decorator-props`）：相当于 `params.filterByTk`，可理解为 `id`，用于获取单条数据

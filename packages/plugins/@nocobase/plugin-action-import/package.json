@@ -9,7 +9,7 @@
   "version": "2.4.0-alpha.13",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/handbook/action-import",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/action-import",
   "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-import",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-import",
   "nocobase": {

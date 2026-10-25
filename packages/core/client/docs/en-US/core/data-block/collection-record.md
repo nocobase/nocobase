@@ -88,7 +88,7 @@ const usersCollection = new Collection({
 
 ### Parent-Child Relationship and Relationship Fields
 
-For [relationship fields](https://docs.nocobase.com/development/server/collections/association-fields), such as the relationship between users and roles, there will be a `roleId` field in the users table, with its value being the `id` in the roles table. When we query the role of a user using the `users.roleId` field:
+For [relationship fields](https://nocode.docs.nocobase.com/development/server/collections/association-fields), such as the relationship between users and roles, there will be a `roleId` field in the users table, with its value being the `id` in the roles table. When we query the role of a user using the `users.roleId` field:
 
 ```bash | pure
 GET /api/users/1/roles:get/10

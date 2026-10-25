@@ -151,7 +151,7 @@ abstract class BaseDBAdapter implements DBAdapter {
     const result = spawnSync(command, ['--version'], { encoding: 'utf8' });
     if (result.error || result.status !== 0) {
       throw new Error(
-        `Command ${command} not found, please install it first. Check reference here: https://docs.nocobase.com/ops-management/backup-manager/`,
+        `Command ${command} not found, please install it first. Check reference here: https://nocode.docs.nocobase.com/ops-management/backup-manager/`,
       );
     }
   };

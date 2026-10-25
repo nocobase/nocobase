@@ -95,7 +95,7 @@ class CollectionManager {
 ```
 
 - 详细解释
-  - `path` 参数可以是数据表名称，也可以是[关系字段](https://docs.nocobase.com/development/server/collections/association-fields)路径。
+  - `path` 参数可以是数据表名称，也可以是[关系字段](https://nocode.docs.nocobase.com/development/server/collections/association-fields)路径。
     - `path: 'users'`: 获取 `users` 数据表
     - `path: 'users.posts'`: 获取 `users` 数据表的 `posts` 关联字段对应的数据表，即 `postCollection`
 

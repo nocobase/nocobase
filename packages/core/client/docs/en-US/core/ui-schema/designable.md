@@ -42,7 +42,7 @@ class Designable {
 
 - Params
   - `current`: The Schema node to operate on
-  - `api`: An instance of [APIClient](https://docs.nocobase.com/api/sdk) used to make backend requests
+  - `api`: An instance of [APIClient](https://nocode.docs.nocobase.com/api/sdk) used to make backend requests
   - `onSuccess`: Callback function to be executed after a successful backend API request
   - `refresh`: Function to refresh the page after updating the node
   - `t`: The return value of `useTranslation()`

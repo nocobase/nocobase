@@ -6,7 +6,7 @@
   "displayName.zh-CN": "区块：树",
   "description": "Provides tree structure filter block",
   "description.zh-CN": "提供树结构的筛选区块",
-  "homepage": "https://docs.nocobase.com/handbook/block-tree",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/block-tree",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-tree",
   "nocobase": {
     "supportedVersions": [

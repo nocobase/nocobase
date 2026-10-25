@@ -245,7 +245,7 @@ function ChannelsPageInner() {
   const docsHref =
     ctx.api?.auth?.locale === 'zh-CN'
       ? 'https://docs-cn.nocobase.com/handbook/notification-manager'
-      : 'https://docs.nocobase.com/handbook/notification-manager';
+      : 'https://nocode.docs.nocobase.com/handbook/notification-manager';
 
   const creatableChannelTypes = useMemo(
     () => registeredChannelTypes.filter((item) => item.meta?.creatable !== false),

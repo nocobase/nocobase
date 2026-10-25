@@ -25,7 +25,7 @@ https://www.nocobase.com/ja
 https://demo.nocobase.com/new
 
 ドキュメント:  
-https://docs.nocobase.com/ja/
+https://nocode.docs.nocobase.com/ja/
 
 フォーラム:  
 https://forum.nocobase.com/
@@ -49,8 +49,8 @@ codex # claude, opencode
 
 詳細手順:
 
-- <a target="_blank" href="https://docs.nocobase.com/ja/ai/install-nocobase-app">NocoBase アプリをインストール</a>
-- <a target="_blank" href="https://docs.nocobase.com/ja/ai/quick-start">AI Agent 接続ガイド</a>
+- <a target="_blank" href="https://nocode.docs.nocobase.com/ja/ai/install-nocobase-app">NocoBase アプリをインストール</a>
+- <a target="_blank" href="https://nocode.docs.nocobase.com/ja/ai/quick-start">AI Agent 接続ガイド</a>
 
 ## リリースノート
 

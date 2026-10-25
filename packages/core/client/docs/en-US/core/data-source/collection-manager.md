@@ -95,7 +95,7 @@ class CollectionManager {
 ```
 
 - Details
-  - The `path` parameter can be either the name of a collection or a path to a [relationship field](https://docs.nocobase.com/development/server/collections/association-fields).
+  - The `path` parameter can be either the name of a collection or a path to a [relationship field](https://nocode.docs.nocobase.com/development/server/collections/association-fields).
     - `path: 'users'`: Get the `users` collection.
     - `path: 'users.posts'`: Get the collection corresponding to the `posts` associated field of the `users` collection, i.e., `postCollection`.
 

@@ -10,4 +10,4 @@ const AssociationProvider = <CollectionFieldProvider name={fieldName}>
 </CollectionFieldProvider>
 ```
 
-For more information on relational fields, please refer to [Association Fields](https://docs.nocobase.com/development/server/collections/association-fields) and [CollectionField](/core/data-source/collection-field).
+For more information on relational fields, please refer to [Association Fields](https://nocode.docs.nocobase.com/development/server/collections/association-fields) and [CollectionField](/core/data-source/collection-field).

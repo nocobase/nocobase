@@ -60,7 +60,7 @@ export default defineConfig({
       },
       {
         title: 'Home site',
-        link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
+        link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://nocode.docs.nocobase.com',
       }
       // {
       //   title: 'UI Schema',

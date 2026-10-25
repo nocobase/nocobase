@@ -171,7 +171,7 @@ export const CreateDatabaseConnectAction = () => {
                               href={
                                 api.auth.locale === 'zh-CN'
                                   ? 'https://docs-cn.nocobase.com/handbook/data-source-manager'
-                                  : 'https://docs.nocobase.com/handbook/data-source-manager'
+                                  : 'https://nocode.docs.nocobase.com/handbook/data-source-manager'
                               }
                               rel="noreferrer"
                             >

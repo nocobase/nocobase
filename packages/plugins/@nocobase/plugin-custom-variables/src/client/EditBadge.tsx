@@ -67,7 +67,11 @@ export const getBadgeFieldsSchema = (
     description: (
       <span>
         {t('Syntax references: ')}
-        <a href="https://docs.nocobase.com/handbook/calculation-engines/formula" target="_blank" rel="noreferrer">
+        <a
+          href="https://nocode.docs.nocobase.com/handbook/calculation-engines/formula"
+          target="_blank"
+          rel="noreferrer"
+        >
           Formula.js
         </a>
       </span>
