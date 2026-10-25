@@ -2,7 +2,7 @@
   "name": "@nocobase/plugin-theme-editor",
   "version": "2.4.0-alpha.13",
   "main": "dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/handbook/theme-editor",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/theme-editor",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/theme-editor",
   "displayName": "Theme editor",
   "displayName.ru-RU": "Редактор тем",

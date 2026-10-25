@@ -11,7 +11,7 @@
     "joi": "^17.13.6",
     "react": "18.x"
   },
-  "homepage": "https://docs.nocobase.com/handbook/workflow-request-interceptor",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/workflow-request-interceptor",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-request-interceptor",
   "peerDependencies": {
     "@nocobase/client": "2.x",

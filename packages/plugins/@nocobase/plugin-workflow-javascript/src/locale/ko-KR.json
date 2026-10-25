@@ -29,5 +29,5 @@
   "The maximum execution time of the script. 0 means no timeout.": "스크립트의 최대 실행 시간입니다. 0은 시간 제한 없음입니다.",
   "Timeout": "시간 초과",
   "Try it out": "테스트 실행",
-  "https://docs.nocobase.com/handbook/workflow-javascript": "https://docs.nocobase.com/handbook/workflow-javascript"
+  "https://nocode.docs.nocobase.com/handbook/workflow-javascript": "https://nocode.docs.nocobase.com/handbook/workflow-javascript"
 }

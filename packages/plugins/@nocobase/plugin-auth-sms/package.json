@@ -8,7 +8,7 @@
   "description.zh-CN": "通过短信验证码认证身份。",
   "version": "2.4.0-alpha.13",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/handbook/auth-sms",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/auth-sms",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth-sms",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/auth-sms",
   "license": "Apache-2.0",

@@ -124,7 +124,7 @@ FooterExampleModel.registerFlow({
               <Button
                 type="link"
                 icon={<QuestionCircleOutlined />}
-                onClick={() => window.open('https://docs.nocobase.com', '_blank')}
+                onClick={() => window.open('https://nocode.docs.nocobase.com', '_blank')}
               >
                 Help
               </Button>

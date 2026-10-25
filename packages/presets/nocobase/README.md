@@ -17,7 +17,7 @@ Online Demo:
 https://demo.nocobase.com/new
 
 Documents:  
-https://docs.nocobase.com/
+https://nocode.docs.nocobase.com/
 
 Commericial license & plugins:  
 https://www.nocobase.com/en/commercial

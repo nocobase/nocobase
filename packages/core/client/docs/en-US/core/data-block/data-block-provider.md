@@ -114,7 +114,7 @@ interface AllDataBlockProps {
 
 - collection (`x-decorator-props`): The table name of the block's collection, used to retrieve the field information and block data of the block.
 - association (`x-decorator-props`): The name of the relationship field of the block, used to retrieve the relationship field information and data of the block.
-- dataSource (`x-decorator-props`): The data source, refer to [Data Modeling](https://docs.nocobase.com/manual/data-modeling) for details.
+- dataSource (`x-decorator-props`): The data source, refer to [Data Modeling](https://nocode.docs.nocobase.com/manual/data-modeling) for details.
 - action (`x-decorator-props`): The request type of the block, either `list` or `get`.
 - params (`x-decorator-props` and `x-use-decorator-props`): The request parameters of the block, exist in both `x-decorator-props` and `x-use-decorator-props`.
 - filterByTk (`x-use-decorator-props`): Equivalent to `params.filterByTk`, can be understood as `id`, used to retrieve a single data.

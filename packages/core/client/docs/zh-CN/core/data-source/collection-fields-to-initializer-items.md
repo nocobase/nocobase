@@ -26,7 +26,7 @@
 - `getSchema`：获取字段对应的 schema
 - `getInitializerItem`：获取字段对应的 initializer item
 
-> 关于 Schema 请查看 [UI Schema](https://docs.nocobase.com/development/client/ui-schema/what-is-ui-schema)。 <br />
+> 关于 Schema 请查看 [UI Schema](https://nocode.docs.nocobase.com/development/client/ui-schema/what-is-ui-schema)。 <br />
 > 关于 Initializer item，可以参考 [SchemaInitializer](/core/ui-schema/schema-initializer)。<br />
 > 两者的关系是 Initializer item 通过类似 `onClick` 的事件触发，将 Schema 插入到 Schema 树中，并渲染到界面上。
 

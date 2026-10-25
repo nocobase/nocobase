@@ -25,7 +25,7 @@ https://www.nocobase.com/cn
 https://demo.nocobase.com/new
 
 文档：  
-https://docs.nocobase.com/cn/
+https://nocode.docs.nocobase.com/cn/
 
 社区：  
 https://forum.nocobase.com/c/chinese-forum/6
@@ -49,8 +49,8 @@ codex # claude, opencode
 
 详细步骤见：
 
-- <a target="_blank" href="https://docs.nocobase.com/cn/ai/install-nocobase-app">安装 NocoBase 应用</a>
-- <a target="_blank" href="https://docs.nocobase.com/cn/ai/quick-start">AI Agent 接入指南</a>
+- <a target="_blank" href="https://nocode.docs.nocobase.com/cn/ai/install-nocobase-app">安装 NocoBase 应用</a>
+- <a target="_blank" href="https://nocode.docs.nocobase.com/cn/ai/quick-start">AI Agent 接入指南</a>
 
 ## 发布日志
 

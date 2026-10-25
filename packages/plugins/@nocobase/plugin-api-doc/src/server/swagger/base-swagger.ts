@@ -22,7 +22,7 @@ export default {
   },
   externalDocs: {
     description: 'Find out more about NocoBase',
-    url: 'https://docs.nocobase.com/api/http',
+    url: 'https://nocode.docs.nocobase.com/api/http',
   },
   components: {
     securitySchemes: {

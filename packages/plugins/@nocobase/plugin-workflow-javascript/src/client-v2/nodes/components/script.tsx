@@ -29,7 +29,7 @@ function ScriptDescription() {
   return (
     <span>
       {t('Node.js features supported can be found in the documentaion: ')}
-      <a href={t('https://docs.nocobase.com/handbook/workflow-javascript')} target="_blank" rel="noreferrer">
+      <a href={t('https://nocode.docs.nocobase.com/handbook/workflow-javascript')} target="_blank" rel="noreferrer">
         {t('JavaScript node')}
       </a>
     </span>

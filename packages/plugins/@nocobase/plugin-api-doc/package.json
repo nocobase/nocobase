@@ -9,7 +9,7 @@
   "description.zh-CN": "NocoBase HTTP API 的 OpenAPI 文档生成器。",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs.nocobase.com/handbook/api-doc",
+  "homepage": "https://nocode.docs.nocobase.com/handbook/api-doc",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/api-doc",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/api-doc",
   "types": "./dist/server/index.d.ts",

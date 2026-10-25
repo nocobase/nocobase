@@ -61,7 +61,7 @@ export interface ActionProps extends ButtonProps {
 
 ### Dynamic Props
 
-Here, the ability of `x-use-component-props` is used. For more information, please refer to [x-use-component-props](https://docs.nocobase.com/development/client/ui-schema/what-is-ui-schema#x-component-props-and-x-use-component-props).
+Here, the ability of `x-use-component-props` is used. For more information, please refer to [x-use-component-props](https://nocode.docs.nocobase.com/development/client/ui-schema/what-is-ui-schema#x-component-props-and-x-use-component-props).
 
 <code src="./demos/new-demos/dynamic-props.tsx"></code>
 

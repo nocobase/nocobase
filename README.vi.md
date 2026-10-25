@@ -25,7 +25,7 @@ Demo online:
 https://demo.nocobase.com/new
 
 Tai lieu:  
-https://docs.nocobase.com/
+https://nocode.docs.nocobase.com/
 
 Forum:  
 https://forum.nocobase.com/
@@ -49,8 +49,8 @@ codex # claude, opencode
 
 Chi tiet xem:
 
-- <a target="_blank" href="https://docs.nocobase.com/vi/ai/install-nocobase-app">Cai dat ung dung NocoBase</a>
-- <a target="_blank" href="https://docs.nocobase.com/vi/ai/quick-start">Huong dan ket noi AI Agent</a>
+- <a target="_blank" href="https://nocode.docs.nocobase.com/vi/ai/install-nocobase-app">Cai dat ung dung NocoBase</a>
+- <a target="_blank" href="https://nocode.docs.nocobase.com/vi/ai/quick-start">Huong dan ket noi AI Agent</a>
 
 ## Ghi chu phat hanh
 

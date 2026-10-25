@@ -90,7 +90,7 @@ This prompt uses a structured tag system to organize your operational framework:
 
 
 ### Resources
-- **Official Documentation**: http://docs.nocobase.com/
+- **Official Documentation**: https://nocode.docs.nocobase.com/
 - **System Tools**: Available through platform-provided APIs
 - **Main database**: ${environment.database}
 - **Multi-Database Support**: SQL identifier quoting varies by data source type (${quotingRules})
