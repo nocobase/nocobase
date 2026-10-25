@@ -65,7 +65,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Get what the application uses of NocoBase Core',
         operationId: 'foundationGetOverview',
         description:
-          'Every NocoBase Core capability with its status, evidence, statistics and providing packages. Failed reads leave information pending or retain reliable observations with their original checkedAt; incomplete file discovery never produces exact current totals. Collected read-only and cached for 30 seconds; refresh=true collects again. History is application-service-local and cleared on restart or a changed scope. Requires unrestricted access, such as the root Permission Set.',
+          'Every NocoBase Core capability with its status, evidence, statistics and providing packages. Failed reads leave information pending or retain reliable observations with their original checkedAt; incomplete file discovery never produces exact current totals. Unknown extensions do not discard observed statistics or create read failures; data-modeling statistics exclude known system tables without asserting ownership or exhaustive coverage. Collected read-only and cached for 30 seconds; refresh=true collects again. History is application-service-local and cleared on restart or a changed scope. Requires unrestricted access, such as the root Permission Set.',
         responses: {
           200: dataResponse(OverviewSchema),
           ...apiErrorResponses,
@@ -86,7 +86,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       '/collections',
       describeRoute({
         tags,
-        summary: 'List application Collections on demand',
+        summary: 'List observed data Collections on demand',
         operationId: 'foundationListCollections',
         responses: {
           200: listResponse(CollectionItemSchema),
@@ -104,8 +104,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             status: 'UNAVAILABLE',
             reason: 'FOUNDATION_COLLECTIONS_UNAVAILABLE',
             domain: FOUNDATION_NAMESPACE,
-            message:
-              'Application Collection ownership could not be determined.',
+            message: 'The data Collection catalog could not be read.',
           });
         return context.json({ data: data.items, meta: { total: data.total } });
       },

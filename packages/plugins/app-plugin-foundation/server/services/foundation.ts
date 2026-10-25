@@ -155,7 +155,7 @@ export class DefaultFoundationService implements FoundationService {
       }
     }
     const applicationName = await this.packages.applicationName();
-    let ownedCollections = inventory
+    const ownedCollections = inventory
       ? applicationCollections(new Probe(inventory))
       : undefined;
     const capabilities = await mapWithConcurrency(
@@ -217,8 +217,7 @@ export class DefaultFoundationService implements FoundationService {
     }
     for (const [name, shape] of inventory?.definitionShapes ?? [])
       this.definitionShapes.set(name, shape);
-    // An unclassified runtime extension may own Collections absent from our ownership catalog. Its rows must not be
-    // presented as an exact business-only count until ownership is known.
+    // Registration does not invalidate observed schema or row counts. Ownership is a separate recognition boundary.
     if (
       inventoryOfProviders.entries.some(
         (entry) =>
@@ -227,28 +226,14 @@ export class DefaultFoundationService implements FoundationService {
           entry.registration === 'observed',
       )
     ) {
-      ownedCollections = undefined;
       const index = capabilities.findIndex(
         (entry) => entry.key === 'dataModeling',
       );
       const data = capabilities[index];
-      if (data && data.completeness !== 'failed')
+      if (data)
         capabilities[index] = {
           ...data,
-          completeness: 'partial',
-          facts: [{ code: 'collectionOwnershipUnknown' }],
-          metrics: data.metrics.map((metric) => ({
-            ...metric,
-            value: metric.key === 'systemCollections' ? metric.value : null,
-            complete: false,
-          })),
-          issues: [
-            ...data.issues,
-            {
-              code: 'SOURCE_UNREADABLE',
-              source: 'extensionCollectionOwnership',
-            },
-          ],
+          facts: [...data.facts, { code: 'collectionOwnershipUnknown' }],
         };
     }
     const signature = inventory
@@ -275,10 +260,7 @@ export class DefaultFoundationService implements FoundationService {
         metric: recordMetric,
         checkedAt: new Date(this.now()).toISOString(),
       };
-    } else if (
-      this.recordCount &&
-      !data?.facts.some((item) => item.code === 'collectionOwnershipUnknown')
-    ) {
+    } else if (this.recordCount) {
       const index = capabilities.findIndex(
         (item) => item.key === 'dataModeling',
       );
@@ -322,8 +304,7 @@ export class DefaultFoundationService implements FoundationService {
         inventoryOfProviders,
       ),
       checkedAt: new Date(finished).toISOString(),
-      ...(this.recordCount &&
-      !data?.facts.some((item) => item.code === 'collectionOwnershipUnknown')
+      ...(this.recordCount
         ? { recordCountCheckedAt: this.recordCount.checkedAt }
         : {}),
       durationMs: finished - started,

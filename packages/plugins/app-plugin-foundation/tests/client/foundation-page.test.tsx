@@ -178,6 +178,92 @@ describe('App Foundation page', () => {
     ).toBeInTheDocument();
   });
 
+  it('hides missing numbers, keeps real zero and words observed data without a business ownership claim', async () => {
+    await render(() => ({
+      data: {
+        ...OVERVIEW,
+        capabilities: [
+          capability('dataModeling', {
+            status: 'active',
+            facts: [{ code: 'collectionOwnershipUnknown' }],
+            metrics: [
+              {
+                key: 'businessRecords',
+                value: null,
+                unit: 'count',
+                complete: false,
+              },
+              {
+                key: 'businessCollections',
+                value: 2,
+                unit: 'count',
+                complete: true,
+              },
+              { key: 'fields', value: 3, unit: 'count', complete: false },
+              { key: 'relations', value: 0, unit: 'count', complete: true },
+            ],
+          }),
+        ],
+      },
+    }));
+    const detail = await screen.findByRole('region', {
+      name: 'Data modeling In use',
+    });
+    expect(within(detail).getByText('Identified 2')).toBeVisible();
+    expect(within(detail).getByText('Counted 3')).toBeVisible();
+    expect(within(detail).getByText('Counted 0')).toBeVisible();
+    expect(
+      within(detail).queryByText('Information pending update'),
+    ).not.toBeInTheDocument();
+    expect(within(detail).queryByText('records')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/≥|withheld|extensionCollectionOwnership/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(
+      within(detail).getByText(/Ownership of additional tables/),
+    ).not.toBeVisible();
+    fireEvent.click(within(detail).getByText('Recognition notes'));
+    expect(
+      within(detail).getByText(/Ownership of additional tables/),
+    ).toBeVisible();
+  });
+
+  it('omits empty statistics sections while preserving active evidence when every metric is missing', async () => {
+    await render(() => ({
+      data: {
+        ...OVERVIEW,
+        capabilities: [
+          capability('dataModeling', {
+            status: 'active',
+            completeness: 'failed',
+            issues: [{ code: 'COLLECTOR_FAILED' }],
+            metrics: [
+              {
+                key: 'businessCollections',
+                value: null,
+                unit: 'count',
+                complete: false,
+              },
+            ],
+          }),
+        ],
+      },
+    }));
+    const detail = await screen.findByRole('region', {
+      name: 'Data modeling In use',
+    });
+    expect(within(detail).queryByText('Statistics')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: 'Key numbers' }),
+    ).not.toBeInTheDocument();
+    expect(within(detail).getByText('Nothing established yet.')).toBeVisible();
+    expect(
+      within(detail).getByText('Information pending update.'),
+    ).toBeVisible();
+    expect(within(detail).queryByText('Not used')).not.toBeInTheDocument();
+  });
+
   it('renders discovered module associations, filters the band on focus and explains the value when selected', async () => {
     await renderWithApp(
       <FoundationOverviewView
@@ -253,12 +339,12 @@ describe('App Foundation page', () => {
     });
     expect(within(preview).getByText('equipment')).toBeInTheDocument();
     expect(within(preview).getByText('borrowings')).toBeInTheDocument();
-    expect(within(detail).getByText('75,413')).toBeInTheDocument();
+    expect(within(detail).getByText('Counted 75,413')).toBeInTheDocument();
     expect(within(detail).getByText('@nocobase/db')).toBeInTheDocument();
     expect(within(detail).getByText('1.2.3')).toBeInTheDocument();
   });
 
-  it('marks a partial count as a lower bound and explains a missing one', async () => {
+  it('shows a counted portion and explains an unreadable capability', async () => {
     await render();
 
     fireEvent.click(
@@ -269,7 +355,7 @@ describe('App Foundation page', () => {
     const detail = screen.getByRole('region', {
       name: /Users & organizations/,
     });
-    expect(within(detail).getByText('≥ 12')).toBeInTheDocument();
+    expect(within(detail).getByText('Counted 12')).toBeInTheDocument();
     expect(
       within(detail).getByText('Could not read: userInvitations'),
     ).not.toBeVisible();
@@ -441,7 +527,7 @@ describe('App Foundation page', () => {
   it('counts business records only when explicitly requested', async () => {
     const calls = await render();
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Count business records' }),
+      await screen.findByRole('button', { name: 'Count records' }),
     );
     await waitFor(() => expect(calls).toHaveLength(2));
     expect(calls[1]).toMatchObject({

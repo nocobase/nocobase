@@ -6,6 +6,7 @@ const enUS = {
     foundation: 'App foundation',
   },
   page: {
+    identified: 'Identified {{value}}',
     counted: 'Counted {{value}}',
     partial: 'Some data is pending update',
     title: 'App foundation',
@@ -132,9 +133,9 @@ const enUS = {
     collectionResults: '{{count}} matching collections',
     previousPage: 'Previous',
     nextPage: 'Next',
-    countRecords: 'Count business records',
+    countRecords: 'Count records',
     recordsOnDemand:
-      'Business record totals are counted on demand. Large databases may take longer.',
+      'Record counts cover the identified tables, excluding known system tables. Counting is on demand; large databases may take longer.',
     recordsCountedAt: 'Records counted {{time}}',
 
     businessModules: 'Connected business modules',
@@ -289,13 +290,12 @@ const enUS = {
   facts: {
     fileCollectionsPartial: 'Counted {{count}} file collections: {{names}}.',
     collectionOwnershipUnknown:
-      'An unclassified runtime extension was found. Collection ownership is unconfirmed, so business counts are withheld.',
+      'Known NocoBase system tables are excluded. Ownership of additional tables is pending recognition; these observations do not establish a business-only or application-wide total.',
     noApplicationCollections:
-      'The data layer runs the application, which has no Collections of its own yet.',
+      'No additional data collections have been identified.',
     applicationCollectionsPreview:
-      'This application has {{count}} collections, including {{names}}.',
-    applicationCollections:
-      '{{count}} Collections of the application’s own: {{names}}.',
+      'Identified {{count}} data collections, including {{names}}.',
+    applicationCollections: 'Identified {{count}} data collections: {{names}}.',
     relations: '{{count}} relations connect them.',
     fileCollections: '{{count}} file Collections: {{names}}.',
     accounts: '{{count}} accounts sign in through NocoBase authentication.',
@@ -342,8 +342,8 @@ const enUS = {
     caching: 'Caching',
   },
   metrics: {
-    businessRecords: 'business records',
-    businessCollections: 'business Collections',
+    businessRecords: 'records',
+    businessCollections: 'data tables',
     views: 'views',
     fields: 'fields',
     relations: 'relations',

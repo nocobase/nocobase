@@ -6,6 +6,7 @@ const esES: FoundationResource = {
     foundation: 'Base de la aplicación',
   },
   page: {
+    identified: 'Identificados: {{value}}',
     counted: 'Contabilizado: {{value}}',
     partial: 'Algunos datos están pendientes de actualizar',
     title: 'Base de la aplicación',
@@ -133,9 +134,9 @@ const esES: FoundationResource = {
     collectionResults: '{{count}} colecciones coincidentes',
     previousPage: 'Anterior',
     nextPage: 'Siguiente',
-    countRecords: 'Contar registros de negocio',
+    countRecords: 'Contar registros',
     recordsOnDemand:
-      'Los registros de negocio se cuentan bajo demanda. Las bases de datos grandes pueden tardar más.',
+      'Cuenta bajo demanda las tablas identificadas, excluyendo las tablas de sistema conocidas. Las bases grandes pueden tardar más.',
     recordsCountedAt: 'Registros contados {{time}}',
 
     businessModules: 'Módulos de negocio relacionados',
@@ -292,12 +293,13 @@ const esES: FoundationResource = {
     fileCollectionsPartial:
       'Colecciones de archivos contabilizadas: {{count}}: {{names}}.',
     collectionOwnershipUnknown:
-      'Se ha detectado una extensión en ejecución sin clasificar. No se conoce la propiedad de las colecciones; se omiten las cifras de negocio.',
+      'Se excluyen las tablas de sistema conocidas de NocoBase. La pertenencia de las demás tablas está pendiente de identificar; estos datos no son un total exclusivo del negocio ni de toda la aplicación.',
     noApplicationCollections:
-      'La capa de datos funciona, pero la aplicación aún no tiene colecciones propias.',
+      'Aún no se han identificado otras tablas de datos.',
     applicationCollectionsPreview:
-      'Esta aplicación tiene {{count}} colecciones, entre ellas {{names}}.',
-    applicationCollections: '{{count}} colecciones propias: {{names}}.',
+      'Se identificaron {{count}} tablas de datos, incluidas {{names}}.',
+    applicationCollections:
+      'Se identificaron {{count}} tablas de datos: {{names}}.',
     relations: '{{count}} relaciones las conectan.',
     fileCollections: '{{count}} colecciones de archivos: {{names}}.',
     accounts:
@@ -346,8 +348,8 @@ const esES: FoundationResource = {
     caching: 'Caché',
   },
   metrics: {
-    businessRecords: 'registros de negocio',
-    businessCollections: 'colecciones de negocio',
+    businessRecords: 'registros',
+    businessCollections: 'tablas de datos',
     views: 'vistas',
     fields: 'campos',
     relations: 'relaciones',

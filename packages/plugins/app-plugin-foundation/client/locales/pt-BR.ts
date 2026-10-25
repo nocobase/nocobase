@@ -6,6 +6,7 @@ const ptBR: FoundationResource = {
     foundation: 'Base do aplicativo',
   },
   page: {
+    identified: 'Identificados: {{value}}',
     counted: 'Contabilizado: {{value}}',
     partial: 'Alguns dados aguardam atualização',
     title: 'Base do aplicativo',
@@ -132,9 +133,9 @@ const ptBR: FoundationResource = {
     collectionResults: '{{count}} coleções encontradas',
     previousPage: 'Anterior',
     nextPage: 'Próxima',
-    countRecords: 'Contar registros de negócio',
+    countRecords: 'Contar registros',
     recordsOnDemand:
-      'Os registros de negócio são contados sob demanda. Bancos de dados grandes podem demorar mais.',
+      'Conta sob demanda as tabelas identificadas, excluindo tabelas de sistema conhecidas. Bancos grandes podem demorar mais.',
     recordsCountedAt: 'Registros contados {{time}}',
 
     businessModules: 'Módulos de negócio relacionados',
@@ -289,12 +290,12 @@ const ptBR: FoundationResource = {
     fileCollectionsPartial:
       'Coleções de arquivos contabilizadas: {{count}}: {{names}}.',
     collectionOwnershipUnknown:
-      'Foi encontrada uma extensão em execução sem classificação. A origem das coleções é incerta; os totais de negócio foram omitidos.',
-    noApplicationCollections:
-      'A camada de dados funciona, mas ainda não há coleções próprias do aplicativo.',
+      'As tabelas de sistema conhecidas do NocoBase são excluídas. A propriedade das demais tabelas ainda será identificada; os valores lidos não são um total exclusivo do negócio ou de toda a aplicação.',
+    noApplicationCollections: 'Nenhuma outra tabela de dados foi identificada.',
     applicationCollectionsPreview:
-      'Este aplicativo tem {{count}} coleções, incluindo {{names}}.',
-    applicationCollections: '{{count}} coleções próprias: {{names}}.',
+      '{{count}} tabelas de dados identificadas, incluindo {{names}}.',
+    applicationCollections:
+      '{{count}} tabelas de dados identificadas: {{names}}.',
     relations: '{{count}} relações entre elas.',
     fileCollections: '{{count}} coleções de arquivos: {{names}}.',
     accounts: '{{count}} contas acessam pela autenticação NocoBase.',
@@ -343,8 +344,8 @@ const ptBR: FoundationResource = {
     caching: 'Cache',
   },
   metrics: {
-    businessRecords: 'registros de negócio',
-    businessCollections: 'coleções de negócio',
+    businessRecords: 'registros',
+    businessCollections: 'tabelas de dados',
     views: 'visualizações',
     fields: 'campos',
     relations: 'relações',
