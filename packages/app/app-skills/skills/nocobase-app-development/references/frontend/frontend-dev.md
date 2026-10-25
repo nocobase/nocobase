@@ -119,8 +119,8 @@ pnpm exec vitest run <related-test-files>
 - Primitives the change added are changed files too: formatted with Prettier, their built-in English translated as ["English built into primitives"](references/shadcn.md#english-built-into-primitives) lists, and otherwise exactly what the CLI wrote.
 - Lint does not check the shadcn skill's "Critical Rules". Read the changed components against them: items inside their groups, `gap-*` rather than `space-*`, `data-icon` and no sizing classes on icons inside components, full `Card` structure, semantic tokens ([`references/shadcn.md`](references/shadcn.md)).
 - Choose the related tests by searching `tests/` for the changed component, page or route name.
-- A changed route always includes `tests/logic/client-routes.test.ts`.
-- A changed `t()` key or route title always includes `tests/logic/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).
+- A changed route always includes `tests/client/client-routes.test.ts`.
+- A changed `t()` key or route title always includes `tests/client/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).
 - Confirm that every test file you named ran: see ["Running tests" in `testing.md`](references/testing.md#running-tests).
 - When you changed server or database code as well, also run `pnpm exec tsc -p tsconfig.server.json --noEmit`.
 - When you changed a browser test under `tests/playwright/`, also run `pnpm exec tsc -p tsconfig.node.json --noEmit`, which covers `tests/playwright/` once Playwright is set up (an application without it sets it up first, as [`references/testing.md`](references/testing.md) describes).

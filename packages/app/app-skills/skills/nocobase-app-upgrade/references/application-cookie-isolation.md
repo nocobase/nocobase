@@ -38,7 +38,7 @@ pnpm test
 pnpm build
 ```
 
-If merging the template's regression tests, include `tests/logic/session-isolation.test.ts`; it uses the application's own configuration and shared synthetic test keys/storage to test the cookie boundary. Never point it at deployment sessions or databases.
+If merging the template's regression tests, include `tests/server/session-isolation.test.ts`; it uses the application's own configuration and shared synthetic test keys/storage to test the cookie boundary. Never point it at deployment sessions or databases.
 
 ## Expected upgrade behavior
 

@@ -92,7 +92,7 @@ The confirmed design is the basis for development and the acceptance review.
 2. Implement according to `design.md`: every item in the component list, every state, every interaction and every piece of copy must have a matching implementation.
 3. When new backend endpoints are needed, implement them to the endpoint contract in the design (for backend code, see [`../server-routes.md`](../server-routes.md), [`../migrations.md`](../migrations.md) and [`../database-and-data.md`](../database-and-data.md)).
 4. When the design contains decisions that the code does not show by itself but that anyone changing this page later needs to know (for example, why an approach was not used, or what limits an endpoint has), write them as code comments. `design.md` is deleted when the task ends.
-5. Cover the page's key behavior (state changes, submission, error handling) with component tests in `tests/components/`, written as [`references/testing.md`](references/testing.md) describes, and add a new App page to the route test ([section 12 of `references/page.md`](references/page.md#12-update-the-route-test)).
+5. Cover the page's key behavior (state changes, submission, error handling) with component tests in `tests/client/`, written as [`references/testing.md`](references/testing.md) describes, and add a new App page to the route test ([section 12 of `references/page.md`](references/page.md#12-update-the-route-test)).
 6. Move on to step 4 only after every check in ["Self-check before finishing" in `frontend-dev.md`](frontend-dev.md#self-check-before-finishing) passes.
 
 If you find during development that the design is not feasible, follow "Design changes".
