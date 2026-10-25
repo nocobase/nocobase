@@ -87,7 +87,7 @@ it('keeps a filtered empty transaction list recoverable without claiming the col
     screen.getByRole('button', { name: 'Clear filters' }),
   ).toBeInTheDocument();
   expect(
-    screen.getByRole('button', { name: 'New request' }),
+    screen.getByRole('button', { name: 'Submit request' }),
   ).toBeInTheDocument();
 });
 

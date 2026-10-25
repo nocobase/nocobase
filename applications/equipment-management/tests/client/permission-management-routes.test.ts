@@ -60,5 +60,5 @@ it('groups existing permission pages without changing their URLs or authorizatio
     buildRouteNavigation(routes, denied)[0].children.map(
       ({ route }) => route.name,
     ),
-  ).toEqual(['settingsUsers']);
+  ).toEqual(['settingsUsers', 'workflows']);
 });

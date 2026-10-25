@@ -339,10 +339,8 @@ describe('app server', () => {
             new Hono().get('/test-runtime', (c) => c.json({ ok: true })),
           ),
         ],
-        serviceProviders: [
-          ...appRuntime.serviceProviders,
-          TestRuntimeApplicationProvider,
-        ],
+        // Isolate runtime composition from business providers that require the disabled plugins.
+        serviceProviders: [TestRuntimeApplicationProvider],
       },
       scope,
     );
