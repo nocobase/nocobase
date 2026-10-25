@@ -281,6 +281,7 @@ export const UserManagementOptionsSchema: z.ZodType = z
         labelI18nNs: z.string().optional(),
         selection: z.enum(['single', 'multiple']),
         requiredOnCreate: z.boolean(),
+        defaultValue: z.union([z.string(), z.array(z.string())]).optional(),
         hasAuthenticatedDefaultAccess: z.boolean().meta({
           description:
             'Whether permissions granted to every signed-in user apply alongside the roles this scope shows.',

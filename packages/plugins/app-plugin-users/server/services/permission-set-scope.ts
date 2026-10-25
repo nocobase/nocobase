@@ -23,7 +23,13 @@ export function createApplicationUserRoleScope(
     labelI18nKey: 'page.roles',
     labelI18nNs: USERS_I18N_NAMESPACE,
     selection: 'multiple',
-    hasAuthenticatedDefaultAccess: true,
+    defaultValue: ['member'],
+    hasAuthenticatedDefaultAccess: async () =>
+      (await permissionSets.listAssignments()).some(
+        (assignment) =>
+          assignment.subject.type === 'authenticated' &&
+          assignment.subject.id === '*',
+      ),
     async options() {
       const state = await directRoleState(permissionSets);
       return state.permissionSets.map((permissionSet) => {
@@ -154,7 +160,8 @@ async function directRoleState(
     permissionSets: sets.filter(
       ({ key }) =>
         !authenticatedDefaults.has(key) &&
-        (permissionSets.protection(key)?.unrestricted === true ||
+        (key === 'member' ||
+          permissionSets.protection(key)?.unrestricted === true ||
           permissionSets.protection(key) === undefined),
     ),
     assignments,

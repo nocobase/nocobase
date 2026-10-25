@@ -148,6 +148,9 @@ const settings = {
     'Contact an administrator to add users or grant the permissions needed to create users and assign roles.',
   rolesReadOnlyEmpty:
     'Contact an administrator to create a role or grant you permission to create roles.',
+  noRoleAccess:
+    'This user can still sign in and use account basics. No business access is granted by roles.',
+  noAssignedRoles: 'No assigned roles',
   noRoles: 'No roles yet',
   create: 'Create',
   edit: 'Edit',

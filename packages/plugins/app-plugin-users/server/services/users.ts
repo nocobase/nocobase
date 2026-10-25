@@ -129,9 +129,14 @@ class DefaultUserManagementService implements UserManagementService {
             ? {}
             : { labelI18nNs: scope.labelI18nNs }),
           selection: scope.selection,
+          ...(scope.defaultValue === undefined
+            ? {}
+            : { defaultValue: scope.defaultValue }),
           requiredOnCreate: scope.requiredOnCreate ?? false,
           hasAuthenticatedDefaultAccess:
-            scope.hasAuthenticatedDefaultAccess ?? false,
+            typeof scope.hasAuthenticatedDefaultAccess === 'function'
+              ? await scope.hasAuthenticatedDefaultAccess()
+              : (scope.hasAuthenticatedDefaultAccess ?? false),
           options: await scope.options(),
         })),
       ),

@@ -68,6 +68,7 @@ async function renderUsers(
   actions: string[] = [],
   initialRoles: Record<string, string[]> = {},
   requiredRole = false,
+  defaultRole = false,
 ) {
   let current = { ...original, roleScopes: initialRoles };
   let roleFailure = false;
@@ -105,7 +106,9 @@ async function renderUsers(
                     label: 'Application',
                     selection: 'multiple',
                     requiredOnCreate: requiredRole,
+                    ...(defaultRole ? { defaultValue: ['member'] } : {}),
                     options: [
+                      { value: 'member', label: 'Member' },
                       { value: 'sales', label: 'Sales team' },
                       { value: 'finance', label: 'Finance team' },
                       {
@@ -534,4 +537,49 @@ it('focuses and describes the required role dropdown when creating without a rol
   expect(
     view.calls.mock.calls.filter(([call]) => call.method === 'POST'),
   ).toHaveLength(0);
+});
+
+it('uses Member only as a creation default and respects explicitly cleared selection', async () => {
+  const user = userEvent.setup();
+  const view = await renderUsers(
+    '/users',
+    '/create',
+    true,
+    true,
+    [],
+    {},
+    false,
+    true,
+  );
+  const roles = await screen.findByRole('combobox', {
+    name: 'Application',
+    exact: true,
+  });
+  expect(roles).toHaveTextContent('Member');
+  await user.click(roles);
+  await user.click(
+    await screen.findByRole('option', { name: 'Member', exact: true }),
+  );
+  await user.keyboard('{Escape}');
+  expect(roles).not.toHaveTextContent('Member');
+  expect(screen.getByText(enUS.settings.noRoleAccess)).toBeVisible();
+  await user.type(screen.getByRole('textbox', { name: 'Name *' }), 'Roleless');
+  await user.type(
+    screen.getByRole('textbox', { name: 'Email *' }),
+    'roleless@example.test',
+  );
+  await user.type(
+    screen.getByLabelText(`${enUS.settings.password} *`),
+    'Roleless-test-123!',
+  );
+  await user.click(screen.getByRole('button', { name: 'Create', exact: true }));
+  await waitFor(() =>
+    expect(view.calls).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        path: 'users',
+        json: expect.objectContaining({ roleScopes: { app: [] } }),
+      }),
+    ),
+  );
 });

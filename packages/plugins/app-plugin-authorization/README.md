@@ -721,3 +721,7 @@ authz.routes.add('/sharingRules', createRouteHandler(router));
 The package manifest, for tools that read its version.
 
 Permission Set reads return an opaque `revision`. Editors should send it as `expectedRevision` in `PATCH /api/authorization/permissionSets/:key`; the store atomically compares and replaces it in the update transaction. A stale revision returns 409 `PERMISSION_SET_CONFLICT` and leaves stored grants unchanged. Preserve the draft, offer explicit reload, and do not automatically retry. Existing callers may omit the precondition for compatibility. The server API equivalent is `permissionSets.update(key, changes, expectedRevision)`. The additive, reversible `202610150001_authorization_permission_set_revision` migration initializes existing rows without changing their grants.
+
+## Member assignment upgrade
+
+Member is a direct creation default for person accounts, with editable grants and removable user assignments. Its built-in set cannot be deleted or assigned to audience subjects. Other configured global default sets retain their independent semantics. Upgrade Authentication, Authorization, and Users together with old writers stopped. Apply database tasks before reopening traffic: `202611010001_authorization_explicit_member_assignments` preserves legacy Member access as direct assignments before removing its global assignment. Existing grants and other roles remain intact, and later removal is not reversed on retry. See the Users package’s Member role upgrade checklist for the required application-page changes and backup recovery.
