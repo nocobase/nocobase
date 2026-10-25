@@ -6,6 +6,8 @@ The Client plugin automatically signs anonymous home-page visitors in as an exis
 
 For a direct link, use `<base path>/demo-sign-in?as=<username>&redirect=/path`. The redirect is application-relative: under `/main`, `/tasks` opens `/main/tasks`. Sign-in reloads the page to discard the previous account's client state.
 
+When Authentication uses partitioned cookies for iframe embedding, quick sign-in expires matching legacy unpartitioned authentication cookies automatically, preserving the configured names, domains and paths. Automatic home entry verifies that the browser sends a usable session before reloading; rejected cookies fall back to normal entry instead of repeated reloads.
+
 ## Customize only when needed
 
 - Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in and automatic home-page sign-in.
