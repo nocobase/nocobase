@@ -7,28 +7,28 @@ settings:
 catalogs:
   default:
     '@ai-sdk/alibaba':
-      specifier: ^2.0.60
+      specifier: 2.0.61
       version: 2.0.61
     '@ai-sdk/anthropic':
-      specifier: ^4.0.71
+      specifier: 4.0.72
       version: 4.0.72
     '@ai-sdk/cohere':
-      specifier: ^4.0.54
+      specifier: 4.0.55
       version: 4.0.55
     '@ai-sdk/deepseek':
-      specifier: ^3.0.58
+      specifier: 3.0.59
       version: 3.0.59
     '@ai-sdk/google':
-      specifier: ^4.0.87
+      specifier: 4.0.88
       version: 4.0.88
     '@ai-sdk/moonshotai':
-      specifier: ^3.0.62
+      specifier: 3.0.63
       version: 3.0.63
     '@ai-sdk/openai':
-      specifier: ^4.0.83
+      specifier: 4.0.84
       version: 4.0.84
     '@ai-sdk/openai-compatible':
-      specifier: ^3.0.62
+      specifier: 3.0.63
       version: 3.0.63
     '@ai-sdk/react':
       specifier: 4.0.131
@@ -244,7 +244,7 @@ catalogs:
       specifier: ^12.0.0
       version: 12.1.0
     ollama-ai-provider-v2:
-      specifier: ^4.0.1
+      specifier: 4.0.1
       version: 4.0.1
     oracledb:
       specifier: ^6.10.0
