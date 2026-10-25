@@ -1,10 +1,12 @@
 import { readFile, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
+import type { ModuleSourceObservation } from './module-sources.js';
 
 /** Read JSONC declarations only; never load a config package or execute a build configuration. */
 export async function sourceAliases(
   root: string,
+  observation?: ModuleSourceObservation,
 ): Promise<ReadonlyMap<string, string | undefined>> {
   const seen = new Set<string>();
   type Config = {
@@ -14,8 +16,10 @@ export async function sourceAliases(
   };
   const read = async (file: string): Promise<Config | undefined> => {
     if (seen.size >= 8 || !inside(root, file)) return undefined;
+    await observation?.watch(file);
     try {
       const resolved = await realpath(file);
+      await observation?.watch(resolved);
       if (
         !inside(root, resolved) ||
         seen.has(resolved) ||
@@ -26,7 +30,10 @@ export async function sourceAliases(
       if ((await stat(resolved)).size > 512_000) return undefined;
       const text = await readFile(resolved, 'utf8');
       const parsed = ts.parseConfigFileTextToJson(resolved, text);
-      if (parsed.error || !record(parsed.config)) return undefined;
+      if (parsed.error || !record(parsed.config)) {
+        observation?.unreadable();
+        return undefined;
+      }
       const config = parsed.config;
       let inherited: Config | undefined;
       let valid = !duplicateKeys(ts.parseJsonText(resolved, text));
@@ -94,7 +101,9 @@ export async function sourceAliases(
         }
       if (!valid) for (const key of aliases.keys()) aliases.set(key, undefined);
       return { aliases, base, valid };
-    } catch {
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'ENOENT' && code !== 'ENOTDIR') observation?.unreadable();
       return undefined;
     }
   };
