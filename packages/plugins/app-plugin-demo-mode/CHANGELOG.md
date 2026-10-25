@@ -1,5 +1,7 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta
+
 ## 0.1.0-beta.3
 
 ### Minor Changes
