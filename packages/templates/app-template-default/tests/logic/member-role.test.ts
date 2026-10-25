@@ -223,10 +223,14 @@ test('invitations preserve explicit empty roles and existing account decisions',
 }) => {
   const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
   const users = app.container.resolve(userManagementServiceToken);
+  await app.container.resolve(authorizationToken).permissionSets.create({
+    key: 'invitation-reader',
+    grants: [],
+  });
   for (const [name, scopes, expected] of [
     ['invite-default', undefined, ['member']],
     ['invite-empty', { app: [] }, []],
-    ['invite-replace', { app: ['reader'] }, ['reader']],
+    ['invite-replace', { app: ['invitation-reader'] }, ['invitation-reader']],
   ] as const) {
     const [invitation] = await users.invite({
       emails: [`${name}@example.test`],
