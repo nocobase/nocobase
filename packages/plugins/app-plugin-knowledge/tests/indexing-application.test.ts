@@ -13,8 +13,11 @@ import {
   knowledgeToken,
   knowledgeAccessToken,
 } from '../server/tokens.js';
+import { generationsRepo } from '../server/indexing/store.js';
 import { createStandaloneServer } from './fixtures/indexing-app/server/standalone.js';
 const test = createAppTest({
+  // Metadata-only checks must never share an earlier test's background jobs.
+  scope: 'test',
   createServer: createStandaloneServer,
   config: {
     knowledge: {
@@ -26,6 +29,7 @@ const test = createAppTest({
 });
 test('starts indexing through application Providers and the original host jobs token', async ({
   app,
+  testApp,
 }) => {
   expect(app.container.has(jobExecutorServiceToken)).toBe(true);
   const registry = app.container.resolve(knowledgeIndexingExtensionsToken);
@@ -53,81 +57,96 @@ test('starts indexing through application Providers and the original host jobs t
       model: 'embed',
       tokens: 0,
     }));
-  // Catalog/model resolution uses the real Agents service; no paid model call is made.
-  const subject = { type: 'user', id: 'fixture-admin' };
-  await authorization.permissionSets.assign({ subject, permissionSet: 'root' });
-  const context = authorization.for({ principal: subject, subjects: [] });
-  app.container.singleton(knowledgeAccessToken, () => ({
-    space: (space) => (space.scope === 'project' ? space : null),
-    inherits: () => [],
-    forReader: (reader) => ({
-      access: async (space) => {
-        const read =
-          reader.userId === 'fixture-admin' || space.scopeId === 'p1';
-        return {
-          read,
-          propose: read,
-          edit: reader.userId === 'fixture-admin',
-          manage: reader.userId === 'fixture-admin',
-        };
+  try {
+    // Catalog/model resolution uses the real Agents service; no paid model call is made.
+    const subject = { type: 'user', id: 'fixture-admin' };
+    await authorization.permissionSets.assign({
+      subject,
+      permissionSet: 'root',
+    });
+    const context = authorization.for({ principal: subject, subjects: [] });
+    app.container.singleton(knowledgeAccessToken, () => ({
+      space: (space) => (space.scope === 'project' ? space : null),
+      inherits: () => [],
+      forReader: (reader) => ({
+        access: async (space) => {
+          const read =
+            reader.userId === 'fixture-admin' || space.scopeId === 'p1';
+          return {
+            read,
+            propose: read,
+            edit: reader.userId === 'fixture-admin',
+            manage: reader.userId === 'fixture-admin',
+          };
+        },
+      }),
+      title: async () => null,
+      names: async () => new Map(),
+    }));
+    const knowledge = app.container.resolve(knowledgeToken);
+    const admin = { kind: 'user', userId: 'fixture-admin' } as const;
+    const reader = { kind: 'user', userId: 'reader' } as const;
+    const first = { scope: 'project', scopeId: 'p1' } as const;
+    const second = { scope: 'project', scopeId: 'p2' } as const;
+    const a = await knowledge.docs.create(admin, {
+      ...first,
+      title: 'One',
+      content: 'First source.',
+    });
+    const b = await knowledge.docs.create(admin, {
+      ...second,
+      title: 'Two',
+      content: 'Second source.',
+    });
+    const receipt = await service.save(context, {
+      requestId: randomUUID(),
+      expectedRevision: '0',
+      config: {
+        version: 1,
+        key: 'local',
+        options: { embedding: { modelService: saved.name, model: 'embed' } },
       },
-    }),
-    title: async () => null,
-    names: async () => new Map(),
-  }));
-  const knowledge = app.container.resolve(knowledgeToken);
-  const admin = { kind: 'user', userId: 'fixture-admin' } as const;
-  const reader = { kind: 'user', userId: 'reader' } as const;
-  const first = { scope: 'project', scopeId: 'p1' } as const;
-  const second = { scope: 'project', scopeId: 'p2' } as const;
-  const a = await knowledge.docs.create(admin, {
-    ...first,
-    title: 'One',
-    content: 'First source.',
-  });
-  const b = await knowledge.docs.create(admin, {
-    ...second,
-    title: 'Two',
-    content: 'Second source.',
-  });
-  const receipt = await service.save(context, {
-    requestId: randomUUID(),
-    expectedRevision: '0',
-    config: {
-      version: 1,
-      key: 'local',
-      options: { embedding: { modelService: saved.name, model: 'embed' } },
-    },
-    acknowledgeFullRebuild: true,
-  });
-  expect(receipt.enabled).toBe(true);
-  await expect
-    .poll(async () => (await service.status(context)).availability)
-    .toBe('ready');
-  expect(embed).toHaveBeenCalled();
-  const hits = await knowledge.docs.searchMany(
-    admin,
-    [first, second],
-    'semantic-query',
-  );
-  expect(new Set(hits.map((hit) => hit.docId))).toEqual(new Set([a.id, b.id]));
-  const visible = await knowledge.docs.searchMany(
-    reader,
-    [first, second],
-    'semantic-query',
-  );
-  expect(new Set(visible.map((hit) => hit.docId))).toEqual(new Set([a.id]));
-  expect(privateEndpoint).not.toHaveBeenCalled();
-  expect(privateConnection).not.toHaveBeenCalled();
-  privateEndpoint.mockRestore();
-  privateConnection.mockRestore();
-  embed.mockRestore();
+      acknowledgeFullRebuild: true,
+    });
+    expect(receipt.enabled).toBe(true);
+    await expect
+      .poll(async () => (await service.status(context)).availability)
+      .toBe('ready');
+    expect(embed).toHaveBeenCalled();
+    const hits = await knowledge.docs.searchMany(
+      admin,
+      [first, second],
+      'semantic-query',
+    );
+    expect(new Set(hits.map((hit) => hit.docId))).toEqual(
+      new Set([a.id, b.id]),
+    );
+    const visible = await knowledge.docs.searchMany(
+      reader,
+      [first, second],
+      'semantic-query',
+    );
+    expect(new Set(visible.map((hit) => hit.docId))).toEqual(new Set([a.id]));
+    expect(privateEndpoint).not.toHaveBeenCalled();
+    expect(privateConnection).not.toHaveBeenCalled();
+  } finally {
+    // Drain all indexing work before restoring the offline gateway, even on assertion failure.
+    try {
+      await testApp.server.close();
+    } finally {
+      privateEndpoint.mockRestore();
+      privateConnection.mockRestore();
+      embed.mockRestore();
+    }
+  }
 });
 
 for (const provider of ['alibaba', 'openai-compatible'] as const) {
   test(`resolves ${provider} transport identity from public metadata without embedding or reading secrets`, async ({
     app,
+    connection,
   }) => {
+    expect(await generationsRepo(connection).findMany({})).toEqual([]);
     const models = app.container.resolve(agentsToken).models;
     const saved = await models.services.create({
       title: `Identity ${provider}`,
