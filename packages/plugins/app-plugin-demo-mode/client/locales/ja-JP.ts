@@ -8,16 +8,16 @@ const resource: DemoModeResource = {
     configure: '設定',
   },
   accounts: {
-    menu: 'デモアカウント：{{name}}',
-    title: 'デモアカウント',
+    menu: 'アカウント：{{name}}',
+    title: 'アカウント',
     description:
       'いずれかのアカウントでデモに入り、それぞれの役割から見た画面を確認できます。',
     enter: '入る',
     signedInAs: '{{name}} でサインイン中 · 切り替え',
     current: '現在',
     entering: '入っています…',
-    failed: 'このデモアカウントに入れませんでした。',
-    unavailable: '現在入れるデモアカウントはありません。',
+    failed: 'このアカウントにログインできませんでした。',
+    unavailable: '現在ログインできるアカウントはありません。',
     password: 'パスワードでサインイン',
   },
   refused: {
@@ -29,32 +29,12 @@ const resource: DemoModeResource = {
     refresh: '更新',
     retry: '再試行',
     busy: 'デモデータを生成またはクリアしています',
-    busyHelp: '完了すると設定を再び保存できます。',
+    busyHelp: '現在のデータ操作が完了してから、次の操作を開始してください。',
     disabled: {
       title: 'このアプリはデモではありません',
       help: 'デモモードはオフです。デプロイ時に NOCOBASE_DEMO_MODE=true でオンにします。',
     },
     cancel: 'キャンセル',
-    save: '保存',
-    apply: '変更を適用',
-    unsaved: '未保存の変更があります',
-    discardAndReload: '自分の変更を破棄して再読み込み',
-    switch: {
-      on: 'オン',
-      off: 'オフ',
-    },
-    tabs: {
-      overview: '概要',
-      schedule: '毎日のリセット',
-      writes: '訪問者の書き込み',
-      simulation: 'シミュレーションと AI',
-    },
-    leave: {
-      title: '保存せずに移動しますか？',
-      description: 'このページで保存していない変更は失われます。',
-      stay: '編集を続ける',
-      discard: '変更を破棄',
-    },
     errors: {
       failed: 'リクエストが完了しませんでした。もう一度お試しください。',
       conflict: '別の管理者が先にこの設定を保存しました。',
@@ -117,12 +97,9 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'デモアカウント',
-      off: 'このデプロイではクイックサインインがオフです。',
-      pending: 'デモデータの準備ができると、アカウントがここに表示されます。',
-      noData:
-        '先にデモデータを生成してください。アカウントがここに表示されます。',
-      credentials: 'ユーザー名 {{username}} · パスワード {{password}}',
+      unavailable: '現在ログインできるアカウントはありません。',
+      title: 'アカウント',
+      username: 'ユーザー名 {{username}}',
       copyLink: 'リンクをコピー',
       copyLinkFor: '{{name}} の入口リンクをコピー',
       openFor: '{{name}} としてデモを開く',
@@ -131,73 +108,13 @@ const resource: DemoModeResource = {
         'コピーできませんでした。アドレスバーからリンクをコピーしてください。',
     },
     schedule: {
-      confirmTitle: '毎日のリセットを保存しますか？',
-      confirmDescription:
-        '下の時刻に、このインスタンスの業務データをすべて削除して再生成します。',
-      summary: '毎日 {{time}}（{{timezone}}）、{{language}}',
-      off: '未設定',
-      enabled: '毎日リセット',
-      enabledHelp: '最後にデモデータを生成した管理者で実行します。',
+      title: '毎日のリセット',
+      description:
+        'デモデータは毎日自動的にリセットされます。スケジュールは環境変数で設定します。',
       time: '時刻',
-      hour: '時',
-      minute: '分',
       language: '言語',
       timezone: 'タイムゾーン',
-      noTimezone: '一致するタイムゾーンがありません',
-      invalidTimezone: '一覧からタイムゾーンを選んでください。',
       next: '次回のリセット：{{time}}',
-    },
-    writes: {
-      intro:
-        'デモを有効にすると、書き込みはデフォルトで拒否されます。訪問者が書き込む必要のあるコレクションを選択してください。操作とレコードへのアクセスはアプリの権限で制御されます。',
-      allow: '許可',
-      revoke: '再び拒否',
-      confirmTitle: '訪問者が書き込める内容を変更しますか？',
-      confirmDescription:
-        'これらへの訪問者の変更は実際に保存され、次のリセットまで残ります。',
-      collections: {
-        title: 'コレクション',
-        description:
-          'アプリで許可されたリクエストは、これらのコレクションに書き込めます。',
-        label: '訪問者が書き込めるコレクション',
-        placeholder: 'コレクションを検索',
-        noMatch: '一致するコレクションがありません',
-        fixed: '常に書き込み可能',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'モデル',
-        tool: 'ツール',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'シミュレーション',
-        description: 'このデモで外部サービスの代わりに応答するものです。',
-        confirmTitle: 'シミュレーションを変更しますか？',
-        confirmDescription:
-          'オフにしたシミュレーションの作業は失敗し、実際のサービスには送られません。',
-        empty: '登録されたシミュレーションはありません',
-        emptyHelp: 'このアプリはシミュレーションを登録していません。',
-        onHelp: 'シミュレーション結果で応答します。',
-        offHelp: 'オフ：作業は拒否されます。',
-      },
-      chat: {
-        title: 'オンラインチャット',
-        description: '訪問者がアプリの AI と会話できるようにします。',
-        confirmTitle: 'オンラインチャットの設定を保存しますか？',
-        confirmDescription:
-          '訪問者の会話は次のメッセージからこの設定に従います。',
-        enabled: '訪問者のチャットを許可',
-        enabledHelp: 'オフにすると訪問者のメッセージを拒否します。',
-        tools: 'ツール',
-        noTools: 'このアプリはチャットツールを宣言していません。',
-        policy: {
-          deny: '拒否',
-          read: 'データを読む',
-          mock: 'シミュレート',
-        },
-      },
     },
   },
 };

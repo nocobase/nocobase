@@ -3,14 +3,10 @@ import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
-import {
-  answerApi,
-  renderWithApp,
-  type ApiCall,
-} from '@nocobase/app-testing/client';
+import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 
 function LocationProbe() {
   return <output data-testid='location'>{useLocation().search}</output>;
@@ -21,8 +17,8 @@ import DemoModeSettings, {
   type DemoSettingsComponents,
 } from '../../client/settings/index.js';
 import { Button } from '../../client/components/ui/button.js';
+import { ScheduleCard } from '../../client/settings/schedule.js';
 import * as cards from '../../client/components/ui/card.js';
-import { TabsList, TabsTrigger } from '../../client/components/ui/tabs.js';
 
 const hostComponents: DemoSettingsComponents = {
   ...cards,
@@ -48,24 +44,23 @@ const hostComponents: DemoSettingsComponents = {
   ),
   Button: (props) => <Button {...props} data-host-button />,
   Card: (props) => <cards.Card {...props} data-testid='host-card' />,
-  TabsList: (props) => <TabsList {...props} variant='line' />,
-  TabsTrigger,
 };
 import type { DemoConfigurationView } from '../../shared/configuration.js';
 
-const view = (patch: Partial<DemoConfigurationView> = {}) => ({
+const view = (
+  patch: Partial<DemoConfigurationView> = {},
+): DemoConfigurationView => ({
   revision: 4,
   collections: [],
   mocks: { 'dataset.model': true },
-  // An administrator switched the default daily reset off.
   schedule: {
-    enabled: false,
+    enabled: true,
     hour: 3,
     minute: 0,
     timezone: 'Asia/Shanghai',
     language: 'zh-CN',
   },
-  chat: { enabled: false, tools: {} },
+  chat: { enabled: true, tools: {} },
   busy: false,
   enabled: true,
   fixedCollections: ['session', 'verification'],
@@ -77,7 +72,7 @@ const view = (patch: Partial<DemoConfigurationView> = {}) => ({
       scope: 'demo-model',
     },
   ],
-  nextRun: null,
+  nextRun: '2026-10-25T19:00:00.000Z',
   ...patch,
 });
 
@@ -124,7 +119,6 @@ function demoApi({
   enabled = true,
   permissions = everything,
   configuration = view(),
-  onPut,
   onRead,
   data = status,
 }: {
@@ -132,7 +126,6 @@ function demoApi({
   enabled?: boolean;
   permissions?: readonly object[];
   configuration?: ReturnType<typeof view>;
-  onPut?: (call: ApiCall) => unknown;
   onRead?: (path: string) => Promise<void>;
 } = {}) {
   return answerApi(async (call) => {
@@ -141,9 +134,6 @@ function demoApi({
       return { data: { unrestricted: false, permissions } };
     if (call.path === 'demoMode/status') return { data: { enabled } };
     if (call.path === 'demoMode/data') return { data };
-    // Quick sign-in offers no account while the data is being replaced.
-    if (call.path === 'demoMode/accounts' && data.importing)
-      return { data: [] };
     if (call.path === 'demoMode/accounts')
       return {
         data: [
@@ -155,14 +145,8 @@ function demoApi({
           },
         ],
       };
-    if (
-      call.method === 'GET' &&
-      call.path === 'demoMode/configuration/collections'
-    )
-      return { data: [{ name: 'userPreferences', title: 'View preferences' }] };
     if (call.method === 'GET' && call.path === 'demoMode/configuration')
       return { data: configuration };
-    if (call.method === 'PUT' && onPut) return onPut(call);
     if (call.method === 'POST' && call.path === 'demoMode/data/clear')
       return {
         data: {
@@ -186,6 +170,7 @@ const renderSettings = (
   renderWithApp(
     <>
       <LocationProbe />
+      <Link to='/elsewhere?left=1'>elsewhere</Link>
       <DemoModeSettings
         components={components}
         onDataChange={onDataChange}
@@ -233,115 +218,24 @@ describe.each(['default', 'host'] as const)(
       if (presentation === 'host') {
         expect(screen.getByTestId('host-header')).toBeInTheDocument();
         expect(screen.getAllByTestId('host-card').length).toBeGreaterThan(1);
-        expect(screen.getByRole('tablist')).toHaveAttribute(
-          'data-variant',
-          'line',
-        );
         expect(screen.getByRole('button', { name: '重置' })).toHaveAttribute(
           'data-host-button',
         );
       }
       expect(screen.getByText('已就绪')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '重置' })).toBeEnabled();
-      expect(
-        await screen.findByText('用户名 liming · 密码 liming123'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('用户名 liming')).toBeInTheDocument();
       expect(
         screen.getByRole('button', { name: '复制 李明 的进入链接' }),
       ).toBeInTheDocument();
+      // The data, the daily reset and the accounts share one page.
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+      expect(screen.getByText('每日重置')).toBeInTheDocument();
+      expect(screen.getByText('03:00')).toBeInTheDocument();
+      expect(screen.getByText('Asia/Shanghai')).toBeInTheDocument();
     });
 
-    it('saves the daily reset with the revision it started from, after confirming', async () => {
-      const puts: ApiCall[] = [];
-      await render(
-        demoApi({
-          onPut: (call) => {
-            puts.push(call);
-            return {
-              data: view({
-                revision: 5,
-                schedule: (call.json as { value: never }).value,
-              }),
-            };
-          },
-        }),
-        '/?tab=schedule',
-      );
-      fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
-      fireEvent.click(screen.getByRole('button', { name: '保存' }));
-      const dialog = await screen.findByRole('alertdialog');
-      expect(within(dialog).getByText('保存每日重置？')).toBeInTheDocument();
-      fireEvent.click(within(dialog).getByRole('button', { name: '确认修改' }));
-      await waitFor(() => expect(puts).toHaveLength(1));
-      expect(puts[0]).toMatchObject({
-        path: 'demoMode/configuration/schedule',
-        json: {
-          expectedRevision: 4,
-          value: { enabled: true, hour: 3, minute: 0, language: 'zh-CN' },
-        },
-      });
-      await waitFor(() =>
-        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
-      );
-    });
-
-    it('guards dirty navigation and preserves unrelated query parameters', async () => {
-      await render(demoApi(), '/?tab=schedule&filter=retained');
-      fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
-      expect(screen.getByRole('button', { name: '刷新' })).toBeDisabled();
-      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
-      const dialog = await screen.findByRole('alertdialog');
-      fireEvent.click(within(dialog).getByRole('button', { name: '继续编辑' }));
-      await waitFor(() =>
-        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
-      );
-      expect(screen.getByRole('switch', { name: '每天重置' })).toHaveAttribute(
-        'aria-checked',
-        'true',
-      );
-      expect(screen.getByTestId('location')).toHaveTextContent(
-        'tab=schedule&filter=retained',
-      );
-      fireEvent.click(screen.getByRole('button', { name: '取消' }));
-      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
-      await waitFor(() =>
-        expect(screen.getByTestId('location')).toHaveTextContent(
-          'tab=overview&filter=retained',
-        ),
-      );
-    });
-
-    it('says when another administrator saved first', async () => {
-      await render(
-        demoApi({
-          onPut: () =>
-            Response.json(
-              {
-                error: {
-                  status: 'ABORTED',
-                  reason: 'DEMO_CONFIGURATION_CONFLICT',
-                  domain: 'demoMode',
-                  message: 'Conflict',
-                },
-              },
-              { status: 409 },
-            ),
-        }),
-        '/?tab=schedule',
-      );
-      fireEvent.click(await screen.findByRole('switch', { name: '每天重置' }));
-      fireEvent.click(screen.getByRole('button', { name: '保存' }));
-      fireEvent.click(
-        within(await screen.findByRole('alertdialog')).getByRole('button', {
-          name: '确认修改',
-        }),
-      );
-      expect(
-        await screen.findAllByText('其他管理员先保存了这项设置。'),
-      ).not.toHaveLength(0);
-    });
-
-    it('shows settings without save buttons to those who may only read them', async () => {
+    it('shows the deployment schedule to those who may only read settings', async () => {
       await render(
         demoApi({
           permissions: everything.map((item) => ({
@@ -349,20 +243,28 @@ describe.each(['default', 'host'] as const)(
             actions: ['read'],
           })),
         }),
-        '/?tab=simulation',
+        '/',
       );
-      expect(await screen.findByText('在线聊天')).toBeInTheDocument();
+      expect(await screen.findByText('03:00')).toBeInTheDocument();
+      expect(screen.getByText('Asia/Shanghai')).toBeInTheDocument();
       expect(
-        screen.getByRole('switch', { name: '允许访客聊天' }),
-      ).toHaveAttribute('data-disabled');
-      expect(
-        screen.queryByRole('button', { name: '保存' }),
-      ).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole('tab', { name: '概览' }));
+        screen.getByText(
+          `下次重置：${new Date(view().nextRun!).toLocaleString()}`,
+        ),
+      ).toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: '重置' }),
       ).not.toBeInTheDocument();
     });
+
+    it.each(['overview', 'schedule', 'simulation', 'writes'])(
+      'opens the whole page for legacy %s tab links',
+      async (tab) => {
+        await render(demoApi(), `/?tab=${tab}&filter=retained`);
+        expect(await screen.findByText('公司')).toBeInTheDocument();
+        expect(await screen.findByText('03:00')).toBeInTheDocument();
+      },
+    );
 
     it('clears after confirming and tells the application its data changed', async () => {
       const onDataChange = vi.fn();
@@ -400,9 +302,7 @@ describe.each(['default', 'host'] as const)(
       expect(
         screen.queryByRole('button', { name: '生成' }),
       ).not.toBeInTheDocument();
-      expect(
-        screen.getByText('演示数据就绪后，账号会显示在这里。'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('用户名 liming')).toBeInTheDocument();
     });
 
     it('explains when the application is not a demo', async () => {
@@ -454,4 +354,30 @@ it('keeps the host refresh pending until both data and configuration settle', as
   expect(refresh).toBeDisabled();
   releaseConfiguration();
   await waitFor(() => expect(refresh).toBeEnabled());
+});
+
+it('shows the server schedule and next reset in English', async () => {
+  const configuration: DemoConfigurationView = {
+    ...view(),
+    schedule: {
+      enabled: true,
+      hour: 6,
+      minute: 5,
+      timezone: 'Europe/London',
+      language: 'en-US',
+    },
+  };
+  await renderWithApp(<ScheduleCard configuration={configuration} />, {
+    plugins: [demoMode()],
+    locale: 'en-US',
+  });
+  expect(await screen.findByText('Daily reset')).toBeInTheDocument();
+  expect(
+    screen.getAllByRole('definition').map((item) => item.textContent),
+  ).toEqual(['06:05', 'English', 'Europe/London']);
+  expect(
+    screen.getByText(
+      `Next reset: ${new Date(configuration.nextRun!).toLocaleString()}`,
+    ),
+  ).toBeInTheDocument();
 });

@@ -1,5 +1,11 @@
 # @nocobase/jobs
 
+## 0.1.0-beta.4
+
+### Patch Changes
+
+- 7f36872: Add a public, idempotent Scheduler drain boundary that waits for in-flight reconciliation, executor shutdown, event records, and accepted completion reports before releasing subscriptions. Preserve shutdown failures after remaining work settles, including queued Jobs event delivery when backend close fails.
+
 ## 0.1.0-beta.3
 
 ### Patch Changes

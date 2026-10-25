@@ -2,6 +2,7 @@ import {
   fixtureFileInputs,
   projectNativeHistory,
 } from './helpers/native-files.js';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import {
@@ -112,6 +113,7 @@ async function fixture(model: MockLanguageModelV4) {
     model: resolveModel,
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
   });
   // HTTP projections must observe the same real Service that owns this SDK fixture.
   vi.spyOn(h.services.onlineAgent, 'producerAvailable').mockImplementation(
@@ -2260,6 +2262,7 @@ it('does not reclaim current-process occupancy through a new service facade or b
   await agent.send([{ role: 'user', content: 'Work' }]);
   await entered.promise;
   const second = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions: f.sessions,
     ids: { next: () => 'unused' },
     model: async () => model,
@@ -2534,6 +2537,7 @@ it('waits for persistence and release, isolates multiple observers across rounds
   outputs[1].close();
   expect(await final).toEqual({ count: 2 });
   const restarted = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions: f.sessions,
     ids: { next: () => 'unused-read-id' },
     model: f.resolveModel,

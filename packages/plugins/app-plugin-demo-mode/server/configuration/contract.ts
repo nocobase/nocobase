@@ -17,15 +17,16 @@ export interface DemoConfigurationService {
   read(includeBusy?: boolean): Promise<DemoConfigurationView>;
   availableCollections(): Promise<{ name: string; title?: string }[]>;
   save(
-    section: 'collections' | 'mocks' | 'schedule' | 'chat',
+    section: 'collections' | 'mocks' | 'chat',
     expectedRevision: number,
     input: unknown,
   ): Promise<DemoConfigurationView>;
-  /** Returns the supplied simulated model in demo mode; call before admission and each model request. */
+  /** Enabled by default; returns the supplied simulated model in demo mode without redirecting other callers. */
   chatModel(simulated: {
     modelService: string;
     model: string;
   }): Promise<{ modelService: string; model: string } | undefined>;
+  /** Uses an explicit policy, else the supplied mock or a host-declared local read. Other operations are refused. */
   runChatTool<T>(
     id: string,
     operation: {
@@ -48,5 +49,4 @@ export interface DemoConfigurationRuntime extends DemoConfigurationService {
   runWithPolicy<T>(run: () => Promise<T>): Promise<T>;
   wholeCollectionRules(): Promise<readonly DemoSqlRule[]>;
   claimDaily(now: Date): Promise<DemoDailySchedule | null>;
-  onScheduleChange(listener: () => Promise<void>): void;
 }

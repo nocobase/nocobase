@@ -1,3 +1,4 @@
+import { copyText } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -18,13 +19,10 @@ export function CommandLine({
   const [copied, setCopied] = useState(false);
 
   async function copy(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      notify.error(error, t('command.copyFailed'));
-    }
+    const copied = await copyText(command);
+    setCopied(copied);
+    if (copied) window.setTimeout(() => setCopied(false), 2000);
+    else notify.error(null, t('command.copyFailed'));
   }
 
   return (

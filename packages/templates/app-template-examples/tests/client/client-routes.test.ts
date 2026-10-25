@@ -158,10 +158,24 @@ describe('app client routes', () => {
       ({ route }) => route.name === 'systemManagement',
     );
     expect(management?.children.map(({ route }) => route.name)).toEqual([
+      'knowledge',
+      'knowledgeIndexing',
       'workflows',
       'settingsUsers',
       'permissionManagement',
     ]);
+    expect(
+      management?.children.find(
+        ({ route }) => route.name === 'knowledgeIndexing',
+      )?.route,
+    ).toMatchObject({
+      path: '/knowledge/indexing',
+      navigation: { title: 'knowledge.indexing' },
+      authz: {
+        resource: { type: 'settings', id: 'kb.indexing' },
+        action: 'read',
+      },
+    });
     const permissions = management?.children.find(
       ({ route }) => route.name === 'permissionManagement',
     );
@@ -205,6 +219,8 @@ describe('app client routes', () => {
       { name: 'ai-translation', authorizedAs: null },
       { name: 'ai-structured-extraction', authorizedAs: null },
       { name: 'ai-form-fill', authorizedAs: null },
+      { name: 'knowledge', authorizedAs: 'knowledge' },
+      { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
       { name: 'workflows', authorizedAs: 'settings:workflow-management' },
       {
         name: 'workflowDefinitions',

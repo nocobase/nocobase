@@ -14,7 +14,7 @@ Follow the repository `AGENTS.md` and `skills/nocobase-app-plugin-development/SK
 
 Imports and cleanup renew their persisted lease every 30 seconds. Status updates, renewal and deletion are conditional on the operation ID. Check ownership again after application callbacks: a stale owner must not finalize or compensate its replacement. Keep fixture factories, clocks and policy initialization inside failure handling.
 
-Clear disables owned demo accounts, including an initiating demo account, for later reuse. Reset carries tracked accounts, Permission Sets and assignments across cleanup and atomically hands `clearing` to `importing`; reused accounts retain sessions, unused identities are released, and failed generation compensates tracked identities. Administrator identities outside tracking remain untouched.
+Clear disables owned demo accounts for later reuse except the operation's trusted actor, whose credentials, enabled state, assignments, required Permission Sets and tracking remain. Persist the actor when claiming cleanup so scheduled retries use the same identity even after cleanup fails. Reset carries tracked identities across cleanup and atomically hands `clearing` to `importing`; reused accounts retain sessions, obsolete tracked assignments are reconciled after successful generation, and failed generation preserves the actor while compensating other identities. Accounts outside tracking are never disabled or adopted.
 
 ## Security posture
 

@@ -32,14 +32,6 @@ function changesRepo(conn: DatabaseConnection): Repository<ChangeRecord> {
   return conn.repository<ChangeRecord>(CHANGES);
 }
 
-/** Removes an agent's history: only for an agent deleted outright (never enabled, never run), not a disabled one. */
-export async function deleteHistory(
-  conn: DatabaseConnection,
-  agentId: string,
-): Promise<void> {
-  await changesRepo(conn).deleteMany({ filter: { agentId } });
-}
-
 /** Lists of strings compare as sets, everything else (the ordered model entries too) as JSON. */
 function same(before: unknown, after: unknown): boolean {
   if (

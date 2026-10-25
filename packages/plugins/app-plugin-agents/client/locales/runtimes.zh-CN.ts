@@ -2,14 +2,6 @@ import type { RuntimesLocale } from './runtimes.en-US.js';
 
 const runtimesZhCN: RuntimesLocale = {
   runtimes: {
-    capacity: {
-      actual: '最后生效槽位：{{slots}}',
-      online: '实际生效槽位 · 线上设置',
-      pending: '等待执行机同步线上设置',
-      legacy: '旧版兼容本地槽位 · 请升级应用服务端',
-      upgrade: '未报告同步状态 · 请升级执行机',
-      lastReported: '最后上报：{{time}}',
-    },
     quota: {
       workspaceStatus: {
         active: '工作进行中',

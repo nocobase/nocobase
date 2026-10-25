@@ -126,7 +126,7 @@ export function toAgent(record: AgentRecord): Agent {
       ? 'disabled'
       : (AGENT_STATUSES as readonly string[]).includes(record.status)
         ? (record.status as AgentStatus)
-        : 'pending';
+        : 'disabled';
   return {
     id: record.id,
     name: record.name,
@@ -245,14 +245,6 @@ export async function updateAgent(
   values: Partial<Omit<AgentRecord, 'id' | 'createdAt'>>,
 ): Promise<void> {
   await agentsRepo(conn).updateMany({ filter: { id }, values });
-}
-
-/** Removes an agent's row outright: only for one never enabled and never run, which keeps no history anyone reads. */
-export async function deleteAgent(
-  conn: DatabaseConnection,
-  id: string,
-): Promise<void> {
-  await agentsRepo(conn).deleteMany({ filter: { id } });
 }
 
 /**

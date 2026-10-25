@@ -1,3 +1,4 @@
+import type { Hash } from 'node:crypto';
 import type {
   OnlineAgentUIStreams,
   UIStreamChannel,
@@ -14,6 +15,9 @@ export type Execution = {
   cursor: number;
   writer: UIStreamChannel;
   published: Set<string>;
+  textLengths: Map<string, number>;
+  previewDigests: Map<string, Hash>;
+  previewParts: Map<string, { index: number; type: 'text' | 'reasoning' }>;
   ready: boolean;
   started: boolean;
   snapshot?: AppUIMessage;

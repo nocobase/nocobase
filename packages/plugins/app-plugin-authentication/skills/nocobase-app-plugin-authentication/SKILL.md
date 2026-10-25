@@ -32,7 +32,7 @@ Server, from `@nocobase/app-plugin-authentication` (the root entry is the
 server entry) or `@nocobase/app-plugin-authentication/server`:
 
 - `authenticationToken` resolves the `Auth` instance: `required()`,
-  `optional()`, `getSession(headers)`, `handler(request)`.
+  `optional()`, `getSession(headers)`, `handler(request)`, `signInUser(userId, request)`.
 - `AuthEnv` types a Hono router whose routes read `context.get('auth')`.
 - `userAdministrationServiceToken` resolves `UserAdministrationService`:
   `list`, `get`, `create`, `update`, `disable`, `enable`, `resetPassword`,
@@ -140,3 +140,7 @@ Prefer props and page composition in `client/pages/auth/`, then new application 
 ## Initial administrator
 
 Before the first seed run, set `users.initialAdmin.username`, `users.initialAdmin.email` and `users.initialAdmin.password` in application configuration to customize the bootstrap account. Omitting the entire node preserves `nocobase` / `admin@nocobase.com` / `admin123`; an explicit node requires a nonempty password and defaults the username to `nocobase` and the email to `admin@nocobase.com`. Usernames contain 3–30 letters, digits, underscores or dots, emails must be valid addresses, and both are stored lowercase. Initialization only runs when the user table is empty, hashes the password and grants the newly created account root permission through the authorization plugin. After initialization, configuration changes do not reset accounts or rerun the recorded seeds. The root permission seed selects the administrator by the same configured username. Use the user administration service for subsequent account changes. Do not edit historical seeds or add a competing administrator seed.
+
+## Trusted server session creation
+
+`Auth.signInUser(userId, request, { clientAddress }?)` creates an ordinary browser session for an existing enabled person account after trusted server code has authorized that sign-in. It returns a `Response`; the caller checks its status and forwards its `Set-Cookie` headers. Better Auth applies the configured session hooks and cookie attributes, without reading or changing the password. There is no HTTP endpoint for this method. The calling plugin owns the access policy: Demo Mode uses it only while public quick sign-in is enabled. This method does not grant permissions or replace authentication for ordinary public login routes.

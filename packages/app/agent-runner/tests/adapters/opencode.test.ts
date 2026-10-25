@@ -779,3 +779,60 @@ describe('parseEventStream', () => {
     ]);
   });
 });
+
+it('streams independent root and child blocks without repeating their completed snapshots', async () => {
+  const chunk = (type: string, delta: string, sid = SID, ordinal = 0) =>
+    ev(`session.${type}.delta`, {
+      sessionID: sid,
+      assistantMessageID: 'msg_a1',
+      ordinal,
+      delta,
+    });
+  const ended = (type: string, text: string, sid = SID, ordinal = 0) =>
+    ev(`session.${type}.ended`, {
+      sessionID: sid,
+      assistantMessageID: 'msg_a1',
+      ordinal,
+      text,
+    });
+  const fake = new FakeOpencode({
+    script: [
+      ...begin(),
+      ...step(1),
+      chunk('reasoning', 'Plan '),
+      chunk('reasoning', 'carefully'),
+      ended('reasoning', 'Plan carefully'),
+      chunk('text', 'Hel'),
+      chunk('text', 'lo'),
+      ev('session.created', { sessionID: 'child', parentID: SID }),
+      chunk('text', 'Child', 'child'),
+      ended('text', 'Child', 'child'),
+      ended('text', 'Hello world'),
+      chunk('text', 'Again', SID, 1),
+      ended('text', 'Again', SID, 1),
+      stepEnd(1),
+      succeeded,
+    ],
+  });
+  const handle = adapterFor(fake).start(session({ outputBlocks: true }));
+  const raw = await collect(handle.events);
+  expect(
+    raw.some((e) => (e.meta?.output as { phase?: string })?.phase === 'delta'),
+  ).toBe(true);
+  const events = raw.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(
+    events.filter((e) => e.type === 'thinking').map((e) => e.content),
+  ).toEqual(['Plan carefully']);
+  expect(
+    events
+      .filter((e) => e.type === 'text' && !e.meta?.childSessionId)
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Hello worldAgain');
+  expect(
+    events.filter((e) => e.meta?.childSessionId && e.type === 'text'),
+  ).toMatchObject([{ content: 'Child', meta: { childSessionId: 'child' } }]);
+  expect(await handle.result).toMatchObject({ exit: 'completed' });
+});

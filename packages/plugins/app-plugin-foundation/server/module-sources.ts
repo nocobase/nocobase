@@ -5,13 +5,17 @@ import ts from 'typescript';
 import type {
   FoundationModuleSource,
   FoundationModuleSources,
+  FoundationApiEvidence,
 } from '../shared/foundation.js';
 import type { RuntimeProviderEvidence } from './provider-inventory.js';
 import { SourceEvidence } from './source-evidence.js';
 import { readModuleManifest } from './module-manifest.js';
 import { apiDependencies as analyzeApiDependencies } from './api-evidence.js';
+import { endpointChain } from './endpoint-chain.js';
 import { pageRequests } from './request-evidence.js';
 import { StaticValues } from './static-values.js';
+import { RouteEvidence } from './route-evidence.js';
+import { sourceAliases, aliasMatches } from './source-aliases.js';
 
 const MAX_FILES = 400;
 const MAX_BYTES = 512_000;
@@ -23,10 +27,16 @@ interface Source {
   readonly imports: readonly string[];
 }
 
+export interface ModuleSourceObservation {
+  watch(file: string): Promise<void>;
+  unreadable(): void;
+}
+
 /** Reads static declarations and value imports only. Never imports an application module or invokes a loader. */
 export async function collectModuleSources(
   rootDir: string,
   runtime: readonly RuntimeProviderEvidence[] = [],
+  observation?: ModuleSourceObservation,
 ): Promise<FoundationModuleSources> {
   const routes: FoundationModuleSource[] = [];
   let complete = true;
@@ -37,7 +47,7 @@ export async function collectModuleSources(
   for (const [name, directory] of roots) {
     if (!directory || name === '@nocobase/app-plugin-foundation') continue;
     try {
-      const graph = await SourceGraph.create(directory);
+      const graph = await SourceGraph.create(directory, observation);
       if (!name) overridden = await graph.overrides();
       const packageName = name || graph.packageName;
       if (!packageName) {
@@ -46,13 +56,20 @@ export async function collectModuleSources(
       }
       const entry = await graph.entry();
       if (!entry) {
+        if (!name)
+          await observation?.watch(
+            path.join(directory, 'server/foundation-modules.json'),
+          );
         const built = !name
           ? await readModuleManifest(directory, packageName)
           : undefined;
         if (built) {
           routes.push(...built.routes);
           complete &&= built.complete;
-        } else complete = false;
+        } else {
+          complete = false;
+          if (!name) observation?.unreadable();
+        }
         continue;
       }
       const declarationFiles = await graph.walk(entry, false);
@@ -77,11 +94,12 @@ export async function collectModuleSources(
           const providers = new Set<string>();
           const apiProviders = new Set<string>();
           const collections = new Set<string>();
+          const apiEvidence: FoundationApiEvidence[] = [];
           let routeComplete = declarationFiles.complete && imports.length > 0;
           for (const { from, specifier } of imports) {
             const target = await graph.local(from, specifier);
             if (!target) {
-              if (!isLocal(specifier)) addProvider(providers, specifier);
+              if (!graph.isLocal(specifier)) addProvider(providers, specifier);
               else routeComplete = false;
               continue;
             }
@@ -89,15 +107,27 @@ export async function collectModuleSources(
             for (const provider of page.providers) providers.add(provider);
             for (const request of graph.requests(page.sources)) {
               routeComplete &&= backendComplete;
-              for (const endpoint of endpoints) {
-                if (
-                  request.method === endpoint.method &&
-                  sameApiPath(request.path, endpoint.path)
-                ) {
-                  for (const provider of endpoint.providers)
-                    apiProviders.add(provider);
-                  for (const collection of endpoint.collections ?? [])
-                    collections.add(collection);
+              const chain = endpointChain(request, endpoints);
+              routeComplete &&= chain.complete;
+              for (const endpoint of chain.endpoints) {
+                for (const provider of endpoint.providers)
+                  apiProviders.add(provider);
+                for (const collection of endpoint.collections ?? [])
+                  collections.add(collection);
+                if (endpoint.providers.length) {
+                  const evidence = {
+                    method: request.method,
+                    path: endpoint.path,
+                    providers: endpoint.providers,
+                    conditions: endpoint.conditions ?? [],
+                  };
+                  if (
+                    !apiEvidence.some(
+                      (item) =>
+                        JSON.stringify(item) === JSON.stringify(evidence),
+                    )
+                  )
+                    apiEvidence.push(evidence);
                 }
               }
             }
@@ -110,6 +140,7 @@ export async function collectModuleSources(
             ...(apiProviders.size
               ? { apiProviders: [...apiProviders].sort() }
               : {}),
+            ...(apiEvidence.length ? { apiEvidence } : {}),
             ...(collections.size
               ? { collections: [...collections].sort() }
               : {}),
@@ -118,8 +149,9 @@ export async function collectModuleSources(
           complete &&= routeComplete;
         }
       }
-      complete &&= declarationFiles.complete;
+      complete &&= declarationFiles.complete && graph.declarationsComplete;
     } catch {
+      observation?.unreadable();
       complete = false;
     }
   }
@@ -135,9 +167,16 @@ class SourceGraph {
     private readonly root: string,
     public readonly packageName: string,
     private readonly aliases: Readonly<Record<string, unknown>>,
+    private readonly paths: ReadonlyMap<string, string | undefined>,
+    private readonly observation?: ModuleSourceObservation,
   ) {}
 
-  public static async create(root: string): Promise<SourceGraph> {
+  public static async create(
+    root: string,
+    observation?: ModuleSourceObservation,
+  ): Promise<SourceGraph> {
+    await observation?.watch(root);
+    await observation?.watch(path.join(root, 'package.json'));
     const directory = await realpath(root);
     const manifest: unknown = JSON.parse(
       await readFile(path.join(directory, 'package.json'), 'utf8'),
@@ -147,6 +186,8 @@ class SourceGraph {
       directory,
       typeof record.name === 'string' ? record.name : '',
       isRecord(record.imports) ? record.imports : {},
+      await sourceAliases(directory, observation),
+      observation,
     );
   }
 
@@ -161,6 +202,7 @@ class SourceGraph {
       base,
       ...SOURCE_SUFFIXES.map((suffix) => path.join(base, 'index' + suffix)),
     ]) {
+      await this.observation?.watch(path.dirname(candidate));
       try {
         const file = await realpath(candidate);
         if (
@@ -173,7 +215,10 @@ class SourceGraph {
         )
           continue;
         if ((await stat(file)).isFile()) return file;
-      } catch {
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== 'ENOENT' && code !== 'ENOTDIR')
+          this.observation?.unreadable();
         /* Missing alternatives are expected when resolving compiled .js references to .tsx sources. */
       }
     }
@@ -197,7 +242,6 @@ class SourceGraph {
   }
 
   public async prepare(entry: string): Promise<boolean> {
-    await this.walk(entry, true);
     this.serverEntry = await this.conventionalEntry(
       'server/routes/index.js',
       'server/routes.js',
@@ -218,6 +262,8 @@ class SourceGraph {
         backendComplete &&= graph.complete;
       }
     }
+    // Read backend declarations before lazy page graphs can exhaust the shared source budget.
+    await this.walk(entry, true);
     const resolutions = new Map<string, string>();
     for (const source of this.files.values()) {
       if (!source) continue;
@@ -234,6 +280,7 @@ class SourceGraph {
         Boolean(source),
       ),
       resolutions,
+      (specifier) => this.isLocal(specifier),
     );
     this.analysis.registerServices(providerEntries);
     return backendComplete;
@@ -267,56 +314,14 @@ class SourceGraph {
     return this.analysis ? pageRequests(sources, this.analysis) : [];
   }
 
-  public routeDeclarations(ast: ts.SourceFile): {
-    name: string;
-    loader: ts.Node;
-    bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
-  }[] {
+  public declarationsComplete = true;
+  public routeDeclarations(
+    ast: ts.SourceFile,
+  ): ReturnType<RouteEvidence['collect']> {
     if (!this.analysis) return [];
-    const analysis = this.analysis;
-    const declarations: ReturnType<SourceGraph['routeDeclarations']> = [];
-    let visits = 0;
-    const visit = (
-      node: ts.Node,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-    ): void => {
-      if (++visits > 100_000) return;
-      const literals = new StaticValues(analysis, bindings);
-      if (
-        ts.isCallExpression(node) &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        node.expression.name.text === 'map'
-      ) {
-        const arrays = literals
-          .values(node.expression.expression)
-          .filter(ts.isArrayLiteralExpression);
-        const callback = node.arguments[0];
-        if (
-          arrays.length === 1 &&
-          arrays[0].elements.length <= 32 &&
-          !arrays[0].elements.some(ts.isSpreadElement) &&
-          callback &&
-          (ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)) &&
-          callback.parameters[0]
-        ) {
-          for (const element of arrays[0].elements) {
-            const context = new Map(bindings);
-            context.set(callback.parameters[0], [element]);
-            visit(callback.body, context);
-          }
-          return;
-        }
-      }
-      if (ts.isObjectLiteralExpression(node)) {
-        const name = property(node, 'name');
-        const loader = property(node, 'componentLoader');
-        if (name && loader)
-          for (const routeName of literals.strings(name))
-            declarations.push({ name: routeName, loader, bindings });
-      }
-      ts.forEachChild(node, (child) => visit(child, bindings));
-    };
-    visit(ast, new Map());
+    const evidence = new RouteEvidence(this.analysis);
+    const declarations = evidence.collect(ast);
+    this.declarationsComplete &&= evidence.complete;
     return declarations;
   }
 
@@ -325,7 +330,7 @@ class SourceGraph {
     bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
   ): { from: string; specifier: string }[] {
     const literals = this.analysis && new StaticValues(this.analysis, bindings);
-    return (this.analysis?.values(node) ?? [node]).flatMap((value) => {
+    return (literals?.values(node) ?? [node]).flatMap((value) => {
       const body =
         ts.isArrowFunction(value) && !ts.isBlock(value.body)
           ? value.body
@@ -363,12 +368,21 @@ class SourceGraph {
     const entry = this.serverEntry;
     const source = entry && this.files.get(entry);
     if (!source || !this.analysis) return [];
-    const graph = this.evidence(source.file);
     return analyzeApiDependencies(
       source.ast,
-      graph.sources,
+      (await this.walk(source.file, false)).sources,
       this.analysis,
       (file, nodes) => [...this.evidence(file, nodes).providers].sort(),
+    );
+  }
+
+  public isLocal(specifier: string): boolean {
+    return (
+      isLocal(specifier) ||
+      specifier.startsWith('@/') ||
+      [...this.paths.keys()].some(
+        (alias) => aliasMatches(alias, specifier) !== undefined,
+      )
     );
   }
 
@@ -378,7 +392,25 @@ class SourceGraph {
   ): Promise<string | undefined> {
     if (specifier.startsWith('.'))
       return this.resolve(path.resolve(path.dirname(from), specifier));
-    if (!specifier.startsWith('#')) return undefined;
+    if (!specifier.startsWith('#')) {
+      const matches = [...this.paths].filter(
+        ([alias]) => aliasMatches(alias, specifier) !== undefined,
+      );
+      // Equal-specificity declarations must not pick an arbitrary target.
+      const specificity = (alias: string): number =>
+        alias.includes('*') ? alias.indexOf('*') : Number.MAX_SAFE_INTEGER;
+      matches.sort(([a], [b]) => specificity(b) - specificity(a));
+      const selected = matches[0];
+      if (
+        !selected ||
+        !selected[1] ||
+        (matches[1] && specificity(matches[1][0]) === specificity(selected[0]))
+      )
+        return undefined;
+      return this.resolve(
+        selected[1].replace('*', aliasMatches(selected[0], specifier)!),
+      );
+    }
     for (const [alias, value] of Object.entries(this.aliases).sort(
       ([a], [b]) => b.length - a.length,
     )) {
@@ -424,7 +456,7 @@ class SourceGraph {
       }
       sources.push(source);
       for (const specifier of source.imports) {
-        if (!isLocal(specifier)) {
+        if (!this.isLocal(specifier)) {
           addProvider(providers, specifier);
           continue;
         }
@@ -439,7 +471,7 @@ class SourceGraph {
         for (const specifier of dynamicImports(source.ast)) {
           const target = await this.local(file, specifier);
           if (target) pending.push(target);
-          else if (isLocal(specifier)) complete = false;
+          else if (this.isLocal(specifier)) complete = false;
           else addProvider(providers, specifier);
         }
       }
@@ -449,8 +481,12 @@ class SourceGraph {
 
   private async read(file: string): Promise<Source | undefined> {
     if (this.files.has(file)) return this.files.get(file);
-    if (this.files.size >= MAX_FILES) return undefined;
+    if (this.files.size >= MAX_FILES) {
+      this.observation?.unreadable();
+      return undefined;
+    }
     this.files.set(file, undefined);
+    await this.observation?.watch(file);
     try {
       if ((await stat(file)).size > MAX_BYTES) return undefined;
       const ast = ts.createSourceFile(
@@ -463,6 +499,7 @@ class SourceGraph {
       this.files.set(file, source);
       return source;
     } catch {
+      this.observation?.unreadable();
       return undefined;
     }
   }
@@ -524,18 +561,6 @@ function dynamicImports(node: ts.Node): string[] {
   return importsIn(node);
 }
 
-function sameApiPath(request: string, endpoint: string): boolean {
-  const segments = (value: string): string[] =>
-    value.split('?')[0].split('/').filter(Boolean);
-  const left = segments(request),
-    right = segments(endpoint);
-  return (
-    left.length === right.length &&
-    left.every((part, index) =>
-      right[index]?.startsWith(':') ? part.length > 0 : part === right[index],
-    )
-  );
-}
 function importsIn(node: ts.Node): string[] {
   const found: string[] = [];
   const visit = (child: ts.Node): void => {

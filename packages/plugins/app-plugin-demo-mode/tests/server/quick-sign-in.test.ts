@@ -1,3 +1,4 @@
+import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,14 +36,32 @@ const listed: DemoAccountSummary[] = [
 
 let testDatabase: TestDatabase;
 let auth: Auth;
+let ordinaryAuth: Auth;
 let enabled: boolean;
 let quickSignIn: boolean;
 let accounts: DemoAccountSummary[];
 let ids: Record<string, string>;
+let administratorIds: string[];
 
 async function routes(): Promise<Hono> {
   const services = new Map<unknown, unknown>([
     [authenticationToken, auth],
+    [
+      authorizationToken,
+      {
+        permissionSets: {
+          list: async () => [{ key: 'administrators' }],
+          protection: (key: string) => ({
+            unrestricted: key === 'administrators',
+          }),
+          listAssignments: async () =>
+            administratorIds.map((id) => ({
+              subject: { type: 'user', id },
+              permissionSet: 'administrators',
+            })),
+        },
+      },
+    ],
     [databaseManagerToken, testDatabase.database],
     [
       demoModeServiceToken,
@@ -124,6 +143,7 @@ beforeAll(async () => {
     emailAndPassword: { enabled: true },
     session: { storeSessionInDatabase: true },
   });
+  ordinaryAuth = auth;
   const users = createUserAdministrationService({
     auth,
     connection: database.connection(),
@@ -150,23 +170,37 @@ beforeAll(async () => {
         .execute();
   }
   await users.disable(ids.cat!);
+  ids.owner = (
+    await users.create({
+      name: 'Super Admin',
+      username: 'owner',
+      email: 'owner@example.com',
+      password: 'private-admin-password',
+    })
+  ).id;
+  ids.robot = (await users.createServiceAccount({ name: 'Robot' })).id;
 });
 afterAll(() => testDatabase.destroy());
 beforeEach(() => {
+  auth = ordinaryAuth;
   enabled = true;
   quickSignIn = true;
   accounts = listed;
+  administratorIds = [ids.owner!];
 });
 
 describe('demo quick sign-in', () => {
-  it('lists the enabled accounts the dataset owns, without their passwords', async () => {
+  it('lists system accounts together, including accounts outside the dataset', async () => {
     const response = await call('GET', '/demoMode/accounts');
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       data: [
         { username: 'ann', name: 'Ann', role: 'Admin', current: false },
         { username: 'bob', name: 'Bob', role: 'Reviewer', current: false },
+        { username: 'eve', name: 'Eve', role: 'Owner', current: false },
+        { username: 'owner', name: 'Super Admin', role: '', current: false },
       ],
+      meta: { total: 4 },
     });
   });
 
@@ -176,6 +210,11 @@ describe('demo quick sign-in', () => {
     expect(await response.json()).toEqual({
       data: { username: 'ann', name: 'Ann', role: 'Admin', current: true },
     });
+    expect(
+      response.headers
+        .getSetCookie()
+        .some((cookie) => /Max-Age=0/i.test(cookie)),
+    ).toBe(false);
     const cookie = cookieOf(response);
     expect(await signedInUser(cookie)).toBe(ids.ann);
     const list = (await (
@@ -184,6 +223,8 @@ describe('demo quick sign-in', () => {
     expect(list.data.map((a) => [a.username, a.current])).toEqual([
       ['ann', true],
       ['bob', false],
+      ['eve', false],
+      ['owner', false],
     ]);
   });
 
@@ -198,7 +239,7 @@ describe('demo quick sign-in', () => {
   });
 
   it('refuses accounts the list does not offer', async () => {
-    for (const username of ['cat', 'dan', 'eve', 'nobody']) {
+    for (const username of ['cat', 'dan', 'nobody', ids.robot!]) {
       const response = await call(
         'POST',
         `/demoMode/accounts/${username}/signIn`,
@@ -211,14 +252,38 @@ describe('demo quick sign-in', () => {
     }
   });
 
-  it('reports a dataset whose listed password is wrong', async () => {
-    accounts = [{ ...listed[0]!, password: 'not-the-password' }];
-    const response = await call('POST', '/demoMode/accounts/ann/signIn');
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      error: { reason: 'DEMO_ACCOUNT_SIGN_IN_FAILED' },
+  it('signs in existing accounts without dataset metadata or known passwords', async () => {
+    accounts = [];
+    const response = await call('POST', '/demoMode/accounts/owner/signIn');
+    expect(response.status).toBe(200);
+    expect(await signedInUser(cookieOf(response))).toBe(ids.owner);
+    expect(
+      (await (await call('GET', '/demoMode/accounts')).json()).data,
+    ).toHaveLength(4);
+  });
+
+  it('enters the existing Super Admin by permission and retains signed-in visitors', async () => {
+    accounts = [];
+    const response = await call('POST', '/demoMode/accounts/signInDefault');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: { signedIn: true } });
+    expect(await signedInUser(cookieOf(response))).toBe(ids.owner);
+    const cookie = cookieOf(
+      await call('POST', '/demoMode/accounts/bob/signIn'),
+    );
+    const returning = await call('POST', '/demoMode/accounts/signInDefault', {
+      cookie,
     });
-    expect(response.headers.getSetCookie()).toEqual([]);
+    expect(await returning.json()).toEqual({ data: { signedIn: false } });
+    expect(await signedInUser(cookie)).toBe(ids.bob);
+  });
+
+  it('leaves normal entry available when no enabled Super Admin exists', async () => {
+    for (const candidates of [[], [ids.cat!]]) {
+      administratorIds = candidates;
+      const response = await call('POST', '/demoMode/accounts/signInDefault');
+      expect(await response.json()).toEqual({ data: { signedIn: false } });
+    }
   });
 
   it('offers nothing outside demo mode or when switched off', async () => {
@@ -231,7 +296,11 @@ describe('demo quick sign-in', () => {
       setup();
       expect(await (await call('GET', '/demoMode/accounts')).json()).toEqual({
         data: [],
+        meta: { total: 0 },
       });
+      expect(
+        await (await call('POST', '/demoMode/accounts/signInDefault')).json(),
+      ).toEqual({ data: { signedIn: false } });
       expect((await call('POST', '/demoMode/accounts/ann/signIn')).status).toBe(
         404,
       );
@@ -249,4 +318,69 @@ describe('demo quick sign-in', () => {
     expect(response.status).toBe(403);
     expect(await signedInUser(cookie)).toBe(ids.ann);
   });
+});
+
+describe('partitioned demo sign-in cookies', () => {
+  it.each([
+    { route: '/demoMode/accounts/signInDefault', username: 'owner' },
+    { route: '/demoMode/accounts/bob/signIn', username: 'bob' },
+  ])(
+    'removes conflicting ordinary cookies when entering through $route',
+    async ({ route, username }) => {
+      auth = new Auth({
+        connection: testDatabase.database.connection(),
+        baseURL: `${ORIGIN}/api/auth`,
+        secret: 'development-secret-at-least-32-characters',
+        emailAndPassword: { enabled: true },
+        session: { storeSessionInDatabase: true },
+        advanced: {
+          cookiePrefix: 'demo-custom',
+          useSecureCookies: true,
+          defaultCookieAttributes: {
+            domain: 'localhost',
+            path: '/api',
+            secure: true,
+            sameSite: 'none',
+            partitioned: true,
+          },
+        },
+      });
+      const stale =
+        '__Secure-demo-custom.session_token=expired-before-partitioning';
+      const response = await call('POST', route, {
+        cookie: `${stale}; unrelated=keep`,
+      });
+      expect(response.status).toBe(200);
+      const cookies = response.headers.getSetCookie();
+      const issued = cookies.filter((cookie) =>
+        /; Partitioned(?:;|$)/i.test(cookie),
+      );
+      expect(
+        issued.some((cookie) =>
+          cookie.startsWith('__Secure-demo-custom.session_token='),
+        ),
+      ).toBe(true);
+      for (const cookie of issued) {
+        const name = cookie.slice(0, cookie.indexOf('='));
+        const expired = cookies.find((header) =>
+          header.startsWith(`${name}=;`),
+        );
+        expect(expired).toContain('Max-Age=0');
+        expect(expired).toContain('Domain=localhost');
+        expect(expired).toContain('Path=/api');
+        expect(expired).toContain('; Secure');
+        expect(expired).not.toMatch(/; Partitioned(?:;|$)/i);
+      }
+      expect(cookies.every((cookie) => !cookie.startsWith('unrelated='))).toBe(
+        true,
+      );
+      const cookie = issued.map((header) => header.split(';')[0]).join('; ');
+      expect(await signedInUser(cookie)).toBe(ids[username]);
+      const returning = await call('POST', '/demoMode/accounts/signInDefault', {
+        cookie,
+      });
+      expect(await returning.json()).toEqual({ data: { signedIn: false } });
+      expect(returning.headers.getSetCookie()).toEqual([]);
+    },
+  );
 });

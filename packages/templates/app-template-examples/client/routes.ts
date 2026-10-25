@@ -1,4 +1,5 @@
 import systemSettingsRoutes from './pages/settings/routes.js';
+import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
   agentsRoute,
   modelsRoute,
@@ -21,6 +22,8 @@ import {
   Plug,
   Workflow,
   Settings,
+  BookOpen,
+  DatabaseZap,
 } from 'lucide-react';
 import {
   defineAppRoutes,
@@ -37,6 +40,26 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       order: 100,
     },
     breadcrumb: { title: 'workflows.systemManagement' },
+  },
+  {
+    ...knowledgeDefinition(),
+    componentLoader: () => import('./pages/knowledge/index.js'),
+    parent: 'systemManagement',
+    navigation: { title: 'knowledge.title', icon: BookOpen },
+    breadcrumb: { title: 'knowledge.title' },
+  },
+  {
+    name: 'knowledgeIndexing',
+    path: '/knowledge/indexing',
+    parent: 'systemManagement',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'kb.indexing' },
+      action: 'read',
+    },
+    navigation: { title: 'knowledge.indexing', icon: DatabaseZap },
+    breadcrumb: { title: 'knowledge.indexing' },
+    componentLoader: () => import('./pages/knowledge/indexing.js'),
   },
   {
     name: 'workflows',

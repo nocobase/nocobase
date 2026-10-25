@@ -11,8 +11,7 @@
  * and the revision an edit was made against, and keeps the history of every change (`agent.history.ts`).
  *
  * Disabling an agent withdraws its queued runs and announces `agent.removed`, so the application lets go of the work
- * it gave the agent. A pending agent nobody enabled and that never ran may be removed outright (`cleanupCandidates`,
- * `cleanup`): it kept no history worth preserving.
+ * it gave the agent.
  */
 import { createHash } from 'node:crypto';
 
@@ -27,27 +26,17 @@ import {
   type AgentChange,
   type AgentName,
   type AgentPatch,
-  type CleanupCandidate,
-  type CleanupGroup,
   type RunnerAgentCreateInput,
   type RunnerModelEntry,
   type SystemAgentInput,
 } from '../../../shared/agents.js';
 import {
   agentNameOf,
-  TOOL_LABELS,
   catalogEntry,
-  discoveryKey,
   normalizeModel,
   type CatalogModel,
 } from '../../../shared/model-catalog.js';
-import {
-  lockDiscovery,
-  preferences,
-  type DiscoveryPreference,
-} from './discovery.js';
 import { reportedModels, type Runner } from '../../../shared/runners.js';
-import { runsRepo } from '../runs/run.store.js';
 import type { Clock } from '../../kernel/clock.js';
 import { invalid, notFound, ProtocolError } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
@@ -55,7 +44,6 @@ import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { cleanList } from '../../kernel/values.js';
 import {
-  deleteHistory,
   diffAgents,
   listChanges,
   recordChange,
@@ -65,7 +53,6 @@ import {
   agentDirectory,
   agentNamesOf,
   agentsRepo,
-  deleteAgent,
   findAgent,
   insertAgent,
   isRemoved,
@@ -144,23 +131,6 @@ function initialEffort(tool: AgentTool): string | null {
   return effortsFor({ tool }).includes('medium') ? 'medium' : null;
 }
 
-/** Of `ids`, the ones with at least one run against them: never safe to delete outright. */
-async function agentIdsWithRuns(
-  conn: DatabaseConnection,
-  ids: readonly string[],
-): Promise<Set<string>> {
-  const withRuns = new Set<string>();
-  for (let offset = 0; offset < ids.length; offset += 200) {
-    const batch = ids.slice(offset, offset + 200);
-    if (batch.length === 0) continue;
-    const rows = await runsRepo(conn).findMany({
-      filter: (f) => f.or(batch.map((id) => f.string('agentId').eq(id))),
-    });
-    for (const row of rows) withRuns.add(row.agentId);
-  }
-  return withRuns;
-}
-
 /** The fixed id of the agent of a tool and model, so two runners reporting it at once create one. */
 export function runnerAgentId(tool: AgentTool, model: string): string {
   const hash = createHash('sha256')
@@ -171,10 +141,6 @@ export function runnerAgentId(tool: AgentTool, model: string): string {
 }
 
 export interface AgentService {
-  setIgnored(
-    groups: readonly { key: string; expectedRevision: number }[],
-    ignored: boolean,
-  ): Promise<DiscoveryPreference[]>;
   /** The agents not removed, by name. */
   list(): Promise<Agent[]>;
   /** 404 when absent or removed. */
@@ -213,7 +179,7 @@ export interface AgentService {
   ): Promise<Agent>;
   /**
    * What `runner` reports, in the transaction of its report: an agent for each tool and model it has signed in that
-   * none is kept for yet (pending), and when the others were last reported.
+   * the application recommends, already enabled, and when the others were last reported.
    */
   syncRunner(unit: Tx, runner: Runner): Promise<void>;
   /** Where every discovered agent's instructions and business actions come from; returns what removes it. */
@@ -233,38 +199,13 @@ export interface AgentService {
   applyDefaults(options?: { preserveInstructions?: boolean }): Promise<number>;
   /**
    * Creates and enables an agent for a tool and model nobody has kept one for yet, from the available models list
-   * (`GET /api/agents/availableModels`): 400 `AGENT_EXISTS` when one already exists (enabled, disabled or pending),
+   * (`GET /api/agents/availableModels`): 400 `AGENT_EXISTS` when one already exists (enabled or disabled),
    * `GOOD_AT_REQUIRED` without a description, `EFFORT_UNSUPPORTED` for an effort its tool does not take.
    */
   createFromAvailable(
     input: RunnerAgentCreateInput,
     byUserId: string | null,
   ): Promise<Agent>;
-  /**
-   * Runner-discovered agents nobody enabled and that never ran: safe to remove outright. Left over from before the
-   * application stopped creating one pending agent per model a runner reports (`syncRunner` now only creates an
-   * agent for a recommended combination), or from igniting a tool that reports far more models than anyone enables.
-   * `filter.tool` scopes to one tool's candidates (for the cleanup drawer's rows, paged by the route); omitted, every
-   * candidate (for `cleanupGroups` and the CLI, which has no drawer to page through).
-   */
-  cleanupCandidates(filter?: {
-    readonly tool?: AgentTool;
-    readonly q?: string;
-  }): Promise<CleanupCandidate[]>;
-  /** One row per tool with candidates, for the cleanup drawer's group headers, matching `q` against the agent name. */
-  cleanupGroups(q?: string): Promise<CleanupGroup[]>;
-  /**
-   * Removes the named agents outright, each re-checked against `cleanupCandidates`' own rule first: anything no
-   * longer pending, now enabled, disabled, or with a run against it (another request may have changed it since it was
-   * listed) is left alone and reported back, never removed. Answers what was actually removed and what was skipped.
-   */
-  cleanup(
-    ids: readonly string[],
-    byUserId: string | null,
-  ): Promise<{
-    readonly removed: readonly string[];
-    readonly skipped: readonly string[];
-  }>;
   /** The agent's history, newest first; with `afterRevision`, the changes made after that revision. 404 when absent. */
   history(id: string, options?: HistoryOptions): Promise<AgentChange[]>;
   /** Records in the agent's history, on `conn`, that one of its variables was added, changed or removed. */
@@ -380,13 +321,10 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     model: string,
     now: string,
     displayModel: string | undefined,
-    enable: boolean,
   ): Promise<boolean> {
     const id = runnerAgentId(tool, model);
     const { instructions, actions } = currentDefaults();
-    const description = enable
-      ? (suggestionOf(defaults(), tool, model)?.en ?? null)
-      : null;
+    const description = suggestionOf(defaults(), tool, model)?.en ?? null;
     const name = await uniqueAgentName(
       unit.conn,
       agentNameOf(tool, model, displayModel),
@@ -403,7 +341,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
           avatar: null,
           type: 'runner',
           source: 'runner',
-          status: enable ? 'enabled' : 'pending',
+          status: 'enabled',
           tool,
           model: model || null,
           modelEntries: [
@@ -439,72 +377,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     return true;
   }
 
-  async function candidatesMatching(filter: {
-    readonly tool?: AgentTool;
-    readonly q?: string;
-  }): Promise<CleanupCandidate[]> {
-    const conn = tx.read();
-    const pending = (await listAgents(conn)).filter(
-      (agent) => agent.source === 'runner' && agent.status === 'pending',
-    );
-    const withRuns = await agentIdsWithRuns(
-      conn,
-      pending.map((agent) => agent.id),
-    );
-    const needle = filter.q?.trim().toLowerCase();
-    return pending
-      .filter((agent) => !withRuns.has(agent.id))
-      .filter((agent) => !filter.tool || agent.tool === filter.tool)
-      .filter((agent) => !needle || agent.name.toLowerCase().includes(needle))
-      .map((agent) => ({
-        id: agent.id,
-        name: agent.name,
-        tool: agent.tool,
-        model: agent.model,
-        createdAt: agent.createdAt,
-      }));
-  }
-
   return {
-    setIgnored: (groups, ignored) =>
-      tx.run(async ({ conn, emit }) => {
-        const result: DiscoveryPreference[] = [];
-        const lockedGroups: DiscoveryPreference[] = [];
-        // Stable ordering avoids deadlocks between overlapping batches.
-        for (const group of [...groups].sort((a, b) =>
-          a.key.localeCompare(b.key),
-        )) {
-          lockedGroups.push(
-            await lockDiscovery(conn, group.key, group.expectedRevision),
-          );
-        }
-        const agents = await listAgents(conn);
-        for (const group of lockedGroups) {
-          const members = agents.filter(
-            (agent) =>
-              agent.source === 'runner' &&
-              agent.tool &&
-              agent.model &&
-              discoveryKey(agent.tool, agent.model) === group.key,
-          );
-          if (
-            !members.some((agent) => agent.status === 'pending') ||
-            members.some((agent) => agent.status === 'enabled')
-          )
-            throw invalid(
-              'Only pending discovery groups can be ignored or restored. Reload the list.',
-              { reason: 'DISCOVERY_NOT_PENDING' },
-            );
-          await preferences(conn).updateMany({
-            filter: { key: group.key },
-            values: { ignored },
-          });
-          for (const member of members)
-            emit({ type: 'agent.changed', agentId: member.id });
-          result.push({ ...group, ignored });
-        }
-        return result;
-      }),
     list: () => listAgents(tx.read()),
     get: (id) => require(tx.read(), id),
     find: findAgent,
@@ -544,9 +417,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
           ? current.status
           : patch.enabled
             ? 'enabled'
-            : current.status === 'pending'
-              ? 'pending'
-              : 'disabled';
+            : 'disabled';
       if (status === 'enabled' && !description)
         throw invalid(
           'Write what the agent is good at before enabling it: the project manager hands it work by this.',
@@ -556,17 +427,6 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         return await tx.run(async (unit) => {
           const { conn, emit } = unit;
           const before = await require(conn, id);
-          if (before.tool && before.model) {
-            const group = await lockDiscovery(
-              conn,
-              discoveryKey(before.tool, before.model),
-            );
-            if (patch.enabled && group.ignored)
-              throw invalid(
-                'Restore this discovery group before enabling it.',
-                { reason: 'DISCOVERY_IGNORED' },
-              );
-          }
           if (patch.expectedRevision !== before.revision)
             throw revisionConflict(before.revision);
           const now = clock.now().toISOString();
@@ -750,20 +610,11 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
               runner.tools
                 .find((tool) => tool.kind === combo.tool)
                 ?.models?.find((model) => model.id === combo.model)?.name,
-              true,
             )
           )
             created.push(id);
           continue;
         }
-        const generated = agentNameOf(combo.tool, combo.model);
-        if (
-          record.status === 'pending' &&
-          record.name ===
-            `${TOOL_LABELS[combo.tool]} · ${combo.model.split('/').at(-1)}` &&
-          record.name !== generated
-        )
-          await updateAgent(unit.conn, id, { name: generated });
         if (
           !record.lastReportedAt ||
           now.getTime() - Date.parse(record.lastReportedAt) >= REPORT_REFRESH_MS
@@ -865,47 +716,6 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         });
         emit({ type: 'agent.changed', agentId: id });
         return (await findAgent(conn, id))!;
-      });
-    },
-    cleanupCandidates: (filter = {}) => candidatesMatching(filter),
-    async cleanupGroups(q) {
-      const candidates = await candidatesMatching({ q });
-      const counts = new Map<AgentTool | null, number>();
-      for (const candidate of candidates)
-        counts.set(candidate.tool, (counts.get(candidate.tool) ?? 0) + 1);
-      return [...counts.entries()]
-        .map(([tool, count]): CleanupGroup => ({ tool, count }))
-        .sort((a, b) => (a.tool ?? '').localeCompare(b.tool ?? ''));
-    },
-    async cleanup(requested, byUserId) {
-      const unique = [...new Set(requested)];
-      return tx.run(async ({ conn, emit }) => {
-        const withRuns = await agentIdsWithRuns(conn, unique);
-        const removed: string[] = [];
-        const skipped: string[] = [];
-        for (const id of unique) {
-          const agent = await findAgent(conn, id);
-          if (
-            !agent ||
-            agent.source !== 'runner' ||
-            agent.status !== 'pending' ||
-            withRuns.has(id)
-          ) {
-            skipped.push(id);
-            continue;
-          }
-          await deleteHistory(conn, id);
-          await deleteAgent(conn, id);
-          emit({
-            type: 'agent.removed',
-            agentId: id,
-            name: agent.name,
-            reason: 'deleted',
-            byUserId,
-          });
-          removed.push(id);
-        }
-        return { removed, skipped };
       });
     },
     async applyDefaults(options = {}) {

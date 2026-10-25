@@ -1,3 +1,4 @@
+import { createUuid } from '@nocobase/app-client';
 import type {
   MailAccountView,
   MailComposeInput,
@@ -106,7 +107,7 @@ export function buildComposerInput(
     retainedAttachmentIds: retainedAttachments.map(
       (attachment) => attachment.id,
     ),
-    idempotencyKey: crypto.randomUUID(),
+    idempotencyKey: createUuid(),
   };
 }
 

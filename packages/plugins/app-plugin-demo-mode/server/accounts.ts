@@ -1,7 +1,9 @@
+import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
 import type { Auth } from '@nocobase/app-plugin-authentication';
 import type { DatabaseManager } from '@nocobase/db';
 
 import { demoDataError } from './errors.js';
+import { migratePartitionedCookies } from './sign-in-cookies.js';
 import type { DemoAccountSummary } from '../shared/data.js';
 
 import type { DemoSignInAccount } from '../shared/accounts.js';
@@ -12,26 +14,22 @@ export interface DemoAccountSignInDependencies {
   readonly database: DatabaseManager;
   /** Whether quick sign-in is switched on and the application runs as a demo. */
   readonly enabled: () => boolean;
-  /** The dataset and the accounts its completed import lists, with their passwords; none while it is not imported. */
-  readonly accounts: () => Promise<{
-    readonly datasetId: string | null;
-    readonly accounts: readonly DemoAccountSummary[];
-  }>;
+  readonly authorization?: () => AppAuthorization | undefined;
+  /** Optional dataset labels; these never determine which system accounts can sign in. */
+  readonly accounts: () => Promise<readonly DemoAccountSummary[]>;
 }
 
-interface Candidate extends DemoAccountSummary {
+interface Candidate {
   readonly id: string;
-  readonly email: string;
+  readonly username: string;
+  readonly name: string;
+  readonly role: string;
 }
 
 /** The path below the API root every route of this service is reached under. */
 const ROUTE_SEGMENT = '/demoMode/';
 
-/**
- * Signs visitors in as the demo accounts the imported dataset lists, through Better Auth's own password sign-in with
- * the password the dataset publishes, so the session is an ordinary one: sign-out, expiry and every guard work as for
- * a typed password. Only accounts the dataset created, still enabled, are offered.
- */
+/** Offers every enabled person account in a demo, with ordinary sessions issued by Authentication. */
 export class DemoAccountSignIn {
   public constructor(private readonly deps: DemoAccountSignInDependencies) {}
 
@@ -64,7 +62,7 @@ export class DemoAccountSignIn {
     if (!account)
       throw demoDataError(
         'DEMO_ACCOUNT_NOT_FOUND',
-        `No demo account ${username} can be entered.`,
+        `No account ${username} can be entered.`,
         'NOT_FOUND',
       );
     const authRoot = authRootOf(request.url);
@@ -83,23 +81,15 @@ export class DemoAccountSignIn {
         )
         .catch(() => undefined);
     forwarded.delete('cookie');
-    forwarded.set('content-type', 'application/json');
-    const response = await this.deps.auth.handler(
-      new Request(`${authRoot}/sign-in/email`, {
-        method: 'POST',
-        headers: forwarded,
-        body: JSON.stringify({
-          email: account.email,
-          password: account.password,
-          rememberMe: false,
-        }),
-      }),
+    const response = await this.deps.auth.signInUser(
+      account.id,
+      new Request(request.url, { method: 'POST', headers: forwarded }),
       { clientAddress },
     );
     if (!response.ok)
       throw demoDataError(
         'DEMO_ACCOUNT_SIGN_IN_FAILED',
-        `Signing in as the demo account ${username} failed with ${response.status}; check that the dataset lists its password.`,
+        `Signing in as ${username} failed with ${response.status}.`,
       );
     return {
       account: {
@@ -108,51 +98,73 @@ export class DemoAccountSignIn {
         role: account.role,
         current: true,
       },
-      cookies: response.headers.getSetCookie(),
+      cookies: migratePartitionedCookies(response.headers.getSetCookie()),
     };
+  }
+
+  /** Signs an anonymous home-page visitor in as an existing Super Admin, leaving an existing session intact. */
+  public async signInDefault(
+    request: Request,
+    clientAddress?: string,
+  ): Promise<string[]> {
+    if (!this.deps.enabled()) return [];
+    if (
+      await this.deps.auth.getSession(request.headers, { disableRefresh: true })
+    )
+      return [];
+    const sets = this.deps.authorization?.()?.permissionSets;
+    if (!sets) return [];
+    const roots = new Set(
+      (await sets.list())
+        .filter((set) => sets.protection(set.key)?.unrestricted)
+        .map((set) => set.key),
+    );
+    const administrators = new Set(
+      (await sets.listAssignments())
+        .filter(
+          (assignment) =>
+            assignment.subject.type === 'user' &&
+            roots.has(assignment.permissionSet),
+        )
+        .map((assignment) => String(assignment.subject.id)),
+    );
+    const account = (await this.candidates()).find((candidate) =>
+      administrators.has(candidate.id),
+    );
+    if (!account) return [];
+    return (await this.signIn(request, account.username, clientAddress))
+      .cookies;
   }
 
   private async candidates(): Promise<Candidate[]> {
     if (!this.deps.enabled()) return [];
-    const { datasetId, accounts } = await this.deps.accounts();
-    if (!datasetId || !accounts.length) return [];
-    const query = this.deps.database.query();
-    const users = await query
-      .selectFrom('user')
-      .select(['id', 'username', 'email'])
-      .where(
-        'username',
-        'in',
-        accounts.map((account) => account.username),
-      )
-      .where('disabledAt', 'is', null)
-      .execute<{ id: unknown; username: unknown; email: unknown }>();
-    if (!users.length) return [];
-    const owned = new Set(
-      (
-        await query
-          .selectFrom('demoModeAccounts')
-          .select(['userId'])
-          .where('datasetId', '=', datasetId)
-          .where(
-            'userId',
-            'in',
-            users.map((user) => String(user.id)),
-          )
-          .execute<{ userId: unknown }>()
-      ).map((row) => String(row.userId)),
+    const [accounts, users] = await Promise.all([
+      this.deps.accounts(),
+      this.deps.database
+        .query()
+        .selectFrom('user')
+        .select(['id', 'username', 'email', 'name'])
+        .where('disabledAt', 'is', null)
+        .where('deletedAt', 'is', null)
+        .where('kind', '=', 'person')
+        .orderBy('createdAt', 'asc')
+        .orderBy('id', 'asc')
+        .execute<{
+          id: string;
+          username: string | null;
+          email: string;
+          name: string;
+        }>(),
+    ]);
+    const labels = new Map(
+      accounts.map((account) => [account.username, account.role]),
     );
-    const byUsername = new Map(
-      users
-        .filter((user) => owned.has(String(user.id)))
-        .map((user) => [String(user.username), user]),
-    );
-    return accounts.flatMap((account) => {
-      const user = byUsername.get(account.username);
-      return user
-        ? [{ ...account, id: String(user.id), email: String(user.email) }]
-        : [];
-    });
+    return users.map((user) => ({
+      id: String(user.id),
+      username: user.username || user.email,
+      name: user.name,
+      role: labels.get(user.username ?? '') ?? '',
+    }));
   }
 }
 

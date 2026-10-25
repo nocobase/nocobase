@@ -96,9 +96,6 @@ import {
   AvailableModelGroupSchema,
   AvailableModelsQuerySchema,
   BriefPreviewSchema,
-  CleanupCandidateSchema,
-  CleanupCandidatesQuerySchema,
-  CleanupGroupSchema,
   RunnerAgentCreateInputSchema,
   ModelUsageReportSchema,
   PageMetaSchema,
@@ -444,70 +441,6 @@ export function createAdminRoutes(
     },
   );
 
-  router.put(
-    '/discoveryPreferences',
-    scoped,
-    can('agents.agents', 'manage'),
-    describeRoute({
-      tags,
-      summary: 'Ignore or restore discovery groups',
-      operationId: 'agentsSetDiscoveryPreferences',
-      ...cliRoute({ command: 'agent discovery set', bodyFile: 'input' }),
-      description:
-        'Shared administrator preferences. Only pending groups can be changed. Batches are atomic and checked against each group revision. Reports do not reset preferences.',
-      responses: {
-        200: listResponse(
-          z.object({
-            key: z.string(),
-            ignored: z.boolean(),
-            revision: z.number().int(),
-          }),
-        ),
-        400: apiErrorResponse(400, 'The group contains a non-pending agent.'),
-        409: apiErrorResponse(409, 'The discovery group changed.'),
-        ...apiErrorResponses,
-      },
-    }),
-    apiValidator(
-      'json',
-      z.strictObject({
-        groups: z
-          .array(
-            z.strictObject({
-              key: z
-                .string()
-                .min(1)
-                .max(256)
-                .meta({ description: 'The discoveryKey from the agent list.' }),
-              expectedRevision: z.number().int().min(0).meta({
-                description: 'The discoveryRevision from the agent list.',
-              }),
-            }),
-          )
-          .min(1)
-          .max(256)
-          .refine(
-            (groups) =>
-              new Set(groups.map((group) => group.key)).size === groups.length,
-            'Groups must be unique.',
-          )
-          .meta({
-            description:
-              'Unique pending discovery groups to update atomically.',
-          }),
-        ignored: z.boolean().meta({
-          description:
-            'True to ignore pending discoveries; false to restore them without enabling.',
-        }),
-      }),
-    ),
-    async (context) => {
-      const { groups, ignored } = context.req.valid('json');
-      const data = await services.agents.setIgnored(groups, ignored);
-      return context.json({ data, meta: { total: data.length } });
-    },
-  );
-
   router.get(
     '/availableModels',
     guard,
@@ -602,96 +535,6 @@ export function createAdminRoutes(
         caller(context).userId,
       );
       context.status(201);
-      return context.json({ data });
-    },
-  );
-
-  router.get(
-    '/cleanupCandidates',
-    guard,
-    can('agents.agents', 'manage'),
-    describeRoute({
-      tags,
-      summary:
-        'List tools, or one tool’s runner-discovered agents, safe to remove outright',
-      operationId: 'agentsListCleanupCandidates',
-      ...cliRoute({
-        command: 'agent cleanup list',
-        examples: ['agent cleanup list', 'agent cleanup list --tool codex'],
-      }),
-      description:
-        'Without `tool`: one row per coding tool with candidates, for the cleanup drawer’s group headers. With `tool`: that tool’s candidates, a page at a time. A candidate is an agent a runner’s report created that nobody enabled and that never ran: safe to remove outright, such as a batch left from before the application stopped creating one agent per reported model. Needs `agents.agents` manage.',
-      responses: {
-        200: listResponse(
-          z.union([CleanupGroupSchema, CleanupCandidateSchema]),
-          PageMetaSchema,
-        ),
-        ...apiErrorResponses,
-      },
-    }),
-    apiValidator('query', CleanupCandidatesQuerySchema),
-    async (context) => {
-      const query = context.req.valid('query');
-      if (query.tool === undefined) {
-        const data = await services.agents.cleanupGroups(query.q);
-        return context.json({
-          data,
-          meta: { total: data.length, page: 1, pageSize: data.length },
-        });
-      }
-      const rows = await services.agents.cleanupCandidates({
-        tool: query.tool,
-        q: query.q,
-      });
-      const start = (query.page - 1) * query.pageSize;
-      return context.json({
-        data: rows.slice(start, start + query.pageSize),
-        meta: {
-          total: rows.length,
-          page: query.page,
-          pageSize: query.pageSize,
-        },
-      });
-    },
-  );
-
-  router.post(
-    '/cleanup',
-    scoped,
-    can('agents.agents', 'manage'),
-    describeRoute({
-      tags,
-      summary: 'Remove chosen cleanup candidates outright',
-      operationId: 'agentsCleanup',
-      ...cliRoute({ command: 'agent cleanup run', bodyFile: 'input' }),
-      description:
-        'Removes the named agents, each re-checked against the cleanup rule first (still pending, never run): anything changed since it was listed is left alone and reported back skipped, never removed. Needs `agents.agents` manage.',
-      responses: {
-        200: dataResponse(
-          z.object({
-            removed: z.array(z.string()),
-            skipped: z.array(z.string()),
-          }),
-        ),
-        ...apiErrorResponses,
-      },
-    }),
-    apiValidator(
-      'json',
-      z.strictObject({
-        agentIds: z
-          .array(z.string().min(1).max(256))
-          .min(1)
-          .max(256)
-          .meta({ description: 'The ids from `GET /cleanupCandidates`.' }),
-      }),
-    ),
-    async (context) => {
-      const { agentIds } = context.req.valid('json');
-      const data = await services.agents.cleanup(
-        agentIds,
-        caller(context).userId,
-      );
       return context.json({ data });
     },
   );

@@ -18,13 +18,14 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createMoonshotAI } from '@ai-sdk/moonshotai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { loadApiKey } from '@ai-sdk/provider-utils';
 import type {
   EmbeddingModel,
   JSONValue,
   LanguageModel,
   RerankingModel,
 } from 'ai';
-import { APICallError, wrapLanguageModel } from 'ai';
+import { APICallError, wrapEmbeddingModel, wrapLanguageModel } from 'ai';
 import packageMetadata from '@nocobase/app-plugin-agents/package.json' with { type: 'json' };
 import { randomUUID } from 'node:crypto';
 import { createOllama } from 'ollama-ai-provider-v2';
@@ -245,15 +246,6 @@ export interface EmbeddingCall {
 }
 
 /**
- * Alibaba's embeddings are served by DashScope's own API, beside the OpenAI-compatible one a service names: the same
- * host's `/api/v1` (`…/compatible-mode/v1` → `…/api/v1`).
- */
-function alibabaEmbeddingBase(baseURL: string | undefined): string | undefined {
-  if (!baseURL) return undefined;
-  return baseURL.replace(/\/compatible-mode\/v1\/?$/u, '/api/v1');
-}
-
-/**
  * The embedding model `model` of the connection's provider, asked for vectors of `dimensions` when set; throws
  * `Error` for a provider that serves no embeddings.
  */
@@ -277,13 +269,33 @@ export function embeddingModel(
         providerOptions: sized('google', 'outputDimensionality'),
       };
     case 'alibaba': {
-      const embeddingBaseURL = alibabaEmbeddingBase(settings.baseURL);
+      // Keep chat on Alibaba's SDK; embeddings use the service's compatible endpoint unchanged.
+      const baseURL = baseUrlOf(connection);
+      if (!baseURL)
+        throw new Error(
+          'Alibaba embedding requires an OpenAI-compatible base URL.',
+        );
       return {
-        model: createAlibaba({
-          ...settings,
-          ...(embeddingBaseURL ? { embeddingBaseURL } : {}),
-        }).embeddingModel(model),
-        providerOptions: sized('alibaba', 'dimension'),
+        model: wrapEmbeddingModel({
+          model: createOpenAICompatible({
+            name: 'openai-compatible',
+            baseURL,
+            apiKey: loadApiKey({
+              apiKey: settings.apiKey,
+              environmentVariableName: 'ALIBABA_API_KEY',
+              description: 'Alibaba',
+            }),
+            headers: settings.headers,
+            fetch: settings.fetch,
+          }).embeddingModel(model),
+          middleware: {
+            specificationVersion: 'v4',
+            // Preserve the former Alibaba SDK's limits instead of adopting generic API limits.
+            overrideMaxEmbeddingsPerCall: () => 10,
+            overrideSupportsParallelCalls: () => false,
+          },
+        }),
+        providerOptions: sized('openaiCompatible', 'dimensions'),
       };
     }
     case 'cohere':

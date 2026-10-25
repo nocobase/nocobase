@@ -26,14 +26,10 @@ export const ChatConfiguration: z.ZodType<DemoChatConfiguration> =
     ),
   });
 export const ConfigurationInput: Record<
-  'collections' | 'mocks' | 'schedule' | 'chat',
+  'collections' | 'mocks' | 'chat',
   z.ZodType<{
     expectedRevision: number;
-    value:
-      | string[]
-      | Record<string, boolean>
-      | DemoDailySchedule
-      | DemoChatConfiguration;
+    value: string[] | Record<string, boolean> | DemoChatConfiguration;
   }>
 > = {
   collections: z.strictObject({
@@ -47,10 +43,6 @@ export const ConfigurationInput: Record<
   mocks: z.strictObject({
     expectedRevision: z.number().int().nonnegative(),
     value: z.record(z.string().max(128), z.boolean()),
-  }),
-  schedule: z.strictObject({
-    expectedRevision: z.number().int().nonnegative(),
-    value: DailySchedule,
   }),
 };
 export const ConfigurationView: z.ZodType<DemoConfigurationView> = z

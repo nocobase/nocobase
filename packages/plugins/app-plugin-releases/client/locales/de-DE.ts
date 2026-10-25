@@ -549,6 +549,8 @@ const deDE: LocaleResource<typeof enUS> = {
       hide: 'Passwort verbergen',
       copy: 'Passwort kopieren',
       copied: 'Passwort kopiert.',
+      copyFailed:
+        'Das Passwort konnte nicht kopiert werden. Zeigen Sie es an und kopieren Sie es manuell.',
       dismiss: 'Ich habe es gespeichert',
       dismissed:
         'Der erste Administrator wurde aus dem Release Manager gelöscht.',

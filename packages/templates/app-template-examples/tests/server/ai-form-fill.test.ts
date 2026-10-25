@@ -117,7 +117,7 @@ test('delivers selected UI data to the model and persists a safe, completed draf
       await (
         await admin.fetch(`/agents/conversations/${ordinaryId}/config`)
       ).json(),
-    ).toMatchObject({ data: { tool: [], scope: [] } });
+    ).toMatchObject({ data: { tool: ['bash', 'skill'], scope: [] } });
     const created = await admin.fetch(
       '/agents/conversations',
       write({

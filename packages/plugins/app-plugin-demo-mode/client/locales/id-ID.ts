@@ -8,16 +8,16 @@ const resource: DemoModeResource = {
     configure: 'Konfigurasi',
   },
   accounts: {
-    menu: 'Akun demo: {{name}}',
-    title: 'Akun demo',
+    menu: 'Akun: {{name}}',
+    title: 'Akun',
     description:
       'Masuk ke demo dengan salah satu akun ini untuk melihat apa yang dilihat masing-masing.',
     enter: 'Masuk',
     signedInAs: 'Masuk sebagai {{name}} · Ganti',
     current: 'Saat ini',
     entering: 'Sedang masuk…',
-    failed: 'Tidak dapat masuk dengan akun demo ini.',
-    unavailable: 'Belum ada akun demo yang bisa dimasuki.',
+    failed: 'Tidak dapat masuk ke akun ini.',
+    unavailable: 'Tidak ada akun yang tersedia saat ini.',
     password: 'Masuk dengan kata sandi',
   },
   refused: {
@@ -29,32 +29,13 @@ const resource: DemoModeResource = {
     refresh: 'Muat ulang',
     retry: 'Coba lagi',
     busy: 'Data demo sedang dibuat atau dihapus',
-    busyHelp: 'Setelan bisa disimpan lagi setelah selesai.',
+    busyHelp:
+      'Tunggu hingga operasi data saat ini selesai sebelum memulai operasi lain.',
     disabled: {
       title: 'Aplikasi ini bukan demo',
       help: 'Mode demo nonaktif. Deployment mengaktifkannya dengan NOCOBASE_DEMO_MODE=true.',
     },
     cancel: 'Batal',
-    save: 'Simpan',
-    apply: 'Terapkan perubahan',
-    unsaved: 'Ada perubahan yang belum disimpan',
-    discardAndReload: 'Buang perubahan saya dan muat ulang',
-    switch: {
-      on: 'Aktif',
-      off: 'Nonaktif',
-    },
-    tabs: {
-      overview: 'Ringkasan',
-      schedule: 'Reset harian',
-      writes: 'Penulisan pengunjung',
-      simulation: 'Simulasi & AI',
-    },
-    leave: {
-      title: 'Keluar tanpa menyimpan?',
-      description: 'Perubahan yang belum disimpan di halaman ini akan hilang.',
-      stay: 'Lanjutkan mengedit',
-      discard: 'Buang perubahan',
-    },
     errors: {
       failed: 'Permintaan tidak selesai. Coba lagi.',
       conflict: 'Administrator lain menyimpan setelan ini lebih dulu.',
@@ -117,11 +98,9 @@ const resource: DemoModeResource = {
       },
     },
     visitors: {
-      title: 'Akun demo',
-      off: 'Masuk cepat dinonaktifkan untuk deployment ini.',
-      pending: 'Akun akan muncul di sini setelah data demo siap.',
-      noData: 'Buat data demo terlebih dahulu; akunnya akan muncul di sini.',
-      credentials: 'Nama pengguna {{username}} · kata sandi {{password}}',
+      unavailable: 'Tidak ada akun yang tersedia saat ini.',
+      title: 'Akun',
+      username: 'Nama pengguna {{username}}',
       copyLink: 'Salin tautan',
       copyLinkFor: 'Salin tautan masuk {{name}}',
       openFor: 'Buka demo sebagai {{name}}',
@@ -129,73 +108,13 @@ const resource: DemoModeResource = {
       copyFailed: 'Gagal menyalin. Salin tautan dari bilah alamat.',
     },
     schedule: {
-      confirmTitle: 'Simpan reset harian?',
-      confirmDescription:
-        'Pada waktu di bawah, semua data bisnis di instans ini dihapus dan dibuat ulang.',
-      summary: 'Setiap hari pukul {{time}} ({{timezone}}), dalam {{language}}',
-      off: 'Belum dijadwalkan',
-      enabled: 'Reset setiap hari',
-      enabledHelp: 'Menggunakan administrator yang terakhir membuat data demo.',
+      title: 'Reset harian',
+      description:
+        'Data demo direset secara otomatis setiap hari. Jadwal dikonfigurasi melalui variabel lingkungan.',
       time: 'Waktu',
-      hour: 'Jam',
-      minute: 'Menit',
       language: 'Bahasa',
       timezone: 'Zona waktu',
-      noTimezone: 'Tidak ada zona waktu yang cocok',
-      invalidTimezone: 'Pilih zona waktu dari daftar.',
       next: 'Reset berikutnya: {{time}}',
-    },
-    writes: {
-      intro:
-        'Saat demo aktif, penulisan ditolak secara default. Pilih koleksi yang perlu ditulis pengunjung; izin aplikasi mengontrol operasi dan akses catatan.',
-      allow: 'Izinkan',
-      revoke: 'Tolak lagi',
-      confirmTitle: 'Ubah apa yang boleh ditulis pengunjung?',
-      confirmDescription:
-        'Perubahan pengunjung pada hal ini benar-benar tersimpan sampai reset berikutnya.',
-      collections: {
-        title: 'Koleksi',
-        description:
-          'Permintaan yang diizinkan aplikasi dapat menulis ke koleksi ini.',
-        label: 'Koleksi yang boleh ditulis pengunjung',
-        placeholder: 'Cari koleksi',
-        noMatch: 'Tidak ada koleksi yang cocok',
-        fixed: 'Selalu bisa ditulis',
-      },
-    },
-    simulation: {
-      kind: {
-        model: 'Model',
-        tool: 'Alat',
-        runner: 'Runner',
-      },
-      mocks: {
-        title: 'Simulasi',
-        description: 'Yang menjawab menggantikan layanan luar di demo ini.',
-        confirmTitle: 'Ubah simulasi?',
-        confirmDescription:
-          'Simulasi yang dinonaktifkan membuat pekerjaan itu gagal; tidak pernah dikirim ke layanan sungguhan.',
-        empty: 'Tidak ada simulasi terdaftar',
-        emptyHelp: 'Aplikasi belum mendaftarkan layanan simulasi.',
-        onHelp: 'Menjawab dengan hasil simulasi.',
-        offHelp: 'Nonaktif: pekerjaan ditolak.',
-      },
-      chat: {
-        title: 'Obrolan daring',
-        description: 'Memungkinkan pengunjung berbicara dengan AI aplikasi.',
-        confirmTitle: 'Simpan setelan obrolan daring?',
-        confirmDescription:
-          'Percakapan pengunjung mengikuti setelan ini mulai pesan berikutnya.',
-        enabled: 'Pengunjung bisa mengobrol',
-        enabledHelp: 'Nonaktif: obrolan menolak pesan pengunjung.',
-        tools: 'Alat',
-        noTools: 'Aplikasi tidak mendeklarasikan alat obrolan.',
-        policy: {
-          deny: 'Tolak',
-          read: 'Baca data',
-          mock: 'Simulasikan',
-        },
-      },
     },
   },
 };

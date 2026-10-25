@@ -6,9 +6,10 @@ import {
 } from '@nocobase/app-plugin-authentication/testing';
 import type { Application } from '@nocobase/app-server/application';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { beforeEach, afterEach, expect, it } from 'vitest';
+import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 import { createStandaloneServer } from '../../server/standalone.js';
+import { ArticlesService } from '../../server/providers/articles-service.js';
 
 let testApp: TestApp;
 let db: DatabaseManager;
@@ -46,7 +47,34 @@ beforeEach(async () => {
   session = await signIn(testApp, member);
 });
 afterEach(async () => {
+  vi.restoreAllMocks();
   await testApp?.close();
+});
+it('reaches the database service only after availability, authentication, size and validation gates pass', async () => {
+  const list = vi.spyOn(ArticlesService.prototype, 'list');
+  const create = vi.spyOn(ArticlesService.prototype, 'create');
+  expect((await request('/articles', 'GET', undefined, false)).status).toBe(
+    401,
+  );
+  expect((await request('/articles?page=0')).status).toBe(400);
+  expect((await request('/articles', 'POST', { title: '' })).status).toBe(400);
+  expect(
+    (
+      await request('/articles', 'POST', {
+        ...body,
+        content: 'x'.repeat(513 * 1024),
+      })
+    ).status,
+  ).toBe(413);
+  expect(list).not.toHaveBeenCalled();
+  expect(create).not.toHaveBeenCalled();
+  const unavailable = await articlesRoutes.createRouter({
+    container: new ServiceContainer(),
+  } as Application);
+  expect((await unavailable.request('/articles')).status).toBe(503);
+  expect(list).not.toHaveBeenCalled();
+  expect((await request('/articles')).status).toBe(200);
+  expect(list).toHaveBeenCalledTimes(1);
 });
 const body = {
   title: 'A new article',

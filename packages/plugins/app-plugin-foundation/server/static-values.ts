@@ -20,6 +20,7 @@ export class StaticValues {
     seen = new Set(seen).add(node);
     const next = (value: ts.Node): readonly ts.Node[] =>
       this.values(value, seen);
+    if (ts.isExportAssignment(node)) return next(node.expression);
     if (ts.isIdentifier(node))
       return this.analysis
         .declarations(node)
@@ -86,6 +87,8 @@ export class StaticValues {
           : [];
     }
     if (ts.isVariableDeclaration(node)) {
+      const bound = this.bindings.get(node);
+      if (bound) return bound.flatMap(next).slice(0, MAX_VALUES);
       if (node.initializer) return next(node.initializer);
       const loop = node.parent.parent;
       if (ts.isForOfStatement(loop))
@@ -272,6 +275,10 @@ export class StaticValues {
           : statement(fn.body).values;
       })
       .slice(0, MAX_VALUES);
+  }
+
+  public booleans(node: ts.Node): boolean[] {
+    return [...new Set(this.atoms(node).map(Boolean))];
   }
 
   public strings(node: ts.Node, dynamic = false): string[] {

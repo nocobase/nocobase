@@ -385,6 +385,7 @@ const ui = {
     hide: 'Hide password',
     copy: 'Copy password',
     copied: 'Password copied.',
+    copyFailed: 'Could not copy the password. Show it and copy it manually.',
     dismiss: 'I’ve saved it',
     dismissed: 'The first administrator was deleted from the release manager.',
   },

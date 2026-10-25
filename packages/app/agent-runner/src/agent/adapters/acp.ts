@@ -1,3 +1,4 @@
+import { StreamOutput } from './stream-output.ts';
 /** Drives a catalog agent through the same ACP client used by personal sessions. */
 import { execFile } from 'node:child_process';
 import { AGENTS } from '@nocobase/acp-bridge/catalog';
@@ -299,7 +300,9 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
   const emit = (event: Omit<AdapterEvent, 'at'>): void => {
     if (replaying || finished) return;
     const content =
-      event.content === undefined ? undefined : capText(event.content);
+      event.content === undefined || event.meta?.output
+        ? undefined
+        : capText(event.content);
     const output =
       event.output === undefined ? undefined : capText(event.output);
     const input = event.input === undefined ? undefined : capInput(event.input);
@@ -317,12 +320,35 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
       at: new Date().toISOString(),
     });
   };
+  const streaming = new StreamOutput(emit);
+  let chunkId = 0;
+  let chunkType: 'text' | 'thinking' | undefined;
+  let streamPieces: string[] = [];
+  const flushStreamChunk = (interrupted = false): void => {
+    if (chunkType) {
+      if (interrupted) streaming.close(String(chunkId));
+      else
+        streaming.complete(String(chunkId), chunkType, streamPieces.join(''));
+    }
+    streamPieces = [];
+    chunkType = undefined;
+  };
+  const emitStreamChunk = (type: 'text' | 'thinking', text: string): void => {
+    if (replaying || finished) return;
+    if (chunkType !== type) {
+      flushStreamChunk();
+      chunkType = type;
+      chunkId++;
+    }
+    streamPieces.push(text);
+    streaming.delta(String(chunkId), type, text);
+  };
   // Zed-style agents stream a text or thinking turn as dozens of small chunks, one `session/update` each. Buffering
   // consecutive same-typed chunks into one event cuts that to about one a second, in the order they arrived; anything
   // else (a tool call, the run ending) flushes what is pending first, so order never changes.
   let pendingChunk: { type: 'text' | 'thinking'; content: string } | undefined;
   let pendingTimer: ReturnType<typeof setTimeout> | undefined;
-  const flushPendingChunk = (): void => {
+  const flushLegacyChunk = (): void => {
     if (pendingTimer !== undefined) {
       clearTimeout(pendingTimer);
       pendingTimer = undefined;
@@ -332,18 +358,24 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
     pendingChunk = undefined;
     emit({ type: chunk.type, content: chunk.content });
   };
-  const emitChunk = (type: 'text' | 'thinking', text: string): void => {
+  const emitLegacyChunk = (type: 'text' | 'thinking', text: string): void => {
     if (replaying || finished) return;
     pendingChunk =
       pendingChunk && pendingChunk.type === type
         ? { type, content: pendingChunk.content + text }
-        : (flushPendingChunk(), { type, content: text });
+        : (flushLegacyChunk(), { type, content: text });
     if (pendingChunk.content.length >= MERGE_FLUSH_BYTES) {
-      flushPendingChunk();
+      flushLegacyChunk();
       return;
     }
     pendingTimer ??= setTimeout(flushPendingChunk, MERGE_FLUSH_MS);
   };
+  const flushPendingChunk = () =>
+    session.outputBlocks ? flushStreamChunk() : flushLegacyChunk();
+  const emitChunk = (type: 'text' | 'thinking', text: string) =>
+    session.outputBlocks
+      ? emitStreamChunk(type, text)
+      : emitLegacyChunk(type, text);
   const update = ({ update }: SessionNotification): void => {
     if (replaying) return;
     if (
@@ -557,7 +589,8 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
             },
           ]
         : [];
-      flushPendingChunk();
+      if (session.outputBlocks) flushStreamChunk();
+      else flushLegacyChunk();
       if (usage.length) emit({ type: 'usage', meta: { usage } });
       if (cancelled || response.stopReason === 'cancelled')
         return { exit: 'aborted', usage, sessionId };
@@ -576,6 +609,7 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
         };
       return { exit: 'completed', usage, sessionId, summary };
     } catch (error) {
+      if (session.outputBlocks && cancelled) flushStreamChunk();
       return {
         exit: cancelled ? 'aborted' : 'error',
         usage: [],
@@ -597,7 +631,8 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
         },
       };
     } finally {
-      flushPendingChunk();
+      if (session.outputBlocks) flushStreamChunk(true);
+      else flushLegacyChunk();
       session.abort.removeEventListener('abort', aborted);
       await process?.stop();
       finished = true;

@@ -729,12 +729,13 @@ export function createModelServices(deps: {
       return (await endpoint(ref, kind)).connection;
     },
 
-    endpointFor: (ref, kind) => endpoint(ref, kind),
+    endpointFor: (ref, kind, options) => endpoint(ref, kind, options),
   };
 
   async function endpoint(
     ref: ModelRef,
     kind: ModelKind,
+    options?: { readonly allowUnlistedModel?: boolean },
   ): Promise<ModelEndpoint> {
     const record = (
       await repo(deps.tx.read()).findMany({
@@ -746,10 +747,19 @@ export function createModelServices(deps: {
         'config',
         `The model service ${ref.modelService} is not there or is off.`,
       );
+    const configured = modelsOf(record.models).find(
+      (model) => model.value === ref.model,
+    );
     const offered = modelsOf(record.models).find(
       (model) => model.value === ref.model && model.kind === kind,
     );
-    if (!offered)
+    const unlistedEmbedding =
+      options?.allowUnlistedModel === true &&
+      kind === 'embedding' &&
+      !configured &&
+      providerOf(record.provider)?.kinds.includes('embedding') === true &&
+      ModelRefSchema.safeParse(ref).success;
+    if (!offered && !unlistedEmbedding)
       throw new ModelError(
         'config',
         `The model service ${ref.modelService} does not offer the ${kind} model ${ref.model}.`,
@@ -769,6 +779,6 @@ export function createModelServices(deps: {
         'auth',
         `The model service ${ref.modelService} has no API key.`,
       );
-    return { connection, dimensions: offered.dimensions };
+    return { connection, dimensions: offered?.dimensions ?? null };
   }
 }

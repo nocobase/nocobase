@@ -21,6 +21,7 @@ import {
   KNOWLEDGE_TOPIC,
   type AcceptKnowledgeProposalRequest,
   type CreateKnowledgeDocRequest,
+  type KnowledgeCapabilities,
   type KnowledgeChunking,
   type KnowledgeChunkingConfig,
   type KnowledgeDoc,
@@ -50,6 +51,15 @@ import {
   type KnowledgeIndexRefreshOptions,
 } from './index-refresh.js';
 
+export {
+  KnowledgeIndexingApi,
+  knowledgeIndexingKeys,
+  useKnowledgeIndexingApi,
+  useKnowledgeIndexingSettings,
+  useKnowledgeIndexingStatus,
+  useKnowledgeIndexingInstances,
+  useKnowledgeEmbeddingModels,
+} from './indexing/api.js';
 export type { KnowledgeIndexRefreshOptions } from './index-refresh.js';
 
 const spaceKey = (space: SpaceRef) => `${space.scope}:${space.scopeId}`;
@@ -154,6 +164,10 @@ export class KnowledgeApi {
       signal,
     });
     return { spaces };
+  }
+
+  public capabilities(signal?: AbortSignal): Promise<KnowledgeCapabilities> {
+    return this.data({ path: `${base}/capabilities`, signal });
   }
 
   public doc(id: string, signal?: AbortSignal): Promise<KnowledgeDoc> {
@@ -574,6 +588,15 @@ export function useKnowledgeRefresh(): void {
       signal,
     ),
   );
+}
+
+export function useKnowledgeCapabilities(): UseQueryResult<KnowledgeCapabilities> {
+  const api = useKnowledgeApi();
+  return useQuery({
+    queryKey: ['knowledge', 'capabilities'],
+    queryFn: ({ signal }) => api.capabilities(signal),
+    retry: false,
+  });
 }
 
 export function useKnowledgeTree(

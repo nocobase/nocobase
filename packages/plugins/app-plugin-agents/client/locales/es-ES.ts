@@ -100,41 +100,28 @@ const esES: LocaleResource<typeof enUS> = {
     unavailableNow: 'No disponible ahora',
     title: 'Agentes',
     description:
-      'Cada herramienta de codificación y modelo que informa un ejecutor es un agente. El director del proyecto entrega cada paso de un problema al agente cuya descripción se ajusta a él.',
+      'Añada agentes a partir de los modelos que informan los ejecutores. El director del proyecto asigna cada paso de una tarea al agente cuya descripción encaja con ella.',
     fromRunners: 'Agentes de ejecutores',
-    discovery: {
-      selectAll: 'Seleccionar todos los resultados',
-      selectFirst: 'Selecciona los primeros resultados de {{limit}}',
-      selectionCount: 'Grupos {{count}} / {{limit}} seleccionados',
-      clearSelection: 'Borrar selección',
-      new: 'Nuevos descubrimientos ({{count}})',
-      ignored: 'Ignorado ({{count}})',
+    display: {
       search: 'Búsqueda de modelos o proveedores',
       select: 'Seleccione {{name}}',
-      ignore: 'Ignorar',
-      restore: 'Restaurar',
-      ignoreSelected: 'Ignorar seleccionado',
-      restoreSelected: 'Restaurar seleccionado',
       showDisabled: 'Mostrar deshabilitados',
       hideDisabled: 'Ocultar deshabilitados',
-      provider: 'Proveedor y ejecutor',
-      saved: 'Preferencias de descubrimiento guardadas',
     },
     filterLabel: 'Mostrar agentes',
     filters: {
       all: 'Todos {{count}}',
       enabled: 'Habilitado {{count}}',
-      pending: 'Para habilitar {{count}}',
       unreported: 'Sin ejecutor {{count}}',
     },
     loadFailed: 'No se pudieron cargar los agentes',
     loadMore: 'Cargar más',
     emptyTitle: 'Aún no hay agentes',
     emptyDescription:
-      'Conecte un ejecutor con una herramienta de codificación iniciada: cada uno de sus modelos aparece aquí como un agente para habilitar.',
+      'Conecte un ejecutor con una herramienta de codificación con la sesión iniciada y añada un agente desde «Modelos disponibles».',
     noneInFilter: 'Ningún agente aquí.',
     howToAdd:
-      'Para añadir un agente, instale una herramienta de codificación en un ejecutor e inicie sesión en un modelo que pueda usar: una vez que el ejecutor lo informa, aparece aquí y usted lo habilita escribiendo en qué es bueno. Un agente que solo tienen los ejecutores personales trabaja solo en los problemas que inician sus propietarios.',
+      'Para añadir un agente, instale una herramienta de codificación en un ejecutor e inicie sesión para usar un modelo disponible. Cuando el ejecutor lo informe, añada el agente desde «Modelos disponibles» indicando en qué destaca. Quedará habilitado al añadirlo. Un agente disponible solo en ejecutores personales trabaja únicamente en las tareas que inician sus propietarios.',
     goodAtMissing: 'Aún no escrito',
     columns: {
       agent: 'Agente',
@@ -159,7 +146,6 @@ const esES: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Habilitado',
-      pending: 'Para habilitar',
       disabled: 'Deshabilitado',
       unreported: 'Ningún ejecutor',
     },
@@ -175,9 +161,6 @@ const esES: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Completar y habilitar',
-      buttonFor: 'Completar y habilitar {{name}}',
-      title: 'Habilitar {{name}}',
       reportedBy_one:
         'Reportado por el ejecutor {{count}} en línea: {{names}}.',
       reportedBy_other:
@@ -190,8 +173,6 @@ const esES: LocaleResource<typeof enUS> = {
         'El director del proyecto no puede cambiarlo cuando entrega el trabajo.',
       personalOnly:
         'Sólo lo tienen los ejecutores personales: el director del proyecto lo entrega trabajo sólo en los problemas que inician sus propietarios.',
-      submit: 'Habilitar',
-      done: '{{name}} está habilitado',
       reportedBy_many:
         'Reportado por ejecutores {{count}} en línea: {{names}}.',
     },
@@ -253,34 +234,6 @@ const esES: LocaleResource<typeof enUS> = {
         'Se añadieron {{succeeded}}; {{failed}} no se pudieron añadir. El motivo está debajo de cada uno.',
       addFailed:
         '{{failed}} no se pudieron añadir. El motivo está debajo de cada uno; inténtelo de nuevo.',
-    },
-    cleanup: {
-      open: 'Limpiar',
-      title: 'Eliminar agentes descubiertos sin usar',
-      description:
-        'Agentes creados por el reporte de un ejecutor que nadie habilitó y que nunca se ejecutaron: se pueden eliminar sin riesgo. Lo que haya cambiado desde que se cargó esta lista se omite, no se elimina.',
-      none: 'Nada para eliminar.',
-      select: 'Seleccionar {{name}}',
-      selectGroup: 'Seleccionar todo en {{tool}}',
-      clearGroup: 'Deseleccionar {{tool}}',
-      neverEnabled: 'Nunca habilitado · Sin historial de ejecuciones',
-      createdAt: 'Descubierto {{when}}',
-      group_one: '{{tool}} · {{count}} candidato',
-      group_other: '{{tool}} · {{count}} candidatos',
-      group_many: '{{tool}} · {{count}} candidatos',
-      selectedCount_one: '{{count}} seleccionado',
-      selectedCount_other: '{{count}} seleccionados',
-      selectedCount_many: '{{count}} seleccionados',
-      remove: 'Eliminar {{count}}',
-      confirmTitle_one: '¿Eliminar {{count}} agente?',
-      confirmTitle_other: '¿Eliminar {{count}} agentes?',
-      confirmTitle_many: '¿Eliminar {{count}} agentes?',
-      confirmDescription:
-        'En {{tools}}. Seguro de eliminar: se vuelve a comprobar justo antes de eliminar, y lo que ya no cumpla se omite, no se elimina.',
-      confirmAction: 'Eliminar {{count}}',
-      done: 'Eliminados {{removed}}, omitidos {{skipped}}',
-      partialFailure:
-        'Eliminados {{removed}}, omitidos {{skipped}}; {{failed}} no se pudieron eliminar ({{reason}}). Permanecen seleccionados para volver a intentarlo.',
     },
   },
   agentTypes: {
@@ -652,14 +605,6 @@ const esES: LocaleResource<typeof enUS> = {
   },
   runtimes: {
     pathHint: runtimesEnUS.runtimes.pathHint,
-    capacity: {
-      actual: 'Last effective slots: {{slots}}',
-      online: 'Effective slots · online settings',
-      pending: 'Waiting for runner to sync online settings',
-      legacy: 'Legacy local slots · upgrade the application server',
-      upgrade: 'Sync status unavailable · upgrade the runner',
-      lastReported: 'Last reported: {{time}}',
-    },
     quota: {
       workspaceStatus: {
         active: 'El trabajo continúa',
