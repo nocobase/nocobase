@@ -7,13 +7,20 @@ const resource = {
     configuration: 'Demo configuration',
     configure: 'Configure',
   },
+  menu: {
+    label: 'Demo mode',
+    switchAccount: 'Switch account',
+    title: 'This is a demo environment',
+    description: 'Data resets automatically every day. Changes are not saved.',
+    accountsDescription:
+      'Switch to an account below to see what each role can access.',
+    loading: 'Loading accounts…',
+  },
   accounts: {
-    menu: 'Account: {{name}}',
     title: 'Accounts',
     description:
       'Enter the demo as any of these accounts to see what each of them sees.',
     enter: 'Enter',
-    signedInAs: 'Signed in as {{name}} · Switch',
     current: 'Current',
     entering: 'Entering…',
     failed: 'Could not enter this account.',

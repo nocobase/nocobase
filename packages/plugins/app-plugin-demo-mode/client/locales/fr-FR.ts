@@ -7,13 +7,21 @@ const resource: DemoModeResource = {
     configuration: 'Configuration de démonstration',
     configure: 'Configurer',
   },
+  menu: {
+    label: 'Mode démo',
+    switchAccount: 'Changer de compte',
+    title: 'Ceci est un environnement de démonstration',
+    description:
+      'Les données sont réinitialisées automatiquement chaque jour. Les modifications ne sont pas conservées.',
+    accountsDescription:
+      'Passez à un compte ci-dessous pour voir ce qui est accessible à chaque rôle.',
+    loading: 'Chargement des comptes…',
+  },
   accounts: {
-    menu: 'Compte : {{name}}',
     title: 'Comptes',
     description:
       'Entrez dans la démo avec l’un de ces comptes pour voir ce que voit chacun.',
     enter: 'Entrer',
-    signedInAs: 'Connecté en tant que {{name}} · Changer',
     current: 'Actuel',
     entering: 'Connexion…',
     failed: 'Impossible d’accéder à ce compte.',

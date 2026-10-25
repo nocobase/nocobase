@@ -152,24 +152,24 @@ Demo reset always clears business data before calling the generator again. A fai
 
 ## Quick sign-in
 
-When `NOCOBASE_DEMO_MODE=true`, visitors enter any enabled person account without a password and switch between them. Existing accounts and accounts created by the dataset share the same entry list. An anonymous visitor opening the application home page automatically signs in as an existing Super Admin, identified by its unrestricted Permission Set; existing sessions are retained. This works before data generation and does not change passwords or permissions. The Client plugin contributes a `/demo-sign-in` page and a corner account switcher on every page, the sign-in page included. Registering the plugin alone does not enable Demo Mode.
+When `NOCOBASE_DEMO_MODE=true`, visitors enter any enabled person account without a password and switch between them. Existing accounts and accounts created by the dataset share the same entry list. An anonymous visitor opening the application home page automatically signs in as an existing Super Admin, identified by its unrestricted Permission Set; existing sessions are retained. This works before data generation and does not change passwords or permissions. The Client plugin contributes a `/demo-sign-in` page and exports a header menu. Registering the plugin alone does not enable Demo Mode.
 
 Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in and automatic home-page sign-in. It defaults to `true` and has no environment variable.
 
-Signed-in visitors switch accounts from a corner button by default. An application with an account menu puts the switch there instead, before signing out, and keeps the corner button for visitors who have not signed in:
+Place `DemoModeMenu` in the application's top header actions, before the assistant, appearance and avatar controls. It is a standalone “Demo mode · Switch account” button, with the environment explanation and account list in one dropdown. Hovering or clicking opens it; selecting an account reloads the current location, and a check marks the current account. Use the same component in the guest header when the application has one:
 
 ```tsx
 // client/plugins.ts
-demoMode({ accountSwitcher: 'menu' });
+demoMode();
 
-// the account menu, inside its Base UI DropdownMenuContent, before the sign-out item
-import { DemoAccountMenu } from '@nocobase/app-plugin-demo-mode/client/account-menu';
-<DemoAccountMenu />;
+// The application's header actions, alongside its other controls
+import { DemoModeMenu } from '@nocobase/app-plugin-demo-mode/client/menu';
+<DemoModeMenu />;
 ```
 
-Set `showFloatingAccountSwitcher: false` in the client registration to hide the floating entry for both guests and signed-in visitors. This does not disable `DemoAccountMenu` or the direct `/demo-sign-in` route. The default remains `true`.
+The application owns header placement and mounts one `DemoModeMenu` in each header. Outside Demo Mode the component renders nothing. When quick sign-in offers no accounts, the environment notice stays available and the dropdown explains that no accounts can be entered.
 
-`DemoAccountMenu` is a submenu of the system accounts with the current one checked, followed by a separator; it renders nothing outside a demo. The plugin preloads a shared account list on page entry, including when the floating switcher is hidden, so the submenu opens immediately on hover. Navigation and dataset changes refresh the list in the background.
+The plugin preloads a shared account list on page entry so the menu opens immediately on hover. Navigation and dataset changes refresh the list in the background. During a switch, account actions are disabled until navigation or an error; errors keep the current account selected and allow retry.
 
 - `GET /api/demoMode/accounts`, public, lists all enabled person accounts as `{ username, name, role, current }` with `meta.total`, without passwords. Dataset labels may provide `role`; they do not determine eligibility. Disabled, deleted and service accounts are excluded.
 - `POST /api/demoMode/accounts/{username}/signIn` ends the request's own session and asks Authentication to create an ordinary session for the selected account. No password or dataset ownership is required. An unavailable account is `404 DEMO_ACCOUNT_NOT_FOUND`; session creation failure is `400 DEMO_ACCOUNT_SIGN_IN_FAILED`.

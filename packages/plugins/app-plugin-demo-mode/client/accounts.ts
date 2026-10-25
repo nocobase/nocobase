@@ -41,7 +41,18 @@ export function useDemoAccounts(refreshKey?: unknown): DemoAccounts {
         path: `/demoMode/accounts/${encodeURIComponent(username)}/signIn`,
         method: 'POST',
       });
-      window.location.assign(safeRedirect(redirect, root));
+      const target = safeRedirect(redirect, root);
+      const url = new URL(target, window.location.href);
+      if (
+        url.pathname === window.location.pathname &&
+        url.search === window.location.search
+      ) {
+        // Assigning the same document with a hash only navigates within it, retaining the previous account's state.
+        window.history.replaceState(window.history.state, '', target);
+        window.location.reload();
+      } else {
+        window.location.assign(target);
+      }
     },
     [api, root],
   );

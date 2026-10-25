@@ -7,13 +7,21 @@ const resource: DemoModeResource = {
     configuration: 'Konfigurasi demo',
     configure: 'Konfigurasi',
   },
+  menu: {
+    label: 'Mode demo',
+    switchAccount: 'Ganti akun',
+    title: 'Ini adalah lingkungan demo',
+    description:
+      'Data diatur ulang secara otomatis setiap hari. Perubahan tidak disimpan.',
+    accountsDescription:
+      'Beralih ke salah satu akun di bawah untuk melihat apa yang dapat diakses setiap peran.',
+    loading: 'Memuat akun…',
+  },
   accounts: {
-    menu: 'Akun: {{name}}',
     title: 'Akun',
     description:
       'Masuk ke demo dengan salah satu akun ini untuk melihat apa yang dilihat masing-masing.',
     enter: 'Masuk',
-    signedInAs: 'Masuk sebagai {{name}} · Ganti',
     current: 'Saat ini',
     entering: 'Sedang masuk…',
     failed: 'Tidak dapat masuk ke akun ini.',

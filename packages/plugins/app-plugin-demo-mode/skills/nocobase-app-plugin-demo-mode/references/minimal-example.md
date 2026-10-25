@@ -21,6 +21,8 @@ The example's cleanup deletes all rows in `demotasks` and `demoprojects`, includ
 
 Retain the application's Authentication, Authorization and Users plugins. Register Demo Mode with `pnpm nocobase plugin register demo-mode`, as described in [enable the deployment](../SKILL.md#enable-the-deployment). Add `DemoProvider` to `server/providers/index.ts` and `demoProjectRoutes` to `server/routes/index.ts`. Register the `demoMode` configuration section as described in [enable the deployment](../SKILL.md#enable-the-deployment).
 
+Mount `DemoModeMenu` from `@nocobase/app-plugin-demo-mode/client/menu` in the existing top header action row, before the appearance and avatar controls, following [the required header entry](visitor-entry.md#required-header-entry). It supplies the demo notice and account switching in one dropdown.
+
 Configure the isolated deployment:
 
 ```yaml
@@ -84,8 +86,9 @@ Wrap each top-level page in the application's existing `PageContainer`, followin
 
 1. Run the application's normal migrations/startup and open its printed application entry URL. Sign in as the initial administrator described in [confirm the dedicated deployment](../SKILL.md#confirm-the-dedicated-deployment) and open `/demo-mode` under System management.
 2. Generate `en-US`. Expect one project, two tasks and two visitor accounts. Open `/demo-sign-in?as=demo_alex&redirect=/demo-projects`: Alex sees “Review the first issue”. Sam sees “Prepare the next issue”. The server filters by assignee even if the caller changes the URL.
-3. Reset as the administrator. Expect one project and two tasks again, with no duplicates; an existing visitor session remains valid. Clear, then generate again to exercise account disable/reuse separately.
-4. For a writable demo, add an authorized business mutation through the application's normal API workflow, enable only its collection, create visitor content and verify reset removes it. The minimal example intentionally exposes only reading.
+3. Open the header’s “Demo mode · Switch account” menu. Check the notice, account roles and current-account check, switch between Alex and Sam, and verify that each sees their assigned task.
+4. Reset as the administrator. Expect one project and two tasks again, with no duplicates; an existing visitor session remains valid. Clear, then generate again to exercise account disable/reuse separately.
+5. For a writable demo, add an authorized business mutation through the application's normal API workflow, enable only its collection, create visitor content and verify reset removes it. The minimal example intentionally exposes only reading.
 
 Alternatively use `pnpm nocobase demo-mode data import --actor <existing-admin-id> --language en-US --dry-run`, then replace `--dry-run` with `--force` after reviewing the target deployment. `--actor` takes the administrator's user ID, the `id` of its row in the `user` table, not its username. Dry-run prints the requested operation without starting or validating the application. Prefer the management page when the ID is not already known.
 
