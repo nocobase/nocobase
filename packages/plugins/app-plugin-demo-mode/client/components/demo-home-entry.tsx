@@ -18,20 +18,28 @@ export function DemoHomeEntry({ children }: PropsWithChildren): ReactElement {
   const { search, hash } = useLocation();
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
   const [ready, setReady] = useState(false);
-  const pendingRef = useRef<
-    Promise<{ data: { signedIn: boolean } }> | undefined
-  >(undefined);
+  const pendingRef = useRef<Promise<boolean> | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
-    pendingRef.current ??= api.request<{ data: { signedIn: boolean } }>({
-      path: '/demoMode/accounts/signInDefault',
-      method: 'POST',
-    });
+    pendingRef.current ??= api
+      .request<{ data: { signedIn: boolean } }>({
+        path: '/demoMode/accounts/signInDefault',
+        method: 'POST',
+      })
+      .then(async ({ data }) => {
+        if (!data.signedIn) return false;
+        // A successful sign-in response does not prove the browser accepted its cookies. Reload only after the next
+        // request recognizes the session; otherwise leave normal entry available instead of signing in forever.
+        const session = await api.request<{ user?: unknown } | null>({
+          path: '/auth/get-session',
+        });
+        return Boolean(session?.user);
+      });
     pendingRef.current
-      .then(({ data }) => {
+      .then((signedIn) => {
         if (!active) return;
-        if (data.signedIn) window.location.replace(`${root}${search}${hash}`);
+        if (signedIn) window.location.replace(`${root}${search}${hash}`);
         else setReady(true);
       })
       .catch(() => {

@@ -176,6 +176,8 @@ Set `showFloatingAccountSwitcher: false` in the client registration to hide the 
 - `POST /api/demoMode/accounts/signInDefault` creates a Super Admin session only for an anonymous visitor and answers `{ data: { signedIn } }`. It leaves normal entry available when no enabled Super Admin exists or quick sign-in is off.
 - Every listed account, including the initial administrator, is publicly enterable in Demo Mode. Internal dataset tracking exists only to manage generation, reset and cleanup; it is not a separate user account type.
 
+When Authentication issues partitioned cookies for an embedded demo, quick sign-in also expires their ordinary, unpartitioned counterparts with the same names, domains and paths. This migrates visitors who signed in before partitioning was enabled without changing the configured iframe cookies. Automatic home-page entry reloads only after a follow-up request recognizes the session; if the browser refuses the cookies, normal application entry remains available instead of a reload loop.
+
 ## Administration page
 
 Wrap the application's demo management route declarations with `demoModeRoutes([...])` from `@nocobase/app-plugin-demo-mode/client` before passing them to `defineAppRoutes()`, including when spreading them into a settings group's `children`. The helper includes them only when the server publishes `demoMode.enabled: true`; disabled or missing configuration omits both the routes and their menu entries, including for root. `defineDemoModeConfig()` publishes this flag automatically. See the [integration example](skills/nocobase-app-plugin-demo-mode/references/minimal-example.md#2-wire-existing-composition-roots). Existing applications must adopt the helper for their application-owned routes.
