@@ -3,7 +3,7 @@
 For dedicated demo deployments with databases and storage isolated from production. Mixed production and demo business data in one instance is not supported. The plugin has two parts:
 
 - **Request write protection.** A request-scoped database guard refuses writes except configured exceptions, and the client reports refused operations. Enabling Demo Mode activates the guard; applications must verify browsing and sign-in flows, adapt read paths that write, and separately isolate external calls.
-- **Demo data.** An application registers one demo dataset; administrators generate, clear and reset it from the application's own page, a command, a schedule or the API, and a simulated model answers its agents. See [Demo data generation](#demo-data-generation).
+- **Demo data.** An application registers one demo dataset; administrators generate, clear and reset it through a command, a schedule or the API, and a simulated model answers its agents. See [Demo data generation](#demo-data-generation).
 
 ## Sample data or a dedicated demo system
 
@@ -73,7 +73,7 @@ Use `NOCOBASE_DEMO_MODE=true` only in the isolated demo deployment. Browse the i
 
 ## Demo data generation
 
-The user actions are **Generate demo data**, **Clear demo data** and **Reset demo data**. Generation runs the application's predefined dataset steps; it does not upload a file or ingest an external dataset. Reset clears the demo system's business data and generates it again. The existing API/CLI names (`/import`, `importNow`, `demo-mode data import`) are retained as technical names for generation, not a separate data-import feature.
+The data operations are **Generate demo data**, **Clear demo data** and **Reset demo data**, available through the CLI and API. Generation runs the application's predefined dataset steps; it does not upload a file or ingest an external dataset. Reset clears the demo system's business data and generates it again. The existing API/CLI names (`/import`, `importNow`, `demo-mode data import`) are retained as technical names for generation, not a separate data-import feature.
 
 The plugin owns the generation/clear/reset lifecycle; the application owns what the data says. Register the dataset from a service provider:
 
@@ -180,15 +180,15 @@ The plugin preloads a shared account list on page entry so the menu opens immedi
 
 Wrap the application's demo management route declarations with `demoModeRoutes([...])` from `@nocobase/app-plugin-demo-mode/client` before passing them to `defineAppRoutes()`, including when spreading them into a settings group's `children`. The helper includes them only when the server publishes `demoMode.enabled: true`; disabled or missing configuration omits both the routes and their menu entries, including for root. `defineDemoModeConfig()` publishes this flag automatically. See the [integration example](skills/nocobase-app-plugin-demo-mode/references/minimal-example.md#2-wire-existing-composition-roots). Existing applications must adopt the helper for their application-owned routes.
 
-`DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is the whole demo administration: an application mounts it on a route of its own, inside its own page layout, and protects that route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`. Management uses the settings grants below, without an additional page grant. It is a single page of three cards:
+`DemoModeSettings` from `@nocobase/app-plugin-demo-mode/client/settings` is a read-only demo overview: an application mounts it on a route of its own, inside its own page layout, and protects that route with `authz: { resource: { type: 'settings', id: 'demoMode.data' }, action: 'read' }`. Viewing the page uses the settings read grants below, without an additional page grant. It is a single page of three cards:
 
-- **Demo data** — the dataset's state, language, time and counts, with Generate, Reset and Clear (each confirmed, with its exact consequence).
+- **Demo data** — the dataset's state, language, time, counts and operation progress.
 - **Daily reset** — a read-only display of the deployment’s reset time, IANA time zone, dataset language and next run. Daily reset is enabled automatically; it has no save controls or on/off switch.
 - **Accounts** — system usernames and a copyable sign-in link for each.
 
-Visitor write policies, simulation and AI controls are not displayed. Existing collection exceptions remain effective and can be managed through deployment configuration or the configuration API. Registered simulations and integrated demo chat are enabled by default; the application decides which flows to integrate. The page has no tabs; an existing `?tab=` parameter is ignored.
+Visitor write policies, simulation and AI controls are not displayed. Existing collection exceptions remain effective and can be managed through deployment configuration or the configuration API. Registered simulations and integrated demo chat are enabled by default; the application decides which flows to integrate.
 
-Data operations require the manage grant; the daily reset card requires only the configuration read grant. Update the reset environment variables and restart the application to change its schedule.
+The page is read-only for every account, including administrators: it has no Generate, Reset, Clear or dataset language controls. Use the CLI or API for data operations; API mutations require the manage grant. The daily reset card requires only the configuration read grant. Update the reset environment variables and restart the application to change its schedule.
 
 ```tsx
 import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings';
@@ -201,15 +201,15 @@ import { DemoModeSettings } from '@nocobase/app-plugin-demo-mode/client/settings
 />;
 ```
 
-`label` receives `count` (a key of the dataset's `counts`) with its id. `onDataChange` is called when a clear answers or a watched import or reset finishes, for the application to refresh what it caches. The data language defaults to the reader's interface language when the dataset is written in it.
+`label` receives `count` (a key of the dataset's `counts`) with its id. `onDataChange` is called when a data operation the page watched finishes, for the application to refresh what it caches. The page displays the dataset's recorded language.
 
 ### Host presentation components
 
 Pass a stable, module-level `components` map to reuse the host's page header, cards and buttons. `DemoSettingsComponents` and `DemoSettingsHeaderProps` are public types on the same `client/settings` export. Omitted slots retain the plugin defaults, so existing callers keep their presentation. Keep one `PageContainer` in the owning application.
 
-The slots are `Header`, `Button`, `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent` and `CardFooter`. Header receives localized `title`, `refreshLabel`, `refreshDisabled`, `refreshing` and `onRefresh`; preserve the refresh guard, and use `refreshing` for pending feedback. A host with a parent settings heading should use its frame-aware header.
+The slots are `Header`, `Button`, `Card`, `CardHeader`, `CardTitle`, `CardDescription` and `CardContent`. Header receives localized `title`, `refreshLabel`, `refreshDisabled`, `refreshing` and `onRefresh`; preserve the refresh guard, and use `refreshing` for pending feedback. A host with a parent settings heading should use its frame-aware header.
 
-Define component functions outside the page render to preserve drafts and focus. Primitive replacements must forward children, refs, disabled states, events and accessibility props. The plugin retains permissions, confirmation dialogs and revision-safe saves. Replace card parts together when the host uses a different spacing model, and allow action rows and unsaved-state footers to wrap on mobile. Do not change theme tokens or use global CSS overrides to adapt this one page.
+Define component functions outside the page render to preserve state and focus. Primitive replacements must forward children, refs, disabled states, events and accessibility props. The plugin retains read permissions, status refresh and account entry links. Replace card parts together when the host uses a different spacing model, and allow account action rows to wrap on mobile. Do not change theme tokens or use global CSS overrides to adapt this one page.
 
 ## Command line
 

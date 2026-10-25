@@ -28,21 +28,19 @@ const settings = (id: string, action: string) => ({
   action,
 });
 
-/** What the signed-in person may see and change on the page. */
+/** What the signed-in person may see on the page. */
 function useAccess() {
   const readData = useCan(settings('demoMode.data', 'read'));
-  const manageData = useCan(settings('demoMode.data', 'manage'));
   const readConfiguration = useCan(settings('demoMode.configuration', 'read'));
   return {
     pending: readData.isPending || readConfiguration.isPending,
     readData: readData.can,
-    manageData: readData.can && manageData.can,
     readConfiguration: readConfiguration.can,
   };
 }
 
 /**
- * The demo's administration page: its data, how visitors enter, and the daily reset.
+ * The demo's read-only overview: its data, how visitors enter, and the daily reset.
  * An application mounts it on a route of its own, passing the names of its dataset counts.
  */
 export function DemoModeSettings(
@@ -168,9 +166,7 @@ export function DemoModeSettings(
             <AlertDescription>{t('busyHelp')}</AlertDescription>
           </Alert>
         ) : null}
-        {access.readData ? (
-          <DataCard demo={demo} canManage={access.manageData} />
-        ) : null}
+        {access.readData ? <DataCard demo={demo} /> : null}
         {access.readConfiguration ? configured() : null}
         {access.readData ? <VisitorsCard status={demo.status} /> : null}
       </div>

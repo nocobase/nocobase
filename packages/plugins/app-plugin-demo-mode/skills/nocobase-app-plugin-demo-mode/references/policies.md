@@ -1,6 +1,6 @@
 # Data operations and write policies
 
-Use the built-in management page for data operations and a read-only daily reset overview. Write policies are managed through deployment configuration or the configuration service/API, without a built-in settings tab. Add the application's base path to each URL below.
+Use the built-in management page for a read-only overview of data status, progress, daily resets and account entry links. Run data operations and select the dataset language through the CLI or API. Write policies are managed through deployment configuration or the configuration service/API, without a built-in settings tab. Add the application's base path to each URL below.
 
 ## Data operations
 
