@@ -17,7 +17,7 @@ const RELATION_TYPES = new Set([
   'belongsToMany',
 ]);
 
-/** The Collections that hold the application's own data rather than a NocoBase package's. */
+/** Observed Collections outside the known system catalog; their business ownership is not inferred. */
 export function applicationCollections(
   probe: Probe,
 ): readonly CollectionSummary[] {
