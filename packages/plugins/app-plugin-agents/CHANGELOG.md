@@ -1,5 +1,107 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 6380861: Stream coding-tool conversation replies and supplied reasoning summaries through a bounded, redacted realtime preview channel. Automatically negotiate capable conversation runners, persist one completed snapshot per block, and preserve task execution, public log redaction and prompt history. Preserve token boundaries across chunks and verify that live text and reasoning match their completed snapshots. Preserve complete redaction context when choosing preview boundaries so token-like prose and punctuation remain consistent with completed snapshots.
+
+  Upgrade the application before its runners: protocol 14 announces the outputBlocks feature, while the upgraded application continues serving older runners. Retain ACP partial answers on length limits, refusals and cancellation, safely redact values adjacent to private keys, reconcile divergent previews through normal history refresh, skip empty assistant messages, and suppress unused Codex delta notifications for tasks.
+
+- Updated dependencies [756f3df]
+- Updated dependencies [6380861]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+  - @nocobase/agent-protocol@0.1.0-beta.15
+  - @nocobase/app-cli-client@0.1.0-beta.16
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
+- Updated dependencies [58531da]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-cli@1.0.0-beta.27
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 1.0.0-beta.22
+
+### Minor Changes
+
+- d490379: Prepare Native OnlineAgent document attachments in detached user-level model replay copies while preserving original messages, attachment authorization, public history and search text. Reuse the same preparation pipeline for realtime and background execution, history, approvals and message editing or regeneration.
+
+  Apply Provider forwarding defaults with exact service/model/Provider/protocol/base URL overrides, bounded file and text budgets, and an instance-owned TTL/LRU cache that reauthorizes and reads current source bytes before every reuse. Unsupported user inputs become honest parsing-limitation descriptions without hiding permission, validation, budget, cancellation or genuine extraction failures.
+
+  Support connection-pinned Kimi Files extraction for Moonshot documents by default and explicitly configured compatible services. Bound upload and content responses, attempt independent best-effort remote deletion, reuse remote results only within an execution, and keep credentials and remote identifiers out of messages. Preserve canonical tool evidence during approval and finalization recovery, and omit embedded DOCX images from extracted model text.
+
+### Patch Changes
+
+- d490379: Show safe, actionable, localized attachment preparation failures in live chat and saved history, including unconfigured image input, unreadable documents, extraction timeouts, and file or text limits. Keep Provider messages and document contents private, preserve cancellation and model capability checks, and use a generic localized explanation for historical failures without a saved reason.
+- d490379: Declare official DeepSeek Flash JPEG, PNG, GIF, and WebP capability in the shared model capability catalog, and derive native file routing from it regardless of service name. Remove the duplicated Examples profile while preserving exact model and endpoint admission, explicit deployment-policy overrides, local document extraction, and existing file limits.
+- d490379: Restore legacy PDF and image routing defaults for native agent providers while preserving DeepSeek behavior and exact model overrides. Moonshot now uploads supported documents to its selected Kimi Files service by default; an exact local profile disables remote extraction. Extract Ollama PDF text locally by default and describe explicit PDF-original overrides as unavailable when its SDK would silently omit them. Preserve authorization, budgets, cancellation and user-level document replay.
+- d490379: Keep native agent conversations usable when a user attaches an unsupported file type. Describe the filename, MIME type and parsing limitation in user-level model replay instead of failing the execution, including historical follow-up and unsupported image inputs. Preserve original attachments, authorization, input budgets and genuine parsing or Provider failures; update the Examples regression coverage without granting additional image capabilities.
+- d490379: Omit empty or whitespace-only system instructions from native agent model requests instead of sending an empty system message rejected by Moonshot/Kimi and other strict providers. Preserve nonempty instructions verbatim and keep extracted attachment content in user messages.
+- 4c98f67: Clarify personal and shared runtime usage, offer agent prompts and manual installation for macOS, Linux and Windows through WSL, and explain how to recover missing coding tools with the service PATH. New runtimes default to three concurrent runs. Expand installation prompts in full and require Windows agents to verify WSL Ubuntu before continuing.
+- 01e03b7: Keep runner agents visible according to their status, derive their model entry from their tool and model, and repair stale markers or missing model entries in existing installations.
+- Updated dependencies [d490379]
+  - @nocobase/document-extractor@0.1.0-beta.0
+
+## 1.0.0-beta.21
+
+### Minor Changes
+
+- 39fa974: The chat's headless entry tells a panel which kind of agent it shows: `resolveChatAgentMode`, `configuredChatModes`, `agentsOfMode` and `chatAgentMode` split the catalog into the online agent and runner agents, and `useChatPanel()` carries `agentMode` with `setAgentMode` for a panel that switches between them. `GET /api/agents/conversations` takes `mode=online|runner` to list one kind's conversations. `ChatProvider` takes `memoryScope` (the signed-in person's id) and remembers the agent a new conversation last went to in `localStorage` (`lastAgentId`, `rememberAgent`, `readLastAgent`, `rememberLastAgent`); `newConversationAgent` takes it as a third argument, ahead of the person's and the team's defaults. Every addition is optional, and a panel that passes none of it behaves as before.
+
+  The UI Library catalog in `nocobase-app-development` describes the updated `agent-chat` and `agent-composer` items: the panel's mode switch and the agent last used, and context chips that open a preview of what they carry.
+
+- 005418a: Add native realtime message resend and text editing with atomic history replacement, original attachment and context retention, and authoritative cross-view synchronization. Add inline Edit, Copy, and Regenerate controls with direct execution and duplicate-submit protection to the Examples chat while keeping its composer drafts and application readiness safeguards.
+
+  Use a single neutral inline editing surface with Cancel and Send outside the input. Remove the redundant attachment/context hint and hide duplicate message actions while editing.
+
+- dfc9be3: Add opt-in native OnlineAgent web search with provider-level admission for configured OpenAI, Anthropic, Google and Alibaba chat models on official endpoints, using the selected model service with isolated retrieval, execution budgets, cancellation and usage recording. Remove model-name allowlists without claiming universal vendor compatibility. Alibaba uses its existing Chat Completions SDK with an instance-scoped search flag; source-free answers are explicitly unverified, not fabricated evidence, and display no source list. Other platforms retain strict search/source evidence requirements. Incompatible calls fail safely without fallback; other providers and compatible/custom endpoints remain unsupported.
+
+  Expose derived model capabilities and published web-search contracts, preserve the existing configuration and SDK message lifecycle, and add localized search controls and overridable result cards to the Examples chat. Include locked-SDK offline provider fixtures and desktop/mobile compiled-deployment regression coverage; real provider acceptance is not implied.
+
+  Align an unset Alibaba service endpoint with the Beijing default shown by the model-service editor instead of the SDK's implicit Singapore endpoint. Preserve explicitly configured regional endpoints and credentials.
+
+  Present web search as a full-width segmented card with independent four-line result previews and Expand/Collapse controls. Pulse the globe only while searching, omit verification labels and disclaimers from the card, and preserve evidence states and safeguards in model output and persistence.
+
+  Use one retrieval-only prompt across the four providers, returning concise facts and specific evidence gaps instead of polished answers or generic website recommendations. Guide the main model to batch distinct queries and avoid unnecessary repeated searches, while preserving structured source validation and the Alibaba-only unverified policy.
+
+  Require forced search on Alibaba's isolated retrieval calls by sending both enable_search and search_options.forced_search. Keep ordinary chat requests unchanged and retain the unverified classification for source-free answers.
+
+## 1.0.0-beta.20
+
+### Minor Changes
+
+- 4dc982a: Support server-selected runner tools with shared ACP catalog adapters, explicit tool migration, cached detection, model discovery, session recovery and runtime configuration. Native adapters retain precedence. Upgrade the server before protocol-13 runners; new runtimes default to Codex and Claude Code. Tools without model listing use their default model, while unavailable explicit models fail before sending a task.
+
+  A runner's report no longer creates an agent for every tool and model it lists signed in: only a combination the application recommends is still created automatically, already enabled. Every other reported combination joins an available models list instead, for an administrator to create an agent from (`POST /api/agents/runnerAgents`, or select several at once); leftover pending agents from the old behavior that were never enabled and never ran can be listed and removed outright (`GET`/`POST /api/agents/cleanupCandidates`, `/cleanup`). Both lists are grouped by tool and paged (`GET /api/agents/availableModels` and `/cleanupCandidates` return one row per tool, with a `tool` parameter paging that tool's rows), so a tool reporting hundreds of models never ships them all in one response; the enable and cleanup dialogs became large drawers with a combined tool/model search, a four-state availability filter, per-tool collapse, virtualized rows past a threshold, cross-page multi-select and, for cleanup, a second confirmation before removing. Detection reports why a tool's status is what it is (`ToolInfo.statusReason`/`statusDetail`, optional additions within protocol 13), aggregated per tool so one runner's sign-in problem never hides another runner's working one, and runs behind the run's own code-host credential guard, so a tool that depends on a login command the guard refuses fails detection the same way it would fail a run. A run failure keeps the tool's own words instead of a placeholder, consecutive small text chunks of one turn merge into about one event a second, and an agent's generated name no longer breaks an @ mention.
+
+  Confirm Amp authentication only through a reviewed adapter authentication check; unknown login state remains a detection failure. Keep Add agent requests owned by the full two-step flow so pending requests cannot be duplicated by returning or closing. Report ACP protocol incompatibility separately from tool release requirements, and explicitly identify unknown minimum releases.
+
+  Make model selection and cleanup confirmations readable, render setup commands separately from expandable tool diagnostics, reuse catalog model names, and require Good at before adding agents. Show enabled agents with no usable runtime as unavailable without changing scheduling. Give actionable advice for incompatible ACP versions while keeping unknown minimum tool releases explicit.
+
+  Filter available models by each model's status instead of its tool's aggregate state. Merge disjoint status results and counts with complete pagination, preserve per-tool searches when filters change, and show all states when no status is selected.
+
+### Patch Changes
+
+- Updated dependencies [4dc982a]
+  - @nocobase/acp-bridge@1.0.0-beta.4
+  - @nocobase/agent-protocol@0.1.0-beta.14
+  - @nocobase/app-cli-client@0.1.0-beta.15
+
 ## 1.0.0-beta.19
 
 ### Patch Changes

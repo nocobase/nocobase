@@ -49,6 +49,7 @@ import {
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
   readonly uiRecovery?: OnlineAgentRecoveryConfig;
+  readonly fileInputs?: import('../online/files/types.js').FileInputsConfig;
   /**
    * Completed runs' events and prompt snapshots are kept `retentionDays`: 14 days by default, 0 disables cleanup. A
    * failed attempt waits `retryBaseDelayMs` before the next, doubling up to ten minutes: 30 seconds by default.
@@ -189,6 +190,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           : {}),
         ...(config?.cli ? { cli: config.cli } : {}),
         uiRecovery: config?.uiRecovery,
+        fileInputs: config?.fileInputs,
         manifestUrl: `${this.app.publicBasePath}/api/cli/manifest`,
         ...(config?.vectors ? { vectors: config.vectors } : {}),
         paths: {
@@ -400,6 +402,17 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.releases.push(
       services.events.onAny((event) => {
         switch (event.type) {
+          case 'conversation.historyReplaced':
+            announceConversation(event.userId, {
+              kind: 'conversation.historyReplaced',
+              conversationId: event.conversationId,
+              messageId: event.messageId,
+              seq: event.seq,
+              revision: event.revision,
+              lastSeq: event.lastSeq,
+              executionId: event.executionId,
+            });
+            return;
           case 'conversation.changed':
             announceConversation(
               event.userId,

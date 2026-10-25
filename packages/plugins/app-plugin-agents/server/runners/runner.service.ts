@@ -506,7 +506,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           emit({ type: 'runner.changed', runnerId: runner.id });
         }
         // Capacity belongs to the application; legacy registration requests cannot override it.
-        const slots = token.slots === null ? 4 : Number(token.slots);
+        const slots = token.slots === null ? 3 : Number(token.slots);
         const toolSlots = storedToolSlots(token.toolSlots);
         await runnersRepo(conn).createOne({
           values: {

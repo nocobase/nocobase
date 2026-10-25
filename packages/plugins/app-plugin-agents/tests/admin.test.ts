@@ -120,11 +120,11 @@ describe('admin API', () => {
   it('lets anyone signed in read agents, and only a manager of agents change them', async () => {
     h = await createHarness();
     expect((await h.request('GET', '/agents')).status).toBe(401);
-    const id = await h.createAgent({ source: 'runner', status: 'pending' });
+    const id = await h.createAgent({ source: 'runner', status: 'disabled' });
     const list = await h.request('GET', '/agents', { user: 'bob' });
     expect(list.status).toBe(200);
     expect(list.body.data).toEqual([
-      expect.objectContaining({ id, status: 'pending', canEdit: false }),
+      expect.objectContaining({ id, status: 'disabled', canEdit: false }),
     ]);
     const reader = await h.request('PATCH', `/agents/${id}`, {
       user: 'bob',
@@ -137,7 +137,7 @@ describe('admin API', () => {
       can: ADMIN,
     });
     expect(managed.body.data[0].canEdit).toBe(true);
-    // Anyone signed in may add a personal runner; a team runner needs the runners item.
+    // Anyone signed in may add a personal runner; a shared runner needs the runners item.
     const personal = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
@@ -159,7 +159,7 @@ describe('admin API', () => {
     h = await createHarness();
     const id = await h.createAgent({
       source: 'runner',
-      status: 'pending',
+      status: 'disabled',
       modelEntries: [{ tool: 'codex', model: 'gpt-6-astra', effort: 'medium' }],
     });
     const bare = await h.request('PATCH', `/agents/${id}`, {
@@ -889,7 +889,7 @@ describe('admin API', () => {
     expect(shared.body.data.trust).toBe('team');
   });
 
-  it('lets owners and team runner managers choose tools without granting other settings', async () => {
+  it('lets owners and shared runner managers choose tools without granting other settings', async () => {
     h = await createHarness();
     const token = await h.request(
       'POST',

@@ -1,3 +1,4 @@
+import { copyText } from '@nocobase/app-client';
 import {
   AlignLeft,
   AppWindow,
@@ -716,23 +717,9 @@ function RegistryPreview({
 
   const copyInstallCommand = async (): Promise<void> => {
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(installCommand);
-      } else {
-        const input = document.createElement('textarea');
-        input.value = installCommand;
-        input.setAttribute('readonly', '');
-        input.style.position = 'fixed';
-        input.style.opacity = '0';
-        document.body.append(input);
-        try {
-          input.select();
-          if (!document.execCommand('copy')) {
-            throw new Error('Clipboard is unavailable.');
-          }
-        } finally {
-          input.remove();
-        }
+      if (!(await copyText(installCommand))) {
+        setCopied(false);
+        return;
       }
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);

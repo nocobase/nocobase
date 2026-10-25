@@ -1,0 +1,113 @@
+import type { DemoModeResource } from './en-US.js';
+const resource: DemoModeResource = {
+  authorization: {
+    title: '示範資料',
+    read: '檢視',
+    manage: '產生與清空',
+    configuration: '示範設定',
+    configure: '設定',
+  },
+  accounts: {
+    menu: '帳號：{{name}}',
+    title: '帳號',
+    description: '以下列任一帳號進入示範，看看每個角色看到的系統。',
+    enter: '進入',
+    signedInAs: '目前：{{name}} · 切換',
+    current: '目前',
+    entering: '正在進入…',
+    failed: '無法進入此帳號。',
+    unavailable: '目前沒有可進入的帳號。',
+    password: '使用密碼登入',
+  },
+  refused: {
+    title: '示範模式無法儲存變更。',
+    description: '其他功能可照常瀏覽。',
+  },
+  settings: {
+    title: '示範環境',
+    refresh: '重新整理',
+    retry: '重試',
+    busy: '正在產生或清除示範資料',
+    busyHelp: '請等待目前的資料操作完成後再開始其他操作。',
+    disabled: {
+      title: '這個應用不是示範環境',
+      help: '示範模式未開啟，部署時以 NOCOBASE_DEMO_MODE=true 開啟。',
+    },
+    cancel: '取消',
+    errors: {
+      failed: '請求沒有完成，請重試。',
+      conflict: '其他管理員先儲存了這項設定。',
+      busy: '正在產生或清除示範資料，完成後再試。',
+      exists: '示範資料已經產生，請使用重設。',
+      demoModeRequired: '只有開啟示範模式時才能這樣做。',
+      accountConflict: '某個示範使用者名稱屬於不歸示範所有的帳號。',
+      unavailable: '這個應用沒有提供示範資料。',
+      signedOut: '登入已逾期，請重新登入。',
+      denied: '你沒有管理示範環境的權限。',
+    },
+    data: {
+      title: '示範資料',
+      state: {
+        importing: '產生中',
+        clearing: '清除中',
+        resetting: '重設中',
+        failed: '失敗',
+        ready: '已就緒',
+        none: '未產生',
+      },
+      presentSummary: '{{language}} · {{time}} 產生',
+      resettingSummary: '正在清除現有資料，然後以{{language}}重新產生。',
+      phase: {
+        clearing: '清除現有資料',
+        generating: '重新產生',
+      },
+      absentSummary: '產生示範資料後，訪客就能在完整的業務情境中體驗應用。',
+      language: '語言',
+      clear: '清除',
+      reset: '重設',
+      generate: '產生',
+      failed: '上一次沒有完成',
+      readOnly: '你可以檢視示範資料；產生、重設和清除需要管理權限。',
+      unavailable: '沒有示範資料',
+      unavailableHelp: '這個應用沒有註冊示範資料集。',
+      cleared: '已清除示範資料',
+      resetStarted: '正在重設示範資料',
+      importStarted: '正在產生示範資料',
+      confirm: {
+        import: {
+          title: '產生示範資料？',
+          description: '以{{language}}產生示範資料，並啟用其中的示範帳號。',
+        },
+        reset: {
+          title: '重設示範資料？',
+          description:
+            '會刪除這個執行個體中的全部業務資料（包括訪客新增的內容），然後以{{language}}重新產生示範資料。',
+        },
+        clear: {
+          title: '清除示範資料？',
+          description:
+            '會刪除這個執行個體中的全部業務資料（包括訪客新增的內容），並停用示範帳號。設定和管理員保留。',
+        },
+      },
+    },
+    visitors: {
+      unavailable: '目前沒有可進入的帳號。',
+      title: '帳號',
+      username: '使用者名稱 {{username}}',
+      copyLink: '複製連結',
+      copyLinkFor: '複製 {{name}} 的進入連結',
+      openFor: '以 {{name}} 開啟示範',
+      copied: '已複製',
+      copyFailed: '複製失敗，請從網址列複製連結。',
+    },
+    schedule: {
+      title: '每日重設',
+      description: '示範資料每天自動重設，重設時間、時區和語言由環境變數設定。',
+      time: '時間',
+      language: '語言',
+      timezone: '時區',
+      next: '下次重設：{{time}}',
+    },
+  },
+};
+export default resource;

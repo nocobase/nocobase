@@ -21,9 +21,9 @@ describe('agent governance', () => {
   const patch = (id: string, body: object, user = 'alice', can = ADMIN) =>
     h.request('PATCH', `/agents/${id}`, { user, can, body });
 
-  /** A discovered agent, pending until enabled. */
+  /** A disabled runner agent. */
   const discovered = (name = 'Coder') =>
-    h.createAgent({ name, source: 'runner', status: 'pending' });
+    h.createAgent({ name, source: 'runner', status: 'disabled' });
 
   it('refuses an edit made against a revision the agent has left', async () => {
     h = await createHarness();
@@ -107,7 +107,7 @@ describe('agent governance', () => {
     ]);
     expect(history.body.data[4].changes).toEqual([
       { field: 'description', before: null, after: 'Code review' },
-      { field: 'status', before: 'pending', after: 'enabled' },
+      { field: 'status', before: 'disabled', after: 'enabled' },
     ]);
     expect(
       history.body.data

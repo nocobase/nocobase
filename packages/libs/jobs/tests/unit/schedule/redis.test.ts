@@ -91,6 +91,8 @@ class FakeWorker {
   public readonly listeners = new Map<string, Listener>();
   public readonly calls: string[] = [];
   public readonly abort = new AbortController();
+  public terminalGate: Promise<void> = Promise.resolve();
+  public readonly terminalEntered = Promise.withResolvers<void>();
 
   public constructor(public readonly processor: ScheduleProcessor) {}
 
@@ -110,11 +112,19 @@ class FakeWorker {
   /** Runs a job the way BullMQ does: `active`, the processor, then `completed` or `failed`. */
   public async fire(job: Job): Promise<unknown> {
     this.listeners.get('active')?.(job, 'waiting');
+    return this.processJob(job, 'token');
+  }
+
+  public async processJob(job: Job, token: string): Promise<unknown> {
     try {
-      await this.processor(job, 'token', this.abort.signal);
+      await this.processor(job, token, this.abort.signal);
+      this.terminalEntered.resolve();
+      await this.terminalGate;
       this.listeners.get('completed')?.(job, undefined, 'active');
       return undefined;
     } catch (error) {
+      this.terminalEntered.resolve();
+      await this.terminalGate;
       this.listeners.get('failed')?.(job, error, 'active');
       return error;
     }
@@ -516,6 +526,119 @@ describe('redis adapter', () => {
     expect(created.abort.signal.aborted).toBe(true);
     expect(queue.close).toHaveBeenCalledTimes(1);
   });
+
+  it('waits for a processor and event delivery when worker close fails', async () => {
+    const { executor, worker, queue } = harness();
+    const processing = Promise.withResolvers<void>();
+    const entered = Promise.withResolvers<void>();
+    const delivery = Promise.withResolvers<void>();
+    const error = new Error('worker close failed');
+    await executor.addJob(
+      job(async () => {
+        entered.resolve();
+        await processing.promise;
+      }),
+    );
+    executor.subscribe(async () => {
+      await delivery.promise;
+    });
+    await executor.setup();
+    const created = worker();
+    const execution = created.fire(firing());
+    await entered.promise;
+    created.close.mockRejectedValue(error);
+    let settled = false;
+    const outcome = executor.shutdown().catch((cause) => {
+      settled = true;
+      return cause;
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+    expect(queue.close).not.toHaveBeenCalled();
+    processing.resolve();
+    await execution;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+    delivery.resolve();
+    expect(await outcome).toBe(error);
+    expect(queue.close).toHaveBeenCalledOnce();
+  });
+
+  it.each([false, true])(
+    'waits for terminal persistence and delivery after close fails (handler fails: %s)',
+    async (fails) => {
+      const { executor, worker, queue } = harness();
+      const terminal = Promise.withResolvers<void>();
+      const delivery = Promise.withResolvers<void>();
+      const closeFailure = new Error('worker close failed');
+      const handlerFailure = new Error('handler failed');
+      const seen: ScheduleEvent[] = [];
+      await executor.addJob(
+        job(async () => {
+          if (fails) throw handlerFailure;
+        }),
+      );
+      executor.subscribe(async (event) => {
+        seen.push(event);
+        if (event.name !== 'ScheduleStart') {
+          await delivery.promise;
+        }
+      });
+      await executor.setup();
+      const created = worker();
+      created.terminalGate = terminal.promise;
+      const execution = created.fire(firing());
+      await created.terminalEntered.promise;
+      created.close.mockRejectedValue(closeFailure);
+      let settled = false;
+      const shared = executor.shutdown();
+      const shutdown = shared.catch((error) => {
+        settled = true;
+        return error;
+      });
+      expect(executor.shutdown()).toBe(shared);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      const premature = settled;
+      const prematurelyClosedQueue = queue.close.mock.calls.length;
+      terminal.resolve();
+      await execution;
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      const beforeDelivery = settled;
+      delivery.resolve();
+      expect(await shutdown).toBe(closeFailure);
+      expect(premature).toBe(false);
+      expect(prematurelyClosedQueue).toBe(0);
+      expect(beforeDelivery).toBe(false);
+      expect(seen.map((event) => event.name)).toEqual([
+        'ScheduleStart',
+        fails ? 'ScheduleError' : 'ScheduleEnd',
+      ]);
+      if (fails) expect(seen[1]?.error).toBe(handlerFailure);
+      expect(queue.close).toHaveBeenCalledOnce();
+    },
+    30_000,
+  );
+
+  it('preserves close and terminal persistence failures without waiting for a missing event', async () => {
+    const { executor, worker, queue } = harness();
+    const terminal = Promise.withResolvers<void>();
+    const closeFailure = new Error('worker close failed');
+    const persistenceFailure = new Error('terminal persistence failed');
+    await executor.addJob(job());
+    await executor.setup();
+    const created = worker();
+    created.terminalGate = terminal.promise;
+    const execution = created.fire(firing()).catch((error) => error);
+    await created.terminalEntered.promise;
+    created.close.mockRejectedValue(closeFailure);
+    const outcome = executor.shutdown().catch((error) => error);
+    terminal.reject(persistenceFailure);
+    expect(await execution).toBe(persistenceFailure);
+    const error = await outcome;
+    expect(error).toBeInstanceOf(AggregateError);
+    expect(error.errors).toEqual([closeFailure, persistenceFailure]);
+    expect(queue.close).toHaveBeenCalledOnce();
+  }, 30_000);
 
   it('closes the queue when the worker cannot start', async () => {
     const { executor, queue } = harness();

@@ -1,3 +1,8 @@
+import {
+  fixtureFileInputs,
+  projectNativeHistory,
+} from './helpers/native-files.js';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import {
@@ -87,26 +92,28 @@ async function fixture(model: MockLanguageModelV4) {
     },
   });
   const measurements: { phase: string; durationMs: number }[] = [];
+  const fileInputs = fixtureFileInputs(model, h.services.chatAttachments);
   const sessions = createSessionManager({
     tx: h.services.tx,
     ids,
     attachments: attachments.links,
-    files: h.services.chatAttachments,
     now: () => new Date().toISOString(),
     measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
   });
   const resolver = new ServiceContainer();
   const errors: unknown[] = [];
-  const resolveModel = vi.fn(
-    async (_ref: typeof ref, _sessionId: string) => model,
+  const resolveModel = vi.fn((_ref: typeof ref, _sessionId: string) =>
+    fileInputs.model(_ref, _sessionId),
   );
   const service = new OnlineAgentService({
     sessions,
     ids,
     resolver,
+    fileInputs,
     model: resolveModel,
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
   });
   // HTTP projections must observe the same real Service that owns this SDK fixture.
   vi.spyOn(h.services.onlineAgent, 'producerAvailable').mockImplementation(
@@ -121,7 +128,9 @@ async function fixture(model: MockLanguageModelV4) {
     resolveModel,
     history: async (agent: { sessionId: string }, userId = 'alice') =>
       (
-        await sessions.native.executionHistory(
+        await projectNativeHistory(
+          sessions.native,
+          h.services.chatAttachments,
           userId,
           agent.sessionId,
           undefined,
@@ -443,6 +452,34 @@ describe('OnlineAgent service slice', () => {
     ).rejects.toThrow('not found');
   });
 
+  it('lists online and Runner conversations apart by mode', async () => {
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async () => ({ stream: streamed(text('Hi')) }),
+      }),
+    );
+    const online = await f.service.realtime(context());
+    const agentId = await h.createAgent();
+    const runner = (await h.services.conversations.create('alice', { agentId }))
+      .id;
+    const ids = async (mode?: 'online' | 'runner') =>
+      (
+        await h.services.conversations.list('alice', mode ? { mode } : {})
+      ).items.map((item) => item.id);
+    expect(await ids()).toEqual(
+      expect.arrayContaining([online.sessionId, runner]),
+    );
+    expect(await ids('online')).toEqual([online.sessionId]);
+    expect(await ids('runner')).toEqual([runner]);
+    const http = await h.request('GET', '/agents/conversations?mode=runner', {
+      user: 'alice',
+    });
+    expect(http.status).toBe(200);
+    expect(http.body.data.map((item: { id: string }) => item.id)).toEqual([
+      runner,
+    ]);
+  });
+
   it('retries failed and commit-unknown UI saves without rerunning the SDK or duplicating messages', async () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({ stream: streamed(text('Saved once')) }),
@@ -624,12 +661,6 @@ it.each(['realtime', 'background'] as const)(
     const internal = await f.history(agent);
     expect(JSON.stringify(internal)).toContain('Private');
     expect(JSON.stringify(internal)).toContain('secret');
-    expect(await f.sessions.history('alice', agent.sessionId)).toEqual(
-      internal,
-    );
-    expect(await f.sessions.executionHistory('alice', agent.sessionId)).toEqual(
-      internal,
-    );
   },
 );
 
@@ -691,7 +722,7 @@ it('assembles background UI messages without transport and replays private user 
     ]);
     expect(history[0].parts).toEqual([{ type: 'text', text: 'Files' }]);
     expect(JSON.stringify(history)).not.toContain('private');
-    const replay = await f.sessions.history('alice', job.sessionId);
+    const replay = await f.history(job);
     expect(replay[0]).toMatchObject({
       role: 'user',
       providerOptions: { fixture: { token: 'private-user-options' } },
@@ -2231,6 +2262,7 @@ it('does not reclaim current-process occupancy through a new service facade or b
   await agent.send([{ role: 'user', content: 'Work' }]);
   await entered.promise;
   const second = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions: f.sessions,
     ids: { next: () => 'unused' },
     model: async () => model,
@@ -2505,6 +2537,7 @@ it('waits for persistence and release, isolates multiple observers across rounds
   outputs[1].close();
   expect(await final).toEqual({ count: 2 });
   const restarted = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions: f.sessions,
     ids: { next: () => 'unused-read-id' },
     model: f.resolveModel,

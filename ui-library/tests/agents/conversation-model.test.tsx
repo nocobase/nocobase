@@ -28,6 +28,7 @@ import enUS from '../../registry/agents/agent-chat/locales/en-US';
 
 const host = vi.hoisted(() => ({
   request: vi.fn(),
+  resendPending: false,
   stream: vi.fn(),
   show: vi.fn(),
   realtime: { watch: () => ({ close: () => {} }) },
@@ -38,6 +39,19 @@ vi.mock('@nocobase/app-client', async (original) => ({
   useService: () => host.realtime,
   useToaster: () => ({ show: host.show }),
 }));
+vi.mock('@nocobase/app-plugin-agents/client/chat', async (original) => {
+  const actual =
+    await original<typeof import('@nocobase/app-plugin-agents/client/chat')>();
+  return {
+    ...actual,
+    useResendMessage: (
+      ...args: Parameters<typeof actual.useResendMessage>
+    ) => ({
+      ...actual.useResendMessage(...args),
+      isPending: host.resendPending,
+    }),
+  };
+});
 const runtime = await createTestI18nRuntime({
   application: { namespace: 'model-choice-test', resources: enUS },
 });
@@ -53,8 +67,8 @@ function Open() {
   useLayoutEffect(() => openChat({ conversationId: 'c' }), [openChat]);
   return null;
 }
-function mount() {
-  return render(
+function scene() {
+  return (
     <TestI18nProvider runtime={runtime}>
       <MemoryRouter>
         <ChatProvider>
@@ -62,12 +76,16 @@ function mount() {
           <ConversationView conversationId='c' />
         </ChatProvider>
       </MemoryRouter>
-    </TestI18nProvider>,
+    </TestI18nProvider>
   );
+}
+function mount() {
+  return render(scene());
 }
 beforeEach(() => {
   agentsQueryClient().clear();
   host.request.mockReset();
+  host.resendPending = false;
   host.stream.mockReset();
   config = {
     selectedModel: first,
@@ -119,7 +137,12 @@ beforeEach(() => {
             name: 'local',
             title: 'Local',
             models: [
-              { value: 'first', label: 'First model', kind: 'chat' },
+              {
+                value: 'first',
+                label: 'First model',
+                kind: 'chat',
+                capabilities: { webSearch: true },
+              },
               { value: 'second', label: 'Second model', kind: 'chat' },
               { value: 'forbidden', label: 'Outside scope', kind: 'chat' },
             ],
@@ -137,6 +160,33 @@ async function ready() {
   expect(picker).toHaveTextContent('First model');
   return picker;
 }
+it('persists the search toggle through the shared config patch and disables it for unsupported models', async () => {
+  mount();
+  await ready();
+  const button = screen.getByTestId('chat-web-search-toggle');
+  expect(button).toHaveAttribute('aria-pressed', 'false');
+  expect(button).toBeEnabled();
+  patch = async () => (config = { ...config, webSearch: true });
+  fireEvent.click(button);
+  await waitFor(() => expect(button).toHaveAttribute('aria-pressed', 'true'));
+  expect(host.request).toHaveBeenCalledWith(
+    expect.objectContaining({
+      path: 'agents/conversations/c/config',
+      method: 'PATCH',
+      json: { config: { webSearch: true } },
+    }),
+  );
+  expect(config.scope).toEqual(['business']);
+  config = { ...config, selectedModel: second, webSearch: false };
+  await act(async () => {
+    await agentsQueryClient().invalidateQueries({
+      queryKey: chatKeys.configuration('c'),
+      exact: true,
+    });
+  });
+  await waitFor(() => expect(button).toBeDisabled());
+  expect(button).toHaveAttribute('aria-pressed', 'false');
+});
 it('shows only allowed models in an existing native conversation and saves the choice without creating a conversation', async () => {
   mount();
   const picker = await ready();
@@ -316,4 +366,19 @@ it('offers recovery after configuration loading fails without showing a false de
   );
   await waitFor(() => expect(picker).toBeEnabled());
   expect(picker).toHaveTextContent('First model');
+});
+
+it('blocks model and search configuration while resend admission is pending', async () => {
+  const view = mount();
+  const picker = await ready();
+  const search = screen.getByTestId('chat-web-search-toggle');
+  expect(search).toBeEnabled();
+  host.resendPending = true;
+  view.rerender(scene());
+  expect(picker).toBeDisabled();
+  expect(search).toBeDisabled();
+  host.resendPending = false;
+  view.rerender(scene());
+  expect(picker).toBeEnabled();
+  expect(search).toBeEnabled();
 });

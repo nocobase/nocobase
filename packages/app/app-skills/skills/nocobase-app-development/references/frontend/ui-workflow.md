@@ -8,6 +8,8 @@ This is the entry point for the application's frontend work: read it before writ
 
 What the interface should look like is in [`ui-guidelines.md`](ui-guidelines.md); how to write the code is in [`frontend-dev.md`](frontend-dev.md). Paths in this document are relative to its own directory: [`ui-guidelines.md`](ui-guidelines.md) and [`frontend-dev.md`](frontend-dev.md) sit beside it, the topic references are under `references/`, the record templates and reviewer prompts are under `templates/`, and the screenshot tool is under `scripts/`.
 
+Every workflow follows [browser API compatibility](frontend-dev.md#browser-api-compatibility): explain unavailable HTTPS-only capabilities to users, and verify that UUID generation and copy actions work on ordinary HTTP through the shared `@nocobase/app-client` utilities.
+
 ## Choosing a workflow
 
 Decide before you start, and say in one sentence in your reply which workflow you are following and why.

@@ -168,11 +168,9 @@ export interface PermissionsApprovalParams {
   permissions: unknown;
 }
 
-/** Streaming deltas the adapter does not need; it reads completed items. */
+/** Notifications not used by the adapter. */
 export const OPTED_OUT_NOTIFICATIONS: readonly string[] = [
-  'item/agentMessage/delta',
   'item/plan/delta',
-  'item/reasoning/summaryTextDelta',
   'item/reasoning/summaryPartAdded',
   'item/reasoning/textDelta',
   'item/commandExecution/outputDelta',

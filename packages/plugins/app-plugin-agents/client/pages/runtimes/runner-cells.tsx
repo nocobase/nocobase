@@ -3,7 +3,6 @@
  * runtime-cli.tsx`): its state with the slots it uses, its coding tools with whether each is turned on, installed and
  * signed in, and its version with the command that upgrades it.
  */
-import { AGENT_TOOLS } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 
@@ -42,9 +41,7 @@ const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
 };
 
 /**
- * Its state at a glance: online or busy with the slots it uses ("Busy 1/1"), offline since when, revoked, or waiting
- * for an upgrade; below it, the runs by coding tool against each tool's limit ("Claude Code 2/2 · Codex 0/1") when it
- * limits a tool or runs any.
+ * Its state at a glance, with online concurrency limits and optional per-tool limits.
  */
 export function RunnerStatusCell({
   runner,
@@ -55,10 +52,6 @@ export function RunnerStatusCell({
     RunnerListItem,
     | 'status'
     | 'slots'
-    | 'reportedSlots'
-    | 'capacitySource'
-    | 'capacityReportedAt'
-    | 'toolLoad'
     | 'activeRuns'
     | 'activeJobs'
     | 'lastSeenAt'
@@ -70,24 +63,15 @@ export function RunnerStatusCell({
 }): ReactElement {
   const { t } = useTranslation();
   const format = useFormatters();
-  const actual = {
-    ...runner,
-    slots: runner.reportedSlots ?? Number.POSITIVE_INFINITY,
-    toolSlots: Object.fromEntries(
-      Object.entries(runner.toolLoad ?? {}).map(([tool, load]) => [
-        tool,
-        load.slots,
-      ]),
-    ),
-  };
-  const activity = runnerActivity(actual);
+  const state = runnerActivity(runner);
+  const activity = state === 'busy' ? 'online' : state;
   const values = {
     active: runner.activeRuns + runner.activeJobs,
-    slots: runner.reportedSlots ?? '?',
+    slots: runner.slots,
     time: format.relative(runner.lastSeenAt),
   };
   let label: string;
-  if (activity === 'online' || activity === 'busy' || activity === 'low_disk')
+  if (activity === 'online' || activity === 'low_disk')
     label = t(`runtimes.activity.${activity}`, values);
   else if (activity === 'offline')
     label = runner.lastSeenAt
@@ -104,42 +88,10 @@ export function RunnerStatusCell({
       {label}
     </AgTag>
   );
-  const usage = runner.reportedSlots === undefined ? [] : toolUsage(actual);
-  const pending =
-    runner.capacitySource === 'online' &&
-    (runner.reportedSlots !== runner.slots ||
-      AGENT_TOOLS.some((tool) => {
-        return (
-          (runner.toolLoad?.[tool]?.slots ?? runner.reportedSlots) !==
-          Math.min(runner.toolSlots?.[tool] ?? runner.slots, runner.slots)
-        );
-      }));
-  const notice =
-    runner.capacitySource === undefined
-      ? t('runtimes.capacity.upgrade')
-      : pending
-        ? t('runtimes.capacity.pending')
-        : runner.capacitySource === 'legacyLocal'
-          ? t('runtimes.capacity.legacy')
-          : t('runtimes.capacity.online');
+  const usage = toolUsage(runner).filter((item) => item.limited);
   return (
     <div className='flex flex-col items-start gap-1'>
       {tag}
-      {runner.status === 'offline' ? (
-        <span className='text-xs'>
-          {t('runtimes.capacity.actual', {
-            slots: runner.reportedSlots ?? '?',
-          })}
-        </span>
-      ) : null}
-      <span className='text-xs text-muted-foreground'>{notice}</span>
-      {runner.status === 'offline' ? (
-        <span className='text-xs text-muted-foreground'>
-          {t('runtimes.capacity.lastReported', {
-            time: format.dateTime(runner.capacityReportedAt),
-          })}
-        </span>
-      ) : null}
       {badgeOnly || usage.length === 0 ? null : (
         <ul
           className='flex flex-wrap gap-x-2 text-xs text-muted-foreground tabular-nums'

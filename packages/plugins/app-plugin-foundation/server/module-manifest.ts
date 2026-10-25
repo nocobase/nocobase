@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 import type { FoundationModuleSources } from '../shared/foundation.js';
+import { ApiEvidenceSchema } from './api-evidence-schema.js';
 
 export const MODULE_MANIFEST_FILE: string = 'foundation-modules.json';
 const manifestSchema = z
@@ -19,6 +20,7 @@ const manifestSchema = z
                 routeName: z.string(),
                 providers: z.array(z.string()),
                 apiProviders: z.array(z.string()).optional(),
+                apiEvidence: z.array(ApiEvidenceSchema).optional(),
                 collections: z.array(z.string()).optional(),
                 complete: z.boolean(),
               })

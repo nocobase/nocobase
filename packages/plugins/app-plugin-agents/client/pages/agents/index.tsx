@@ -1,5 +1,5 @@
 /**
- * Route `/agents`: the agents people give work to, one for each coding tool and model the runners report
+ * Route `/agents`: the agents people give work to, added from reported models or the application’s recommendations
  * (`runner-agents.tsx`). An application that keeps agents of its own composes this section into its own page instead
  * (`RunnerAgentsSection` from `client/kit`).
  */

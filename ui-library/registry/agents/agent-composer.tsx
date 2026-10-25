@@ -10,6 +10,9 @@
  * text, an image as a thumbnail and anything else as a chip, until it is removed or sent. A file over the size limit
  * or one that failed to upload is marked and keeps the message from being sent; a message sent while files upload
  * goes once they are done.
+ *
+ * With `context.inspect`, clicking a chip opens a small dialog with what it carries (`ContextPreviewDialog`, which a
+ * page can also open for the context a sent message carried).
  */
 import {
   filterText,
@@ -52,6 +55,12 @@ import {
 import { Badge } from '#components/ui/badge';
 import { Button } from '#components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '#components/ui/dialog';
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupTextarea,
@@ -81,6 +90,10 @@ export interface AgentComposerLabels {
   /** A chip's remove button; `{label}` is the chip's text. */
   readonly contextRemove: string;
   readonly contextFailed?: string;
+  /** A chip's button that shows what it carries; `{label}` is the chip's text. */
+  readonly contextInspect?: string;
+  /** The title of the dialog that shows what a chip carries; `{label}` is the chip's text. */
+  readonly contextPreview?: string;
   /** The attach button. */
   readonly attach: string;
   /** The files' accessible name. */
@@ -114,6 +127,8 @@ const defaultAgentComposerLabels: AgentComposerLabels = {
   contextRemove: 'Remove context: {label}',
   contextFailed:
     'Could not read the selected context or send the message. Check the current page and try again.',
+  contextInspect: 'Show context: {label}',
+  contextPreview: 'Context: {label}',
   attach: 'Attach files',
   attachmentsLabel: 'Files the next message carries',
   attachmentRemove: 'Remove {name}',
@@ -180,6 +195,11 @@ export interface AgentComposerContext {
   /** The context a message sent now carries; called on send. */
   readonly build: () =>
     PageContext | undefined | Promise<PageContext | undefined>;
+  /**
+   * What a chip carries, shown in a dialog when the chip is clicked: text as it is, anything else as JSON. Left out,
+   * the chips are not clickable.
+   */
+  readonly inspect?: (chip: ChatContextChip) => unknown;
 }
 
 /** Text put in the box from elsewhere, such as an "Ask agent" button; each new `nonce` fills it once. */
@@ -237,21 +257,84 @@ function ChipIcon({ chip }: { readonly chip: ChatContextChip }): ReactElement {
   );
 }
 
+export interface ContextPreviewDialogProps {
+  /** The chip's text; the dialog's title is `labels.contextPreview` with it. */
+  readonly label: string;
+  /** Text shows as it is, anything else as JSON. */
+  readonly content: unknown;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly labels?: Partial<AgentComposerLabels>;
+}
+
+function previewText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (content === undefined) return '';
+  try {
+    return JSON.stringify(content, null, 2) ?? '';
+  } catch {
+    // A cycle or a BigInt: nothing better to show than its type.
+    return typeof content;
+  }
+}
+
+/** A small dialog with what a piece of context carries, for a chip in the composer or under a sent message. */
+export function ContextPreviewDialog({
+  label,
+  content,
+  open,
+  onOpenChange,
+  labels,
+}: ContextPreviewDialogProps): ReactElement {
+  const words = labels
+    ? { ...defaultAgentComposerLabels, ...labels }
+    : defaultAgentComposerLabels;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className='flex max-h-[min(80dvh,36rem)] flex-col gap-3 sm:max-w-lg'
+        data-testid='chat-context-preview'
+      >
+        <DialogHeader>
+          <DialogTitle className='pr-6 break-words'>
+            {format(
+              words.contextPreview ??
+                defaultAgentComposerLabels.contextPreview ??
+                '{label}',
+              { label },
+            )}
+          </DialogTitle>
+        </DialogHeader>
+        <pre className='min-h-0 flex-1 overflow-auto rounded-md bg-muted p-3 font-mono text-xs whitespace-pre-wrap break-words text-foreground'>
+          {previewText(content)}
+        </pre>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export interface ComposerContextChipsProps {
   readonly chips: readonly ChatContextChip[];
   readonly onRemove: (key: string) => void;
   readonly labels?: Partial<AgentComposerLabels>;
+  /** What a chip carries; with it, clicking a chip opens `ContextPreviewDialog`. */
+  readonly inspect?: ((chip: ChatContextChip) => unknown) | undefined;
 }
 
-/** What the next message carries; each chip holds its own remove button. */
+/** What the next message carries; each chip holds its own remove button, and opens what it carries with `inspect`. */
 export function ComposerContextChips({
   chips,
   onRemove,
   labels,
+  inspect,
 }: ComposerContextChipsProps): ReactElement | null {
   const words = labels
     ? { ...defaultAgentComposerLabels, ...labels }
     : defaultAgentComposerLabels;
+  const [shown, setShown] = useState<{
+    readonly label: string;
+    readonly content: unknown;
+  } | null>(null);
   if (chips.length === 0) return null;
   const text = (chip: ChatContextChip): string =>
     chip.kind === 'ui'
@@ -265,7 +348,7 @@ export function ComposerContextChips({
           : format(words.contextSelection, {
               text: selectionPreview(chip.selection.text),
             });
-  return (
+  const list = (
     <ul
       className='flex w-full min-w-0 flex-wrap items-center gap-1'
       aria-label={words.contextLabel}
@@ -293,7 +376,24 @@ export function ComposerContextChips({
               title={chip.kind === 'selection' ? chip.selection.text : label}
             >
               <ChipIcon chip={chip} />
-              <span className='min-w-0 truncate'>{label}</span>
+              {inspect ? (
+                <button
+                  type='button'
+                  className='min-w-0 truncate rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
+                  aria-label={format(
+                    words.contextInspect ??
+                      defaultAgentComposerLabels.contextInspect ??
+                      '{label}',
+                    { label },
+                  )}
+                  onClick={() => setShown({ label, content: inspect(chip) })}
+                  data-testid='chat-context-chip-inspect'
+                >
+                  {label}
+                </button>
+              ) : (
+                <span className='min-w-0 truncate'>{label}</span>
+              )}
               <Button
                 variant='ghost'
                 size='icon-xs'
@@ -308,6 +408,22 @@ export function ComposerContextChips({
         );
       })}
     </ul>
+  );
+  return inspect ? (
+    <>
+      {list}
+      <ContextPreviewDialog
+        label={shown?.label ?? ''}
+        content={shown?.content}
+        open={shown !== null}
+        onOpenChange={(open) => {
+          if (!open) setShown(null);
+        }}
+        labels={words}
+      />
+    </>
+  ) : (
+    list
   );
 }
 
@@ -742,6 +858,7 @@ export function AgentComposer({
     <ComposerContextChips
       chips={context.chips}
       onRemove={context.onRemove}
+      inspect={context.inspect}
       labels={words}
     />
   ) : null;

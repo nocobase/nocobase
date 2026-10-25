@@ -73,6 +73,27 @@ describe('@nocobase/app-plugin-foundation API routes', () => {
     });
   });
 
+  it('checks authorization again after a successful response has warmed the service', async () => {
+    let identity: 'anonymous' | 'restricted' | 'unrestricted' = 'unrestricted';
+    const overview = vi.fn().mockResolvedValue(OVERVIEW);
+    const router = await apiRoutes.createRouter(
+      application({
+        get identity() {
+          return identity;
+        },
+        overview,
+      }),
+    );
+    expect((await router.request(OVERVIEW_PATH)).status).toBe(200);
+    identity = 'restricted';
+    expect((await router.request(`${OVERVIEW_PATH}?refresh=true`)).status).toBe(
+      403,
+    );
+    identity = 'anonymous';
+    expect((await router.request(OVERVIEW_PATH)).status).toBe(401);
+    expect(overview).toHaveBeenCalledTimes(1);
+  });
+
   it('collects again when asked to refresh, and rejects a malformed flag', async () => {
     const overview = vi.fn().mockResolvedValue(OVERVIEW);
     const router = await apiRoutes.createRouter(

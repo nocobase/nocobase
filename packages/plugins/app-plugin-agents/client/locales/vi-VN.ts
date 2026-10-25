@@ -1,4 +1,6 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
+import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -94,41 +96,28 @@ const viVN: LocaleResource<typeof enUS> = {
     unavailableNow: 'Hiện không khả dụng',
     title: 'Tác nhân',
     description:
-      'Mỗi công cụ mã hóa và mô hình mà trình chạy báo cáo là một tác nhân. Người quản lý dự án giao từng bước của một vấn đề cho người đại diện có mô tả phù hợp với nó.',
+      'Thêm tác nhân từ các mô hình do trình chạy báo cáo. Người quản lý dự án giao từng bước của nhiệm vụ cho tác nhân có mô tả phù hợp.',
     fromRunners: 'Đại lý từ trình chạy',
-    discovery: {
-      selectAll: 'Chọn tất cả kết quả',
-      selectFirst: 'Chọn kết quả {{limit}} đầu tiên',
-      selectionCount: 'Các nhóm {{count}} / {{limit}} đã chọn',
-      clearSelection: 'Lựa chọn rõ ràng',
-      new: 'Những khám phá mới ({{count}})',
-      ignored: 'Đã bỏ qua ({{count}})',
+    display: {
       search: 'Tìm kiếm người mẫu hoặc nhà cung cấp',
       select: 'Chọn {{name}}',
-      ignore: 'Bỏ qua',
-      restore: 'Khôi phục',
-      ignoreSelected: 'Bỏ qua đã chọn',
-      restoreSelected: 'Khôi phục đã chọn',
       showDisabled: 'Hiện đã tắt',
       hideDisabled: 'Ẩn đã tắt',
-      provider: 'Nhà cung cấp và trình chạy',
-      saved: 'Đã lưu tùy chọn khám phá',
     },
     filterLabel: 'Hiển thị đại lý',
     filters: {
       all: 'Tất cả {{count}}',
       enabled: 'Đã bật {{count}}',
-      pending: 'Để kích hoạt {{count}}',
       unreported: 'Không có trình chạy {{count}}',
     },
     loadFailed: 'Không thể tải các đại lý',
     loadMore: 'Tải thêm',
     emptyTitle: 'Chưa có đại lý',
     emptyDescription:
-      'Kết nối trình chạy với công cụ mã hóa đã đăng nhập: mỗi mô hình của nó hiển thị ở đây với tư cách là tác nhân để kích hoạt.',
+      'Kết nối trình chạy có công cụ lập trình đã đăng nhập, rồi thêm tác nhân từ “Các mô hình khả dụng”.',
     noneInFilter: 'Không có đại lý ở đây.',
     howToAdd:
-      'Để thêm một tác nhân, hãy cài đặt một công cụ mã hóa trên một trình chạy và đăng nhập vào một mô hình mà bạn có thể sử dụng: sau khi trình chạy báo cáo, nó sẽ hiển thị ở đây và bạn kích hoạt nó bằng cách viết nó giỏi ở lĩnh vực nào. Một đại lý chỉ có những vận động viên cá nhân chỉ làm việc về những vấn đề mà chủ sở hữu của họ bắt đầu.',
+      'Để thêm tác nhân, hãy cài đặt công cụ lập trình trên trình chạy và đăng nhập để sử dụng mô hình khả dụng. Sau khi trình chạy báo cáo mô hình, hãy thêm tác nhân từ “Các mô hình khả dụng” và mô tả thế mạnh của tác nhân. Tác nhân được bật ngay khi thêm. Tác nhân chỉ có trên trình chạy cá nhân chỉ xử lý các nhiệm vụ do chủ sở hữu trình chạy đó bắt đầu.',
     goodAtMissing: 'Chưa viết',
     columns: {
       agent: 'Tác nhân',
@@ -151,7 +140,6 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Đã bật',
-      pending: 'Để kích hoạt',
       disabled: 'Đã tắt',
       unreported: 'Không có trình chạy',
     },
@@ -167,9 +155,6 @@ const viVN: LocaleResource<typeof enUS> = {
       ultra: 'Cực',
     },
     enable: {
-      button: 'Điền và kích hoạt',
-      buttonFor: 'Điền và kích hoạt {{name}}',
-      title: 'Kích hoạt {{name}}',
       reportedBy_one: 'Á hậu {{count}} tường thuật trực tuyến: {{names}}.',
       reportedBy_other:
         'Báo cáo của các vận động viên {{count}} trực tuyến: {{names}}.',
@@ -181,8 +166,6 @@ const viVN: LocaleResource<typeof enUS> = {
         'Người quản lý dự án không thể thay đổi nó khi bàn giao công việc.',
       personalOnly:
         'Chỉ những trình chạy bộ cá nhân mới có nó: người quản lý dự án giao nó chỉ giải quyết các vấn đề mà chủ sở hữu của họ bắt đầu.',
-      submit: 'Bật',
-      done: '{{name}} được bật',
     },
     edit: {
       button: 'Chỉnh sửa',
@@ -236,31 +219,6 @@ const viVN: LocaleResource<typeof enUS> = {
         'Đã thêm {{succeeded}}, {{failed}} không thể thêm. Lý do ở dưới mỗi mục.',
       addFailed:
         '{{failed}} không thể thêm. Lý do ở dưới mỗi mục; hãy thử lại.',
-    },
-    cleanup: {
-      open: 'Dọn dẹp',
-      title: 'Xóa các agent được phát hiện nhưng không dùng',
-      description:
-        'Các agent do báo cáo của runner tạo ra, chưa ai bật và chưa từng chạy: có thể xóa thẳng mà an toàn. Mọi thứ đã thay đổi từ khi danh sách này được tải sẽ bị bỏ qua, không bị xóa.',
-      none: 'Không có gì để xóa.',
-      select: 'Chọn {{name}}',
-      selectGroup: 'Chọn tất cả trong {{tool}}',
-      clearGroup: 'Bỏ chọn {{tool}}',
-      neverEnabled: 'Chưa từng bật · Không có lịch sử chạy',
-      createdAt: 'Phát hiện {{when}}',
-      group_one: '{{tool}} · {{count}} mục',
-      group_other: '{{tool}} · {{count}} mục',
-      selectedCount_one: 'Đã chọn {{count}}',
-      selectedCount_other: 'Đã chọn {{count}}',
-      remove: 'Xóa {{count}}',
-      confirmTitle_one: 'Xóa {{count}} agent?',
-      confirmTitle_other: 'Xóa {{count}} agent?',
-      confirmDescription:
-        'Trong {{tools}}. An toàn để xóa: được kiểm tra lại ngay trước khi xóa, và những mục không còn đủ điều kiện sẽ bị bỏ qua, không bị xóa.',
-      confirmAction: 'Xóa {{count}}',
-      done: 'Đã xóa {{removed}}, bỏ qua {{skipped}}',
-      partialFailure:
-        'Đã xóa {{removed}}, bỏ qua {{skipped}}; {{failed}} không thể xóa ({{reason}}). Vẫn được chọn để thử lại.',
     },
   },
   agentTypes: {
@@ -617,14 +575,7 @@ const viVN: LocaleResource<typeof enUS> = {
     unknown: 'Việc chạy không thành công.',
   },
   runtimes: {
-    capacity: {
-      actual: 'Last effective slots: {{slots}}',
-      online: 'Effective slots · online settings',
-      pending: 'Waiting for runner to sync online settings',
-      legacy: 'Legacy local slots · upgrade the application server',
-      upgrade: 'Sync status unavailable · upgrade the runner',
-      lastReported: 'Last reported: {{time}}',
-    },
+    pathHint: runtimesEnUS.runtimes.pathHint,
     quota: {
       workspaceStatus: {
         active: 'Công việc vẫn tiếp tục',
@@ -876,6 +827,7 @@ const viVN: LocaleResource<typeof enUS> = {
       version: 'Phiên bản {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: 'Nó phù hợp với ai',
       team: 'Đội',
       teamHint:
@@ -925,6 +877,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: 'Thêm thời gian chạy',
     description:
       'Chạy lệnh bên dưới trên máy chủ đã cài đặt công cụ mã hóa: máy chủ, VM hoặc thiết bị của riêng bạn. Các tác nhân chạy ở đó với toàn quyền truy cập, với tư cách là người dùng chạy trình chạy, đồng thời có thể đọc và thay đổi bất kỳ thứ gì mà người dùng có thể, bao gồm cả khóa SSH và các thông tin xác thực khác. Trình chạy không phải là ranh giới bảo mật: chạy nó với tư cách là người dùng chuyên dụng, trong vùng chứa hoặc trong máy ảo.',
@@ -934,8 +887,6 @@ const viVN: LocaleResource<typeof enUS> = {
     nodeRequired:
       'Máy chủ cần Node.js 24 trở lên (kiểm tra bằng nút --version). Lệnh dừng và cho biết cách cài đặt khi thiếu.',
     installed: 'Đã cài đặt nocobase-runner chưa? Đăng ký nó thay thế:',
-    unsupported:
-      'Á hậu chưa chạy trên Windows. Sử dụng macOS hoặc Linux hoặc WSL.',
     tokenOnce:
       'Lệnh mang thông tin xác thực một lần cho thời gian chạy "{{trust}}". Nó hoạt động một lần, cho đến {{time}}.',
     after:
@@ -959,6 +910,9 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    // Keep new guidance available in English until this locale is translated.
+    executionFailed: chatEnUS.chat.executionFailed,
+    fileInputFailures: chatEnUS.chat.fileInputFailures,
     untitled: 'Cuộc trò chuyện không tên',
     renamed: 'Đổi tên',
     archivedNamed: 'Đã lưu trữ “{{title}}”',

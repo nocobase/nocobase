@@ -68,9 +68,9 @@ const zhCN: AgentsResource = {
       '无法保存或查看变量：服务器未配置密钥。请联系管理员在应用配置中设置 secrets.keys。',
   },
   command: {
-    copy: '复制命令',
+    copy: '复制',
     copied: '已复制',
-    copyFailed: '无法复制，请选中命令后手动复制。',
+    copyFailed: '无法复制，请选中文本后手动复制。',
   },
   tools: {
     claude: 'Claude Code',
@@ -96,41 +96,28 @@ const zhCN: AgentsResource = {
     unavailableNow: '当前不可用',
     title: 'Agent',
     description:
-      '执行机上报的每个「工具 · 模型」就是一个 agent。项目经理按「擅长什么」把任务的每一步派给它们。',
+      '从执行机上报的模型中添加 agent。项目经理按「擅长什么」把任务的每一步派给它们。',
     fromRunners: '来自执行机的 agent',
-    discovery: {
-      selectAll: '全选当前结果',
-      selectFirst: '选择当前结果中的前 {{limit}} 组',
-      selectionCount: '已选 {{count}} / {{limit}} 组',
-      clearSelection: '清除所选',
-      new: '新发现（{{count}}）',
-      ignored: '已忽略（{{count}}）',
+    display: {
       search: '搜索模型或服务商',
       select: '选择 {{name}}',
-      ignore: '忽略',
-      restore: '恢复',
-      ignoreSelected: '忽略所选',
-      restoreSelected: '恢复所选',
       showDisabled: '显示已停用',
       hideDisabled: '隐藏已停用',
-      provider: '服务商与执行机',
-      saved: '发现偏好已保存',
     },
     filterLabel: '按状态筛选',
     filters: {
       all: '全部 {{count}}',
       enabled: '已启用 {{count}}',
-      pending: '待启用 {{count}}',
       unreported: '暂无执行机 {{count}}',
     },
     loadFailed: '无法加载 agent',
     loadMore: '加载更多',
     emptyTitle: '还没有 agent',
     emptyDescription:
-      '连接一台登录了编码工具的执行机：它上报的每个模型都会出现在这里，等你启用。',
+      '连接一台登录了编码工具的执行机，再从「可用模型」添加 agent。',
     noneInFilter: '这里没有 agent。',
     howToAdd:
-      '想加一个 agent：在某台执行机上装好工具、登录可用的模型，执行机上报后它会出现在这里，写好「擅长什么」即可启用。只有个人执行机能跑的 agent，只有执行机的主人自己发起的任务能用。',
+      '想加一个 agent：在某台执行机上装好工具、登录可用的模型，执行机上报后，从「可用模型」写好「擅长什么」即可添加并启用。只有个人执行机能跑的 agent，只有执行机的主人自己发起的任务能用。',
     goodAtMissing: '还没写',
     columns: {
       agent: 'Agent',
@@ -141,11 +128,11 @@ const zhCN: AgentsResource = {
     },
     where: {
       none: '暂无执行机',
-      team_one: '团队 {{count}} 台',
-      team_other: '团队 {{count}} 台',
+      team_one: '共享 {{count}} 台',
+      team_other: '共享 {{count}} 台',
       personal_one: '个人 {{count}} 台在线',
       personal_other: '个人 {{count}} 台在线',
-      both: '团队 {{team}} · 个人 {{personal}}',
+      both: '共享 {{team}} · 个人 {{personal}}',
       names: '{{names}}',
       noneOnline: '现在没有执行机在线',
       personalOnly: '仅个人执行机',
@@ -153,7 +140,6 @@ const zhCN: AgentsResource = {
     },
     state: {
       enabled: '已启用',
-      pending: '待启用',
       disabled: '已停用',
       unreported: '暂无执行机',
     },
@@ -169,9 +155,6 @@ const zhCN: AgentsResource = {
       ultra: '极高',
     },
     enable: {
-      button: '填写并启用',
-      buttonFor: '填写并启用 {{name}}',
-      title: '启用 {{name}}',
       reportedBy_one: '由 {{count}} 台在线执行机上报：{{names}}。',
       reportedBy_other: '由 {{count}} 台在线执行机上报：{{names}}。',
       noRunnerNow: '现在没有在线的执行机有它。',
@@ -181,8 +164,6 @@ const zhCN: AgentsResource = {
       effortHint: '项目经理派活时不能调。',
       personalOnly:
         '只有个人执行机能跑：只有这些执行机的主人自己发起的任务，项目经理才会派给它。',
-      submit: '启用',
-      done: '{{name}} 已启用',
     },
     edit: {
       button: '编辑',
@@ -234,31 +215,6 @@ const zhCN: AgentsResource = {
       addedPartial:
         '已添加 {{succeeded}} 个，{{failed}} 个未能添加，原因见各自下方。',
       addFailed: '{{failed}} 个未能添加，原因见各自下方，请重试。',
-    },
-    cleanup: {
-      open: '清理',
-      title: '清理未使用的发现项',
-      description:
-        '执行机上报产生、没人启用、也从未运行过的 Agent：可以直接删除。预览之后发生变化的项会跳过，不会被删除。',
-      none: '没有可清理的项。',
-      select: '选择 {{name}}',
-      selectGroup: '全选 {{tool}}',
-      clearGroup: '取消全选 {{tool}}',
-      neverEnabled: '从未启用・无运行记录',
-      createdAt: '发现于 {{when}}',
-      group_one: '{{tool}} · {{count}} 项',
-      group_other: '{{tool}} · {{count}} 项',
-      selectedCount_one: '已选 {{count}} 个',
-      selectedCount_other: '已选 {{count}} 个',
-      remove: '删除 {{count}} 项',
-      confirmTitle_one: '删除 {{count}} 个 Agent？',
-      confirmTitle_other: '删除 {{count}} 个 Agent？',
-      confirmDescription:
-        '涉及 {{tools}}。删除前会重新校验，期间已不再符合条件的会被跳过，不会被删除。',
-      confirmAction: '删除 {{count}} 项',
-      done: '已删除 {{removed}} 项，跳过 {{skipped}} 项',
-      partialFailure:
-        '已删除 {{removed}} 项，跳过 {{skipped}} 项；{{failed}} 项未能删除（{{reason}}），已保留选中以便重试。',
     },
   },
   agentTypes: {
@@ -325,7 +281,7 @@ const zhCN: AgentsResource = {
     actionsHead: '操作',
     title: '环境变量',
     description:
-      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。共享 agent 的使用者可以在自己的电脑上拿到这些值；高风险的密钥请勾选「仅限团队运行环境」。',
+      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。共享 agent 的使用者可以在自己的电脑上拿到这些值；高风险的密钥请勾选「仅限共享运行环境」。',
     add: '添加变量',
     addTitle: '添加环境变量',
     editTitle: '替换 {{name}}',
@@ -335,10 +291,10 @@ const zhCN: AgentsResource = {
     value: '值',
     valueTooLong: '值超过 8 KB。',
     keepValueHint: '留空则保留原来的值。',
-    teamRunnersOnly: '仅限团队运行环境',
+    teamRunnersOnly: '仅限共享运行环境',
     teamRunnersOnlyHint:
-      '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由团队运行环境接。',
-    teamRunnersOnlyBadge: '仅限团队运行环境',
+      '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由共享运行环境接。',
+    teamRunnersOnlyBadge: '仅限共享运行环境',
     fromRunner: '从运行环境取',
     fromRunnerHint:
       '这里不保存值：由接活的运行环境从它所在的机器提供，在那台机器上用 {{command}} 设置，或用 `--pass-env` 放行。不提供这个变量的运行环境会在运行开始前失败。',

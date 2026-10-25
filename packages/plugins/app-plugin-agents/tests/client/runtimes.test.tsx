@@ -495,14 +495,14 @@ describe('runtimes page', () => {
     ).toBeInTheDocument();
   });
 
-  it('says busy with the slots in use, and how long a runtime has been offline', async () => {
+  it('shows online concurrency even when full, and how long a runtime has been offline', async () => {
     runners = [
       runner('r1', { activeRuns: 1, slots: 1 }),
       runner('r4', { status: 'offline' }),
     ];
     renderPage(<RuntimesPage />);
     const busy = await screen.findByTestId('runner-r1');
-    within(busy).getByText(/^runtimes\.activity\.busy\(active=1,slots=1,/u);
+    within(busy).getByText(/^runtimes\.activity\.online\(active=1,slots=1,/u);
     within(screen.getByTestId('runner-r4')).getByText(
       /^runtimes\.activity\.offline\(/u,
     );
@@ -636,7 +636,7 @@ describe('runtimes page', () => {
         },
         activeByTool: { claude: 2, codex: 1 },
       }),
-      runner('r3', { slots: 2 }),
+      runner('r3', { slots: 2, activeRuns: 1, activeByTool: { codex: 1 } }),
     ];
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
@@ -651,7 +651,14 @@ describe('runtimes page', () => {
       'runtimes.toolUsage.item(tool=tools.claude,used=2,limit=2)',
       'runtimes.toolUsage.item(tool=tools.codex,used=1,limit=1)',
     ]);
-    // Without limits per tool and with nothing running, there is nothing to show.
+    const sheet = await openSheet();
+    expect(
+      within(sheet).queryByRole('list', {
+        name: 'runtimes.toolUsage.label',
+      }),
+    ).toBeNull();
+    within(sheet).getByText('tools.claude 2/2');
+    // Running tools without a configured limit do not add a usage line.
     expect(
       within(screen.getByTestId('runner-r3')).queryByRole('list', {
         name: 'runtimes.toolUsage.label',
@@ -768,6 +775,19 @@ describe('runtimes page', () => {
     });
   });
 
+  it('shows PATH recovery in details when every reported tool is missing', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      tools: [{ kind: 'codex', authenticated: false, status: 'notInstalled' }],
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(within(sheet).getByText('runtimes.pathHint')).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.trust.isolationHint'),
+    ).toBeInTheDocument();
+  });
+
   it('offers build jobs only when the application gives runners jobs', async () => {
     renderPage(<RuntimesPage />);
     let sheet = await openSheet();
@@ -813,21 +833,42 @@ describe('runtimes page', () => {
     ).toEqual({
       trust: 'ownerOnly',
       enabledTools: ['codex', 'claude'],
-      slots: 4,
+      slots: 3,
     });
     expect(within(dialog).getAllByText(/fgreg_secret/u).length).toBeGreaterThan(
       0,
     );
-    expect(
-      within(dialog).getByText(
-        /^nocobase-runner register .*--token fgreg_secret.* && nocobase-runner service install$/u,
-      ),
-    ).toBeInTheDocument();
-    // The packages run on the host's own Node.js, which the command says beside it.
-    expect(
-      within(dialog).getAllByText('connect.nodeRequired').length,
-    ).toBeGreaterThan(0);
-    runners = [...runners, runner('r3', { name: 'build-box' })];
+    // Both methods use the same credential; switching systems does not create another one.
+    for (const system of ['macos', 'linux', 'windows']) {
+      await userEvent.click(
+        within(dialog).getByRole('tab', { name: `connect.system.${system}` }),
+      );
+      await userEvent.click(
+        within(dialog).getByRole('tab', { name: 'connect.prompt' }),
+      );
+      expect(
+        within(dialog).getByText(/connect\.promptBody/u),
+      ).toHaveTextContent('--token fgreg_secret');
+      if (system === 'windows')
+        expect(
+          within(dialog).getByText(/connect\.promptWindows/u),
+        ).toHaveTextContent(/^connect\.promptWindows/u);
+      await userEvent.click(
+        within(dialog).getByRole('tab', { name: 'connect.manual' }),
+      );
+      expect(within(dialog).getByText(/^curl -fsSL/u)).toHaveTextContent(
+        '--token fgreg_secret',
+      );
+      if (system === 'windows')
+        expect(within(dialog).getByText('wsl --install')).toBeInTheDocument();
+      expect(
+        within(dialog).getByText('connect.nodeRequired'),
+      ).toBeInTheDocument();
+    }
+    expect(callsTo('POST', 'agents/runners/registrationTokens')).toHaveLength(
+      1,
+    );
+    runners = [...runners, runner('r3', { name: 'build-box', tools: [] })];
     realtime.publish(RUNNERS_TOPIC, {
       kind: 'runners.changed',
       runnerId: 'r3',
@@ -835,9 +876,10 @@ describe('runtimes page', () => {
     expect(
       await within(dialog).findByText('connect.connected(name=build-box)'),
     ).toBeInTheDocument();
+    expect(within(dialog).getByText('runtimes.pathHint')).toBeInTheDocument();
   });
 
-  it('lets a manager of runners add a runtime shared with the team', async () => {
+  it('lets a manager of runners add a runtime shared with all users', async () => {
     resetApi(
       {
         'agents/runners': () => runners,
@@ -864,7 +906,7 @@ describe('runtimes page', () => {
       ).toEqual({
         trust: 'team',
         enabledTools: ['codex', 'claude'],
-        slots: 4,
+        slots: 3,
       }),
     );
   });
@@ -986,7 +1028,7 @@ describe('runtimes page', () => {
       within(dialog).getByRole('checkbox', { name: 'tools.codex' }),
     );
     const slots = within(dialog).getByLabelText('connect.slots');
-    expect(slots).toHaveValue('4');
+    expect(slots).toHaveValue('3');
     fireEvent.change(slots, { target: { value: '65' } });
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'connect.createCredential' }),

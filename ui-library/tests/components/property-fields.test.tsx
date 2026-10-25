@@ -82,6 +82,7 @@ function Card({
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  Reflect.deleteProperty(document, 'execCommand');
 });
 
 describe('PropertyCard variant form', () => {
@@ -236,4 +237,37 @@ describe('PropertyCard variant inline', () => {
       screen.queryByRole('button', { name: 'Edit Website' }),
     ).not.toBeInTheDocument();
   });
+});
+
+describe('property copying on HTTP', () => {
+  it.each([true, false])(
+    'reports the fallback copy outcome (%s)',
+    async (success) => {
+      vi.stubGlobal('navigator', { clipboard: undefined });
+      const command = vi.fn(() => {
+        const field = document.activeElement as HTMLTextAreaElement;
+        expect(field.value).toBe('ada@example.com');
+        expect(field.selectionStart).toBe(0);
+        expect(field.selectionEnd).toBe(field.value.length);
+        return success;
+      });
+      Object.defineProperty(document, 'execCommand', {
+        configurable: true,
+        value: command,
+      });
+      render(<Card variant='inline' />);
+      const button = screen.getAllByRole('button', { name: 'Copy' })[0]!;
+      button.focus();
+      fireEvent.click(button);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(command).toHaveBeenCalledWith('copy');
+      expect(button).toHaveFocus();
+      expect(document.querySelector('textarea')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Copied' }) !== null).toBe(
+        success,
+      );
+    },
+  );
 });

@@ -12,25 +12,65 @@ const ATTENTION_STATES = ['reauthorizationRequired', 'suspended', 'revoked'];
 export const mail: CapabilityCollector = {
   key: 'mail',
   packages: ['@nocobase/app-plugin-mail', '@nocobase/mailer'],
-  async collect({ probe }) {
+  async collect({ probe, report }) {
     if (!probe) return NO_DATABASE;
     if (!probe.has('mailAccounts'))
       return { status: 'unused', reason: 'notRegistered' };
     const [accounts, messages, submissions] = await Promise.all([
-      probe.groupCount('mailAccounts', 'status'),
-      probe.has('mailMessages')
+      probe.groupCount('mailAccounts', 'status').then((accounts) => {
+        const connected = countOf(accounts, ['active']);
+        const active = (connected ?? 0) > 0;
+        report?.({
+          status: active ? 'active' : connected === null ? null : 'needsSetup',
+          ...(active || connected === null
+            ? {}
+            : { reason: 'noConnectedMailbox' }),
+          facts: active ? [fact('mailboxes', { count: connected! })] : [],
+          metrics: [
+            metric('connectedMailboxes', connected),
+            metric(
+              'mailboxesNeedAttention',
+              countOf(accounts, ATTENTION_STATES),
+            ),
+          ],
+        });
+        return accounts;
+      }),
+      (probe.has('mailMessages')
         ? probe.count('mailMessages')
-        : Promise.resolve(0),
-      probe.has('mailSubmissions')
+        : Promise.resolve(0)
+      ).then((messages) => {
+        report?.({ status: null, metrics: [metric('messages', messages)] });
+        return messages;
+      }),
+      (probe.has('mailSubmissions')
         ? probe.groupCount('mailSubmissions', 'status')
-        : Promise.resolve(new Map<string, number>()),
+        : Promise.resolve(new Map<string, number>())
+      ).then((submissions) => {
+        report?.({
+          status: null,
+          metrics: [
+            metric(
+              'submissions',
+              submissions === null
+                ? null
+                : [...submissions.values()].reduce(
+                    (sum, count) => sum + count,
+                    0,
+                  ),
+            ),
+            metric('failedSubmissions', countOf(submissions, ['failed'])),
+          ],
+        });
+        return submissions;
+      }),
     ]);
     const connected = countOf(accounts, ['active']);
     const attention = countOf(accounts, ATTENTION_STATES);
     const active = (connected ?? 0) > 0;
     return {
-      status: active ? 'active' : 'needsSetup',
-      ...(active ? {} : { reason: 'noConnectedMailbox' }),
+      status: active ? 'active' : connected === null ? null : 'needsSetup',
+      ...(active || connected === null ? {} : { reason: 'noConnectedMailbox' }),
       facts: [
         ...(active ? [fact('mailboxes', { count: connected ?? 0 })] : []),
         ...((attention ?? 0) > 0
@@ -63,7 +103,7 @@ export const notifications: CapabilityCollector = {
     '@nocobase/app-plugin-notification-providers',
     '@nocobase/app-plugin-notification-web-push',
   ],
-  async collect({ probe, config }) {
+  async collect({ probe, config, report }) {
     if (!probe) return NO_DATABASE;
     if (!probe.has('notificationDeliveries'))
       return { status: 'unused', reason: 'notRegistered' };
@@ -72,6 +112,11 @@ export const notifications: CapabilityCollector = {
         'notification',
       )?.channels ?? {},
     );
+    report?.({
+      status: channels.length > 0 ? 'active' : 'needsSetup',
+      ...(channels.length > 0 ? {} : { reason: 'noChannel' }),
+      metrics: [metric('channels', channels.length)],
+    });
     const [dispatches, deliveries, attempts, inApp, inAppRead] =
       await Promise.all([
         probe.has('notificationDispatches')

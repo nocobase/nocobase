@@ -4,7 +4,7 @@ import { requestToolDetection } from '../../runners/tool-detection.js';
  * and registration tokens. Every route is behind the guard the route contribution passes (a signed-in user and their
  * authorization context); what each caller may do is checked here.
  *
- * - `agents.runners` read/manage: every runner; adding a team runner, and revoking and deleting any runner. Revoking
+ * - `agents.runners` read/manage: every runner; adding a shared runner, and revoking and deleting any runner. Revoking
  *   someone else's runner is an emergency measure: its owner is told, and the server log records who did it.
  * - Changing a runner (its name, slots, coding tools, policy and trust) is its owner's alone, because the runner is
  *   their machine with their tools' sign-ins and credentials: a manager who could share it with the team would send
@@ -120,7 +120,7 @@ export function createAdminRoutes(
     ...apiErrorResponses,
     403: apiErrorResponse(
       403,
-      'Only the owner may edit personal tools. A manager of runners (`agents.runners` manage) may edit team tools, and other settings only once the owner can no longer act.',
+      'Only the owner may edit personal tools. A manager of runners (`agents.runners` manage) may edit shared tools, and other settings only once the owner can no longer act.',
     ),
     404: notVisible,
   };
@@ -405,7 +405,7 @@ export function createAdminRoutes(
         examples: ['runtime token create --trust team'],
       }),
       description:
-        'A one-time token the install script registers a runner with; the token is shown only in this answer. Anyone signed in may add a personal runner; a runner shared with the team (`trust: team`) needs `agents.runners` manage.',
+        'A one-time token the install script registers a runner with; the token is shown only in this answer. Anyone signed in may add a personal runner; a runner shared with all users (`trust: team`) needs `agents.runners` manage.',
       responses: {
         201: dataResponse(RegistrationTokenSchema, 'Created.'),
         ...apiErrorResponses,
@@ -420,7 +420,7 @@ export function createAdminRoutes(
         !(await can(who, 'agents.runners', 'manage'))
       )
         throw forbidden(
-          'Adding a runner shared with the team needs agents.runners manage permission.',
+          'Adding a runner shared with all users needs agents.runners manage permission.',
         );
       return context.json(
         {
@@ -565,7 +565,7 @@ export function createAdminRoutes(
         flags: { runnerId: { name: 'runtime' } },
       }),
       description:
-        'Owners may change their runners. Managers of runners (`agents.runners` manage) may change team tool selections and request detection, but cannot change personal tools or other settings of a runner with an active owner.',
+        'Owners may change their runners. Managers of runners (`agents.runners` manage) may change shared tool selections and request detection, but cannot change personal tools or other settings of a runner with an active owner.',
       responses: { 200: dataResponse(RunnerSchema), ...editErrors },
     }),
     runnerParam,
@@ -588,7 +588,7 @@ export function createAdminRoutes(
           !toolsAllowed)
       )
         throw forbidden(
-          'Only the owner may edit personal tools; team tools may also be edited by runner managers.',
+          'Only the owner may edit personal tools; shared tools may also be edited by runner managers.',
         );
       const { redetectTools, ...settings } = patch;
       const saved = Object.keys(settings).length

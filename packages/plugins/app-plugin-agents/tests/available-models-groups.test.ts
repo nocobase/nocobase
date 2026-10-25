@@ -18,11 +18,8 @@ afterEach(async () => {
   await h?.close();
 });
 
-/**
- * A pending agent, as one existed before the application stopped creating one per model a runner reports: the only
- * way left to produce one, for testing the cleanup rule it feeds (mirrors `discovery.test.ts`'s helper).
- */
-async function seedPendingAgent(
+/** An existing disabled agent remains in the model catalog. */
+async function seedDisabledAgent(
   target: Harness,
   tool: AgentTool,
   model: string,
@@ -39,7 +36,7 @@ async function seedPendingAgent(
       avatar: null,
       type: 'runner',
       source: 'runner',
-      status: 'pending',
+      status: 'disabled',
       tool,
       model,
       modelEntries: [{ tool, model, effort: null }],
@@ -82,9 +79,77 @@ const kilo = (count: number): ToolInfo => ({
 });
 
 describe('available models groups', () => {
+  it('marks enabled and disabled agents as added, and adds a missing model directly enabled', async () => {
+    h = await createHarness();
+    await h.registerRunner({ enabledTools: ['kilo'], tools: [kilo(3)] });
+    const create = (model: string) =>
+      h.request('POST', '/agents/runnerAgents', {
+        user: 'admin',
+        can: ['agents.agents/manage'],
+        body: { tool: 'kilo', model, description: 'Test model' },
+      });
+    const enabled = await create('model-0');
+    const disabled = await create('model-1');
+    expect(enabled.status).toBe(201);
+    await h.services.agents.update(disabled.body.data.id, 'admin', {
+      enabled: false,
+      expectedRevision: 1,
+    });
+    const rows = await h.request('GET', '/agents/availableModels?tool=kilo', {
+      user: 'admin',
+      can: ['agents.agents/read'],
+    });
+    expect(
+      rows.body.data.map((row: { model: string; status: string | null }) => [
+        row.model,
+        row.status,
+      ]),
+    ).toEqual([
+      ['model-0', 'enabled'],
+      ['model-1', 'disabled'],
+      ['model-2', null],
+    ]);
+    expect(await h.services.agents.list()).toHaveLength(2);
+    expect((await create('model-2')).body.data.status).toBe('enabled');
+    for (const model of ['model-0', 'model-1', 'model-2']) {
+      const duplicate = await create(model);
+      expect(duplicate.status).toBe(400);
+      expect(duplicate.body.error.metadata.reason).toBe('AGENT_EXISTS');
+    }
+    expect(
+      (
+        await h.request('POST', '/agents/runnerAgents', {
+          body: { tool: 'kilo', model: 'model-3', description: 'Test' },
+        })
+      ).status,
+    ).toBe(401);
+    expect((await h.request('GET', '/agents/availableModels')).status).toBe(
+      401,
+    );
+  });
+
+  it('no longer exposes discovery preferences or cleanup routes', async () => {
+    h = await createHarness();
+    for (const [method, route] of [
+      ['PUT', 'discoveryPreferences'],
+      ['GET', 'cleanupCandidates'],
+      ['POST', 'cleanup'],
+    ] as const) {
+      expect(
+        (
+          await h.request(method, `/agents/${route}`, {
+            user: 'admin',
+            can: ['agents.agents/manage'],
+            body: method === 'GET' ? undefined : {},
+          })
+        ).status,
+      ).toBe(404);
+    }
+  });
+
   it('keeps a failed historical model in a ready tool with matching row and group counts', async () => {
     h = await createHarness();
-    await seedPendingAgent(h, 'claude', 'historical-model');
+    await seedDisabledAgent(h, 'claude', 'historical-model');
     await h.registerRunner({
       enabledTools: ['claude'],
       tools: [
@@ -426,78 +491,5 @@ describe('available models groups', () => {
       can: [],
     });
     expect(denied.status).toBe(403);
-  });
-});
-
-describe('cleanup groups', () => {
-  it('counts candidates per tool and pages one tool’s rows, covering the whole group for select-all', async () => {
-    h = await createHarness();
-    for (let i = 0; i < 30; i++)
-      await seedPendingAgent(h, 'kilo', `model-${i}`);
-    const groups = await h.request('GET', '/agents/cleanupCandidates', {
-      user: 'admin',
-      can: ['agents.agents/manage'],
-    });
-    expect(groups.body.data).toEqual([
-      expect.objectContaining({ tool: 'kilo', count: 30 }),
-    ]);
-    const firstPage = await h.request(
-      'GET',
-      '/agents/cleanupCandidates?tool=kilo&page=1&pageSize=20',
-      { user: 'admin', can: ['agents.agents/manage'] },
-    );
-    expect(firstPage.body.data).toHaveLength(20);
-    expect(firstPage.body.meta).toEqual({ total: 30, page: 1, pageSize: 20 });
-    const secondPage = await h.request(
-      'GET',
-      '/agents/cleanupCandidates?tool=kilo&page=2&pageSize=20',
-      { user: 'admin', can: ['agents.agents/manage'] },
-    );
-    expect(secondPage.body.data).toHaveLength(10);
-    const allIds = [...firstPage.body.data, ...secondPage.body.data].map(
-      (row: { id: string }) => row.id,
-    );
-    expect(new Set(allIds).size).toBe(30);
-  });
-
-  it('re-checks each id at cleanup time: one someone enabled since it was listed is skipped, not removed', async () => {
-    h = await createHarness();
-    const keptId = await seedPendingAgent(h, 'kilo', 'kept');
-    const removedId = await seedPendingAgent(h, 'kilo', 'removed');
-    // Someone enables `kept` from the agent list between listing candidates and asking to clean them up: it is no
-    // longer pending, so the re-check (not the stale list) is what keeps it safe.
-    const current = await h.services.agents.get(keptId);
-    await h.services.agents.update(keptId, 'alice', {
-      enabled: true,
-      description: 'Now wanted after all.',
-      expectedRevision: current.revision,
-    });
-    const result = await h.request('POST', '/agents/cleanup', {
-      user: 'admin',
-      can: ['agents.agents/manage'],
-      body: { agentIds: [keptId, removedId] },
-    });
-    expect(result.status).toBe(200);
-    expect(result.body.data).toEqual({
-      removed: [removedId],
-      skipped: [keptId],
-    });
-    await expect(h.services.agents.get(keptId)).resolves.toBeDefined();
-    await expect(h.services.agents.get(removedId)).rejects.toThrow();
-  });
-
-  it('refuses the list and the removal to someone without agents.agents manage', async () => {
-    h = await createHarness();
-    const deniedList = await h.request('GET', '/agents/cleanupCandidates', {
-      user: 'nobody',
-      can: ['agents.agents/read'],
-    });
-    expect(deniedList.status).toBe(403);
-    const deniedRemove = await h.request('POST', '/agents/cleanup', {
-      user: 'nobody',
-      can: ['agents.agents/read'],
-      body: { agentIds: ['anything'] },
-    });
-    expect(deniedRemove.status).toBe(403);
   });
 });

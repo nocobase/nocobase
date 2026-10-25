@@ -71,9 +71,9 @@ const pages = {
       'Variables cannot be saved or shown: the server has no secrets key. Ask an administrator to set secrets.keys in the application configuration.',
   },
   command: {
-    copy: 'Copy command',
+    copy: 'Copy',
     copied: 'Copied',
-    copyFailed: 'Could not copy. Select the command and copy it yourself.',
+    copyFailed: 'Could not copy. Select the text and copy it yourself.',
   },
   tools: {
     claude: 'Claude Code',
@@ -99,41 +99,28 @@ const pages = {
     unavailableNow: 'Unavailable now',
     title: 'Agents',
     description:
-      'Each coding tool and model a runner reports is an agent. The project manager hands each step of an issue to the agent whose description fits it.',
+      'Add agents from the models runners report. The project manager hands each step of an issue to the agent whose description fits it.',
     fromRunners: 'Agents from runners',
-    discovery: {
-      selectAll: 'Select all results',
-      selectFirst: 'Select the first {{limit}} results',
-      selectionCount: 'Selected {{count}} / {{limit}} groups',
-      clearSelection: 'Clear selection',
-      new: 'New discoveries ({{count}})',
-      ignored: 'Ignored ({{count}})',
+    display: {
       search: 'Search models or providers',
       select: 'Select {{name}}',
-      ignore: 'Ignore',
-      restore: 'Restore',
-      ignoreSelected: 'Ignore selected',
-      restoreSelected: 'Restore selected',
       showDisabled: 'Show disabled',
       hideDisabled: 'Hide disabled',
-      provider: 'Provider and runner',
-      saved: 'Discovery preferences saved',
     },
     filterLabel: 'Show agents',
     filters: {
       all: 'All {{count}}',
       enabled: 'Enabled {{count}}',
-      pending: 'To enable {{count}}',
       unreported: 'No runner {{count}}',
     },
     loadFailed: 'Could not load the agents',
     loadMore: 'Load more',
     emptyTitle: 'No agents yet',
     emptyDescription:
-      'Connect a runner with a coding tool signed in: each of its models shows up here as an agent to enable.',
+      'Connect a runner with a coding tool signed in, then add an agent from Available models.',
     noneInFilter: 'No agent here.',
     howToAdd:
-      'To add an agent, install a coding tool on a runner and sign in to a model you may use: once the runner reports it, it shows up here, and you enable it by writing what it is good at. An agent only personal runners have works only on issues their owners start.',
+      'To add an agent, install a coding tool on a runner and sign in to a model you may use: once the runner reports it, add it from Available models by writing what it is good at. An agent only personal runners have works only on issues their owners start.',
     goodAtMissing: 'Not written yet',
     columns: {
       agent: 'Agent',
@@ -144,11 +131,11 @@ const pages = {
     },
     where: {
       none: 'No runner',
-      team_one: '{{count}} team runner',
-      team_other: '{{count}} team runners',
+      team_one: '{{count}} shared runner',
+      team_other: '{{count}} shared runners',
       personal_one: '{{count}} personal runner online',
       personal_other: '{{count}} personal runners online',
-      both: '{{team}} team · {{personal}} personal',
+      both: '{{team}} shared · {{personal}} personal',
       names: '{{names}}',
       noneOnline: 'No runner online now',
       personalOnly: 'Personal runners only',
@@ -156,7 +143,6 @@ const pages = {
     },
     state: {
       enabled: 'Enabled',
-      pending: 'To enable',
       disabled: 'Disabled',
       unreported: 'No runner',
     },
@@ -172,9 +158,6 @@ const pages = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Fill in and enable',
-      buttonFor: 'Fill in and enable {{name}}',
-      title: 'Enable {{name}}',
       reportedBy_one: 'Reported by {{count}} runner online: {{names}}.',
       reportedBy_other: 'Reported by {{count}} runners online: {{names}}.',
       noRunnerNow: 'No runner that has it is online now.',
@@ -185,8 +168,6 @@ const pages = {
         'The project manager cannot change it when it hands work over.',
       personalOnly:
         'Only personal runners have it: the project manager hands it work only on issues their owners start.',
-      submit: 'Enable',
-      done: '{{name}} is enabled',
     },
     edit: {
       button: 'Edit',
@@ -240,31 +221,6 @@ const pages = {
         'Added {{succeeded}}, {{failed}} could not be added. See the reason under each.',
       addFailed:
         '{{failed}} could not be added. See the reason under each; try again.',
-    },
-    cleanup: {
-      open: 'Clean up',
-      title: 'Remove unused discovered agents',
-      description:
-        'Agents a runner’s report created that nobody enabled and that never ran: safe to remove outright. Anything changed since this list loaded is skipped, not removed.',
-      none: 'Nothing to remove.',
-      select: 'Select {{name}}',
-      selectGroup: 'Select all in {{tool}}',
-      clearGroup: 'Clear {{tool}}',
-      neverEnabled: 'Never enabled · No run history',
-      createdAt: 'Discovered {{when}}',
-      group_one: '{{tool}} · {{count}} candidate',
-      group_other: '{{tool}} · {{count}} candidates',
-      selectedCount_one: '{{count}} selected',
-      selectedCount_other: '{{count}} selected',
-      remove: 'Remove {{count}}',
-      confirmTitle_one: 'Remove {{count}} agent?',
-      confirmTitle_other: 'Remove {{count}} agents?',
-      confirmDescription:
-        'Across {{tools}}. Safe to remove: re-checked just before removal, and anything no longer eligible is skipped, not removed.',
-      confirmAction: 'Remove {{count}}',
-      done: 'Removed {{removed}}, skipped {{skipped}}',
-      partialFailure:
-        'Removed {{removed}}, skipped {{skipped}}; {{failed}} could not be removed ({{reason}}). They stay selected to try again.',
     },
   },
   agentTypes: {
@@ -332,7 +288,7 @@ const pages = {
   envVars: {
     title: 'Environment variables',
     description:
-      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving. Anyone who may use a shared agent can receive these values on their own computer; mark high-risk secrets "Team runtimes only".',
+      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving. Anyone who may use a shared agent can receive these values on their own computer; mark high-risk secrets "Shared runtimes only".',
     add: 'Add variable',
     addTitle: 'Add environment variable',
     editTitle: 'Replace {{name}}',
@@ -342,10 +298,10 @@ const pages = {
     value: 'Value',
     valueTooLong: 'The value is larger than 8 KB.',
     keepValueHint: 'Leave it empty to keep the current value.',
-    teamRunnersOnly: 'Team runtimes only',
+    teamRunnersOnly: 'Shared runtimes only',
     teamRunnersOnlyHint:
-      'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a team runtime takes runs that get this variable.',
-    teamRunnersOnlyBadge: 'Team runtimes only',
+      'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a shared runtime takes runs that get this variable.',
+    teamRunnersOnlyBadge: 'Shared runtimes only',
     fromRunner: 'Take from the runtime',
     fromRunnerHint:
       'No value is kept here: the runtime that takes a run provides it from its own machine, set there with {{command}} or passed with `--pass-env`. A runtime that does not provide it fails the run before it starts.',

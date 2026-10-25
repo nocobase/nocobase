@@ -1,3 +1,4 @@
+import { outputBlock } from '@nocobase/agent-protocol';
 import {
   historicalPageContext,
   hasContent,
@@ -779,10 +780,19 @@ export function createConversationService(
       for (const event of events) {
         after = Number(event.seq);
         const text = event.type === 'text' ? (event.content ?? '') : '';
+        const meta = jsonObject(event.meta);
+        const output = event.type === 'text' ? outputBlock(meta) : undefined;
         if (text.trim() === '') continue;
         const metadata = {
           agentId: run.agentId,
           runEventSeq: Number(event.seq),
+          ...(output ? { output } : {}),
+          ...(typeof meta.parentToolUseId === 'string'
+            ? { parentToolUseId: meta.parentToolUseId }
+            : {}),
+          ...(typeof meta.childSessionId === 'string'
+            ? { childSessionId: meta.childSessionId }
+            : {}),
         };
         await append(unit, record, {
           role: 'assistant',
@@ -1316,6 +1326,13 @@ export function createConversationService(
                   query.agentId === 'online'
                     ? f.string('agentId').eq('0')
                     : f.string('agentId').eq(query.agentId),
+                ]
+              : []),
+            ...(query.mode
+              ? [
+                  query.mode === 'online'
+                    ? f.string('agentId').eq('0')
+                    : f.string('agentId').ne('0'),
                 ]
               : []),
             ...(query.source ? [f.string('source').eq(query.source)] : []),

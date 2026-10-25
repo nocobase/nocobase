@@ -233,7 +233,7 @@ it.each([
 it('filters source-record groups before choosing first and last while retaining source ordering and identity', () => {
   const message: AppUIMessage = {
     id: 'answer',
-    role: 'assistant',
+    role: 'system',
     metadata: {
       ...metadata,
       sourceRecords: [
@@ -331,7 +331,7 @@ it('filters source-record groups before choosing first and last while retaining 
 it('keeps original source-group ordering when its first visible part follows another group', () => {
   const message: AppUIMessage = {
     id: 'answer',
-    role: 'assistant',
+    role: 'system',
     metadata: {
       ...metadata,
       sourceRecords: [
@@ -417,3 +417,61 @@ it('preserves reasoning, tools and text in original positions without merging re
   expect(segments[0].message).toBe(message);
   expect(message.parts[1]).toMatchObject({ text: ' First ' });
 });
+
+it.each(['streaming', 'done'] as const)(
+  'keeps one assistant bubble across source blocks in %s responses',
+  (state) => {
+    const message: AppUIMessage = {
+      id: 'runner:execution',
+      role: 'assistant',
+      metadata: {
+        ...metadata,
+        sourceRecords: [
+          { recordId: 'opening', partId: 'opening', partIndex: 0, seq: 2 },
+          { recordId: 'thought-1', partId: 'thought-1', partIndex: 1, seq: 3 },
+          { recordId: 'thought-2', partId: 'thought-2', partIndex: 2, seq: 3 },
+          { recordId: 'answer', partId: 'answer', partIndex: 3, seq: 4 },
+        ],
+      },
+      parts: [
+        { type: 'text', text: 'Opening', state: 'done' },
+        { type: 'reasoning', text: 'First thought', state: 'done' },
+        { type: 'reasoning', text: 'Second thought', state: 'done' },
+        { type: 'text', text: 'Answer', state },
+      ],
+    };
+    const notice: AppUIMessage = {
+      id: 'notice',
+      role: 'system',
+      metadata: { ...metadata, seq: 5 },
+      parts: [
+        {
+          type: 'data-notice',
+          data: { type: 'cancelled', title: 'Cancellation requested.' },
+        },
+      ],
+    };
+    const next: AppUIMessage = {
+      ...message,
+      id: 'runner:next',
+      metadata: { ...metadata, seq: 7 },
+      parts: [{ type: 'text', text: 'Next answer' }],
+    };
+    const original = structuredClone(message);
+    const segments = chatMessageSegments([message, notice, next]);
+    expect(segments.map((segment) => segment.key)).toEqual([
+      'runner:execution',
+      'notice',
+      'runner:next',
+    ]);
+    expect(segments[0]).toMatchObject({
+      partIndexes: [0, 1, 2, 3],
+      first: true,
+      last: true,
+      seq: 2,
+    });
+    expect(segments[0].message).toBe(message);
+    expect(message).toEqual(original);
+    expect(chatMessageSegments([message])[0].key).toBe(segments[0].key);
+  },
+);

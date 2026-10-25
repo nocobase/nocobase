@@ -1,3 +1,4 @@
+import { fixtureFileInputs } from './helpers/native-files.js';
 import { ApiDocsService, CliService } from '@nocobase/app-server/router';
 import { appendFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -7,6 +8,7 @@ import { MockLanguageModelV4 } from 'ai/test';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { Knex } from 'knex';
 import { z } from 'zod';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { claim, createHarness, type Harness } from './harness.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import type { AdminEnv } from '../server/routes/admin.js';
@@ -82,18 +84,20 @@ async function fixture() {
     },
   });
   const ids = { next: () => `http-${++counter}` };
+  const fileInputs = fixtureFileInputs(model, h.services.chatAttachments);
   service = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     ids,
     sessions: createSessionManager({
       ids,
       tx: h.services.tx,
       attachments: attachments.links,
-      files: h.services.chatAttachments,
       now: () => new Date().toISOString(),
       measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
     }),
     defaultModel: async () => ({ modelService: 'fixture', model: 'chat' }),
-    model: async () => model,
+    fileInputs,
+    model: (ref, id) => fileInputs.model(ref, id),
     onError: () => {},
   });
   let release!: () => void;
@@ -534,6 +538,11 @@ it('accepts declared business variables but rejects browser policy overrides on 
     tool: ['business'],
     thinking: 'unregistered-level',
   });
+  const savedBeforeRefusals = (await (await f.request(path)).json()).data;
+  const conversationsBeforeRefusals = await h.database
+    .connection()
+    .repository('agConversations')
+    .count();
   for (const config of [
     { tool: [] },
     { model: ['fixture/forged'] },
@@ -555,6 +564,12 @@ it('accepts declared business variables but rejects browser policy overrides on 
     );
     expect((await f.request(path, 'PATCH', { config })).status).toBe(400);
   }
+  expect((await (await f.request(path)).json()).data).toEqual(
+    savedBeforeRefusals,
+  );
+  expect(
+    await h.database.connection().repository('agConversations').count(),
+  ).toBe(conversationsBeforeRefusals);
   const denied = await f.request(
     path,
     'PATCH',

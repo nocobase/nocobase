@@ -9,7 +9,11 @@
  */
 import type { QuotaLocation } from './quota.js';
 
-import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
+import type {
+  OutputBlock,
+  FailureReason,
+  RunStatus,
+} from '@nocobase/agent-protocol';
 
 import type { I18nText } from './i18n.js';
 import type { PageUIContext } from './page-ui-context.js';
@@ -371,6 +375,9 @@ export type ConversationNoticeCode = ConversationNotice['code'];
 
 /** `aiMessages.metadata`. */
 export interface MessageMetadata {
+  readonly output?: OutputBlock;
+  readonly parentToolUseId?: string;
+  readonly childSessionId?: string;
   /** A user message: the run input it became, once the agent was woken. */
   readonly inputId?: string;
   /** An assistant message: the agent that wrote it and the run event it came from. */
@@ -502,6 +509,8 @@ export interface ConversationListQuery {
   /** `false` (default): open ones; `true`: archived ones; `all`: both. */
   readonly archived?: boolean | 'all';
   readonly agentId?: string;
+  /** `online`: conversations with the online agent; `runner`: those with every other agent. */
+  readonly mode?: ConversationMode;
   readonly source?: ConversationSource;
   /** The `meta.nextPageToken` of the previous page. */
   readonly pageToken?: string;
@@ -530,6 +539,7 @@ export interface OnlineChatConfigSnapshot {
   /** Missing and empty lists impose no additional model restriction. */
   readonly model?: string[];
   readonly thinking?: string;
+  readonly webSearch?: boolean;
   readonly tool: string[];
   readonly toolVersions: Record<string, string>;
   readonly systemPrompt: string;
@@ -543,6 +553,7 @@ export interface CreateConversationRequest {
     context?: { variable?: OnlineChatJson };
     scope?: string[];
     thinking?: string;
+    webSearch?: boolean;
   };
   readonly selectedModel?: { modelService: string; model: string };
   /** Selects the native `online` executor or a callable Runner agent for a new conversation. */
@@ -661,7 +672,7 @@ export interface ChatPreferences {
 
 export type ChatPreferencesPatch = Partial<ChatPreferences>;
 
-/** The team's chat settings ("Agent team › Settings"). */
+/** The team's chat settings ("Agent management › Settings"). */
 export interface ChatSettings {
   /** The agent new conversations go to when a person has no default of their own; null when none is set. */
   readonly defaultAgentId: string | null;
@@ -681,6 +692,15 @@ export const CONVERSATIONS_TOPIC = 'agents:conversations';
  * `after`); `conversation`: its title, agent, run, archive or read state changed (fetch it, and the list).
  */
 export type ConversationChanged =
+  | {
+      readonly kind: 'conversation.historyReplaced';
+      readonly conversationId: string;
+      readonly messageId: string;
+      readonly seq: number;
+      readonly revision: number;
+      readonly lastSeq: number;
+      readonly executionId: string;
+    }
   | {
       readonly kind: 'conversation.messageUpdated';
       readonly conversationId: string;

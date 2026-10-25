@@ -1,6 +1,9 @@
+import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
+import { resendMessage } from '../messages/resend.js';
+import type { ExecutionSnapshot, ExecutionFile } from '../../files/types.js';
 import { publicUIPageContext } from '../../../../shared/ui-message.js';
 import { isDeepStrictEqual } from 'node:util';
-import { isToolUIPart, type ModelMessage, type UIMessage } from 'ai';
+import { isToolUIPart, type ModelMessage } from 'ai';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   appUIMessageText,
@@ -10,7 +13,6 @@ import {
 import type { ResolvedPageContext } from '../../../../shared/conversations.js';
 import {
   chatAttachmentUrl,
-  type ChatAttachmentService,
   type ChatAttachmentLinks,
   storedAttachments,
 } from '../../../core/conversations/attachments.js';
@@ -25,6 +27,7 @@ import {
   lockConversation,
   messagesRepo,
   type ConversationRecord,
+  type MessageRecord,
 } from '../../../core/conversations/conversation.store.js';
 import { conflict, invalid, notFound } from '../../../kernel/errors.js';
 import { asJson, jsonObject } from '../../../kernel/values.js';
@@ -48,7 +51,6 @@ export class NativeSessionStore {
     private deps: {
       tx: TxRunner;
       attachments: ChatAttachmentLinks;
-      files?: Pick<ChatAttachmentService, 'content'>;
       contextKinds?: PageContextKinds;
       basePath?: () => string;
       now(): string;
@@ -82,6 +84,7 @@ export class NativeSessionStore {
       conn: DatabaseConnection,
       row: ConversationRecord,
       changed: (message: NativeMessage) => void,
+      emit: Tx['emit'],
     ) => Promise<T>,
     outer?: { unit: Tx; row: ConversationRecord },
   ): Promise<T> {
@@ -90,14 +93,18 @@ export class NativeSessionStore {
       return await this.deps.tx.run(async ({ conn, emit }) => {
         start = performance.now();
         const row = outer?.row ?? (await this.owned(userId, id, conn, true));
-        const result = await work(conn, row, (message) =>
-          emit({
-            type: 'conversation.changed',
-            conversationId: id,
-            userId,
-            messageId: message.id,
-            revision: message.metadata!.revision,
-          }),
+        const result = await work(
+          conn,
+          row,
+          (message) =>
+            emit({
+              type: 'conversation.changed',
+              conversationId: id,
+              userId,
+              messageId: message.id,
+              revision: message.metadata!.revision,
+            }),
+          emit,
         );
         emit({ type: 'conversation.changed', conversationId: id, userId });
         return result;
@@ -384,23 +391,29 @@ export class NativeSessionStore {
         : {}),
     };
   }
-  async executionHistory(
+  async executionSnapshot(
     userId: string,
     id: string,
-    context?: ResolvedPageContext,
-    page = true,
-  ): Promise<{ ui: UIMessage[]; model: ModelMessage[]; page?: ModelMessage }> {
+  ): Promise<ExecutionSnapshot> {
     const owner = await this.owned(userId, id);
     const rows = await messagesRepo(this.deps.tx.read()).findMany({
       filter: { conversationId: id },
       sort: (s) => s.field('seq').asc(),
     });
-    if (!rows.length) return { ui: [], model: [] };
-    const original = await this.messages.validate(
-      rows.map((row) => jsonObject(row.content).original),
-    );
-    const ui = structuredClone(original);
-    for (const message of ui) {
+    return this.snapshot(owner, rows);
+  }
+  private async snapshot(
+    owner: ConversationRecord,
+    rows: MessageRecord[],
+  ): Promise<ExecutionSnapshot> {
+    const original = rows.length
+      ? await this.messages.validate(
+          rows.map((row) => jsonObject(row.content).original),
+        )
+      : [];
+    const replay = structuredClone(original);
+    const files: ExecutionFile[] = [];
+    for (const message of replay) {
       const row = rows.find((row) => row.id === message.id)!;
       if (
         message.role === 'assistant' &&
@@ -417,52 +430,237 @@ export class NativeSessionStore {
               )),
         );
       }
-      for (const part of message.parts) {
+      for (const [partIndex, part] of message.parts.entries()) {
         if (part.type !== 'file') continue;
-        const file = storedAttachments(row.attachments).find(
+        const attachment = storedAttachments(row.attachments).find(
           (file) =>
             chatAttachmentUrl(this.deps.basePath?.() ?? '', file.id) ===
             part.url,
         );
-        if (!file) {
-          if (
-            message.role === 'user' &&
-            jsonObject(jsonObject(owner.metadata).onlineAgent).kind ===
-              'background' &&
-            (message.metadata?.inputFiles ?? []).includes(
-              message.parts.indexOf(part),
-            )
-          )
-            continue;
-          if (message.role === 'assistant' && part.url.startsWith('data:'))
-            continue;
-          throw invalid('A saved file reference cannot be authorized.');
+        if (attachment) {
+          files.push({ messageId: message.id, partIndex, attachment });
+          continue;
         }
-        if (!this.deps.files)
-          throw invalid('Attachment content is unavailable.');
-        const authorized = await this.deps.files.content({ userId }, file.id);
-        const bytes = Buffer.from(
-          await new Response(authorized.body).arrayBuffer(),
-        );
-        part.url = `data:${file.mimeType};base64,${bytes.toString('base64')}`;
+        if (
+          message.role === 'user' &&
+          jsonObject(jsonObject(owner.metadata).onlineAgent).kind ===
+            'background' &&
+          (message.metadata?.inputFiles ?? []).includes(partIndex)
+        ) {
+          files.push({ messageId: message.id, partIndex });
+          continue;
+        }
+        if (message.role === 'assistant' && part.url.startsWith('data:'))
+          continue;
+        throw invalid('A saved file reference cannot be authorized.');
       }
     }
-    const model = await this.messages.model(ui);
-    const current =
-      page && this.deps.contextKinds
-        ? await historicalPageContext(
-            this.deps.contextKinds,
-            this.deps.tx.read(),
-            userId,
-            latestPageContext(rows),
-            context,
-          )
-        : undefined;
-    const historical: ModelMessage | undefined = current
-      ? { role: 'user', content: current }
-      : undefined;
-    if (historical) model.push(historical);
-    return { ui: original, model, page: historical };
+    return { original, replay, files };
+  }
+  async pageContext(
+    userId: string,
+    id: string,
+    context?: ResolvedPageContext,
+    allowed = true,
+  ): Promise<ModelMessage | undefined> {
+    await this.owned(userId, id);
+    if (!allowed || !this.deps.contextKinds) return undefined;
+    const rows = await messagesRepo(this.deps.tx.read()).findMany({
+      filter: { conversationId: id },
+      sort: (s) => s.field('seq').asc(),
+    });
+    if (!rows.length) return undefined;
+    const current = await historicalPageContext(
+      this.deps.contextKinds,
+      this.deps.tx.read(),
+      userId,
+      latestPageContext(rows),
+      context,
+    );
+    return current ? { role: 'user', content: current } : undefined;
+  }
+  private accepting(
+    row: ConversationRecord,
+    expected: {
+      config: OnlineAgentConfig;
+      model: { modelService: string; model: string };
+    },
+  ): void {
+    const binding = jsonObject(jsonObject(row.metadata).onlineAgent);
+    const call = binding.call as OnlineAgentCall | null;
+    if (
+      call?.state === 'running' ||
+      call?.state === 'waitingApproval' ||
+      call?.closing ||
+      row.archivedAt ||
+      row.syncRunId
+    )
+      throw conflict('This conversation cannot accept input.');
+    if (
+      !isDeepStrictEqual(binding.config, expected.config) ||
+      row.model !== expected.model.model ||
+      row.modelService !== expected.model.modelService
+    )
+      throw conflict(
+        'The conversation configuration has changed. Refresh before sending.',
+      );
+  }
+
+  resend(
+    userId: string,
+    id: string,
+    options: OnlineAgentResendOptions,
+    config: OnlineAgentConfig,
+    model: { modelService: string; model: string },
+    executionId: string,
+    messageId: string,
+    expected: {
+      config: OnlineAgentConfig;
+      model: { modelService: string; model: string };
+    },
+    page = true,
+    prepare?: (
+      snapshot: ExecutionSnapshot,
+      conn: DatabaseConnection,
+    ) => Promise<NativeMessage[]>,
+  ): Promise<{
+    lastSeq: number;
+    messageId: string;
+    history: {
+      snapshot: ExecutionSnapshot;
+      prepared: NativeMessage[];
+      page?: ModelMessage;
+    };
+  }> {
+    return this.write(
+      userId,
+      id,
+      'native.resend',
+      async (conn, row, _changed, emit) => {
+        this.accepting(row, expected);
+        const record = await messagesRepo(conn).findOne({
+          filter: {
+            conversationId: id,
+            role: 'user',
+            ...(options.messageId ? { id: options.messageId } : {}),
+          },
+          sort: (s) => s.field('seq').desc(),
+        });
+        if (!record)
+          throw invalid(
+            'An existing user message in this conversation is required.',
+          );
+        const [original] = await this.messages.validate([
+          jsonObject(record.content).original,
+        ]);
+        const message = resendMessage(original, options);
+        message.metadata = {
+          ...message.metadata!,
+          revision: (message.metadata?.revision ?? 0) + 1,
+          executionId,
+          turnId: executionId,
+        };
+        await this.messages.validate([message]);
+        // Prepare only the retained prefix before any destructive write. Revoked
+        // suffix attachments and page references must never affect this execution.
+        const prefix = await messagesRepo(conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('conversationId').eq(id),
+              f.number('seq').lte(Number(record.seq)),
+            ]),
+          sort: (s) => s.field('seq').asc(),
+        });
+        const snapshot = await this.snapshot(
+          row,
+          prefix.map((item) =>
+            item.id === record.id
+              ? {
+                  ...item,
+                  content: asJson({
+                    ...jsonObject(item.content),
+                    original: message,
+                  }),
+                }
+              : item,
+          ),
+        );
+        if (!prepare && snapshot.files.length)
+          throw invalid('File input preparation is unavailable.');
+        const prepared = prepare
+          ? await prepare(snapshot, conn)
+          : snapshot.replay;
+        const current =
+          page && this.deps.contextKinds
+            ? await historicalPageContext(
+                this.deps.contextKinds,
+                conn,
+                userId,
+                latestPageContext(prefix),
+              )
+            : undefined;
+        const history = {
+          snapshot,
+          prepared,
+          ...(current
+            ? { page: { role: 'user' as const, content: current } }
+            : {}),
+        };
+        const text = appUIMessageText(
+          (await this.messages.public([message]))[0],
+        );
+        await messagesRepo(conn).updateMany({
+          filter: { conversationId: id, id: record.id },
+          values: {
+            content: asJson({ type: 'text', content: text, original: message }),
+            searchText: text,
+            updatedAt: this.deps.now(),
+          },
+        });
+        await messagesRepo(conn).deleteMany({
+          filter: (f) =>
+            f.and([
+              f.string('conversationId').eq(id),
+              f.number('seq').gt(Number(record.seq)),
+            ]),
+        });
+        const binding = jsonObject(jsonObject(row.metadata).onlineAgent);
+        await conversationsRepo(conn).updateMany({
+          filter: { id },
+          values: {
+            metadata: asJson({
+              ...jsonObject(row.metadata),
+              onlineAgent: {
+                ...binding,
+                config,
+                call: {
+                  actorId: userId,
+                  state: 'running',
+                  executionId,
+                  messageId,
+                },
+              },
+            }),
+            modelService: model.modelService,
+            model: model.model,
+            read: true,
+            lastMessageAt: this.deps.now(),
+            updatedAt: this.deps.now(),
+          },
+        });
+        emit({
+          type: 'conversation.historyReplaced',
+          conversationId: id,
+          userId,
+          messageId: record.id,
+          seq: Number(record.seq),
+          revision: message.metadata.revision,
+          lastSeq: Number(row.lastSeq),
+          executionId,
+        });
+        return { lastSeq: Number(row.lastSeq), messageId: record.id, history };
+      },
+    );
   }
   accept(
     userId: string,
@@ -483,34 +681,12 @@ export class NativeSessionStore {
       id,
       'native.accept',
       async (conn, row, changed) => {
-        const call = jsonObject(jsonObject(row.metadata).onlineAgent)
-          .call as OnlineAgentCall | null;
-        if (
-          call?.state === 'running' ||
-          call?.state === 'waitingApproval' ||
-          call?.closing ||
-          row.archivedAt ||
-          row.syncRunId
-        ) {
-          throw conflict('This conversation cannot accept input.');
-        }
+        this.accepting(row, expected);
         if (
           !inputs.length ||
           inputs.some((item) => !item.id || item.id.length > 64)
         ) {
           throw invalid('A message ID of at most 64 characters is required.');
-        }
-        if (
-          !isDeepStrictEqual(
-            jsonObject(jsonObject(row.metadata).onlineAgent).config,
-            expected.config,
-          ) ||
-          row.model !== expected.model.model ||
-          row.modelService !== expected.model.modelService
-        ) {
-          throw conflict(
-            'The conversation configuration has changed. Refresh before sending.',
-          );
         }
         let seq = Number(row.lastSeq);
         const title: string[] = [];

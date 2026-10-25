@@ -8,7 +8,9 @@ import { externalCrmRoutes } from '../../server/routes/external-crm.ts';
 import { numericExamplesRoutes } from '../../server/routes/numeric-examples.ts';
 import { structuredExtractionRoutes } from '../../server/routes/structured-extraction.ts';
 import { aiTranslationRoutes } from '../../server/routes/ai-translation.ts';
+import { knowledgeDirectoryRoutes } from '../../server/routes/knowledge-directory.js';
 import AIFormFillProvider from '../../server/providers/ai-form-fill.js';
+import KnowledgeChatProvider from '../../server/providers/knowledge-chat.js';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -347,11 +349,14 @@ describe('app server', () => {
             route !== externalCrmRoutes &&
             route !== numericExamplesRoutes &&
             route !== structuredExtractionRoutes &&
+            route !== knowledgeDirectoryRoutes &&
             route !== aiTranslationRoutes,
         ),
         serviceProviders: [
           ...appRuntime.serviceProviders.filter(
-            (provider) => provider !== AIFormFillProvider,
+            (provider) =>
+              provider !== AIFormFillProvider &&
+              provider !== KnowledgeChatProvider,
           ),
           TestRuntimeApplicationProvider,
         ],

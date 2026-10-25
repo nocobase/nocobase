@@ -9,6 +9,7 @@ import type {
   CreateKnowledgeDocRequest,
   KnowledgeAccess,
   KnowledgeAuthor,
+  KnowledgeCapabilities,
   KnowledgeChunking,
   KnowledgeChunkingConfig,
   KnowledgeDoc,
@@ -35,6 +36,173 @@ import type {
   UpdateKnowledgeChunkingRequest,
   UpdateKnowledgeDocRequest,
 } from '../../shared/knowledge.js';
+
+import type {
+  EmbeddingServiceView,
+  GenerationStatus,
+  IndexingConfig,
+  IndexingInstanceView,
+  IndexingReceipt,
+  IndexingSettingsView,
+  IndexingStatus,
+  JsonObject,
+  SaveIndexingRequest,
+  RebuildIndexingRequest,
+  RetryIndexingRequest,
+} from '../../shared/indexing.js';
+
+/** Transport-safe schemas for the single application-wide index. */
+const indexingCount = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+const indexingRevision = z
+  .string()
+  .regex(/^(0|[1-9][0-9]{0,18})$/)
+  .refine((value) => BigInt(value) <= 9223372036854775807n);
+const indexingUuid = z.uuid().regex(/^[0-9a-f-]+$/);
+const indexingTime = z.iso.datetime();
+const indexingJson: z.ZodType<JsonObject> = z.record(z.string(), z.json());
+export const KnowledgeIndexingConfigSchema: z.ZodType<IndexingConfig> = z
+  .strictObject({
+    version: z.literal(1),
+    key: z.string().min(1).max(64),
+    options: indexingJson,
+  })
+  .meta({ ref: 'KnowledgeIndexingConfig' });
+export const SaveIndexingBody: z.ZodType<SaveIndexingRequest> = z.strictObject({
+  requestId: indexingUuid,
+  expectedRevision: indexingRevision,
+  config: KnowledgeIndexingConfigSchema.nullable(),
+  acknowledgeFullRebuild: z.boolean(),
+});
+export const RebuildIndexingBody: z.ZodType<RebuildIndexingRequest> =
+  z.strictObject({
+    requestId: indexingUuid,
+    expectedRevision: indexingRevision,
+    acknowledgeFullRebuild: z.literal(true),
+  });
+export const RetryIndexingBody: z.ZodType<RetryIndexingRequest> =
+  z.strictObject({
+    requestId: indexingUuid,
+    expectedRevision: indexingRevision,
+    generationId: z.string().min(1).max(64),
+    acknowledgeFullRebuild: z.literal(true),
+  });
+export const KnowledgeIndexingReceiptSchema: z.ZodType<IndexingReceipt> = z
+  .strictObject({
+    requestId: indexingUuid,
+    revision: indexingRevision,
+    changed: z.boolean(),
+    enabled: z.boolean(),
+    generationId: z.string().nullable(),
+    acceptedAt: indexingTime,
+  })
+  .meta({ ref: 'KnowledgeIndexingReceipt' });
+export const KnowledgeIndexingSettingsSchema: z.ZodType<IndexingSettingsView> =
+  z
+    .strictObject({
+      revision: indexingRevision,
+      config: KnowledgeIndexingConfigSchema.nullable(),
+      updatedAt: indexingTime,
+      capabilities: z.strictObject({
+        configure: z.boolean(),
+        rebuild: z.boolean(),
+      }),
+    })
+    .meta({ ref: 'KnowledgeIndexingSettings' });
+export const KnowledgeIndexingInstanceSchema: z.ZodType<IndexingInstanceView> =
+  z
+    .strictObject({
+      key: z.string(),
+      name: z.string(),
+      type: z.string(),
+      channels: z.array(
+        z.strictObject({
+          name: z.string(),
+          kind: z.enum(['lexical', 'vector']),
+        }),
+      ),
+      available: z.boolean(),
+      reason: z.string().nullable(),
+    })
+    .meta({ ref: 'KnowledgeIndexingInstance' });
+export const KnowledgeEmbeddingServiceSchema: z.ZodType<EmbeddingServiceView> =
+  z
+    .strictObject({
+      name: z.string(),
+      title: z.string(),
+      provider: z.string(),
+      models: z.array(
+        z.strictObject({
+          value: z.string(),
+          label: z.string(),
+          dimensions: z.number().int().min(1).max(8192).nullable(),
+        }),
+      ),
+    })
+    .meta({ ref: 'KnowledgeEmbeddingService' });
+const KnowledgeIndexGenerationSchema: z.ZodType<GenerationStatus> = z
+  .strictObject({
+    id: z.string(),
+    configRevision: indexingRevision,
+    state: z.enum([
+      'queued',
+      'building',
+      'failed',
+      'active',
+      'retired',
+      'superseded',
+      'dropping',
+      'dropped',
+    ]),
+    type: z.string(),
+    instanceKey: z.string(),
+    scanComplete: z.boolean(),
+    dimension: z.number().int().min(1).max(8192).nullable(),
+    documents: z.strictObject({
+      total: indexingCount.nullable(),
+      done: indexingCount,
+      pending: indexingCount,
+      failed: indexingCount,
+    }),
+    chunks: z.strictObject({
+      total: indexingCount.nullable(),
+      prepared: indexingCount,
+      committed: indexingCount,
+    }),
+    retryPolicy: z.literal('hostJobs'),
+    error: z
+      .strictObject({ reason: z.string(), message: z.string() })
+      .nullable(),
+    createdAt: indexingTime,
+    publishedAt: indexingTime.nullable(),
+    cleanupAfter: indexingTime.nullable(),
+  })
+  .meta({ ref: 'KnowledgeIndexGeneration' });
+export const KnowledgeIndexingStatusSchema: z.ZodType<IndexingStatus> = z
+  .strictObject({
+    revision: indexingRevision,
+    enabled: z.boolean(),
+    availability: z.enum([
+      'disabled',
+      'unavailable',
+      'building',
+      'ready',
+      'degraded',
+    ]),
+    reason: z.string().nullable(),
+    serving: KnowledgeIndexGenerationSchema.nullable(),
+    target: KnowledgeIndexGenerationSchema.nullable(),
+    observedAt: indexingTime,
+  })
+  .meta({ ref: 'KnowledgeIndexingStatus' });
+export const KnowledgeIndexingDirectoryMetaSchema: z.ZodType<{
+  total: number;
+  reason: string | null;
+}> = z
+  .strictObject({
+    total: indexingCount,
+    reason: z.string().nullable(),
+  })
+  .meta({ ref: 'KnowledgeIndexingDirectoryMeta' });
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
@@ -97,23 +265,37 @@ export const SpacesQuery: z.ZodType<SpacesQuery, unknown> = z.object({
   archived: flag.describe('Filter by archive state.'),
 });
 
-export interface SearchQuery extends SpaceQuery {
+export interface SearchQuery {
+  readonly scope?: string;
+  readonly scopeId: string;
   readonly q: string;
   readonly pageSize?: number;
   readonly explain?: 'true' | 'false';
 }
-export const SearchQuery: z.ZodType<SearchQuery, unknown> = z.object({
-  ...spaceQuery,
-  q: z.string().default('').describe('Text to search for.'),
-  pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional().meta({
-    description:
-      'How many hits at most; the application’s recall settings decide by default (20 unless changed).',
-  }),
-  explain: flag.meta({
-    description:
-      '`true` adds `explain` to each hit (how it was ranked), for someone who manages the space or the search settings; others get the hits without it.',
-  }),
-});
+export const SearchQuery: z.ZodType<SearchQuery, unknown> = z
+  .object({
+    scope: spaceQuery.scope.optional(),
+    scopeId: spaceQuery.scopeId,
+    q: z.string().default('').describe('Text to search for.'),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_PAGE_SIZE)
+      .optional()
+      .meta({
+        description:
+          'How many hits at most; the application’s recall settings decide by default (20 unless changed).',
+      }),
+    explain: flag.meta({
+      description:
+        '`true` adds `explain` to each hit (how it was ranked), for someone who manages the space or the search settings; others get the hits without it.',
+    }),
+  })
+  .refine((query) => query.scope !== undefined || !query.scopeId, {
+    path: ['scopeId'],
+    message: 'A non-empty owner requires a scope.',
+  });
 
 export const SpaceOnlyQuery: z.ZodType<SpaceQuery, unknown> =
   z.object(spaceQuery);
@@ -927,3 +1109,13 @@ export const KnowledgeTotalMetaSchema: z.ZodType<KnowledgeTotalMeta> = z.object(
 /** `meta` of a ranking, which has no next page. */
 export const KnowledgeEmptyMetaSchema: z.ZodType<Record<string, never>> =
   z.object({});
+
+export const KnowledgeCapabilitiesSchema: z.ZodType<KnowledgeCapabilities> = z
+  .object({
+    proposals: z.boolean().optional(),
+    semanticSearch: z.boolean().meta({
+      description:
+        'Whether the application has registered a knowledge indexer.',
+    }),
+  })
+  .meta({ ref: 'KnowledgeCapabilities' });

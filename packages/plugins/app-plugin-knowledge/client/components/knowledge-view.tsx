@@ -58,6 +58,7 @@ import type {
 import {
   knowledgeKeys,
   useKnowledgeApi,
+  useKnowledgeCapabilities,
   useKnowledgeProposals,
   useKnowledgeRefresh,
   useKnowledgeTree,
@@ -116,6 +117,8 @@ export interface KnowledgeViewLabels {
 export interface KnowledgeViewProps {
   /** The application supplies its authorized directory and global search; single-space mode remains the default. */
   readonly directory?: KnowledgeDirectorySource;
+  /** Application-owned actions beside the sidebar title; omitted by default. */
+  readonly titleActions?: ReactNode;
   /** The space shown, with the spaces it inherits. */
   readonly space: SpaceRef;
   readonly labels?: KnowledgeViewLabels;
@@ -245,12 +248,17 @@ export function KnowledgeView({
   accessDetails,
   className,
   directory,
+  titleActions,
 }: KnowledgeViewProps): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   useKnowledgeRefresh();
   const view = useViewState();
   const wide = useMediaQuery('(min-width: 768px)');
   const api = useKnowledgeApi();
+  const capabilities = useKnowledgeCapabilities().data;
+  const semanticSearch = capabilities?.semanticSearch === true;
+  const proposalsEnabled =
+    capabilities !== undefined && capabilities.proposals !== false;
   const notify = useNotify();
   const queryClient = useQueryClient();
   const [archived, setArchived] = useState(false);
@@ -283,20 +291,21 @@ export function KnowledgeView({
     directory ? active : null,
     'pending',
     true,
-    !directory ||
-      (!!active && !(view.doc || view.proposal || view.proposals || view.q)),
+    proposalsEnabled &&
+      (!directory ||
+        (!!active && !(view.doc || view.proposal || view.proposals || view.q))),
   );
   const reviewTotal = useQuery({
     queryKey: ['knowledge', 'review-total'],
     queryFn: ({ signal }) => api.reviewTotal(signal),
-    enabled: !!directory,
+    enabled: proposalsEnabled && !!directory,
     retry: false,
   });
   const listed = useKnowledgeProposals(
     null,
     view.proposals ?? 'pending',
     false,
-    !directory && !!view.proposals,
+    proposalsEnabled && !directory && !!view.proposals,
   );
   const paged = useQuery({
     queryKey: [
@@ -314,15 +323,31 @@ export function KnowledgeView({
         view.about,
         signal,
       ),
-    enabled: !!directory && !!view.proposals,
+    enabled: proposalsEnabled && !!directory && !!view.proposals,
     placeholderData: keepPreviousData,
     retry: false,
   });
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const spaces = directory
+  const rawSpaces = directory
     ? catalog.entries.map(({ space, docs }) => ({ space, docs }))
     : (tree.data?.spaces ?? []);
+  const spaces = rawSpaces.map((entry) =>
+    proposalsEnabled
+      ? entry
+      : {
+          ...entry,
+          space: {
+            ...entry.space,
+            access: { ...entry.space.access, propose: false },
+          },
+          docs: entry.docs.map((doc) => ({
+            ...doc,
+            pendingProposals: 0,
+            access: { ...doc.access, propose: false },
+          })),
+        },
+  );
   const own = directory
     ? spaces.find(
         (entry) => active && directoryKey(entry.space) === directoryKey(active),
@@ -529,7 +554,9 @@ export function KnowledgeView({
   function forSpace(item: KnowledgeSpace): EntryActions {
     const choose = () => setTarget(item);
     return {
-      access: item.access,
+      access: proposalsEnabled
+        ? item.access
+        : { ...item.access, propose: false },
       newEntry: (entry, parentId) => {
         choose();
         setDialog({ kind: 'new', entry, parentId });
@@ -563,23 +590,41 @@ export function KnowledgeView({
         choose();
         setDialog({ kind: 'spaceAccess' });
       },
-      searchTest: () => {
-        choose();
-        setDialog({ kind: 'searchTest' });
-      },
-      chunking: () => {
-        choose();
-        setDialog({ kind: 'chunking' });
-      },
+      ...(semanticSearch
+        ? {
+            searchTest: () => {
+              choose();
+              setDialog({ kind: 'searchTest' });
+            },
+            chunking: () => {
+              choose();
+              setDialog({ kind: 'chunking' });
+            },
+          }
+        : {}),
     };
   }
 
   const sidebar = (
     <KnowledgeSidebar
+      headingActions={titleActions}
       spaces={
         directory
           ? catalog.entries.map((entry) => ({
               ...entry,
+              space: proposalsEnabled
+                ? entry.space
+                : {
+                    ...entry.space,
+                    access: { ...entry.space.access, propose: false },
+                  },
+              docs: proposalsEnabled
+                ? entry.docs
+                : entry.docs.map((doc) => ({
+                    ...doc,
+                    pendingProposals: 0,
+                    access: { ...doc.access, propose: false },
+                  })),
               expanded: expanded.has(directoryKey(entry.space)),
               onExpanded: (open: boolean) =>
                 setExpanded((current) => {
@@ -615,7 +660,13 @@ export function KnowledgeView({
       inheritedHint={inheritedHint}
       selected={view.doc}
       onSelect={open}
-      pending={directory ? (reviewTotal.data ?? 0) : pending.length}
+      pending={
+        proposalsEnabled
+          ? directory
+            ? (reviewTotal.data ?? 0)
+            : pending.length
+          : 0
+      }
       reviewing={
         directory
           ? view.review && (!!view.proposals || !!view.proposal)
@@ -630,7 +681,9 @@ export function KnowledgeView({
           ...(directory ? { review: 'true' } : {}),
         })
       }
-      onProposals={() => view.show({ proposals: 'pending' })}
+      onProposals={
+        proposalsEnabled ? () => view.show({ proposals: 'pending' }) : undefined
+      }
       onSearch={() => setDialog({ kind: 'search' })}
       onDropFiles={
         !directory && own
@@ -681,9 +734,11 @@ export function KnowledgeView({
     />
   );
 
-  const content = view.proposal ? (
+  const activeProposal = proposalsEnabled ? view.proposal : null;
+  const activeProposals = proposalsEnabled ? view.proposals : null;
+  const content = activeProposal ? (
     <ProposalDetail
-      id={view.proposal}
+      id={activeProposal}
       onBack={() =>
         view.show({
           proposals: 'pending',
@@ -702,7 +757,7 @@ export function KnowledgeView({
       }}
       onOpenDoc={open}
     />
-  ) : view.proposals && directory && paged.isError ? (
+  ) : activeProposals && directory && paged.isError ? (
     <Alert variant='destructive'>
       <AlertDescription>{t('knowledge.loadFailed')}</AlertDescription>
       {!(paged.error instanceof ApiClientError && paged.error.status < 500) ? (
@@ -711,7 +766,7 @@ export function KnowledgeView({
         </Button>
       ) : null}
     </Alert>
-  ) : view.proposals ? (
+  ) : activeProposals ? (
     <ProposalList
       contextLabel={
         directory
@@ -723,7 +778,7 @@ export function KnowledgeView({
             }
           : undefined
       }
-      status={view.proposals}
+      status={activeProposals}
       onStatus={(status) => view.set({ proposals: status, proposalPage: null })}
       proposals={(directory
         ? (paged.data?.data ?? [])
@@ -761,6 +816,7 @@ export function KnowledgeView({
     />
   ) : view.doc ? (
     <DocPane
+      proposalsEnabled={proposalsEnabled}
       key={view.doc}
       docId={view.doc}
       inherited={selectedSpace?.inherited === true}
@@ -836,11 +892,14 @@ export function KnowledgeView({
       docs={directory ? (own?.docs ?? []) : allDocs}
       ownDocs={own?.docs ?? []}
       pending={
-        directory && own
-          ? pending.filter(
-              (proposal) => directoryKey(proposal) === directoryKey(own.space),
-            )
-          : pending
+        !proposalsEnabled
+          ? []
+          : directory && own
+            ? pending.filter(
+                (proposal) =>
+                  directoryKey(proposal) === directoryKey(own.space),
+              )
+            : pending
       }
       actions={actions}
       onOpen={open}
@@ -906,7 +965,7 @@ export function KnowledgeView({
           onAll={(q) => view.show({ q })}
         />
       ) : null}
-      {dialog?.kind === 'searchTest' ? (
+      {semanticSearch && dialog?.kind === 'searchTest' ? (
         <SearchTestDialog
           open
           onOpenChange={(next) => !next && setDialog(null)}
@@ -968,6 +1027,7 @@ export function KnowledgeView({
       ) : null}
       {dialog?.kind === 'spaceAccess' && own ? (
         <SpaceAccessSheet
+          proposalsEnabled={proposalsEnabled}
           open
           onOpenChange={(next) => !next && setDialog(null)}
           access={access}
@@ -979,7 +1039,7 @@ export function KnowledgeView({
           }
         />
       ) : null}
-      {dialog?.kind === 'chunking' && ownRef && own ? (
+      {semanticSearch && dialog?.kind === 'chunking' && ownRef && own ? (
         <ChunkingDialog
           open
           onOpenChange={(next) => !next && setDialog(null)}

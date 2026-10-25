@@ -1,0 +1,113 @@
+import type { DemoModeResource } from './en-US.js';
+const resource: DemoModeResource = {
+  authorization: {
+    title: '演示数据',
+    read: '查看',
+    manage: '生成和清空',
+    configuration: '演示配置',
+    configure: '配置',
+  },
+  accounts: {
+    menu: '账号：{{name}}',
+    title: '账号',
+    description: '以下面任一账号进入演示，看看每个角色看到的系统。',
+    enter: '进入',
+    signedInAs: '当前：{{name}} · 切换',
+    current: '当前',
+    entering: '正在进入…',
+    failed: '无法进入这个账号。',
+    unavailable: '暂时没有可进入的账号。',
+    password: '使用密码登录',
+  },
+  refused: {
+    title: '演示模式不能修改',
+    description: '其他功能可以照常浏览。',
+  },
+  settings: {
+    title: '演示环境',
+    refresh: '刷新',
+    retry: '重试',
+    busy: '正在生成或清空演示数据',
+    busyHelp: '请等待当前数据操作完成后再开始其他操作。',
+    disabled: {
+      title: '这个应用不是演示环境',
+      help: '演示模式未开启，部署时用 NOCOBASE_DEMO_MODE=true 开启。',
+    },
+    cancel: '取消',
+    errors: {
+      failed: '请求没有完成，请重试。',
+      conflict: '其他管理员先保存了这项设置。',
+      busy: '正在生成或清空演示数据，完成后再试。',
+      exists: '演示数据已经生成，请使用重置。',
+      demoModeRequired: '只有开启演示模式时才能这样做。',
+      accountConflict: '某个演示用户名属于不归演示所有的账号。',
+      unavailable: '这个应用没有提供演示数据。',
+      signedOut: '登录已过期，请重新登录。',
+      denied: '你没有管理演示环境的权限。',
+    },
+    data: {
+      title: '演示数据',
+      state: {
+        importing: '生成中',
+        clearing: '清空中',
+        resetting: '重置中',
+        failed: '失败',
+        ready: '已就绪',
+        none: '未生成',
+      },
+      presentSummary: '{{language}} · {{time}} 生成',
+      resettingSummary: '正在清空现有数据，然后以{{language}}重新生成。',
+      phase: {
+        clearing: '清空现有数据',
+        generating: '重新生成',
+      },
+      absentSummary: '生成演示数据后，访客就能在一套完整的业务场景里体验应用。',
+      language: '语言',
+      clear: '清空',
+      reset: '重置',
+      generate: '生成',
+      failed: '上一次没有完成',
+      readOnly: '你可以查看演示数据；生成、重置和清空需要管理权限。',
+      unavailable: '没有演示数据',
+      unavailableHelp: '这个应用没有注册演示数据集。',
+      cleared: '已清空演示数据',
+      resetStarted: '正在重置演示数据',
+      importStarted: '正在生成演示数据',
+      confirm: {
+        import: {
+          title: '生成演示数据？',
+          description: '以{{language}}生成演示数据，并启用其中的演示账号。',
+        },
+        reset: {
+          title: '重置演示数据？',
+          description:
+            '会删除这个实例中的全部业务数据（包括访客新增的内容），然后以{{language}}重新生成演示数据。',
+        },
+        clear: {
+          title: '清空演示数据？',
+          description:
+            '会删除这个实例中的全部业务数据（包括访客新增的内容），并停用演示账号。设置和管理员保留。',
+        },
+      },
+    },
+    visitors: {
+      unavailable: '暂时没有可进入的账号。',
+      title: '账号',
+      username: '用户名 {{username}}',
+      copyLink: '复制链接',
+      copyLinkFor: '复制 {{name}} 的进入链接',
+      openFor: '以 {{name}} 打开演示',
+      copied: '已复制',
+      copyFailed: '复制失败，请从地址栏复制链接。',
+    },
+    schedule: {
+      title: '每日重置',
+      description: '演示数据每天自动重置，重置时间、时区和语言由环境变量配置。',
+      time: '时间',
+      language: '语言',
+      timezone: '时区',
+      next: '下次重置：{{time}}',
+    },
+  },
+};
+export default resource;

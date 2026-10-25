@@ -5,6 +5,7 @@
  * what the message can mention, such as an issue, which then goes with it. What the host attached, such as the page
  * it was opened from, shows above the message until removed and goes with the next message sent.
  */
+import { createUuid } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -291,7 +292,7 @@ export function Composer({
     onEdit?.();
     const read = await Promise.all(
       files.map(async (file): Promise<Pending> => ({
-        id: crypto.randomUUID(),
+        id: createUuid(),
         type: 'image',
         mimeType: file.type,
         data: await base64(file),

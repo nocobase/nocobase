@@ -2,7 +2,7 @@
  * What this plugin offers to be granted: its pages and its settings items. The application that assembles the plugin
  * keeps the roles, and composes these declarations with its other plugins' into one role catalog.
  *
- * - The pages (`page` grants, action `access`) are the Agent team section: agents, runtimes (with "Add runtime"),
+ * - The pages (`page` grants, action `access`) are the Agent management section: agents, runtimes (with "Add runtime"),
  *   skills and usage. A page grant only opens the page; what the page shows and changes is governed by the settings
  *   items below. The usage page's API (`GET agents/usage`) checks
  *   its grant too, and counts every run for a reader of agents.
@@ -10,7 +10,7 @@
  *   where an agent runs), managing lets them change agents and skills and cancel or retry any run. Without it, a
  *   person still sees and cancels the runs they started.
  * - `agents.runners` covers every runner and every job: reading lets someone see them, managing lets them change,
- *   revoke and delete any runner and add one shared with the team. Without it, a person still adds personal runners
+ *   revoke and delete any runner and add one shared with all users. Without it, a person still adds personal runners
  *   and manages the ones they added; reading agents also shows every runner (to pick where an agent runs).
  * - `agents.prices` covers the model prices costs are estimated from: reading shows them, managing changes them.
  * - `agents.services` covers the model services online agents call: reading lists them (never their keys), managing

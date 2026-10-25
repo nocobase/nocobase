@@ -264,6 +264,34 @@ export function ModuleMatrix({
                   })}
                 </p>
               ) : null}
+              {link.apiEvidence?.length ? (
+                <ul className='flex flex-col gap-2 text-xs text-muted-foreground'>
+                  {link.apiEvidence.map((item) => (
+                    <li
+                      key={JSON.stringify(item)}
+                      className='flex flex-col gap-1'
+                    >
+                      <span>
+                        {t(
+                          item.conditions.length
+                            ? 'matrix.successPath'
+                            : 'matrix.apiPath',
+                          { method: item.method, path: item.path },
+                        )}
+                      </span>
+                      {item.conditions.map((condition) => (
+                        <span key={condition.kind + condition.source}>
+                          {t(`matrix.conditions.${condition.kind}`)}
+                          {' · '}
+                          <span className='break-words font-mono'>
+                            {condition.source}
+                          </span>
+                        </span>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               {selected.reason !== 'unrecognizedExtension' ? (
                 <div className='flex flex-col gap-1 border-t pt-3'>
                   <h4 className='font-medium'>

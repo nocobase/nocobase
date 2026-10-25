@@ -17,6 +17,8 @@ Do not use it to develop a published plugin package. Plugin development has its 
 
 Do not use it to upgrade the template this application was generated from, which is also how the application moves to a newer NocoBase version when the user asks to upgrade NocoBase or its core. That is `.agents/skills/nocobase-app-upgrade/`, which reconciles a newer template release against the application without reverting the user's work.
 
+Check [browser API compatibility](references/frontend/frontend-dev.md#browser-api-compatibility) for direct calls and third-party integrations. HTTPS-only APIs require capability detection and a clear user-facing explanation when unavailable. UUID generation and copying text must support HTTP; use `createUuid()` and `copyText()` from `@nocobase/app-client`.
+
 ## Before you start
 
 Read the application's `AGENTS.md` first for the rules that apply everywhere, and the `.agents/rules/` files its index points to for your task. This Skill's references are the detail behind it. Before running any `pnpm nocobase` command, read [the command line](references/cli.md): it maps tasks to commands and states the flags an agent must not add on its own.
@@ -65,6 +67,14 @@ For notification configuration or sending, follow the notification plugin Skill:
 Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
 
 Business role assignments must be visible and editable through administration. Default to explicit users; do not assign application roles to every authenticated identity or broaden the inherited member role merely to enable a feature. Follow [permission assignment safety](references/authorization.md#visible-and-manageable-assignments) and run the template's initialized-assignment guard before delivery.
+
+## Choose sample data or a demo system
+
+A request to add example customers, orders or tasks normally means sample data in the existing application. Use `sample: true` seeds or `sampleDataToken`; see [sample data and demo systems](references/migrations.md#sample-data-and-demo-systems). Keep required initialization data in ordinary seeds. Do not infer an isolated demo deployment from the words "demo data" alone.
+
+A dedicated demo system has its own database and storage, repeatable business-data generation/clear/reset, visitor write policies and optional simulated external or Agent execution. For that requirement, follow the `nocobase-app-plugin-demo-mode` Skill. If `@nocobase/app-plugin-demo-mode` is not yet a dependency, register it with `pnpm nocobase plugin register demo-mode`, which also synchronizes its Skill; the Skill exists in the application only after synchronization. The plugin supplies the environment mechanisms; the application supplies its dataset, cleanup, management UI and any simulation adapters. Sample data alone supplies none of those operating policies. Use the user's stated deployment and lifecycle requirements to choose; if the intended scope remains ambiguous, clarify it before adding full-business cleanup or changing the environment mode. A trial, staging or customer environment where users keep their data, a provider's sandbox credentials and an in-app presentation mode are not demo systems.
+
+When the application already depends on `@nocobase/app-plugin-demo-mode`, a change that adds business collections, outbound integrations or background jobs also updates the demo dataset's cleanup and adapters; follow that Skill's maintenance section.
 
 ## Deliver system administration by default
 

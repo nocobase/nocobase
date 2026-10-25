@@ -1,4 +1,5 @@
 export { SkillIdsSchema } from './core/skills/skill.service.js';
+export { ONLINE_AGENT_CREDENTIAL } from './cli/online-credential.js';
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import {
   createServiceToken,

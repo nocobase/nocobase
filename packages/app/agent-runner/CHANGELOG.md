@@ -1,5 +1,45 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.19
+
+### Patch Changes
+
+- 18a2e21: Fix Gitee CLI argument parsing so command-like title and body values, including URL-valued `--body` arguments, pass through without bypassing existing credential and destination guards.
+- 6380861: Stream coding-tool conversation replies and supplied reasoning summaries through a bounded, redacted realtime preview channel. Automatically negotiate capable conversation runners, persist one completed snapshot per block, and preserve task execution, public log redaction and prompt history. Preserve token boundaries across chunks and verify that live text and reasoning match their completed snapshots. Preserve complete redaction context when choosing preview boundaries so token-like prose and punctuation remain consistent with completed snapshots.
+
+  Upgrade the application before its runners: protocol 14 announces the outputBlocks feature, while the upgraded application continues serving older runners. Retain ACP partial answers on length limits, refusals and cancellation, safely redact values adjacent to private keys, reconcile divergent previews through normal history refresh, skip empty assistant messages, and suppress unused Codex delta notifications for tasks.
+
+- Updated dependencies [6380861]
+  - @nocobase/agent-protocol@0.1.0-beta.15
+  - @nocobase/app-cli-client@0.1.0-beta.16
+
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 6740287: Wrap the official Gitee CLI with the run's current GITEE_TOKEN credential, pin public Gitee API destinations over inherited and saved settings, guard commands that reveal or persist credentials, and report how to install a missing gitee binary. No runner protocol changes are required.
+
+## 0.1.0-beta.17
+
+### Minor Changes
+
+- 4dc982a: Support server-selected runner tools with shared ACP catalog adapters, explicit tool migration, cached detection, model discovery, session recovery and runtime configuration. Native adapters retain precedence. Upgrade the server before protocol-13 runners; new runtimes default to Codex and Claude Code. Tools without model listing use their default model, while unavailable explicit models fail before sending a task.
+
+  A runner's report no longer creates an agent for every tool and model it lists signed in: only a combination the application recommends is still created automatically, already enabled. Every other reported combination joins an available models list instead, for an administrator to create an agent from (`POST /api/agents/runnerAgents`, or select several at once); leftover pending agents from the old behavior that were never enabled and never ran can be listed and removed outright (`GET`/`POST /api/agents/cleanupCandidates`, `/cleanup`). Both lists are grouped by tool and paged (`GET /api/agents/availableModels` and `/cleanupCandidates` return one row per tool, with a `tool` parameter paging that tool's rows), so a tool reporting hundreds of models never ships them all in one response; the enable and cleanup dialogs became large drawers with a combined tool/model search, a four-state availability filter, per-tool collapse, virtualized rows past a threshold, cross-page multi-select and, for cleanup, a second confirmation before removing. Detection reports why a tool's status is what it is (`ToolInfo.statusReason`/`statusDetail`, optional additions within protocol 13), aggregated per tool so one runner's sign-in problem never hides another runner's working one, and runs behind the run's own code-host credential guard, so a tool that depends on a login command the guard refuses fails detection the same way it would fail a run. A run failure keeps the tool's own words instead of a placeholder, consecutive small text chunks of one turn merge into about one event a second, and an agent's generated name no longer breaks an @ mention.
+
+  Confirm Amp authentication only through a reviewed adapter authentication check; unknown login state remains a detection failure. Keep Add agent requests owned by the full two-step flow so pending requests cannot be duplicated by returning or closing. Report ACP protocol incompatibility separately from tool release requirements, and explicitly identify unknown minimum releases.
+
+  Make model selection and cleanup confirmations readable, render setup commands separately from expandable tool diagnostics, reuse catalog model names, and require Good at before adding agents. Show enabled agents with no usable runtime as unavailable without changing scheduling. Give actionable advice for incompatible ACP versions while keeping unknown minimum tool releases explicit.
+
+  Filter available models by each model's status instead of its tool's aggregate state. Merge disjoint status results and counts with complete pagination, preserve per-tool searches when filters change, and show all states when no status is selected.
+
+### Patch Changes
+
+- Updated dependencies [4dc982a]
+  - @nocobase/acp-bridge@1.0.0-beta.4
+  - @nocobase/agent-protocol@0.1.0-beta.14
+  - @nocobase/app-cli-client@0.1.0-beta.15
+
 ## 0.1.0-beta.16
 
 ### Minor Changes

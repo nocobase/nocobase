@@ -1,5 +1,66 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.62
+
+### Patch Changes
+
+- 58531da: Require HTTP-compatible UUID and clipboard helpers in browser source while preserving Node APIs. Use the shared helpers for mail composition, demo links, example records, template copy actions and workflow request identifiers.
+- Updated dependencies [58531da]
+- Updated dependencies [58531da]
+- Updated dependencies [7f36872]
+  - @nocobase/app-plugin-mail@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.19
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.2
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.12
+  - @nocobase/app-plugin-agents@1.0.0-beta.23
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.20
+  - @nocobase/jobs@0.1.0-beta.4
+
+## 1.0.0-beta.61
+
+### Patch Changes
+
+- d490379: Show safe, actionable, localized attachment preparation failures in live chat and saved history, including unconfigured image input, unreadable documents, extraction timeouts, and file or text limits. Keep Provider messages and document contents private, preserve cancellation and model capability checks, and use a generic localized explanation for historical failures without a saved reason.
+- d490379: Declare official DeepSeek Flash JPEG, PNG, GIF, and WebP capability in the shared model capability catalog, and derive native file routing from it regardless of service name. Remove the duplicated Examples profile while preserving exact model and endpoint admission, explicit deployment-policy overrides, local document extraction, and existing file limits.
+- d490379: Keep native agent conversations usable when a user attaches an unsupported file type. Describe the filename, MIME type and parsing limitation in user-level model replay instead of failing the execution, including historical follow-up and unsupported image inputs. Preserve original attachments, authorization, input budgets and genuine parsing or Provider failures; update the Examples regression coverage without granting additional image capabilities.
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [4c98f67]
+- Updated dependencies [01e03b7]
+  - @nocobase/app-plugin-agents@1.0.0-beta.22
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.11
+
+## 1.0.0-beta.60
+
+### Patch Changes
+
+- 39fa974: The installed agent chat follows the UI Library's `agent-chat` and `agent-composer`: the panel switches between the Online agent and Runner agents when both are configured, each with its own history; full width lists the conversations in a column on the left and returns to the side panel when the navigation changes the page; the history ends with an Archived toggle and says it is empty in one line; context chips open a preview of what they carry; the panel takes the focus as it opens; and a new conversation starts with the agent the person used last (`ChatProvider memoryScope`). The new-conversation picker offers only the current mode's choices, models for the Online agent and agents for Runner, in place of one mixed list. An application generated earlier keeps its installed copy; reinstall the items or merge these files to follow.
+- 005418a: Add native realtime message resend and text editing with atomic history replacement, original attachment and context retention, and authoritative cross-view synchronization. Add inline Edit, Copy, and Regenerate controls with direct execution and duplicate-submit protection to the Examples chat while keeping its composer drafts and application readiness safeguards.
+
+  Use a single neutral inline editing surface with Cancel and Send outside the input. Remove the redundant attachment/context hint and hide duplicate message actions while editing.
+
+- dfc9be3: Add opt-in native OnlineAgent web search with provider-level admission for configured OpenAI, Anthropic, Google and Alibaba chat models on official endpoints, using the selected model service with isolated retrieval, execution budgets, cancellation and usage recording. Remove model-name allowlists without claiming universal vendor compatibility. Alibaba uses its existing Chat Completions SDK with an instance-scoped search flag; source-free answers are explicitly unverified, not fabricated evidence, and display no source list. Other platforms retain strict search/source evidence requirements. Incompatible calls fail safely without fallback; other providers and compatible/custom endpoints remain unsupported.
+
+  Expose derived model capabilities and published web-search contracts, preserve the existing configuration and SDK message lifecycle, and add localized search controls and overridable result cards to the Examples chat. Include locked-SDK offline provider fixtures and desktop/mobile compiled-deployment regression coverage; real provider acceptance is not implied.
+
+  Align an unset Alibaba service endpoint with the Beijing default shown by the model-service editor instead of the SDK's implicit Singapore endpoint. Preserve explicitly configured regional endpoints and credentials.
+
+  Present web search as a full-width segmented card with independent four-line result previews and Expand/Collapse controls. Pulse the globe only while searching, omit verification labels and disclaimers from the card, and preserve evidence states and safeguards in model output and persistence.
+
+  Use one retrieval-only prompt across the four providers, returning concise facts and specific evidence gaps instead of polished answers or generic website recommendations. Guide the main model to batch distinct queries and avoid unnecessary repeated searches, while preserving structured source validation and the Alibaba-only unverified policy.
+
+  Require forced search on Alibaba's isolated retrieval calls by sending both enable_search and search_options.forced_search. Keep ordinary chat requests unchanged and retain the unverified classification for source-free answers.
+
+- Updated dependencies [39fa974]
+- Updated dependencies [005418a]
+- Updated dependencies [dfc9be3]
+  - @nocobase/app-plugin-agents@1.0.0-beta.21
+
 ## 1.0.0-beta.59
 
 ### Patch Changes

@@ -2,12 +2,12 @@ import type { AccessLocale } from './access.en-US.js';
 
 const accessZhCN: AccessLocale = {
   access: {
-    section: 'Agent 团队',
-    businessSection: 'Agent 团队',
+    section: 'Agent 管理',
+    businessSection: 'Agent 管理',
     businesses: {
       agents: {
         title: 'Agent 和技能',
-        description: '团队的 Agent 以及它们使用的技能。',
+        description: 'Agents 以及它们使用的技能。',
         actions: {
           edit: {
             title: '管理 Agent 和技能',

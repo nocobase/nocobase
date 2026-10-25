@@ -39,7 +39,9 @@ describe('formatRunWait', () => {
     );
     expect(
       words('secretsNotAllowed', { variables: ['NPM_TOKEN', 'KEY'] }),
-    ).toBe('Needs a team runtime: NPM_TOKEN, KEY is for team runtimes only');
+    ).toBe(
+      'Needs a shared runtime: NPM_TOKEN, KEY is for shared runtimes only',
+    );
     expect(words('concurrencyFull', { active: 2, limit: 2 })).toBe(
       'Concurrency full (2/2)',
     );
@@ -85,10 +87,10 @@ describe('formatRunWait', () => {
     const { runtime, t } = await runtimeWith();
     const wait = { reason: 'secretsNotAllowed', params: { variables: ['K'] } };
     expect(formatRunWait(t, wait)).toBe(
-      'Needs a team runtime: K is for team runtimes only',
+      'Needs a shared runtime: K is for shared runtimes only',
     );
     await runtime.changeLanguage('zh-CN');
-    expect(formatRunWait(t, wait)).toBe('需要团队运行环境：K 仅限团队运行环境');
+    expect(formatRunWait(t, wait)).toBe('需要共享运行环境：K 仅限共享运行环境');
     expect(formatRunWait(t, { reason: 'somethingNew' })).toBe(
       '排队中（somethingNew）',
     );

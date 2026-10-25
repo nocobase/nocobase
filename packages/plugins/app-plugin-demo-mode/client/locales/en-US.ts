@@ -1,0 +1,122 @@
+import type { LocaleResource } from '@nocobase/i18n';
+const resource = {
+  authorization: {
+    title: 'Demo data',
+    read: 'View',
+    manage: 'Generate and clear',
+    configuration: 'Demo configuration',
+    configure: 'Configure',
+  },
+  accounts: {
+    menu: 'Account: {{name}}',
+    title: 'Accounts',
+    description:
+      'Enter the demo as any of these accounts to see what each of them sees.',
+    enter: 'Enter',
+    signedInAs: 'Signed in as {{name}} · Switch',
+    current: 'Current',
+    entering: 'Entering…',
+    failed: 'Could not enter this account.',
+    unavailable: 'No accounts can be entered right now.',
+    password: 'Sign in with a password',
+  },
+  refused: {
+    title: 'This is a demo. Changes cannot be saved.',
+    description: 'Everything else works as usual.',
+  },
+  settings: {
+    title: 'Demo environment',
+    refresh: 'Refresh',
+    retry: 'Try again',
+    busy: 'Demo data is being generated or cleared',
+    busyHelp:
+      'Wait for the current data operation to finish before starting another.',
+    disabled: {
+      title: 'This application is not a demo',
+      help: 'Demo mode is off. A deployment turns it on with NOCOBASE_DEMO_MODE=true.',
+    },
+    cancel: 'Cancel',
+    errors: {
+      failed: 'The request did not complete. Try again.',
+      conflict: 'Another administrator saved this setting first.',
+      busy: 'Demo data is being generated or cleared. Try again when it finishes.',
+      exists: 'Demo data is already generated. Reset it instead.',
+      demoModeRequired: 'This works only while demo mode is on.',
+      accountConflict:
+        'A demo username belongs to an account the demo does not own.',
+      unavailable: 'This application provides no demo data.',
+      signedOut: 'Your session has ended. Sign in again.',
+      denied: 'You do not have permission to manage the demo.',
+    },
+    data: {
+      title: 'Demo data',
+      state: {
+        importing: 'Generating',
+        clearing: 'Clearing',
+        resetting: 'Resetting',
+        failed: 'Failed',
+        ready: 'Ready',
+        none: 'Not generated',
+      },
+      presentSummary: 'Generated in {{language}} · {{time}}',
+      resettingSummary:
+        'Clearing the current data, then generating it again in {{language}}.',
+      phase: {
+        clearing: 'Clearing',
+        generating: 'Generating again',
+      },
+      absentSummary:
+        'Generate the demo data to fill the application with a story visitors can explore.',
+      language: 'Language',
+      clear: 'Clear',
+      reset: 'Reset',
+      generate: 'Generate',
+      failed: 'The last run did not finish',
+      readOnly:
+        'You can view the demo data; generating, resetting and clearing need the manage permission.',
+      unavailable: 'No demo data',
+      unavailableHelp: 'This application does not register a demo dataset.',
+      cleared: 'Demo data cleared',
+      resetStarted: 'Resetting the demo data',
+      importStarted: 'Generating the demo data',
+      confirm: {
+        import: {
+          title: 'Generate the demo data?',
+          description:
+            'The demo data is generated in {{language}}, and its demo accounts are turned on.',
+        },
+        reset: {
+          title: 'Reset the demo data?',
+          description:
+            'All business data in this instance is deleted, including what visitors added, and the demo data is generated again in {{language}}.',
+        },
+        clear: {
+          title: 'Clear the demo data?',
+          description:
+            'All business data in this instance is deleted, including what visitors added, and the demo accounts are turned off. Settings and administrators stay.',
+        },
+      },
+    },
+    visitors: {
+      unavailable: 'No accounts can be entered right now.',
+      title: 'Accounts',
+      username: 'Username {{username}}',
+      copyLink: 'Copy link',
+      copyLinkFor: 'Copy the entry link for {{name}}',
+      openFor: 'Open the demo as {{name}}',
+      copied: 'Copied',
+      copyFailed: 'Could not copy. Copy the link from the address bar instead.',
+    },
+    schedule: {
+      title: 'Daily reset',
+      description:
+        'Demo data resets automatically every day. The schedule is configured through environment variables.',
+      time: 'Time',
+      language: 'Language',
+      timezone: 'Time zone',
+      next: 'Next reset: {{time}}',
+    },
+  },
+};
+export type DemoModeResource = LocaleResource<typeof resource>;
+export default resource;

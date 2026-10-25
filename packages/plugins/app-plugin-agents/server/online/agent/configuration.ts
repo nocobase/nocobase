@@ -1,3 +1,6 @@
+import { isDeepStrictEqual } from 'node:util';
+import { WEB_SEARCH_TOOL } from '../../../shared/web-search.js';
+import { registerSandboxTools } from '../sandbox/tools.js';
 import type { Tool } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { invalid } from '../../kernel/errors.js';
@@ -41,6 +44,19 @@ function supported(value: object) {
     );
 }
 
+/** Single effective selection for versioning, SDK binding, instructions and realtime projection. */
+export function effectiveTools(config: OnlineAgentConfig): string[] {
+  if (config.tool.includes(WEB_SEARCH_TOOL))
+    throw invalid(
+      'webSearch is reserved; enable it through webSearch configuration.',
+    );
+  return [
+    ...new Set([
+      ...config.tool,
+      ...(config.webSearch ? [WEB_SEARCH_TOOL] : []),
+    ]),
+  ];
+}
 export class OnlineAgentConfigurator {
   private globals: (OnlineAgentScope | OnlineAgentScopeProvider)[] = [];
   private scopes = new Map<
@@ -48,6 +64,10 @@ export class OnlineAgentConfigurator {
     (OnlineAgentScope | OnlineAgentScopeProvider)[]
   >();
   private tools = new Map<string, OnlineAgentRegisteredTool>();
+
+  constructor() {
+    registerSandboxTools(this);
+  }
 
   registerOnlineAgentGlobalScope(
     ...scope: (OnlineAgentScope | OnlineAgentScopeProvider)[]
@@ -146,6 +166,7 @@ export class OnlineAgentConfigurator {
     http: boolean = false,
   ): Promise<{ config: OnlineAgentConfig; hasModel: boolean }> {
     let hasModel = previous?.model !== undefined;
+    let hasTools = previous !== undefined;
     supported(options);
     if (
       http &&
@@ -167,7 +188,8 @@ export class OnlineAgentConfigurator {
         'Business variables must be an object declared by a selected scope.',
       );
     const declared = new Set<string>();
-    let validated = false;
+    const resolved: OnlineAgentScope[] = [];
+    let hasSelectedSchema = false;
     const result: OnlineAgentConfig = previous
       ? structuredClone(previous)
       : {
@@ -193,89 +215,136 @@ export class OnlineAgentConfigurator {
       layers.push(...found.map((value) => ({ value, selected: true })));
     }
     layers.push({ value: options, selected: false });
+    const enteringPrompt = result.systemPrompt;
     for (const { value: layer, selected } of layers) {
       const current: OnlineAgentContext = {
         ...context,
         variable: result.variable,
-        systemPrompt: result.systemPrompt,
+        systemPrompt: enteringPrompt,
       };
       const scope = typeof layer === 'function' ? await layer(current) : layer;
       supported(scope);
+      resolved.push(scope);
+      const template = scope.systemPromptTemplate;
+      if (
+        selected &&
+        template &&
+        typeof template !== 'string' &&
+        template.variableSchema
+      ) {
+        hasSelectedSchema = true;
+        for (const key of Object.keys(template.variableSchema.shape))
+          declared.add(key);
+      }
       if (scope.context?.variable !== undefined && !(http && layer === options))
         result.variable = jsonSafe(scope.context.variable);
-      if (scope.context?.systemPrompt !== undefined)
-        result.systemPrompt = scope.context.systemPrompt;
-      const template = scope.systemPromptTemplate;
-      if (typeof template === 'string') result.systemPrompt = template;
-      else if (template) {
-        if (template.variableSchema) {
-          const existing =
-            result.variable &&
-            typeof result.variable === 'object' &&
-            !Array.isArray(result.variable)
-              ? result.variable
-              : {};
-          let candidate = result.variable;
-          if (supplied !== undefined && selected) {
-            validated = true;
-            candidate = Object.fromEntries(
-              Object.keys(template.variableSchema.shape).flatMap((key) => {
-                declared.add(key);
-                if (Object.hasOwn(supplied, key)) return [[key, supplied[key]]];
-                return Object.hasOwn(existing, key)
-                  ? [[key, existing[key]]]
-                  : [];
-              }),
-            );
-          }
-          const parsed = template.variableSchema.safeParse(candidate);
-          if (!parsed.success) {
-            if (http)
-              throw invalid(
-                'Business variables do not match the selected scope schema.',
-              );
-            throw parsed.error;
-          }
-          result.variable = jsonSafe(
-            supplied !== undefined && selected
-              ? { ...existing, ...parsed.data }
-              : parsed.data,
-          );
-        }
-        result.systemPrompt = template.template({
-          ...context,
-          variable: result.variable,
-          systemPrompt: result.systemPrompt,
-        });
-      }
       if (scope.agentId !== undefined) {
         if (typeof scope.agentId !== 'string' || !scope.agentId.trim())
           throw invalid('Select a valid agentId.');
         result.agentId = scope.agentId;
       }
-      if (scope.tool !== undefined) result.tool = [...scope.tool];
+      if (scope.tool !== undefined) {
+        result.tool = [...scope.tool];
+        hasTools = true;
+      }
       if (scope.skill !== undefined) result.skill = [...new Set(scope.skill)];
       if (scope.model !== undefined) {
         result.model = [...scope.model];
         hasModel = true;
       }
       if (scope.thinking !== undefined) result.thinking = scope.thinking;
+      if (scope.webSearch !== undefined) {
+        if (typeof scope.webSearch !== 'boolean')
+          throw invalid('webSearch must be a boolean.');
+        result.webSearch = scope.webSearch;
+      }
     }
     if (
       supplied !== undefined &&
-      (!validated || Object.keys(supplied).some((key) => !declared.has(key)))
+      (!hasSelectedSchema ||
+        Object.keys(supplied).some((key) => !declared.has(key)))
     )
       throw invalid(
         'Business variables must be declared by the selected scopes.',
       );
+    const schemas = resolved.flatMap((scope) => {
+      const template = scope.systemPromptTemplate;
+      return template && typeof template !== 'string' && template.variableSchema
+        ? [template.variableSchema]
+        : [];
+    });
+    const raw = result.variable;
+    if (supplied !== undefined || schemas.length) {
+      if (
+        raw !== undefined &&
+        (raw === null || typeof raw !== 'object' || Array.isArray(raw))
+      )
+        throw invalid(
+          'Business variables must be an object for template schemas.',
+        );
+      const candidate = { ...(raw ?? {}), ...(supplied ?? {}) };
+      const normalized = new Map<string, OnlineAgentJson | undefined>();
+      for (const schema of schemas) {
+        const keys = Object.keys(schema.shape);
+        const projected = Object.fromEntries(
+          keys
+            .filter((key) => Object.hasOwn(candidate, key))
+            .map((key) => [key, candidate[key]]),
+        );
+        const parsed = schema.safeParse(projected);
+        if (!parsed.success) {
+          if (http)
+            throw invalid(
+              'Business variables do not match the selected scope schema.',
+            );
+          throw parsed.error;
+        }
+        for (const key of keys) {
+          const value =
+            parsed.data[key] === undefined
+              ? undefined
+              : jsonSafe(parsed.data[key]);
+          if (
+            normalized.has(key) &&
+            !isDeepStrictEqual(normalized.get(key), value)
+          )
+            throw invalid(
+              'Template schemas normalize the same business variable inconsistently.',
+            );
+          normalized.set(key, value);
+        }
+      }
+      for (const [key, value] of normalized) {
+        if (value === undefined) delete candidate[key];
+        else candidate[key] = value;
+      }
+      result.variable = jsonSafe(candidate);
+    }
+    // Every template sees the same final variables, but its own detached copy.
+    result.systemPrompt = enteringPrompt;
+    for (const scope of resolved) {
+      if (scope.context?.systemPrompt !== undefined)
+        result.systemPrompt = scope.context.systemPrompt;
+      const template = scope.systemPromptTemplate;
+      if (typeof template === 'string') result.systemPrompt = template;
+      else if (template)
+        result.systemPrompt = template.template({
+          ...context,
+          variable:
+            result.variable === undefined
+              ? undefined
+              : structuredClone(result.variable),
+          systemPrompt: result.systemPrompt,
+        });
+    }
     if (options.scope !== undefined) result.scope = [...options.scope];
+    if (!hasTools && (!result.agentId || result.agentId === 'online'))
+      result.tool = ['bash', 'skill'];
     if (
       result.skill.length &&
       (!result.tool.includes('bash') || !result.tool.includes('skill'))
     )
       throw invalid('Selected skills require both bash and skill tools.');
-    if (result.tool.includes('skill') && !result.skill.length)
-      throw invalid('The skill tool requires selected skills.');
     if (
       result.agentId &&
       result.agentId !== 'online' &&
@@ -284,8 +353,10 @@ export class OnlineAgentConfigurator {
         result.tool.includes('skill'))
     )
       throw invalid('Sandbox tools are only supported by the native backend.');
+    if (result.webSearch && result.agentId && result.agentId !== 'online')
+      throw invalid('Web search is only supported by the native backend.');
     result.toolVersions = Object.fromEntries(
-      result.tool.map((name) => {
+      effectiveTools(result).map((name) => {
         const registered = this.tools.get(name);
         if (!registered) throw invalid(`Tool ${name} is not registered.`);
         return [name, registered.version];
@@ -302,7 +373,7 @@ export class OnlineAgentConfigurator {
     track: (task: Promise<unknown>) => void = () => {},
   ): Record<string, Tool<unknown, OnlineAgentJson, OnlineAgentToolContext>> {
     return Object.fromEntries(
-      config.tool.map((name) => {
+      effectiveTools(config).map((name) => {
         const registered = this.tools.get(name);
         if (!registered || registered.version !== config.toolVersions[name])
           throw invalid(`Tool ${name} has changed or is unavailable.`);

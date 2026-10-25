@@ -42,12 +42,12 @@ export interface AccessLocale {
 
 const accessEnUS: AccessLocale = {
   access: {
-    section: 'Agent team',
-    businessSection: 'Agent team',
+    section: 'Agent management',
+    businessSection: 'Agent management',
     businesses: {
       agents: {
         title: 'Agents and skills',
-        description: 'The agents of the team and the skills they use.',
+        description: 'Agents and the skills they use.',
         actions: {
           edit: {
             title: 'Manage agents and skills',

@@ -18,9 +18,10 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useHref, useLocation, useNavigate } from 'react-router';
 
 import type {
+  ConversationMode,
   ConversationSource,
   PageContextRef,
   PageUIContext,
@@ -51,6 +52,7 @@ import {
   type ChatPanelState,
   type ChatPanelView,
 } from './panel-state.js';
+import { readLastAgent, rememberLastAgent } from './agent-mode.js';
 import { ChatClientProvider } from './controller.js';
 import { useChatRealtime } from './use-chat.js';
 
@@ -117,6 +119,12 @@ export interface ChatPanelValue extends ChatPanelState {
   readonly openPage: ((conversationId: string) => void) | null;
   /** The full-page view's path of a conversation; null without one. */
   readonly conversationPath: ((conversationId: string) => string) | null;
+  /** Switches the panel to one kind of agent (`online` or `runner`); null goes back to choosing it from the agents. */
+  readonly setAgentMode?: (mode: ConversationMode | null) => void;
+  /** The agent last used for a new conversation, remembered per application and `memoryScope`; null when none. */
+  readonly lastAgentId?: string | null;
+  /** Remembers the agent a new conversation went to, so the next one starts with it. */
+  readonly rememberAgent?: (agentId: string) => void;
 }
 
 export interface ChatSourcesValue {
@@ -224,9 +232,15 @@ function focusIsInPanel(): boolean {
 export function ChatProvider({
   available = true,
   conversationPath,
+  memoryScope,
   children,
 }: {
   readonly available?: boolean;
+  /**
+   * Who the panel remembers things for in `localStorage`, such as the agent last used: pass the signed-in person's id.
+   * The application's base path is added, so two applications on one origin keep theirs apart.
+   */
+  readonly memoryScope?: string;
   /**
    * Where the application shows one conversation as a page of its own (for example, `/chat/:conversationId`). With it, the
    * panel offers "Open full page" for a conversation, and the agent-chat block's `ChatConversationPage` moves between
@@ -267,6 +281,22 @@ export function ChatProvider({
   const draftNonceRef = useRef(0);
 
   useEffect(() => writePanelState(state), [state]);
+
+  const base = useHref('/');
+  const memoryKey = memoryScope ? `${base}:${memoryScope}` : base;
+  const [lastAgent, setLastAgent] = useState(() => ({
+    key: memoryKey,
+    id: readLastAgent(memoryKey),
+  }));
+  if (lastAgent.key !== memoryKey)
+    setLastAgent({ key: memoryKey, id: readLastAgent(memoryKey) });
+  const rememberAgent = useCallback(
+    (agentId: string) => {
+      rememberLastAgent(memoryKey, agentId);
+      setLastAgent({ key: memoryKey, id: agentId });
+    },
+    [memoryKey],
+  );
 
   const focusComposer = useCallback(() => {
     focusWantedRef.current = true;
@@ -318,6 +348,8 @@ export function ChatProvider({
             : options.conversationId,
         newAgentId:
           options.agentId === undefined ? current.newAgentId : options.agentId,
+        // An agent asked for decides the panel's mode.
+        agentMode: options.agentId ? null : (current.agentMode ?? null),
       }));
       if (options.source) setSource(options.source);
       const pin = options.pin;
@@ -477,6 +509,10 @@ export function ChatProvider({
             conversationId === null && agentId !== undefined
               ? agentId
               : current.newAgentId,
+          agentMode:
+            conversationId === null && agentId
+              ? null
+              : (current.agentMode ?? null),
         }));
       },
       pinned,
@@ -489,8 +525,14 @@ export function ChatProvider({
       focusComposer,
       openPage,
       conversationPath: pathOf,
+      setAgentMode: (agentMode) =>
+        setState((current) => ({ ...current, agentMode })),
+      lastAgentId: lastAgent.id,
+      rememberAgent,
     }),
     [
+      lastAgent.id,
+      rememberAgent,
       openPage,
       pathOf,
       state,

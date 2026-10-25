@@ -3,7 +3,7 @@
   "description": "从部署 Studio、配置 Runner Agent 和 Git，到创建项目、接入 CI、创建与跟进任务，以及使用 Studio CLI 的完整指南。",
   "eyebrow": "STUDIO / GETTING STARTED",
   "heading": "开始带领你的",
-  "headingAccent": "Agent 团队交付项目",
+  "headingAccent": "Agents 交付项目",
   "intro": "安装 NocoBase Studio，接入 Coding Agent 和代码仓库，在预览环境里验收 Agent 完成的第一个任务。",
   "imageHint": "点击截图可放大查看",
   "flowLabel": "配置与使用概览",
@@ -47,7 +47,7 @@
     {
       "id": "deployment",
       "title": "NocoBase Studio",
-      "summary": "安装并启动 NocoBase Studio，为 Agent 团队准备好协作环境。",
+      "summary": "安装并启动 NocoBase Studio，为 Agents 准备好协作环境。",
       "sections": [
         {
           "id": "deployment-prepare",
@@ -71,13 +71,13 @@
         {
           "id": "runtime-connect",
           "title": "配置运行环境",
-          "html": "<p>进入 <strong>Agent team → Runtimes</strong>，点击 <strong>Add runtime</strong>。运行环境可以是个人电脑，也可以是服务器；建议使用隔离的虚拟机。</p><figure><a class=\"screenshot\" href=\"./assets/runtime-list.png\" aria-label=\"放大查看：在 Runtimes 页面添加运行环境。\"><img src=\"./assets/runtime-list.png\" width=\"3456\" height=\"1992\" alt=\"在 Runtimes 页面添加运行环境。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 01</span>在 Runtimes 页面添加运行环境。</figcaption></figure><ol class=\"steps\"><li>按使用范围选择 <strong>Personal</strong> 或 <strong>Team</strong>，勾选机器上准备使用的 Coding tools。</li><li>调整 <strong>Max concurrent runs</strong>（最大并发运行数）。根据机器资源与模型额度设置，例如需要同时执行 10 个任务时填写 <code>10</code>。</li><li>点击 <strong>Generate install command</strong>，复制当前页面生成的命令。</li></ol><figure><a class=\"screenshot\" href=\"./assets/runtime-setup.png\" aria-label=\"放大查看：根据机器能力调整 Max concurrent runs，再生成安装命令。\"><img src=\"./assets/runtime-setup.png\" width=\"3456\" height=\"1992\" alt=\"根据机器能力调整 Max concurrent runs，再生成安装命令。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 02</span>根据机器能力调整 Max concurrent runs，再生成安装命令。</figcaption></figure><p>在目标运行环境执行对应系统的安装命令，按提示准备 Node.js 24 或更高版本，并完成 Coding tools 的授权。安装后回到 Runtimes，确认运行环境在线。</p><figure><a class=\"screenshot\" href=\"./assets/runtime-install.png\" aria-label=\"放大查看：选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。\"><img src=\"./assets/runtime-install.png\" width=\"3456\" height=\"1992\" alt=\"选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 03</span>选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。</figcaption></figure>",
+          "html": "<p>进入 <strong>Agent management → Runtimes</strong>，点击 <strong>Add runtime</strong>。运行环境可以是个人电脑，也可以是服务器；建议使用隔离的虚拟机。</p><figure><a class=\"screenshot\" href=\"./assets/runtime-list.png\" aria-label=\"放大查看：在 Runtimes 页面添加运行环境。\"><img src=\"./assets/runtime-list.png\" width=\"1440\" height=\"1050\" alt=\"在 Runtimes 页面添加运行环境。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 01</span>在 Runtimes 页面添加运行环境。</figcaption></figure><ol class=\"steps\"><li>按使用范围选择 <strong>Personal</strong> 或 <strong>Shared</strong>，勾选机器上准备使用的 Coding tools。</li><li>新增运行环境的默认最大并发数为 <strong>3</strong>。调整 <strong>Max concurrent runs</strong>（最大并发运行数）。根据机器资源与模型额度设置，例如需要同时执行 10 个任务时填写 <code>10</code>。</li><li>点击 <strong>Generate install command</strong>，复制当前页面生成的命令。</li></ol><figure><a class=\"screenshot\" href=\"./assets/runtime-setup.png\" aria-label=\"放大查看：根据机器能力调整 Max concurrent runs，再生成安装命令。\"><img src=\"./assets/runtime-setup.png\" width=\"1440\" height=\"1400\" alt=\"根据机器能力调整 Max concurrent runs，再生成安装命令。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 02</span>根据机器能力调整 Max concurrent runs，再生成安装命令。</figcaption></figure><p>每个系统都提供「提示词 / 手动安装」（Prompt / Manual）。可复制提示词给目标机器上的 Agent，或自行执行一次性注册命令。Windows 完整提示词首先要求 Agent 判断自己是否在 WSL Ubuntu 中；不在就停止，告知用户到 PowerShell 执行 wsl --install、重启 Windows，再到 WSL Ubuntu 中打开 Agent 重执行提示词。只有在 WSL Ubuntu 中才继续；Node.js 24 和编码工具都装在 WSL 内，无法访问外网时开启镜像网络。个人仅执行所属用户的任务；共享可执行所有用户的任务并收到其变量和密钥。无论哪种范围，都建议隔离运行：Agent 拥有完全权限，执行机不是沙箱。安装后用 nocobase-runner status 确认连接。未检测到工具时，在 which codex / which claude 可用的终端重新执行 nocobase-runner service install 并重启服务，让服务带上正确 PATH。提示词也会指导处理代理、npm 全局安装权限以及避免 snap 版工具。</p><figure><a class=\"screenshot\" href=\"./assets/runtime-install.png\" aria-label=\"放大查看：选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。\"><img src=\"./assets/runtime-install.png\" width=\"1440\" height=\"1400\" alt=\"选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 03</span>选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。</figcaption></figure>",
           "topics": []
         },
         {
           "id": "agents-enable",
           "title": "启动 Agents",
-          "html": "<p>运行环境在线后，进入 <strong>Agent team → Agents</strong>。为发现的 Agent 点击 <strong>Fill in and enable</strong>，完成配置并启用，供 Runner 执行任务时使用。</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"放大查看：配置并启用运行环境提供的 Agents。\"><img src=\"./assets/enable-agents.png\" width=\"3456\" height=\"1992\" alt=\"配置并启用运行环境提供的 Agents。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 04</span>配置并启用运行环境提供的 Agents。</figcaption></figure><p>还需要给 <strong>Project manager</strong> 配置执行 Agent：在 <strong>The agent it runs with → First choice</strong> 选择可用 Agent，按需设置 Fallback，然后保存。</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"放大查看：为项目经理选择执行 Agent 并保存。\"><img src=\"./assets/project-manager.png\" width=\"3456\" height=\"1992\" alt=\"为项目经理选择执行 Agent 并保存。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 05</span>为项目经理选择执行 Agent 并保存。</figcaption></figure>",
+          "html": "<p>运行环境在线后，进入 <strong>Agent management → Agents</strong>。为发现的 Agent 点击 <strong>Fill in and enable</strong>，完成配置并启用，供 Runner 执行任务时使用。</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"放大查看：配置并启用运行环境提供的 Agents。\"><img src=\"./assets/enable-agents.png\" width=\"1440\" height=\"1050\" alt=\"配置并启用运行环境提供的 Agents。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 04</span>配置并启用运行环境提供的 Agents。</figcaption></figure><p>还需要给 <strong>Project manager</strong> 配置执行 Agent：在 <strong>The agent it runs with → First choice</strong> 选择可用 Agent，按需设置 Fallback，然后保存。</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"放大查看：为项目经理选择执行 Agent 并保存。\"><img src=\"./assets/project-manager.png\" width=\"1440\" height=\"1050\" alt=\"为项目经理选择执行 Agent 并保存。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 05</span>为项目经理选择执行 Agent 并保存。</figcaption></figure>",
           "topics": []
         }
       ]

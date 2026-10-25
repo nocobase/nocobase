@@ -15,6 +15,8 @@ export type CollectionSummary = Awaited<
 
 /** The Collections of the default connection, read once per overview and shared by every capability. */
 export class Inventory {
+  /** Shapes already read by collectors, used to invalidate history without issuing another schema query. */
+  public readonly definitionShapes: Map<string, string> = new Map();
   private readonly definitions = new Map<
     string,
     Promise<CollectionDefinition | undefined>
@@ -58,10 +60,15 @@ export class Inventory {
   ): Promise<CollectionDefinition | undefined> {
     let pending = this.definitions.get(name);
     if (!pending) {
-      pending = this.reads.run(
-        () => this.database.collections().get(name),
-        signal,
-      );
+      pending = this.reads.run(async () => {
+        const definition = await this.database.collections().get(name);
+        if (definition !== undefined)
+          this.definitionShapes.set(
+            name,
+            JSON.stringify(definition.fields ?? []),
+          );
+        return definition;
+      }, signal);
       this.definitions.set(name, pending);
     }
     return pending;
@@ -103,14 +110,23 @@ export class Probe {
     return this.inventory.has(name);
   }
 
-  public async fieldNames(name: string): Promise<readonly string[] | null> {
+  /** A listed Collection can disappear or become unreadable before its definition is inspected. */
+  public async definition(name: string): Promise<CollectionDefinition | null> {
     try {
       const definition = await this.inventory.definition(name, this.signal);
-      return (definition?.fields ?? []).map((field) => field.name);
+      if (definition !== undefined) return definition;
     } catch {
-      this.unreadable(name);
-      return null;
+      // Driver details must not reach a capability response.
     }
+    this.unreadable(name);
+    return null;
+  }
+
+  public async fieldNames(name: string): Promise<readonly string[] | null> {
+    const definition = await this.definition(name);
+    return definition
+      ? (definition.fields ?? []).map((field) => field.name)
+      : null;
   }
 
   public count(

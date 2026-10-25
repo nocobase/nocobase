@@ -32,6 +32,8 @@ import { ConsultationCard } from './consultation-card.js';
 import { SentContext } from './context-chips.js';
 import { MessageAttachments } from './message-attachments.js';
 import { ReasoningPart } from './reasoning-part.js';
+import { WebSearchCard } from './web-search-card.js';
+import { WEB_SEARCH_TOOL } from '@nocobase/app-plugin-agents/shared/web-search';
 
 function Time({
   at,
@@ -51,7 +53,7 @@ function Time({
     </time>
   );
 }
-/* eslint-disable @eslint-react/static-components, react-hooks/static-components -- The registry selects existing component identities; it never creates a component during render. */
+/* eslint-disable react-hooks/static-components -- The registry selects existing component identities; it never creates a component during render. */
 function ToolPart({
   part,
   message,
@@ -64,7 +66,9 @@ function ToolPart({
   readonly fallback: ReactNode;
 }): ReactNode {
   const toolName = getToolName(part);
-  const Renderer = useAIToolRenderer(toolName);
+  const Renderer =
+    useAIToolRenderer(toolName) ??
+    (toolName === WEB_SEARCH_TOOL ? WebSearchCard : undefined);
   return Renderer ? (
     <div data-chat-part='tool' data-tool-call={part.toolCallId}>
       <Renderer
@@ -78,13 +82,15 @@ function ToolPart({
     fallback
   );
 }
-/* eslint-enable @eslint-react/static-components, react-hooks/static-components */
+/* eslint-enable react-hooks/static-components */
 
 export interface MessageItemProps {
   readonly message: AppUIMessage;
   readonly segment?: ChatMessageSegment;
   readonly agentName: (agentId: string | undefined) => string;
   readonly extra?: ReactNode;
+  readonly editor?: ReactNode;
+  readonly actions?: ReactNode;
   readonly onApproval?: (input: AppUIToolApprovalInput) => Promise<void>;
   readonly approvalDisabled?: boolean;
   readonly readOnly?: boolean;
@@ -98,6 +104,8 @@ export function MessageItem({
   segment,
   agentName,
   extra,
+  editor,
+  actions,
   onApproval,
   approvalDisabled,
   readOnly = false,
@@ -118,6 +126,11 @@ export function MessageItem({
     chatMessageSegments([message]).flatMap((item) => item.partIndexes)
   ).map((index) => ({ part: message.parts[index], index }));
   const fromAgent = message.role === 'assistant';
+  const fullWidthSearch =
+    fromAgent &&
+    parts.some(
+      ({ part }) => isToolUIPart(part) && getToolName(part) === WEB_SEARCH_TOOL,
+    );
   const writing =
     streaming &&
     parts.some(
@@ -157,6 +170,7 @@ export function MessageItem({
     const key = String(index);
     if (part.type === 'reasoning')
       return <ReasoningPart key={key} part={part} streaming={streaming} />;
+    if (part.type === 'text' && editor) return null;
     if (part.type === 'text')
       return fromAgent ? (
         <ChatMarkdown key={key} content={part.text} />
@@ -182,7 +196,13 @@ export function MessageItem({
         <div key={part.id ?? key} data-chat-part='notice'>
           {card ?? (
             <p className='text-xs text-muted-foreground'>
-              {extensions.newsText?.(part.data, t) ?? part.data.title}
+              {noticeText(
+                t,
+                { ...part.data, code: 'news' },
+                part.data.title,
+                () => '',
+                extensions.newsText,
+              )}
             </p>
           )}
         </div>
@@ -312,7 +332,7 @@ export function MessageItem({
     }
     return null;
   });
-  if (content.every((part) => part == null)) {
+  if (!editor && content.every((part) => part == null)) {
     const context = message.role === 'user' ? message.metadata?.context : null;
     if (extra == null && !context) return null;
     return (
@@ -358,7 +378,12 @@ export function MessageItem({
       <div
         className={cn(
           'flex min-w-0 flex-col',
-          fromAgent ? 'max-w-[92%] items-start' : 'max-w-[85%] items-end',
+          editor
+            ? 'w-[21.5rem] max-w-[92%] items-end'
+            : fromAgent
+              ? 'max-w-[92%] items-start'
+              : 'max-w-[85%] items-end',
+          fullWidthSearch && 'flex-1 max-w-none items-stretch',
         )}
       >
         {fromAgent ? (
@@ -371,10 +396,17 @@ export function MessageItem({
         )}
         <div
           className={cn(
-            'max-w-full min-w-0 space-y-1 overflow-x-auto rounded-lg px-3 py-2 text-sm wrap-anywhere [&_table]:wrap-normal',
-            fromAgent ? 'bg-muted' : 'bg-primary/10',
+            'max-w-full min-w-0 space-y-1 text-sm wrap-anywhere [&_table]:wrap-normal',
+            editor
+              ? 'w-full'
+              : cn(
+                  'overflow-x-auto rounded-lg px-3 py-2',
+                  fromAgent ? 'bg-muted' : 'bg-primary/10',
+                ),
+            fullWidthSearch && 'w-full',
           )}
         >
+          {editor}
           {content}
           {writing ? (
             <span
@@ -386,6 +418,11 @@ export function MessageItem({
         </div>
         {!fromAgent && message.metadata?.context ? (
           <SentContext context={message.metadata.context} />
+        ) : null}
+        {actions && !editor ? (
+          <div className='mt-1 opacity-0 transition-opacity group-focus-within/message:opacity-100 group-hover/message:opacity-100 motion-reduce:transition-none pointer-coarse:opacity-100'>
+            {actions}
+          </div>
         ) : null}
         {!fromAgent && at ? (
           <Time

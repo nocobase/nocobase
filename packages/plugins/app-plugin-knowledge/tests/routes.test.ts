@@ -1,9 +1,14 @@
 // @vitest-environment node
 /** `/api/knowledge` over the services: answers as `{ data }`, refusals in the standard error body, access by the resolver. */
-import { Hono } from 'hono';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
+import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import { ServiceContainer } from '@nocobase/service-provider';
+import type { Hono } from 'hono';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createKnowledgeRoutes } from '../server/routes/api.js';
+import { apiRoutes } from '../server/routes/index.js';
+import { NO_ACCESS } from '../server/services/access.js';
+import { knowledgeToken, knowledgeAccessToken } from '../server/tokens.js';
 import {
   ADMIN,
   READER,
@@ -23,20 +28,56 @@ describe('knowledge routes', () => {
       leadUserId: 'lead',
       seenBy: ['lead', 'admin'],
     });
-    app = new Hono();
-    app.route(
-      '/knowledge',
-      createKnowledgeRoutes(
-        h.knowledge,
-        (c) => ({ userId: c.req.header('x-user') ?? 'nobody' }),
-        (space) =>
-          space.scope === 'system'
-            ? { scope: 'system', scopeId: '' }
-            : space.scope === 'project' && space.scopeId
-              ? space
-              : null,
-      ),
+    const authentication = new Auth({
+      connection: h.database.connection(),
+      secret: 'knowledge-test-authentication-secret-at-least-32-characters',
+      baseURL: 'http://localhost',
+    });
+    vi.spyOn(authentication, 'getSession').mockImplementation(
+      async (headers) => {
+        const id = headers.get('x-user');
+        if (!id) return null;
+        const now = new Date();
+        return {
+          user: {
+            id,
+            name: id,
+            email: `${id}@example.test`,
+            emailVerified: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+          session: {
+            id: 'session',
+            token: 'test',
+            userId: id,
+            expiresAt: new Date(Date.now() + 60000),
+            createdAt: now,
+            updatedAt: now,
+          },
+        };
+      },
     );
+    const container = new ServiceContainer();
+    container.instance(authenticationToken, authentication);
+    container.instance(knowledgeToken, h.knowledge);
+    container.instance(knowledgeAccessToken, {
+      ...NO_ACCESS,
+      space: (space) =>
+        space.scope === 'system'
+          ? { scope: 'system', scopeId: '' }
+          : space.scope === 'project' && space.scopeId
+            ? space
+            : null,
+    });
+    app = await apiRoutes.createRouter({
+      appName: 'test',
+      publicBasePath: '',
+      config: {},
+      paths: {},
+      router: {},
+      container,
+    } as AppPluginApplication);
   });
   afterEach(async () => {
     await h?.close();
@@ -48,6 +89,29 @@ describe('knowledge routes', () => {
       headers: { 'x-user': user, 'content-type': 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
+
+  it('requires native authentication for capability and semantic tool requests', async () => {
+    for (const [method, path, body] of [
+      ['GET', '/capabilities', undefined],
+      ['GET', '/chunking?scope=project&scopeId=p1', undefined],
+      ['PUT', '/chunking', { scope: 'project', scopeId: 'p1', override: null }],
+      [
+        'GET',
+        '/search?scope=project&scopeId=p1&q=needle&explain=true',
+        undefined,
+      ],
+    ] as const) {
+      const response = await app.request(`/knowledge${path}`, {
+        method,
+        headers: { 'content-type': 'application/json' },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      expect(response.status).toBe(401);
+      expect(await response.json()).toMatchObject({
+        error: { status: 'UNAUTHENTICATED', reason: 'AUTHENTICATION_REQUIRED' },
+      });
+    }
+  });
 
   it('reports indexer notification coverage without changing snapshot data or permissions', async () => {
     const created = await call('lead', 'POST', '/docs', {
@@ -154,6 +218,107 @@ describe('knowledge routes', () => {
     });
   });
 
+  it('reports indexer registration and rejects semantic tools while preserving keyword search', async () => {
+    const capabilities = async () =>
+      (await call('lead', 'GET', '/capabilities')).json();
+    expect(await capabilities()).toEqual({
+      data: { semanticSearch: false, proposals: true },
+    });
+    const register = () =>
+      h.knowledge.registerIndexer({
+        // Registration alone determines availability, even before any state exists.
+        states: async () => null,
+        unfinished: async () => null,
+        reindex: async () => {},
+      });
+    const unregister = register();
+    expect(await capabilities()).toEqual({
+      data: { semanticSearch: true, proposals: true },
+    });
+    unregister();
+    expect(await capabilities()).toEqual({
+      data: { semanticSearch: false, proposals: true },
+    });
+    await call('lead', 'POST', '/docs', {
+      scope: 'project',
+      scopeId: 'p1',
+      title: 'Guide',
+      content: 'Keyword needle.',
+    });
+    const before = await h.knowledge.chunking.get(h.user('lead'), {
+      scope: 'project',
+      scopeId: 'p1',
+    });
+    for (const [method, path, body] of [
+      [
+        'GET',
+        '/search?scope=project&scopeId=p1&q=needle&explain=true',
+        undefined,
+      ],
+      ['GET', '/chunking?scope=project&scopeId=p1', undefined],
+      [
+        'PUT',
+        '/chunking',
+        {
+          scope: 'project',
+          scopeId: 'p1',
+          override: { headingDepth: 1, target: 800, max: 1200 },
+        },
+      ],
+    ] as const) {
+      const response = await call('lead', method, path, body);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        error: {
+          status: 'FAILED_PRECONDITION',
+          reason: 'SEMANTIC_SEARCH_UNAVAILABLE',
+          domain: 'knowledge',
+        },
+      });
+    }
+    expect(
+      await h.knowledge.chunking.get(h.user('lead'), {
+        scope: 'project',
+        scopeId: 'p1',
+      }),
+    ).toEqual(before);
+    const keywords = await call(
+      'lead',
+      'GET',
+      '/search?scope=project&scopeId=p1&q=needle',
+    );
+    expect(keywords.status).toBe(200);
+    expect(await keywords.json()).toMatchObject({ data: [{ title: 'Guide' }] });
+    register();
+    expect(
+      (await call('lead', 'GET', '/chunking?scope=project&scopeId=p1')).status,
+    ).toBe(200);
+    expect(
+      (
+        await call(
+          'lead',
+          'GET',
+          '/search?scope=project&scopeId=p1&q=needle&explain=true',
+        )
+      ).status,
+    ).toBe(200);
+    h.projects.set('p1', { id: 'p1', name: 'Acme', leadUserId: 'lead' });
+    h.levels.set('member', READER);
+    expect(
+      (
+        await call('member', 'PUT', '/chunking', {
+          scope: 'project',
+          scopeId: 'p1',
+          override: null,
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (await call('outsider', 'GET', '/chunking?scope=project&scopeId=hidden'))
+        .status,
+    ).toBe(404);
+  });
+
   it('serves the chunking, the index state of a document and the unindexed list, and explains search when asked', async () => {
     const created = await call('lead', 'POST', '/docs', {
       scope: 'project',
@@ -162,6 +327,11 @@ describe('knowledge routes', () => {
       content: '# Release\n\nShip it.',
     });
     const { data: doc } = (await created.json()) as { data: { id: string } };
+    const unregister = h.knowledge.registerIndexer({
+      states: async () => new Map(),
+      unfinished: async () => [],
+      reindex: async () => {},
+    });
     const chunking = await call(
       'lead',
       'GET',
@@ -190,6 +360,7 @@ describe('knowledge routes', () => {
     });
     await h.knowledge.chunking.idle();
 
+    unregister();
     const index = await call('lead', 'GET', `/docs/${doc.id}/index`);
     expect(await index.json()).toMatchObject({
       data: { docId: doc.id, enabled: false, total: 1, state: null },
@@ -206,6 +377,11 @@ describe('knowledge routes', () => {
       meta: { enabled: false, notifications: 'none' },
     });
 
+    h.knowledge.registerIndexer({
+      states: async () => null,
+      unfinished: async () => null,
+      reindex: async () => {},
+    });
     const explained = await call(
       'lead',
       'GET',

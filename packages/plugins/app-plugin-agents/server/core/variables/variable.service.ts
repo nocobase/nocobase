@@ -151,7 +151,7 @@ export interface VariableService {
     targets: readonly VariableTarget[],
   ): Promise<string[]>;
   /**
-   * The variables of `targets`, merged in order as a run gets them, that only team runners may receive: by the scope
+   * The variables of `targets`, merged in order as a run gets them, that only shared runners may receive: by the scope
    * whose value the run would get.
    */
   teamOnly(
@@ -183,7 +183,7 @@ export interface VariableService {
   /**
    * For a job's claim: the values of the named variables, by `scope`, `scopeId` and `name` joined with NUL, recorded
    * as delivered for the job. A variable that is not set is left out. Throws `JobSecretsNotAllowed` before opening
-   * any value if a referenced variable is for team runners only and the stored runner is not a team runner.
+   * any value if a referenced variable is for shared runners only and the stored runner is not a shared runner.
    */
   forJob(
     conn: DatabaseConnection,
@@ -516,7 +516,7 @@ export function createVariableService(
             );
           if (options.teamRunnersOnly === true)
             throw invalid(
-              'A variable taken from the runner never leaves the runner; it cannot be for team runners only.',
+              'A variable taken from the runner never leaves the runner; it cannot be for shared runners only.',
               { reason: 'teamRunnersOnlyNotAllowed' },
             );
           const change = await setFromRunner(conn, target, name, userId);

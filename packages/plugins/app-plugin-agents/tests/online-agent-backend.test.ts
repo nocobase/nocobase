@@ -9,6 +9,7 @@ import {
   NativeBackgroundOnlineAgent,
   NativeRealtimeOnlineAgent,
 } from '../server/online/agent/native/session.js';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
@@ -82,7 +83,6 @@ async function fixture(languageModel = model()) {
     tx: h.services.tx,
     ids,
     attachments: attachments.links,
-    files: h.services.chatAttachments,
     now: () => new Date().toISOString(),
   });
   const configurator = new OnlineAgentConfigurator();
@@ -90,6 +90,7 @@ async function fixture(languageModel = model()) {
   const resolveModel = vi.fn(async () => languageModel);
   const defaultModel = vi.fn(async () => ref);
   const deps = {
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions,
     ids,
     configurator,

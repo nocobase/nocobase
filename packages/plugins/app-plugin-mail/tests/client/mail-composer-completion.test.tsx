@@ -212,6 +212,25 @@ beforeEach(async () => {
 });
 
 describe('Mail composer completion through the actual hook', () => {
+  it('creates draft and request UUIDs without randomUUID on HTTP', async () => {
+    vi.stubGlobal('crypto', {
+      getRandomValues: crypto.getRandomValues.bind(crypto),
+    });
+    try {
+      const view = await mountComposer(props());
+      act(() => view.result.current.sendComposer('normal'));
+      await waitFor(() => expect(mail.sendMessage).toHaveBeenCalledTimes(1));
+      const wire = mail.sendMessage.mock.calls[0]![0];
+      const uuidV4 =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+      expect(wire.draftKey).toMatch(uuidV4);
+      expect(wire.idempotencyKey).toMatch(uuidV4);
+      expect(wire.draftKey).not.toBe(wire.idempotencyKey);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('closes before completing with the response ID and a detached exact wire body including signature, quote, copies, and attachments', async () => {
     const response = { ...submission(), error: rejection };
     const pending = deferred<MailSubmissionView>();

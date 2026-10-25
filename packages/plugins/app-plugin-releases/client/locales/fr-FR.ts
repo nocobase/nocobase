@@ -554,6 +554,8 @@ const frFR: LocaleResource<typeof enUS> = {
       hide: 'Masquer le mot de passe',
       copy: 'Copier le mot de passe',
       copied: 'Mot de passe copié.',
+      copyFailed:
+        'Impossible de copier le mot de passe. Affichez-le et copiez-le manuellement.',
       dismiss: "Je l'ai sauvegardé",
       dismissed:
         'Le premier administrateur a été supprimé du gestionnaire de versions.',

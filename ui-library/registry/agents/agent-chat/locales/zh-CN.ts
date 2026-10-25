@@ -2,7 +2,40 @@ import type { AgentChatLocale } from './en-US.js';
 
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    webSearch: {
+      title: '联网搜索',
+      queryCount: '{{count}} 个搜索词',
+      expand: '展开',
+      collapse: '收起',
+      toggle: '联网搜索',
+      unsupported: '请选择支持联网搜索的模型。',
+      searching: '正在搜索…',
+      completed: '已获取来源',
+      unverified: '搜索未经核验',
+      unverifiedNotice:
+        '服务返回了回答，但未提供搜索证据；无法核验是否实际联网搜索、信息时效或来源。',
+      partial: '部分搜索失败',
+      failed: '搜索不可用',
+      cancelled: '搜索已取消',
+      interrupted: '搜索已中断',
+      timeout: '搜索超时。',
+      unavailable: '搜索暂时不可用。',
+      noEvidence: '未返回可验证的网络证据。',
+      sources: '来源',
+    },
     retrySaving: '重试保存',
+    cancel: '取消',
+    editMessage: '编辑',
+    copyMessage: '复制',
+    refreshReply: '重新生成',
+    copyFailed: '无法复制消息。',
+    resendConfirm: '重新发送',
+    resend: {
+      rejected: '消息未重新发送，已保留编辑内容。',
+      unknown:
+        '重新发送的结果未知，请先刷新历史并等待，再决定是否重试；消息可能已经接收。',
+      needsSync: '消息已接收，但历史尚未同步。请刷新历史，不要再次发送。',
+    },
     contextFailed: '无法读取所选上下文或发送消息，请检查当前页面后重试。',
     approval: {
       request: '此工具需要您批准后才能执行。',
@@ -92,6 +125,29 @@ const agentChatZhCN: AgentChatLocale = {
       usingDefault: '这条对话暂时由 {{name}} 代替 {{own}} 回答。',
       restore: '切回 {{own}}',
     },
+    fileInputFailures: {
+      imageCapability:
+        '所选模型尚未配置图片输入能力，请切换已确认支持图片的模型。',
+      unsupportedFormat:
+        '所选模型尚未配置此格式的文件输入能力，当前也没有适用的文本提取器。请换用支持的文档格式，或已确认支持此类文件的模型。',
+      formatMismatch:
+        '附件的文件名与内容类型不一致，请检查文件格式后重新上传。',
+      invalidInline: '附件数据无效或过大，请重新上传或使用更小的文件。',
+      fileTooLarge: '单个附件大小超出限制，请使用更小的文件。',
+      inputTooLarge: '会话附件总大小超出限制，请缩小文件或新建会话。',
+      documentTooLarge:
+        '附件提取出的文字超出限制，请拆分文档或使用更小的文件。',
+      contextTooLarge: '会话附件的文字总量超出限制，请缩小文件或新建会话。',
+      fileCount: '会话文件输入已超过 100 个，请新建会话。',
+      nativeFileCount:
+        '附件数量超出文件输入限制，请减少附件，或改用可提取文字的文档。',
+      unreadable:
+        '附件中没有可读取的文字。纯图片或扫描文档需要先做 OCR 文字识别。',
+      extractionFailed:
+        '无法提取附件文字，请检查文档是否损坏或受密码保护，然后重新上传。',
+      extractionTimeout: '附件文字提取超时，请使用更小的文件或稍后重试。',
+      preparationFailed: '无法准备附件，请检查文件访问权限和格式后重试。',
+    },
     notice: {
       switchedToDefault:
         '已临时改用系统默认的 {{name}}，等 {{own}} 恢复后可以切回。',
@@ -170,6 +226,14 @@ const agentChatZhCN: AgentChatLocale = {
       filter: '筛选：{{filter}}',
       selection: '选中文字：“{{text}}”',
       remove: '移除上下文：{{label}}',
+      inspect: '查看上下文：{{label}}',
+      preview: '上下文：{{label}}',
+    },
+    modes: {
+      online: '在线 Agent',
+      runner: '执行机 Agent',
+      switchToOnline: '切换到在线 Agent',
+      switchToRunner: '切换到执行机 Agent',
     },
     agents: {
       models: '模型',
@@ -215,7 +279,7 @@ const agentChatZhCN: AgentChatLocale = {
       loadFailed: '无法加载对话',
       noMatch: '没有匹配的对话',
       noArchived: '没有已归档的对话',
-      empty: '还没有对话',
+      empty: '没有对话',
       more: '加载更多',
       unread: '有新回复',
       actions: '{{title}} 的操作',

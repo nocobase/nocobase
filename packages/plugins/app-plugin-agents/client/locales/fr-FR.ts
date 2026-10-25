@@ -1,4 +1,6 @@
+import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
+import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -97,41 +99,28 @@ const frFR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponible actuellement',
     title: 'Agents',
     description:
-      "Chaque outil de codage et modèle signalé par un exécuteur est un agent. Le chef de projet confie chaque étape d'un problème à l'agent dont la description correspond.",
+      'Ajoutez des agents à partir des modèles signalés par les exécuteurs. Le chef de projet confie chaque étape d’une tâche à l’agent dont la description convient.',
     fromRunners: 'Agents des exécuteurs',
-    discovery: {
-      selectAll: 'Sélectionner tous les résultats',
-      selectFirst: 'Sélectionnez les premiers résultats {{limit}}',
-      selectionCount: 'Groupes {{count}} / {{limit}} sélectionnés',
-      clearSelection: 'Effacer la sélection',
-      new: 'Nouvelles découvertes ({{count}})',
-      ignored: 'Ignoré ({{count}})',
+    display: {
       search: 'Rechercher des modèles ou des fournisseurs',
       select: 'Sélectionnez {{name}}',
-      ignore: 'Ignorer',
-      restore: 'Restaurer',
-      ignoreSelected: 'Ignorer la sélection',
-      restoreSelected: 'Restaurer la sélection',
       showDisabled: 'Afficher désactivés',
       hideDisabled: 'Masquer désactivés',
-      provider: 'Fournisseur et exécuteur',
-      saved: 'Préférences de découverte enregistrées',
     },
     filterLabel: 'Afficher les agents',
     filters: {
       all: 'Tous les {{count}}',
       enabled: 'Activé {{count}}',
-      pending: 'Pour activer {{count}}',
       unreported: 'Aucun exécuteur {{count}}',
     },
     loadFailed: 'Impossible de charger les agents',
     loadMore: 'Charger plus',
     emptyTitle: "Aucun agent pour l'instant",
     emptyDescription:
-      'Connectez un runner avec un outil de codage connecté : chacun de ses modèles apparaît ici comme un agent à activer.',
+      'Connectez un exécuteur disposant d’un outil de codage avec une session ouverte, puis ajoutez un agent depuis « Modèles disponibles ».',
     noneInFilter: 'Aucun agent ici.',
     howToAdd:
-      "Pour ajouter un agent, installez un outil de codage sur un exécuteur et connectez-vous à un modèle que vous pouvez utiliser : une fois que le exécuteur l'a signalé, il apparaît ici, et vous l'activez en écrivant ce pour quoi il est bon. Un agent uniquement des exécuteurs personnels travaille uniquement sur les problèmes lancés par leurs propriétaires.",
+      'Pour ajouter un agent, installez un outil de codage sur un exécuteur et connectez-vous pour utiliser un modèle disponible. Une fois le modèle signalé par l’exécuteur, ajoutez l’agent depuis « Modèles disponibles » en décrivant ses points forts. Il est activé dès son ajout. Un agent disponible uniquement sur des exécuteurs personnels ne travaille que sur les tâches lancées par leurs propriétaires.',
     goodAtMissing: 'Pas encore écrit',
     columns: {
       agent: 'Agent',
@@ -156,7 +145,6 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Activé',
-      pending: 'Pour activer',
       disabled: 'Désactivé',
       unreported: 'Aucun exécuteur',
     },
@@ -172,9 +160,6 @@ const frFR: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Remplir et activer',
-      buttonFor: 'Remplissez et activez {{name}}',
-      title: 'Activer {{name}}',
       reportedBy_one:
         'Rapporté par le exécuteur {{count}} en ligne : {{names}}.',
       reportedBy_other:
@@ -187,8 +172,6 @@ const frFR: LocaleResource<typeof enUS> = {
         "Le chef de projet ne peut pas le modifier lorsqu'il lui confie le travail.",
       personalOnly:
         "Seuls les exécuteurs personnels l'ont : le chef de projet ne lui confie le travail que sur les problèmes lancés par ses propriétaires.",
-      submit: 'Activer',
-      done: '{{name}} est activé',
       reportedBy_many:
         'Rapporté par les exécuteurs de {{count}} en ligne : {{names}}.',
     },
@@ -250,34 +233,6 @@ const frFR: LocaleResource<typeof enUS> = {
         '{{succeeded}} ajoutés, {{failed}} n’ont pas pu être ajoutés. Raison sous chacun.',
       addFailed:
         '{{failed}} n’ont pas pu être ajoutés. Raison sous chacun ; réessayez.',
-    },
-    cleanup: {
-      open: 'Nettoyer',
-      title: 'Supprimer les agents découverts inutilisés',
-      description:
-        'Agents créés par le rapport d’un exécuteur, que personne n’a activés et qui n’ont jamais été exécutés : peuvent être supprimés sans risque. Tout ce qui a changé depuis le chargement de cette liste est ignoré, pas supprimé.',
-      none: 'Rien à supprimer.',
-      select: 'Sélectionner {{name}}',
-      selectGroup: 'Tout sélectionner dans {{tool}}',
-      clearGroup: 'Désélectionner {{tool}}',
-      neverEnabled: 'Jamais activé · Aucun historique d’exécution',
-      createdAt: 'Découvert {{when}}',
-      group_one: '{{tool}} · {{count}} candidat',
-      group_other: '{{tool}} · {{count}} candidats',
-      group_many: '{{tool}} · {{count}} candidats',
-      selectedCount_one: '{{count}} sélectionné',
-      selectedCount_other: '{{count}} sélectionnés',
-      selectedCount_many: '{{count}} sélectionnés',
-      remove: 'Supprimer {{count}}',
-      confirmTitle_one: 'Supprimer {{count}} agent ?',
-      confirmTitle_other: 'Supprimer {{count}} agents ?',
-      confirmTitle_many: 'Supprimer {{count}} agents ?',
-      confirmDescription:
-        'Dans {{tools}}. Sans risque : revérifié juste avant la suppression, et tout ce qui n’est plus éligible est ignoré, pas supprimé.',
-      confirmAction: 'Supprimer {{count}}',
-      done: '{{removed}} supprimés, {{skipped}} ignorés',
-      partialFailure:
-        '{{removed}} supprimés, {{skipped}} ignorés ; {{failed}} n’ont pas pu être supprimés ({{reason}}). Ils restent sélectionnés pour réessayer.',
     },
   },
   agentTypes: {
@@ -647,14 +602,7 @@ const frFR: LocaleResource<typeof enUS> = {
     unknown: "L'exécution a échoué.",
   },
   runtimes: {
-    capacity: {
-      actual: 'Last effective slots: {{slots}}',
-      online: 'Effective slots · online settings',
-      pending: 'Waiting for runner to sync online settings',
-      legacy: 'Legacy local slots · upgrade the application server',
-      upgrade: 'Sync status unavailable · upgrade the runner',
-      lastReported: 'Last reported: {{time}}',
-    },
+    pathHint: runtimesEnUS.runtimes.pathHint,
     quota: {
       workspaceStatus: {
         active: 'Les travaux continuent',
@@ -908,6 +856,7 @@ const frFR: LocaleResource<typeof enUS> = {
       version: 'Version {{version}}',
     },
     trust: {
+      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
       label: 'Pour qui ça marche',
       team: 'Équipe',
       teamHint:
@@ -959,6 +908,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "Les environnements d'exécution {{count}} ont été révoqués.",
   },
   connect: {
+    ...runtimesEnUS.connect,
     title: "Ajouter un environnement d'exécution",
     description:
       "Exécutez la commande ci-dessous sur un hôte sur lequel un outil de codage est installé : un serveur, une VM ou votre propre appareil. Les agents y fonctionnent avec un accès complet, en tant qu'utilisateur qui exécute le exécuteur, et peuvent lire et modifier tout ce que l'utilisateur peut faire, clés SSH et autres informations d'identification incluses. Le runner n'est pas une barrière de sécurité : exécutez-le en tant qu'utilisateur dédié, dans un conteneur ou dans une VM.",
@@ -968,8 +918,6 @@ const frFR: LocaleResource<typeof enUS> = {
     nodeRequired:
       "L'hôte a besoin de Node.js 24 ou plus récent (vérifiez avec node --version). La commande s'arrête et indique comment l'installer lorsqu'elle est manquante.",
     installed: 'Nocobase-runner est-il déjà installé ? Enregistrez-le plutôt :',
-    unsupported:
-      "Le programme d'exécution ne s'exécute pas encore sous Windows. Utilisez macOS ou Linux, ou WSL.",
     tokenOnce:
       'La commande comporte un identifiant unique pour un environnement d\'exécution "{{trust}}". Cela fonctionne une fois, jusqu\'à {{time}}.',
     after:
@@ -993,6 +941,9 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    // Keep new guidance available in English until this locale is translated.
+    executionFailed: chatEnUS.chat.executionFailed,
+    fileInputFailures: chatEnUS.chat.fileInputFailures,
     untitled: 'Conversation sans titre',
     renamed: 'Renommé',
     archivedNamed: 'Archivé « {{title}} »',

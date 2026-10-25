@@ -80,12 +80,26 @@ export const dataModeling: CapabilityCollector = {
           complete: tables.length === 0,
         };
     const definitions = await probe.map(own, (collection) =>
-      probe.inventory.definition(collection.name, probe.signal),
+      probe.definition(collection.name),
     );
-    const fields = definitions.flatMap(
-      (definition) => definition?.fields ?? [],
+    const relations = total(
+      definitions.map((definition) =>
+        definition === null
+          ? null
+          : (definition.fields ?? []).filter((field) =>
+              RELATION_TYPES.has(field.type),
+            ).length,
+      ),
     );
-    const relations = fields.filter((field) => RELATION_TYPES.has(field.type));
+    const fields = total(
+      definitions.map((definition) =>
+        definition === null
+          ? null
+          : (definition.fields ?? []).filter(
+              (field) => !RELATION_TYPES.has(field.type),
+            ).length,
+      ),
+    );
     return {
       status: 'active',
       facts:
@@ -103,8 +117,10 @@ export const dataModeling: CapabilityCollector = {
                     .map((collection) => collection.title ?? collection.name),
                 },
               ),
-              ...(relations.length > 0
-                ? [fact('relations', { count: relations.length })]
+              ...(relations.complete &&
+              relations.value !== null &&
+              relations.value > 0
+                ? [fact('relations', { count: relations.value })]
                 : []),
             ],
       metrics: [
@@ -113,8 +129,8 @@ export const dataModeling: CapabilityCollector = {
         }),
         metric('businessCollections', tables.length),
         metric('views', own.length - tables.length),
-        metric('fields', fields.length - relations.length),
-        metric('relations', relations.length),
+        metric('fields', fields.value, { complete: fields.complete }),
+        metric('relations', relations.value, { complete: relations.complete }),
         metric(
           'systemCollections',
           probe.inventory.collections.length - own.length,
@@ -137,41 +153,115 @@ const FILE_COLUMNS = [
 export const files: CapabilityCollector = {
   key: 'files',
   packages: ['@nocobase/app-plugin-file', '@nocobase/drive'],
-  async collect({ probe, container }) {
+  async collect({ probe, container, report }) {
     if (!probe) return NO_DATABASE;
+    const hasDrive = container.has(driveManagerToken);
+    const knownFiles: CollectionSummary[] = [];
     const candidates = await probe.map(
       applicationCollections(probe).filter(
         (collection) => collection.kind === 'table',
       ),
       async (collection) => {
         const names = await probe.fieldNames(collection.name);
-        return names !== null &&
-          FILE_COLUMNS.every((column) => names.includes(column))
-          ? collection
-          : undefined;
+        if (names === null) return null;
+        if (!FILE_COLUMNS.every((column) => names.includes(column)))
+          return undefined;
+        knownFiles.push(collection);
+        report?.({
+          status: hasDrive ? 'active' : 'needsSetup',
+          ...(hasDrive ? {} : { reason: 'noDrive' }),
+          facts: [
+            fact('fileCollectionsPartial', {
+              count: knownFiles.length,
+              names: knownFiles
+                .slice(0, 5)
+                .map((item) => item.title ?? item.name),
+            }),
+          ],
+          metrics: [
+            metric('fileCollections', knownFiles.length, { complete: false }),
+            metric('files', null),
+            metric('storedBytes', null, { unit: 'bytes' }),
+          ],
+        });
+        return collection;
       },
     );
+    const discoveryComplete = candidates.every((item) => item !== null);
     const fileCollections = candidates.filter(
-      (collection): collection is CollectionSummary => collection !== undefined,
+      (collection): collection is CollectionSummary => collection != null,
     );
     if (fileCollections.length === 0)
-      return { status: 'unused', reason: 'noFileCollection' };
+      return {
+        status: discoveryComplete ? 'unused' : null,
+        ...(discoveryComplete ? { reason: 'noFileCollection' } : {}),
+        metrics: [
+          metric('files', discoveryComplete ? 0 : null),
+          metric('storedBytes', discoveryComplete ? 0 : null, {
+            unit: 'bytes',
+          }),
+          metric('fileCollections', discoveryComplete ? 0 : null),
+        ],
+      };
+    report?.({
+      status: hasDrive ? 'active' : 'needsSetup',
+      ...(hasDrive ? {} : { reason: 'noDrive' }),
+      facts: [
+        fact(discoveryComplete ? 'fileCollections' : 'fileCollectionsPartial', {
+          count: fileCollections.length,
+          names: fileCollections
+            .slice(0, 5)
+            .map((item) => item.title ?? item.name),
+        }),
+      ],
+      metrics: [
+        metric('fileCollections', fileCollections.length, {
+          complete: discoveryComplete,
+        }),
+      ],
+    });
+    let countedFiles: number | null = null;
     const counts = total(
-      await probe.map(fileCollections, (collection) =>
-        probe.count(collection.name),
-      ),
+      await probe.map(fileCollections, async (collection) => {
+        const count = await probe.count(collection.name);
+        if (count !== null) countedFiles = (countedFiles ?? 0) + count;
+        report?.({
+          status: null,
+          metrics: [metric('files', countedFiles, { complete: false })],
+        });
+        return count;
+      }),
     );
+    report?.({
+      status: null,
+      metrics: [
+        metric('files', counts.value, {
+          complete: discoveryComplete && counts.complete,
+        }),
+      ],
+    });
+    let countedBytes: number | null = null;
     const bytes = total(
-      await probe.map(fileCollections, (collection) =>
-        probe.sum(collection.name, 'size'),
-      ),
+      await probe.map(fileCollections, async (collection) => {
+        const bytes = await probe.sum(collection.name, 'size');
+        if (bytes !== null) countedBytes = (countedBytes ?? 0) + bytes;
+        report?.({
+          status: null,
+          metrics: [
+            metric('storedBytes', countedBytes, {
+              unit: 'bytes',
+              complete: false,
+            }),
+          ],
+        });
+        return bytes;
+      }),
     );
-    const hasDrive = container.has(driveManagerToken);
     return {
       status: hasDrive ? 'active' : 'needsSetup',
       ...(hasDrive ? {} : { reason: 'noDrive' }),
       facts: [
-        fact('fileCollections', {
+        fact(discoveryComplete ? 'fileCollections' : 'fileCollectionsPartial', {
           count: fileCollections.length,
           names: fileCollections
             .slice(0, 5)
@@ -179,12 +269,16 @@ export const files: CapabilityCollector = {
         }),
       ],
       metrics: [
-        metric('files', counts.value, { complete: counts.complete }),
+        metric('files', counts.value, {
+          complete: discoveryComplete && counts.complete,
+        }),
         metric('storedBytes', bytes.value, {
           unit: 'bytes',
-          complete: bytes.complete,
+          complete: discoveryComplete && bytes.complete,
         }),
-        metric('fileCollections', fileCollections.length),
+        metric('fileCollections', fileCollections.length, {
+          complete: discoveryComplete,
+        }),
       ],
     };
   },

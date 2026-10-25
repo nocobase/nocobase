@@ -31,7 +31,43 @@ import {
   routeAcceptsScheme,
 } from '@nocobase/app-server/router';
 import { databaseAdapter } from './better-auth/database-adapter.js';
-import { createAuthMiddleware } from 'better-auth/api';
+import { createAuthEndpoint, createAuthMiddleware } from 'better-auth/api';
+import { setSessionCookie } from 'better-auth/cookies';
+import { z } from 'zod';
+
+// No HTTP path: only trusted server code can invoke this through Auth.signInUser().
+const trustedSessionPlugin = {
+  id: 'nocobase-trusted-session',
+  endpoints: {
+    signInUser: createAuthEndpoint(
+      {
+        method: 'POST',
+        body: z.object({ userId: z.string().min(1) }),
+      },
+      async (context) => {
+        const user = await context.context.internalAdapter.findUserById(
+          context.body.userId,
+        );
+        if (!user || Reflect.get(user, 'deletedAt') != null)
+          throw APIError.from('NOT_FOUND', {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found.',
+          });
+        const session = await context.context.internalAdapter.createSession(
+          user.id,
+          true,
+        );
+        if (!session)
+          throw APIError.from('UNAUTHORIZED', {
+            code: 'SESSION_CREATION_FAILED',
+            message: 'Could not create a session.',
+          });
+        await setSessionCookie(context, { session, user }, true);
+        return context.json({ success: true });
+      },
+    ),
+  },
+} satisfies BetterAuthPlugin;
 
 export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   connection: DatabaseConnection;
@@ -219,7 +255,11 @@ export class Auth {
       ...config,
       appName: config.appName ?? 'NocoBase3',
       database: databaseAdapter(connection),
-      plugins: [...(plugins ?? []), this.resetPolicy.plugin()],
+      plugins: [
+        ...(plugins ?? []),
+        this.resetPolicy.plugin(),
+        trustedSessionPlugin,
+      ],
       hooks: {
         ...config.hooks,
         // Delegate the original middleware with its header/response envelope intact.
@@ -382,6 +422,25 @@ export class Auth {
   ): Promise<Response> {
     return this.resetPolicy.runRequest(options.clientAddress, () =>
       this.auth.handler(request),
+    );
+  }
+
+  /**
+   * Creates an ordinary browser session after a trusted caller has authorized this sign-in. Has no HTTP endpoint;
+   * callers own their access policy. Session hooks, disabled/service-account checks and cookie configuration apply.
+   */
+  signInUser(
+    userId: string,
+    request: Request,
+    options: AuthRequestOptions = {},
+  ): Promise<Response> {
+    return this.resetPolicy.runRequest(options.clientAddress, () =>
+      this.auth.api.signInUser({
+        body: { userId },
+        headers: request.headers,
+        request,
+        asResponse: true,
+      }),
     );
   }
 

@@ -3,9 +3,7 @@
  * display toggle, not a separate view: it never hides the enabled agents it was showing. A row shows where it can
  * run now (team and personal runners, with a few names), its default reasoning effort and its state; an enabled or
  * disabled one offers "Edit" (`agent-dialog.tsx`), for someone who manages agents; everyone else reads. The header's
- * "Add agent" opens the available models drawer (`available-models-drawer.tsx`, replacing the old discoveries
- * section a runner's report used to fill on its own) and "Clean up" removes leftover never-enabled, never-run agents
- * outright (`cleanup-drawer.tsx`).
+ * "Add agent" opens the live available models drawer (`available-models-drawer.tsx`).
  */
 import { AgentQuotaHint, QuotaLabel } from '../../components/quota-status.js';
 
@@ -35,12 +33,10 @@ import { useFormatters } from '../../lib/format.js';
 import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { AgentDialog } from './agent-dialog.js';
 import { AvailableModelsDrawer } from './available-models-drawer.js';
-import { CleanupDrawer } from './cleanup-drawer.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
 
 const STATE_TONE: Readonly<Record<AgentState, Tone>> = {
   enabled: 'green',
-  pending: 'amber',
   disabled: 'grey',
   unreported: 'slate',
 };
@@ -51,7 +47,6 @@ export function RunnerAgentsSection(): ReactElement {
   const [showDisabled, setShowDisabled] = useState(false);
   const [editing, setEditing] = useState<AgentView | null>(null);
   const [creatingOpen, setCreatingOpen] = useState(false);
-  const [cleanupOpen, setCleanupOpen] = useState(false);
   const agents = useQuery({
     queryKey: agentsKeys.agents,
     queryFn: () => api.agents(),
@@ -69,13 +64,6 @@ export function RunnerAgentsSection(): ReactElement {
           <>
             <Button
               variant='outline'
-              onClick={() => setCleanupOpen(true)}
-              data-testid='agents-cleanup-open'
-            >
-              {t('agents.cleanup.open')}
-            </Button>
-            <Button
-              variant='outline'
               onClick={() => setCreatingOpen(true)}
               data-testid='agents-available-open'
             >
@@ -88,8 +76,8 @@ export function RunnerAgentsSection(): ReactElement {
             >
               {t(
                 showDisabled
-                  ? 'agents.discovery.hideDisabled'
-                  : 'agents.discovery.showDisabled',
+                  ? 'agents.display.hideDisabled'
+                  : 'agents.display.showDisabled',
               )}
             </Button>
           </>
@@ -121,7 +109,6 @@ export function RunnerAgentsSection(): ReactElement {
         open={creatingOpen}
         onClose={() => setCreatingOpen(false)}
       />
-      <CleanupDrawer open={cleanupOpen} onClose={() => setCleanupOpen(false)} />
     </section>
   );
 }
@@ -264,22 +251,13 @@ function AgentRow({
       <TableCell className='text-right'>
         {agent.canEdit ? (
           <Button
-            variant={agent.status === 'pending' ? 'default' : 'ghost'}
+            variant='ghost'
             size='sm'
             onClick={() => onEdit(agent)}
-            aria-label={t(
-              agent.status === 'pending'
-                ? 'agents.enable.buttonFor'
-                : 'agents.edit.buttonFor',
-              { name: agent.name },
-            )}
+            aria-label={t('agents.edit.buttonFor', { name: agent.name })}
             data-testid={`agent-edit-${agent.id}`}
           >
-            {t(
-              agent.status === 'pending'
-                ? 'agents.enable.button'
-                : 'agents.edit.button',
-            )}
+            {t('agents.edit.button')}
           </Button>
         ) : null}
       </TableCell>

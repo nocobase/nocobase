@@ -30,13 +30,14 @@ import { which } from './cli.ts';
 export const WRAPPER_MARKER = '# nocobase-runner host tool wrapper';
 
 /** The tools wrapped whenever they are installed, credential or not. */
-export const GUARDED_TOOLS: readonly string[] = ['git', 'gh', 'glab'];
+export const GUARDED_TOOLS: readonly string[] = ['git', 'gh', 'glab', 'gitee'];
 
 /** `<bin> auth <subcommand>` that would change this machine's login or print the credential. */
 export const HOST_LOGIN_COMMANDS: Readonly<Record<string, readonly string[]>> =
   {
     gh: ['login', 'logout', 'refresh', 'setup-git', 'switch', 'token'],
     glab: ['login', 'logout', 'token'],
+    gitee: ['login', 'logout', 'token'],
   };
 
 export const GUARD_FILE = 'git-guard-nocobase-runner.mjs';
@@ -142,7 +143,7 @@ export function hostToolWrapperScript(
 ): string {
   const lines = ['#!/bin/sh', WRAPPER_MARKER];
   const logins = HOST_LOGIN_COMMANDS[bin] ?? [];
-  if (logins.length > 0)
+  if (logins.length > 0 && bin !== 'gitee')
     lines.push(
       'if [ "$1" = auth ]; then',
       '  case "$2" in',
@@ -159,12 +160,73 @@ export function hostToolWrapperScript(
       '  esac',
       'fi',
     );
+  if (bin === 'gitee')
+    lines.push(
+      // Track command positions separately from option values. A title/body may itself be "auth", "login" or a URL.
+      'command=',
+      'subcommand=',
+      'value_for=',
+      'positional=',
+      'for arg do',
+      '  if [ -n "$value_for" ]; then',
+      '    case "$value_for" in',
+      '      --hostname) if [ "$arg" != gitee.com ]; then echo "nocobase-runner: refused: only gitee.com is supported." >&2; exit 1; fi ;;',
+      '    esac',
+      '    value_for=',
+      '    continue',
+      '  fi',
+      '  if [ -z "$positional" ]; then',
+      '    if [ "$command:$subcommand" = auth:status ]; then',
+      '      case "$arg" in -t|--show-token|--show-token=*) echo "nocobase-runner: refused: gitee may not show credentials during a run." >&2; exit 1 ;; esac',
+      '    fi',
+      '    case "$arg" in',
+      '      --) positional=1; continue ;;',
+      '      --hostname=*) if [ "$arg" != --hostname=gitee.com ]; then echo "nocobase-runner: refused: only gitee.com is supported." >&2; exit 1; fi; continue ;;',
+      '      --method=*) continue ;;',
+      '      --hostname|--method|-m|--title|-t|--body|-b|--repo|-R|--head|--base|--sha|--field|-f|--header|-H|--state|-s|--assignee|-a|--reviewer|-r|--label|-l|--limit|-L|--page|--per-page|--search|--jq)',
+      '        value_for=$arg; continue ;;',
+      '      -m?*) continue ;;',
+      // Keep option values in bundled short flags from being interpreted as command words.
+      '      -q?*|-j?*|-V?*|-h?*)',
+      '        short=${arg#-}',
+      '        while [ -n "$short" ]; do',
+      '          case "$short" in',
+      '            q*|j*|V*|h*) short=${short#?} ;;',
+      '            m*) short=${short#m}; if [ -z "$short" ]; then value_for=--method; fi; break ;;',
+      '            R*) short=${short#R}; if [ -z "$short" ]; then value_for=--repo; fi; break ;;',
+      '            *) break ;;',
+      '          esac',
+      '        done; continue ;;',
+      '    esac',
+      '    case "$arg" in -*) continue ;; esac',
+      '  fi',
+      '  if [ -z "$command" ]; then command=$arg; continue; fi',
+      '  if [ -z "$subcommand" ]; then subcommand=$arg; fi',
+      '  case "$command:$subcommand" in',
+      '    auth:login|auth:logout|auth:token|config:set|alias:set|alias:delete|alias:rm)',
+      '      echo "nocobase-runner: refused: gitee may not persist or show credentials during a run." >&2; exit 1 ;;',
+      '  esac',
+      '  case "$command:$subcommand:$arg" in',
+      '    api:*:https://gitee.com/*|pipeline:request:https://go-api.gitee.com/*) ;;',
+      '    api:*:*://*|pipeline:request:*://*) echo "nocobase-runner: refused: only public Gitee API URLs are supported." >&2; exit 1 ;;',
+      '  esac',
+      'done',
+    );
   if (credential !== undefined)
     lines.push(
       `exports=$(${quote(node)} ${quote(credential.helper)} ${credential.index} env ${quote(JSON.stringify(credential.env))}) || exit 1`,
       'eval "$exports"',
     );
-  lines.push(`exec ${quote(real)} "$@"`, '');
+  if (bin === 'gitee' && credential !== undefined)
+    lines.push(
+      // These environment values override both inherited variables and config.yml in the official CLI.
+      'export GITEE_API_PREFIX=https://gitee.com/api/v5',
+      'export GITEE_GO_API_HOST=go-api.gitee.com',
+    );
+  lines.push(
+    `exec ${quote(real)}${bin === 'gitee' ? ' --hostname gitee.com' : ''} "$@"`,
+    '',
+  );
   return lines.join('\n');
 }
 
@@ -225,7 +287,9 @@ export async function writeHostTools(
     const real = which(bin, others);
     if (real === undefined) {
       if (byBin.has(bin))
-        options.log?.(`host tools: ${bin} is not installed; no wrapper`);
+        options.log?.(
+          `host tools: ${bin} is not installed; no wrapper${bin === 'gitee' ? '. Install the official CLI with npm install -g @gitee/gitee-cli, then retry.' : ''}`,
+        );
       continue;
     }
     let script: string;

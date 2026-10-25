@@ -1,13 +1,7 @@
 import { useClientApplication } from '@nocobase/app-client';
 import { cn } from 'cn';
-import { Layers, Package, Plug, RefreshCw, TriangleAlert } from 'lucide-react';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactElement,
-} from 'react';
+import { Layers, Package, Plug, RefreshCw } from 'lucide-react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
 
 import {
   FOUNDATION_HIGHLIGHTS,
@@ -21,6 +15,7 @@ import {
 import { withAvailableCapabilities } from '../../shared/available-capabilities.js';
 import { businessModules } from '../business-modules.js';
 import { Button } from './ui/button.js';
+import { Skeleton } from './ui/skeleton.js';
 import { ModuleMatrix } from './module-matrix.js';
 import { CollectionsBrowser } from './collections-browser.js';
 import { useFoundationTranslation } from './foundation-translation.js';
@@ -32,44 +27,6 @@ import {
 } from '../provider-inventory.js';
 import { CAPABILITY_ICONS } from './capability-icons.js';
 import { formatFactParams, formatMetricValue, formatTime } from './format.js';
-
-/** How long each capability takes to light up. */
-const LIGHT_STEP_MS = 140;
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
-/**
- * Lights the active capabilities one after another when an overview arrives. With reduced motion everything is lit
- * at once.
- */
-function useLighting(
-  activeCount: number,
-  runKey: string,
-): { readonly lit: number } {
-  const reduced = prefersReducedMotion();
-  const [state, setState] = useState({ runKey, step: 0 });
-  // A new result lights up from the start again: adjusting state while rendering, as React recommends over an effect.
-  if (state.runKey !== runKey) setState({ runKey, step: 0 });
-  useEffect(() => {
-    if (reduced || activeCount === 0) return undefined;
-    let step = 0;
-    const timer = setInterval(() => {
-      step += 1;
-      setState((current) => ({ ...current, step }));
-      if (step >= activeCount) clearInterval(timer);
-    }, LIGHT_STEP_MS);
-    return () => clearInterval(timer);
-  }, [activeCount, runKey, reduced]);
-  return {
-    lit: reduced ? activeCount : Math.min(state.step, activeCount),
-  };
-}
 
 export function FoundationPage(): ReactElement {
   const { t } = useFoundationTranslation();
@@ -92,7 +49,7 @@ export function FoundationPage(): ReactElement {
           {error === 'failed' ? (
             <p
               role='alert'
-              className='rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-foreground'
+              className='rounded-lg border px-4 py-3 text-sm text-muted-foreground'
             >
               {t('page.refreshFailed')}
             </p>
@@ -125,9 +82,27 @@ export function FoundationPage(): ReactElement {
           ) : null}
         </div>
       ) : (
-        <p className='rounded-lg border bg-card p-6 text-sm text-muted-foreground'>
-          {t('page.loading')}
-        </p>
+        <section
+          aria-busy='true'
+          aria-label={t('page.loading')}
+          className='flex flex-col gap-4 rounded-lg border bg-card p-6'
+        >
+          <p role='status' className='text-sm text-muted-foreground'>
+            {t('page.loading')}
+          </p>
+          <div aria-hidden='true' className='flex flex-col gap-4'>
+            <Skeleton className='h-8 w-48 motion-reduce:animate-none' />
+            <Skeleton className='h-24 w-full motion-reduce:animate-none' />
+            <div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
+              {Array.from({ length: 4 }, (_, index) => (
+                <Skeleton
+                  key={index}
+                  className='h-16 motion-reduce:animate-none'
+                />
+              ))}
+            </div>
+          </div>
+        </section>
       )}
     </div>
   );
@@ -168,7 +143,7 @@ export function FoundationOverviewView({
     () => overview.capabilities.filter((entry) => entry.status === 'active'),
     [overview],
   );
-  const { lit } = useLighting(active.length, overview.checkedAt);
+  const lit = active.length;
   const [selected, setSelected] = useState<FoundationCapabilityKey>(
     () => active[0]?.key ?? overview.capabilities[0]?.key ?? 'dataModeling',
   );
@@ -311,11 +286,7 @@ export function FoundationOverviewView({
               label={t('status.legendUnused', { count: counts.unused })}
             />
             {counts.undetermined > 0 ? (
-              <li className='flex items-center gap-1.5 text-foreground'>
-                <TriangleAlert
-                  className='size-3.5 text-destructive'
-                  aria-hidden
-                />
+              <li className='flex items-center gap-1.5 text-muted-foreground'>
                 {t('page.undetermined', { count: counts.undetermined })}
               </li>
             ) : null}
@@ -402,7 +373,7 @@ function CapabilityBand({
   readonly onSelect: (key: FoundationCapabilityKey) => void;
   readonly focusKeys?: ReadonlySet<string>;
 }): ReactElement {
-  const { t, text } = useFoundationTranslation();
+  const { t, text, locale } = useFoundationTranslation();
   const lighting = lit < active.length ? active[lit - 1]?.key : undefined;
   return (
     <ul className='grid grid-cols-3 border-t sm:grid-cols-5 lg:grid-cols-[repeat(auto-fit,minmax(88px,1fr))]'>
@@ -432,6 +403,9 @@ function CapabilityBand({
             ? 'dynamic.pending'
             : `status.${capability.status ?? 'undetermined'}`,
         );
+        const statusLabel = capability.checkedAt
+          ? `${status} · ${t('detail.retainedAt', { time: formatTime(capability.checkedAt, locale) })}`
+          : status;
         return (
           <li
             key={capability.key}
@@ -444,8 +418,8 @@ function CapabilityBand({
               type='button'
               onClick={() => onSelect(capability.key)}
               aria-pressed={capability.key === selected}
-              aria-label={`${name}: ${status}`}
-              title={status}
+              aria-label={`${name}: ${statusLabel}`}
+              title={statusLabel}
               data-status={capability.status ?? 'undetermined'}
               className={cn(
                 'relative flex h-full min-h-20 w-full flex-col items-center justify-center gap-1.5 px-1 py-3 text-center text-xs transition-colors duration-300 motion-reduce:transition-none focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:text-sm',
@@ -457,7 +431,7 @@ function CapabilityBand({
                 look === 'off' &&
                   'bg-card text-muted-foreground hover:bg-hover',
                 look === 'undetermined' &&
-                  'bg-card text-muted-foreground outline-1 -outline-offset-4 outline-dashed outline-destructive/40 hover:bg-hover',
+                  'bg-card text-muted-foreground hover:bg-hover',
                 capability.key === selected &&
                   'z-10 ring-2 ring-inset ring-primary',
               )}
@@ -466,11 +440,10 @@ function CapabilityBand({
               <span className='max-w-full break-words leading-tight'>
                 {name}
               </span>
-              {capability.status === null &&
-              capability.reason !== 'unrecognizedExtension' ? (
-                <TriangleAlert
-                  className='absolute right-1.5 top-1.5 size-3.5 text-destructive'
-                  aria-hidden
+              {capability.checkedAt ? (
+                <RetainedAt
+                  at={capability.checkedAt}
+                  inheritColor={highlighted}
                 />
               ) : null}
             </button>
@@ -539,12 +512,35 @@ function Highlights({
                 <span className='text-sm text-primary'>
                   {t(`capabilities.${key}.name`)}
                 </span>
+                {metric?.checkedAt ? (
+                  <RetainedAt at={metric.checkedAt} />
+                ) : null}
               </button>
             </li>
           );
         })}
       </ul>
     </section>
+  );
+}
+
+function RetainedAt({
+  at,
+  inheritColor = false,
+}: {
+  readonly at: string;
+  readonly inheritColor?: boolean;
+}): ReactElement {
+  const { t, locale } = useFoundationTranslation();
+  return (
+    <span
+      className={cn(
+        'block text-xs font-normal',
+        inheritColor ? 'text-current opacity-80' : 'text-muted-foreground',
+      )}
+    >
+      {t('detail.retainedAt', { time: formatTime(at, locale) })}
+    </span>
   );
 }
 
@@ -564,10 +560,7 @@ function StatusBadge({
         status === 'needsSetup' &&
           'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400',
         status === 'unused' && 'text-muted-foreground',
-        status === null &&
-          (pending
-            ? 'border-border text-muted-foreground'
-            : 'border-destructive/40 text-destructive'),
+        status === null && 'border-border text-muted-foreground',
       )}
     >
       {t(pending ? 'dynamic.pending' : `status.${status ?? 'undetermined'}`)}
@@ -641,6 +634,7 @@ function CapabilityDetail({
           {capability.title ? text(capability.title) : t(`${base}.name`)}{' '}
           <StatusBadge status={capability.status} pending={pending} />
         </h2>
+        {capability.checkedAt ? <RetainedAt at={capability.checkedAt} /> : null}
         {!pending || capability.description ? (
           <p className='text-sm text-muted-foreground'>
             {pending ? capability.description : t(`${base}.tagline`)}
@@ -656,12 +650,8 @@ function CapabilityDetail({
       {capability.completeness !== 'complete' ? (
         <div
           role='note'
-          className='flex gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm'
+          className='flex gap-2 rounded-lg border p-3 text-sm text-muted-foreground'
         >
-          <TriangleAlert
-            className='mt-0.5 size-4 shrink-0 text-destructive'
-            aria-hidden
-          />
           <div className='flex flex-col gap-1'>
             <p>
               {t(
@@ -670,20 +660,23 @@ function CapabilityDetail({
                   : 'detail.partial',
               )}
             </p>
-            {capability.issues.some(
-              (issue) => issue.code === 'COLLECTOR_TIMEOUT',
-            ) ? (
-              <p className='text-muted-foreground'>{t('detail.timeout')}</p>
-            ) : null}
-            {unreadable.length > 0 ? (
-              <p className='text-muted-foreground'>
-                {t('detail.unreadable', {
-                  sources: new Intl.ListFormat(locale, {
-                    style: 'short',
-                  }).format(unreadable),
-                })}
-              </p>
-            ) : null}
+            <details key={capability.key}>
+              <summary>{t('detail.readNotes')}</summary>
+              {capability.issues.some(
+                (issue) => issue.code === 'COLLECTOR_TIMEOUT',
+              ) ? (
+                <p className='text-muted-foreground'>{t('detail.timeout')}</p>
+              ) : null}
+              {unreadable.length > 0 ? (
+                <p className='text-muted-foreground'>
+                  {t('detail.unreadable', {
+                    sources: new Intl.ListFormat(locale, {
+                      style: 'short',
+                    }).format(unreadable),
+                  })}
+                </p>
+              ) : null}
+            </details>
           </div>
         </div>
       ) : null}
@@ -721,12 +714,19 @@ function CapabilityDetail({
                         `facts.${fact.code}`,
                         formatFactParams(fact.params, locale, text),
                       )}
+                      {fact.checkedAt ? (
+                        <RetainedAt at={fact.checkedAt} />
+                      ) : null}
                     </li>
                   ))}
                 </ul>
               ) : !collectionSummary ? (
                 <p className='text-sm text-muted-foreground'>
-                  {t('detail.noFacts')}
+                  {t(
+                    capability.checkedAt
+                      ? 'page.unavailable'
+                      : 'detail.noFacts',
+                  )}
                 </p>
               ) : null}
             </div>
@@ -754,6 +754,7 @@ function CapabilityDetail({
                   >
                     <span>{word(`parts.${part.key}`)}</span>
                     <StatusBadge status={part.status} />
+                    {part.checkedAt ? <RetainedAt at={part.checkedAt} /> : null}
                     {part.reason && part.status !== 'active' ? (
                       <span className='text-muted-foreground'>
                         {word(`reasons.${part.reason}`)}
@@ -765,7 +766,7 @@ function CapabilityDetail({
             </div>
           ) : null}
 
-          {!pending ? (
+          {!pending && capability.status !== null ? (
             <div className='rounded-lg border border-dashed p-3'>
               <h3 className='text-sm text-muted-foreground'>
                 {t(inUse ? 'detail.withoutFoundation' : 'detail.onceInUse')}
@@ -796,7 +797,11 @@ function CapabilityDetail({
                         )}
                         title={
                           !metric.complete && value !== undefined
-                            ? t('page.lowerBound')
+                            ? t(
+                                capability.key === 'files'
+                                  ? 'page.partial'
+                                  : 'page.lowerBound',
+                              )
                             : undefined
                         }
                       >
@@ -804,11 +809,22 @@ function CapabilityDetail({
                           ? t('page.unavailable')
                           : metric.complete
                             ? value
-                            : `≥ ${value}`}
+                            : capability.key === 'files'
+                              ? t('page.counted', { value })
+                              : `≥ ${value}`}
                       </p>
                       <p className='text-xs text-muted-foreground'>
                         {word(`metrics.${metric.key}`)}
                       </p>
+                      {metric.checkedAt ? (
+                        <RetainedAt at={metric.checkedAt} />
+                      ) : !metric.complete &&
+                        value !== undefined &&
+                        capability.key === 'files' ? (
+                        <p className='text-xs text-muted-foreground'>
+                          {t('page.partial')}
+                        </p>
+                      ) : null}
                     </li>
                   );
                 })}
@@ -863,7 +879,11 @@ function CapabilityDetail({
               </ul>
             ) : (
               <p className='text-sm text-muted-foreground'>
-                {t('detail.noPackages')}
+                {t(
+                  capability.completeness === 'failed'
+                    ? 'page.unavailable'
+                    : 'detail.noPackages',
+                )}
               </p>
             )}
           </div>

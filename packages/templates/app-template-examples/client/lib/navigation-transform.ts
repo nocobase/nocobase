@@ -1,3 +1,4 @@
+import { groupFoundationNavigation } from '@nocobase/app-plugin-foundation/client';
 import { Workflow } from 'lucide-react';
 import type { RouteNavigationItem } from '../routing/route-navigation.js';
 
@@ -75,7 +76,10 @@ export function groupWorkflowNavigation(
 export function transformNavigation(
   items: RouteNavigationItem[],
 ): RouteNavigationItem[] {
-  return collapsePermissionNavigation(groupWorkflowNavigation(items));
+  return groupFoundationNavigation(
+    collapsePermissionNavigation(groupWorkflowNavigation(items)),
+    'systemManagement',
+  );
 }
 
 /** One sidebar entry opens the first readable tab; original routes and guards remain unchanged. */

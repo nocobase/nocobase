@@ -1,3 +1,4 @@
+import type { OnlineAgentResendOptions } from '../../../shared/resend.js';
 import type { JSONSchema7, ModelMessage, Schema } from 'ai';
 import type { AppUIMessage } from '../../../shared/online-agent.js';
 import type { ModelRef } from '../../../shared/models.js';
@@ -19,7 +20,6 @@ import type {
   OnlineAgentInitialConfiguration,
 } from './types.js';
 import type { NativeSessionStore } from './persistence/store.js';
-import type { ResolvedPageContext } from '../../../shared/conversations.js';
 import type { NativeOnlineAgent } from './native/execution.js';
 import type { OnlineAgentUIStreams } from './transport/streams.js';
 import type {
@@ -44,6 +44,7 @@ export interface RealtimeOnlineAgent extends OnlineAgent {
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,
   ): Promise<number>;
+  resend(options?: OnlineAgentResendOptions): Promise<number>;
   receive(): Promise<ReadableStream<NativeUIChunk> | null>;
   approve(input: NativeApproval): Promise<number>;
 }
@@ -118,12 +119,6 @@ export interface OnlineAgentSessionManager {
     model: ModelRef,
   ): Promise<void>;
   /** Private model projection; public facades expose safe UI messages instead. */
-  history(userId: string, id: string): Promise<ModelMessage[]>;
-  executionHistory(
-    userId: string,
-    id: string,
-    current?: ResolvedPageContext,
-  ): Promise<ModelMessage[]>;
   finish(userId: string, id: string): Promise<void>;
 }
 
@@ -145,6 +140,13 @@ export interface NativeSessionHost {
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions & { boundary?: OnlineAgentBoundary },
     schema?: Schema<OnlineAgentJson>,
+    onExecution?: (execution: OnlineAgentExecution) => void,
+  ): Promise<number>;
+  resend(
+    context: OnlineAgentContext,
+    id: string,
+    options: OnlineAgentResendOptions,
+    input: OnlineAgentSendOptions & { boundary?: OnlineAgentBoundary },
     onExecution?: (execution: OnlineAgentExecution) => void,
   ): Promise<number>;
   approve(

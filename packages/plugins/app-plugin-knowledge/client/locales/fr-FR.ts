@@ -3,6 +3,157 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  indexing: {
+    failedDocumentCount: 'Documents en échec : {{count}}',
+    enabled: 'Activer l’indexation',
+    enabledHint:
+      'Désactivez pour utiliser uniquement la recherche textuelle. Les modifications prennent effet après enregistrement.',
+    chooseInstance: 'Sélectionnez une instance d’index',
+    documentProgress: 'Documents indexés',
+    pendingDocuments: 'Documents en attente',
+    failedDocuments: 'Documents en échec',
+    preparedChunks: 'Fragments préparés',
+    committedChunks: 'Fragments validés',
+    agentPrompt:
+      'Aide-moi à configurer l’index de la base de connaissances de cette application NocoBase 3.\n\nLis AGENTS.md et vérifie les types d’index (type) réellement disponibles. Deux bases vectorielles sont proposées : SQLite avec sqlite-vec (type sqlite-vec, fichier local) et PostgreSQL avec pgvector (type pgvector, extension vector requise). Explique les options et leurs prérequis dans ce déploiement, puis laisse-moi choisir avant de continuer.\n\nAprès mon choix, demande le chemin du fichier pour SQLite ou la connexion et l’état de l’extension vector pour PostgreSQL. N’affiche aucun mot de passe ni clé API.\n\nPrésente la configuration prévue et attends mon accord avant de l’écrire sous knowledge.indexing dans config.yaml. Conserve les autres paramètres. Si l’application utilise déjà config.yml, modifie ce fichier sans en créer un autre.\n\nValide la configuration sans risque et explique le redémarrage. Demande mon accord avant de redémarrer ou d’installer des dépendances. Guide-moi ensuite pour rouvrir les paramètres, activer l’index, choisir l’instance et un modèle d’embedding, puis enregistrer. Demande aussi mon accord avant tout appel payant ou reconstruction d’index.',
+    databases: {
+      sqlite: {
+        name: 'Base vectorielle SQLite',
+        description:
+          'Utilise l’extension vectorielle sqlite-vec pour conserver l’index dans un fichier SQLite local du serveur applicatif. Aucun service de base de données séparé ; adapté à un déploiement sur un seul serveur.',
+      },
+      pgvector: {
+        name: 'Base vectorielle PostgreSQL',
+        description:
+          'Utilise pgvector pour stocker et rechercher les vecteurs dans PostgreSQL. Nécessite une connexion et l’extension vector activée. Convient à un service PostgreSQL existant ou à un index partagé entre plusieurs serveurs.',
+      },
+    },
+    setupTitle: 'Étapes de configuration',
+    setup: {
+      instance:
+        'Ouvrez config.yaml et ajoutez une instance sous knowledge.indexing avec son nom, son type et le chemin du fichier local ou les informations de connexion.',
+      restart:
+        'Enregistrez le fichier et redémarrez l’application pour charger la configuration.',
+      enable:
+        'Rouvrez les paramètres d’indexation, activez l’index, choisissez la nouvelle instance et un modèle d’embedding, puis enregistrez.',
+    },
+    agentHandoff:
+      'Si vous ne connaissez pas les fichiers de configuration, copiez la consigne ci-dessous pour un Agent de développement.',
+    global: 'Tous les espaces de connaissances',
+    back: 'Retour aux connaissances',
+    configuration: 'Configuration de l’index',
+    typeHint:
+      'Les instances sont regroupées par type. Chaque type définit son formulaire et le besoin d’un modèle Embedding.',
+    typeForm: 'Formulaire dynamique de ce type',
+    openPage: 'Ouvrir la page de configuration',
+    emptyTitle: 'Configurez d’abord une base de données vectorielle',
+    emptyDescription:
+      'L’index a besoin d’une base de données vectorielle pour stocker et rechercher les vecteurs des documents. Choisissez une option et ajoutez-la au fichier config.yaml de l’application :',
+    agentTitle: 'Consigne de configuration',
+    copyPrompt: 'Copier les instructions',
+    promptCopied: 'Instructions copiées. Aucune opération exécutée.',
+    promptCopyFallback:
+      'Copie automatique indisponible. Le texte est sélectionné pour une copie manuelle.',
+    promptLabel: 'Instructions pour votre Agent de développement',
+    rebuildHint: 'Les modifications nécessitent une reconstruction',
+    editHint: 'Modifiez la configuration pour enregistrer',
+    confirmRetryEmbedding:
+      'Réessayer uniquement les documents en échec de tous les espaces. Le travail terminé est conservé ; des frais Embedding sont possibles.',
+    confirmRetry:
+      'Réessayer uniquement les documents en échec de tous les espaces. Le travail terminé est conservé ; des ressources du service sont utilisées.',
+    confirmResources:
+      'Les index de tous les espaces seront reconstruits. Ce type n’appelle pas Embedding mais utilise du stockage et des ressources. L’index publié reste disponible jusqu’au remplacement.',
+    deploymentPg:
+      'Connexion, schéma et préfixe de table sont gérés dans la configuration du déploiement.',
+    deploymentFile:
+      'Le chemin du fichier d’index est géré dans la configuration du déploiement.',
+    errors: {
+      configurationChanged:
+        'La configuration de l’index ou du modèle a changé. L’ancienne génération ne peut pas être relancée avec ces paramètres. Vérifiez-les et reconstruisez tous les espaces si nécessaire (des frais Embedding peuvent s’appliquer).',
+      modelAuth:
+        'Échec de l’authentification Embedding. Vérifiez la clé API, les droits et la région du point d’accès.',
+      modelQuota:
+        'Le quota ou le crédit Embedding est épuisé. Vérifiez le compte avant de réessayer.',
+      modelRateLimit:
+        'Le service Embedding limite les requêtes. Patientez avant de réessayer.',
+      modelConfig:
+        'Le modèle Embedding enregistré est indisponible, modifié ou non pris en charge. Vérifiez le service et le modèle.',
+      modelInput:
+        'L’entrée Embedding est trop longue. Vérifiez la taille des segments du document.',
+      modelPolicy:
+        'Le service Embedding a refusé l’entrée selon sa politique de contenu. Vérifiez le contenu concerné.',
+      modelResponse:
+        'Le service Embedding a renvoyé des vecteurs invalides. Vérifiez la compatibilité et les dimensions.',
+      modelUnavailable:
+        'Le service Embedding est inaccessible ou temporairement indisponible. Vérifiez le point d’accès et le réseau.',
+      storageAuth:
+        'Échec de l’authentification du stockage de l’index. Vérifiez l’utilisateur, le mot de passe et la connexion.',
+      storagePermission:
+        'Le stockage de l’index refuse l’opération ou est en lecture seule. Vérifiez les droits du schéma et des tables.',
+      storageSchema:
+        'La base, le schéma ou une table requise de l’index est indisponible. Vérifiez le déploiement et le schéma.',
+      storageUnavailable:
+        'Le stockage de l’index est inaccessible ou la connexion a été interrompue. Vérifiez l’adresse, le port et le réseau.',
+      storageBusy:
+        'Le stockage de l’index est occupé ou un conflit de transaction est survenu. Attendez la politique de reprise de l’hôte.',
+      timeout:
+        'Le délai d’indexation a expiré. Vérifiez le stockage et le service du modèle avant de réessayer.',
+      vectorExtension:
+        'L’extension PostgreSQL vector est absente. Demandez son installation à l’administrateur.',
+      ownership:
+        'Le propriétaire ou la structure de la cible ne correspond pas. Vérifiez la ressource ; ne supprimez pas de tables tierces.',
+      dependencies:
+        'Une instance, une extension ou la configuration jobs de l’hôte est indisponible. Vérifiez le déploiement et redémarrez si nécessaire.',
+    },
+    invalidValue: 'Vérifiez cette valeur.',
+    title: 'Paramètres de l’index de connaissances',
+    description:
+      'Configurez l’indexation de recherche pour tous les espaces de connaissances.',
+    progress: 'Progression de l’indexation',
+    instance: 'Instance d’indexation',
+    off: 'Désactivé — recherche textuelle uniquement',
+    missingForm:
+      'Le formulaire de cette instance est indisponible. Les options enregistrées sont conservées.',
+    statusFailed: 'Impossible d’actualiser l’état de l’index.',
+    loadFailed:
+      'Impossible de charger les paramètres. Vérifiez vos droits et réessayez.',
+    saveFailed:
+      'La requête n’a pas été acceptée. Votre brouillon a été conservé.',
+    conflict:
+      'Les paramètres ont été modifiés ailleurs. Rechargez la dernière révision sans perdre votre brouillon, vérifiez-le puis enregistrez à nouveau.',
+    saved: 'Demande acceptée. L’indexation se poursuit en arrière-plan.',
+    workFailed:
+      'Certaines tâches ont échoué. Vérifiez l’instance et le service de modèle, puis réessayez.',
+    rebuild: 'Reconstruire tous les espaces',
+    retry: 'Réessayer les tâches échouées',
+    confirmTitle: 'Confirmer la modification globale',
+    confirmRebuild:
+      'Cela affecte tous les espaces et peut recalculer les vecteurs de tous les documents, générer des frais de modèle et nécessiter du stockage supplémentaire. L’index actuel reste disponible jusqu’à ce que le nouveau soit prêt.',
+    confirmDisable:
+      'Cela désactive la recherche par index dans tous les espaces. La recherche textuelle reste disponible. Le nettoyage s’exécute en arrière-plan.',
+    discardTitle: 'Abandonner les modifications non enregistrées ?',
+    discardDescription: 'Vos paramètres d’index non enregistrés seront perdus.',
+    discard: 'Abandonner les modifications',
+    confirm: 'Confirmer',
+    documents:
+      'Documents : {{done}} / {{total}} · En attente : {{pending}} · Échecs : {{failed}}',
+    chunks: 'Fragments préparés : {{prepared}} · Validés : {{committed}}',
+    availability: {
+      disabled: 'Désactivé — recherche textuelle uniquement',
+      unavailable: 'Index indisponible — recherche textuelle disponible',
+      building: 'Construction de l’index',
+      ready: 'Index prêt',
+      degraded: 'Index dégradé — recherche textuelle disponible',
+    },
+    table: 'Nom de la table',
+    modelService: 'Service de modèles',
+    model: 'Modèle de plongement',
+    chooseService: 'Choisir un service de modèles',
+    chooseModel: 'Choisir ou saisir un nom de modèle',
+    loadingModels: 'Chargement des modèles de plongement…',
+    modelsUnavailable:
+      'Les modèles de plongement sont indisponibles. Vérifiez le service et réessayez.',
+  },
   access: {
     businessSection: 'Connaissance',
     businesses: {
@@ -389,13 +540,13 @@ const frFR: LocaleResource<typeof enUS> = {
         none: "Pas d'accès",
       },
       title: "Accès à l'espace",
-      description: 'Qui peut lire, proposer et éditer dans {{space}}.',
+      description: 'Qui peut accéder à {{space}}.',
       yours: 'Votre accès',
       actions: {
         read: 'Lire les documents et les rechercher',
         propose:
           "Proposer des modifications à quelqu'un qui peut modifier pour décider",
-        edit: 'Modifier, organiser et vérifier les documents et décider des propositions',
+        edit: 'Modifier, organiser et vérifier les documents',
         manage: 'Changer qui peut accéder à chaque dossier et article',
       },
       allowed: 'Autorisé',

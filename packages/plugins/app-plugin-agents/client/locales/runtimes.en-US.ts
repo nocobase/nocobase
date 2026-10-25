@@ -1,14 +1,6 @@
 /** The runtimes page's and the "Add runtime" dialog's words, merged into this plugin's locale (`en-US.ts`). */
 const runtimesEnUS = {
   runtimes: {
-    capacity: {
-      actual: 'Last effective slots: {{slots}}',
-      online: 'Effective slots · online settings',
-      pending: 'Waiting for runner to sync online settings',
-      legacy: 'Legacy local slots · upgrade the application server',
-      upgrade: 'Sync status unavailable · upgrade the runner',
-      lastReported: 'Last reported: {{time}}',
-    },
     quota: {
       workspaceStatus: {
         active: 'Work continues',
@@ -199,6 +191,8 @@ const runtimesEnUS = {
       unsupported:
         'This runtime’s runner does not take jobs. Update the runner to turn this on.',
     },
+    pathHint:
+      'The runner finds coding tools using its own PATH. In a terminal where which codex / which claude works, run nocobase-runner service install again and restart the service (or run nocobase-runner start again) so it gets the correct PATH.',
     noTools: 'No coding tool found',
     actionsFor: 'Actions for {{name}}',
     columns: {
@@ -257,21 +251,23 @@ const runtimesEnUS = {
       version: 'Version {{version}}',
     },
     trust: {
-      label: 'Who it works for',
-      team: 'Team',
+      isolationHint:
+        'For both personal and shared runtimes, run the runner in a VM or isolated environment: agents have full access, and the runner is not a sandbox.',
+      label: 'Usage scope',
+      team: 'Shared',
       teamHint:
-        'Runs work anyone on the team starts, with their variables and secrets. For shared servers and VMs.',
+        'Runs tasks started by any user and receives their variables and secrets.',
       ownerOnly: 'Personal',
       ownerOnlyHint:
-        'Runs only the work you start. The default for a runtime you add.',
+        'Runs only tasks started by its owner. Runtimes you add are personal by default.',
       personalOnly:
-        'This runtime will be personal: it runs only the work you start. You can share it with the team later.',
+        'This runtime will be personal: it runs only tasks started by its owner. You can share it with all users later.',
     },
     share: {
-      title: 'Share {{name}} with the team?',
+      title: 'Share {{name}} with all users?',
       description:
         'Other people’s runs will run on this runtime, with their variables and secrets, and can read what is on it. Share it only if that is fine.',
-      confirm: 'Share with team',
+      confirm: 'Share with all users',
     },
     edit: {
       button: 'Edit',
@@ -308,15 +304,27 @@ const runtimesEnUS = {
   connect: {
     title: 'Add runtime',
     description:
-      'Run the command below on a host that has a coding tool installed: a server, a VM or your own device. Agents run there with full access, as the user who runs the runner, and can read and change anything that user can, SSH keys and other credentials included. The runner is not a security boundary: run it as a dedicated user, in a container or in a VM.',
+      'Choose the coding tools and usage scope, then set up the runner on the target machine.',
     createCredential: 'Generate install command',
     advanced: 'Advanced: limits per coding tool',
     run: "Run this on that host. It downloads the runner (nocobase-runner) and this application's CLI from this application, registers the runner and starts it at login:",
     nodeRequired:
       'The host needs Node.js 24 or newer (check with node --version). The command stops and says how to install it when it is missing.',
     installed: 'Already have nocobase-runner installed? Register it instead:',
-    unsupported:
-      'The runner does not run on Windows yet. Use macOS or Linux, or WSL.',
+    prompt: 'Prompt',
+    manual: 'Manual',
+    promptHint:
+      'Copy the full prompt below to an agent (Claude Code, Codex, etc.) on the target machine. On small screens, scroll the dialog to read every step. It includes a one-time credential; share it only with that agent.',
+    windowsPowerShell:
+      '1. Install WSL: run in PowerShell, then restart Windows:',
+    windowsUbuntu:
+      '2. Open Ubuntu and run the Linux command below. Install Node.js and coding tools inside WSL Ubuntu.',
+    windowsNetwork:
+      'If WSL cannot access the internet, enable mirrored networking in WSL.',
+    promptWindows:
+      'FIRST, determine whether you are running inside WSL Ubuntu. If you are NOT in WSL Ubuntu, STOP: do not run any installation or registration commands. Tell the user to run wsl --install in PowerShell, restart Windows, then open the agent inside WSL Ubuntu and run this prompt again. Continue with the steps below ONLY inside WSL Ubuntu. Install both Node.js and the coding tools inside WSL. If WSL cannot access the internet, enable mirrored networking.\n\n',
+    promptBody:
+      'Set up this machine as a NocoBase runner. Use a VM or isolated environment: agents have full access and the runner is not a sandbox.\n\nCheck Node.js 24 or newer and that these coding tools are installed and signed in: {{tools}}. Use their official installation methods, not snap packages.\n\nRun this one-time registration command to install the runner and application CLI, register it, and install its background service:\n{{command}}\n\nResolve common setup problems: ensure the service PATH contains the coding tools (check which codex / which claude in the installation terminal, then run nocobase-runner service install again and restart the service); configure any required proxy for downloads and for the service; resolve npm global install permissions using a user-owned prefix or a Node version manager, without sudo npm install.\n\nFinish with nocobase-runner status and confirm the connection and coding tools. Report any remaining login or network steps for me to complete. Treat the registration credential as a secret and do not include it in your report.',
     tokenOnce:
       'The command carries a one-time credential for a "{{trust}}" runtime. It works once, until {{time}}.',
     after:

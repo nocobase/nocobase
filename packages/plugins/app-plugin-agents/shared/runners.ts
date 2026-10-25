@@ -23,8 +23,8 @@ import type { RunnerModelEntry } from './agents.js';
 import { normalizeModel } from './model-catalog.js';
 
 /**
- * `team` runs anyone's work; `ownerOnly` (shown as "personal") runs only work its owner started. A runner added by its
- * owner starts personal; the owner may share it with the team, and an administrator may add one shared from the start.
+ * `team` (shown as "shared") runs anyone's work; `ownerOnly` (shown as "personal") runs only work its owner started. A runner added by its
+ * owner starts personal; the owner may share it with all users, and an administrator may add one shared from the start.
  */
 export const RUNNER_TRUST = ['team', 'ownerOnly'] as const;
 
@@ -310,7 +310,7 @@ export interface RunnerSummary extends Omit<
    */
   readonly canManage: boolean;
   readonly canManageTools?: boolean;
-  /** The viewer may switch it between personal and team: whoever may change it (`canManage`). */
+  /** The viewer may switch it between personal and shared: whoever may change it (`canManage`). */
   readonly canChangeTrust: boolean;
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
@@ -428,7 +428,7 @@ export interface RegistrationTokenInput {
   /** The coding tools the runner that registers with this token may run; omitted or null for every tool. */
   readonly enabledTools?: readonly AgentTool[] | null;
   /**
-   * How many runs at once the runner that registers with this token takes (1 to 64); omitted or null defaults to four.
+   * How many runs at once the runner that registers with this token takes (1 to 64); omitted or null defaults to three.
    */
   readonly slots?: number | null;
   /**
