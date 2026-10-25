@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.1
+
+### Patch Changes
+
+- f5b51a4: Restore the compact Demo Mode header menu with smaller text, tighter spacing, a narrower dropdown and the application's primary color. Keep account preloading, pending and retry states, keyboard access, and location-preserving switching unchanged.
+- Updated dependencies [d78f586]
+  - @nocobase/app-plugin-agents@1.0.0-beta.26
+
 ## 0.2.0-beta.0
 
 ### Minor Changes

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-demo-mode",
   "displayName": "Demo Mode",
   "description": "Enables isolated demo deployments with application-owned repeatable datasets, visitor accounts, request-scoped write protection, scheduled resets and optional simulated models for agents.",
-  "version": "0.2.0-beta.0",
+  "version": "0.2.0-beta.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
