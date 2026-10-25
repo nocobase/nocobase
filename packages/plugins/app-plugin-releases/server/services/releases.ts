@@ -289,6 +289,24 @@ export interface StartDeploymentOptions {
   readonly requestId?: string | null;
 }
 
+/** A release's archive opened for download (`ReleasesService.openArchive`). */
+export interface ReleaseArchive {
+  readonly stream: Readable;
+  /** In bytes, when the upload recorded it. */
+  readonly size: number | null;
+  /** The archive's SHA-256, hex. */
+  readonly checksum: string;
+  /** `<appId>-<version>.tar.gz`, reduced to characters safe in a file name. */
+  readonly fileName: string;
+}
+
+/** `<appId>-<version>.tar.gz`, with anything but letters, digits, `.`, `_` and `-` replaced. */
+export function archiveFileName(appId: string, version: string): string {
+  const safe = (text: string): string =>
+    text.replace(/[^A-Za-z0-9._-]+/gu, '_').replace(/^\.+/u, '') || 'release';
+  return `${safe(appId)}-${safe(version)}.tar.gz`;
+}
+
 export class ReleasesService {
   private readonly diagnostic: ReturnType<typeof createDiagnosticLogger>;
   private readonly disk: NocoBaseDriveDisk;
@@ -620,6 +638,55 @@ export class ReleasesService {
     const release = await this.requireRelease(appId, releaseId);
     const images = await this.artifacts.imagesOf([release.id]);
     return releaseView(release, images.get(release.id) ?? []);
+  }
+
+  /**
+   * Several Apps' summaries in one batched read (one runtime status call per environment), for the assembling
+   * application: no caller is checked. Unknown ids are left out; the rest keep the order asked.
+   */
+  public async summarizeApps(appIds: readonly string[]): Promise<AppSummary[]> {
+    const ids = [...new Set(appIds)];
+    if (ids.length === 0) return [];
+    const rows = await this.query()
+      .selectFrom('relApps')
+      .selectAll()
+      .where('id', 'in', ids)
+      .execute<Row>();
+    const byId = new Map(
+      rows.map(decodeApp).map((app) => [app.id, app] as const),
+    );
+    const apps = ids.flatMap((id) => {
+      const app = byId.get(id);
+      return app ? [app] : [];
+    });
+    return this.summarize(apps);
+  }
+
+  /**
+   * A release's archive, to download: `view` on the App. An image release has none (`RELEASE_HAS_NO_ARCHIVE`). The
+   * stream is opened last, so a refusal never touches the disk.
+   */
+  public async openArchive(
+    caller: Caller,
+    appId: string,
+    releaseId: string,
+  ): Promise<ReleaseArchive> {
+    const app = await this.requireApp(appId);
+    await this.options.guard.requireApp(caller, 'view', app);
+    const release = await this.requireRelease(appId, releaseId);
+    const key = release.artifactKey;
+    if (!key)
+      throw new ReleasesError(
+        'This release is a set of images and has no archive to download.',
+        'RELEASE_HAS_NO_ARCHIVE',
+        'FAILED_PRECONDITION',
+      );
+    return {
+      stream: Readable.from(await this.disk.getStream(key)),
+      size: release.size,
+      checksum: release.checksum,
+      fileName: archiveFileName(app.id, release.version),
+    };
   }
 
   /**

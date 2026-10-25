@@ -17,6 +17,8 @@ import {
   listResponse,
   type ApiFieldViolation,
 } from '@nocobase/app-server/router';
+import { Readable } from 'node:stream';
+
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import type { AppAction } from '../../shared/access.js';
@@ -1555,6 +1557,71 @@ export function createReleasesApi(
           releaseId,
         ),
       });
+    },
+  );
+  api.get(
+    '/apps/:appId/releases/:releaseId/archive',
+    onApps('view'),
+    describeRoute({
+      tags,
+      summary: "Download a release's archive",
+      operationId: 'releasesDownloadReleaseArchive',
+      security: personOrRunSecurity,
+      ...cliRoute({
+        command: 'release download',
+        flags: { appId: { name: 'app' }, releaseId: { name: 'release' } },
+        action: 'rel.apps/view',
+        examples: ['release download --app <app> --release <release> --out .'],
+      }),
+      description:
+        'Requires the `view` action on the App. Answers the uploaded `.tar.gz` as `<appId>-<version>.tar.gz`, with its SHA-256 in `X-Artifact-Sha256`. An image release has no archive (`RELEASE_HAS_NO_ARCHIVE`).',
+      responses: {
+        200: {
+          description: 'The archive.',
+          headers: {
+            'Content-Disposition': {
+              description: '`attachment`, named `<appId>-<version>.tar.gz`.',
+              schema: { type: 'string' },
+            },
+            'X-Artifact-Sha256': {
+              description: "The archive's SHA-256, hex.",
+              schema: { type: 'string' },
+            },
+          },
+          content: {
+            'application/gzip': {
+              schema: { type: 'string', format: 'binary' },
+            },
+          },
+        },
+        ...apiErrorResponses,
+        404: apiErrorResponse(404),
+        400: apiErrorResponse(
+          400,
+          'An image release has no archive (`FAILED_PRECONDITION`, reason `RELEASE_HAS_NO_ARCHIVE`).',
+        ),
+      },
+    }),
+    apiValidator('param', ReleaseParams),
+    async (context) => {
+      const { appId, releaseId } = context.req.valid('param');
+      const archive = await services.releases.openArchive(
+        person(context),
+        appId,
+        releaseId,
+      );
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/gzip',
+        'Content-Disposition': `attachment; filename="${archive.fileName}"`,
+        'X-Artifact-Sha256': archive.checksum,
+        'Cache-Control': 'private, no-store',
+      };
+      if (archive.size !== null)
+        headers['Content-Length'] = String(archive.size);
+      return new Response(
+        Readable.toWeb(archive.stream) as unknown as ReadableStream<Uint8Array>,
+        { headers },
+      );
     },
   );
   api.patch(
