@@ -1,3 +1,4 @@
+import { equipmentWorkflowRoute } from '../equipment/routes.js';
 import {
   Settings,
   Users,
@@ -17,6 +18,7 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
     path: '/settings',
     navigation: { title: 'settings.title', icon: Settings, order: 100 },
     children: [
+      equipmentWorkflowRoute,
       {
         name: 'settingsUsers',
         path: '/users',

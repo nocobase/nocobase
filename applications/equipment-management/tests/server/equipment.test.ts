@@ -35,7 +35,9 @@ test('equipment issue and return commit once, refuse stale writes, and preserve 
     path: string,
     value?: unknown,
     method = 'POST',
-    status = 200,
+    status = path === 'assets' && method === 'POST' && value !== undefined
+      ? 201
+      : 200,
   ) => {
     const response = await admin.fetch(
       '/equipment/' + path,
@@ -194,7 +196,9 @@ async function fixture(testApp: Parameters<typeof signIn>[0]) {
     path: string,
     value?: unknown,
     method = 'POST',
-    expected = 200,
+    expected = path === 'assets' && method === 'POST' && value !== undefined
+      ? 201
+      : 200,
   ) {
     const response = await manager.session.fetch(
       '/equipment/' + path,

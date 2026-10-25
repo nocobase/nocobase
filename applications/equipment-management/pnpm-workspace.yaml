@@ -38,3 +38,8 @@ minimumReleaseAgeExclude:
   - '@nocobase/app-plugin-knowledge@0.1.0-beta.12'
   - '@nocobase/app-plugin-users@2.0.0-beta.10'
   - '@nocobase/app-skills@0.1.0-beta.51'
+
+# Keep optional Tiptap menus compatible with the template's exact editor runtime.
+overrides:
+  '@tiptap/extension-bubble-menu': 3.30.2
+  '@tiptap/extension-floating-menu': 3.30.2

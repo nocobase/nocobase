@@ -194,13 +194,26 @@ export const equipmentRoutes = defineApiRoutes<Application>((app) => {
   );
   r.post(
     '/assets',
-    doc('createEquipmentAsset', 'Create an idle asset'),
+    describeRoute({
+      tags: ['Equipment'],
+      operationId: 'createEquipmentAsset',
+      summary: 'Create an idle asset',
+      responses: {
+        '201': dataResponse(RowSchema),
+        ...apiErrorResponses,
+        '400': apiErrorResponse(400),
+        '409': apiErrorResponse(409),
+      },
+    }),
     apiValidator('json', AssetInput),
     async (c) => {
       const p = await policies(c.get('authz'), 'assets', 'create');
-      return c.json({
-        data: await service.createAsset(c.req.valid('json'), who(c), p),
-      });
+      return c.json(
+        {
+          data: await service.createAsset(c.req.valid('json'), who(c), p),
+        },
+        201,
+      );
     },
   );
   r.get(

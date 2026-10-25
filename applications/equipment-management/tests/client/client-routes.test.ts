@@ -5,7 +5,6 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
-import systemSettingsRoutes from '../../client/pages/settings/routes.js';
 import applicationRoutes from '../../client/routes.ts';
 
 describe('app client routes', () => {
@@ -51,58 +50,34 @@ describe('app client routes', () => {
     // access is a new grant somebody has to be given.
     const resolved = resolveRoutes();
 
-    // The landing page and the inbox opted out of page authorization, so they are reachable by every signed-in user.
-    expect(pageAuthorizations(resolved.routes)).toEqual([
-      { name: 'home', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
-    ]);
+    const assetPages = (prefix: string) => [
+      prefix + 'Asset', prefix + 'AssetEdit', prefix + 'AssetAction', prefix + 'AssetRequest',
+    ];
+    const group = (authorizedAs: string | null, names: string[]) => names.map((name) => ({name, authorizedAs}));
+    const expected = [
+      ...group(null, ['home', ...assetPages('home'), 'inbox']),
+      ...group('equipment', ['equipment', 'equipmentDirectEdit', 'equipmentNew', 'equipmentImport', ...assetPages('equipment')]),
+      ...group('myEquipment', ['myEquipment', 'myEquipmentDirectEdit', ...assetPages('myEquipment')]),
+      ...group('operations', ['operations', 'operationsNew', 'operationsDetail', 'operationsHandle', ...assetPages('operations')]),
+      ...group('maintenance', ['maintenance', 'maintenanceNew', 'maintenanceDetail', 'maintenanceHandle', ...assetPages('maintenance')]),
+      ...group('stocktakes', ['stocktakes', 'stocktakesNew', 'stocktakesDetail', 'stocktakesHandle', 'stocktakesObserve', ...assetPages('stocktakes')]),
+      ...group('referenceData', ['referenceData', 'referenceNew', 'referenceEdit']),
+      ...group('settings:equipment.workflows', ['workflows', 'workflowDefinitions', 'workflowDefinitionDetail', 'workflowExecutions', 'workflowExecutionDetail']),
+      ...group('user:*', ['settingsUsers', 'settingsUserCreate', 'settingsUser', 'settingsUserEdit']),
+      ...group('settings:authorization.permission-sets', ['settingsRoles', 'settingsRoleCreate', 'settingsRoleEdit']),
+      ...group('settings:authorization.default-access', ['settingsDefaultAccess', 'settingsDefaultAccessCreate', 'settingsDefaultAccessEdit']),
+    ];
+    const byName = (a: {name: string}, b: {name: string}) => a.name.localeCompare(b.name);
+    expect(pageAuthorizations(resolved.routes).sort(byName)).toEqual(expected.sort(byName));
   });
 
-  it('keeps a bare application home-only and supports settings registration as business capabilities are developed', async () => {
-    expect(
-      pagePaths(resolveRoutes().routes).some((path) =>
-        path.startsWith('/settings'),
-      ),
-    ).toBe(false);
-    const built = resolveAppClientContributions([
-      {
-        packageName: '@nocobase/app-template-default',
-        routes: [...applicationRoutes, systemSettingsRoutes],
-        source: 'application',
-      },
-    ]);
-    expect(pageAuthorizations(built.routes)).toEqual([
-      { name: 'home', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
-      { name: 'settingsUsers', authorizedAs: 'user:*' },
-      { name: 'settingsUserCreate', authorizedAs: 'user:*' },
-      { name: 'settingsUser', authorizedAs: 'user:*' },
-      { name: 'settingsUserEdit', authorizedAs: 'user:*' },
-      {
-        name: 'settingsRoles',
-        authorizedAs: 'settings:authorization.permission-sets',
-      },
-      {
-        name: 'settingsRoleCreate',
-        authorizedAs: 'settings:authorization.permission-sets',
-      },
-      {
-        name: 'settingsRoleEdit',
-        authorizedAs: 'settings:authorization.permission-sets',
-      },
-      ...[
-        'settingsDefaultAccess',
-        'settingsDefaultAccessCreate',
-        'settingsDefaultAccessEdit',
-      ].map((name) => ({
-        name,
-        authorizedAs: 'settings:authorization.default-access',
-      })),
-    ]);
-    for (const loader of componentLoadersIn(built.routes))
-      await expect(loader()).resolves.toMatchObject({
-        default: expect.any(Function),
-      });
+  it('registers business and administration entries once with inherited child grants', () => {
+    const paths = pagePaths(resolveRoutes().routes);
+    expect(paths).toEqual(expect.arrayContaining([
+      '/equipment', '/myEquipment', '/operations', '/maintenance', '/stocktakes', '/referenceData',
+      '/settings/users', '/settings/roles', '/settings/default-access', '/settings/workflows/definitions', '/settings/workflows/executions',
+    ]));
+    expect(new Set(paths).size).toBe(paths.length);
   });
 
   it('keeps the inbox out of the application navigation', () => {

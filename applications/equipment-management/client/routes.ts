@@ -1,3 +1,8 @@
+import {
+  homeEquipmentChildren,
+  equipmentRoutes,
+} from './pages/equipment/routes.js';
+import systemSettingsRoutes from './pages/settings/routes.js';
 import { Home } from 'lucide-react';
 import {
   defineAppRoutes,
@@ -10,8 +15,9 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     // no permission change can leave a user signed in with nowhere to land.
     authz: 'skip',
     auth: 'required',
-    componentLoader: () => import('./pages/home/index.js'),
+    componentLoader: () => import('./pages/equipment/dashboard.js'),
     name: 'home',
+    children: homeEquipmentChildren,
     navigation: { title: 'navigation.home', icon: Home },
     path: '/',
   },
@@ -64,6 +70,10 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-const routes: readonly AppClientRouteContribution[] = [appRoutes];
+const routes: readonly AppClientRouteContribution[] = [
+  appRoutes,
+  equipmentRoutes,
+  systemSettingsRoutes,
+];
 
 export default routes;

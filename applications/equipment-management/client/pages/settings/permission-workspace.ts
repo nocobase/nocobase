@@ -34,8 +34,15 @@ export interface PermissionWorkspaceSelection {
 
 /** Add only business operations and configuration controls this application exposes. */
 export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
-  business: [],
+  business: [
+{type:'composite',id:'equipment.assets',actions:['view','inspect','create','operate','import','export']},
+{type:'composite',id:'equipment.requests',actions:['view','create','handle']},
+{type:'composite',id:'equipment.maintenance',actions:['view','manage']},
+{type:'composite',id:'equipment.stocktakes',actions:['view','manage']},
+{type:'composite',id:'equipment.reference',actions:['view','directory','manage']},
+],
   settings: [
+ {id:'equipment.workflows',actions:['read']},
     {
       id: 'authorization.permission-sets',
       actions: ['read', 'create', 'update'],
