@@ -812,6 +812,7 @@ export function KnowledgeView({
     />
   ) : view.doc ? (
     <DocPane
+      proposalsEnabled={proposalsEnabled}
       key={view.doc}
       docId={view.doc}
       inherited={selectedSpace?.inherited === true}

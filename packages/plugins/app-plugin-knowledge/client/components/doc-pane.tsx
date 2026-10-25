@@ -79,7 +79,6 @@ import {
   knowledgeKeys,
   useKnowledgeApi,
   useKnowledgeDoc,
-  useKnowledgeCapabilities,
   useKnowledgeVersion,
   useKnowledgeVersions,
 } from '../api.js';
@@ -94,6 +93,8 @@ import { ProposeFileDialog } from './propose-file.js';
 export type { DocMode } from '../hooks/use-view-state.js';
 
 export interface DocPaneProps {
+  /** Availability already read by the containing knowledge view. */
+  readonly proposalsEnabled?: boolean;
   readonly docId: string;
   /** Shown in another space's view, which inherits it: read-only here. */
   readonly inherited: boolean;
@@ -448,7 +449,7 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const { docId, inherited, mode, version } = props;
   const doc = useKnowledgeDoc(docId);
-  const proposalsEnabled = useKnowledgeCapabilities().data?.proposals !== false;
+  const proposalsEnabled = props.proposalsEnabled !== false;
   const old = useKnowledgeVersion(docId, version);
   const api = useKnowledgeApi();
   const notify = useNotify();
