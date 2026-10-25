@@ -8,12 +8,47 @@
  */
 
 import { Model, Transaction, Transactionable } from '@nocobase/database';
+import type { Context } from '@nocobase/actions';
 import { parseCollectionName } from '@nocobase/data-source-manager';
 import type { DataSourceManager } from '@nocobase/data-source-manager';
 import type PluginWorkflowServer from './Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
 import type { ExecutionModel, WorkflowModel } from './types';
 import Processor from './Processor';
+
+export function sanitizeWorkflowTaskReadParams(context: Context) {
+  const associations = {
+    user: 'users',
+    node: 'flow_nodes',
+    job: 'jobs',
+    workflow: 'workflows',
+    'workflow.nodes': 'flow_nodes',
+    execution: 'executions',
+    'execution.jobs': 'jobs',
+  };
+  const allowed = new Set(Object.keys(context.db.getCollection(context.action.resourceName).model.rawAttributes));
+  for (const [path, collectionName] of Object.entries(associations)) {
+    allowed.add(path);
+    for (const field of Object.keys(context.db.getCollection(collectionName).model.rawAttributes)) {
+      allowed.add(`${path}.${field}`);
+    }
+  }
+
+  // Restrict complete paths: allowing arbitrary descendants of workflow or execution exposes other executions.
+  const { appends, fields } = context.action.params;
+  const filteredAppends = Array.isArray(appends)
+    ? appends.filter((path: unknown) => typeof path === 'string' && allowed.has(path))
+    : [];
+  if (Array.isArray(fields)) {
+    const filtered = Array.from(
+      new Set(fields.filter((path: unknown) => typeof path === 'string' && allowed.has(path))),
+    );
+    context.action.params.fields = filtered.length ? filtered : ['id'];
+  }
+  // Association fields also become appends in the repository; selecting a path twice fails with the MariaDB driver.
+  const selectedFields = new Set(context.action.params.fields || []);
+  context.action.params.appends = Array.from(new Set(filteredAppends)).filter((path) => !selectedFields.has(path));
+}
 
 type AbortOptions = Transactionable & {
   reason?: (typeof EXECUTION_REASON)[keyof typeof EXECUTION_REASON];

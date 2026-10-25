@@ -166,7 +166,7 @@ export class PluginWorkflowCCServer extends Plugin {
   async load() {
     initActions(this.app);
 
-    this.app.acl.allow('workflowCcTasks', ['list', 'listMine', 'get', 'read', 'unread', 'readAll'], 'loggedIn');
+    this.app.acl.allow('workflowCcTasks', ['listMine', 'get', 'read', 'unread', 'readAll'], 'loggedIn');
 
     const workflowPlugin = this.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
     workflowPlugin.registerInstruction('cc', CCInstruction);
