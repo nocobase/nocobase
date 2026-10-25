@@ -22,6 +22,7 @@ import api from './api.js';
 import database from './database.js';
 import snowflake from './snowflake.js';
 import users from './users.js';
+import equipment from './equipment.js';
 import knowledge from './knowledge.js';
 
 const defaultConfigs: AppConfigFactory<{
@@ -46,6 +47,7 @@ const defaultConfigs: AppConfigFactory<{
   snowflake: ReturnType<typeof snowflake>;
   users: ReturnType<typeof users>;
   knowledge: ReturnType<typeof knowledge>;
+  equipment: ReturnType<typeof equipment>;
 }> = defaultAppConfigs({
   auth,
   authorization,
@@ -68,6 +70,7 @@ const defaultConfigs: AppConfigFactory<{
   snowflake,
   users,
   knowledge,
+  equipment,
 });
 
 export default defaultConfigs;
