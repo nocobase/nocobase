@@ -81,7 +81,8 @@
     "vitest": "catalog:",
     "tar": "catalog:",
     "@xyflow/react": "^12.11.5",
-    "elkjs": "^0.10.2"
+    "elkjs": "^0.10.2",
+    "@types/jsdom": "catalog:"
   },
   "files": [
     ".prettierignore",

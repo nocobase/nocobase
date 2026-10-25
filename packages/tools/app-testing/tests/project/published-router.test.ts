@@ -146,6 +146,7 @@ it.each(['shared', 'app-template-default', 'app-template-examples'] as const)(
         for (const file of [
           'vitest.config.ts',
           'tests/setup/client-config.ts',
+          'tests/setup/application-environment.ts',
         ]) {
           const target = path.join(
             root,
@@ -158,12 +159,17 @@ it.each(['shared', 'app-template-default', 'app-template-examples'] as const)(
           );
         }
       }
+      const testFile =
+        configuration === 'shared'
+          ? 'router.test.ts'
+          : 'tests/client/router.test.ts';
+      await mkdir(path.dirname(path.join(root, testFile)), { recursive: true });
       await writeFile(
         path.join(root, 'vitest.config.ts'),
-        `import config from './consumer.config.ts'; export default {...config,cacheDir:'./cache',server:{fs:{allow:${JSON.stringify([root, path.resolve(packageRoot, '../../..')])}}},test:{...config.test,include:['router.test.ts'],fileParallelism:false}};`,
+        `import config from './consumer.config.ts'; export default {...config,cacheDir:'./cache',server:{fs:{allow:${JSON.stringify([root, path.resolve(packageRoot, '../../..')])}}},test:{...config.test,include:[${JSON.stringify(testFile)}],fileParallelism:false,passWithNoTests:false}};`,
       );
       await writeFile(
-        path.join(root, 'router.test.ts'),
+        path.join(root, testFile),
         `
       import {createElement} from 'react';
       import {render, screen} from '@testing-library/react';
