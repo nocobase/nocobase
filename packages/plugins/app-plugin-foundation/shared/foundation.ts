@@ -60,6 +60,7 @@ export interface FoundationFact {
 export type FoundationMetricUnit = 'count' | 'bytes' | 'tokens';
 
 export interface FoundationMetric {
+  /** Legacy data-modeling keys `businessCollections` and `businessRecords` describe observed tables outside the known system catalog, not proven business ownership or application-wide totals. */
   readonly key: string;
   /** Null when it could not be read; never a stand-in zero. */
   readonly value: number | null;
@@ -120,14 +121,14 @@ export interface FoundationOverview {
   readonly moduleSources?: FoundationModuleSources;
   /** When this result was collected, RFC 3339. A cached result keeps its original time. */
   readonly checkedAt: string;
-  /** The independent collection time of the last successful, explicitly requested business row count. */
+  /** The independent collection time of the last successful, explicitly requested count of observed non-system-catalog tables. */
   readonly recordCountCheckedAt?: string;
   readonly durationMs: number;
   /** The database connection the statistics read: always the default one. */
   readonly connection: string;
 }
 
-/** One bounded, on-demand page of application-owned Collections. */
+/** One bounded, on-demand page of observed Collections outside the known system catalog. */
 export interface FoundationCollectionPage {
   readonly items: readonly {
     readonly name: string;

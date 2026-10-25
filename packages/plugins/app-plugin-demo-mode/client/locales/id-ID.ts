@@ -7,13 +7,21 @@ const resource: DemoModeResource = {
     configuration: 'Konfigurasi demo',
     configure: 'Konfigurasi',
   },
+  menu: {
+    label: 'Mode demo',
+    switchAccount: 'Ganti akun',
+    title: 'Ini adalah lingkungan demo',
+    description:
+      'Data diatur ulang secara otomatis setiap hari. Perubahan tidak disimpan.',
+    accountsDescription:
+      'Beralih ke salah satu akun di bawah untuk melihat apa yang dapat diakses setiap peran.',
+    loading: 'Memuat akun…',
+  },
   accounts: {
-    menu: 'Akun: {{name}}',
     title: 'Akun',
     description:
       'Masuk ke demo dengan salah satu akun ini untuk melihat apa yang dilihat masing-masing.',
     enter: 'Masuk',
-    signedInAs: 'Masuk sebagai {{name}} · Ganti',
     current: 'Saat ini',
     entering: 'Sedang masuk…',
     failed: 'Tidak dapat masuk ke akun ini.',
@@ -29,24 +37,16 @@ const resource: DemoModeResource = {
     refresh: 'Muat ulang',
     retry: 'Coba lagi',
     busy: 'Data demo sedang dibuat atau dihapus',
-    busyHelp:
-      'Tunggu hingga operasi data saat ini selesai sebelum memulai operasi lain.',
+    busyHelp: 'Tunggu hingga operasi data saat ini selesai.',
     disabled: {
       title: 'Aplikasi ini bukan demo',
       help: 'Mode demo nonaktif. Deployment mengaktifkannya dengan NOCOBASE_DEMO_MODE=true.',
     },
-    cancel: 'Batal',
     errors: {
       failed: 'Permintaan tidak selesai. Coba lagi.',
-      conflict: 'Administrator lain menyimpan setelan ini lebih dulu.',
-      busy: 'Data demo sedang dibuat atau dihapus. Coba lagi setelah selesai.',
-      exists: 'Data demo sudah dibuat. Reset sebagai gantinya.',
       demoModeRequired: 'Hanya bisa dilakukan saat mode demo aktif.',
-      accountConflict:
-        'Sebuah nama pengguna demo milik akun yang bukan milik demo.',
-      unavailable: 'Aplikasi ini tidak menyediakan data demo.',
       signedOut: 'Sesi Anda telah berakhir. Masuk lagi.',
-      denied: 'Anda tidak berizin mengelola demo.',
+      denied: 'Anda tidak memiliki izin untuk melihat pengaturan demo.',
     },
     data: {
       title: 'Data demo',
@@ -65,37 +65,10 @@ const resource: DemoModeResource = {
         clearing: 'Sedang dihapus',
         generating: 'Membuat ulang',
       },
-      absentSummary:
-        'Buat data demo agar pengunjung bisa menjelajahi aplikasi lewat cerita yang lengkap.',
-      language: 'Bahasa',
-      clear: 'Hapus',
-      reset: 'Reset',
-      generate: 'Buat',
+      absentSummary: 'Belum ada data demo yang dibuat.',
       failed: 'Proses terakhir tidak selesai',
-      readOnly:
-        'Anda bisa melihat data demo; membuat, mereset, dan menghapus memerlukan izin kelola.',
       unavailable: 'Tidak ada data demo',
       unavailableHelp: 'Aplikasi ini tidak mendaftarkan kumpulan data demo.',
-      cleared: 'Data demo dihapus',
-      resetStarted: 'Mereset data demo',
-      importStarted: 'Membuat data demo',
-      confirm: {
-        import: {
-          title: 'Buat data demo?',
-          description:
-            'Data demo dibuat dalam {{language}} dan akun demonya diaktifkan.',
-        },
-        reset: {
-          title: 'Reset data demo?',
-          description:
-            'Semua data bisnis di instans ini dihapus, termasuk yang ditambahkan pengunjung, lalu dibuat ulang dalam {{language}}.',
-        },
-        clear: {
-          title: 'Hapus data demo?',
-          description:
-            'Semua data bisnis di instans ini dihapus, termasuk yang ditambahkan pengunjung, dan akun demo dinonaktifkan. Setelan dan administrator tetap ada.',
-        },
-      },
     },
     visitors: {
       unavailable: 'Tidak ada akun yang tersedia saat ini.',

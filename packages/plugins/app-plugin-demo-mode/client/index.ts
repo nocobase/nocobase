@@ -2,3 +2,4 @@
 // its client/plugins.ts.
 export { default } from './plugin.js';
 export { demoModeRoutes } from './demo-mode-routes.js';
+export { DemoModeMenu } from './menu.js';

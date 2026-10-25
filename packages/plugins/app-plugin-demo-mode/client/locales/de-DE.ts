@@ -7,13 +7,21 @@ const resource: DemoModeResource = {
     configuration: 'Demokonfiguration',
     configure: 'Konfigurieren',
   },
+  menu: {
+    label: 'Demomodus',
+    switchAccount: 'Konto wechseln',
+    title: 'Dies ist eine Demoumgebung',
+    description:
+      'Die Daten werden täglich automatisch zurückgesetzt. Änderungen werden nicht gespeichert.',
+    accountsDescription:
+      'Wechseln Sie zu einem der folgenden Konten, um zu sehen, worauf die einzelnen Rollen zugreifen können.',
+    loading: 'Konten werden geladen…',
+  },
   accounts: {
-    menu: 'Konto: {{name}}',
     title: 'Konten',
     description:
       'Öffnen Sie die Demo mit einem dieser Konten, um zu sehen, was jedes davon sieht.',
     enter: 'Öffnen',
-    signedInAs: 'Angemeldet als {{name}} · Wechseln',
     current: 'Aktuell',
     entering: 'Wird geöffnet…',
     failed: 'Die Anmeldung mit diesem Konto ist fehlgeschlagen.',
@@ -30,25 +38,17 @@ const resource: DemoModeResource = {
     retry: 'Erneut versuchen',
     busy: 'Demo-Daten werden erzeugt oder gelöscht',
     busyHelp:
-      'Warten Sie, bis der aktuelle Datenvorgang abgeschlossen ist, bevor Sie einen weiteren starten.',
+      'Bitte warten Sie, bis der aktuelle Datenvorgang abgeschlossen ist.',
     disabled: {
       title: 'Diese Anwendung ist keine Demo',
       help: 'Der Demo-Modus ist aus. Eine Bereitstellung schaltet ihn mit NOCOBASE_DEMO_MODE=true ein.',
     },
-    cancel: 'Abbrechen',
     errors: {
       failed: 'Die Anfrage wurde nicht abgeschlossen. Versuchen Sie es erneut.',
-      conflict:
-        'Ein anderer Administrator hat diese Einstellung zuerst gespeichert.',
-      busy: 'Demo-Daten werden erzeugt oder gelöscht. Versuchen Sie es danach erneut.',
-      exists:
-        'Die Demo-Daten sind bereits erzeugt. Setzen Sie sie stattdessen zurück.',
       demoModeRequired: 'Das geht nur bei eingeschaltetem Demo-Modus.',
-      accountConflict:
-        'Ein Demo-Benutzername gehört zu einem Konto, das nicht der Demo gehört.',
-      unavailable: 'Diese Anwendung stellt keine Demo-Daten bereit.',
       signedOut: 'Ihre Sitzung ist abgelaufen. Melden Sie sich erneut an.',
-      denied: 'Sie dürfen die Demo nicht verwalten.',
+      denied:
+        'Sie haben keine Berechtigung, die Demo-Einstellungen anzuzeigen.',
     },
     data: {
       title: 'Demo-Daten',
@@ -67,37 +67,10 @@ const resource: DemoModeResource = {
         clearing: 'Wird gelöscht',
         generating: 'Wird neu erzeugt',
       },
-      absentSummary:
-        'Erzeugen Sie die Demo-Daten, damit Besucher die Anwendung anhand einer vollständigen Geschichte erkunden können.',
-      language: 'Sprache',
-      clear: 'Löschen',
-      reset: 'Zurücksetzen',
-      generate: 'Erzeugen',
+      absentSummary: 'Es wurden noch keine Demodaten generiert.',
       failed: 'Der letzte Lauf wurde nicht abgeschlossen',
-      readOnly:
-        'Sie können die Demo-Daten ansehen; Erzeugen, Zurücksetzen und Löschen erfordern die Verwaltungsberechtigung.',
       unavailable: 'Keine Demo-Daten',
       unavailableHelp: 'Diese Anwendung registriert keinen Demo-Datensatz.',
-      cleared: 'Demo-Daten gelöscht',
-      resetStarted: 'Demo-Daten werden zurückgesetzt',
-      importStarted: 'Demo-Daten werden erzeugt',
-      confirm: {
-        import: {
-          title: 'Demo-Daten erzeugen?',
-          description:
-            'Die Demo-Daten werden auf {{language}} erzeugt und ihre Demo-Konten eingeschaltet.',
-        },
-        reset: {
-          title: 'Demo-Daten zurücksetzen?',
-          description:
-            'Alle Geschäftsdaten dieser Instanz werden gelöscht, auch was Besucher hinzugefügt haben, und die Demo-Daten auf {{language}} neu erzeugt.',
-        },
-        clear: {
-          title: 'Demo-Daten löschen?',
-          description:
-            'Alle Geschäftsdaten dieser Instanz werden gelöscht, auch was Besucher hinzugefügt haben, und die Demo-Konten ausgeschaltet. Einstellungen und Administratoren bleiben.',
-        },
-      },
     },
     visitors: {
       unavailable: 'Derzeit sind keine Konten verfügbar.',

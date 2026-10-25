@@ -11,7 +11,7 @@ import type {
 export interface FoundationOverviewOptions {
   /** Collects again instead of answering a result younger than the cache lifetime. */
   readonly refresh?: boolean;
-  /** Explicitly calculate exact business row counts. Ordinary refreshes retain the last known count. */
+  /** Explicitly count rows in observed tables outside the known system catalog. Ordinary refreshes retain the last known count. */
   readonly countRecords?: boolean;
 }
 
