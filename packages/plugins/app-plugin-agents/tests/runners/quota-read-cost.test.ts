@@ -9,7 +9,8 @@ it.each([1, 10, 50])(
   'keeps page reads fixed with %s runners and agents, without writes',
   async (n) => {
     const counts = new Map<string, number>([
-      ['/agents', 6],
+      // The Agent page no longer reads the retired discovery preferences.
+      ['/agents', 5],
       ['/agents/available', 5],
       // Native chat also reads model services and the configured default once per catalog.
       ['/agents/chatAgents', 8],

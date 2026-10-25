@@ -419,8 +419,8 @@ export function AvailableModelsDrawer({
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder={t('agents.discovery.search')}
-                aria-label={t('agents.discovery.search')}
+                placeholder={t('agents.display.search')}
+                aria-label={t('agents.display.search')}
                 data-testid='available-models-search'
               />
               <div className='flex flex-wrap gap-2'>
@@ -731,7 +731,7 @@ function ModelRow({
       className='flex items-center gap-3 rounded-md p-2 hover:bg-muted/50'
     >
       <Checkbox
-        aria-label={t('agents.cleanup.select', {
+        aria-label={t('agents.display.select', {
           name: modelName(model),
         })}
         checked={checked}

@@ -353,7 +353,7 @@ describe('runners', () => {
   it('persists per-runner capabilities from heartbeats and exposes suggestions through existing visibility', async () => {
     h = await createHarness();
     // No agent may be given work yet, so a reader of agents is no one who may use one.
-    const agentId = await h.createAgent({ status: 'pending' });
+    const agentId = await h.createAgent({ status: 'disabled' });
     const agentBefore = await h.services.agents.get(agentId);
     const first = await h.registerRunner();
     const other = await h.registerRunner({
@@ -746,7 +746,7 @@ describe('runners', () => {
 
   it('shows the host name and tool paths to the owner, the managers of runners and those who may use an agent', async () => {
     h = await createHarness();
-    const agentId = await h.createAgent({ status: 'pending' });
+    const agentId = await h.createAgent({ status: 'disabled' });
     const runner = await h.registerRunner({
       tools: [
         {

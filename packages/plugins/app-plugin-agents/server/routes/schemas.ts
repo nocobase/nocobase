@@ -56,8 +56,6 @@ import {
   type AvailableModel,
   type AvailableModelGroup,
   type AvailableModelRunners,
-  type CleanupCandidate,
-  type CleanupGroup,
   type ModelAvailabilityStatus,
   type RunnerAgentCreateInput,
   type UserRef,
@@ -642,8 +640,7 @@ const agentObject = z.object({
       '`runner`: one of the coding tools and models runners report; `system`: kept by the application.',
   }),
   status: z.enum(AGENT_STATUSES).meta({
-    description:
-      '`pending` until someone enables it; only `enabled` agents are offered work.',
+    description: 'Enabled or disabled; only `enabled` agents are offered work.',
   }),
   tool: AgentToolSchema.nullable(),
   model: z.string().nullable().meta({
@@ -676,18 +673,6 @@ export const AgentSchema: z.ZodType<Agent> = agentObject.meta({
 
 export const AgentViewSchema: z.ZodType<AgentView> = agentObject
   .extend({
-    discoveryKey: z.string().optional().meta({
-      description:
-        'Persistent display group; known catalog models share a tool/model key across providers.',
-    }),
-    discoveryRevision: z.number().int().optional().meta({
-      description:
-        'Expected preference revision for ignore or restore; zero when no preference exists yet.',
-    }),
-    ignored: z.boolean().optional().meta({
-      description:
-        'Shared administrator preference hiding pending discoveries in this group.',
-    }),
     effort: z.string().nullable().meta({
       description: 'Its default reasoning effort.',
     }),
@@ -850,23 +835,6 @@ export const RunnerAgentCreateInputSchema: z.ZodType<RunnerAgentCreateInput> =
     }),
   });
 
-export const CleanupCandidateSchema: z.ZodType<CleanupCandidate> = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    tool: AgentToolSchema.nullable(),
-    model: z.string().nullable(),
-    createdAt: dateTime,
-  })
-  .meta({ ref: 'AgentsCleanupCandidate' });
-
-export const CleanupGroupSchema: z.ZodType<CleanupGroup> = z
-  .object({
-    tool: AgentToolSchema.nullable(),
-    count: z.number().int(),
-  })
-  .meta({ ref: 'AgentsCleanupGroup' });
-
 export const PageMetaSchema: z.ZodType<{
   readonly total: number;
   readonly page: number;
@@ -910,36 +878,6 @@ export const AvailableModelsQuerySchema: z.ZodType<{
     .describe('One-based page, within one tool’s models.'),
   pageSize: pageSize(50, 200).describe(
     'Models per page, from 1 to 200, within one tool.',
-  ),
-});
-
-/**
- * Without `tool`: the group summary, one row per tool with candidates. With `tool`: that tool's candidates, a page at
- * a time, both kept to the same shape so one route serves both views of `GET /cleanupCandidates`.
- */
-export const CleanupCandidatesQuerySchema: z.ZodType<{
-  readonly tool?: AgentTool | undefined;
-  readonly q?: string | undefined;
-  readonly page: number;
-  readonly pageSize: number;
-}> = z.object({
-  tool: AgentToolSchema.optional().describe(
-    'Return this tool’s candidates, a page at a time; omit for the group summary.',
-  ),
-  q: z
-    .string()
-    .trim()
-    .max(200)
-    .optional()
-    .describe('Filter by the agent’s name, case-insensitive.'),
-  page: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .default(1)
-    .describe('One-based page, within one tool’s candidates.'),
-  pageSize: pageSize(50, 500).describe(
-    'Candidates per page, from 1 to 500, within one tool; large enough for "select all in group" to page through in one or two calls.',
   ),
 });
 

@@ -102,41 +102,28 @@ const deDE: LocaleResource<typeof enUS> = {
     unavailableNow: 'Derzeit nicht verfügbar',
     title: 'Agenten',
     description:
-      'Jedes Codierungstool und jedes Modell, das ein Runner meldet, ist ein Agent. Der Projektmanager übergibt jeden Schritt eines Problems an den Agenten, dessen Beschreibung dazu passt.',
+      'Fügen Sie Agenten aus den von Runnern gemeldeten Modellen hinzu. Der Projektmanager weist jeden Schritt einer Aufgabe dem Agenten zu, dessen Beschreibung dazu passt.',
     fromRunners: 'Agenten von Runnern',
-    discovery: {
-      selectAll: 'Alle Ergebnisse auswählen',
-      selectFirst: 'Wählen Sie die ersten {{limit}}-Ergebnisse aus',
-      selectionCount: 'Ausgewählte {{count}} / {{limit}}-Gruppen',
-      clearSelection: 'Auswahl löschen',
-      new: 'Neue Entdeckungen ({{count}})',
-      ignored: 'Ignoriert ({{count}})',
+    display: {
       search: 'Suchmodelle oder Anbieter',
       select: 'Wählen Sie {{name}}',
-      ignore: 'Ignorieren',
-      restore: 'Wiederherstellen',
-      ignoreSelected: 'Ausgewählte ignorieren',
-      restoreSelected: 'Ausgewählte Wiederherstellung',
       showDisabled: 'Deaktivierte anzeigen',
       hideDisabled: 'Deaktivierte ausblenden',
-      provider: 'Versorger und Runner',
-      saved: 'Discovery-Einstellungen gespeichert',
     },
     filterLabel: 'Agenten anzeigen',
     filters: {
       all: 'Alle {{count}}',
       enabled: 'Aktiviert {{count}}',
-      pending: 'Zum Aktivieren von {{count}}',
       unreported: 'Kein Runner {{count}}',
     },
     loadFailed: 'Die Agenten konnten nicht geladen werden',
     loadMore: 'Mehr laden',
     emptyTitle: 'Noch keine Agenten',
     emptyDescription:
-      'Verbinden Sie einen Runner mit einem angemeldeten Codierungstool: Jedes seiner Modelle wird hier als zu aktivierender Agent angezeigt.',
+      'Verbinden Sie einen Runner mit einem angemeldeten Codierungstool und fügen Sie dann unter „Verfügbare Modelle“ einen Agenten hinzu.',
     noneInFilter: 'Kein Agent hier.',
     howToAdd:
-      'Um einen Agenten hinzuzufügen, installieren Sie ein Codierungstool auf einem Runner und melden Sie sich bei einem Modell an, das Sie verwenden können: Sobald der Runner ihn meldet, wird er hier angezeigt und Sie aktivieren ihn, indem Sie schreiben, was er kann. Ein Agent, den nur persönliche Runner haben, arbeitet nur an Problemen, die ihre Besitzer starten.',
+      'Um einen Agenten hinzuzufügen, installieren Sie ein Codierungstool auf einem Runner und melden Sie sich für ein nutzbares Modell an. Sobald der Runner es meldet, fügen Sie unter „Verfügbare Modelle“ einen Agenten hinzu und beschreiben Sie seine Stärken. Er wird beim Hinzufügen sofort aktiviert. Ein Agent, der nur auf persönlichen Runnern verfügbar ist, kann nur Aufgaben bearbeiten, die deren Besitzer starten.',
     goodAtMissing: 'Noch nicht geschrieben',
     columns: {
       agent: 'Agent',
@@ -159,7 +146,6 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Aktiviert',
-      pending: 'Zum Aktivieren',
       disabled: 'Deaktiviert',
       unreported: 'Kein Runner',
     },
@@ -175,9 +161,6 @@ const deDE: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Ausfüllen und aktivieren',
-      buttonFor: 'Füllen Sie {{name}} aus und aktivieren Sie es',
-      title: '{{name}} aktivieren',
       reportedBy_one: 'Von {{count}}-Runner online gemeldet: {{names}}.',
       reportedBy_other: 'Von {{count}}-Runnern online gemeldet: {{names}}.',
       noRunnerNow: 'Kein Runner, der es hat, ist jetzt online.',
@@ -189,8 +172,6 @@ const deDE: LocaleResource<typeof enUS> = {
         'Der Projektmanager kann es bei der Übergabe der Arbeit nicht ändern.',
       personalOnly:
         'Nur persönliche Runner haben es: Der Projektmanager übergibt die Arbeit nur an Vorgänge, die ihre Besitzer starten.',
-      submit: 'Aktivieren',
-      done: '{{name}} ist aktiviert',
     },
     edit: {
       button: 'Bearbeiten',
@@ -244,31 +225,6 @@ const deDE: LocaleResource<typeof enUS> = {
         '{{succeeded}} hinzugefügt, {{failed}} konnten nicht hinzugefügt werden. Grund jeweils darunter.',
       addFailed:
         '{{failed}} konnten nicht hinzugefügt werden. Grund jeweils darunter; bitte erneut versuchen.',
-    },
-    cleanup: {
-      open: 'Aufräumen',
-      title: 'Ungenutzte entdeckte Agenten entfernen',
-      description:
-        'Agenten, die ein Runner-Bericht erstellt hat, die niemand aktiviert hat und die nie gelaufen sind: können bedenkenlos entfernt werden. Alles, was sich seit dem Laden dieser Liste geändert hat, wird übersprungen, nicht entfernt.',
-      none: 'Nichts zu entfernen.',
-      select: '{{name}} auswählen',
-      selectGroup: 'Alle in {{tool}} auswählen',
-      clearGroup: '{{tool}} abwählen',
-      neverEnabled: 'Nie aktiviert · Keine Ausführungshistorie',
-      createdAt: 'Entdeckt {{when}}',
-      group_one: '{{tool}} · {{count}} Kandidat',
-      group_other: '{{tool}} · {{count}} Kandidaten',
-      selectedCount_one: '{{count}} ausgewählt',
-      selectedCount_other: '{{count}} ausgewählt',
-      remove: '{{count}} entfernen',
-      confirmTitle_one: '{{count}} Agent entfernen?',
-      confirmTitle_other: '{{count}} Agenten entfernen?',
-      confirmDescription:
-        'Über {{tools}}. Sicher zu entfernen: wird unmittelbar vor dem Entfernen erneut geprüft; alles nicht mehr Zutreffende wird übersprungen, nicht entfernt.',
-      confirmAction: '{{count}} entfernen',
-      done: '{{removed}} entfernt, {{skipped}} übersprungen',
-      partialFailure:
-        '{{removed}} entfernt, {{skipped}} übersprungen; {{failed}} konnten nicht entfernt werden ({{reason}}). Sie bleiben ausgewählt, um es erneut zu versuchen.',
     },
   },
   agentTypes: {

@@ -156,9 +156,16 @@ function allCombos(
     }
   // An agent offline runners stopped reporting stays listed: it is not forgotten just because nothing reports it now.
   for (const agent of agents)
-    if (agent.source === 'runner' && agent.tool && !combos.has(agent.id))
+    if (isAdded(agent) && agent.tool && !combos.has(agent.id))
       combos.set(agent.id, { tool: agent.tool, model: agent.model ?? '' });
   return combos;
+}
+
+function isAdded(agent: Agent): boolean {
+  return (
+    agent.source === 'runner' &&
+    (agent.status === 'enabled' || agent.status === 'disabled')
+  );
 }
 
 /** Matches the tool's display name, the tool's own id, the model's own id, or its display name. */
@@ -313,7 +320,9 @@ export function availableModelRows(
   tool: AgentTool,
   filter: AvailableModelFilter = {},
 ): AvailableModel[] {
-  const byId = new Map(agents.map((agent) => [agent.id, agent] as const));
+  const byId = new Map(
+    agents.filter(isAdded).map((agent) => [agent.id, agent] as const),
+  );
   const recommended = new Set(
     options.recommendedModels.map((item) => `${item.tool}\u0000${item.model}`),
   );

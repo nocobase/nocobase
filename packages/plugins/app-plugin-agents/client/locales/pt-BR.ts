@@ -98,41 +98,28 @@ const ptBR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponível agora',
     title: 'Agentes',
     description:
-      'Cada ferramenta de codificação e modelo que um executor relata é um agente. O gerente de projeto entrega cada etapa de um problema ao agente cuja descrição se ajusta a ele.',
+      'Adicione agentes a partir dos modelos informados pelos executores. O gerente de projeto atribui cada etapa de uma tarefa ao agente cuja descrição é adequada.',
     fromRunners: 'Agentes de executores',
-    discovery: {
-      selectAll: 'Selecionar todos os resultados',
-      selectFirst: 'Selecione os primeiros resultados {{limit}}',
-      selectionCount: 'Grupos {{count}}/{{limit}} selecionados',
-      clearSelection: 'Limpar seleção',
-      new: 'Novas descobertas ({{count}})',
-      ignored: 'Ignorado ({{count}})',
+    display: {
       search: 'Pesquisar modelos ou provedores',
       select: 'Selecione {{name}}',
-      ignore: 'Ignorar',
-      restore: 'Restaurar',
-      ignoreSelected: 'Ignorar selecionado',
-      restoreSelected: 'Restaurar selecionado',
       showDisabled: 'Mostrar desabilitados',
       hideDisabled: 'Ocultar desabilitados',
-      provider: 'Provedor e executor',
-      saved: 'Preferências de descoberta salvas',
     },
     filterLabel: 'Mostrar agentes',
     filters: {
       all: 'Todos {{count}}',
       enabled: '{{count}} habilitado',
-      pending: 'Para habilitar {{count}}',
       unreported: 'Nenhum executor {{count}}',
     },
     loadFailed: 'Não foi possível carregar os agentes',
     loadMore: 'Carregar mais',
     emptyTitle: 'Nenhum agente ainda',
     emptyDescription:
-      'Conecte um executor com uma ferramenta de codificação conectada: cada um de seus modelos aparece aqui como um agente a ser habilitado.',
+      'Conecte um executor com uma ferramenta de codificação autenticada e adicione um agente em “Modelos disponíveis”.',
     noneInFilter: 'Nenhum agente aqui.',
     howToAdd:
-      'Para adicionar um agente, instale uma ferramenta de codificação em um executor e entre em um modelo que você possa usar: assim que o executor relatar isso, ele aparecerá aqui, e você o habilita escrevendo no que ele é bom. Um agente que apenas executores pessoais trabalha apenas nas questões iniciadas por seus proprietários.',
+      'Para adicionar um agente, instale uma ferramenta de codificação em um executor e entre na conta para usar um modelo disponível. Quando o executor informar o modelo, adicione o agente em “Modelos disponíveis”, descrevendo suas especialidades. Ele será habilitado ao ser adicionado. Um agente disponível apenas em executores pessoais trabalha somente nas tarefas iniciadas pelos proprietários desses executores.',
     goodAtMissing: 'Ainda não escrito',
     columns: {
       agent: 'Agente',
@@ -157,7 +144,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Habilitado',
-      pending: 'Para habilitar',
       disabled: 'Desabilitado',
       unreported: 'Sem executor',
     },
@@ -173,9 +159,6 @@ const ptBR: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Preencha e ative',
-      buttonFor: 'Preencha e habilite {{name}}',
-      title: 'Habilitar {{name}}',
       reportedBy_one: 'Relatado pelo executor {{count}} online: {{names}}.',
       reportedBy_other: 'Relatado por executores {{count}} online: {{names}}.',
       noRunnerNow: 'Nenhum executor que o tenha está online agora.',
@@ -186,8 +169,6 @@ const ptBR: LocaleResource<typeof enUS> = {
         'O gerente de projeto não pode alterá-lo quando entrega o trabalho.',
       personalOnly:
         'Apenas os executores pessoais o possuem: o gerente do projeto entrega o trabalho apenas nas questões que seus proprietários iniciam.',
-      submit: 'Habilitar',
-      done: '{{name}} está habilitado',
       reportedBy_many: 'Relatado por executores {{count}} online: {{names}}.',
     },
     edit: {
@@ -248,34 +229,6 @@ const ptBR: LocaleResource<typeof enUS> = {
         '{{succeeded}} adicionados, {{failed}} não puderam ser adicionados. O motivo está abaixo de cada um.',
       addFailed:
         '{{failed}} não puderam ser adicionados. O motivo está abaixo de cada um; tente novamente.',
-    },
-    cleanup: {
-      open: 'Limpar',
-      title: 'Remover agentes descobertos não usados',
-      description:
-        'Agentes criados pelo relatório de um executor, que ninguém habilitou e que nunca foram executados: podem ser removidos sem risco. Qualquer coisa que tenha mudado desde que esta lista foi carregada é ignorada, não removida.',
-      none: 'Nada para remover.',
-      select: 'Selecionar {{name}}',
-      selectGroup: 'Selecionar tudo em {{tool}}',
-      clearGroup: 'Limpar seleção de {{tool}}',
-      neverEnabled: 'Nunca habilitado · Sem histórico de execução',
-      createdAt: 'Descoberto {{when}}',
-      group_one: '{{tool}} · {{count}} candidato',
-      group_other: '{{tool}} · {{count}} candidatos',
-      group_many: '{{tool}} · {{count}} candidatos',
-      selectedCount_one: '{{count}} selecionado',
-      selectedCount_other: '{{count}} selecionados',
-      selectedCount_many: '{{count}} selecionados',
-      remove: 'Remover {{count}}',
-      confirmTitle_one: 'Remover {{count}} agente?',
-      confirmTitle_other: 'Remover {{count}} agentes?',
-      confirmTitle_many: 'Remover {{count}} agentes?',
-      confirmDescription:
-        'Em {{tools}}. Seguro para remover: verificado novamente antes da remoção, e o que não for mais elegível é ignorado, não removido.',
-      confirmAction: 'Remover {{count}}',
-      done: '{{removed}} removidos, {{skipped}} ignorados',
-      partialFailure:
-        '{{removed}} removidos, {{skipped}} ignorados; {{failed}} não puderam ser removidos ({{reason}}). Permanecem selecionados para tentar novamente.',
     },
   },
   agentTypes: {
