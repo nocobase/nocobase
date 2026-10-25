@@ -7,6 +7,8 @@ import { settingsRepo, workRepo } from '../../server/indexing/store.js';
 test.skipIf(!process.env.KNOWLEDGE_INDEXING_PROCESS_CONFIG)(
   'isolated Knowledge process worker',
   async () => {
+    // Static imports are loaded; subsequent deadlines measure application work.
+    console.info('KB_PROCESS_WORKER_READY');
     const configPath = process.env.KNOWLEDGE_INDEXING_PROCESS_CONFIG!;
     if (process.env.KNOWLEDGE_INDEXING_PROCESS_MODE === 'recover') {
       // Expire the five-minute reconciliation window without waiting or faking timers.

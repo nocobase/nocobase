@@ -54,11 +54,51 @@ function worker(
   child.stderr.on('data', (data) => {
     output += String(data);
   });
-  const exit = new Promise<number | null>((resolve, reject) => {
-    child.once('exit', resolve);
-    child.once('error', reject);
+  let spawnError: Error | undefined;
+  child.once('error', (error) => {
+    spawnError = error;
   });
-  return { child, exit, output: () => output };
+  // close follows drained stdout/stderr, including diagnostics from failed workers.
+  const exit = new Promise<number | null>((resolve) => {
+    child.once('close', resolve);
+  });
+  function waitFor(pattern: RegExp, timeout: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer);
+        child.stdout.off('data', check);
+        child.stderr.off('data', check);
+        child.off('close', check);
+        child.off('error', check);
+      };
+      const fail = (reason: string) => {
+        cleanup();
+        reject(new Error(`Knowledge ${mode} worker ${reason}.\n${output}`));
+      };
+      const check = () => {
+        if (pattern.test(output)) {
+          cleanup();
+          resolve();
+        } else if (spawnError) {
+          fail(`could not start: ${spawnError.message}`);
+        } else if (child.exitCode !== null || child.signalCode !== null) {
+          fail(
+            `exited before ${pattern}: code=${child.exitCode}, signal=${child.signalCode}`,
+          );
+        }
+      };
+      const timer = setTimeout(
+        () => fail(`timed out waiting for ${pattern}`),
+        timeout,
+      );
+      child.stdout.on('data', check);
+      child.stderr.on('data', check);
+      child.once('close', check);
+      child.once('error', check);
+      check();
+    });
+  }
+  return { child, exit, waitFor, output: () => output };
 }
 const test = createAppTest({
   createServer: createStandaloneServer,
@@ -72,7 +112,8 @@ const test = createAppTest({
 });
 test(
   'recovers in a fresh process after SIGKILL during real Memory execution',
-  { timeout: 45000 },
+  // Each fresh Vitest process gets its own cold-import budget, not recovery time.
+  { timeout: 180000 },
   async ({ app, testApp, connection }) => {
     const authorization = app.container.resolve(authorizationToken);
     const subject = { type: 'user', id: 'fixture-admin' };
@@ -152,9 +193,8 @@ test(
     await testApp.server.close();
     const held = worker(testApp.config.path, receipt.generationId!, 'hold');
     try {
-      await expect
-        .poll(held.output, { timeout: 15000 })
-        .toMatch(/^KB_PROCESS_EMBEDDING_STARTED$/m);
+      await held.waitFor(/^KB_PROCESS_WORKER_READY$/m, 60000);
+      await held.waitFor(/^KB_PROCESS_EMBEDDING_STARTED$/m, 15000);
     } finally {
       held.child.kill('SIGKILL');
       await held.exit;
@@ -165,11 +205,17 @@ test(
       'recover',
     );
     try {
+      await recovered.waitFor(/^KB_PROCESS_WORKER_READY$/m, 60000);
+      await recovered.waitFor(/^KB_PROCESS_RECOVERY_VERIFIED$/m, 30000);
+      await expect
+        .poll(() => recovered.child.exitCode, { timeout: 15000 })
+        .not.toBeNull();
       const code = await recovered.exit;
       expect(recovered.output()).toMatch(/^KB_PROCESS_RECOVERY_VERIFIED$/m);
       expect(code).toBe(0);
     } finally {
       if (recovered.child.exitCode === null) recovered.child.kill('SIGKILL');
+      await recovered.exit;
     }
   },
 );
