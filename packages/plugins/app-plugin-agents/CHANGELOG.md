@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- d78f586: Pin official AI SDK providers to the compatible ai/provider-utils release set to prevent independent provider patch upgrades from breaking Agents builds. The workspace also constrains Ollama's provider-utils dependency; independently installed applications must manage Ollama's transitive dependency alignment themselves.
+
 ## 1.0.0-beta.25
 
 ### Patch Changes
