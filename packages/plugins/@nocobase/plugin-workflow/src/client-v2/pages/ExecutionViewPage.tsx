@@ -31,8 +31,6 @@ export default function ExecutionViewPage() {
       }
       const response = await resource.get({
         filterByTk: executionId,
-        appends: ['jobs', 'workflow', 'workflow.nodes', 'workflow.versionStats', 'workflow.stats'],
-        except: ['jobs.result', 'workflow.options'],
       });
       return normalizeRecordResponse(response);
     },

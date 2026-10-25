@@ -9,9 +9,44 @@
 
 import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
+import { col, fn } from 'sequelize';
+import { jobListFields } from './executionJobs';
+import type { ExecutionModel } from '../types';
 import PluginWorkflowServer from '../Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS } from '../constants';
 import { abortExecution, getExecutionLockKey, isLockAcquireError } from '../utils';
+
+export async function get(context: Context, next: Next) {
+  const { filterByTk, filter } = context.action.params;
+  // The detail endpoint owns its projection: callers cannot append the full jobs association or large job fields.
+  const execution = (await context.db.getRepository('executions').findOne({
+    filterByTk,
+    filter,
+    appends: ['workflow', 'workflow.nodes', 'workflow.versionStats', 'workflow.stats'],
+    except: ['workflow.options'],
+    context,
+  })) as ExecutionModel | null;
+  context.body = execution;
+  context.status = 200;
+  if (execution) {
+    const Job = context.db.getModel('jobs');
+    const ids = await Job.findAll({
+      attributes: ['nodeId', [fn('MAX', col('id')), 'id']],
+      where: { executionId: execution.id },
+      group: ['nodeId'],
+      raw: true,
+    });
+    const jobs = ids.length
+      ? await Job.findAll({
+          attributes: jobListFields,
+          where: { executionId: execution.id, id: ids.map((job) => job.id) },
+          order: [['id', 'ASC']],
+        })
+      : [];
+    execution.setDataValue('jobs', jobs);
+  }
+  await next();
+}
 
 export async function destroy(context: Context, next: Next) {
   context.action.mergeParams({

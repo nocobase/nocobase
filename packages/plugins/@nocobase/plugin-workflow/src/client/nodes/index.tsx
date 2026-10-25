@@ -44,6 +44,7 @@ import {
   resolveLegacyConfigRenderMode,
 } from '../../client-v2/canvas/nodeRenderDispatch';
 import { DrawerDescription } from '../components/DrawerDescription';
+import { JobHistoryPopover } from '../../client-v2/components/JobHistoryPopover';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
 import { useGetAriaLabelOfAddButton, useWorkflowExecuted } from '../hooks';
@@ -216,71 +217,48 @@ export function RemoveButton() {
 
 export function JobButton() {
   const { execution, setViewJob } = useFlowContext();
-  const { jobs } = useNodeContext();
+  const node = useNodeContext();
+  const { jobs } = node;
+  const api = useAPIClient();
   const { styles } = useStyles();
-
-  const onOpenJobInList = useCallback(
-    ({ key }) => {
-      if (!jobs?.length) {
-        return;
-      }
-      const job = jobs.find((item) => item.id == key);
-      setViewJob(job);
-    },
-    [jobs, setViewJob],
-  );
-
-  const onOpenOnlyJob = useCallback(() => {
-    const job = jobs?.[0];
-    if (!job) {
-      return;
-    }
-    setViewJob(job);
-  }, [jobs, setViewJob]);
+  const latestJob = jobs?.[jobs.length - 1];
 
   if (!execution) {
     return null;
   }
-
-  if (!jobs?.length) {
+  if (!latestJob) {
     return <StatusButton className={styles.nodeJobButtonClass} disabled />;
   }
-
   return (
-    <Tooltip title={lang('View result')}>
-      {jobs?.length > 1 ? (
-        <Dropdown
-          menu={{
-            items: jobs.map((job) => {
-              return {
-                key: job.id,
-                label: (
-                  <>
-                    <StatusButton statusMap={JobStatusOptionsMap} status={job.status} />
-                    <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
-                  </>
-                ),
-              };
-            }),
-            onClick: onOpenJobInList,
-            className: styles.dropdownClass,
-          }}
-        >
-          <StatusButton
-            statusMap={JobStatusOptionsMap}
-            status={jobs[jobs.length - 1].status}
-            className={styles.nodeJobButtonClass}
-          />
-        </Dropdown>
-      ) : (
-        <StatusButton
-          statusMap={JobStatusOptionsMap}
-          status={jobs?.[0].status}
-          onClick={onOpenOnlyJob}
-          className={styles.nodeJobButtonClass}
-        />
-      )}
-    </Tooltip>
+    <JobHistoryPopover
+      key={`${execution.id}:${latestJob.nodeId}:${latestJob.id}:${latestJob.updatedAt}:${execution.updatedAt}`}
+      menuClassName={styles.dropdownClass}
+      loadPage={async (cursor) => {
+        const response = await api.resource('executions.jobs', execution.id).list({
+          nodeId: latestJob.nodeId,
+          ...cursor,
+        });
+        return response.data.data;
+      }}
+      onSelect={(job) =>
+        setViewJob({ ...job, node: { id: node.id, key: node.key, title: node.title, type: node.type } })
+      }
+      renderJob={(job) => {
+        return (
+          <>
+            <StatusButton
+              statusMap={JobStatusOptionsMap}
+              status={job.status}
+              tabIndex={-1}
+              style={{ pointerEvents: 'none' }}
+            />
+            <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+          </>
+        );
+      }}
+    >
+      <StatusButton statusMap={JobStatusOptionsMap} status={latestJob.status} className={styles.nodeJobButtonClass} />
+    </JobHistoryPopover>
   );
 }
 

@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
+import { RobotOutlined } from '@ant-design/icons';
 import { Avatar, Card, Radio, Select, Space, Spin, Switch, Tag, Tooltip, Typography, theme } from 'antd';
 import type { RadioGroupProps } from 'antd';
 import { FlowModel, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
@@ -73,6 +74,43 @@ const isWithinAIChatBoxBlock = (model: FlowModel | null | undefined) => {
   return false;
 };
 
+type AIEmployeePreviewRepository = {
+  aiEmployees?: AIEmployee[];
+  getAIEmployees?: () => Promise<AIEmployee[]>;
+};
+
+const HiddenAIEmployeePreview: React.FC<{
+  aiEmployee: AIEmployeeShortcutModelProps['aiEmployee'];
+  size: number;
+  title: string;
+  repository?: AIEmployeePreviewRepository;
+}> = observer(({ aiEmployee, size, title, repository }) => {
+  const username = aiEmployee?.username;
+  const hasEmployee = !!repository?.aiEmployees?.some((employee) => employee.username === username);
+
+  useEffect(() => {
+    if (username && repository?.getAIEmployees && !hasEmployee) {
+      void repository.getAIEmployees().catch(console.error);
+    }
+  }, [hasEmployee, repository, username]);
+
+  const resolvedAIEmployee = repository?.aiEmployees?.find((employee) => employee.username === username);
+  const avatar = resolvedAIEmployee?.avatar ?? aiEmployee?.avatar;
+
+  return (
+    <Tooltip title={title}>
+      <div style={{ display: 'inline-flex', opacity: 0.3 }}>
+        <Avatar
+          shape="circle"
+          size={size}
+          src={avatar ? avatars(avatar) : undefined}
+          icon={!avatar ? <RobotOutlined /> : undefined}
+        />
+      </div>
+    </Tooltip>
+  );
+});
+
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
   get supportedActionLinkageStates() {
     return ['visible', 'hidden'] as const;
@@ -85,10 +123,21 @@ export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
   }
 
   protected renderHiddenInConfig(): React.ReactNode {
-    return <div style={{ display: 'inline-flex', opacity: 0.3 }}>{this.render()}</div>;
+    // Keep this preview lightweight: `render()` is already wrapped for reactivity, so calling it here would
+    // re-enter `renderHiddenInConfig` and recurse infinitely until the page freezes.
+    // Resolve the configured employee's avatar from the shared AI config repository instead of mounting the
+    // full shortcut/chatbox runtime. The small preview fetches employee metadata only when it is not cached.
+    const aiConfigRepository = this.flowEngine?.context?.aiConfigRepository as AIEmployeePreviewRepository | undefined;
+    return (
+      <HiddenAIEmployeePreview
+        aiEmployee={this.props.aiEmployee}
+        size={this.props.style?.size ?? 40}
+        title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+        repository={aiConfigRepository}
+      />
+    );
   }
 }
-
 AIEmployeeButtonModel.registerFlow({
   key: 'buttonSettings',
   title: tExpr('Button settings'),
