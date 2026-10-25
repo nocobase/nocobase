@@ -58,6 +58,7 @@ import type {
 import {
   knowledgeKeys,
   useKnowledgeApi,
+  useKnowledgeCapabilities,
   useKnowledgeProposals,
   useKnowledgeRefresh,
   useKnowledgeTree,
@@ -251,6 +252,8 @@ export function KnowledgeView({
   const view = useViewState();
   const wide = useMediaQuery('(min-width: 768px)');
   const api = useKnowledgeApi();
+  const semanticSearch =
+    useKnowledgeCapabilities().data?.semanticSearch === true;
   const notify = useNotify();
   const queryClient = useQueryClient();
   const [archived, setArchived] = useState(false);
@@ -563,14 +566,18 @@ export function KnowledgeView({
         choose();
         setDialog({ kind: 'spaceAccess' });
       },
-      searchTest: () => {
-        choose();
-        setDialog({ kind: 'searchTest' });
-      },
-      chunking: () => {
-        choose();
-        setDialog({ kind: 'chunking' });
-      },
+      ...(semanticSearch
+        ? {
+            searchTest: () => {
+              choose();
+              setDialog({ kind: 'searchTest' });
+            },
+            chunking: () => {
+              choose();
+              setDialog({ kind: 'chunking' });
+            },
+          }
+        : {}),
     };
   }
 
@@ -906,7 +913,7 @@ export function KnowledgeView({
           onAll={(q) => view.show({ q })}
         />
       ) : null}
-      {dialog?.kind === 'searchTest' ? (
+      {semanticSearch && dialog?.kind === 'searchTest' ? (
         <SearchTestDialog
           open
           onOpenChange={(next) => !next && setDialog(null)}
@@ -979,7 +986,7 @@ export function KnowledgeView({
           }
         />
       ) : null}
-      {dialog?.kind === 'chunking' && ownRef && own ? (
+      {semanticSearch && dialog?.kind === 'chunking' && ownRef && own ? (
         <ChunkingDialog
           open
           onOpenChange={(next) => !next && setDialog(null)}

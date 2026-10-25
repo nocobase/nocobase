@@ -108,3 +108,9 @@ pnpm --filter @nocobase/app-plugin-knowledge typecheck
 pnpm --filter @nocobase/app-plugin-knowledge test
 pnpm --filter @nocobase/app-plugin-knowledge build
 ```
+
+## Semantic search availability
+
+The space menu's Search test and Section settings require an indexer registered through `knowledge.registerIndexer()`. The client reads `GET /api/knowledge/capabilities` (`data.semanticSearch`) and hides both actions until an indexer is registered; Section settings still requires space management access. Unregistering the indexer disables both actions again. This checks the knowledge plugin's own registration, without depending on a particular search plugin or vector store.
+
+Without an indexer, `GET /api/knowledge/search?explain=true`, `GET /api/knowledge/chunking` and `PUT /api/knowledge/chunking` return HTTP 400 with status `FAILED_PRECONDITION` and reason `SEMANTIC_SEARCH_UNAVAILABLE`. Ordinary keyword search remains available. The capability endpoint requires the application's native authentication, like the other knowledge APIs.
