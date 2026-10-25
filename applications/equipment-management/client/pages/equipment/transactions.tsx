@@ -1,3 +1,4 @@
+import { RefreshButton } from './shared.js';
 import { RequiredFieldError, focusInvalid } from './validation.js';
 import { useState, type FormEvent } from 'react';
 import {
@@ -43,6 +44,7 @@ const cap = (kind: Kind) =>
 export function TransactionList({ kind }: { kind: Kind }) {
   const { t } = useTranslation();
   const caps = useCapabilities();
+  const refs = useReferences();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const table = useTableUrlState({
@@ -53,6 +55,22 @@ export function TransactionList({ kind }: { kind: Kind }) {
   query.set('page', String(table.paginationState.pageIndex + 1));
   query.set('pageSize', String(table.paginationState.pageSize));
   const result = useEquipment<Row[]>(kind + '?' + query.toString());
+  const filtered = !!params.get('status');
+  const clear = (
+    <Button
+      variant='outline'
+      onClick={() =>
+        setParams((old) => {
+          const next = new URLSearchParams(old);
+          next.delete('status');
+          next.delete('page');
+          return next;
+        })
+      }
+    >
+      {t('equipment.clear')}
+    </Button>
+  );
   const can = !!caps.data?.data[cap(kind)];
   const createLabel = t(
     'equipment.' +
@@ -85,14 +103,13 @@ export function TransactionList({ kind }: { kind: Kind }) {
           )}
           actions={
             <>
-              {!result.isPending && !!result.data?.data.length ? add : null}
-              <Button
-                variant='outline'
-                disabled={result.isFetching}
+              {!result.isPending && (!!result.data?.data.length || filtered)
+                ? add
+                : null}
+              <RefreshButton
+                busy={result.isFetching}
                 onClick={() => void result.refetch()}
-              >
-                {t('equipment.refresh')}
-              </Button>
+              />
             </>
           }
         />
@@ -123,12 +140,20 @@ export function TransactionList({ kind }: { kind: Kind }) {
             }))}
           />
         </div>
+        {filtered && clear}
+        {filtered &&
+          !result.isPending &&
+          !result.error &&
+          !result.data?.data.length && <p>{t('equipment.noResults')}</p>}
         <LoadState
           loading={result.isPending}
           error={result.error}
           retry={() => void result.refetch()}
           empty={
-            !result.isPending && !result.error && !result.data?.data.length
+            !filtered &&
+            !result.isPending &&
+            !result.error &&
+            !result.data?.data.length
           }
           action={add}
         />
@@ -155,7 +180,7 @@ export function TransactionList({ kind }: { kind: Kind }) {
                       ? String(row.original.name)
                       : t('equipment.transitions.' + row.original.kind) +
                         ' · ' +
-                        String(row.original.id).slice(0, 8)}
+                        String(row.original.id)}
                   </Link>
                 ),
               },
@@ -181,7 +206,13 @@ export function TransactionList({ kind }: { kind: Kind }) {
                     lines={1}
                     className='max-w-sm'
                   >
-                    {typeof getValue() === 'string' ? getValue<string>() : '—'}
+                    {kind === 'stocktakes'
+                      ? refs.data?.data.equipmentLocations?.find(
+                          (r) => r.id === getValue(),
+                        )?.name || '—'
+                      : typeof getValue() === 'string'
+                        ? getValue<string>()
+                        : '—'}
                   </LongTextPreview>
                 ),
               },
@@ -230,26 +261,12 @@ export function TransactionDetail({ kind }: { kind: Kind }) {
               record
                 ? String(
                     record.name ||
-                      t('equipment.transitions.' + record.kind) +
-                        ' · ' +
-                        id.slice(0, 8),
+                      t('equipment.transitions.' + record.kind) + ' · ' + id,
                   )
                 : t('equipment.details')
             }
             actions={
               <>
-                <Button
-                  variant='outline'
-                  nativeButton={false}
-                  render={
-                    <Link
-                      to={{ pathname: '..', search: location.search }}
-                      relative='route'
-                    />
-                  }
-                >
-                  {t('equipment.back')}
-                </Button>
                 {record && can && !completed && (
                   <Button
                     nativeButton={false}
@@ -265,13 +282,10 @@ export function TransactionDetail({ kind }: { kind: Kind }) {
                     )}
                   </Button>
                 )}
-                <Button
-                  variant='outline'
-                  disabled={result.isFetching}
+                <RefreshButton
+                  busy={result.isFetching}
                   onClick={() => void result.refetch()}
-                >
-                  {t('equipment.refresh')}
-                </Button>
+                />
               </>
             }
           />
@@ -692,7 +706,7 @@ export function TransactionForm({
             type='submit'
             disabled={busy || ((handling || observation) && !existing)}
           >
-            {t('equipment.confirm')}
+            {busy ? t('settings.saving') : t('equipment.confirm')}
           </Button>
         </>
       }
@@ -707,7 +721,11 @@ export function TransactionForm({
           {t('equipment.states.' + item.expectedStatus)}
         </p>
       )}
-      <form className='space-y-4' id={formId} onSubmit={(e) => void submit(e)}>
+      <form
+        className='flex flex-col gap-4'
+        id={formId}
+        onSubmit={(e) => void submit(e)}
+      >
         <ErrorNotice error={error} />
         <FormFields
           error={error}
@@ -715,6 +733,7 @@ export function TransactionForm({
           values={values}
           setValue={(k, v) => {
             setDirty(true);
+            setError(undefined);
             setValues((old) => ({ ...old, [k]: v }));
           }}
           disabled={busy}

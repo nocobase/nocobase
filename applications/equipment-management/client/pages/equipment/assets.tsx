@@ -1,3 +1,5 @@
+import { RefreshButton } from './shared.js';
+import { ConfirmAction } from '../settings/shared.js';
 import { RequiredFieldError, focusInvalid } from './validation.js';
 import { downloadCsv } from './download.js';
 import { useState, useCallback, type FormEvent } from 'react';
@@ -434,18 +436,6 @@ export function AssetDetail() {
             description={record ? String(record.assetNumber) : undefined}
             actions={
               <>
-                <Button
-                  variant='outline'
-                  nativeButton={false}
-                  render={
-                    <Link
-                      to={{ pathname: '..', search: location.search }}
-                      relative='route'
-                    />
-                  }
-                >
-                  {t('equipment.back')}
-                </Button>
                 {record &&
                   can['assets.operate'] &&
                   record.status !== 'scrapped' && (
@@ -461,13 +451,10 @@ export function AssetDetail() {
                       {t('equipment.edit')}
                     </Button>
                   )}
-                <Button
-                  variant='outline'
-                  disabled={result.isFetching}
+                <RefreshButton
+                  busy={result.isFetching}
                   onClick={() => void result.refetch()}
-                >
-                  {t('equipment.refresh')}
-                </Button>
+                />
               </>
             }
           />
@@ -747,7 +734,7 @@ function AssetForm({ record }: { record?: Row }) {
         title={t('equipment.' + (record ? 'edit' : 'create'))}
         description={t('equipment.description')}
       />
-      <form onSubmit={(e) => void submit(e)} className='space-y-6'>
+      <form onSubmit={(e) => void submit(e)} className='flex flex-col gap-6'>
         <ErrorNotice error={error} />
         <FormFields
           error={error}
@@ -755,6 +742,7 @@ function AssetForm({ record }: { record?: Row }) {
           values={values}
           setValue={(k, v) => {
             setDirty(true);
+            setError(undefined);
             setValues((old) => ({ ...old, [k]: v }));
           }}
           disabled={busy}
@@ -774,7 +762,7 @@ function AssetForm({ record }: { record?: Row }) {
             {t('equipment.cancel')}
           </Button>
           <Button type='submit' disabled={busy || refs.isPending}>
-            {t('equipment.save')}
+            {busy ? t('settings.saving') : t('equipment.save')}
           </Button>
         </div>
       </form>
@@ -793,6 +781,7 @@ export function AssetAction() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmScrap, setConfirmScrap] = useState(false);
   const [error, setError] = useState<unknown>();
   const guard = useFormGuard(dirty, busy);
   const record = result.data?.data.record;
@@ -824,12 +813,16 @@ export function AssetAction() {
       ] || []
     ).map((row) => ({ value: row.id, label: String(row.name) })),
   }));
-  async function submit(e: FormEvent) {
-    e.preventDefault();
+  async function submit(e?: FormEvent, confirmed = false) {
+    e?.preventDefault();
     const missing = keys.find((k) => !values[k]);
     if (missing) {
       document.getElementById('eq-' + missing)?.focus();
       setError(new RequiredFieldError(missing));
+      return;
+    }
+    if (transition === 'scrap' && !confirmed) {
+      setConfirmScrap(true);
       return;
     }
     setBusy(true);
@@ -890,7 +883,7 @@ export function AssetAction() {
             type='submit'
             disabled={busy || !record}
           >
-            {t('equipment.confirm')}
+            {busy ? t('settings.saving') : t('equipment.confirm')}
           </Button>
         </>
       }
@@ -899,7 +892,7 @@ export function AssetAction() {
       <form
         id='equipment-action'
         onSubmit={(e) => void submit(e)}
-        className='space-y-5'
+        className='flex flex-col gap-5'
       >
         <ErrorNotice error={error} />
         <FormFields
@@ -908,11 +901,24 @@ export function AssetAction() {
           values={values}
           setValue={(k, v) => {
             setDirty(true);
+            setError(undefined);
             setValues((old) => ({ ...old, [k]: v }));
           }}
           disabled={busy}
         />
       </form>
+      <ConfirmAction
+        open={confirmScrap}
+        title={t('equipment.confirmTitle', {
+          action: t('equipment.transitions.scrap'),
+          name: record?.name,
+        })}
+        description={t('equipment.scrapWarning')}
+        busy={busy}
+        error={<ErrorNotice error={error} />}
+        onCancel={() => setConfirmScrap(false)}
+        onConfirm={() => void submit(undefined, true)}
+      />
       {guard.guard}
     </RouteDialog>
   );

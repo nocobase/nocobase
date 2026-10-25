@@ -75,3 +75,33 @@ it('explains missing business access and hides import, export and create from an
     screen.queryByRole('button', { name: 'Retry' }),
   ).not.toBeInTheDocument();
 });
+
+it('keeps a filtered empty transaction list recoverable without claiming the collection is empty', async () => {
+  const { TransactionList } =
+    await import('../../client/pages/equipment/transactions.js');
+  await renderAuthenticatedClient(<TransactionList kind='requests' />, {
+    route: '/operations?status=rejected',
+  });
+  expect(await screen.findByText('No matching records')).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Clear filters' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'New request' }),
+  ).toBeInTheDocument();
+});
+
+it('does not offer reference mutations to a plain Member', async () => {
+  const { default: ReferenceData } =
+    await import('../../client/pages/equipment/reference.js');
+  await renderAuthenticatedClient(<ReferenceData />, {
+    member: true,
+    route: '/referenceData',
+  });
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Access is not granted',
+  );
+  expect(
+    screen.queryByRole('button', { name: 'Create' }),
+  ).not.toBeInTheDocument();
+});

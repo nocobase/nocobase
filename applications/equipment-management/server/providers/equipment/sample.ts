@@ -130,7 +130,7 @@ export function registerEquipmentSample(
               ),
               nextMaintenanceAt: date(i % 7 === 0 ? -7 : 30 + i),
               notes:
-                'Synthetic equipment for the isolated PM-697 preview. Purchase and movement records are fictional.',
+                'Synthetic equipment for the isolated equipment preview. Purchase and movement records are fictional.',
               createdAt: new Date().toISOString(),
             },
             { actor: SYSTEM_ACTOR },

@@ -95,7 +95,7 @@ export default function CsvImport() {
       }
     >
       <form
-        className='space-y-4'
+        className='flex flex-col gap-4'
         onSubmit={(e: FormEvent) => {
           e.preventDefault();
           void run(false);

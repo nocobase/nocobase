@@ -1,3 +1,5 @@
+import { RefreshButton } from './shared.js';
+import { ConfirmAction } from '../settings/shared.js';
 import { focusInvalid } from './validation.js';
 import { useState, type FormEvent } from 'react';
 import {
@@ -15,7 +17,12 @@ import { Button } from '#components/ui/button';
 import { RouteDialog } from '#components/route-dialog';
 import { DataTable } from '#components/data-table';
 import { toast } from '#components/ui/toast';
-import { useReferences, useEquipmentWrite, type Row } from './api.js';
+import {
+  useReferences,
+  useEquipmentWrite,
+  useCapabilities,
+  type Row,
+} from './api.js';
 import { useFormGuard } from './form-guard.js';
 import { FormFields, ErrorNotice, LoadState } from './shared.js';
 const kinds = [
@@ -26,6 +33,8 @@ const kinds = [
 export default function ReferenceData() {
   const { t } = useTranslation();
   const refs = useReferences();
+  const caps = useCapabilities();
+  const canManage = !!caps.data?.data['reference.manage'];
   const location = useLocation();
   return (
     <>
@@ -34,13 +43,10 @@ export default function ReferenceData() {
           title={t('equipment.referenceData')}
           description={t('equipment.description')}
           actions={
-            <Button
-              variant='outline'
-              disabled={refs.isFetching}
+            <RefreshButton
+              busy={refs.isFetching}
               onClick={() => void refs.refetch()}
-            >
-              {t('equipment.refresh')}
-            </Button>
+            />
           }
         />
         <LoadState
@@ -54,21 +60,23 @@ export default function ReferenceData() {
               <CardHeader>
                 <CardTitle className='flex items-center justify-between gap-2'>
                   {t('equipment.reference.' + kind)}
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    nativeButton={false}
-                    render={
-                      <Link
-                        to={{
-                          pathname: kind + '/new',
-                          search: location.search,
-                        }}
-                      />
-                    }
-                  >
-                    +
-                  </Button>
+                  {canManage && (
+                    <Button
+                      size='sm'
+                      variant='outline'
+                      nativeButton={false}
+                      render={
+                        <Link
+                          to={{
+                            pathname: kind + '/new',
+                            search: location.search,
+                          }}
+                        />
+                      }
+                    >
+                      {t('equipment.createAction')}
+                    </Button>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -79,17 +87,20 @@ export default function ReferenceData() {
                     {
                       accessorKey: 'name',
                       header: t('equipment.fields.name'),
-                      cell: ({ row }) => (
-                        <Link
-                          className='text-primary hover:underline'
-                          to={{
-                            pathname: kind + '/' + row.original.id,
-                            search: location.search,
-                          }}
-                        >
-                          {row.original.name}
-                        </Link>
-                      ),
+                      cell: ({ row }) =>
+                        canManage ? (
+                          <Link
+                            className='text-primary hover:underline'
+                            to={{
+                              pathname: kind + '/' + row.original.id,
+                              search: location.search,
+                            }}
+                          >
+                            {row.original.name}
+                          </Link>
+                        ) : (
+                          row.original.name
+                        ),
                     },
                     { accessorKey: 'code', header: t('equipment.fields.code') },
                   ]}
@@ -106,9 +117,28 @@ export default function ReferenceData() {
 export function ReferenceForm() {
   const { kind = '', refId = '' } = useParams();
   const refs = useReferences();
+  const caps = useCapabilities();
+  const canManage = !!caps.data?.data['reference.manage'];
   const row = refs.data?.data[kind]?.find((r) => r.id === refId);
-  if (refs.isPending) return <LoadState loading />;
+  if (refs.isPending || caps.isPending) return <LoadState loading />;
+  if (refs.error || caps.error)
+    return (
+      <LoadState
+        error={refs.error || caps.error}
+        retry={() => void refs.refetch()}
+      />
+    );
+  if (!canManage || !kinds.includes(kind) || (refId && !row))
+    return <ReferenceUnavailable />;
   return <Editor key={kind + refId} row={row} kind={kind} />;
+}
+function ReferenceUnavailable() {
+  const { t } = useTranslation();
+  return (
+    <RouteDialog title={t('equipment.missing')} closeTo='..'>
+      <p>{t('equipment.forbidden')}</p>
+    </RouteDialog>
+  );
 }
 function Editor({ row, kind }: { row?: Row; kind: string }) {
   const { t } = useTranslation();
@@ -124,15 +154,15 @@ function Editor({ row, kind }: { row?: Row; kind: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const guard = useFormGuard(dirty, busy);
-  async function submit(e: FormEvent) {
-    e.preventDefault();
+  async function submit(e?: FormEvent, remove = false) {
+    e?.preventDefault();
     setBusy(true);
     setError(undefined);
     try {
       await write(
         'reference/' + kind + (row ? '/' + row.id : ''),
-        deleting ? undefined : values,
-        deleting ? 'DELETE' : row ? 'PATCH' : 'POST',
+        remove ? undefined : values,
+        remove ? 'DELETE' : row ? 'PATCH' : 'POST',
       );
       guard.allowLeave();
       toast.add({
@@ -187,17 +217,17 @@ function Editor({ row, kind }: { row?: Row; kind: string }) {
           <Button
             type='submit'
             form='equipment-reference-form'
-            variant={deleting ? 'destructive' : 'default'}
+            variant='default'
             disabled={busy}
           >
-            {t('equipment.' + (deleting ? 'confirm' : 'save'))}
+            {busy ? t('settings.saving') : t('equipment.save')}
           </Button>
         </>
       }
     >
       <form
         id='equipment-reference-form'
-        className='space-y-4'
+        className='flex flex-col gap-4'
         onSubmit={(e) => void submit(e)}
       >
         <ErrorNotice error={error} />
@@ -211,12 +241,25 @@ function Editor({ row, kind }: { row?: Row; kind: string }) {
             values={values}
             setValue={(k, v) => {
               setDirty(true);
+              setError(undefined);
               setValues((old) => ({ ...old, [k]: v }));
             }}
             disabled={busy}
           />
         )}
       </form>
+      <ConfirmAction
+        open={deleting}
+        title={t('equipment.confirmTitle', {
+          action: t('equipment.delete'),
+          name: row?.name,
+        })}
+        description={t('equipment.deleteWarning')}
+        busy={busy}
+        error={<ErrorNotice error={error} />}
+        onCancel={() => setDeleting(false)}
+        onConfirm={() => void submit(undefined, true)}
+      />
       {guard.guard}
     </RouteDialog>
   );

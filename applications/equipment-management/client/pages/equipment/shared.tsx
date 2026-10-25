@@ -1,3 +1,8 @@
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '#components/ui/tooltip';
 import { invalidFields } from './validation.js';
 import { EquipmentPicker } from './equipment-picker.js';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
@@ -6,7 +11,7 @@ import { Link, useNavigate } from 'react-router';
 import { ApiClientError } from '@nocobase/app-client';
 
 import { useTranslation } from '@nocobase/i18n/client';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, PackageOpen, X, RefreshCw } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import { Badge } from '#components/ui/badge';
 import { Input } from '#components/ui/input';
@@ -30,6 +35,7 @@ import { Skeleton } from '#components/ui/skeleton';
 import {
   Empty,
   EmptyTitle,
+  EmptyMedia,
   EmptyDescription,
   EmptyContent,
 } from '#components/ui/empty';
@@ -130,7 +136,10 @@ export function LoadState({
   }
   if (empty)
     return (
-      <Empty>
+      <Empty className='min-h-64 border border-dashed'>
+        <EmptyMedia variant='icon'>
+          <PackageOpen aria-hidden />
+        </EmptyMedia>
         <EmptyTitle>{t('equipment.empty')}</EmptyTitle>
         <EmptyDescription>{t('equipment.scopeHint')}</EmptyDescription>
         <EmptyContent>{action}</EmptyContent>
@@ -195,10 +204,10 @@ export function Choice({
       >
         <SelectValue placeholder={t('equipment.select')} />
       </SelectTrigger>
-      <SelectContent className='min-w-(--anchor-width)'>
+      <SelectContent className='w-max min-w-(--anchor-width) max-w-(--available-width)'>
         {options.map((o) => (
           <SelectItem
-            className='whitespace-normal'
+            className='whitespace-normal [&_[data-slot=select-item-text]]:whitespace-normal [&_[data-slot=select-item-text]]:break-words'
             key={o.value}
             value={o.value}
           >
@@ -306,9 +315,10 @@ export function FormFields({
                 variant='ghost'
                 disabled={disabled || !values[f.key]}
                 aria-label={t('equipment.clear')}
+                title={t('equipment.clear')}
                 onClick={() => setValue(f.key, '')}
               >
-                ×
+                <X aria-hidden className='size-4' />
               </Button>
             </div>
           ) : f.type === 'textarea' ? (
@@ -387,5 +397,36 @@ export function SearchBox({
       }}
       onChange={(e) => setDraft(e.target.value)}
     />
+  );
+}
+
+export function RefreshButton({
+  busy,
+  onClick,
+}: {
+  busy: boolean;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            variant='outline'
+            size='icon'
+            aria-label={t('equipment.refresh')}
+            disabled={busy}
+            onClick={onClick}
+          />
+        }
+      >
+        <RefreshCw
+          aria-hidden
+          className={busy ? 'size-4 animate-spin' : 'size-4'}
+        />
+      </TooltipTrigger>
+      <TooltipContent>{t('equipment.refresh')}</TooltipContent>
+    </Tooltip>
   );
 }
