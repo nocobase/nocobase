@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.7
+
+### Patch Changes
+
+- 9de4995: Keep observed statistics visible when registered extensions await recognition. Show identified tables and counted results without asserting business ownership or exhaustive coverage, omit metrics without a reliable value, and preserve real zero, dated history and genuine read failures.
+
 ## 0.1.0-beta.6
 
 ### Patch Changes
