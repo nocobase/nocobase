@@ -17,6 +17,7 @@ import PluginWorkflowServer, {
   JOB_STATUS,
   type JobModel,
   type Processor,
+  sanitizeWorkflowTaskReadParams,
 } from '@nocobase/plugin-workflow';
 
 import ManualInstruction, { type ManualConfig } from './ManualInstruction';
@@ -277,7 +278,16 @@ export async function submit(context: Context, next) {
   plugin.resume(task.job).catch(() => undefined);
 }
 
+export async function get(context: Context, next) {
+  sanitizeWorkflowTaskReadParams(context);
+  context.action.mergeParams({
+    filter: { userId: context.state.currentUser.id },
+  });
+  return actions.get(context, next);
+}
+
 export async function listMine(context: Context, next) {
+  sanitizeWorkflowTaskReadParams(context);
   context.action.mergeParams({
     filter: {
       $and: [
