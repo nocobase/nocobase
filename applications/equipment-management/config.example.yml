@@ -1,0 +1,210 @@
+# Copy this file to config.yml before starting the application.
+
+# app:
+#   Public origin used for callbacks and redirects in production.
+#   publicOrigin: https://apps.example.com
+
+# The language the application starts in, for the browser and the server alike. Which languages it offers follows
+# from the files in client/locales and server/locales, not from configuration.
+# i18n:
+#   defaultLocale: zh-CN
+
+# Limits every /api request meets before its route, each off until set. bodyLimit refuses a larger body with 413
+# BODY_TOO_LARGE; a route may set its own, usually smaller, limit. timeout answers 503 REQUEST_TIMEOUT when a handler
+# has not produced its response in time; a streaming response that has started is not cut off. rateLimit allows max
+# requests per window from each client address and answers 429 RATE_LIMITED with Retry-After; GET /api/healthz is
+# exempt. Counters live in each process, so every instance counts on its own, and behind a reverse proxy the proxy is
+# the client address. API_BODY_LIMIT and API_TIMEOUT set the first two.
+# api:
+#   bodyLimit: 10mb
+#   timeout: 30s
+#   rateLimit:
+#     max: 600
+#     window: 1m
+
+# Realtime events are transient and local to this process. Clients refetch after subscription acknowledgement.
+# realtime:
+#   adapter: inMemory # Use redis for multiple application processes.
+#   redis:
+#     connection:
+#       host: 127.0.0.1
+#       port: 6379
+#   namespace: my-app # Defaults to the application name; keep applications isolated.
+#   authorizationTimeoutMs: 5000
+#   sessionCheckIntervalMs: 30000
+#   limits:
+#     maxConcurrentAuthorizations: 256
+#     maxPendingAuthorizations: 2048
+#     maxRecentEventIds: 10000
+#     maxConnections: 10000
+#     maxMessageBytes: 65536
+#     maxSubscriptionsPerConnection: 64
+#     maxBufferedBytesPerConnection: 1048576
+#     maxPendingMessagesPerConnection: 64
+
+# Values under client are public and embedded in the SPA HTML.
+client:
+  app:
+    title: NocoBase
+    # Defaults apply only when no valid browser-local choice is saved.
+    # defaultColorScheme: system # light | dark | system
+    # defaultTheme: compact # ID from client/theme/theme-presets.ts
+
+users:
+  # The first administrator, created only when seeding an empty user table. Changing these values later does not
+  # reset an existing account. Replace the password before exposing the application. INITIAL_ADMIN_USERNAME,
+  # INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD set them from the environment instead.
+  initialAdmin:
+    username: nocobase # 3–30 letters, digits, underscores or dots; stored lowercase
+    email: admin@nocobase.com # stored lowercase; also signs in
+    password: admin123
+
+# Master keys for what the application encrypts at rest — stored credentials and API keys, OAuth tokens — and from
+# which the sign-in and session keys are derived. The first key is current; the others only decrypt. To rotate, put a
+# new key first with a higher version, run `pnpm nocobase secrets rotate`, then remove the old key. Changing the current
+# key signs everyone out. Generate a key with: openssl rand -hex 32. SECRETS_KEYS=2:<key>,1:<key> sets the list from
+# the environment instead.
+secrets:
+  keys:
+    - version: 1
+      key: replace-with-a-unique-secret
+
+auth:
+  emailAndPassword:
+    enabled: true
+    autoSignIn: false
+  session:
+    storeSessionInDatabase: true
+
+notification:
+  # provider remains a compatibility alias for type; both must match when supplied.
+  channels:
+    inbox:
+      type: in-app
+
+    # Uncomment and configure independent email Channels.
+    # Values are read as written: ${NAME} is not expanded. To take a secret from the environment instead, map a
+    # variable onto its path in env of server/config/notification.ts, such as SMTP_PASSWORD.
+    # system-email:
+    #   type: smtp
+    #   host: smtp.example.com
+    #   port: 587
+    #   auth:
+    #     user: notifications@example.com
+    #     pass: replace-with-the-smtp-password
+    #   from: notifications@example.com
+    # marketing-email:
+    #   type: resend
+    #   apiKey: replace-with-the-resend-api-key
+    #   from: marketing@example.com
+
+    # ops-feishu:
+    #   type: feishu-webhook
+    #   webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
+    # ops-dingtalk:
+    #   type: dingtalk-webhook
+    #   webhookUrl: https://oapi.dingtalk.com/robot/send?access_token=replace-with-the-token
+
+# DB_DIALECT, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_SSL and DB_FILENAME override the main
+# connection's fields from the environment.
+database:
+  default: main
+  connections:
+    main:
+      dialect: sqlite
+      database: database.sqlite
+      debug: false
+      # For Oracle, use dialect: oracle and replace database with serviceName: FREEPDB1.
+      # For SQL Server, use dialect: mssql and configure encrypt and trustServerCertificate.
+      schemaManagement: managed
+      migrations:
+        autoRun: true
+      seeds:
+        autoRun: true
+    # Additional managed databases use database/<connectionName>/{migrations,seeds}.
+    # analytics:
+    #   dialect: postgres
+    #   host: localhost
+    #   database: analytics
+    #   username: postgres
+    #   password: replace-with-the-password # or DB_ANALYTICS_PASSWORD, declared with connectionEnvironment('analytics', 'DB_ANALYTICS')
+    #   schemaManagement: managed
+    #   migrations:
+    #     autoRun: false
+    #   seeds:
+    #     autoRun: false
+    # An existing database another system owns sets schemaManagement: external and runs no tasks. Its titles,
+    # descriptions and relations are read from database/<connection>/metadata/<name>.json unless metadataStore says otherwise.
+
+snowflake:
+  # Assign a unique worker ID to each concurrently running instance.
+  workerId: 0
+  epoch: 1605024000
+
+# Scheduled jobs, such as the Scheduler plugin's. Without jobs.default they run on the built-in memory adapter:
+# state kept in the process, read from storage/jobs at startup and written back when the application stops, so a
+# process that is killed loses what changed since it started. It serves one process: every other process or instance
+# would run its own copy. Set default to memory to keep that without the startup warning, or to redis to run several.
+# Redis must persist its data (AOF or RDB) and use maxmemory-policy noeviction, or schedules can be lost.
+# jobs:
+#   default: redis
+#   redis:
+#     connection:
+#       host: 127.0.0.1
+#       port: 6379
+#     # namespace: my-app # defaults to the application name; set it when deployments share one Redis
+
+# The jobs configuration the Scheduler plugin's schedules run on, by name. Left out, they follow jobs.default.
+# scheduler:
+#   jobs: redis
+
+# Knowledge owns one global index shared by all spaces; these are server-only instance definitions.
+# Declaring instances does not enable indexing. Select an instance and Embedding model in Knowledge's
+# global index dialog, then explicitly confirm the all-space rebuild and possible model charges.
+# Agents supplies Embedding models only; its vector collections are not used.
+# knowledge:
+#   # Optional: select an existing host jobs configuration by name; omitted follows jobs.default.
+#   # jobs: redis
+#   indexing:
+#     local:
+#       name: Local semantic index
+#       type: sqlite-vec
+#       # Relative to application storage; use one shared file on one host, not separate pod-local files.
+#       file: knowledge/vectors.sqlite
+#     shared:
+#       name: Shared PostgreSQL index
+#       type: pgvector
+#       # Supply real credentials privately. An administrator must install vector and create this schema.
+#       url: postgresql://kb_user:replace-with-the-password@127.0.0.1:5432/knowledge
+#       schema: knowledge_index
+#       # Deployment-owned generation table prefix (default: knowledge); not a page setting.
+#       table: knowledge
+#       # Optional TLS settings; ca/cert/key are PEM contents, not file paths.
+#       # ssl:
+#       #   rejectUnauthorized: true
+#       #   ca: replace-with-the-ca-pem
+#       #   cert: replace-with-the-client-certificate-pem
+#       #   key: replace-with-the-client-private-key-pem
+
+# Mail is registered by default. Configure mailbox provider instances before connecting accounts.
+# See .agents/skills/nocobase-app-plugin-mail/references/configuration-and-accounts.md.
+mail:
+  providers: {}
+
+# File logging is independent of terminal formatting.
+logging:
+  level: info
+  file:
+    enabled: true
+    retentionDays: 7
+    name: app
+    maxFileSizeMB: 10
+    maxTotalSizeMB: 500
+  loggers:
+    request:
+      file:
+        name: request
+  console:
+    enabled: true
+    # Set true for human-readable terminal output.
+    pretty: false
