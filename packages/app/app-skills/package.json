@@ -11,10 +11,10 @@
   "prettier": "@nocobase/dev-config/prettier",
   "files": [
     "skills",
-    "!skills/**/node_modules",
-    "!skills/**/storage",
-    "!skills/**/dist",
-    "!skills/**/coverage"
+    "!skills/nocobase-app-plugin-development/**/node_modules",
+    "!skills/nocobase-app-plugin-development/**/storage",
+    "!skills/nocobase-app-plugin-development/**/dist",
+    "!skills/nocobase-app-plugin-development/**/coverage"
   ],
   "publishConfig": {
     "access": "public"

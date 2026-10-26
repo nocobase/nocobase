@@ -116,6 +116,41 @@ describe('pluginSkillPrefix', () => {
 });
 
 describe('skills synchronization', () => {
+  it('replaces a project link with a real copy without altering the identical global target', async () => {
+    const name = 'nocobase-app-plugin-development';
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      dependencies: { '@nocobase/app-skills': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/app-skills', {
+      [name]: '# complete guide',
+    });
+    const globalRoot = await mkdtemp(
+      path.join(os.tmpdir(), 'nb3-global-skill-'),
+    );
+    created.push(globalRoot);
+    await writeFile(path.join(globalRoot, 'SKILL.md'), '# complete guide');
+    const target = path.join(appRoot, '.agents/skills', name);
+    await mkdir(path.dirname(target), { recursive: true });
+    await symlink(globalRoot, target, 'dir');
+    await syncApp(appRoot);
+    expect((await lstat(target)).isDirectory()).toBe(true);
+    expect((await lstat(target)).isSymbolicLink()).toBe(false);
+    expect(await readFile(path.join(globalRoot, 'SKILL.md'), 'utf8')).toBe(
+      '# complete guide',
+    );
+    await rm(globalRoot, { recursive: true });
+    expect(await readFile(path.join(target, 'SKILL.md'), 'utf8')).toBe(
+      '# complete guide',
+    );
+    expect(
+      await readFile(
+        path.join(appRoot, '.claude/skills', name, 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# complete guide');
+  });
+
   it('syncs, upgrades and removes the shared plugin development Skill with package ownership', async () => {
     const name = 'nocobase-app-plugin-development';
     const appRoot = await createApp();

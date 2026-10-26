@@ -318,6 +318,13 @@ export async function applySkillsSync(
 
 /** Whether a skill's target holds exactly its source's files, byte for byte, and nothing else. */
 async function isSameSkill(copy: SkillCopy): Promise<boolean> {
+  // Project output must be a real copy, not a link into a global installation that an upgrade may retire.
+  try {
+    if (!(await lstat(copy.targetPath)).isDirectory()) return false;
+  } catch (error) {
+    if (isNodeError(error, 'ENOENT')) return false;
+    throw error;
+  }
   const targetFiles = await listFiles(copy.targetPath);
   if (
     targetFiles.length !== copy.files.length ||
