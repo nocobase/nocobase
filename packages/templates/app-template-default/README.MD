@@ -441,3 +441,7 @@ MIT
 ## Strict startup verification
 
 Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in automated verification. Startup failures, including job import failures, exit nonzero after resource cleanup. Strict dev runs the server without watch mode so a failed server cannot remain hidden behind a watcher; restart the command after server or configuration changes. Client HMR remains available. Omit the variable or set it to `false` for normal development with server hot reload. Request errors and individual job execution failures do not terminate the application.
+
+## Internal workspace packages
+
+The application can also be the root of a pnpm workspace, with internal packages under `packages/*` and the existing `client/`, `server/` and `database/` directories unchanged. New projects receive this workspace pattern automatically. Internal packages use `workspace:*` dependencies and may remain private. Run installation, development and deployment builds from the application root; `pnpm check` includes the internal packages' own checks. See [internal packages](.agents/rules/workspace.md) for configuration and development conventions.

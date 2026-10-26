@@ -234,11 +234,11 @@ describe('build pipeline hook stages', () => {
       expect(result.status).toBe(0);
       expect(commands).toEqual([
         'pnpm demo before',
+        'pnpm --filter fixture-app^... build',
         'pnpm exec tsc',
         'pnpm exec tsc -p tsconfig.node.json',
         'pnpm exec vite build',
         'pnpm demo after-client',
-        'pnpm --filter fixture-app^... build',
         'pnpm exec tsc -p tsconfig.server.json',
         'pnpm exec tsc-alias -p tsconfig.server.json',
         'node after-server.mjs',
