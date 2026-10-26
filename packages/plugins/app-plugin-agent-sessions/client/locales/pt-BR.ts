@@ -186,6 +186,11 @@ const ptBR: LocaleResource<typeof enUS> = {
     recordBody: 'O registro completo é mantido aqui e só você pode vê-lo.',
   },
   composer: {
+    stopping: 'Parando…',
+    stopUnconfirmed: 'A parada não foi confirmada. Tente novamente.',
+    held: 'Envie primeiro as entradas pendentes acima uma por vez.',
+    previousAttempt: 'Tentativa anterior',
+    newAttempt: 'Nova tentativa',
     unconfirmed:
       'A entrega não foi confirmada. Tente novamente o envio original ou edite como uma nova mensagem (a original pode já ter chegado).',
     retrySubmission: 'Tentar novamente o envio original',
@@ -213,7 +218,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       send: 'enviar',
       queue: 'enviar após este turno',
       newline: 'nova linha',
-      interrupt: 'pare este turno e envie agora',
+      interrupt: 'parar este turno',
     },
   },
   choices: {

@@ -25,7 +25,13 @@ import {
   WrenchIcon,
   XIcon,
 } from 'lucide-react';
-import { Fragment, useRef, useState, type ReactElement } from 'react';
+import {
+  Fragment,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { Link } from 'react-router';
 
 import { MarkdownView } from './markdown-view.js';
@@ -55,6 +61,10 @@ import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 
 export interface TranscriptActions {
+  readonly editor?: { readonly key: string; readonly node: ReactNode };
+  readonly canEdit?: (
+    item: Extract<TranscriptItem, { type: 'prompt' }>,
+  ) => boolean;
   readonly withdraw?: (seq: number) => Promise<void>;
   readonly edit?: (item: Extract<TranscriptItem, { type: 'prompt' }>) => void;
   readonly answer: (requestId: string, optionId: string | null) => void;
@@ -98,13 +108,17 @@ export function TranscriptView({
     <ol className='flex flex-col gap-4'>
       {items.map((item) => (
         <li key={item.key}>
-          <Item
-            item={item}
-            session={session}
-            agentName={agentName}
-            writable={writable}
-            actions={actions}
-          />
+          {actions.editor?.key === item.key ? (
+            actions.editor.node
+          ) : (
+            <Item
+              item={item}
+              session={session}
+              agentName={agentName}
+              writable={writable}
+              actions={actions}
+            />
+          )}
         </li>
       ))}
       <li ref={endRef} aria-hidden className='h-px' />
@@ -131,6 +145,15 @@ function Item({
     case 'prompt':
       return (
         <div className='ml-auto flex max-w-[82%] flex-col items-end gap-1'>
+          {(item.superseded || item.retryOfPromptId) && (
+            <span className='text-muted-foreground text-xs'>
+              {t(
+                item.superseded
+                  ? 'composer.previousAttempt'
+                  : 'composer.newAttempt',
+              )}
+            </span>
+          )}
           {item.images.length > 0 && (
             <div className='flex flex-wrap justify-end gap-2'>
               {item.images.map((image) => (
@@ -177,36 +200,39 @@ function Item({
                 {t('transcript.prompt.unsupported')}
               </span>
             ))}
-          {item.state === 'withdrawn' && (
-            <div className='flex gap-2'>
-              {item.text && (
-                <Button
-                  size='xs'
-                  variant='ghost'
-                  onClick={() =>
-                    void copyText(item.text).then((copied) => {
-                      if (!copied)
-                        toaster.show({
-                          type: 'error',
-                          title: t('errors.copy'),
-                        });
-                    })
-                  }
-                >
-                  {t('transcript.prompt.copy')}
-                </Button>
-              )}
-              {actions.edit && session.archivedAt === null && (
-                <Button
-                  size='xs'
-                  variant='ghost'
-                  onClick={() => actions.edit?.(item)}
-                >
-                  {t('transcript.prompt.edit')}
-                </Button>
-              )}
-            </div>
-          )}
+          {(item.state === 'withdrawn' || item.state === 'cancelled') &&
+            !item.superseded && (
+              <div className='flex gap-2'>
+                {item.text && (
+                  <Button
+                    size='xs'
+                    variant='ghost'
+                    onClick={() =>
+                      void copyText(item.text).then((copied) => {
+                        if (!copied)
+                          toaster.show({
+                            type: 'error',
+                            title: t('errors.copy'),
+                          });
+                      })
+                    }
+                  >
+                    {t('transcript.prompt.copy')}
+                  </Button>
+                )}
+                {actions.edit &&
+                  session.archivedAt === null &&
+                  (actions.canEdit?.(item) ?? true) && (
+                    <Button
+                      size='xs'
+                      variant='ghost'
+                      onClick={() => actions.edit?.(item)}
+                    >
+                      {t('transcript.prompt.edit')}
+                    </Button>
+                  )}
+              </div>
+            )}
         </div>
       );
     case 'message':

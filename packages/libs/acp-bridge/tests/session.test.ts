@@ -467,29 +467,29 @@ describe('BridgeSession', () => {
     );
   });
 
-  it('cancels the running turn and drops the prompts waiting behind it', async () => {
+  it('cancels only the selected turn and preserves other queued prompts', async () => {
     const { session, events, target } = start();
     prompt(session, target, 'p1', 'hang');
     prompt(session, target, 'p2', 'hi');
     await until(events, (event) => event.kind === 'turnStarted');
     await new Promise((resolve) => setTimeout(resolve, 200));
-    session.handle({ type: 'cancel', session: target });
+    session.handle({ type: 'cancel', session: target, promptId: 'p1' });
 
     expect(await until(events, ended('p2'))).toMatchObject({
-      stopReason: 'cancelled',
+      stopReason: 'end_turn',
     });
     expect(await until(events, ended('p1'))).toMatchObject({
       stopReason: 'cancelled',
     });
     expect(events.filter((event) => event.kind === 'turnStarted')).toHaveLength(
-      1,
+      2,
     );
   });
 
   it('cancels a turn whose agent is still starting, and answers the next prompt', async () => {
     const { session, events, target } = start();
     prompt(session, target, 'p1', 'hang');
-    session.handle({ type: 'cancel', session: target });
+    session.handle({ type: 'cancel', session: target, promptId: 'p1' });
 
     expect(await until(events, ended('p1'))).toMatchObject({
       stopReason: 'cancelled',

@@ -181,6 +181,11 @@ const viVN: LocaleResource<typeof enUS> = {
       'Bản ghi đầy đủ được lưu giữ ở đây và chỉ bạn mới có thể xem được.',
   },
   composer: {
+    stopping: 'Đang dừng…',
+    stopUnconfirmed: 'Chưa xác nhận dừng. Hãy thử lại.',
+    held: 'Gửi từng nội dung đang chờ ở trên trước khi gửi tin nhắn mới.',
+    previousAttempt: 'Lần thử trước',
+    newAttempt: 'Lần thử mới',
     unconfirmed:
       'Việc giao hàng chưa được xác nhận. Hãy thử gửi lại bản gốc hoặc chỉnh sửa dưới dạng tin nhắn mới (bản gốc có thể đã được gửi đến).',
     retrySubmission: 'Thử gửi lại bản gốc',
@@ -207,7 +212,7 @@ const viVN: LocaleResource<typeof enUS> = {
       send: 'gửi',
       queue: 'gửi sau lượt này',
       newline: 'dòng mới',
-      interrupt: 'dừng lượt này và gửi ngay',
+      interrupt: 'dừng lượt này',
     },
   },
   choices: {

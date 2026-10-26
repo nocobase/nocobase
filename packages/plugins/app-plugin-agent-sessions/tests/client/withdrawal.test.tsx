@@ -37,6 +37,7 @@ const session: Session = {
 };
 const prompt: Extract<TranscriptItem, { type: 'prompt' }> = {
   type: 'prompt',
+  promptId: 'original-prompt',
   key: '3',
   at: session.createdAt,
   text: 'Original message',
@@ -184,12 +185,18 @@ describe('withdrawing a queued message', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Edit and send again' }),
     );
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('group', {
+      name: 'Edit and send again',
+    });
     const input = await within(dialog).findByRole('textbox');
     expect(input).toHaveValue('Original message');
     fireEvent.change(input, { target: { value: 'Edited original' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('group', { name: 'Edit and send again' }),
+      ).toBeNull(),
+    );
     expect(screen.getByRole('textbox', { name: 'Current draft' })).toHaveValue(
       'Keep this draft',
     );
@@ -201,6 +208,7 @@ describe('withdrawing a queued message', () => {
         { type: 'image', mimeType: 'image/png', data: 'aGVsbG8=' },
       ],
       submissionId: expect.any(String),
+      retryOfPromptId: prompt.promptId,
     });
   });
 });

@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
   errors: {
+    retryUnavailable:
+      'Envía las entradas pendientes en orden. Solo se puede reenviar la última entrada interrumpida o la siguiente retirada.',
+    stopTargetChanged:
+      'El turno actual ha cambiado. Actualiza antes de detenerlo.',
     promptNotFound: 'No existe ningún mensaje con esta identidad en la sesión.',
     promptStarted:
       'El mensaje ha comenzado a procesarse y no se puede retirar.',

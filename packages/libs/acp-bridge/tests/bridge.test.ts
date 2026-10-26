@@ -733,7 +733,7 @@ describe('runBridge', () => {
           .every((entry) => !entry.process.alive),
       ).toBe(true);
       expect(active.alive).toBe(true);
-      commands.push({ type: 'cancel', session });
+      commands.push({ type: 'cancel', session, promptId: 'p1' });
       await until(() =>
         seen.some(
           (request) =>

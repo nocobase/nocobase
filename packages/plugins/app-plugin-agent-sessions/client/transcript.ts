@@ -60,6 +60,9 @@ export type TranscriptItem =
       })[];
       readonly state: PromptState;
       readonly withdrawable: boolean;
+      readonly promptId: string;
+      readonly retryOfPromptId?: string | undefined;
+      readonly superseded?: boolean;
     }
   | { readonly type: 'message'; readonly key: string; readonly text: string }
   | { readonly type: 'thought'; readonly key: string; readonly text: string }
@@ -109,6 +112,31 @@ export type TranscriptItem =
     };
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
+
+export function editablePrompts(
+  items: readonly TranscriptItem[],
+): ReadonlySet<string> {
+  const prompts = items.filter((item) => item.type === 'prompt');
+  if (
+    prompts.some(
+      (item) =>
+        item.state === 'queued' ||
+        item.state === 'running' ||
+        item.state === 'withdrawing',
+    )
+  )
+    return new Set();
+  const last = prompts
+    .filter((item) => ['done', 'failed', 'cancelled'].includes(item.state))
+    .at(-1);
+  const waiting = prompts.find(
+    (item) => item.state === 'withdrawn' && !item.superseded,
+  );
+  return new Set([
+    ...(last?.state === 'cancelled' && !last.superseded ? [last.promptId] : []),
+    ...(waiting ? [waiting.promptId] : []),
+  ]);
+}
 type Draft = Mutable<TranscriptItem>;
 type Update = Readonly<Record<string, unknown>>;
 
@@ -176,6 +204,8 @@ export function foldTranscript(
             .map((image, index) => ({ ...image, id: `${key}:${index}` })),
           state: 'queued' as PromptState,
           withdrawable: event.withdrawable === true,
+          promptId: event.promptId,
+          retryOfPromptId: event.retryOfPromptId,
         };
         prompts.set(event.promptId, item);
         items.push(item);
@@ -277,7 +307,46 @@ export function foldTranscript(
     }
   }
   flushLinks(events.at(-1)?.seq ?? 0);
-  return items;
+  // Execution events stay with their actual attempt. Retries share the original input's position;
+  // queued inputs therefore never move ahead of the interrupted reply they were waiting behind.
+  const positions = new Map<string, { root: number; attempt: number }>();
+  const owners = new Map<number, { root: number; attempt: number }>();
+  let active: { root: number; attempt: number } | undefined;
+  for (const event of events) {
+    if (event.kind === 'prompt') {
+      const previous =
+        event.retryOfPromptId && positions.get(event.retryOfPromptId);
+      const position = {
+        root: previous ? previous.root : event.seq,
+        attempt: event.seq,
+      };
+      positions.set(event.promptId, position);
+      owners.set(event.seq, position);
+      if (event.retryOfPromptId) {
+        const prior = prompts.get(event.retryOfPromptId);
+        if (prior) prior.superseded = true;
+      }
+    } else {
+      if (event.kind === 'turnStarted') active = positions.get(event.promptId);
+      if (active) owners.set(event.seq, active);
+      if (
+        event.kind === 'turnEnded' &&
+        active === positions.get(event.promptId)
+      )
+        active = undefined;
+    }
+  }
+  const position = (item: Draft): { root: number; attempt: number } => {
+    const seq = Number(
+      item.key.startsWith('links-') ? item.key.split('-')[1] : item.key,
+    );
+    return owners.get(seq) ?? { root: seq, attempt: seq };
+  };
+  return items.sort((left, right) => {
+    const a = position(left),
+      b = position(right);
+    return a.root - b.root || a.attempt - b.attempt;
+  });
 }
 
 /** Folds one ACP update into the items; the id of the message the next piece would continue. */

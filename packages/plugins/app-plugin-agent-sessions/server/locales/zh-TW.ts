@@ -4,6 +4,9 @@ import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
   errors: {
+    retryUnavailable:
+      '請依序傳送待傳送輸入。只能重傳最後一條被中斷的輸入或下一條已撤回的輸入。',
+    stopTargetChanged: '目前回合已變更，請重新整理後再停止。',
     promptNotFound: '會話中不存在具有此標識的訊息。',
     promptStarted: '訊息已開始處理，無法撤回。',
     withdrawalUnsupported:

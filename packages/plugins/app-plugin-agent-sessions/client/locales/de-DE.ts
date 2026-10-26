@@ -182,6 +182,11 @@ const deDE: LocaleResource<typeof enUS> = {
       'Der vollständige Datensatz wird hier aufbewahrt und nur Sie können ihn sehen.',
   },
   composer: {
+    stopping: 'Wird gestoppt…',
+    stopUnconfirmed: 'Stopp nicht bestätigt. Erneut versuchen.',
+    held: 'Senden Sie zuerst die wartenden Eingaben oben einzeln.',
+    previousAttempt: 'Vorheriger Versuch',
+    newAttempt: 'Neuer Versuch',
     unconfirmed:
       'Lieferung ist unbestätigt. Versuchen Sie die ursprüngliche Übermittlung erneut oder bearbeiten Sie sie als neue Nachricht (das Original ist möglicherweise bereits angekommen).',
     retrySubmission: 'Versuchen Sie die ursprüngliche Übermittlung erneut',
@@ -209,7 +214,7 @@ const deDE: LocaleResource<typeof enUS> = {
       send: 'senden',
       queue: 'nach dieser Runde senden',
       newline: 'neue Zeile',
-      interrupt: 'Stoppen Sie diesen Zug und senden Sie jetzt',
+      interrupt: 'diesen Zug stoppen',
     },
   },
   choices: {

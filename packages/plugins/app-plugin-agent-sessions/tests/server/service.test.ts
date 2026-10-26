@@ -649,6 +649,18 @@ describe('AgentSessionsService', () => {
   }) => {
     const { service, started, take } = setup(database);
     const { computerId, session } = await started();
+    const first = (
+      await service.listEvents('u1', session.id, { after: 0, limit: 10 })
+    )[0]!;
+    if (first.kind !== 'prompt') throw new Error('Expected prompt');
+    await service.claim('u1', {
+      computerId,
+      sessionId: session.id,
+      seq: first.seq,
+      promptId: first.promptId,
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      bridgeStartedAt: 'bridge-1',
+    });
     await take(computerId);
     const waiting = service.poll(
       'u1',
@@ -660,7 +672,7 @@ describe('AgentSessionsService', () => {
       },
       signal,
     );
-    setTimeout(() => void service.cancel('u1', session.id), 50);
+    setTimeout(() => void service.cancel('u1', session.id, first.promptId), 50);
     const before = Date.now();
     await expect(waiting).resolves.toMatchObject({
       commands: [{ type: 'cancel' }],

@@ -15,13 +15,6 @@ import { errorText } from '../lib/errors.js';
 import { Composer } from './composer.js';
 import { SubmissionNotice } from './submission-notice.js';
 import { Button } from './ui/button.js';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from './ui/dialog.js';
 
 /** A separate composer instance never reads or writes the session's current draft. */
 export function WithdrawnEditor({
@@ -42,7 +35,9 @@ export function WithdrawnEditor({
   const submission = useSubmission<{
     content: PromptContent[];
     mentions: Mention[];
-  }>(draftKey, draftKey, (input) => prompt.mutateAsync(input));
+  }>(draftKey, draftKey, (input) =>
+    prompt.mutateAsync({ ...input, retryOfPromptId: item.promptId }),
+  );
   const content = useQuery({
     queryKey: ['agentSessions', 'reedit', draftKey],
     retry: false,
@@ -79,60 +74,67 @@ export function WithdrawnEditor({
     ],
   });
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) close();
+    <div
+      role='group'
+      aria-label={t('transcript.prompt.edit')}
+      data-session-editor
+      className='rounded-lg border p-3'
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && !event.defaultPrevented) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!prompt.isPending && !submission.pending) close();
+        }
       }}
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('transcript.prompt.edit')}</DialogTitle>
-          <DialogDescription>
-            {t('transcript.prompt.editBody')}
-          </DialogDescription>
-        </DialogHeader>
-        {content.isError ? (
-          <div role='alert'>
-            <p>{t('transcript.prompt.attachmentError')}</p>
-            <Button variant='outline' onClick={() => void content.refetch()}>
-              {t('transcript.prompt.retry')}
-            </Button>
-          </div>
-        ) : content.data ? (
-          <>
-            <SubmissionNotice
-              pending={submission.pending}
-              sending={prompt.isPending}
-              retry={submission.retry}
-              edit={submission.edit}
-            />
-            <Composer
-              placeholder={t('composer.placeholder')}
-              initialContent={content.data}
-              draftKey={draftKey}
-              disabled={submission.pending}
-              sendDisabled={!session.computerOnline}
-              sending={prompt.isPending}
-              mentions={{ projectId: session.project?.id ?? null }}
-              onSend={async (parts, _interrupt, mentions) => {
-                try {
-                  await submission.send({ content: parts, mentions });
-                  close();
-                } catch (error) {
-                  void toaster.show({
-                    type: 'error',
-                    title: errorText(error, t('errors.generic')),
-                  });
-                  throw error;
-                }
-              }}
-            />
-          </>
-        ) : (
-          <p role='status'>{t('transcript.prompt.loading')}</p>
-        )}
-      </DialogContent>
-    </Dialog>
+      <p className='mb-2 text-sm'>{t('transcript.prompt.editBody')}</p>
+      {content.isError ? (
+        <div role='alert'>
+          <p>{t('transcript.prompt.attachmentError')}</p>
+          <Button variant='outline' onClick={() => void content.refetch()}>
+            {t('transcript.prompt.retry')}
+          </Button>
+        </div>
+      ) : content.data ? (
+        <>
+          <SubmissionNotice
+            pending={submission.pending}
+            sending={prompt.isPending}
+            retry={submission.retry}
+            edit={submission.edit}
+          />
+          <Composer
+            placeholder={t('composer.placeholder')}
+            initialContent={content.data}
+            draftKey={draftKey}
+            disabled={submission.pending}
+            sendDisabled={!session.computerOnline}
+            sending={prompt.isPending}
+            mentions={{ projectId: session.project?.id ?? null }}
+            onSend={async (parts, _interrupt, mentions) => {
+              try {
+                await submission.send({ content: parts, mentions });
+                close();
+              } catch (error) {
+                void toaster.show({
+                  type: 'error',
+                  title: errorText(error, t('errors.generic')),
+                });
+                throw error;
+              }
+            }}
+          />
+        </>
+      ) : (
+        <p role='status'>{t('transcript.prompt.loading')}</p>
+      )}
+      <Button
+        variant='ghost'
+        disabled={prompt.isPending || submission.pending}
+        onClick={close}
+      >
+        {t('actions.cancel')}
+      </Button>
+    </div>
   );
 }

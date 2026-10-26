@@ -292,7 +292,12 @@ export async function readEvents(
 
 /** Internal submission metadata never enters public transcripts or bridge commands. */
 export function eventView(row: EventRecord): TranscriptEvent {
-  const { _submission: _internal, _execution: _decision, ...data } = row.data;
+  const {
+    _submission: _internal,
+    _execution: _decision,
+    _stopRequested: _stop,
+    ...data
+  } = row.data;
   return {
     ...data,
     kind: row.kind,

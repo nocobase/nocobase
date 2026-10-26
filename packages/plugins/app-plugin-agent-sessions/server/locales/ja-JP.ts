@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
   errors: {
+    retryUnavailable:
+      '待機中の入力を順番に送信してください。最後に中断した入力または次の撤回済み入力だけを再送信できます。',
+    stopTargetChanged:
+      '現在のターンが変わりました。更新してから停止してください。',
     promptNotFound: 'この ID を持つメッセージはセッション内に存在しません。',
     promptStarted:
       'メッセージの処理が開始されたため、取り消すことができません。',

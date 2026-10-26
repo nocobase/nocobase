@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
   errors: {
+    retryUnavailable:
+      'Senden Sie wartende Eingaben der Reihe nach. Nur die letzte unterbrochene oder die nächste zurückgezogene Eingabe kann erneut gesendet werden.',
+    stopTargetChanged:
+      'Der aktuelle Zug hat sich geändert. Aktualisieren Sie vor dem Stoppen.',
     promptNotFound:
       'In der Sitzung ist keine Nachricht mit dieser Identität vorhanden.',
     promptStarted:

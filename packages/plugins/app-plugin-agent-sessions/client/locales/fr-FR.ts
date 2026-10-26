@@ -188,6 +188,11 @@ const frFR: LocaleResource<typeof enUS> = {
       'Le dossier complet est conservé ici et vous seul pouvez le voir.',
   },
   composer: {
+    stopping: 'Arrêt en cours…',
+    stopUnconfirmed: 'Arrêt non confirmé. Réessayez.',
+    held: 'Envoyez d’abord les saisies en attente ci-dessus une par une.',
+    previousAttempt: 'Tentative précédente',
+    newAttempt: 'Nouvelle tentative',
     unconfirmed:
       "La livraison n'est pas confirmée. Réessayez l'envoi d'origine ou modifiez-le en tant que nouveau message (l'original est peut-être déjà arrivé).",
     retrySubmission: 'Réessayer la soumission originale',
@@ -215,7 +220,7 @@ const frFR: LocaleResource<typeof enUS> = {
       send: 'envoyer',
       queue: 'envoyer après ce tour',
       newline: 'nouvelle ligne',
-      interrupt: 'arrête ce tour et envoie maintenant',
+      interrupt: 'arrêter ce tour',
     },
   },
   choices: {

@@ -4,6 +4,9 @@ import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   errors: {
+    retryUnavailable:
+      'Gửi các nội dung đang chờ theo thứ tự. Chỉ có thể gửi lại nội dung bị gián đoạn cuối cùng hoặc nội dung đã rút tiếp theo.',
+    stopTargetChanged: 'Lượt hiện tại đã thay đổi. Hãy làm mới trước khi dừng.',
     promptNotFound:
       'Không có tin nhắn nào có danh tính này tồn tại trong phiên.',
     promptStarted: 'Tin nhắn đã bắt đầu xử lý và không thể rút lại được.',

@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   errors: {
+    retryUnavailable:
+      'Kirim input yang menunggu secara berurutan. Hanya input terakhir yang terhenti atau input berikutnya yang ditarik yang dapat dikirim ulang.',
+    stopTargetChanged:
+      'Giliran saat ini telah berubah. Muat ulang sebelum menghentikan.',
     promptNotFound: 'Tidak ada pesan dengan identitas ini dalam sesi tersebut.',
     promptStarted: 'Pesan telah mulai diproses dan tidak dapat ditarik.',
     withdrawalUnsupported:

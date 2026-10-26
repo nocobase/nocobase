@@ -331,10 +331,15 @@ export const UpdateSessionInput: z.ZodType<{
 });
 
 export const PromptInput: z.ZodType<{
+  retryOfPromptId?: string | undefined;
   submissionId?: string | undefined;
   content: PromptContent[];
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  retryOfPromptId: z
+    .uuid()
+    .optional()
+    .describe('The previous attempt of the input to resend in place.'),
   submissionId: z.uuid().optional().meta({
     description:
       'A client UUID retained with immutable input for safe explicit retries.',

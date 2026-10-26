@@ -518,6 +518,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           context.req.valid('json').content,
           context.req.valid('json').mentions,
           context.req.valid('json').submissionId,
+          context.req.valid('json').retryOfPromptId,
         ),
       }),
   );
@@ -529,7 +530,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       ...pageOnly,
       summary: "Stop a session's turn",
       operationId: 'agentSessionsCancel',
-      description: `Stops the running turn and drops the messages waiting behind it. ${own}`,
+      description: `Stops the specified turn and withdraws queued inputs until manually resent. ${own}`,
       responses: {
         204: emptyResponse('Sent to the computer.'),
         ...errors,
@@ -538,10 +539,12 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       },
     }),
     apiValidator('param', SessionParams),
+    apiValidator('json', z.strictObject({ promptId: z.uuid() })),
     async (context) => {
       await service.cancel(
         userId(context),
         context.req.valid('param').sessionId,
+        context.req.valid('json').promptId,
       );
       return context.body(null, 204);
     },

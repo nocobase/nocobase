@@ -170,6 +170,11 @@ const zhTW: LocaleResource<typeof enUS> = {
     recordBody: '完整記錄儲存在這裡，只有您可以看到。',
   },
   composer: {
+    stopping: '正在停止…',
+    stopUnconfirmed: '尚未確認停止，請重試。',
+    held: '請先逐條傳送上方待傳送的輸入，再傳送新訊息。',
+    previousAttempt: '上次嘗試',
+    newAttempt: '新的嘗試',
     unconfirmed:
       '交貨未確認。重試原始提交，或編輯為新訊息（原始訊息可能已經到達）。',
     retrySubmission: '重試原始提交',
@@ -195,7 +200,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       send: '傳送',
       queue: '本回合後傳送',
       newline: '新線',
-      interrupt: '停止本回合並立即傳送',
+      interrupt: '停止目前回合',
     },
   },
   choices: {
