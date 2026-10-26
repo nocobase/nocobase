@@ -100,4 +100,90 @@ describe('storer', () => {
     const authenticators = await cache.get('authenticators');
     expect(authenticators['test3']).toBeDefined();
   });
+
+  it('should preserve raw template options until the auth type is registered', async () => {
+    const originalFilter = '(sAMAccountName={{account}})';
+    const ldapAuthenticator = {
+      name: 'ldap',
+      authType: 'LDAP',
+      enabled: true,
+      options: {
+        ldap: { filter: originalFilter },
+        url: '{{$env.LDAP_URL}}',
+      },
+    };
+    db = new MockDB([ldapAuthenticator]);
+
+    let authConfig: any;
+    const renderJsonTemplate = jest.fn((options: any, settings: any = {}) => {
+      const result = JSON.parse(JSON.stringify(options));
+      if (!settings.omit?.includes('ldap.filter')) {
+        result.ldap.filter = result.ldap.filter.replace('{{account}}', '');
+      }
+      result.url = 'https://ldap.example.test';
+      return result;
+    });
+    const app = {
+      environment: { renderJsonTemplate },
+    };
+    const authManager = {
+      getAuthConfig: jest.fn(() => authConfig),
+    };
+    storer = new Storer({
+      app: app as any,
+      db,
+      cache,
+      authManager: authManager as any,
+    });
+
+    // A cache miss before LDAP registration must not render or mutate the template.
+    const beforeRegistration = await storer.get('ldap');
+    expect(beforeRegistration.options.ldap.filter).toBe(originalFilter);
+    expect(renderJsonTemplate).not.toHaveBeenCalled();
+
+    const cached = (await cache.get('authenticators')) as any;
+    expect(cached.ldap.options.ldap.filter).toBe(originalFilter);
+
+    // Once LDAP is registered, render using its options exclusion list.
+    authConfig = {
+      auth: {
+        optionsKeysNotAllowedInEnv: ['ldap.filter'],
+      },
+    };
+    const afterRegistration = await storer.get('ldap');
+    expect(renderJsonTemplate).toHaveBeenCalledWith(ldapAuthenticator.options, {
+      omit: ['ldap.filter'],
+    });
+    expect(afterRegistration.options.ldap.filter).toBe(originalFilter);
+    expect(afterRegistration.options.url).toBe('https://ldap.example.test');
+
+    // Rendering a response must not overwrite the raw value held in the cache.
+    const cachedAfterRendering = (await cache.get('authenticators')) as any;
+    expect(cachedAfterRendering.ldap.options.ldap.filter).toBe(originalFilter);
+  });
+
+  it('should not render authenticator options in afterSave before auth type registration', async () => {
+    const originalFilter = '(sAMAccountName={{account}})';
+    const ldapAuthenticator = {
+      name: 'ldap',
+      authType: 'LDAP',
+      enabled: true,
+      options: {
+        ldap: { filter: originalFilter },
+      },
+    };
+    const renderJsonTemplate = jest.fn();
+    storer = new Storer({
+      app: { environment: { renderJsonTemplate } } as any,
+      db,
+      cache,
+      authManager: { getAuthConfig: () => undefined } as any,
+    });
+
+    await db.emitAsync('authenticators.afterSave', ldapAuthenticator);
+
+    const cached = (await cache.get('authenticators')) as any;
+    expect(renderJsonTemplate).not.toHaveBeenCalled();
+    expect(cached.ldap.options.ldap.filter).toBe(originalFilter);
+  });
 });
