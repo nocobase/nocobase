@@ -49,6 +49,8 @@ The target must be new or empty. Before writing anything, the command also check
 
 Ctrl-C (or SIGTERM) stops the step that is running and lets that cleanup happen; a second one exits at once.
 
+On a command timeout or the first interrupt, the installer sends SIGTERM to the command's process group and waits until no member can execute or write, including descendants that closed their output. Members that ignore SIGTERM receive SIGKILL after 10 seconds. Linux and macOS require `ps` on PATH to distinguish running members from terminated, unreaped zombies. Confirmation is bounded to another 2 seconds; if signals or state checks fail or members remain, the failure explicitly says the stop could not be confirmed. Normal successful commands have no added wait. This covers the local process group; it cannot stop descendants that deliberately leave the group or remote operations after an SSH connection ends.
+
 | Flag               | Default                      | Purpose                                                                                                               |
 | ------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `--dir`            |                              | The target, as the other commands name it; the same as the directory argument.                                        |
