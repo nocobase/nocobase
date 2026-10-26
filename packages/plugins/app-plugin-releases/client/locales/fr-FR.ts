@@ -811,6 +811,7 @@ const frFR: LocaleResource<typeof enUS> = {
       name: 'Nom',
       driver: 'Pilote',
       runsOn: 'Fonctionne sur',
+      appCount: 'Applications',
       policy: 'Politique',
       publicUrl: 'Modèle public URL',
       config: 'Paramètres (JSON)',

@@ -584,6 +584,7 @@ const zhCN: typeof enUS = {
       name: '名称',
       driver: '驱动',
       runsOn: '运行方式',
+      appCount: '应用数',
       policy: '策略',
       publicUrl: '访问地址规则',
       config: '设置（JSON）',

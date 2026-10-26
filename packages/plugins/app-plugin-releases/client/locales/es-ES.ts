@@ -803,6 +803,7 @@ const esES: LocaleResource<typeof enUS> = {
       name: 'Nombre',
       driver: 'Conductor',
       runsOn: 'Se ejecuta en',
+      appCount: 'Aplicaciones',
       policy: 'Política',
       publicUrl: 'Patrón público URL',
       config: 'Configuración (JSON)',

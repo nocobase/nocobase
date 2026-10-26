@@ -785,6 +785,7 @@ const idID: LocaleResource<typeof enUS> = {
       name: 'Nama',
       driver: 'Sopir',
       runsOn: 'Berjalan terus',
+      appCount: 'Aplikasi',
       policy: 'Kebijakan',
       publicUrl: 'Pola URL publik',
       config: 'Pengaturan (JSON)',

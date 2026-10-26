@@ -16,7 +16,10 @@ import {
 import { useState, type ReactElement } from 'react';
 import { Link, useNavigate, useOutlet } from 'react-router';
 
-import type { EnvironmentRecord } from '../../shared/releases.js';
+import type {
+  EnvironmentListItem,
+  EnvironmentRecord,
+} from '../../shared/releases.js';
 import { ActorName } from '../components/actor-name.js';
 import { useConfirmDialog } from '../components/confirm-dialog.js';
 import { DataTable } from '../components/data-table.js';
@@ -51,7 +54,7 @@ export function EnvironmentsList(): ReactElement {
   const canManage = me.permissions.settings['rel.environments/manage'];
   const environments = useLoad(
     () =>
-      api.list<EnvironmentRecord>('environments').then((page) => page.items),
+      api.list<EnvironmentListItem>('environments').then((page) => page.items),
     'environments',
   );
   const { drivers, driverName, t } = useDriverNames();
@@ -83,7 +86,7 @@ export function EnvironmentsList(): ReactElement {
     }
   };
 
-  const columns: ColumnDef<EnvironmentRecord, unknown>[] = [
+  const columns: ColumnDef<EnvironmentListItem, unknown>[] = [
     {
       id: 'name',
       header: t('ui.environments.name'),
@@ -108,6 +111,12 @@ export function EnvironmentsList(): ReactElement {
       header: t('ui.environments.runsOn'),
       meta: { className: 'w-32' },
       cell: ({ row }) => driverName(row.original.driver, row.original.config),
+    },
+    {
+      id: 'appCount',
+      header: t('ui.environments.appCount'),
+      meta: { className: 'w-20 text-right tabular-nums' },
+      cell: ({ row }) => row.original.appCount,
     },
     {
       id: 'policy',

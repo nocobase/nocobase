@@ -60,6 +60,7 @@ import {
   ReleasesDeploymentSchema,
   ReleasesDriverSchema,
   ReleasesEnvironmentCheckSchema,
+  ReleasesEnvironmentListItemSchema,
   ReleasesEnvironmentSchema,
   ReleasesLogEntrySchema,
   ReleasesLogMeta,
@@ -248,13 +249,13 @@ export function createReleasesApi(
       security: personOrRunSecurity,
       ...cliRoute({
         command: 'env list',
-        columns: ['id', 'name', 'driver', 'protected'],
+        columns: ['id', 'name', 'driver', 'protected', 'appCount'],
         action: 'rel.environments/read',
       }),
       description:
         'Requires the `rel.environments` `read` setting, access to the Apps page, or the `create` action on every App.',
       responses: {
-        200: listResponse(ReleasesEnvironmentSchema, ReleasesTotalMeta),
+        200: listResponse(ReleasesEnvironmentListItemSchema, ReleasesTotalMeta),
         ...apiErrorResponses,
       },
     }),

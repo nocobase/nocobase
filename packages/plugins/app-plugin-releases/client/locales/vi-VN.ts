@@ -792,6 +792,7 @@ const viVN: LocaleResource<typeof enUS> = {
       name: 'Tên',
       driver: 'Lái xe',
       runsOn: 'Chạy tiếp',
+      appCount: 'Ứng dụng',
       policy: 'Chính sách',
       publicUrl: 'Mẫu URL công khai',
       config: 'Cài đặt (JSON)',

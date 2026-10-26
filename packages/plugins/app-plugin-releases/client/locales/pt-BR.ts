@@ -805,6 +805,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       name: 'Nome',
       driver: 'Motorista',
       runsOn: 'Continua',
+      appCount: 'Aplicativos',
       policy: 'Política',
       publicUrl: 'Padrão público URL',
       config: 'Configurações (JSON)',

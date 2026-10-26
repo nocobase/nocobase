@@ -96,6 +96,16 @@ describe('access through the application port', () => {
         .map((item) => item.app.id)
         .sort();
     expect(await visible()).toEqual(['a']);
+    // The environments list counts every App, whoever may see them.
+    expect(
+      (await harness.services.environments.list(alice)).map((env) => [
+        env.id,
+        env.appCount,
+      ]),
+    ).toEqual([
+      ['production', 0],
+      ['staging', 3],
+    ]);
     await expect(
       harness.services.releases.getApp(alice, 'b'),
     ).rejects.toMatchObject({

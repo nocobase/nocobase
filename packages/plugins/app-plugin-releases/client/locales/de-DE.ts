@@ -811,6 +811,7 @@ const deDE: LocaleResource<typeof enUS> = {
       name: 'Name',
       driver: 'Fahrer',
       runsOn: 'Läuft weiter',
+      appCount: 'Apps',
       policy: 'Richtlinie',
       publicUrl: 'Öffentliches URL-Muster',
       config: 'Einstellungen (JSON)',

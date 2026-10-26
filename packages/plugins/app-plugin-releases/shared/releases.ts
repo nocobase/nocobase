@@ -169,6 +169,11 @@ export interface EnvironmentRecord {
   readonly updatedAt: string;
 }
 
+/** An environment as the environments list answers it, with how many Apps it holds. */
+export interface EnvironmentListItem extends EnvironmentRecord {
+  readonly appCount: number;
+}
+
 export interface EnvironmentInput {
   readonly id?: string;
   readonly name?: string;

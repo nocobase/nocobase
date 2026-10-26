@@ -616,6 +616,7 @@ const ui = {
     name: 'Name',
     driver: 'Driver',
     runsOn: 'Runs on',
+    appCount: 'Apps',
     policy: 'Policy',
     publicUrl: 'Public URL pattern',
     config: 'Settings (JSON)',

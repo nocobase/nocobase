@@ -722,6 +722,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       name: '名稱',
       driver: '驅動程式',
       runsOn: '執行於',
+      appCount: '應用數',
       policy: '原則',
       publicUrl: '公共URL圖案',
       config: '設定 (JSON)',
