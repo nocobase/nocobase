@@ -6,123 +6,40 @@ import path from 'node:path';
 import test from 'node:test';
 
 import {
-  deduplicateDependencyUpdates,
-  extractChangelogSection,
+  changelogUrl,
   findPackageDirectories,
-  fitReleaseNotes,
   parseAggregateTag,
   parsePackageTag,
   readPackagesFromTags,
-  RELEASE_BODY_LIMIT,
+  renderPackageTable,
   resolveDirectories,
 } from '../../scripts/release-notes.mjs';
 
-test('deduplicates dependency commits and preserves their dependency/version list', () => {
-  const section = [
-    '### Patch Changes',
-    '',
-    '- ceb356b: First fix.',
-    '- ceb356b: A different fix from the same commit.',
-    '- Updated dependencies [ceb356b]',
-    '- Updated dependencies [c960d07]',
-    '- Updated dependencies [ceb356b]',
-    '- Updated dependencies [c960d07]',
-    '  - @example/alpha@1.0.0',
-    '  - @example/beta@2.0.0',
-  ];
-  const expected = [
-    ...section.slice(0, 4),
-    '- Updated dependencies [ceb356b], [c960d07]',
-    ...section.slice(8),
-  ].join('\n');
-  assert.equal(deduplicateDependencyUpdates(section.join('\n')), expected);
-  assert.equal(deduplicateDependencyUpdates(expected), expected);
-});
-
-test('handles a dependency run at the end and keeps deduplication local to each section', () => {
-  const section =
-    '- Updated dependencies [ceb356b]\n- Updated dependencies [ceb356b]';
-  for (const heading of ['## Alpha', '## Beta']) {
-    assert.equal(
-      deduplicateDependencyUpdates(`${heading}\n\n${section}`),
-      `${heading}\n\n- Updated dependencies [ceb356b]`,
-    );
-  }
-});
-
-test('preserves code examples, ordinary changes and nested dependency entries', () => {
-  for (const fence of ['```', '~~~~']) {
-    const section = [
-      '- A change.',
-      '- A change.',
-      `${fence}markdown`,
-      '- Updated dependencies [ceb356b]',
-      '- Updated dependencies [ceb356b]',
-      fence,
-      '  - Updated dependencies [ceb356b]',
-      '  - Updated dependencies [ceb356b]',
-      '',
-    ].join('\n');
-    assert.equal(deduplicateDependencyUpdates(section), section);
-  }
-});
-
-test('preserves notes exactly at the body limit, including the final newline', () => {
-  const header = 'Packages';
-  const full = 'x'.repeat(RELEASE_BODY_LIMIT - header.length - 3);
+test('lists every published package with a link to its changelog at the tagged commit', () => {
+  const commit = 'ab1f9c76f55cafc60f4966c2617170b96aaebb54';
+  const url = changelogUrl(
+    commit,
+    'packages/tools/app-installer/CHANGELOG.md',
+    '0.1.0-beta.10',
+  );
   assert.equal(
-    fitReleaseNotes(header, [{ full, compact: 'Changelog link' }]),
-    `${header}\n\n${full}\n`,
+    url,
+    `https://github.com/nocobase/nocobase/blob/${commit}/packages/tools/app-installer/CHANGELOG.md#010-beta10`,
   );
-});
-
-test('replaces whole long sections with links while preserving order and small entries', () => {
-  const header = '| Package | Version |\n| --- | --- |\n| alpha | 1 |';
-  const small = '## Small\n\n- Keep this fix.';
-  const link = '## Large\n\n[Full changelog](https://example.com/changelog)';
-  const notes = fitReleaseNotes(header, [
-    { full: small, compact: 'Small link' },
-    {
-      full: `## Large\n\n\`\`\`\n${'修复😀'.repeat(40_000)}\n\`\`\``,
-      compact: link,
-    },
-    { full: '## Last\n\n- Keep this too.', compact: 'Last link' },
-  ]);
-  assert.ok(notes.length <= RELEASE_BODY_LIMIT);
-  assert.ok(notes.startsWith(header));
-  assert.match(notes, /Some long package entries/u);
-  assert.ok(
-    notes.endsWith(`${small}\n\n${link}\n\n## Last\n\n- Keep this too.\n`),
-  );
-  assert.ok(!notes.includes('```'));
-});
-
-test('compacts multiple entries when one replacement is insufficient', () => {
-  const sections = Array.from({ length: 4 }, (_, index) => ({
-    full: `## ${index}\n\n${'x'.repeat(60_000)}`,
-    compact: `## ${index}\n\nChangelog link ${index}`,
-  }));
-  const notes = fitReleaseNotes('Packages', sections);
-  assert.ok(notes.length <= RELEASE_BODY_LIMIT);
-  assert.equal(notes.match(/Changelog link/gu)?.length, 3);
-  assert.ok(notes.includes(sections[3].full));
-});
-
-test('includes the compaction notice in the length budget', () => {
-  const full = 'x'.repeat(RELEASE_BODY_LIMIT);
-  assert.throws(
-    () => fitReleaseNotes('Packages', [{ full, compact: full.slice(0, -20) }]),
-    /even with compact changelog links/u,
-  );
-});
-
-test('fails clearly when even the package summary cannot fit', () => {
-  assert.throws(
-    () =>
-      fitReleaseNotes('x'.repeat(RELEASE_BODY_LIMIT), [
-        { full: 'abc', compact: 'a' },
-      ]),
-    /even with compact changelog links/u,
+  assert.deepEqual(
+    renderPackageTable(
+      [
+        { name: '@nocobase/app-installer', version: '0.1.0-beta.10' },
+        { name: '@nocobase/unknown', version: '1.0.0' },
+      ],
+      (pkg) => (pkg.name === '@nocobase/app-installer' ? url : undefined),
+    ),
+    [
+      '| Package | Version | Changelog |',
+      '| --- | --- | --- |',
+      `| \`@nocobase/app-installer\` | \`0.1.0-beta.10\` | [CHANGELOG.md](${url}) |`,
+      '| `@nocobase/unknown` | `1.0.0` | — |',
+    ],
   );
 });
 
@@ -186,45 +103,9 @@ test('keeps only package tags, sorted by name', () => {
   );
 });
 
-test('extracts one changelog section without prefix collisions', () => {
-  const changelog = `# @nocobase/alpha
-
-## 1.0.0-beta.10
-
-Ten.
-
-## 1.0.0-beta.1
-
-One.
-
-## 1.0.0
-
-### Patch Changes
-
-- Stable.
-`;
-  assert.equal(extractChangelogSection(changelog, '1.0.0-beta.1'), 'One.');
-  assert.equal(extractChangelogSection(changelog, '1.0.0-beta.10'), 'Ten.');
-  assert.equal(
-    extractChangelogSection(changelog, '1.0.0'),
-    '### Patch Changes\n\n- Stable.',
-  );
-});
-
-test('returns undefined when the version has no changelog section', () => {
-  assert.equal(extractChangelogSection('# Package\n', '1.0.0'), undefined);
-  assert.equal(
-    extractChangelogSection(
-      '# Package\n\n## 1.0.0\n\n## 0.9.0\n\nOld.\n',
-      '1.0.0',
-    ),
-    undefined,
-  );
-});
-
 // `packages/` was flat before it was regrouped into `packages/<category>/<package>`, and release notes still get
 // rendered from tags cut in either era. A resolver hard-coded to one depth returns an empty map for the other, which
-// does not fail — every package just renders as "no changelog entry". These two cases pin both layouts down.
+// does not fail — every package just renders without its changelog link. These two cases pin both layouts down.
 for (const { label, manifests } of [
   {
     label: 'flat',
