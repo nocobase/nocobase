@@ -25,7 +25,8 @@ export function useStop(
     (item) => item.type === 'prompt' && item.promptId === request?.promptId,
   );
   const finished =
-    request?.phase === 'waiting' &&
+    request !== null &&
+    request.phase !== 'requesting' &&
     target?.type === 'prompt' &&
     ['done', 'cancelled', 'failed'].includes(target.state) &&
     !items?.some(

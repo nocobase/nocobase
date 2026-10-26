@@ -1376,41 +1376,79 @@ export class AgentSessionsService {
     const sessionId = session.id;
     const promptId = randomUUID();
     const locked = (await lockSession(conn, sessionId, now))!;
-    const history = await events(conn).findMany({
-      filter: { sessionId, kind: 'prompt' },
-      sort: (sort) => sort.field('seq').asc(),
-    });
-    const byId = new Map(
-      history.map((row) => [row.data.promptId as string, row]),
-    );
-    const superseded = new Set(history.map((row) => row.data.retryOfPromptId));
-    const rootSeq = (row: (typeof history)[number]): number => {
-      let current = row;
-      while (typeof current.data.retryOfPromptId === 'string') {
-        const previous = byId.get(current.data.retryOfPromptId);
-        if (!previous || Number(previous.seq) >= Number(current.seq)) break;
-        current = previous;
+    if (!retryOfPromptId) {
+      // Ordinary submissions need only withdrawal candidates, never completed prompt/image payloads.
+      const candidates = await events(conn).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('sessionId').eq(sessionId),
+            f.string('kind').eq('prompt'),
+            f.or([
+              f.json('data').path(['_execution', 'state']).eq('withdrawing'),
+              f.json('data').path(['_execution', 'state']).eq('withdrawn'),
+              f.and([
+                f.json('data').path(['_execution', 'state']).eq('claimed'),
+                f.json('data').path(['_stopRequested']).eq(true),
+              ]),
+            ]),
+          ]),
+      });
+      if (
+        candidates.some(
+          (row) => (row.data._execution as Execution).state === 'claimed',
+        )
+      )
+        throw new AgentSessionsError('retryUnavailable');
+      if (candidates.length) {
+        // Each source can have only one accepted retry, enforced under this same session mutex.
+        let retried = 0;
+        for (let offset = 0; offset < candidates.length; offset += 100) {
+          retried += await events(conn).count({
+            filter: (f) =>
+              f.and([
+                f.string('sessionId').eq(sessionId),
+                f.string('kind').eq('prompt'),
+                f.or(
+                  candidates.slice(offset, offset + 100).map((row) =>
+                    f
+                      .json('data')
+                      .path(['retryOfPromptId'])
+                      .eq(row.data.promptId as string),
+                  ),
+                ),
+              ]),
+          });
+        }
+        if (retried < candidates.length)
+          throw new AgentSessionsError('retryUnavailable');
       }
-      return Number(current.seq);
-    };
-    const waiting = history.filter(
-      (row) =>
-        !superseded.has(row.data.promptId) &&
-        ['withdrawn', 'withdrawing'].includes(
-          (row.data._execution as Execution | undefined)?.state ?? '',
-        ),
-    );
-    if (
-      !retryOfPromptId &&
-      (waiting.length ||
-        history.some(
-          (row) =>
-            row.data._stopRequested &&
-            (row.data._execution as Execution | undefined)?.state === 'claimed',
-        ))
-    )
-      throw new AgentSessionsError('retryUnavailable');
-    if (retryOfPromptId) {
+    } else {
+      const history = await events(conn).findMany({
+        filter: { sessionId, kind: 'prompt' },
+        sort: (sort) => sort.field('seq').asc(),
+      });
+      const byId = new Map(
+        history.map((row) => [row.data.promptId as string, row]),
+      );
+      const superseded = new Set(
+        history.map((row) => row.data.retryOfPromptId),
+      );
+      const rootSeq = (row: (typeof history)[number]): number => {
+        let current = row;
+        while (typeof current.data.retryOfPromptId === 'string') {
+          const previous = byId.get(current.data.retryOfPromptId);
+          if (!previous || Number(previous.seq) >= Number(current.seq)) break;
+          current = previous;
+        }
+        return Number(current.seq);
+      };
+      const waiting = history.filter(
+        (row) =>
+          !superseded.has(row.data.promptId) &&
+          ['withdrawn', 'withdrawing'].includes(
+            (row.data._execution as Execution | undefined)?.state ?? '',
+          ),
+      );
       const source = byId.get(retryOfPromptId);
       if (!source) throw new AgentSessionsError('promptNotFound');
       const state = (source.data._execution as Execution | undefined)?.state;
@@ -1439,13 +1477,13 @@ export class AgentSessionsService {
       )
         throw new AgentSessionsError('retryUnavailable');
       if (state === 'ended') {
-        const ends = await events(conn).findMany({
+        const lastEnd = await events(conn).findOne({
           filter: { sessionId, kind: 'turnEnded' },
           sort: (sort) => sort.field('seq').desc(),
         });
         if (
-          ends[0]?.data.promptId !== retryOfPromptId ||
-          ends[0].data.stopReason !== 'cancelled'
+          lastEnd?.data.promptId !== retryOfPromptId ||
+          lastEnd.data.stopReason !== 'cancelled'
         )
           throw new AgentSessionsError('retryUnavailable');
       }

@@ -195,6 +195,25 @@ describe('targeted stop and ordered retries', () => {
     ]);
     expect(prompts[0]?.superseded).toBe(true);
     expect(prompts[1]?.state).toBe('done');
+    await s.end(next, 'end_turn');
+    await expect(
+      reloaded.prompt(owner, s.session.id, text('Still held')),
+    ).rejects.toMatchObject({ key: 'retryUnavailable' });
+    const last = await reloaded.prompt(
+      owner,
+      s.session.id,
+      text('C edited'),
+      [],
+      randomUUID(),
+      c.promptId,
+    );
+    if (last.kind !== 'prompt') throw new Error('Expected retry');
+    await reloaded.claim(owner.userId, s.request(last));
+    await s.end(last, 'end_turn');
+    // Superseded withdrawals no longer prevent an ordinary new submission.
+    await expect(
+      reloaded.prompt(owner, s.session.id, text('Continue')),
+    ).resolves.toMatchObject({ kind: 'prompt' });
   });
 
   test('rejects stale targets after another turn claims, ownership violations and old bridges', async ({

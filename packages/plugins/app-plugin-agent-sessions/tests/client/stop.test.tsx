@@ -5,7 +5,7 @@ import {
 } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import plugin from '../../client/plugin.js';
 import { Composer } from '../../client/components/composer.js';
@@ -14,7 +14,8 @@ import type { TranscriptItem } from '../../client/transcript.js';
 
 const prompt = (
   id: string,
-  state: 'running' | 'queued' | 'cancelled' | 'withdrawing' | 'withdrawn',
+  state:
+    'running' | 'queued' | 'cancelled' | 'done' | 'withdrawing' | 'withdrawn',
 ): TranscriptItem => ({
   type: 'prompt',
   key: id,
@@ -110,7 +111,9 @@ describe('stopping a session', () => {
         prompt('A', 'running'),
         prompt('B', 'queued'),
       ]);
-      replaceItems = setItems;
+      useEffect(() => {
+        replaceItems = setItems;
+      }, []);
       return (
         <QueryClientProvider client={client}>
           <Surface items={items} name='first' />
@@ -175,3 +178,89 @@ describe('stopping a session', () => {
     expect(calls[3]?.json).toEqual({ promptId: 'E' });
   });
 });
+
+function ReconciliationHarness({
+  failure,
+  register,
+}: {
+  failure: (error: unknown) => void;
+  register: (update: (items: TranscriptItem[]) => void) => void;
+}) {
+  const [items, setItems] = useState(() => [
+    prompt('A', 'running'),
+    prompt('B', 'queued'),
+  ]);
+  useEffect(() => {
+    register(setItems);
+  }, [register]);
+  const stop = useStop('reconcile', items, failure);
+  return (
+    <button onClick={stop.stop}>
+      {stop.pending ? 'pending' : stop.active ? 'retry' : 'idle'}
+    </button>
+  );
+}
+
+it.each(['lost response', 'natural completion', 'late confirmation'] as const)(
+  'reconciles %s without another stop request',
+  async (scenario) => {
+    const client = new QueryClient();
+    const failure = vi.fn();
+    const requests: ApiCall[] = [];
+    let update!: (items: TranscriptItem[]) => void;
+    await renderWithApp(
+      <QueryClientProvider client={client}>
+        <ReconciliationHarness
+          failure={failure}
+          register={(setItems) => {
+            update = setItems;
+          }}
+        />
+      </QueryClientProvider>,
+      {
+        ...options,
+        fetch: answerApi((call) => {
+          if (call.method === 'POST') {
+            requests.push(call);
+            if (scenario !== 'late confirmation')
+              return Response.json(
+                { error: { message: 'Lost response' } },
+                { status: 503 },
+              );
+          }
+          return { data: null };
+        }),
+      },
+    );
+    if (scenario === 'late confirmation') vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'idle' }));
+      if (scenario === 'late confirmation') {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(30_001);
+        });
+        expect(screen.getByRole('button', { name: 'retry' })).toBeVisible();
+        vi.useRealTimers();
+      } else await screen.findByRole('button', { name: 'retry' });
+      expect(requests).toHaveLength(1);
+      // A terminal target alone is not enough while the queued input is still awaiting removal.
+      act(() =>
+        update([
+          prompt('A', scenario === 'natural completion' ? 'done' : 'cancelled'),
+          prompt('B', 'withdrawing'),
+        ]),
+      );
+      expect(screen.getByRole('button', { name: 'retry' })).toBeVisible();
+      act(() =>
+        update([
+          prompt('A', scenario === 'natural completion' ? 'done' : 'cancelled'),
+          prompt('B', 'withdrawn'),
+        ]),
+      );
+      await screen.findByRole('button', { name: 'idle' });
+      expect(requests).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);
