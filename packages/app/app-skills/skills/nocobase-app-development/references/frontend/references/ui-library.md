@@ -288,6 +288,20 @@ Theme-aware, read-only lifecycle diagram using React Flow and ELK. Shows the cur
 - Example: `@nocobase/lifecycle-diagram-demo` (`pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`)
 - After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN, autoHeight and initialMinZoom 0.7 for readable vertical page reading. The Fit control still shows the entire graph; an explicit initialMinZoom overrides the default. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger border and ring; icons, top accents and status footers distinguish current, visited and configurable nodes using theme tokens. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export. Pass configuration={label, canConfigure, onConfigure} for automatic Configure buttons on authorized bound states and configuration selection on bound transitions. onConfigure receives the exact target and permitted bound fields grouped by native parameter key; connect the existing real editor and API. canConfigure is required and is only a UI affordance. Explicit direction/style overrides are reserved for user-requested customization; Mermaid is documentation/export only.
 
+## File
+
+### file-component-ui
+
+Application-owned upload, list, thumbnail, and preview components for business file endpoints.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/file-component-ui`
+- Installs to: `client/extensions/nocobase-file-component-ui/`
+- Plugin dependencies: `@nocobase/app-plugin-file`
+- Also installs: `@nocobase/attachment-list`
+- Example: `@nocobase/file-component-ui-demo` (`pnpm exec shadcn view @nocobase/file-component-ui-demo`)
+- After installing: Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them.
+
 ## Inbox
 
 ### inbox
@@ -312,6 +326,19 @@ A header button linking to the inbox, with an amber badge for what waits on the 
 - Plugin dependencies: none
 - Example: `@nocobase/inbox-button-demo` (`pnpm exec shadcn view @nocobase/inbox-button-demo`)
 - After installing: Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from #components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.
+
+## Notification
+
+### notification-logs-ui
+
+Application-owned delivery and provider attempt log components backed by the NocoBase notification API.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/notification-logs-ui`
+- Installs to: `client/extensions/nocobase-notification-logs-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/notification-logs-ui-demo` (`pnpm exec shadcn view @nocobase/notification-logs-ui-demo`)
+- After installing: Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.
 
 ## Other
 

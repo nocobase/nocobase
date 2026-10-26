@@ -2,6 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import {
   cpSync,
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -33,7 +34,7 @@ function snippet(section: string, language: string): string {
   return source.slice(start + fence.length).split('```')[0]!;
 }
 
-it('builds a business attachment feature from the shipped Skill and materialized Registry', () => {
+it('builds a business attachment feature from the shipped Skill and UI Library', () => {
   const appRoot = mkdtempSync(path.join(tmpdir(), 'file-agent-app-'));
   try {
     mkdirSync(path.join(appRoot, 'node_modules/@nocobase'), {
@@ -90,7 +91,7 @@ it('builds a business attachment feature from the shipped Skill and materialized
     }
     // The receiving application owns the primitives and resolves their imports in its own package scope.
     mkdirSync(path.join(appRoot, 'client/components/ui'), { recursive: true });
-    for (const name of ['button', 'dialog', 'spinner']) {
+    for (const name of ['button', 'dialog', 'spinner', 'alert-dialog']) {
       cpSync(
         path.join(templateRoot, `client/components/ui/${name}.tsx`),
         path.join(appRoot, `client/components/ui/${name}.tsx`),
@@ -98,6 +99,7 @@ it('builds a business attachment feature from the shipped Skill and materialized
     }
     // Include the application's Spinner implementation and its brand dependencies.
     for (const file of [
+      'attachment-list.tsx',
       'brand-spinner.tsx',
       'brand-loading-mark.tsx',
       'brand-mark-geometry.ts',
@@ -114,8 +116,7 @@ it('builds a business attachment feature from the shipped Skill and materialized
         type: 'module',
         imports: {
           '#components/*': './client/components/*.js',
-          '#extensions/nocobase-file-component-ui':
-            './client/extensions/nocobase-file-component-ui/index.ts',
+          '#extensions/*': './client/extensions/*.js',
         },
       }),
     );
@@ -132,32 +133,18 @@ it('builds a business attachment feature from the shipped Skill and materialized
     writeFileSync(path.join(appRoot, 'routes.ts'), snippet('API routes', 'ts'));
     writeFileSync(
       path.join(appRoot, 'client/invoice-attachments.tsx'),
-      snippet('Registry components', 'tsx'),
+      snippet('UI Library components', 'tsx'),
     );
-    execFileSync(
-      process.execPath,
-      [
-        path.join(repoRoot, 'scripts/registry.mjs'),
-        'build',
-        '--package',
-        packageRoot,
-      ],
-      { cwd: repoRoot },
+    // Copy the maintained UI Library item at the same targets shadcn installs.
+    const registryRoot = path.join(repoRoot, 'ui-library/registry/file');
+    const registry = JSON.parse(
+      readFileSync(path.join(registryRoot, 'registry.json'), 'utf8'),
     );
-    execFileSync(
-      process.execPath,
-      [
-        path.join(repoRoot, 'scripts/registry.mjs'),
-        'materialize',
-        '--package',
-        packageRoot,
-        '--item',
-        'component-ui',
-        '--output-root',
-        appRoot,
-      ],
-      { cwd: repoRoot },
-    );
+    for (const file of registry.items[0].files) {
+      const target = path.join(appRoot, file.target);
+      mkdirSync(path.dirname(target), { recursive: true });
+      copyFileSync(path.join(registryRoot, file.path), target);
+    }
     const templateClient = path.join(templateRoot, 'client');
     writeFileSync(
       path.join(appRoot, 'tsconfig.json'),

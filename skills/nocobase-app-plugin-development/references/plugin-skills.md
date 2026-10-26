@@ -12,7 +12,7 @@ Read this reference when a plugin exposes capabilities that an App Agent must di
 
 The plugin's top-level `skills/` directory is authoritative. The entire App-side `.agents/` tree is ignored generated state and must not be committed or edited as source. Synchronization replaces each managed Skill directory wholesale, records package ownership in `.agents/.skills-sync.json`, and removes tracked copies that disappeared upstream during a full sync. App-owned Skills whose directory names do not start with `nocobase-` are preserved.
 
-Plugin Skills do not register Client, Server, or CLI contributions and do not enable runtime behavior. A plugin needs them only when an App Agent benefits from knowledge of public components, hooks, Tokens, APIs, Registry items, data-model prerequisites, permissions, workflows, or operational constraints.
+Plugin Skills do not register Client, Server, or CLI contributions and do not enable runtime behavior. A plugin needs them only when an App Agent benefits from knowledge of public components, hooks, Tokens, APIs, UI Library items, data-model prerequisites, permissions, workflows, or operational constraints.
 
 ## Scaffold and replace the draft
 
@@ -59,7 +59,7 @@ Describe only implemented public surfaces:
 - Importable Client components, hooks, factories, props, and options.
 - Server exports, original ServiceTokens, public APIs, and supported Route factories.
 - Collections, fields, relations, permissions, and configuration the App must own.
-- Pages, Settings entries, Registry items, CLI commands, and other composable capabilities.
+- Pages, Settings entries, UI Library items, CLI commands, and other composable capabilities.
 - Required call order, inputs, outputs, identity, idempotency, retry limits, lifecycle, capacity limits, and observable failure behavior.
 
 Do not make private modules, internal tables, deep source paths, copied implementations, general repository rules, or design history part of the App contract.
@@ -71,7 +71,7 @@ For every capability, make these facts unambiguous:
 ```text
 App owns       page composition, business collections, permissions, invocation timing
 Plugin owns    public components, Tokens, Routes, internal persistence, runtime behavior
-Public entry   package export, API path, UI entry, CLI command, or Registry item
+Public entry   package export, API path, UI entry, CLI command, or UI Library item
 Do not bypass  private modules, internal tables, or synchronized Skill copies
 ```
 

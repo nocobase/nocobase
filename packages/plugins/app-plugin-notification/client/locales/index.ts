@@ -1,3 +1,4 @@
+// Retain these resources for application-owned UI copied before its move to the UI Library.
 import type { LocaleLoaders } from '@nocobase/i18n';
 
 const locales: LocaleLoaders = {

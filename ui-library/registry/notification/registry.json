@@ -1,0 +1,89 @@
+{
+  "items": [
+    {
+      "name": "notification-logs-ui",
+      "type": "registry:block",
+      "title": "NocoBase Notification Logs UI",
+      "description": "Application-owned delivery and provider attempt log components backed by the NocoBase notification API.",
+      "dependencies": [
+        "@nocobase/app-client@^1.0.0-beta.5",
+        "lucide-react@^0.487.0",
+        "@nocobase/i18n@^1.0.0-beta.4"
+      ],
+      "registryDependencies": ["alert", "badge", "button", "card", "table"],
+      "docs": "Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.",
+      "meta": {
+        "group": "Notification",
+        "iframeHeight": 740
+      },
+      "categories": ["notification"],
+      "files": [
+        {
+          "path": "notification-logs-ui/api.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/api.ts"
+        },
+        {
+          "path": "notification-logs-ui/index.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/index.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/de-DE.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/de-DE.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/en-US.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/en-US.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/es-ES.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/es-ES.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/fr-FR.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/fr-FR.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/id-ID.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/id-ID.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/ja-JP.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/ja-JP.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/pt-BR.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/pt-BR.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/vi-VN.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/vi-VN.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/zh-CN.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/zh-CN.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/zh-TW.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/zh-TW.ts"
+        },
+        {
+          "path": "notification-logs-ui/page.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/page.tsx"
+        }
+      ]
+    }
+  ]
+}

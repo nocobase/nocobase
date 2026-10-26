@@ -25,7 +25,6 @@
     "i18n:check": "node ./scripts/i18n-check.mjs",
     "plugin:create": "node ./packages/tools/create-plugin/bin/run.js",
     "plugin:remove": "node ./scripts/remove-plugin.mjs",
-    "registry": "node ./scripts/registry.mjs",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm pack:check && pnpm peers:check && pnpm deps:check && pnpm db-tests:check && pnpm ui-library-catalog:check && pnpm openapi:check && pnpm agents:check",
     "fix": "pnpm lint:fix && pnpm format",
     "typecheck": "pnpm -r --if-present typecheck && pnpm db:typecheck",

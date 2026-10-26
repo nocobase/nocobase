@@ -1,0 +1,3 @@
+Release notes
+
+File uploads and previews are editable UI Library source.
