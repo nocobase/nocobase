@@ -47,6 +47,13 @@ type AuthConfig = {
   getPublicOptions?: (options: Record<string, any>) => Record<string, any>; // Get the public options.
 };
 
+type RenderedOptionsCacheEntry = {
+  sourceOptions: Record<string, any>;
+  updatedAt: unknown;
+  environment: object;
+  options: Record<string, any>;
+};
+
 export class AuthManager {
   /**
    * @internal
@@ -59,6 +66,7 @@ export class AuthManager {
   // authenticators collection manager.
   protected storer: Storer;
   protected builtInAuthenticators = new Map<string, BuiltInAuthenticator>();
+  private renderedOptionsCache = new WeakMap<object, RenderedOptionsCacheEntry>();
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
@@ -93,12 +101,45 @@ export class AuthManager {
     return authenticator;
   }
 
-  private createAuth(authenticator: Authenticator, ctx: Context) {
+  private getRenderedOptions(authenticator: Authenticator, auth: AuthExtend<Auth>, ctx: Context) {
+    const environment = ctx?.app?.environment;
+    if (!environment) {
+      return authenticator.options;
+    }
+
+    // Keep the cache aligned with the previous behavior: render once for a given
+    // cached authenticator/options version, rather than parsing templates per request.
+    const updatedAt =
+      authenticator.updatedAt instanceof Date ? authenticator.updatedAt.getTime() : authenticator.updatedAt;
+    const cached = this.renderedOptionsCache.get(authenticator);
+    if (
+      cached &&
+      cached.sourceOptions === authenticator.options &&
+      cached.updatedAt === updatedAt &&
+      cached.environment === environment
+    ) {
+      return cached.options;
+    }
+
+    const options = environment.renderJsonTemplate(authenticator.options, {
+      omit: auth['optionsKeysNotAllowedInEnv'],
+    });
+    this.renderedOptionsCache.set(authenticator, {
+      sourceOptions: authenticator.options,
+      updatedAt,
+      environment,
+      options,
+    });
+    return options;
+  }
+
+  private createAuth(authenticator: Authenticator, ctx: Context, renderOptions = true) {
     const { auth } = this.authTypes.get(authenticator.authType) || {};
     if (!auth) {
       throw new Error(`AuthType [${authenticator.authType}] is not found.`);
     }
-    return new auth({ authenticator, options: authenticator.options, ctx });
+    const options = renderOptions ? this.getRenderedOptions(authenticator, auth, ctx) : authenticator.options;
+    return new auth({ authenticator, options, ctx });
   }
 
   setTokenBlacklistService(service: ITokenBlacklistService) {
@@ -143,7 +184,8 @@ export class AuthManager {
   async get(name: string, ctx: Context) {
     const builtInAuthenticator = this.getBuiltInAuthenticator(name);
     if (builtInAuthenticator) {
-      return this.createAuth(builtInAuthenticator, ctx);
+      // Built-in authenticators historically bypassed Storer's environment rendering.
+      return this.createAuth(builtInAuthenticator, ctx, false);
     }
 
     if (!this.storer) {
