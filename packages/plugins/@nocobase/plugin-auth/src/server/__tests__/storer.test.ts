@@ -8,6 +8,7 @@
  */
 
 import { Cache, CacheManager } from '@nocobase/cache';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Storer } from '../storer';
 
 class MockDB {
@@ -99,5 +100,86 @@ describe('storer', () => {
     await db.emitAsync('authenticators.afterSave', { name: 'test3', enabled: true });
     const authenticators = await cache.get('authenticators');
     expect(authenticators['test3']).toBeDefined();
+  });
+});
+
+describe('storer with a not yet registered auth type', () => {
+  const filter = '(sAMAccountName={{account}})';
+  let cache: Cache;
+  let db: any;
+  let storer: Storer;
+  let registeredAuthConfig: any;
+  let environment: any;
+
+  const createAuthenticator = (name: string, authType: string) => ({
+    name,
+    authType,
+    enabled: true,
+    dataValues: {
+      options: {
+        ldap: {
+          url: 'ldap://127.0.0.1:389',
+          searchDN: 'dc=example,dc=com',
+          bindPassword: '{{$env.LDAP_BIND_PASSWORD}}',
+          filter,
+        },
+      },
+    },
+  });
+
+  beforeEach(async () => {
+    const cacheManager = new CacheManager();
+    cache = await cacheManager.createCache({ name: 'test' });
+    db = new MockDB([createAuthenticator('ldap1', 'LDAP')]);
+    registeredAuthConfig = undefined;
+    environment = {
+      // Mirrors Environment.renderJsonTemplate: without the omit list the business placeholder is replaced with an empty string.
+      renderJsonTemplate: vi.fn((template: any, options?: { omit?: string[] }) => {
+        const rendered = JSON.parse(JSON.stringify(template));
+        if (rendered.ldap && !options?.omit?.includes('ldap.filter')) {
+          rendered.ldap.filter = '(sAMAccountName=)';
+        }
+        rendered.ldap.bindPassword = 'secret';
+        return rendered;
+      }),
+    };
+    const authManager = {
+      getAuthConfig: vi.fn(() => registeredAuthConfig),
+    };
+    storer = new Storer({ app: { environment } as any, db, cache, authManager: authManager as any });
+  });
+
+  afterEach(() => {
+    db = undefined;
+    storer = undefined;
+  });
+
+  it('should keep the raw filter while the auth type is not registered', async () => {
+    const authenticator = await storer.get('ldap1');
+
+    expect(authenticator.dataValues.options.ldap.filter).toBe(filter);
+    expect(environment.renderJsonTemplate).not.toHaveBeenCalled();
+  });
+
+  it('should render the cached authenticator once the auth type is registered', async () => {
+    await storer.get('ldap1');
+    registeredAuthConfig = { auth: { optionsKeysNotAllowedInEnv: ['ldap.filter'] } };
+
+    const authenticator = await storer.get('ldap1');
+
+    expect(authenticator.dataValues.options.ldap.filter).toBe(filter);
+    expect(authenticator.dataValues.options.ldap.bindPassword).toBe('secret');
+    expect(environment.renderJsonTemplate).toHaveBeenCalledWith(expect.anything(), { omit: ['ldap.filter'] });
+    const authenticators = await cache.get('authenticators');
+    expect(authenticators['ldap1'].dataValues.options.ldap.bindPassword).toBe('secret');
+  });
+
+  it('should not render a saved authenticator before its auth type is registered', async () => {
+    const authenticator = createAuthenticator('ldap1', 'LDAP');
+    await db.emitAsync('authenticators.afterSave', authenticator);
+
+    const authenticators = await cache.get('authenticators');
+    expect(authenticators['ldap1'].dataValues.options.ldap.filter).toBe(filter);
+    expect(environment.renderJsonTemplate).not.toHaveBeenCalled();
   });
 });
