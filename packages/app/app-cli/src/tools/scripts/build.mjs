@@ -24,7 +24,8 @@ Options:
                           current uses the running Node version and ABI.
                           The application requires Node >=24.
   --tar                   Also create storage/exports/dist.tar.gz containing dist/
-                          and config.example.yml after a successful build.
+                          and config.example.yml (and the Dockerfile with its
+                          .dockerignore, when present) after a successful build.
 
 Examples:
   pnpm build
