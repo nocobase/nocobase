@@ -46,7 +46,7 @@ skills/
     └── SKILL.md
 ```
 
-Use lower-case kebab-case. Do not claim another plugin's prefix, and split multiple Skills by independent App tasks rather than by `client/`, `server/`, or other source directories.
+For a custom scope, keep that scope in the owned prefix too: `@acme/app-plugin-audit-log` owns `acme-app-plugin-audit-log`, not `nocobase-app-plugin-audit-log`. Use lower-case kebab-case. Do not claim another plugin's prefix, and split multiple Skills by independent App tasks rather than by `client/`, `server/`, or other source directories.
 
 ## Write for App tasks
 
