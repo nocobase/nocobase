@@ -339,3 +339,111 @@ it.each([
     ).toBe(recognized);
   },
 );
+
+it.each(['plugins', "'plugins'", '"plugins"'])(
+  'retains the identity barrier for %s configuration keys',
+  async (key) => {
+    const result = await collectModuleSources(
+      await fixture(routes, {
+        'server/config/authorization.js': `import {defineAppConfig} from '@nocobase/app-server/config';export default defineAppConfig(()=>({${key}:[{id:'stop',setup(a){a.use(()=>{});}}]}));`,
+      }),
+    );
+    expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+  },
+);
+
+it.each([
+  [
+    'configuration plugins',
+    'server/config/authorization.js',
+    `import {defineAppConfig} from '@nocobase/app-server/config';export default defineAppConfig(()=>({plugins:unknown,'plugins':[]}));`,
+  ],
+  [
+    'runtime providers',
+    'server/runtime.js',
+    `import {defineAppRuntime} from '@nocobase/app-server/runtime';import plugins from './plugins.js';import defaultConfigs from './config/index.js';export default defineAppRuntime({plugins,defaultConfigs,'serviceProviders':unknown});`,
+  ],
+  [
+    'duplicate runtime providers',
+    'server/runtime.js',
+    `import {defineAppRuntime} from '@nocobase/app-server/runtime';import plugins from './plugins.js';import serviceProviders from './providers/index.js';import defaultConfigs from './config/index.js';export default defineAppRuntime({plugins,defaultConfigs,serviceProviders,'serviceProviders':unknown});`,
+  ],
+  [
+    'duplicate runtime config factory',
+    'server/runtime.js',
+    `import {defineAppRuntime} from '@nocobase/app-server/runtime';import plugins from './plugins.js';import defaultConfigs from './config/index.js';export default defineAppRuntime({plugins,defaultConfigs,createAppConfig:unknown,'createAppConfig':other});`,
+  ],
+  [
+    'duplicate authorization default',
+    'server/config/index.js',
+    `import {defaultAppConfigs} from '@nocobase/app-server/config';import authorization from './authorization.js';export default defaultAppConfigs({authorization,'authorization':unknown});`,
+  ],
+  [
+    'computed configuration',
+    'server/config/authorization.js',
+    `import {defineAppConfig} from '@nocobase/app-server/config';export default defineAppConfig(()=>({[key]:unknown}));`,
+  ],
+])('rejects ambiguous or unproven %s', async (_name, file, source) => {
+  const result = await collectModuleSources(
+    await fixture(routes, { [file]: source }),
+  );
+  expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+});
+
+const wrappers = [
+  'opts',
+  '(opts)',
+  '((opts))',
+  '(opts as object)',
+  '(opts satisfies object)',
+  'opts!',
+  '(<object>opts)',
+  '((opts as object)!)',
+];
+it.each(wrappers)(
+  'rejects documentation object escape through %s',
+  async (wrapped) => {
+    const source = routes
+      .replace(
+        'const doc=',
+        `const opts={};Object.defineProperty(${wrapped},'summary',{enumerable:true,get(){throw new Error('side effect')}});const doc=`,
+      )
+      .replace(
+        'operationId,summary,tags:',
+        '...opts,operationId,summary,tags:',
+      );
+    const root = await fixture(source);
+    // Preserve TypeScript wrappers in the source fixture, as authored by applications.
+    await rm(path.join(root, 'server/routes/index.js'));
+    await writeFile(path.join(root, 'server/routes/index.ts'), source);
+    const result = await collectModuleSources(root);
+    expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+  },
+);
+it.each(wrappers)(
+  'recognizes immutable documentation values through %s',
+  async (wrapped) => {
+    const source = routes
+      .replace('const doc=', 'const opts={summary:"List catalog"};const doc=')
+      .replace(
+        'operationId,summary,tags:',
+        `...${wrapped},operationId,summary,tags:`,
+      );
+    const root = await fixture(source);
+    await rm(path.join(root, 'server/routes/index.js'));
+    await writeFile(path.join(root, 'server/routes/index.ts'), source);
+    const result = await collectModuleSources(root);
+    expect(result.routes[0]?.apiProviders).toContain('@nocobase/db');
+  },
+);
+
+it('recognizes quoted registration keys with the same meaning as identifier keys', async () => {
+  const root = await fixture(routes, {
+    'server/runtime.js': `import {defineAppRuntime} from '@nocobase/app-server/runtime';import plugins from './plugins.js';import serviceProviders from './providers/index.js';import routes from './routes/index.js';import defaultConfigs from './config/index.js';export default defineAppRuntime({'plugins':plugins,'serviceProviders':serviceProviders,routes,'defaultConfigs':defaultConfigs});`,
+    'server/config/index.js': `import {defaultAppConfigs} from '@nocobase/app-server/config';import authorization from './authorization.js';export default defaultAppConfigs({'authorization':authorization});`,
+    'server/config/authorization.js': `import {defineAppConfig} from '@nocobase/app-server/config';export default defineAppConfig(()=>({'plugins':[]}));`,
+  });
+  expect((await collectModuleSources(root)).routes[0]?.apiProviders).toContain(
+    '@nocobase/db',
+  );
+});

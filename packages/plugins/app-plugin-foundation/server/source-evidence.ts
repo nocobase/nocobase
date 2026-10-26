@@ -360,9 +360,23 @@ export class SourceEvidence {
         this.symbol(node) === symbol
       ) {
         let owner: ts.Node = node;
+        const transparent = (
+          node: ts.Node,
+        ): node is
+          | ts.ParenthesizedExpression
+          | ts.AsExpression
+          | ts.SatisfiesExpression
+          | ts.TypeAssertion
+          | ts.NonNullExpression =>
+          ts.isParenthesizedExpression(node) ||
+          ts.isAsExpression(node) ||
+          ts.isSatisfiesExpression(node) ||
+          ts.isTypeAssertionExpression(node) ||
+          ts.isNonNullExpression(node);
         while (
           (ts.isPropertyAccessExpression(owner.parent) ||
-            ts.isElementAccessExpression(owner.parent)) &&
+            ts.isElementAccessExpression(owner.parent) ||
+            transparent(owner.parent)) &&
           owner.parent.expression === owner
         )
           owner = owner.parent;
@@ -397,7 +411,8 @@ export class SourceEvidence {
             ts.isShorthandPropertyAssignment(context.parent) ||
             ts.isPropertyAssignment(context.parent) ||
             ts.isArrayLiteralExpression(context.parent) ||
-            ts.isObjectLiteralExpression(context.parent)
+            ts.isObjectLiteralExpression(context.parent) ||
+            transparent(context.parent)
           )
             context = context.parent;
           if (
@@ -431,7 +446,9 @@ export class SourceEvidence {
     if (
       ts.isParenthesizedExpression(node) ||
       ts.isAsExpression(node) ||
-      ts.isSatisfiesExpression(node)
+      ts.isSatisfiesExpression(node) ||
+      ts.isTypeAssertionExpression(node) ||
+      ts.isNonNullExpression(node)
     )
       return this.values(node.expression, seen);
     return [node];

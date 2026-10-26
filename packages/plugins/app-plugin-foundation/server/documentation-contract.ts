@@ -27,7 +27,9 @@ export function documentationContract(
     if (
       ts.isParenthesizedExpression(node) ||
       ts.isAsExpression(node) ||
-      ts.isSatisfiesExpression(node)
+      ts.isSatisfiesExpression(node) ||
+      ts.isTypeAssertionExpression(node) ||
+      ts.isNonNullExpression(node)
     )
       return check(node.expression);
     if (ts.isParameter(node)) {

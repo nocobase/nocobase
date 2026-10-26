@@ -91,7 +91,10 @@ export function authorizationProgram(
     name: string,
   ): ts.Expression | undefined => {
     const matches = object.properties.filter(
-      (p) => p.name && ts.isIdentifier(p.name) && p.name.text === name,
+      (p) =>
+        p.name &&
+        (ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name)) &&
+        p.name.text === name,
     );
     if (matches.length !== 1) return undefined;
     const p = matches[0];
@@ -103,14 +106,22 @@ export function authorizationProgram(
   };
   const object = (
     node: ts.Node | undefined,
-  ): node is ts.ObjectLiteralExpression =>
-    !!node &&
-    ts.isObjectLiteralExpression(node) &&
-    node.properties.every(
-      (p) =>
-        (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) &&
-        !ts.isComputedPropertyName(p.name),
-    );
+  ): node is ts.ObjectLiteralExpression => {
+    if (!node || !ts.isObjectLiteralExpression(node)) return false;
+    const names = new Set<string>();
+    // A missing optional property is safe only after the whole object is proven unambiguous.
+    // Quoted and identifier keys share one namespace; computed keys, spreads and duplicates are unknown.
+    return node.properties.every((p) => {
+      if (
+        !(ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) ||
+        !(ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name)) ||
+        names.has(p.name.text)
+      )
+        return false;
+      names.add(p.name.text);
+      return true;
+    });
+  };
   const runtime = exported(entries.runtime);
   if (
     !runtime ||
