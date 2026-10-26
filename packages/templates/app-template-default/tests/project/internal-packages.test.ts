@@ -1,5 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import {
+  cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -15,6 +17,11 @@ import packageMetadata from '../../package.json' with { type: 'json' };
 it('checks every internal package without selecting the root application and propagates a failed check', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'app-internal-checks-'));
   try {
+    cpSync(
+      path.resolve(import.meta.dirname, '../../scripts'),
+      path.join(root, 'scripts'),
+      { recursive: true },
+    );
     writeFileSync(
       path.join(root, 'pnpm-workspace.yaml'),
       "packages: ['packages/*']\nverifyDepsBeforeRun: false\n",
@@ -63,6 +70,28 @@ it('checks every internal package without selecting the root application and pro
       'process.exit(7);\n',
     );
     expect(run().status).not.toBe(0);
+    rmSync(path.join(root, 'packages/first/checked'));
+    writeFileSync(
+      path.join(root, 'packages/second/package.json'),
+      JSON.stringify({ name: 'fixture-second', scripts: { check: '  ' } }),
+    );
+    const missing = run();
+    expect(missing.status).not.toBe(0);
+    expect(missing.stderr).toContain('packages/second');
+    expect(existsSync(path.join(root, 'packages/first/checked'))).toBe(false);
+    writeFileSync(
+      path.join(root, 'packages/second/package.json'),
+      JSON.stringify({ name: 'fixture-second' }),
+    );
+    expect(run().status).not.toBe(0);
+    // pnpm workspace exclusions apply to both the preflight and the script run.
+    writeFileSync(
+      path.join(root, 'pnpm-workspace.yaml'),
+      "packages: ['packages/*', '!packages/second']\nverifyDepsBeforeRun: false\n",
+    );
+    expect(run().status).toBe(0);
+    rmSync(path.join(root, 'packages'), { recursive: true });
+    expect(run().status).toBe(0);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -130,7 +130,8 @@
     "AGENTS.md",
     ".agents/rules",
     "CLAUDE.md",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "scripts/check-packages.mjs"
   ],
   "publishConfig": {
     "access": "public"
@@ -156,7 +157,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test --pass-with-no-tests",
-    "check:packages": "pnpm --filter './packages/**' check"
+    "check:packages": "node scripts/check-packages.mjs"
   },
   "browserslist": {
     "production": [

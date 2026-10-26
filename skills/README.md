@@ -227,6 +227,8 @@ Worth covering when `nocobase-app-installer` changes:
 
 `pnpm unreleased:create my-app` creates an application from the snapshot under `../nocobase-local-apps/`, and `pnpm unreleased:smoke` runs the create-app smoke test against it. Both set up the environment themselves.
 
+Add `--internal-packages` to `pnpm unreleased:smoke` to run the application Skill's complete internal-package example in the generated application. This requires the Playwright Chromium browser (`pnpm exec playwright install chromium` from an application). It checks package scripts and declaration updates, browser HMR without a page reload, server reloads, and the same greeting in a production archive with the source paths unavailable. The option also works with `--template examples`. Source directories are temporarily renamed during archive verification and restored during cleanup; use the smoke command's disposable generated application.
+
 `pnpm unreleased:installer-smoke` runs the snapshot's `@nocobase/app-installer` through `scripts/smoke-app-installer.mjs`, the script the app-installer CI jobs run: it creates a default application, builds its archive, installs, upgrades and rolls it back. It covers changes to the templates, `app-cli` and `create-app` that the CI jobs cannot see before a release. It needs pm2 on `PATH`, runs pm2 under its own `PM2_HOME` and stops it afterwards, and keeps the installations and their logs under the temporary directory it prints.
 
 ### 5. Clean up

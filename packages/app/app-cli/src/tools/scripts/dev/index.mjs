@@ -10,6 +10,7 @@ import { readCliHooks, runHookStage } from '../utils/cli-hooks.mjs';
 import { assertConfigurationPresent } from '../utils/config-presence.mjs';
 import { resolvePluginWatchIncludes } from './plugin-watches.mjs';
 import { resolveWorkspaceWatchIncludes } from './workspace-watches.mjs';
+import { createDevConnectionProxy } from './connection-proxy.mjs';
 import { resolveConfigWatch, watchConfigFiles } from './config-watch.mjs';
 import {
   DEPENDENCY_SETTLE_MS,
@@ -117,6 +118,7 @@ let envWatcher;
 let dependencyWatchers = [];
 let dependencyRestartTimer;
 let instanceLock;
+let connectionProxy;
 
 const shutdown = (exitCode = 0) => {
   if (shuttingDown) return;
@@ -134,6 +136,7 @@ const shutdown = (exitCode = 0) => {
   }
   for (const watcher of dependencyWatchers.splice(0)) watcher.close();
   instanceLock?.release();
+  void connectionProxy?.close();
 
   // The supervisor owns the complete process group. Exiting the worker starts
   // Execa's graceful termination and bounded escalation for all descendants.
@@ -277,14 +280,31 @@ spawnDevProcess(
 
 // A remote backend owns its lifecycle; do not allocate, start, or watch a local server.
 if (!proxyTarget) {
+  // HMR imports use the public application origin. Keep accepting those
+  // connections while tsx replaces Hono, instead of failing the module fetch.
+  const backendPort = strictStartup
+    ? appServerPort
+    : await findAvailablePort({
+        excludedPorts: [appServerPort, vitePort],
+        host: '127.0.0.1',
+        label: 'development backend',
+        preferredPort: 14000,
+      });
+  if (!strictStartup) {
+    connectionProxy = await createDevConnectionProxy({
+      host: appServerHost,
+      port: appServerPort,
+      targetPort: backendPort,
+    });
+  }
   const serverEnv = {
     ...nextEnv,
     ...resolveDevShutdownEnv(nextEnv),
     APP_VITE_DEV_HOST: viteDevHost,
     APP_VITE_DEV_PORT: String(vitePort),
     APP_VITE_DEV_URL: `http://${toUrlHost(viteDevHost)}:${vitePort}`,
-    APP_SERVER_HOST: appServerHost,
-    APP_SERVER_PORT: String(appServerPort),
+    APP_SERVER_HOST: strictStartup ? appServerHost : '127.0.0.1',
+    APP_SERVER_PORT: String(backendPort),
     APP_SERVER_START_LOG: 'false',
     // Asks the server to refresh database/<connection>/collections/ after its startup migrations change a schema.
     // It names this application's root, so other applications a host runs in the same process, which see the same

@@ -277,6 +277,7 @@ describe('remote development runner', () => {
       appServerPort: '13399',
     });
 
+    expect(run.createDevConnectionProxy).not.toHaveBeenCalled();
     expect(run.findAvailablePort).toHaveBeenCalledExactlyOnceWith({
       host: '0.0.0.0',
       label: 'Vite dev',
@@ -323,19 +324,25 @@ describe('remote development runner', () => {
     );
   });
 
-  it('keeps APP_SERVER_PORT on the backend in normal development', async () => {
+  it('keeps APP_SERVER_PORT on the public listener during backend restarts', async () => {
     const run = await runDevMode(undefined, { appServerPort: '13399' });
 
     expect(
       run.findAvailablePort.mock.calls.map(
         ([options]) => options.preferredPort,
       ),
-    ).toEqual([5173, 13399]);
+    ).toEqual([5173, 13399, 14000]);
+    expect(run.createDevConnectionProxy).toHaveBeenCalledExactlyOnceWith({
+      host: '0.0.0.0',
+      port: 13399,
+      targetPort: 14000,
+    });
     expect(run.spawnDevProcess.mock.calls[0]?.[3]).toMatchObject({
       APP_VITE_DEV_PORT: '5173',
     });
     expect(run.spawnDevProcess.mock.calls[1]?.[3]).toMatchObject({
-      APP_SERVER_PORT: '13399',
+      APP_SERVER_PORT: '14000',
+      APP_SERVER_HOST: '127.0.0.1',
       BETTER_AUTH_TRUSTED_ORIGINS:
         'http://localhost:13399,http://127.0.0.1:13399',
     });
@@ -345,6 +352,23 @@ describe('remote development runner', () => {
     expect(run.log).toHaveBeenCalledWith(
       '  Local:     http://127.0.0.1:13399/main/',
     );
+  });
+
+  it('keeps strict startup on the original listener without a connection proxy', async () => {
+    const run = await runDevMode(undefined, {
+      appServerPort: '13399',
+      strictStartup: true,
+    });
+    expect(run.createDevConnectionProxy).not.toHaveBeenCalled();
+    expect(
+      run.findAvailablePort.mock.calls.map(
+        ([options]) => options.preferredPort,
+      ),
+    ).toEqual([5173, 13399]);
+    expect(run.spawnDevProcess.mock.calls[1]?.[3]).toMatchObject({
+      APP_SERVER_PORT: '13399',
+      APP_SERVER_HOST: '0.0.0.0',
+    });
   });
 
   it('leaves the configured public origin to the application instead of overriding it', async () => {
@@ -395,7 +419,7 @@ describe('remote development runner', () => {
 
     expect(
       run.findAvailablePort.mock.calls.map(([options]) => options.label),
-    ).toEqual(['Vite dev', 'application server']);
+    ).toEqual(['Vite dev', 'application server', 'development backend']);
     expect(
       run.spawnDevProcess.mock.calls.map(([label, command]) => [
         label,
@@ -611,6 +635,7 @@ async function runDevMode(
   proxyTarget: string | undefined,
   options: {
     appServerPort?: string;
+    strictStartup?: boolean;
     vitePortOffset?: number;
     watchEnvironment?: Record<string, string>;
   } = {},
@@ -633,6 +658,7 @@ async function runDevMode(
       preferredPort +
       (label === 'Vite dev' ? (options.vitePortOffset ?? 0) : 0),
   );
+  const createDevConnectionProxy = vi.fn(async () => ({ close: vi.fn() }));
   const resolvePluginWatchIncludes = vi.fn(() => ['plugins/**']);
   const resolveConfigWatch = vi.fn(() => ({
     directory: '/app',
@@ -673,6 +699,8 @@ async function runDevMode(
       setInterval,
       clearInterval,
       findAvailablePort,
+      createDevConnectionProxy,
+      connectionProxy: undefined,
       resolveDevTrustedOrigins,
       DEFAULT_APP_BASE_PATH,
       normalizeBasePath,
@@ -683,6 +711,7 @@ async function runDevMode(
       }),
       loadEnv: () => ({
         APP_BASE_PATH: '/main',
+        NOCOBASE_STRICT_STARTUP: options.strictStartup ? 'true' : undefined,
         APP_SERVER_PORT: options.appServerPort,
         PROXY_TARGET_URL: proxyTarget,
       }),
@@ -727,6 +756,7 @@ async function runDevMode(
 
   return {
     log,
+    createDevConnectionProxy,
     findAvailablePort,
     resolveConfigWatch,
     resolvePluginWatchIncludes,
