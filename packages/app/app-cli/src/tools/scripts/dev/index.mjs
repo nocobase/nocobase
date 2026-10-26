@@ -9,6 +9,7 @@ import {
 import { readCliHooks, runHookStage } from '../utils/cli-hooks.mjs';
 import { assertConfigurationPresent } from '../utils/config-presence.mjs';
 import { resolvePluginWatchIncludes } from './plugin-watches.mjs';
+import { resolveWorkspaceWatchIncludes } from './workspace-watches.mjs';
 import { resolveConfigWatch, watchConfigFiles } from './config-watch.mjs';
 import {
   DEPENDENCY_SETTLE_MS,
@@ -233,7 +234,12 @@ progress('Running beforeDev hooks');
 runHookStage(readCliHooks().dev, 'beforeDev', runDevHook);
 const pluginWatchIncludes = proxyTarget
   ? []
-  : await resolvePluginWatchIncludes(rootDir);
+  : [
+      ...new Set([
+        ...(await resolvePluginWatchIncludes(rootDir)),
+        ...resolveWorkspaceWatchIncludes(rootDir),
+      ]),
+    ];
 
 // Only a run that owns a local server contends for the application's database;
 // a proxy run talks to someone else's and may share the root. Claimed before

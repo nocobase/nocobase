@@ -50,6 +50,10 @@ When a compatible newer version of the retaining dependency is available within 
 
 After resolving the conflict, rerun `pnpm nocobase skills sync` and all Finish checks. Confirm the affected paths use a compatible shared package resolution; unrelated packages may legitimately retain multiple versions. A remaining type error without duplicate package resolutions needs investigation as a source or API compatibility issue.
 
+## Internal workspace packages
+
+When the application owns `packages/`, preserve those directories and their `workspace:` dependency ranges while reconciling the root template. Preserve custom `packages` patterns and installation settings in `pnpm-workspace.yaml`; add `packages/*` only when internal packages need it and no existing pattern includes them. Keep a single root lockfile. New template check scripts may delegate to internal packages, so ensure those packages provide their own checks and run them as well as the application checks. See the development Skill's [internal workspace package contract](../../nocobase-app-development/references/dependencies.md#internal-workspace-packages).
+
 ## Generated configuration and committed examples
 
 `config.yml` holds real settings and generated secrets. A template may also generate `.env` for build-time deployment facts. These live files are gitignored, were written by `pnpm nocobase config init` and the generator rather than copied from the template, and are absent from the release diff. Never print or replace them as part of the merge. `config init` refuses to overwrite an existing configuration, so it is safe to run during an upgrade; `--force` replaces one and is never part of a merge.

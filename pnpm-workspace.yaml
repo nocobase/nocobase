@@ -1,5 +1,6 @@
 packages:
   - packages/*/*
+  - packages/templates/*/packages/*
   - ui-library
   - docs
   - skills/nocobase-app-plugin-development/assets/testing-example

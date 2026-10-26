@@ -705,6 +705,7 @@ async function runDevMode(
       setTimeout,
       clearTimeout,
       resolvePluginWatchIncludes,
+      resolveWorkspaceWatchIncludes: () => ['packages/shared/src/**/*'],
       rootDir: '/app',
       runHookStage: (
         hooks: { beforeDev: DevHook[] },

@@ -37,7 +37,7 @@ Do not infer the application's capabilities from a template name or from this Sk
 
 ## The one rule that decides most tasks
 
-Build the feature in the application. Do not run a plugin generator, create a `packages/plugins/` directory, or write a `defineServerPlugin()` declaration for this application's own feature. Create a plugin only when the user explicitly asks for an independently published, reusable package.
+Build the feature in the application. Do not run a plugin generator, create a `packages/plugins/` directory, or write a `defineServerPlugin()` declaration for this application's own feature. Create a plugin only when the user explicitly asks for an independently published, reusable package. Ordinary internal workspace packages for shared code are different: when the application needs them, follow [internal workspace packages](references/dependencies.md#internal-workspace-packages), keeping the application at the workspace root.
 
 ## Check the installed plugins first
 

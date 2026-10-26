@@ -145,7 +145,7 @@
     "dev": "nocobase dev",
     "build": "nocobase build",
     "start": "nocobase start",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "check": "pnpm check:packages && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "lint": "eslint . --max-warnings 0",
@@ -155,7 +155,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test --pass-with-no-tests"
+    "test:e2e": "playwright test --pass-with-no-tests",
+    "check:packages": "pnpm --filter './packages/**' check"
   },
   "browserslist": {
     "production": [

@@ -48,3 +48,35 @@ Declare such a package in `dependencies` when you write the code; nothing will r
 Node ABI to major version: 115 is Node 20, 127 is 22, 137 is 24, 147 is 26.
 
 `pnpm build` targets the machine it runs on, so `pnpm build && pnpm start` works. A deployment build says where it is going: `--target linux-x64`, `--target linux-arm64`, `--target linux-x64-musl`, plus `--node-version` when the server's Node major differs. A `.node` binary must match the target platform, architecture, and C library; addons using the Node ABI must also match its version. `pg`, `mysql2`, and `tedious` are plain JavaScript, so an application using only those is portable as built. The Finishing section of [the Skill](../SKILL.md#finishing) and the `nocobase-deployment` Skill cover build targets in full.
+
+## Internal workspace packages
+
+An application may own a pnpm workspace without moving its `client/`, `server/`, `cli/` or `database/`. Declare `packages: ['packages/*']` in its root `pnpm-workspace.yaml`, preserving existing settings, and put ordinary shared packages below `packages/`. Use unique package names and explicit `workspace:*` references: server imports belong in the application's `dependencies`, client-only imports in `devDependencies`. Internal packages can be private; sharing code does not require a plugin or an npm release. Never import a sibling package through a relative filesystem path.
+
+Use `src/` for an ordinary package's sources. Prefer source imports during development, with compiled declarations for typechecking and compiled imports for deployment. For example:
+
+```json
+{
+  "name": "@my-app/shared",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "files": ["dist"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./src/index.ts" }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    }
+  }
+}
+```
+
+`publishConfig.exports` also tells the application build which exports to put in its vendored deployment copy; it does not require publishing. Give the package a `build` script that emits JavaScript and declarations into `dist`, plus `lint`, `typecheck`, `test`, `check` and `fix` scripts using `@nocobase/dev-config`. Install the package's build tooling as its own development dependencies. Keep React and identity-sensitive NocoBase runtimes as peers, supplied by the application. Browser packages must not expose server-only imports through their client entry.
+
+Run `pnpm install` once at the application root. Build a new package before standalone typechecking needs its declarations. During `pnpm dev`, Vite loads linked client sources and the server watches reachable internal workspace packages, including transitive ones, under `src/`, `server/`, `database/` and `shared/`; it also watches compiled `dist/` for packages that choose compiled exports. Such packages need their own build watcher running separately. Restart development after adding a package or changing the dependency graph so the watch set is recalculated.
+
+`pnpm build` builds workspace dependencies before application typechecking and client bundling. The deployment includes runtime workspace packages and their transitive runtime dependencies under `dist/vendor`, using their compiled exports. Keep runtime assets in `dist` or in literal paths named by `files`; glob patterns in `files` are not copied by the deployment builder. Verify a deployment outside the source workspace. Do not run a recursive build that also selects the root application while its own build is rebuilding dependencies; an external topological build may set `NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD=1` once it owns that ordering.
+
+Each internal package owns its checks. Current templates exclude `packages/` from root linting and formatting and run the packages' `check` scripts through `pnpm check:packages` before the application checks. During a template upgrade, retain internal packages, their `workspace:` dependencies and custom workspace patterns, then reinstall at the application root and check the affected packages and application together.
