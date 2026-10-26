@@ -21,11 +21,11 @@ Choose a lowercase kebab-case short name, check the destination and npm name for
 | Shared React context                     | Client React Provider                                     |
 | Client service or startup initialization | Client ServiceProvider                                    |
 | Asynchronous execution                   | `JobExecutor` job owned by a Server ServiceProvider; a queue only for delay, priority, deduplication, rate limits or fan-out |
-| App-owned editable UI source             | Registry item                                             |
+| App-owned editable UI source             | UI Library item                                             |
 | Agent integration knowledge              | Plugin `skills/`                                          |
 | Application command                      | Plugin `cli/` and `./cli` export                          |
 
-An App owns its page composition, business models, call sites, and permission configuration. A plugin owns its services, components, internal data, and lifecycle. Communicate through public exports, API endpoints, typed options, Registry items, and Plugin Skills; do not bypass private modules or internal tables.
+An App owns its page composition, business models, call sites, and permission configuration. A plugin owns its services, components, internal data, and lifecycle. Communicate through public exports, API endpoints, typed options, UI Library items, and Plugin Skills; do not bypass private modules or internal tables.
 
 ## Select capabilities explicitly
 
@@ -42,7 +42,6 @@ An App owns its page composition, business models, call sites, and permission co
 | `client.react-providers`   | React context/wrapper contribution                    |
 | `client.locales`           | Client locale declaration/resources                   |
 | `cli`                      | CLI definition and command structure                  |
-| `registry`                 | App-owned source delivery structure                   |
 | `skills`                   | App-facing integration Skill draft                    |
 
 Use repeatable `--with`; repeated capabilities are deduplicated. Use `--empty` for only a package foundation. Omitting both is an error. `--with all` is available when all capabilities are actually required; it is not a reason to generate unused modules. Locale capabilities are explicit: selecting Routes or Providers does not create locale resources.
@@ -87,7 +86,6 @@ This is the union of possible capabilities, not a directory tree every plugin mu
 | `server/locales/`                         | Lazy Server locale resources                               |
 | `database/migrations/`, `database/seeds/` | Historical schema operations and initial records           |
 | `cli/`                                    | Explicit CLI contribution and command modules              |
-| `registry/`                               | Canonical source that becomes App-owned after installation |
 | `skills/`                                 | Plugin-owned integration knowledge synchronized into Apps  |
 | `tests/`                                  | Plugin behavior and integration tests                      |
 
@@ -188,14 +186,14 @@ Keep the configuration emitted by `plugin:create`: browser-only libraries use `c
 | Ordinary Server/database/CLI implementation at runtime            | `dependencies`, except shared peers                                |
 | Tests, build tools, or erased types that consumers never resolve  | `devDependencies`                                                  |
 | Types retained in published declarations                          | Consumer-resolvable dependency or peer contract                    |
-| Registry source compiled only after copying into an App           | Registry item dependency contract, not plugin runtime dependencies |
+| UI Library source compiled in its consumer           | UI Library item dependency contract, not plugin runtime dependencies |
 
 Use `catalog:` for shared catalog packages and `workspace:` for internal packages as required by the repository. Mark peers optional only when a consumer legitimately does not need them. A client peer is not optional merely because a Server deployment omits client tooling. Dependency edits require the coordinated package-manager install and lockfile update.
 
-Every package under `packages/` is publishable: use the required public metadata, `files`, changelog, and initial version policy. Runtime code ships from `dist`; do not also publish source `server/` or `database/` directories that can shadow compiled resources. Publish `skills/` and Registry artifacts only when provided. Build checksum manifests for emitted migrations/seeds as described in [database resources](database.md).
+Every package under `packages/` is publishable: use the required public metadata, `files`, changelog, and initial version policy. Runtime code ships from `dist`; do not also publish source `server/` or `database/` directories that can shadow compiled resources. Publish `skills/` when provided; editable UI is published by the UI Library. Build checksum manifests for emitted migrations/seeds as described in [database resources](database.md).
 
 ## Delivery sequence
 
-Implement the required data model, service contract and Provider, HTTP/Job boundary, Client behavior, locales, and integration knowledge in dependency order. Registry source is needed only when the App should own editable UI. Keep implementation, declarations, exports, dependencies, published files, tests, README, and Plugin Skills aligned throughout.
+Implement the required data model, service contract and Provider, HTTP/Job boundary, Client behavior, locales, and integration knowledge in dependency order. App-owned editable UI belongs in the UI Library. Keep implementation, declarations, exports, dependencies, published files, tests, README, and Plugin Skills aligned throughout.
 
 Continue with [registration](registration.md) when target App integration is requested and [testing](testing.md) for completion checks. The capability source (`packages/tools/create-plugin/src/lib/capabilities.ts`) and generator templates (`packages/tools/create-plugin/template`) are authoritative when extending the scaffold itself.

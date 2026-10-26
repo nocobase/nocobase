@@ -353,12 +353,9 @@ test('paths read without a declared dependency select their consumers but not th
     'packages/plugins/app-plugin-agents/client/components/ui/button.tsx',
   );
   assert.ok(ui.packages.includes('@nocobase/app-plugin-agents'));
-  assert.ok(ui.packages.includes('@nocobase/app-plugin-notification'));
+  assert.ok(!ui.packages.includes('@nocobase/app-plugin-notification'));
   assert.ok(!ui.packages.includes('@nocobase/app-plugin-file'));
-  assert.deepEqual(ui.changedPackages, [
-    '@nocobase/app-plugin-agents',
-    '@nocobase/app-plugin-notification',
-  ]);
+  assert.deepEqual(ui.changedPackages, ['@nocobase/app-plugin-agents']);
 
   const agents = plan('packages/plugins/app-plugin-agents/server/index.ts');
   assert.ok(!agents.packages.includes('@nocobase/app-plugin-notification'));
@@ -369,7 +366,6 @@ test('paths read without a declared dependency select their consumers but not th
   for (const name of [
     '@nocobase/app-template-default',
     '@nocobase/app-plugin-file',
-    '@nocobase/app-plugin-notification',
   ]) {
     assert.ok(template.packages.includes(name), name);
   }

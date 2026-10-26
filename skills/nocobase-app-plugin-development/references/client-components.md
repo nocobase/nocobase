@@ -10,7 +10,7 @@ Use this reference for plugin-owned pages, React Providers, reusable component e
 | React tree wrapper        | `defineClientReactProviders()`                   | Plugin                                    |
 | Public reusable component | App or another plugin importing a package export | Plugin API                                |
 | Internal component        | Another module inside the plugin                 | Plugin implementation                     |
-| Registry component        | Target App after materialization                 | App                                       |
+| UI Library item        | Receiving package after installation                 | App                                       |
 
 This ownership determines which package imports, UI primitives, locales, dependencies, exports, tests, and upgrade rules apply.
 
@@ -106,7 +106,7 @@ cd packages/plugins/app-plugin-audit-log
 pnpm exec shadcn add button card dialog
 ```
 
-Do not use `--overwrite` over customized primitives without reviewing and accepting the diff. The Registry example components.json (`packages/examples/app-plugin-registry-example/components.json`), generation stylesheet (`packages/examples/app-plugin-registry-example/client/styles.css`), and adapted Button source (`packages/examples/app-plugin-registry-example/client/components/ui/button.tsx`) are the maintained source-generation example.
+Do not use `--overwrite` over customized primitives without reviewing and accepting the diff. Use the generated plugin's `components.json`, stylesheet, and package import mappings; see `ui-library/USAGE.md` for maintained installation examples.
 
 ## Adapt generated source for a published plugin
 

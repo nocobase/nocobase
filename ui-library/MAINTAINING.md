@@ -14,7 +14,7 @@ An item is one of two kinds, and its kind decides where it installs:
 Two neighbours look similar and are not the same thing:
 
 - Behavior a plugin must keep consistent across upgrades belongs in the plugin, as a runtime component, route, or public export. Nothing updates installed source, so it cannot carry anything the plugin has to control.
-- A plugin can also ship its own recipes from a `registry/` directory described by `registry.config.json`, built and materialized with `pnpm registry`; see the [plugin Registry reference](../.agents/skills/nocobase-app-plugin-development/references/registry.md). Those travel inside the plugin's npm package. This library is the registry served over HTTP, which is what lets any project run `shadcn add @nocobase/<item>`.
+- All editable UI recipes live in this library. Plugins consume items under `client/` and expose stable runtime contracts; they do not publish their own Registry directories or build configuration.
 
 ## Layout
 
@@ -26,6 +26,8 @@ ui-library/
 │   ├── auth/                   a group of blocks: registry.json, a README, and one directory per block
 │   ├── agents/                 agents: the agent-queue and agent-chat blocks and the agent-run-history, agent-composer and agent-picker components
 │   ├── authorization/          the permission-editor component
+│   ├── file/                   file-component-ui: uploads and multi-format previews over File Repository services
+│   ├── notification/           notification-logs-ui: delivery and provider-attempt logs
 │   ├── projects/               projects and issues: the project-detail and issue-detail blocks, issue-table
 │   └── components/             the group of components: registry.json, a README, and every
 │                               component's files side by side, as they land in client/components/

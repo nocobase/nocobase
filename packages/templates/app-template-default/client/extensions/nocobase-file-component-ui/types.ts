@@ -17,7 +17,7 @@ export interface FileUiLabels {
 }
 
 export interface FileUploadFieldProps {
-  readonly repository: ClientFileRepository;
+  readonly repository: Pick<ClientFileRepository, 'uploadOne' | 'deleteOne'>;
   readonly value: readonly FileRecord[];
   readonly onChange: (value: readonly FileRecord[]) => void;
   readonly onError?: (error: Error) => void;

@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
 export default defineConfig({
+  optimizeDeps: { exclude: ['@silurus/ooxml'] },
   plugins: [react(), tailwindcss() as unknown as PluginOption],
   resolve: {
     alias: [

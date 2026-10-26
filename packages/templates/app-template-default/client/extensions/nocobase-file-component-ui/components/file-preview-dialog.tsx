@@ -6,16 +6,16 @@ import type {
   FilePreviewDialogProps,
   FileRecord,
   FileUiLabels,
-} from '../types';
+} from '../types.js';
 import {
   isActiveMarkupMimeType,
   resolveFilePreviewKind,
   type FilePreviewKind,
-} from '../lib/file-preview';
+} from '../lib/file-preview.js';
 import { Button } from '#components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
-import { fileUrlCredentials, resolveSafeFileUrl } from '../lib/file-url';
-import { FilePreviewContent } from './previewers/file-preview-content';
+import { fileUrlCredentials, resolveSafeFileUrl } from '../lib/file-url.js';
+import { FilePreviewContent } from './previewers/file-preview-content.js';
 
 const PDF_MIME_TYPE = 'application/pdf';
 const PDF_PREVIEW_ERROR = 'Unable to load the PDF preview.';
@@ -58,7 +58,7 @@ interface OpenFilePreviewDialogProps {
 function OpenFilePreviewDialog(
   inputProps: OpenFilePreviewDialogProps,
 ): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const {
     files,
     initialIndex,
@@ -72,7 +72,8 @@ function OpenFilePreviewDialog(
   const file = files[index];
   if (!file) throw new Error('A preview file is required.');
   const downloadLabel =
-    labels?.download ?? t('files.download', { defaultValue: 'Download' });
+    labels?.download ??
+    t('fileUi.files.download', { defaultValue: 'Download' });
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent
@@ -91,7 +92,7 @@ function OpenFilePreviewDialog(
                   type='button'
                   size='icon'
                   variant='ghost'
-                  aria-label={t('files.previous', {
+                  aria-label={t('fileUi.files.previous', {
                     defaultValue: 'Previous file',
                   })}
                   onClick={() =>
@@ -106,7 +107,9 @@ function OpenFilePreviewDialog(
                   type='button'
                   size='icon'
                   variant='ghost'
-                  aria-label={t('files.next', { defaultValue: 'Next file' })}
+                  aria-label={t('fileUi.files.next', {
+                    defaultValue: 'Next file',
+                  })}
                   onClick={() =>
                     setIndex((value) => (value + 1) % files.length)
                   }

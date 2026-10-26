@@ -93,7 +93,7 @@ Use `en-US` as the locale key-shape source, confirm every locale manifest of the
 
 ## Registry and Skill verification
 
-Build Registry items and install/materialize them into a temporary or intended App within the task's scope. Check copied paths, source extensions, dependencies, public imports, typecheck, tests, build, and rendered behavior. The App copy is not the plugin's canonical source, and a snapshot does not establish an upgrade merge strategy.
+Build UI Library items with shadcn and install them into a temporary or intended App within the task's scope. Check copied paths, source extensions, dependencies, public imports, typecheck, tests, build, and rendered behavior. The App copy is distinct from the UI Library's canonical source, and a snapshot does not establish an upgrade merge strategy.
 
 Check Plugin Skill frontmatter, ownership prefixes, absence of drafts, publication through `files`, and synchronization replacement/removal/conflict behavior. Then review every claimed public API, prerequisite, permission, and verification step against the implementation. File equality only proves synchronization; the target App must demonstrate the integration the Skill promises. The Skills example (`packages/examples/app-plugin-skills-example`) shows a public component consumer and actual App HTTP verification.
 
