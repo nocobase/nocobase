@@ -1,0 +1,39 @@
+# Which dependencies may run install scripts: true compiles a native addon, false skips a script
+# the project does not need. A package left out here stops the install with ERR_PNPM_IGNORED_BUILDS.
+# pnpm 11 reads this from pnpm-workspace.yaml only; see https://pnpm.io/settings/build.
+allowBuilds:
+  better-sqlite3: false
+  esbuild: true
+  oracledb: true
+  tesseract.js: false
+  '@mongodb-js/zstd': false
+  node-liblzma: false
+
+# Use msgpackr without its optional native accelerator or platform binary packages.
+ignoredOptionalDependencies: [ msgpackr-extract ]
+
+# Install dependencies explicitly instead of during dev/build/start.
+# create-app installs them initially; run pnpm install after changing dependencies.
+verifyDepsBeforeRun: false
+
+# Skips re-auditing lockfile entries against the supply-chain policy on every install.
+# The check costs tens of seconds here and re-verifies versions the lockfile already pins;
+# newly resolved packages are still checked. Set to false if outside contributors edit the
+# lockfile. See https://pnpm.io/settings/dependency-resolution#trustlockfile.
+trustLockfile: true
+
+# Reports a dependency whose install script was skipped as a warning instead of failing the
+# install. allowBuilds above decides the packages known today; this keeps a new transitive
+# dependency from stopping the install with a red error before anything is even running.
+# See https://pnpm.io/settings/build#strictdepbuilds.
+strictDepBuilds: false
+
+minimumReleaseAgeExclude:
+  - '@nocobase/app-plugin-agents@1.0.0-beta.25'
+  - '@nocobase/app-plugin-authentication@2.0.0-beta.15'
+  - '@nocobase/app-plugin-authorization@1.0.0-beta.32'
+  - '@nocobase/app-plugin-foundation@0.1.0-beta.7'
+  - '@nocobase/app-plugin-knowledge@0.1.0-beta.12'
+  - '@nocobase/app-plugin-users@2.0.0-beta.10'
+  - '@nocobase/app-skills@0.1.0-beta.51'
+  - '@nocobase/app-plugin-foundation@0.1.0-beta.8'

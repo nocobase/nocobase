@@ -1,0 +1,599 @@
+@import 'tailwindcss';
+@config "../tailwind.config.mjs";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import './theme/themes/default.css';
+@import './theme/themes/compact.css';
+@source "./components/ui";
+
+@custom-variant dark (&:is(.dark *));
+
+/* The stationary brand and a constant orbit read as loading at every size. */
+@keyframes nocobase-loading-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.nocobase-loading-orbit {
+  transform-origin: 32px 32px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nocobase-loading-orbit {
+    animation: nocobase-loading-orbit 1.1s linear infinite;
+  }
+}
+
+@theme {
+  --font-heading: var(--font-sans);
+  /* These names are implemented below as runtime-variable utilities. */
+  --shadow-2xs: initial;
+  --shadow-xs: initial;
+  --shadow-sm: initial;
+  --shadow-md: initial;
+  --shadow-lg: initial;
+  --shadow-xl: initial;
+  --shadow-2xl: initial;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-hover: var(--hover);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply min-h-svh bg-background font-sans text-base text-foreground antialiased;
+    margin: 0;
+  }
+
+  /* Keep semantic text in application and plugin content on the same typography. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    @apply font-mono;
+  }
+}
+
+/* Named shadows normally compile to literal values. Arbitrary-value utilities
+   preserve the runtime token and Tailwind's ring/shadow composition. */
+@utility shadow-2xs {
+  @apply shadow-(--shadow-2xs);
+}
+@utility shadow-xs {
+  @apply shadow-(--shadow-xs);
+}
+@utility shadow-sm {
+  @apply shadow-(--shadow-sm);
+}
+@utility shadow-md {
+  @apply shadow-(--shadow-md);
+}
+@utility shadow-lg {
+  @apply shadow-(--shadow-lg);
+}
+@utility shadow-xl {
+  @apply shadow-(--shadow-xl);
+}
+@utility shadow-2xl {
+  @apply shadow-(--shadow-2xl);
+}
+
+/* The application's one toaster mounts before any dialog opens, and every
+   overlay shares z-50, so a dialog portaled later would paint over its toasts.
+   Lift the viewport here rather than in the generated component; left outside
+   any layer so it outranks the component's z-50 utility. */
+[data-slot='toast-viewport'] {
+  z-index: 100;
+}
+
+/* Application-wide interaction and badge treatment, outside generated primitives. */
+@layer base {
+  /* Whatever may be clicked shows the pointer, the plugins' pages included.
+     Tailwind 4 leaves buttons with the arrow; a control disabled (natively,
+     or as Base UI and ARIA mark it) keeps it, and a utility on an element
+     (`cursor-default`, `cursor-not-allowed`) still wins over this layer. */
+  :is(
+      button,
+      [role='button'],
+      [role='menuitem'],
+      [role='menuitemcheckbox'],
+      [role='menuitemradio'],
+      [role='option'],
+      [role='tab'],
+      [role='checkbox'],
+      [role='radio'],
+      [role='switch'],
+      [role='combobox'],
+      summary,
+      select,
+      label[for],
+      input[type='checkbox'],
+      input[type='radio'],
+      input[type='file'],
+      a[href]
+    ):not(:disabled):not([aria-disabled='true']):not([data-disabled]) {
+    cursor: pointer;
+  }
+}
+
+[data-slot='badge'] {
+  border-radius: var(--radius-md);
+  min-height: calc(var(--spacing) * 7);
+  height: auto;
+  padding-inline: calc(var(--spacing) * 2.5);
+  line-height: 1.4;
+}
+/* The small badge, `data-size='sm'`: beside a title or a name, on a card or
+   a board's card, wherever several sit in a dense row. The default one is a
+   status standing on its own, as in a table's column or a record's
+   particulars. */
+[data-slot='badge'][data-size='sm'] {
+  min-height: calc(var(--spacing) * 5.5);
+  padding-block: 0;
+  padding-inline: calc(var(--spacing) * 1.5);
+  font-size: var(--text-xs);
+  line-height: 1.3;
+}
+
+/* One focus for every control, across the application and the plugins'
+   pages: a half-strength border and a 2px halo at a fifth of the ring colour,
+   in place of the 3px ring at half of it that the primitives and pages draw,
+   which reads heavy. Unlayered, so it wins over their utilities without
+   editing them. A label wrapping a visually hidden control, such as an
+   option card, and a rich text editor's frame show their control's focus.
+   An invalid field keeps its red, and a destructive button its own colour. */
+:is(
+    [data-slot='input'],
+    [data-slot='textarea'],
+    [data-slot='select-trigger'],
+    button,
+    [role='button'],
+    [role='tab'],
+    [role='menuitem'],
+    [role='checkbox'],
+    [role='switch'],
+    [role='radio'],
+    input[type='checkbox'],
+    input[type='radio'],
+    a[href]
+  ):focus-visible:not([aria-invalid='true']),
+label:has(> .sr-only:focus-visible),
+[data-slot='rich-text-editor']:focus-within,
+[data-slot='input-group']:has(
+    [data-slot='input-group-control']:focus-visible
+  ):not(:has([aria-invalid='true'])) {
+  border-color: color-mix(in oklch, var(--ring) 50%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring) 20%, transparent);
+}
+[data-slot='button'].text-destructive:focus-visible:not([aria-invalid='true']) {
+  border-color: color-mix(in oklch, var(--destructive) 40%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--destructive) 20%, transparent);
+}
+
+/* Overlays in a light frame: a faint, blurred backdrop, and the content
+   framed by the general border alone, as a card is, without the primitive's
+   ring or a heavy shadow. The plugins' copies of these primitives take it
+   too; unlayered, so it wins over their utilities. */
+:is(
+  [data-slot='dialog-overlay'],
+  [data-slot='alert-dialog-overlay'],
+  [data-slot='sheet-overlay']
+) {
+  background: rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(4px);
+}
+:is(
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-content'],
+  [data-slot='route-overlay-content']
+) {
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+[data-slot='route-overlay-content'][data-presentation='dialog'] {
+  border-radius: var(--radius-xl);
+}
+:is([data-slot='dialog-title'], [data-slot='alert-dialog-title']) {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.4;
+}
+:is([data-slot='dialog-description'], [data-slot='alert-dialog-description']) {
+  line-height: 1.65;
+}
+:is([data-slot='dialog-footer'], [data-slot='alert-dialog-footer']) > button {
+  min-height: calc(var(--spacing) * 10);
+  padding-inline: calc(var(--spacing) * 4);
+}
+/* Route overlays compose the dialog primitives, so their close button sits where a dialog's does. */
+:is([data-slot='dialog-content'], [data-slot='route-overlay-content'])
+  > [data-slot='dialog-close'] {
+  top: calc(var(--spacing) * 4);
+  right: calc(var(--spacing) * 4);
+}
+[data-slot='dialog-header'] {
+  padding-right: calc(var(--spacing) * 8);
+}
+[data-slot='alert-dialog-media'] {
+  border-radius: var(--radius-lg);
+  width: calc(var(--spacing) * 12);
+  height: calc(var(--spacing) * 12);
+}
+[data-slot='alert'] {
+  padding: calc(var(--spacing) * 4);
+  row-gap: calc(var(--spacing) * 1.5);
+  column-gap: calc(var(--spacing) * 3);
+  border-radius: var(--radius-lg);
+}
+[data-slot='alert'][data-tone='info'] {
+  background: color-mix(in srgb, var(--primary) 5%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+}
+[data-slot='alert'][data-tone='info'] > svg {
+  color: var(--primary);
+}
+[data-slot='alert-action'] {
+  top: calc(var(--spacing) * 4);
+  right: calc(var(--spacing) * 4);
+}
+[data-slot='toast'] {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+[data-slot='toast-content'] {
+  padding: calc(var(--spacing) * 4);
+  align-items: center;
+  gap: calc(var(--spacing) * 3);
+}
+[data-slot='toast-viewport'] {
+  width: 22rem;
+  max-width: calc(100vw - 2rem);
+}
+[data-slot='toast-content']:has([data-slot='toast-description']:not(:empty)) {
+  align-items: flex-start;
+}
+:is([data-slot='toast-title'], [data-slot='toast-description']) {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+[data-slot='toast-close'] {
+  width: calc(var(--spacing) * 6);
+  height: calc(var(--spacing) * 6);
+  opacity: 0.55;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease;
+}
+[data-slot='toast-close']:is(:hover, :focus-visible) {
+  opacity: 1;
+}
+
+[data-slot='toast-icon'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--spacing) * 7);
+  height: calc(var(--spacing) * 7);
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  color: var(--primary);
+}
+[data-slot='toast-icon']:has(.lucide-circle-check) {
+  background: var(--status-success-background);
+  color: var(--status-success);
+}
+[data-slot='toast-icon']:has(.lucide-octagon-x) {
+  background: color-mix(in srgb, var(--destructive) 10%, var(--popover));
+  color: var(--destructive);
+}
+[data-slot='toast-icon']:has(.lucide-triangle-alert) {
+  background: var(--status-warning-background);
+  color: var(--status-warning);
+}
+[data-slot='alert'].text-destructive {
+  background: color-mix(in srgb, var(--destructive) 5%, var(--card));
+  border-color: color-mix(in srgb, var(--destructive) 20%, var(--border));
+}
+[data-slot='alert-dialog-header']:has([data-slot='alert-dialog-media']) {
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: calc(var(--spacing) * 4);
+  align-items: start;
+  justify-items: start;
+  text-align: left;
+}
+[data-slot='alert-dialog-header'] > [data-slot='alert-dialog-media'] {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  margin-bottom: 0;
+}
+[data-slot='alert-dialog-header']:has([data-slot='alert-dialog-media'])
+  > :is(
+    [data-slot='alert-dialog-title'],
+    [data-slot='alert-dialog-description']
+  ) {
+  grid-column: 2;
+}
+[data-slot='alert']:has([data-slot='alert-action']) {
+  padding-right: calc(var(--spacing) * 24);
+}
+
+/* The navigation's rows are roomier than the sidebar primitive's: 10 units
+   high with half a unit between them, nested rows 8.5 high, in a sidebar 64
+   units wide (layouts/components/app-sidebar.tsx). The primitive's important
+   icon-mode sizes still control the collapsed rail. */
+.app-navigation [data-slot='sidebar-menu'] {
+  gap: calc(var(--spacing) * 0.5);
+}
+/* Top-level groups only: a section nested in a menu sits flush. */
+.app-navigation > nav > [data-slot='sidebar-group'] {
+  padding: calc(var(--spacing) * 2);
+}
+/* A section's heading reads as a heading over its entries, not as one of
+   them: half the menu's foreground, mixed toward its ground, so both colour
+   schemes follow. */
+.app-navigation [data-sidebar='group-label'] {
+  height: calc(var(--spacing) * 8);
+  padding-inline: calc(var(--spacing) * 3.5);
+  color: color-mix(in oklch, var(--sidebar-foreground) 50%, var(--sidebar));
+}
+.app-navigation [data-slot='sidebar-menu-button'] {
+  height: calc(var(--spacing) * 10);
+  gap: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3.5);
+}
+/* The primitive places a row's count and its expand button for 8-unit rows;
+   both are 5 units high, so this centres them on the taller rows. */
+.app-navigation
+  [data-slot='sidebar-menu-item']
+  > :is([data-slot='sidebar-menu-badge'], [data-slot='sidebar-menu-action']) {
+  top: calc(var(--spacing) * 2.5);
+}
+.app-navigation
+  [data-slot='sidebar-menu-sub-item']
+  > [data-slot='sidebar-menu-action'] {
+  top: calc(var(--spacing) * 1.75);
+}
+.app-navigation [data-slot='sidebar-menu-button'] > svg {
+  width: calc(var(--spacing) * 4);
+  height: calc(var(--spacing) * 4);
+}
+/* An entry with a count (navigation-menu.tsx) leaves room for it at the
+   row's end, so a long label truncates before reaching it. */
+.app-navigation
+  [data-slot='sidebar-menu-item']:has(> [data-slot='sidebar-menu-badge'])
+  > [data-slot='sidebar-menu-button'] {
+  padding-right: calc(var(--spacing) * 10);
+}
+.app-navigation [data-slot='sidebar-menu-sub'] {
+  gap: calc(var(--spacing) * 0.5);
+  padding-block: calc(var(--spacing) * 1);
+}
+.app-navigation [data-slot='sidebar-menu-sub-button'] {
+  height: calc(var(--spacing) * 8.5);
+  gap: calc(var(--spacing) * 2);
+  padding-inline: calc(var(--spacing) * 2.5);
+}
+.app-navigation [data-slot='sidebar-menu-sub-button'] > svg {
+  width: calc(var(--spacing) * 4);
+  height: calc(var(--spacing) * 4);
+}
+
+/* Brand tint belongs to the application shell, independent of each page's content. */
+.app-brand-surface {
+  background-image: radial-gradient(
+    ellipse at 100% 0%,
+    color-mix(in srgb, var(--primary) 6%, transparent),
+    transparent 70%
+  );
+  background-size: 100% 18rem;
+  background-repeat: no-repeat;
+}
+
+/* Shared table hierarchy stays neutral so semantic status colors remain distinct. */
+[data-slot='table-header'] {
+  background: var(--hover);
+}
+[data-slot='table-header'] [data-slot='table-row']:hover {
+  background: transparent;
+}
+/* A row under the pointer takes the --hover grey, as every hovered row and
+   list item does, rather than the primitive's half of --muted. Matched by
+   that class, so a row given another hover keeps it, and a selected row
+   keeps its own ground. */
+[data-slot='table-row'][class~='hover:bg-muted/50']:hover:not(
+    [data-state='selected']
+  ) {
+  background: var(--hover);
+}
+[data-slot='table-head'] {
+  height: calc(var(--spacing) * 12);
+  padding-inline: calc(var(--spacing) * 3);
+  color: color-mix(in srgb, var(--foreground) 80%, var(--muted-foreground));
+  font-weight: 600;
+}
+[data-slot='table-cell'] {
+  padding-inline: calc(var(--spacing) * 3);
+}
+[data-slot='table-head'][aria-sort]:not([aria-sort='none']) {
+  color: var(--primary);
+}
+[data-slot='table-head'] button {
+  font-weight: inherit;
+}
+[data-slot='table-head'] button:hover {
+  color: var(--primary);
+}
+
+/* A card's frame in the general border, as every other line: the card
+   primitive and the plugins' copies draw their ring at a tenth of the
+   foreground. Matched by that class, so a card given another ring colour
+   keeps it; unlayered, so it wins over the utility. */
+[data-slot='card'][class~='ring-foreground/10'] {
+  --tw-ring-color: var(--border);
+}
+
+/* Line tabs as a record page's tabs: from the left, the open one in the
+   foreground over a 2px line that sits on a thin rule under the row, the
+   others muted until hovered. Unlayered, so it wins over the primitive's
+   utilities. A row whose tabs keep off its edges sets --tabs-inset; its rule
+   still runs edge to edge. */
+[data-slot='tabs-list'][data-variant='line'][data-orientation='horizontal'] {
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  gap: calc(var(--spacing) * 5);
+  padding: 0 var(--tabs-inset, 0px);
+  border-bottom: 1px solid var(--border);
+}
+[data-slot='tabs-list'][data-variant='line'][data-orientation='horizontal']
+  > [data-slot='tabs-trigger'] {
+  flex: none;
+  height: calc(var(--spacing) * 10);
+  padding-inline: 0;
+  border-inline-width: 0;
+  color: var(--muted-foreground);
+}
+[data-slot='tabs-list'][data-variant='line'][data-orientation='horizontal']
+  > [data-slot='tabs-trigger']:is(:hover, [data-active]) {
+  color: var(--foreground);
+}
+[data-slot='tabs-list'][data-variant='line'][data-orientation='horizontal']
+  > [data-slot='tabs-trigger']::after {
+  bottom: -1px;
+  height: 2px;
+}
+
+/* Every scrollbar, across and down: a thin rounded bar in a faint grey on no
+   track, drawn only while its element scrolls or the mouse is near the edge
+   it runs along (revealScrollbarsWhileScrolling
+   in client/lib/scrollbar.ts marks it `data-scrolling` until it has been
+   still for a moment) and transparent otherwise, so showing it moves nothing;
+   a little firmer under the pointer. Chromium and Safari draw it through the
+   -webkit- pseudo-elements, which allow a thinner bar than
+   `scrollbar-width: thin`; they ignore those wherever the standard properties
+   are set (scrollbar-color is inherited), so the standard ones are given only
+   to a browser without them (Firefox). */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: transparent;
+}
+[data-scrolling]::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 20%,
+    transparent
+  );
+}
+[data-scrolling]::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 30%,
+    transparent
+  );
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  [data-scrolling] {
+    scrollbar-color: color-mix(
+        in oklab,
+        var(--muted-foreground) 20%,
+        transparent
+      )
+      transparent;
+  }
+}
+
+/* A scroller whose bar always shows, thicker, to be dragged: one wider than
+   the page, such as a board, which a mouse without a sideways wheel moves
+   only by its bar. Plain rules beside the ones above rather than a utility,
+   which their unlayered rules would outrank. */
+.scroll-shown::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-shown::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 25%,
+    transparent
+  );
+}
+.scroll-shown::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 40%,
+    transparent
+  );
+}
+@supports not selector(::-webkit-scrollbar) {
+  .scroll-shown {
+    scrollbar-color: color-mix(
+        in oklab,
+        var(--muted-foreground) 25%,
+        transparent
+      )
+      transparent;
+  }
+}

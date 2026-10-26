@@ -1,0 +1,62 @@
+import {
+  defineAppConfig,
+  envString,
+  type AppConfigFactory,
+} from '@nocobase/app-server/config';
+import type { AppSessionConfigInput } from '@nocobase/app-server/session';
+import {
+  createAppCookieScope,
+  normalizeBasePath,
+} from '@nocobase/app-server/support';
+
+const session: AppConfigFactory<AppSessionConfigInput> = defineAppConfig({
+  env: {
+    SESSION_SECRET: envString('secret', {
+      description:
+        'The legacy session signing secret; keys are derived from SECRETS_KEYS when it is set.',
+      secret: true,
+      generate: 'secret',
+    }),
+  },
+  defaults: ({ paths, env, routing }) => ({
+    enabled: true,
+    default: 'memory',
+    cookie: {
+      name: `nocobase_session_${createAppCookieScope(routing.publicBasePath)}`,
+      // A distinct name also keeps a child application from reading a parent's cookie sent under an overlapping path.
+      path: normalizeBasePath(routing.publicBasePath) || '/',
+      secure: env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax' as const,
+      partitioned: false,
+      expireOnClose: false,
+    },
+    lifetime: {
+      absolute: '2h',
+      rolling: true,
+    },
+    previousSecrets: [],
+    gcLottery: { hits: 2, total: 100 },
+    stores: {
+      memory: {
+        driver: 'memory',
+        base: 'nocobase:session:',
+      },
+      fs: {
+        driver: 'fs',
+        base: paths.storage('sessions'),
+      },
+      redis: {
+        driver: 'redis',
+        host: '127.0.0.1',
+        port: 6379,
+        db: 0,
+        base: 'nocobase:session:',
+        tls: false,
+      },
+      null: { driver: 'null' },
+    },
+  }),
+});
+
+export default session;

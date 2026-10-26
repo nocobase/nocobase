@@ -1,0 +1,32 @@
+{
+  "archiveSha256": "ce48a613da516a52e9c0423425c87da9b7465130e76fd66bc4d69fbf49e637b6",
+  "archiveBytes": 77342179,
+  "archiveRuntimeFilesAbsent": true,
+  "template": "@nocobase/app-template-default@1.0.0-beta.81",
+  "foundationSource": "0.1.0-beta.8",
+  "foundationProduction": "0.1.0-beta.8",
+  "buildTarget": {
+    "templateKind": "app",
+    "defaultTemplateVersion": "1.0.0-beta.81",
+    "templatePackage": "@nocobase/app-template-default",
+    "relocatable": true,
+    "builtAt": "2026-10-26T09:52:26.501Z",
+    "buildTarget": {
+      "platform": "linux",
+      "arch": "x64",
+      "libc": "glibc",
+      "nodeAbi": 137,
+      "nodeMajor": 24
+    }
+  },
+  "foundation": {
+    "complete": false,
+    "routes": 77,
+    "incompleteRoutes": 21,
+    "sha256": "d3a9dca0a3971a10e5ebd4f2edbe999eb62f195b938b709bcd208be889f0594a"
+  },
+  "lockfiles": {
+    "pnpm-lock.yaml": "3413af7bc4f098ad51bbd3af91acf5aa2d812788d7fd9201e874848333fbcd40",
+    "verification/production-lock.yaml": "96a29340fdfee64f2ad9299eab5e4265d27f3171be90d4049346341f74520c0f"
+  }
+}

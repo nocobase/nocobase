@@ -1,0 +1,509 @@
+{
+  "checkedAt": "2026-10-26T09:50:13.507Z",
+  "registry": "https://registry.npmjs.org",
+  "packages": [
+    {
+      "name": "@nocobase/create-app",
+      "version": "0.1.0-beta.33",
+      "published": "2026-10-21T06:50:36.906Z",
+      "tags": {
+        "latest": "0.1.0-beta.33",
+        "beta": "0.1.0-beta.33"
+      },
+      "source": {
+        "url": "git+https://github.com/nocobase/nocobase.git",
+        "type": "git",
+        "directory": "packages/tools/create-app"
+      },
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/create-app/-/create-app-0.1.0-beta.33.tgz",
+      "integrity": "sha512-miYcYpoXIYhfU/3xTlx+M0LpbyQiW2L+xR4khRKlkTrOLbXIHd0/lWUQafYRyVqUl6xhOCH00BtkAR34wgsh/w==",
+      "sha256": "ed9febc16940e99088660e5246ccd86fbed8589e1d904f52b73a20f6439549af",
+      "bytes": 30608,
+      "integrityVerified": true,
+      "dependencies": {
+        "yaml": "^2.9.0",
+        "@oclif/core": "^4.14.0",
+        "@clack/prompts": "^1.7.0",
+        "@nocobase/cli-envelope": "^0.1.0-beta.1"
+      }
+    },
+    {
+      "name": "@nocobase/app-template-default",
+      "version": "1.0.0-beta.81",
+      "published": "2026-10-25T13:11:50.656Z",
+      "tags": {
+        "beta": "1.0.0-beta.81",
+        "latest": "1.0.0-beta.81"
+      },
+      "source": {
+        "url": "git+https://github.com/nocobase/nocobase.git",
+        "type": "git",
+        "directory": "packages/templates/app-template-default"
+      },
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-template-default/-/app-template-default-1.0.0-beta.81.tgz",
+      "integrity": "sha512-BchJupROX6Tw3q7FLZMsF8OYwQoQHoIkU3jMknxllrkwPhoNe8vXhfuebZoDTqkqCHPTLiXq6v4W0BeDUqjDmw==",
+      "sha256": "cfe1898ff2eb9cde628f40fce62b85046c7af5266b7a2a7d7fc1344855ad36a4",
+      "bytes": 572107,
+      "integrityVerified": true,
+      "dependencies": {
+        "zod": "^4.6.5",
+        "hono": "^4.13.2",
+        "@oclif/core": "^4.14.0",
+        "better-auth": "1.7.5",
+        "@nocobase/db": "^1.0.0-beta.22",
+        "@nocobase/i18n": "^2.0.0-beta.1",
+        "@nocobase/jobs": "^0.1.0-beta.4",
+        "@nocobase/queue": "^0.1.0-beta.9",
+        "@nocobase/config": "^0.1.0-beta.3",
+        "@nocobase/app-cli": "^1.0.0-beta.27",
+        "@nocobase/caching": "^0.1.0-beta.3",
+        "@nocobase/realtime": "^0.1.0-beta.3",
+        "@nocobase/db-sqlite": "^0.1.0-beta.6",
+        "@nocobase/lifecycle": "^0.1.0-beta.3",
+        "@nocobase/snowflake": "^1.0.0-beta.4",
+        "@nocobase/app-server": "^3.0.0-beta.3",
+        "@nocobase/authorization": "^1.0.0-beta.15",
+        "@nocobase/app-plugin-file": "^1.0.0-beta.26",
+        "@nocobase/app-plugin-i18n": "^1.0.0-beta.18",
+        "@nocobase/app-plugin-mail": "^1.0.0-beta.17",
+        "@nocobase/app-plugin-users": "^2.0.0-beta.10",
+        "@nocobase/repository-input": "^0.1.0-beta.3",
+        "@nocobase/service-provider": "^0.0.2-beta.2",
+        "@nocobase/app-plugin-agents": "^1.0.0-beta.25",
+        "@nocobase/app-plugin-api-keys": "^1.0.0-beta.18",
+        "@nocobase/app-plugin-knowledge": "^0.1.0-beta.12",
+        "@nocobase/app-plugin-scheduler": "^1.0.0-beta.20",
+        "@nocobase/app-plugin-foundation": "^0.1.0-beta.7",
+        "@nocobase/app-plugin-notification": "^2.0.0-beta.0",
+        "@nocobase/app-plugin-authorization": "^1.0.0-beta.32",
+        "@nocobase/app-plugin-authentication": "^2.0.0-beta.15",
+        "@nocobase/app-plugin-database-explorer": "^1.0.0-beta.16",
+        "@nocobase/app-plugin-authz-sharing-rules": "^1.0.0-beta.15",
+        "@nocobase/app-plugin-notification-in-app": "^2.0.0-beta.0",
+        "@nocobase/app-plugin-authz-default-access": "^1.0.0-beta.15",
+        "@nocobase/app-plugin-notification-providers": "^1.0.0-beta.15",
+        "@nocobase/app-plugin-authz-restriction-rules": "^1.0.0-beta.14"
+      },
+      "devDependencies": {
+        "@nocobase/drive": "^0.1.0-beta.7",
+        "@nocobase/logging": "^0.1.0-beta.7",
+        "@nocobase/session": "^0.1.0-beta.3",
+        "@nocobase/app-client": "^4.0.0-beta.3",
+        "@nocobase/app-skills": "0.1.0-beta.51",
+        "@nocobase/dev-config": "0.1.0-beta.25",
+        "@nocobase/app-testing": "0.1.0-beta.6",
+        "@nocobase/app-websocket": "^0.1.0-beta.1",
+        "@nocobase/app-plugin-template-print": "0.0.2-beta.2"
+      }
+    },
+    {
+      "name": "@nocobase/app-plugin-foundation",
+      "version": "0.1.0-beta.8",
+      "published": "2026-10-26T05:53:26.025Z",
+      "tags": {
+        "latest": "0.1.0-beta.8",
+        "beta": "0.1.0-beta.8"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-plugin-foundation/-/app-plugin-foundation-0.1.0-beta.8.tgz",
+      "integrity": "sha512-7LjffwcGdz73qvYID98fb5twbXfcu8Ob8irTSuId4b1A5WJxGpGZzjGcqzFMXOZ7Oy5OJXH5AN9hAtf3g4XGSg==",
+      "sha256": "51caae6bad2a7db6eb12972d4f36a7d3f45a111efa36fbe1b1c774dc55f70669",
+      "bytes": 258026,
+      "integrityVerified": true,
+      "dependencies": {
+        "zod": "^4.6.5",
+        "hono": "^4.13.2",
+        "typescript": "^6.0.3"
+      },
+      "peerDependencies": {
+        "cn": "^0.4.0",
+        "react": "^19.0.0",
+        "@nocobase/db": "^1.0.0-beta.22",
+        "lucide-react": "^0.487.0",
+        "@base-ui/react": "^1.6.0",
+        "@nocobase/i18n": "^2.0.0-beta.1",
+        "@nocobase/app-cli": "^1.0.0-beta.27",
+        "@nocobase/app-client": "^4.0.0-beta.3",
+        "@nocobase/app-server": "^3.0.0-beta.3",
+        "@tanstack/react-query": "^5.81.5",
+        "class-variance-authority": "^0.7.1",
+        "@nocobase/service-provider": "^0.0.2-beta.2",
+        "@nocobase/app-plugin-authorization": "^1.0.0-beta.32",
+        "@nocobase/app-plugin-authentication": "^2.0.0-beta.15"
+      }
+    },
+    {
+      "name": "@nocobase/app-cli",
+      "version": "1.0.0-beta.27",
+      "published": "2026-10-22T14:04:13.756Z",
+      "tags": {
+        "latest": "1.0.0-beta.27",
+        "beta": "1.0.0-beta.27"
+      },
+      "source": {
+        "url": "git+https://github.com/nocobase/nocobase.git",
+        "type": "git",
+        "directory": "packages/app/app-cli"
+      },
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-cli/-/app-cli-1.0.0-beta.27.tgz",
+      "integrity": "sha512-Estu/ihbDOsI3Wnuuew+aYb0SqA71KJK327pKFOlkYRm7npYh0uDg1Y68sSUKQDQyIzlnTLip3qa10MwT2oRSg==",
+      "sha256": "1360e6c7082394215801d7976c8cb810cc6ad2c351cfd0dc238f81011dcb8cb6",
+      "bytes": 293875,
+      "integrityVerified": true,
+      "dependencies": {
+        "yaml": "^2.9.0",
+        "execa": "^10.0.1",
+        "@oclif/core": "^4.14.0",
+        "cross-spawn": "^7.0.6",
+        "@clack/prompts": "^1.7.0",
+        "@nocobase/logging": "^0.1.0-beta.7",
+        "@nocobase/secrets": "^0.1.0-beta.1",
+        "@nocobase/cli-envelope": "^0.1.0-beta.1"
+      },
+      "peerDependencies": {
+        "tar": "^7.5.22",
+        "tsx": "^4.21.0",
+        "vite": "^6.3.5",
+        "prettier": "^3.9.6",
+        "tsc-alias": "^1.9.2",
+        "typescript": "^6.0.3",
+        "@nocobase/db": "^1.0.0-beta.22",
+        "@nocobase/app-server": "^3.0.0-beta.3",
+        "@nocobase/dev-config": "^0.1.0-beta.24"
+      }
+    },
+    {
+      "name": "@nocobase/app-server",
+      "version": "3.0.0-beta.3",
+      "published": "2026-10-22T14:03:39.757Z",
+      "tags": {
+        "latest": "3.0.0-beta.3",
+        "beta": "3.0.0-beta.3"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-server/-/app-server-3.0.0-beta.3.tgz",
+      "integrity": "sha512-3R05hvNVqpzISu3xzaRfrrxxhDJnult+ysAVYeUMniTZvYd7UuR9OnlMjsg42sGplyjEYi1q7LCqBjQzg8RZ+A==",
+      "sha256": "29af63367380e764d3e9be10ffe64bdc51415bc6b7761ff5612b05c482a6bb77",
+      "bytes": 762408,
+      "integrityVerified": true,
+      "dependencies": {
+        "zod": "^4.6.5",
+        "hono": "^4.13.2",
+        "hono-openapi": "^1.3.3",
+        "openapi-types": "^12.1.3",
+        "@nocobase/drive": "^0.1.0-beta.7",
+        "@nocobase/config": "^0.1.0-beta.3",
+        "@nocobase/mailer": "^0.1.0-beta.0",
+        "@hono/node-server": "^2.1.1",
+        "@nocobase/logging": "^0.1.0-beta.7",
+        "@nocobase/secrets": "^0.1.0-beta.1",
+        "@nocobase/session": "^0.1.0-beta.3",
+        "@sinclair/typebox": "^0.34.52",
+        "@nocobase/realtime": "^0.1.0-beta.3",
+        "@nocobase/snowflake": "^1.0.0-beta.4",
+        "@standard-schema/spec": "^1.0.0",
+        "@nocobase/app-websocket": "^0.1.0-beta.1"
+      },
+      "peerDependencies": {
+        "@nocobase/db": "^1.0.0-beta.22",
+        "@nocobase/i18n": "^2.0.0-beta.1",
+        "@nocobase/jobs": "^0.1.0-beta.3",
+        "@nocobase/queue": "^0.1.0-beta.9",
+        "@nocobase/caching": "^0.1.0-beta.3",
+        "@nocobase/db-mssql": "^0.1.0-beta.5",
+        "@nocobase/db-mysql": "^0.1.0-beta.5",
+        "@nocobase/db-dameng": "^0.1.0-beta.4",
+        "@nocobase/db-oracle": "^0.1.0-beta.5",
+        "@nocobase/db-sqlite": "^0.1.0-beta.6",
+        "@nocobase/db-kingbase": "^0.1.0-beta.4",
+        "@nocobase/db-postgres": "^0.1.0-beta.5",
+        "@nocobase/db-oceanbase": "^0.1.0-beta.4",
+        "@nocobase/service-provider": "^0.0.2-beta.2"
+      }
+    },
+    {
+      "name": "@nocobase/app-host",
+      "version": "0.1.0-beta.17",
+      "published": "2026-10-19T07:24:46.204Z",
+      "tags": {
+        "beta": "0.1.0-beta.17",
+        "latest": "0.1.0-beta.17"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-host/-/app-host-0.1.0-beta.17.tgz",
+      "integrity": "sha512-9dJMQOg15yBab5Ov1hfwMb/c2SMSqagXKcbKJ4HtnozVO+S8MwYD7hJVfq1KwakLVMTeGmAVybk9n2M9GwQ2kQ==",
+      "sha256": "77dca068afaa8970b97c3de80ceebb54aca15ae03724b961f3a3859235bfbf1f",
+      "bytes": 152088,
+      "integrityVerified": true,
+      "dependencies": {
+        "tar": "^7.5.22",
+        "@nocobase/drive": "^0.1.0-beta.7",
+        "@nocobase/config": "^0.1.0-beta.3",
+        "@nocobase/logging": "^0.1.0-beta.7",
+        "@nocobase/app-websocket": "^0.1.0-beta.1"
+      },
+      "peerDependencies": {
+        "@nocobase/app-server": "^3.0.0-beta.0"
+      }
+    },
+    {
+      "name": "@nocobase/app-plugin-authentication",
+      "version": "2.0.0-beta.15",
+      "published": "2026-10-25T13:10:40.812Z",
+      "tags": {
+        "beta": "2.0.0-beta.15",
+        "latest": "2.0.0-beta.15"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-plugin-authentication/-/app-plugin-authentication-2.0.0-beta.15.tgz",
+      "integrity": "sha512-K6nisI+c+sN7MwlOLwQavRehdU5CXmxZJFE0/8d7a4D8z/jzueOmYr8dsoSfNw88KtvMh1Abm2hsO0TUTZ5nww==",
+      "sha256": "c1c8fc522f50d4a42e54666af651ee34aa2f687625fa8333b4ec1328d4fdb5f2",
+      "bytes": 141330,
+      "integrityVerified": true,
+      "dependencies": {
+        "zod": "^4.6.5",
+        "hono": "^4.13.2",
+        "knex": "^3.1.0",
+        "better-auth": "1.7.5",
+        "@nocobase/mailer": "^0.1.0-beta.0",
+        "@sinclair/typebox": "^0.34.52",
+        "@nocobase/snowflake": "^1.0.0-beta.4"
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+        "@nocobase/db": "^1.0.0-beta.22",
+        "react-router": "^7.0.0",
+        "@nocobase/i18n": "^2.0.0-beta.1",
+        "@nocobase/caching": "^0.1.0-beta.3",
+        "@nocobase/app-client": "^4.0.0-beta.3",
+        "@nocobase/app-server": "^3.0.0-beta.3",
+        "@nocobase/service-provider": "^0.0.2-beta.2"
+      }
+    },
+    {
+      "name": "@nocobase/app-plugin-authorization",
+      "version": "1.0.0-beta.32",
+      "published": "2026-10-25T13:09:33.933Z",
+      "tags": {
+        "beta": "1.0.0-beta.32",
+        "latest": "1.0.0-beta.32"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-plugin-authorization/-/app-plugin-authorization-1.0.0-beta.32.tgz",
+      "integrity": "sha512-zQ/tg1zsuLaFKmt0rnZ4nkt6F6HlK9JmHTey28dFINkpqFCEmfdZxceukMjmdeGDUZqOMZfe0OsDBWTLsMtrSg==",
+      "sha256": "be3e50fe0d4bb07c260f519b32dadae6c06b2af9f0efef3d394f95e2cac4ea84",
+      "bytes": 197898,
+      "integrityVerified": true,
+      "dependencies": {
+        "zod": "^4.6.5",
+        "hono": "^4.13.2"
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+        "@nocobase/db": "^1.0.0-beta.22",
+        "@nocobase/i18n": "^2.0.0-beta.1",
+        "@nocobase/app-client": "^4.0.0-beta.3",
+        "@nocobase/app-server": "^3.0.0-beta.3",
+        "@nocobase/authorization": "^1.0.0-beta.15",
+        "@nocobase/service-provider": "^0.0.2-beta.2",
+        "@nocobase/app-plugin-authentication": "^2.0.0-beta.15"
+      }
+    },
+    {
+      "name": "@nocobase/app-plugin-users",
+      "version": "2.0.0-beta.10",
+      "published": "2026-10-25T13:10:49.844Z",
+      "tags": {
+        "latest": "2.0.0-beta.10",
+        "beta": "2.0.0-beta.10"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-plugin-users/-/app-plugin-users-2.0.0-beta.10.tgz",
+      "integrity": "sha512-3yKEMXL/EbjBfyrMfsx0DItY/Xls7RLWuMEfeeY7DJW3HB4SXPwYXHLX6QCElNcEPaMXttIchCOlkqXHlD6ypA==",
+      "sha256": "d2d180bd4c71f8434eb86348adb4a0bc4129784bb52ed071d753e88bd03f89a5",
+      "bytes": 118342,
+      "integrityVerified": true,
+      "dependencies": {
+        "zod": "^4.6.5",
+        "hono": "^4.13.2"
+      },
+      "peerDependencies": {
+        "cn": "^0.4.0",
+        "react": "^19.0.0",
+        "@nocobase/db": "^1.0.0-beta.22",
+        "lucide-react": "^0.487.0",
+        "react-router": "^7.0.2",
+        "@base-ui/react": "^1.6.0",
+        "@nocobase/i18n": "^2.0.0-beta.1",
+        "@nocobase/app-client": "^4.0.0-beta.3",
+        "@nocobase/app-server": "^3.0.0-beta.3",
+        "@nocobase/authorization": "^1.0.0-beta.15",
+        "class-variance-authority": "^0.7.1",
+        "@nocobase/service-provider": "^0.0.2-beta.2",
+        "@nocobase/app-plugin-notification": "^2.0.0-beta.0",
+        "@nocobase/app-plugin-authorization": "^1.0.0-beta.32",
+        "@nocobase/app-plugin-authentication": "^2.0.0-beta.15"
+      }
+    },
+    {
+      "name": "@nocobase/app-plugin-authz-default-access",
+      "version": "1.0.0-beta.15",
+      "published": "2026-10-20T06:26:03.121Z",
+      "tags": {
+        "latest": "1.0.0-beta.15",
+        "beta": "1.0.0-beta.15"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-plugin-authz-default-access/-/app-plugin-authz-default-access-1.0.0-beta.15.tgz",
+      "integrity": "sha512-XVFPSSFSyzjgoP7ozY+ogC5JcEuscv+H0LOonqI5c6ygVqU5I8TOJ1Fq7+1wWg8XRkzi+fCcWet7VAwvAzxOZQ==",
+      "sha256": "a1dcfa2f0b104e6c2ae42460a4d3b7a5ee66aebf9bc0c712fa23e4be11ecaa3d",
+      "bytes": 33240,
+      "integrityVerified": true,
+      "dependencies": {
+        "zod": "^4.6.5",
+        "@nocobase/authorization": "^1.0.0-beta.15"
+      },
+      "peerDependencies": {
+        "@nocobase/db": "^1.0.0-beta.21",
+        "@nocobase/i18n": "^2.0.0-beta.1",
+        "@nocobase/app-client": "^4.0.0-beta.0",
+        "@nocobase/app-server": "^3.0.0-beta.0",
+        "@nocobase/app-plugin-authorization": "^1.0.0-beta.30",
+        "@nocobase/app-plugin-authentication": "^2.0.0-beta.12"
+      }
+    },
+    {
+      "name": "@nocobase/db",
+      "version": "1.0.0-beta.22",
+      "published": "2026-10-22T07:30:08.960Z",
+      "tags": {
+        "latest": "1.0.0-beta.22",
+        "beta": "1.0.0-beta.22"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/db/-/db-1.0.0-beta.22.tgz",
+      "integrity": "sha512-tpu6XM6Qfg/Fufg9tLMcCW3ynHJH0ZnlABOqJE5gxYT3VhD4he8CmsyC7SPFPBYUrXJFSnD52pSMYNUyaYb7MA==",
+      "sha256": "dcd9c73aaa573447558617f334df6e64d89853cecd29c2d77e20444b7e61cf34",
+      "bytes": 282836,
+      "integrityVerified": true,
+      "dependencies": {
+        "knex": "^3.1.0",
+        "@nocobase/repository-input": "^0.1.0-beta.3",
+        "@nocobase/service-provider": "^0.0.2-beta.2"
+      }
+    },
+    {
+      "name": "@nocobase/db-sqlite",
+      "version": "0.1.0-beta.6",
+      "published": "2026-10-18T02:46:52.784Z",
+      "tags": {
+        "beta": "0.1.0-beta.6",
+        "latest": "0.1.0-beta.6"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/db-sqlite/-/db-sqlite-0.1.0-beta.6.tgz",
+      "integrity": "sha512-qOY8wUhZm/w3a9dUnFutZWowsD0+OLOsl4g2VdWzEw68DcXo9WHxoHqoYGAZNdaJamyrK/4oEVlFhP8t5X1CDQ==",
+      "sha256": "05f0cc4ff91474cac6fb58ddb176c426c250c7085fc52e5d6694b1d59d7e66a4",
+      "bytes": 12941,
+      "integrityVerified": true,
+      "dependencies": {
+        "knex": "^3.1.0",
+        "better-sqlite3": "^13.0.3"
+      },
+      "peerDependencies": {
+        "@nocobase/db": "^1.0.0-beta.21"
+      }
+    },
+    {
+      "name": "@nocobase/app-client",
+      "version": "4.0.0-beta.3",
+      "published": "2026-10-24T10:02:19.479Z",
+      "tags": {
+        "latest": "4.0.0-beta.3",
+        "beta": "4.0.0-beta.3"
+      },
+      "source": null,
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-client/-/app-client-4.0.0-beta.3.tgz",
+      "integrity": "sha512-i8bSymffmxKz+87RzUEG7+3ySHQpEp+oML9yW11q6kKCX11FHpg6WchfdWDiyRv40tRlTcO4ILUtR2Ta/o8mNg==",
+      "sha256": "4d3542803df309e8bfb4ffaf8ffb8f8470f3f5e642746123d14ee01805a92bfb",
+      "bytes": 65706,
+      "integrityVerified": true,
+      "dependencies": {
+        "@nocobase/realtime": "^0.1.0-beta.3",
+        "@nocobase/api-client": "^1.0.0-beta.5"
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-router": "^7.0.0",
+        "react-i18next": "^17.0.0",
+        "@nocobase/i18n": "^2.0.0-beta.1",
+        "@tanstack/react-query": "^5.81.5",
+        "@nocobase/service-provider": "^0.0.2-beta.2"
+      }
+    },
+    {
+      "name": "@nocobase/app-skills",
+      "version": "0.1.0-beta.51",
+      "published": "2026-10-25T13:09:31.282Z",
+      "tags": {
+        "latest": "0.1.0-beta.51",
+        "beta": "0.1.0-beta.51"
+      },
+      "source": {
+        "url": "git+https://github.com/nocobase/nocobase.git",
+        "type": "git",
+        "directory": "packages/app/app-skills"
+      },
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-skills/-/app-skills-0.1.0-beta.51.tgz",
+      "integrity": "sha512-0nYcFsHIbbTfjHSN6QMP59iQ0TGJjQ5NFC1k/H13XCc0ZZXy0TrVucXvNMqWBKpImm96Akkcdzaurk/1tphakA==",
+      "sha256": "f015173b9fa1dd3a93a973ca0ad75398c62d9463e1b325ac41e7d29e61273361",
+      "bytes": 485760,
+      "integrityVerified": true,
+      "peerDependencies": {
+        "prettier": "^3.9.6",
+        "@playwright/test": "^1.62.1"
+      }
+    },
+    {
+      "name": "@nocobase/app-installer",
+      "version": "0.1.0-beta.10",
+      "published": "2026-10-26T05:53:36.830Z",
+      "tags": {
+        "latest": "0.1.0-beta.10",
+        "beta": "0.1.0-beta.10"
+      },
+      "source": {
+        "url": "git+https://github.com/nocobase/nocobase.git",
+        "type": "git",
+        "directory": "packages/tools/app-installer"
+      },
+      "gitHead": null,
+      "tarball": "https://registry.npmjs.org/@nocobase/app-installer/-/app-installer-0.1.0-beta.10.tgz",
+      "integrity": "sha512-t/2tvOdCYFtAxTtkI4L8ROJhMCE+gjtBMYo69FmODGjrKOjfuRxrPvlYtWV815oLS02HR1ZGq3OoIY0D+HQ3jQ==",
+      "sha256": "9add01b08456f87d3976b6f5fd8637a6cacb74fb4f332e96ee0b6eead05ea4ce",
+      "bytes": 94488,
+      "integrityVerified": true,
+      "dependencies": {
+        "tar": "^7.5.22",
+        "yaml": "^2.9.0",
+        "@oclif/core": "^4.14.0",
+        "@nocobase/cli-envelope": "^0.1.0-beta.1"
+      }
+    }
+  ]
+}
