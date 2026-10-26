@@ -11,7 +11,7 @@ title: 'Tổng quan phê duyệt'
 | Năng lực                                             | Cung cấp gì                                                                                 |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | [Nhiều giai đoạn và định tuyến theo điều kiện](./stages.md) | Người duyệt tuần tự và tuyến duyệt theo số tiền hoặc loại yêu cầu.                                 |
-| [Duyệt chung và quy tắc quyết định](./joint-review.md)   | Quyết định kiểu tất cả, bất kỳ, người trả lời đầu tiên hoặc theo ngưỡng phiếu giữa nhiều người tham gia.                  |
+| [Duyệt đồng thuận và quy tắc thông qua](./joint-review.md)   | Quyết định kiểu tất cả, bất kỳ, người trả lời đầu tiên hoặc theo ngưỡng phiếu giữa nhiều người tham gia.                  |
 | [Thêm người duyệt và chuyển giao](./handover.md)         | Thêm người duyệt hoặc giao tác vụ hiện tại cho một người đủ điều kiện.                                     |
 | [Xử lý yêu cầu và tiến độ](./requests.md)         | Trả lại để chỉnh sửa, rút lại, nộp lại, sao gửi và xác nhận đã xem, tiến độ và lịch sử. |
 

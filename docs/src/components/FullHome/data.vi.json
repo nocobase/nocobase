@@ -57,12 +57,12 @@
       "approval",
       "Phê duyệt",
       "",
-      "Kết nối các năng lực phê duyệt bản Pro cho định tuyến theo điều kiện, duyệt chung, thêm người duyệt và chuyển giao.",
+      "Kết nối các năng lực phê duyệt bản Pro cho định tuyến theo điều kiện, duyệt đồng thuận, thêm người duyệt và chuyển giao.",
       ""
     ],
     [
       "task-center",
-      "Trung tâm Task",
+      "Trung Tâm Công Việc",
       "✓",
       "Gom phê duyệt, nhận thiết bị và các công việc cá nhân khác về một nơi, với bộ lọc trạng thái và số đếm dùng chung.",
       "Quản lý xử lý đơn nghỉ phép, chi phí và các loại đơn khác mỗi ngày. Họ muốn một nơi duy nhất để xem mọi thứ đang chờ mình xử lý mà không phải kiểm tra riêng từng nghiệp vụ.\nThêm trang My tasks, nơi mỗi người chỉ thấy các mục đang chờ, đã hoàn thành và đã hủy của chính mình, kèm số đếm cho từng loại."
@@ -243,14 +243,14 @@
     },
     "approval": {
       "title": "Phê duyệt",
-      "description": "Kết nối các năng lực phê duyệt bản Pro cho định tuyến theo điều kiện, duyệt chung, thêm người duyệt và chuyển giao.",
+      "description": "Kết nối các năng lực phê duyệt bản Pro cho định tuyến theo điều kiện, duyệt đồng thuận, thêm người duyệt và chuyển giao.",
       "prompts": {
         "stages-0": {
           "label": "Phê duyệt theo điều kiện",
           "text": "Add approval to Northstar special transport requests with cargo details, reasons, extra fees and attachments.\nFees of CNY 2,000 or less need operations approval; higher fees continue to finance afterwards.\nPreview the route and reviewers before submission; show the current stage, offered actions and opinions in details.\nRetain the approval decision without automatically paying fees."
         },
         "joint-review-0": {
-          "label": "Duyệt chung và duyệt bởi bất kỳ ai",
+          "label": "Duyệt đồng thuận và duyệt một trong nhiều",
           "text": "Add joint review to Northstar special cargo requests. Both operations and finance leads must approve.\nReject immediately when either rejects, requiring a reason. After one approval, keep waiting for the other.\nUse any-approval for routine dispatch: one on-duty supervisor\u2019s approval is sufficient.\nShow individual opinions and whom the request is still waiting for."
         },
         "handover-0": {
@@ -434,7 +434,7 @@
       }
     },
     "task-center": {
-      "title": "Trung tâm Task",
+      "title": "Trung Tâm Công Việc",
       "description": "Gom phê duyệt, nhận thiết bị và các công việc cá nhân khác về một nơi, với bộ lọc trạng thái và số đếm dùng chung.",
       "prompts": {
         "start": {

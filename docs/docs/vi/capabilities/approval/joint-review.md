@@ -1,8 +1,8 @@
 ---
-title: 'Duyệt chung và quy tắc quyết định'
+title: 'Duyệt đồng thuận và quy tắc thông qua'
 ---
 
-# Duyệt chung và quy tắc quyết định
+# Duyệt đồng thuận và quy tắc thông qua
 
 Nhiều người có thể cùng quyết định trong một giai đoạn. Chính sách đã cấu hình sẽ tổng hợp ý kiến của họ để xác định phê duyệt, từ chối hay tiếp tục chờ.
 
@@ -14,7 +14,7 @@ Nhiều người có thể cùng quyết định trong một giai đoạn. Chín
 | Ngưỡng phiếu    | Phê duyệt cần một số phiếu nhất định, có thể tính theo tỷ lệ khi cần.            |
 | Duyệt tuần tự | Những người tham gia trong giai đoạn lần lượt xử lý tác vụ theo thứ tự.                                                |
 
-Nhiều giai đoạn đi qua các bước duyệt khác nhau; duyệt chung tổng hợp ý kiến trong cùng một bước.
+Nhiều giai đoạn đi qua các bước duyệt khác nhau; duyệt đồng thuận tổng hợp ý kiến trong cùng một bước.
 
 ## Ví dụ: hai trưởng bộ phận cùng duyệt hàng đặc biệt
 
@@ -37,7 +37,7 @@ Show individual opinions and whom the request is still waiting for.
 
 ### 1. Tất cả đồng ý: tiếp tục chờ sau quyết định đầu tiên
 
-Tạo và nộp một yêu cầu trong **Yêu cầu vận chuyển đặc biệt**, chọn **Hội ký — tất cả đồng ý**. Sau khi người duyệt vận hành Olivia đồng ý, yêu cầu vẫn ở trạng thái **Chờ duyệt**. Trang hiển thị **1 trên 2** ý kiến đồng ý và cho biết đang chờ Frank.
+Tạo và nộp một yêu cầu trong **Yêu cầu vận chuyển đặc biệt**, chọn **Duyệt đồng thuận — tất cả đồng ý**. Sau khi người duyệt vận hành Olivia đồng ý, yêu cầu vẫn ở trạng thái **Chờ duyệt**. Trang hiển thị **1 trên 2** ý kiến đồng ý và cho biết đang chờ Frank.
 
 ![Olivia đã đồng ý trong khi yêu cầu vẫn chờ Frank](../assets/northstar-approval-all-waiting-en.png)
 
@@ -67,10 +67,10 @@ Hãy xác định cả chính sách phê duyệt lẫn chính sách từ chối.
 
 Với bỏ phiếu, hãy xác định số người tham gia, số phiếu cần thiết, phiếu trắng, vị trí có quyền phủ quyết và có cần đủ tất cả ý kiến hay không. Quyết định theo từng mục, phê duyệt một phần và quy đổi tỷ lệ là các quy tắc riêng của nghiệp vụ để Agent triển khai; chỉ nói "hai phần ba đồng ý" là chưa đủ.
 
-Nhận việc theo nhóm khác với duyệt chung: một thành viên có thể đại diện cho cả nhóm, còn duyệt chung cần ý kiến của từng cá nhân. Hãy chọn mô hình trước khi định nghĩa quy tắc nhận việc, trả việc và hết thời gian.
+Nhận việc theo nhóm khác với duyệt đồng thuận: một thành viên có thể đại diện cho cả nhóm, còn duyệt đồng thuận cần ý kiến của từng cá nhân. Hãy chọn mô hình trước khi định nghĩa quy tắc nhận việc, trả việc và hết thời gian.
 
 ```text
 Assign finance review for ordinary Northstar dispatch requests to qualified finance staff as a team. A member claims the task and acts for the team; others cannot handle it until it is released. Explain how this differs from requiring two finance reviewers to agree, then implement the option I confirm.
 ```
 
-Với duyệt chung, ý kiến đồng ý đầu tiên không được đẩy yêu cầu đi tiếp quá sớm. Khi phê duyệt kiểu bất kỳ ai đồng ý đóng các tác vụ khác, điều đó không có nghĩa những người duyệt kia đã đồng ý. Các lần nộp lặp lại hoặc đồng thời không được đếm trùng phiếu hay ghi đè ý kiến.
+Với duyệt đồng thuận, ý kiến đồng ý đầu tiên không được đẩy yêu cầu đi tiếp quá sớm. Khi phê duyệt kiểu bất kỳ ai đồng ý đóng các tác vụ khác, điều đó không có nghĩa những người duyệt kia đã đồng ý. Các lần nộp lặp lại hoặc đồng thời không được đếm trùng phiếu hay ghi đè ý kiến.

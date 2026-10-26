@@ -16,7 +16,7 @@ NocoBase cung cấp các năng lực có thể tái sử dụng cho ứng dụng
 | [Phân quyền](./authorization/index.md)          | Quyền truy cập trang, thao tác và bản ghi, truy cập mặc định, chia sẻ, hạn chế và kiểm tra quyền.                       |
 | [Vòng đời](./workflow/index.md)                  | Giai đoạn nghiệp vụ, thao tác của con người, kết quả từ bên ngoài, giới hạn thời gian và lịch sử chuyển trạng thái.                        |
 | [Phê duyệt](./approval/index.md)                    | Quy tắc và cộng tác phê duyệt nhiều giai đoạn, nhiều người.                                                |
-| [Trung tâm Task](./task-center.md)                    | Gom phê duyệt, nhận thiết bị và các công việc cá nhân khác về một nơi với bộ lọc trạng thái và số đếm dùng chung. |
+| [Trung Tâm Công Việc](./task-center.md)                    | Gom phê duyệt, nhận thiết bị và các công việc cá nhân khác về một nơi với bộ lọc trạng thái và số đếm dùng chung. |
 | [Tệp](./file.md)                                 | Tải lên, liên kết, xem trước, tải xuống, lưu trữ và kiểm soát truy cập.                                          |
 | [Thông báo](./notification.md)                 | Tin nhắn nghiệp vụ qua hộp thư trong ứng dụng, email hoặc kênh nhóm, kèm bản ghi gửi.                             |
 | [Email](./mail/index.md)                           | Hộp thư cá nhân, thư từ, chữ ký, mẫu thư và tích hợp nghiệp vụ.                          |

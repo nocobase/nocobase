@@ -25,7 +25,7 @@ Dùng Workflow cho các nghiệp vụ có nhiều giai đoạn, khoảng thời 
 
 Dùng [Thông báo](../notification.md) để gửi tin nhắn sau khi dữ liệu thay đổi, và [Tác vụ định kỳ](../scheduler.md) cho tác vụ chạy vào thời điểm cố định. Workflow kết nối các thao tác này quanh một bản ghi nghiệp vụ và tiếp tục cho đến khi quy trình kết thúc.
 
-Xác nhận hoặc từ chối đơn giản có thể là thao tác của Workflow. Dùng [Phê duyệt](../approval/index.md) cho quyết định nhiều cấp, hội ký, thêm người duyệt và phân công lại.
+Xác nhận hoặc từ chối đơn giản có thể là thao tác của Workflow. Dùng [Phê duyệt](../approval/index.md) cho quyết định nhiều cấp, duyệt đồng thuận, thêm người duyệt và phân công lại.
 
 ## Xây dựng và thay đổi quy trình
 

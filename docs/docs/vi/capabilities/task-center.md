@@ -1,10 +1,10 @@
 ---
-title: 'Trung tâm Task'
+title: 'Trung Tâm Công Việc'
 description: 'Sao chép prompt cho Agent để kết nối phê duyệt, nhận thiết bị và các công việc cá nhân khác vào một lối vào duy nhất, bao gồm xử lý, số đếm và tác vụ cũ.'
 keywords: 'trung tâm task, tác vụ cá nhân, Agent, phê duyệt, xây dựng ứng dụng'
 ---
 
-# Trung tâm Task
+# Trung Tâm Công Việc
 
 ## 1. Giới thiệu
 
@@ -12,7 +12,7 @@ keywords: 'trung tâm task, tác vụ cá nhân, Agent, phê duyệt, xây dựn
 
 Một người quản lý cần xem tại một chỗ các đơn nghỉ phép và đơn thanh toán chi phí đang chờ duyệt. Một nhân viên cần nộp bổ sung chứng từ còn thiếu và xác nhận đã nhận thiết bị.
 
-Hãy dùng Trung tâm Task khi công việc cá nhân nằm rải rác ở nhiều nghiệp vụ khác nhau.
+Hãy dùng Trung Tâm Công Việc khi công việc cá nhân nằm rải rác ở nhiều nghiệp vụ khác nhau.
 
 ### Tìm việc nhanh và theo dõi được
 
