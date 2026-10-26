@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.2
+
+### Patch Changes
+
+- 14e042c: Automatically use secure, partitioned authentication cookies for HTTPS demo deployments so visitors can stay signed in inside a cross-site iframe. Preserve explicit deployment overrides and the existing cookie policy for HTTP development and non-demo applications.
+
 ## 0.2.0-beta.1
 
 ### Patch Changes
