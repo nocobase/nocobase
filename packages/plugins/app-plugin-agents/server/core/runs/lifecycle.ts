@@ -210,8 +210,33 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
   async function deliver(conn: DatabaseConnection, run: RunRecord) {
     const now = clock.now().toISOString();
     const pending = await settlePending(conn, run, now);
-    await markDelivered(conn, pending, now);
-    return pending.map(toInput);
+    return (await markDelivered(conn, pending, now)).map(toInput);
+  }
+
+  /**
+   * For an events answer: the run's input when some arrived that its runner has not been given, delivered as a status
+   * poll would; nothing otherwise, so most answers read nothing more.
+   */
+  async function arrived(conn: DatabaseConnection, run: RunRecord) {
+    return (await undelivered(conn, run.id))
+      ? await deliver(conn, run)
+      : undefined;
+  }
+
+  async function undelivered(
+    conn: DatabaseConnection,
+    runId: string,
+  ): Promise<boolean> {
+    return Boolean(
+      await inputsRepo(conn).findOne({
+        filter: (f) =>
+          f.and([
+            f.string('runId').eq(runId),
+            f.date('handledAt').empty(),
+            f.date('deliveredAt').empty(),
+          ]),
+      }),
+    );
   }
 
   /** The run's unhandled input it may act on, marking what it may no longer act on handled. */
@@ -418,12 +443,20 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           () => redactorOf(runId),
           (event) => deps.onOutput?.(runId, event),
         );
-        if (transient.length === reported.events.length)
+        if (transient.length === reported.events.length) {
+          // A preview answer reads nothing more unless input is waiting.
+          const inputs = (await undelivered(tx.read(), runId))
+            ? await tx.run(async ({ conn }) =>
+                arrived(conn, await held(conn, runner, runId)),
+              )
+            : undefined;
           return {
             accepted: 0,
             duplicates: 0,
             cancelRequested: run.cancelRequestedAt !== null,
+            ...(inputs ? { inputs } : {}),
           };
+        }
       }
       const durable = {
         ...reported,
@@ -550,10 +583,12 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         await recordActualModels(conn, run, reportedUsage, now, efforts, true);
         if (accepted > 0)
           unit.emit({ type: 'run.events', runId: run.id, lastSeq });
+        const inputs = await arrived(conn, run);
         return {
           accepted,
           duplicates: request.events.length - accepted,
           cancelRequested: run.cancelRequestedAt !== null,
+          ...(inputs ? { inputs } : {}),
         };
       });
       if (completed.length)

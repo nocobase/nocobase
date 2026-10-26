@@ -6,7 +6,10 @@ import { mayAccessRun } from '../core/runs/access.js';
  * work sent back with a back-off) is `runners.ts`.
  */
 import { HEADERS, type RunApp } from '@nocobase/agent-protocol';
-import { runRetentionDays } from '../core/runs/run-data-purge.js';
+import {
+  archivedRetentionDays,
+  runRetentionDays,
+} from '../core/runs/run-data-purge.js';
 import { retryBaseDelayMs } from '../core/runs/policy.js';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { driveManagerToken } from '@nocobase/app-server/drive';
@@ -58,6 +61,11 @@ export interface AgentsConfig {
     readonly retentionDays?: number;
     readonly retryBaseDelayMs?: number;
   };
+  /**
+   * Archived conversations are deleted `archivedRetentionDays` days after they were archived, with their messages,
+   * files and links: 30 by default, 0 keeps them. Checked once a day.
+   */
+  readonly conversations?: { readonly archivedRetentionDays?: number };
   /** How often the runners sweep runs (`sweepIntervalMs`): every 30 seconds by default. */
   readonly runners?: { readonly sweepIntervalMs?: number };
   /**
@@ -148,6 +156,10 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   public override register(): void {
     runRetentionDays(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,
+    );
+    archivedRetentionDays(
+      this.app.config.get<AgentsConfig>('agents')?.conversations
+        ?.archivedRetentionDays,
     );
     retryBaseDelayMs(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retryBaseDelayMs,

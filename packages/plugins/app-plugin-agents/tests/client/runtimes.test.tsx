@@ -838,32 +838,40 @@ describe('runtimes page', () => {
     expect(within(dialog).getAllByText(/fgreg_secret/u).length).toBeGreaterThan(
       0,
     );
-    // Both methods use the same credential; switching systems does not create another one.
+    // The prompt for an agent comes first, then the steps to take by hand; both carry the same credential, and switching
+    // systems does not create another one.
     for (const system of ['macos', 'linux', 'windows']) {
       await userEvent.click(
         within(dialog).getByRole('tab', { name: `connect.system.${system}` }),
       );
+      const panel = within(within(dialog).getByRole('tabpanel'));
+      const callout = panel
+        .getByText('connect.promptTitle')
+        .closest('[data-agent-prompt]') as HTMLElement;
+      expect(callout).not.toBeNull();
+      expect(
+        within(callout).getByRole('button', { name: 'connect.promptCopy' }),
+      ).toBeInTheDocument();
+      expect(
+        callout.compareDocumentPosition(panel.getByText('connect.manual')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
       await userEvent.click(
-        within(dialog).getByRole('tab', { name: 'connect.prompt' }),
+        within(callout).getByRole('button', { name: 'connect.promptShow' }),
       );
       expect(
-        within(dialog).getByText(/connect\.promptBody/u),
+        within(callout).getByText(/connect\.promptBody/u),
       ).toHaveTextContent('--token fgreg_secret');
       if (system === 'windows')
         expect(
-          within(dialog).getByText(/connect\.promptWindows/u),
+          within(callout).getByText(/connect\.promptWindows/u),
         ).toHaveTextContent(/^connect\.promptWindows/u);
-      await userEvent.click(
-        within(dialog).getByRole('tab', { name: 'connect.manual' }),
-      );
-      expect(within(dialog).getByText(/^curl -fsSL/u)).toHaveTextContent(
+      expect(panel.getByText(/^curl -fsSL/u)).toHaveTextContent(
         '--token fgreg_secret',
       );
       if (system === 'windows')
-        expect(within(dialog).getByText('wsl --install')).toBeInTheDocument();
-      expect(
-        within(dialog).getByText('connect.nodeRequired'),
-      ).toBeInTheDocument();
+        expect(panel.getByText('wsl --install')).toBeInTheDocument();
+      expect(panel.getByText('connect.nodeRequired')).toBeInTheDocument();
     }
     expect(callsTo('POST', 'agents/runners/registrationTokens')).toHaveLength(
       1,

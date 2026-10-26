@@ -4,7 +4,14 @@ import type {
   RealtimeOnlineAgent,
   OnlineAgentBackend,
 } from '../contracts.js';
-import { runnerMessages, runnerUIPage, runnerMessageId } from './projection.js';
+import {
+  runnerMessages,
+  runnerToolParts,
+  runnerUIPage,
+  runnerMessageId,
+  runnerPlan,
+  type RunnerToolPart,
+} from './projection.js';
 import type { UIStreamChannel } from '../transport/streams.js';
 import type { AppUIMessage } from '../../../../shared/online-agent.js';
 import { isDeepStrictEqual } from 'node:util';
@@ -20,7 +27,11 @@ import {
   toMessage,
 } from '../../../core/conversations/conversation.store.js';
 import { openRunsOnEach } from '../../../core/runs/index.js';
-import { findRunRecord, toRun } from '../../../core/runs/run.store.js';
+import {
+  eventsRepo,
+  findRunRecord,
+  toRun,
+} from '../../../core/runs/run.store.js';
 import {
   conflict,
   forbidden,
@@ -104,6 +115,59 @@ function overrides(
   } = options;
   return Object.keys(pending).length ? pending : undefined;
 }
+
+/** The response without its turn footer, which history shows once the run has ended; it is never streamed. */
+function withoutTurn(
+  message: AppUIMessage | undefined,
+): AppUIMessage | undefined {
+  if (!message) return message;
+  const kept = message.parts.flatMap((part, index) =>
+    part.type === 'data-turn' ? [] : [index],
+  );
+  if (kept.length === message.parts.length) return message;
+  return {
+    ...message,
+    parts: kept.map((index) => message.parts[index]),
+    metadata: {
+      ...message.metadata!,
+      sourceRecords: (message.metadata?.sourceRecords ?? []).filter(
+        (source) => !source.partId.startsWith('turn:'),
+      ),
+    },
+  };
+}
+
+/** The text of the one user message Runner chat takes per send. */
+function userText(
+  messages: ModelMessage[],
+  input: OnlineAgentSendOptions | undefined,
+): string {
+  if (input?.selectedModel)
+    throw unsupportedCapability('runner', 'native models');
+  if (messages.length !== 1 || messages[0].role !== 'user')
+    throw invalid('Runner chat accepts one user message per turn.');
+  if (messages[0].providerOptions !== undefined)
+    throw unsupportedCapability('runner', 'provider-specific message options');
+  const content = messages[0].content;
+  if (
+    Array.isArray(content) &&
+    content.some(
+      (part) => part.type !== 'text' || part.providerOptions !== undefined,
+    )
+  )
+    throw unsupportedCapability(
+      'runner',
+      'native binary parts; send attachments by attachmentIds',
+    );
+  if ((input?.attachmentIds?.length ?? 0) > 1)
+    throw invalid('Attachments must belong to the single user message.');
+  return typeof content === 'string'
+    ? content
+    : content.map((part) => (part.type === 'text' ? part.text : '')).join('');
+}
+
+/** The most parts one streamed response carries: its text and reasoning blocks and its tool calls. */
+const MAX_STREAM_PARTS = 256;
 
 /** One trusted facade, with pending configuration and only its last accepted response pinned. */
 export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
@@ -222,34 +286,51 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
       .catch(() => {});
     return task;
   }
+  async queue(
+    messages: ModelMessage[],
+    input?: OnlineAgentSendOptions,
+  ): Promise<number> {
+    const { deps, state } = this.host;
+    if (state.stopping) throw conflict('OnlineAgent is stopping.');
+    const text = userText(messages, input);
+    credentials(this.context);
+    if (input?.overrides)
+      throw invalid('Queued messages keep the configuration of the work.');
+    // A first message still being admitted is the work this one joins.
+    while (state.admitting.has(this.sessionId))
+      await Promise.allSettled([...state.admissions]);
+    const before = await owned(deps, this.context.user.id, this.sessionId);
+    const current = runnerBinding(before.metadata)?.config;
+    if (!current)
+      throw invalid('This is not a Runner OnlineAgent conversation.');
+    const accepted = await deps.conversations.sendRealtime(
+      this.context.user.id,
+      this.sessionId,
+      {
+        content: text,
+        attachmentIds: input?.attachmentIds?.[0],
+        clientId: input?.clientId,
+      },
+      {
+        config: current,
+        expectedConfig: current,
+        workContext: input?.workContext,
+        business: this.context.business,
+        queue: true,
+      },
+    );
+    const execution = state.active.get(this.sessionId);
+    if (execution)
+      void this.host.refresh(execution).catch((error) => deps.onError(error));
+    return accepted.seq;
+  }
   private async submit(
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,
   ): Promise<number> {
     const { deps, state } = this.host;
     credentials(this.context);
-    if (input?.selectedModel)
-      throw unsupportedCapability('runner', 'native models');
-    if (messages.length !== 1 || messages[0].role !== 'user')
-      throw invalid('Runner chat accepts one user message per turn.');
-    if (messages[0].providerOptions !== undefined)
-      throw unsupportedCapability(
-        'runner',
-        'provider-specific message options',
-      );
-    const content = messages[0].content;
-    if (
-      Array.isArray(content) &&
-      content.some(
-        (part) => part.type !== 'text' || part.providerOptions !== undefined,
-      )
-    )
-      throw unsupportedCapability(
-        'runner',
-        'native binary parts; send attachments by attachmentIds',
-      );
-    if ((input?.attachmentIds?.length ?? 0) > 1)
-      throw invalid('Attachments must belong to the single user message.');
+    const text = userText(messages, input);
     const before = await owned(deps, this.context.user.id, this.sessionId);
     if (
       state.active.has(this.sessionId) ||
@@ -291,6 +372,8 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
       textLengths: new Map(),
       previewDigests: new Map(),
       previewParts: new Map(),
+      toolStates: new Map(),
+      stepSeq: 0,
       ready: false,
       started: false,
       again: false,
@@ -302,12 +385,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
         this.context.user.id,
         this.sessionId,
         {
-          content:
-            typeof content === 'string'
-              ? content
-              : content
-                  .map((part) => (part.type === 'text' ? part.text : ''))
-                  .join(''),
+          content: text,
           attachmentIds: input?.attachmentIds?.[0],
           clientId: input?.clientId,
         },
@@ -542,22 +620,9 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
     const id = `output:${output.blockId}`;
     if (execution.published.has(id)) return;
     const type = event.type === 'thinking' ? 'reasoning' : 'text';
-    if (!execution.started) {
-      execution.writer.write({
-        type: 'start',
-        messageId: runnerMessageId(runId),
-        messageMetadata: {
-          conversationId: execution.id,
-          revision: 0,
-          createdAt: this.deps.now(),
-          executionId: runId,
-          turnId: runId,
-        },
-      });
-      execution.started = true;
-    }
+    this.ensureStarted(execution);
     if (!execution.previewParts.has(id)) {
-      if (execution.previewParts.size >= 64) return;
+      if (execution.previewParts.size >= MAX_STREAM_PARTS) return;
       execution.previewParts.set(id, {
         index: execution.previewParts.size,
         type,
@@ -569,31 +634,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       execution.textLengths.set(id, 0);
       execution.previewDigests.set(id, createHash('sha256'));
     }
-    const sources = [...execution.previewParts].map(([partId, part]) => ({
-      recordId: partId,
-      partId,
-      partIndex: part.index,
-      seq: execution.cursor + 1,
-      createdAt: this.deps.now(),
-      output: {
-        blockId: partId.slice(7),
-        phase: execution.published.has(partId)
-          ? ('end' as const)
-          : ('delta' as const),
-      },
-    }));
-    execution.writer.write({
-      type: 'message-metadata',
-      messageMetadata: {
-        ...execution.snapshot?.metadata,
-        revision: execution.snapshot?.metadata?.revision ?? 0,
-        conversationId: execution.id,
-        createdAt: execution.snapshot?.metadata?.createdAt ?? this.deps.now(),
-        sourceRecords: sources,
-        executionId: runId,
-        turnId: runId,
-      },
-    });
+    this.writeSources(execution);
     let content = event.content ?? '';
     if (output.phase === 'end' && event.content !== undefined) {
       const length = this.prefixLength(execution, id, content);
@@ -636,7 +677,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
           createHash('sha256').update(canonical.slice(0, length)).digest('hex'))
     ) {
       for (const [partId, part] of execution.previewParts)
-        if (!execution.published.has(partId)) {
+        if (!execution.published.has(partId) && part.type !== 'tool') {
           execution.writer.write({
             type: part.type === 'text' ? 'text-end' : 'reasoning-end',
             id: partId,
@@ -649,6 +690,217 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       return undefined;
     }
     return length;
+  }
+  /** The run's tool calls and results saved since the last read, as tool parts of the response, in order. */
+  private async liveTools(execution: Execution): Promise<void> {
+    const events = await eventsRepo(this.deps.tx.read()).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('runId').eq(execution.runId!),
+          f.or([
+            f.string('type').eq('toolUse'),
+            f.string('type').eq('toolResult'),
+            f.and([
+              f.string('type').eq('status'),
+              f.text('content').eq('plan'),
+            ]),
+          ]),
+          f.number('seq').gt(execution.stepSeq),
+        ]),
+      sort: (s) => s.field('seq').asc(),
+      limit: 200,
+    });
+    if (events.length === 0) return;
+    execution.stepSeq = Number(events.at(-1)!.seq);
+    // The agent's plan, as it last reported it, replaces the one shown.
+    const plan = runnerPlan(events.filter((event) => event.type === 'status'));
+    const planId = `plan:${execution.runId!}`;
+    if (
+      plan &&
+      (execution.previewParts.has(planId) ||
+        execution.previewParts.size < MAX_STREAM_PARTS)
+    ) {
+      this.ensureStarted(execution);
+      if (!execution.previewParts.has(planId))
+        execution.previewParts.set(planId, {
+          index: execution.previewParts.size,
+          type: 'tool',
+        });
+      execution.writer.write({
+        type: 'data-plan',
+        id: planId,
+        data: plan.plan,
+      });
+      execution.published.add(planId);
+      this.writeSources(execution);
+    }
+    // A result whose call was read earlier still needs the call's input: read the calls of these results too.
+    const earlier = events
+      .filter((event) => event.type === 'toolResult')
+      .map((event) => jsonObject(event.meta).toolUseId)
+      .filter(
+        (id): id is string =>
+          typeof id === 'string' && execution.toolStates.has(`tool:${id}`),
+      );
+    const calls = earlier.length
+      ? await eventsRepo(this.deps.tx.read()).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('runId').eq(execution.runId!),
+              f.string('type').eq('toolUse'),
+              f.or(
+                earlier.map((id) => f.json('meta').path(['toolUseId']).eq(id)),
+              ),
+            ]),
+          sort: (s) => s.field('seq').asc(),
+          limit: earlier.length,
+        })
+      : [];
+    const parts = runnerToolParts([
+      ...calls.filter((call) =>
+        earlier.includes(String(jsonObject(call.meta).toolUseId)),
+      ),
+      ...events,
+    ]);
+    let wrote = false;
+    for (const [id, { part }] of parts)
+      wrote = this.writeTool(execution, id, part) || wrote;
+    if (wrote) this.writeSources(execution);
+  }
+  /**
+   * Before the response has output, says where it stands (`data-phase`): waiting for a runner, starting the agent, or
+   * the agent thinking. The page shows it in place of a blank response; output replaces it.
+   */
+  private async livePhase(execution: Execution, run: Run): Promise<void> {
+    if (execution.phase === 'done') return;
+    if ([...execution.previewParts.keys()].some((id) => id !== 'phase')) {
+      execution.phase = 'done';
+      return;
+    }
+    let phase: NonNullable<Execution['phase']> =
+      run.status === 'queued' ? 'waiting' : 'starting';
+    if (run.status === 'running' && execution.phase !== 'thinking') {
+      const started = await eventsRepo(this.deps.tx.read()).findOne({
+        filter: (f) =>
+          f.and([
+            f.string('runId').eq(run.id),
+            f.string('type').eq('status'),
+            f.text('content').eq('started'),
+          ]),
+      });
+      if (started) phase = 'thinking';
+    } else if (execution.phase === 'thinking') phase = 'thinking';
+    if (phase === execution.phase) return;
+    this.ensureStarted(execution);
+    if (!execution.previewParts.has('phase'))
+      execution.previewParts.set('phase', {
+        index: execution.previewParts.size,
+        type: 'tool',
+      });
+    execution.published.add('phase');
+    execution.writer.write({
+      type: 'data-phase',
+      id: 'phase',
+      data: { phase },
+    });
+    execution.phase = phase;
+    this.writeSources(execution);
+  }
+  /** Writes what of a tool part the stream has not had; true when something was written. */
+  private writeTool(
+    execution: Execution,
+    id: string,
+    part: RunnerToolPart,
+  ): boolean {
+    let state = execution.toolStates.get(id);
+    if (state === 'done') return false;
+    let wrote = false;
+    if (!state) {
+      if (execution.previewParts.size >= MAX_STREAM_PARTS) return false;
+      this.ensureStarted(execution);
+      execution.previewParts.set(id, {
+        index: execution.previewParts.size,
+        type: 'tool',
+      });
+      execution.writer.write({
+        type: 'tool-input-available',
+        toolCallId: part.toolCallId,
+        toolName: part.toolName,
+        input: part.input,
+        dynamic: true,
+      });
+      state = 'input';
+      execution.toolStates.set(id, state);
+      wrote = true;
+    }
+    if (part.state === 'output-available' || part.state === 'output-error') {
+      execution.writer.write(
+        part.state === 'output-available'
+          ? {
+              type: 'tool-output-available',
+              toolCallId: part.toolCallId,
+              output: part.output,
+              dynamic: true,
+            }
+          : {
+              type: 'tool-output-error',
+              toolCallId: part.toolCallId,
+              errorText: part.errorText,
+              dynamic: true,
+            },
+      );
+      execution.toolStates.set(id, 'done');
+      execution.published.add(id);
+      wrote = true;
+    }
+    return wrote;
+  }
+  private ensureStarted(execution: Execution): void {
+    if (execution.started) return;
+    execution.writer.write({
+      type: 'start',
+      messageId: runnerMessageId(execution.runId!),
+      messageMetadata: {
+        conversationId: execution.id,
+        revision: 0,
+        createdAt: this.deps.now(),
+        executionId: execution.runId!,
+        turnId: execution.runId!,
+      },
+    });
+    execution.started = true;
+  }
+  /** Where each part of the response streamed so far stands, so the page keeps them in order. */
+  private writeSources(execution: Execution): void {
+    const runId = execution.runId!;
+    execution.writer.write({
+      type: 'message-metadata',
+      messageMetadata: {
+        ...execution.snapshot?.metadata,
+        revision: execution.snapshot?.metadata?.revision ?? 0,
+        conversationId: execution.id,
+        createdAt: execution.snapshot?.metadata?.createdAt ?? this.deps.now(),
+        sourceRecords: [...execution.previewParts].map(([partId, part]) => ({
+          recordId: partId,
+          partId,
+          partIndex: part.index,
+          seq: execution.cursor + 1,
+          createdAt: this.deps.now(),
+          ...(partId.startsWith('output:')
+            ? {
+                output: {
+                  blockId: partId.slice(7),
+                  phase: execution.published.has(partId)
+                    ? ('end' as const)
+                    : ('delta' as const),
+                },
+              }
+            : {}),
+        })),
+        executionId: runId,
+        turnId: runId,
+      },
+    });
   }
   private refresh(execution: Execution): Promise<void> {
     if (this.state.detaching) return execution.pending ?? Promise.resolve();
@@ -698,7 +950,11 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
     // A reclaimed attempt can be queued again without finishing the conversation stream.
     if (run.status === 'queued' || run.status === 'dispatched')
       for (const [id, part] of execution.previewParts)
-        if (id.startsWith('output:') && !execution.published.has(id)) {
+        if (
+          id.startsWith('output:') &&
+          part.type !== 'tool' &&
+          !execution.published.has(id)
+        ) {
           execution.writer.write({
             type: part.type === 'text' ? 'text-end' : 'reasoning-end',
             id,
@@ -706,6 +962,8 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
           execution.published.add(id);
           execution.previewDigests.delete(id);
         }
+    await this.liveTools(execution);
+    await this.livePhase(execution, run);
     // Synchronization commits first. Independent notices are delivered by durable business rereads.
     const row = await owned(this.deps, execution.userId, execution.id);
     if (Number(row.lastSeq) > execution.cursor) {
@@ -717,12 +975,14 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         },
         sort: (s) => s.field('seq').asc(),
       });
-      const message = (
-        await runnerMessages(
-          this.deps.tx,
-          records.map((record) => toMessage(record, this.deps.basePath())),
-        )
-      )[0];
+      const message = withoutTurn(
+        (
+          await runnerMessages(
+            this.deps.tx,
+            records.map((record) => toMessage(record, this.deps.basePath())),
+          )
+        )[0],
+      );
       if (message) {
         const sourceParts = new Map(
           message.metadata!.sourceRecords!.map((source) => [
@@ -734,12 +994,15 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         for (const source of message.metadata!.sourceRecords!) {
           let part = execution.previewParts.get(source.partId);
           if (!part) {
+            const type = sourceParts.get(source.partId)?.type;
             part = {
               index: execution.previewParts.size,
               type:
-                sourceParts.get(source.partId)?.type === 'reasoning'
+                type === 'reasoning'
                   ? 'reasoning'
-                  : 'text',
+                  : type === 'dynamic-tool' || type?.startsWith('data-')
+                    ? 'tool'
+                    : 'text',
             };
             execution.previewParts.set(source.partId, part);
           }
@@ -810,6 +1073,9 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
               execution.published.add(source.partId);
               execution.previewDigests.delete(source.partId);
             }
+          } else if (part.type === 'dynamic-tool') {
+            this.writeTool(execution, source.partId, part);
+            continue;
           } else if (part.type === 'file')
             execution.writer.write({
               type: 'file',
@@ -826,7 +1092,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
     }
     if (!this.terminal(run)) return;
     for (const [id, part] of execution.previewParts)
-      if (!execution.published.has(id)) {
+      if (!execution.published.has(id) && part.type !== 'tool') {
         execution.writer.write({
           type: part.type === 'text' ? 'text-end' : 'reasoning-end',
           id,
@@ -880,9 +1146,8 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       const current = await lockConversation(conn, id, this.deps.now());
       if (!current || current.userId !== userId) throw notFound('Conversation');
       const binding = runnerBinding(current.metadata);
-      if (binding?.closingRunId && binding.closingRunId !== runId)
-        throw conflict('Another execution is being finalized.');
-      if (!binding?.closingRunId) return;
+      // A later run (one the application woke) closes on its own.
+      if (!binding?.closingRunId || binding.closingRunId !== runId) return;
       const { closingRunId: _closed, ...kept } = binding;
       await conversationsRepo(conn).updateMany({
         filter: { id },

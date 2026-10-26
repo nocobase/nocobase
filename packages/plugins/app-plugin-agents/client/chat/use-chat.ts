@@ -28,6 +28,7 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
   useSyncExternalStore,
   type Dispatch,
 } from 'react';
@@ -53,6 +54,7 @@ import { agentsQueryClient } from '../query.js';
 import { useChatController, useChatStream } from './controller.js';
 import { ChatApi } from './api.js';
 import { chatKeys } from './keys.js';
+import { coalescedInvalidation } from './coalesced-invalidation.js';
 import {
   EMPTY_MESSAGES,
   messagesReducer,
@@ -209,8 +211,10 @@ export function useConversationList(
  */
 export function useChatRealtime(enabled: boolean): void {
   const queryClient = agentsQueryClient();
+  const [stale] = useState(() => coalescedInvalidation(queryClient));
+  useEffect(() => () => stale.stop(), [stale]);
   useRealtimeTopic(enabled ? RUNNERS_TOPIC : null, () => {
-    void queryClient.invalidateQueries({ queryKey: chatKeys.agents });
+    stale.add(chatKeys.agents);
   });
   useRealtimeTopic(enabled ? CONVERSATIONS_TOPIC : null, (payload) => {
     if (payload === undefined) {
@@ -218,11 +222,9 @@ export function useChatRealtime(enabled: boolean): void {
       return;
     }
     if (!isChatPayload(payload)) return;
-    void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
+    stale.add(chatKeys.lists);
     if (payload.kind === 'conversation.changed')
-      void queryClient.invalidateQueries({
-        queryKey: chatKeys.conversation(payload.conversationId),
-      });
+      stale.add(chatKeys.conversation(payload.conversationId));
   });
 }
 
@@ -539,6 +541,8 @@ export interface ConversationActions {
     { readonly id: string; readonly archived: boolean }
   >;
   readonly stop: UseMutationResult<ConversationDetail, unknown, string>;
+  /** Deletes the conversation for good; the lists forget it. */
+  readonly remove: UseMutationResult<void, unknown, string>;
   readonly markRead: (id: string) => void;
 }
 
@@ -628,6 +632,19 @@ export function useConversationActions(): ConversationActions {
     queryClient,
   );
 
+  const remove = useMutation(
+    {
+      mutationFn: (id: string) => api.deleteConversation(id),
+      onMutate: scope,
+      onSuccess: (_result, id) => {
+        queryClient.removeQueries({ queryKey: chatKeys.conversation(id) });
+        void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
+      },
+      onError: failed,
+    },
+    queryClient,
+  );
+
   const markRead = useCallback(
     (id: string) => {
       void controller
@@ -641,5 +658,5 @@ export function useConversationActions(): ConversationActions {
     [api, controller],
   );
 
-  return { rename, archive, stop, markRead };
+  return { rename, archive, stop, remove, markRead };
 }

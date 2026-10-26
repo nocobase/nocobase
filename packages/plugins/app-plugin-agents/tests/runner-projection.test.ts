@@ -150,3 +150,103 @@ it('interleaves saved negotiated reasoning with canonical text without changing 
   ]);
   expect(rows).toEqual(original);
 });
+
+it('places a run’s reasoning and tool calls among its texts, in run order, with their results', async () => {
+  const { validateAppUIMessages } = await import('../shared/ui-message.js');
+  const end = (blockId: string) => ({ output: { blockId, phase: 'end' } });
+  const rows = [
+    row(1, 'Let me look.', { ...end('a'), runEventSeq: 2 }),
+    row(2, 'Done: PM-9.', { ...end('b'), runEventSeq: 7 }),
+  ];
+  const at = '2026-01-01T00:00:01Z';
+  const steps = [
+    {
+      runId: 'run',
+      seq: 1,
+      at,
+      type: 'thinking',
+      content: 'Plan the issue.',
+      meta: end('t1'),
+    },
+    {
+      runId: 'run',
+      seq: 3,
+      at,
+      type: 'toolUse',
+      tool: 'Bash',
+      content: null,
+      input: JSON.stringify({ command: 'nb-studio issue create --json' }),
+      meta: { toolUseId: 'call-1' },
+    },
+    {
+      runId: 'run',
+      seq: 4,
+      at,
+      type: 'toolResult',
+      tool: 'Bash',
+      content: null,
+      output: '{"ok":true}',
+      meta: { toolUseId: 'call-1', isError: false },
+    },
+    {
+      runId: 'run',
+      seq: 5,
+      at,
+      type: 'toolUse',
+      tool: 'Read',
+      content: null,
+      input: { file_path: 'x'.repeat(5000) },
+      meta: { toolUseId: 'call-2' },
+    },
+    {
+      runId: 'run',
+      seq: 6,
+      at,
+      type: 'toolResult',
+      tool: 'Read',
+      content: null,
+      output: 'denied',
+      meta: { toolUseId: 'call-2', isError: true },
+    },
+  ];
+  const [message] = await validateAppUIMessages(runnerUIMessages(rows, steps));
+  expect(message!.parts.map((part) => part.type)).toEqual([
+    'reasoning',
+    'text',
+    'dynamic-tool',
+    'dynamic-tool',
+    'text',
+  ]);
+  expect(message!.parts[2]).toMatchObject({
+    toolName: 'Bash',
+    toolCallId: 'call-1',
+    state: 'output-available',
+    input: { command: 'nb-studio issue create --json' },
+    output: '{"ok":true}',
+  });
+  expect(message!.parts[3]).toMatchObject({
+    toolName: 'Read',
+    state: 'output-error',
+    errorText: 'denied',
+  });
+  // Long inputs are bounded; the run's transcript keeps them whole.
+  const input = (message!.parts[3] as { input: { file_path: string } }).input;
+  expect(input.file_path.length).toBeLessThan(5000);
+  expect(
+    message!.metadata!.sourceRecords!.map((source) => source.partId),
+  ).toEqual([
+    'output:t1',
+    'output:a',
+    'tool:call-1',
+    'tool:call-2',
+    'output:b',
+  ]);
+  // A response that only used tools before it was stopped still shows them.
+  const stopped = runnerUIMessages(
+    [{ ...row(1, 'Go'), role: 'user', id: 'u1' }],
+    steps.slice(1, 3),
+  );
+  expect(stopped.find((m) => m.role === 'assistant')?.parts).toEqual([
+    expect.objectContaining({ type: 'dynamic-tool', toolCallId: 'call-1' }),
+  ]);
+});

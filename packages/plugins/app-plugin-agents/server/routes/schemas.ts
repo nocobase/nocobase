@@ -63,6 +63,9 @@ import {
 import type { BriefPreview, RunBrief } from '../../shared/briefs.js';
 import {
   CONSULTATION_STATES,
+  CONVERSATION_LINK_KIND_PATTERN,
+  CONVERSATION_LINK_ORIGINS,
+  CONVERSATION_NEEDS_YOU,
   CONVERSATION_SOURCE_PATTERN,
   MESSAGE_ROLES,
   OFFLINE_REASONS,
@@ -70,8 +73,12 @@ import {
   type ChatAgent,
   type ChatPreferences,
   type ChatSettings,
+  type ConversationAttentionCounts,
+  type ConversationUsage,
   type ConversationDetail,
+  type ConversationLink,
   type ConversationMessage,
+  type ConversationNeedsYou,
   type MessageAttachment,
   type ConversationSummary,
   type SendMessageResult,
@@ -209,6 +216,13 @@ export const WorkspaceParams: z.ZodType<{
 });
 export const ConversationParams: z.ZodType<{ conversationId: string }> =
   z.object({ conversationId: id.describe('The conversation identifier.') });
+export const ConversationMessageParams: z.ZodType<{
+  conversationId: string;
+  messageId: string;
+}> = z.object({
+  conversationId: id.describe('The conversation identifier.'),
+  messageId: id.describe('The message identifier.'),
+});
 export const ServiceParams: z.ZodType<{ serviceName: string }> = z.object({
   serviceName: id.describe('The configured model service name.'),
 });
@@ -400,8 +414,23 @@ export const ConversationListQuerySchema: z.ZodType<
     readonly agentId?: string | undefined;
     readonly mode?: 'online' | 'runner' | undefined;
     readonly source?: string | undefined;
+    readonly linkKind?: string | undefined;
+    readonly linkTargetId?: string | undefined;
   }
 > = z.object({
+  linkKind: z
+    .string()
+    .regex(CONVERSATION_LINK_KIND_PATTERN)
+    .optional()
+    .describe(
+      'Only conversations tied to a target of this kind; with linkTargetId.',
+    ),
+  linkTargetId: z
+    .string()
+    .min(1)
+    .max(255)
+    .optional()
+    .describe('Only conversations tied to this target; with linkKind.'),
   q: z.string().max(200).optional().describe('Text to search for.'),
   archived: z
     .enum(['true', 'false', 'all'])
@@ -1552,6 +1581,91 @@ export const ProviderModelsSchema: z.ZodType<ProviderModels> =
   ]);
 
 // Conversations.
+export const ConversationNeedsYouSchema: z.ZodType<ConversationNeedsYou> = z
+  .object({
+    reason: z.enum(CONVERSATION_NEEDS_YOU),
+    seq: z.number().int(),
+    text: z.string().nullable(),
+  })
+  .meta({ ref: 'AgentsConversationNeedsYou' });
+
+export const ConversationAttentionSchema: z.ZodType<ConversationAttentionCounts> =
+  z
+    .object({
+      unread: z.number().int().meta({
+        description: 'Open conversations with messages the owner has not read.',
+      }),
+      needsYou: z
+        .number()
+        .int()
+        .meta({ description: 'Open conversations that need the owner.' }),
+    })
+    .meta({ ref: 'AgentsConversationAttention' });
+
+const tokenCount = z.number().int().nonnegative();
+export const ConversationUsageSchema: z.ZodType<ConversationUsage> = z
+  .object({
+    inputTokens: tokenCount.meta({
+      description: 'Input tokens over every run, besides cached ones.',
+    }),
+    cacheReadTokens: tokenCount.meta({
+      description: 'Input tokens read from the cache over every run.',
+    }),
+    outputTokens: tokenCount.meta({
+      description: 'Output tokens over every run.',
+    }),
+    runs: tokenCount.meta({ description: 'Runs that reported tokens.' }),
+    context: z
+      .object({
+        used: tokenCount.meta({
+          description:
+            'Tokens the context held after the latest run that said.',
+        }),
+        size: tokenCount.meta({ description: "The model's context window." }),
+      })
+      .nullable()
+      .meta({
+        description:
+          "How full the context window was, when the run's coding tool reports it; null otherwise.",
+      }),
+    costUsd: z.number().nonnegative().nullable().meta({
+      description:
+        'What the runs cost in US dollars, over the runs whose coding tool priced them (Claude Code, Pi, OpenCode); null when none did.',
+    }),
+  })
+  .meta({ ref: 'AgentsConversationUsage' });
+
+export const ConversationLinkSchema: z.ZodType<ConversationLink> = z
+  .object({
+    id: z.string(),
+    conversationId: z.string(),
+    kind: z.string(),
+    targetId: z.string(),
+    origin: z.enum(CONVERSATION_LINK_ORIGINS),
+    createdAt: dateTime,
+    view: z
+      .object({
+        key: z.string().nullable(),
+        title: z.string(),
+        status: z.string().nullable(),
+        url: z.string().nullable(),
+      })
+      .nullable()
+      .meta({
+        description:
+          'How the application shows the target to the caller; null when its kind cannot resolve it, or the caller may no longer see it.',
+      }),
+  })
+  .meta({ ref: 'AgentsConversationLink' });
+
+export const ConversationLinkParams: z.ZodType<{
+  conversationId: string;
+  linkId: string;
+}> = z.object({
+  conversationId: id.describe('The conversation identifier.'),
+  linkId: id.describe('The link identifier.'),
+});
+
 const conversationAgent = z.object({
   id: z.string(),
   name: z.string().nullable(),
@@ -1599,6 +1713,29 @@ const conversationSummaryObject = z.object({
       acceptsInput: z.boolean(),
     })
     .nullable(),
+  runner: z
+    .object({
+      id: z.string(),
+      name: z.string().nullable(),
+      status: z.enum(['online', 'offline', 'revoked', 'missing']).meta({
+        description:
+          'online takes the conversation now; offline and revoked keep its runs waiting until the runner is back or the owner switches runner; missing is a deleted runner.',
+      }),
+    })
+    .nullable()
+    .meta({
+      description:
+        'The runner the conversation is bound to: the first that took a run on it, which alone takes the next ones. Null until then, and after switchRunner.',
+    }),
+  lastSeq: z.number().int().meta({ description: 'The highest message seq.' }),
+  seenSeq: z
+    .number()
+    .int()
+    .meta({ description: 'How far the owner has seen it (markSeen).' }),
+  needsYou: ConversationNeedsYouSchema.nullable().meta({
+    description:
+      'What waits for the owner: a reply or failure until they see it, a question until they write.',
+  }),
 });
 
 export const ConversationSummarySchema: z.ZodType<ConversationSummary> =
@@ -1737,6 +1874,9 @@ const messageObject = z.object({
     .nullable(),
   metadata: z.object({
     inputId: z.string().optional(),
+    queued: z.boolean().optional(),
+    pickedUp: z.boolean().optional(),
+    withdrawn: z.boolean().optional(),
     agentId: z.string().optional(),
     runEventSeq: z.number().int().optional(),
     notice: notice.optional(),
