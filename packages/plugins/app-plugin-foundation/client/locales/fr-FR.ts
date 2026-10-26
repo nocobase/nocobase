@@ -39,6 +39,7 @@ const frFR: FoundationResource = {
     successPath: 'Requête API réussie : {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Base de données disponible',
+      authorizationIdentityResolved: 'Identité d’autorisation résolue',
       authenticated: 'Authentification acceptée',
       bodyWithinLimit: 'Corps de la requête dans la limite de taille',
       validInput: 'Validation des entrées réussie',

@@ -37,6 +37,7 @@ const jaJP: FoundationResource = {
     successPath: '成功する API リクエスト：{{method}} {{path}}',
     conditions: {
       databaseAvailable: 'データベースが利用可能',
+      authorizationIdentityResolved: '認可の識別情報を解決済み',
       authenticated: '認証が成功',
       bodyWithinLimit: 'リクエスト本文がサイズ制限内',
       validInput: '入力検証が成功',

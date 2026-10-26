@@ -35,6 +35,7 @@ const zhCN: FoundationResource = {
     successPath: '成功路径的 API 请求：{{method}} {{path}}',
     conditions: {
       databaseAvailable: '数据库可用',
+      authorizationIdentityResolved: '授权身份解析成功',
       authenticated: '身份认证通过',
       bodyWithinLimit: '请求体未超过大小限制',
       validInput: '输入校验通过',

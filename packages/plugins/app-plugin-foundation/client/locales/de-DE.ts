@@ -38,6 +38,7 @@ const deDE: FoundationResource = {
     successPath: 'Erfolgreiche API-Anfrage: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Datenbank ist verfügbar',
+      authorizationIdentityResolved: 'Autorisierungsidentität wurde ermittelt',
       authenticated: 'Authentifizierung akzeptiert',
       bodyWithinLimit: 'Anfragetext liegt innerhalb des Größenlimits',
       validInput: 'Eingabeprüfung erfolgreich',

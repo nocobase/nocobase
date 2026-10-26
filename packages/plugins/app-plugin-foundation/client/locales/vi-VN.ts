@@ -36,6 +36,7 @@ const viVN: FoundationResource = {
     successPath: 'Yêu cầu API thành công: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Cơ sở dữ liệu khả dụng',
+      authorizationIdentityResolved: 'Đã xác định danh tính phân quyền',
       authenticated: 'Xác thực được chấp nhận',
       bodyWithinLimit: 'Nội dung yêu cầu trong giới hạn kích thước',
       validInput: 'Kiểm tra đầu vào thành công',
