@@ -1,14 +1,14 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useState, type ReactElement } from 'react';
-import type { FilePreviewFieldProps } from '../types';
+import type { FilePreviewFieldProps } from '../types.js';
 import { Button } from '#components/ui/button';
-import { FilePreviewDialog } from './file-preview-dialog';
-import { FileThumbnail } from './file-thumbnail';
+import { FilePreviewDialog } from './file-preview-dialog.js';
+import { FileThumbnail } from './file-thumbnail.js';
 
 export function FilePreviewField(
   inputProps: FilePreviewFieldProps,
 ): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const {
     files,
     labels,
@@ -24,7 +24,7 @@ export function FilePreviewField(
       <>
         {emptyState ?? (
           <span role='status'>
-            {t('files.empty', { defaultValue: 'No files.' })}
+            {t('fileUi.files.empty', { defaultValue: 'No files.' })}
           </span>
         )}
       </>
@@ -39,7 +39,7 @@ export function FilePreviewField(
               variant='ghost'
               size='icon'
               className='h-12 w-12 overflow-hidden'
-              aria-label={`${labels?.preview ?? t('files.preview', { defaultValue: 'Preview' })}: ${file.filename}`}
+              aria-label={`${labels?.preview ?? t('fileUi.files.preview', { defaultValue: 'Preview' })}: ${file.filename}`}
               onClick={() => {
                 setInitialIndex(index);
                 setOpen(true);

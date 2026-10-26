@@ -112,6 +112,8 @@ function bytes(size: number | undefined, locale: string | undefined): string {
 }
 
 export interface AttachmentListProps {
+  /** Override downloads, for example to validate URLs or authenticate a request. */
+  readonly onDownload?: (file: AttachmentFile) => void;
   readonly files: readonly AttachmentFile[];
   /** Previews a file the consumer's way, stepping through `files` from `index`; every file opens it. */
   readonly onPreview?: (
@@ -128,6 +130,7 @@ export interface AttachmentListProps {
 
 export function AttachmentList({
   files,
+  onDownload,
   onPreview,
   onRemove,
   removingId = null,
@@ -237,8 +240,13 @@ export function AttachmentList({
                 size='icon-xs'
                 className='shrink-0 text-muted-foreground'
                 aria-label={fill(labels.download, { name: file.name })}
-                render={<a href={file.downloadUrl} download={file.name} />}
-                nativeButton={false}
+                render={
+                  onDownload ? undefined : (
+                    <a href={file.downloadUrl} download={file.name} />
+                  )
+                }
+                nativeButton={Boolean(onDownload)}
+                onClick={onDownload ? () => onDownload(file) : undefined}
               >
                 <DownloadIcon />
               </Button>

@@ -41,7 +41,6 @@ CAPABILITIES
   client.react-providers
   client.locales
   cli
-  registry
   skills
 
 OPTIONS
@@ -68,14 +67,11 @@ React context composition owned by the rendered tree.
 
 `server.jobs` adds a one-off background job in `server/jobs/`, a `Job` class from `@nocobase/jobs`, and the Server provider that owns the plugin's `JobExecutor` under its package name: it registers the job and sets the executor up in `start()`, and shuts it down in `shutdown()`. The application's `jobs` configuration decides the backend.
 
-The `registry` capability currently belongs to source-workspace tooling and is rejected in application mode, including when selected through `all`. Choose application capabilities explicitly; editable UI is maintained in the UI Library.
+The `registry` capability is no longer supported. Editable UI is maintained in the UI Library.
 
 `cli` adds a CLI plugin in `cli/index.ts`, exported as `./cli`, with one example command under the topic derived from the package name; an application lists it in its `cli/plugins.ts` to get the commands. `--with all` selects every capability at once.
 
-The generator derives Client and Server plugin declarations, package exports,
-dependencies, tests, publication files, Registry scripts, and Plugin Skill
-publication from the same capability model. It does not invent business routes
-or rely on a complete example that must be deleted after generation.
+The generator derives Client and Server plugin declarations, package exports, dependencies, tests, publication files, and Plugin Skill publication from the same capability model. It does not invent business routes or rely on a complete example that must be deleted after generation.
 
 Use `--dry-run --json` to inspect the exact read-only generation plan before
 creating a plugin. Registering or enabling the generated plugin remains an
@@ -91,7 +87,7 @@ Plugins with the `database` capability run `nocobase-db-manifests` after TypeScr
 
 ## Installing client UI with shadcn
 
-Every plugin with client code includes `components.json`, `client/styles.css`, shadcn tooling, and the `@nocobase` registry. Selecting `registry` is needed only to publish the plugin's own editable source recipes. A component-only plugin can install UI directly:
+Every plugin with client code includes `components.json`, `client/styles.css`, shadcn tooling, and the `@nocobase` registry. Editable source is published by the UI Library. A component-only plugin can install UI directly:
 
 ```bash
 pnpm dlx @nocobase/create-plugin feature-card --with client.components

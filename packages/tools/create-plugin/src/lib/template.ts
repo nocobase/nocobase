@@ -73,8 +73,7 @@ function hasBrowserCode(capabilities: PluginCapabilities): boolean {
     capabilities.client.components ||
     capabilities.client.locales ||
     capabilities.client.reactProviders ||
-    capabilities.client.routes ||
-    capabilities.registry
+    capabilities.client.routes
   );
 }
 
@@ -171,12 +170,7 @@ function includeTemplateFile(
   ) {
     return hasBrowserCode(capabilities);
   }
-  if (
-    relativePath === 'registry.config.json' ||
-    relativePath.startsWith('registry/')
-  ) {
-    return capabilities.registry;
-  }
+
   if (
     relativePath.startsWith('cli/') ||
     relativePath.startsWith('tests/cli/')
@@ -348,9 +342,7 @@ export async function renderManifest(
   const serverPlugin = hasServerPlugin(capabilities);
   const browserCode = hasBrowserCode(capabilities);
   const react =
-    capabilities.client.components ||
-    capabilities.client.reactProviders ||
-    capabilities.registry;
+    capabilities.client.components || capabilities.client.reactProviders;
   const exports: Record<string, unknown> = {};
   const publishExports: Record<string, unknown> = {};
   const addExport = (name: string, source: string, compiled: string): void => {
@@ -419,15 +411,6 @@ export async function renderManifest(
       'pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build',
     fix: 'pnpm lint:fix && pnpm format',
   };
-  if (capabilities.registry) {
-    scripts['registry:build'] =
-      'node ../../../scripts/registry.mjs build --package .';
-    scripts['registry:materialize'] =
-      'node ../../../scripts/registry.mjs materialize --package .';
-    scripts.prepack = 'pnpm registry:build';
-    scripts.check =
-      'pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm registry:build && pnpm build';
-  }
 
   // Dependency keys are added in capability order, which varies with what the user selected. Sorting keeps the same
   // set of capabilities producing a byte-identical manifest.
@@ -534,13 +517,6 @@ export async function renderManifest(
   // Compiled plugins resolve resources from baseDir inside dist; only that runtime tree is published.
   const files = ['dist', 'README.md', 'CHANGELOG.md'];
   if (capabilities.skills) files.push('skills');
-  if (capabilities.registry)
-    files.push(
-      'components.json',
-      'registry',
-      'registry.config.json',
-      'public/r',
-    );
 
   const manifest = {
     name: context.packageName,
@@ -567,13 +543,6 @@ export async function renderManifest(
         }
       : {}),
     files,
-    ...(capabilities.registry
-      ? {
-          nocobase: {
-            registry: { items: { 'component-ui': './registry/component-ui' } },
-          },
-        }
-      : {}),
     publishConfig: {
       access: 'public',
       exports: publishExports,
@@ -608,8 +577,6 @@ function renderEslintConfig(capabilities: PluginCapabilities): string {
 
 export default ${factory}({
   tsconfigRootDir: import.meta.dirname,
-  // Registry source is compiled after installation by the consuming app.
-  ignores: ['registry/**'],
 });
 `;
 }
@@ -759,7 +726,6 @@ function renderReadme(
     capabilities.client.reactProviders && 'client.react-providers',
     capabilities.client.locales && 'client.locales',
     capabilities.cli && 'cli',
-    capabilities.registry && 'registry',
     capabilities.skills && 'skills',
   ].filter(Boolean);
   const list =
@@ -767,7 +733,7 @@ function renderReadme(
       ? selected.map((value) => `- \`${value}\``).join('\n')
       : '- Package foundation only';
   const clientUi = hasBrowserCode(capabilities)
-    ? `\n\n## Adding UI components\n\nRun shadcn from this plugin's directory. \`components.json\`, the generation stylesheet and tooling are included independently of the \`registry\` recipe-publishing capability.\n\n\`\`\`bash\npnpm exec shadcn add @nocobase/permission-editor --dry-run\npnpm exec shadcn add @nocobase/permission-editor\n\`\`\`\n\nKeep the generated \`#components/*\` imports: \`package.json#imports\` resolves development sources, and \`publishConfig.imports\` binds every published condition to \`dist/client\`. No TypeScript paths or host Vite alias is required. Review added client value dependencies and declare them as peers, keep exported types explicit for declarations, and run this plugin's checks before rendering it in the consuming application.`
+    ? `\n\n## Adding UI components\n\nRun shadcn from this plugin's directory. \`components.json\`, the generation stylesheet and tooling are included for every plugin with client code.\n\n\`\`\`bash\npnpm exec shadcn add @nocobase/permission-editor --dry-run\npnpm exec shadcn add @nocobase/permission-editor\n\`\`\`\n\nKeep the generated \`#components/*\` imports: \`package.json#imports\` resolves development sources, and \`publishConfig.imports\` binds every published condition to \`dist/client\`. No TypeScript paths or host Vite alias is required. Review added client value dependencies and declare them as peers, keep exported types explicit for declarations, and run this plugin's checks before rendering it in the consuming application.`
     : '';
   return `# ${context.packageName}\n\n${context.description}\n\n## Generated capabilities\n\n${list}\n\nImplement only the public behavior this plugin owns. Keep declarations, exports, dependencies, tests, README, and Plugin Skills aligned when capabilities change. Every concrete Server Route must own and test its authentication and authorization boundary.${clientUi}\n\n## Verification\n\n\`\`\`bash\npnpm --filter ${context.packageName} lint\npnpm --filter ${context.packageName} typecheck\npnpm --filter ${context.packageName} test\npnpm --filter ${context.packageName} build\n\`\`\`\n`;
 }
@@ -793,13 +759,11 @@ function renderSkill(
       '- Server jobs: document what submits each job, its payload, its retry and idempotency behavior, and its observable results.',
     capabilities.database &&
       '- Database: document only App-visible schema prerequisites and lifecycle constraints; do not copy migration implementation details.',
-    capabilities.registry &&
-      '- Registry: document which files the App materializes, who owns the resulting code, and how updates are applied.',
   ]
     .filter(Boolean)
     .join('\n');
 
-  return `---\nname: ${context.packageName.slice(1).replace('/', '-')}\ndescription: Development draft for the App-facing capabilities of ${context.displayName}; replace this description with concrete Agent trigger conditions before synchronization.\n---\n\n# ${context.displayName}\n\n> Development draft: replace every instruction below with verified, implemented behavior before registering this plugin with an App. Do not synchronize placeholder claims.\n\n## Use this Skill when\n\nDescribe the App-level user outcome that should trigger this Skill. State when the Agent should not use it.\n\n## Public surfaces\n\nList only stable package exports, routes, services, jobs, schema requirements, or registry assets that actually exist.\n\n${capabilityPrompts || '- This plugin selected no runtime capability alongside `skills`. Document any real App-facing contract added during implementation.'}\n\n## Prerequisites\n\nList required plugin registration, authentication, permissions, configuration, and data.\n\n## App workflow\n\nGive the shortest ordered workflow an App Agent can execute. Identify which files or UI surfaces belong to the App and which belong to the plugin.\n\n## Ownership\n\nState what the plugin owns, what the App may customize, and whether generated or materialized files may be edited.\n\n## Permissions and constraints\n\nState authentication and authorization requirements separately. Document important unsupported behavior and failure modes.\n\n## Verification\n\nList observable checks that prove the integration works. Verify behavioral claims in the target App; Skill synchronization alone proves only that the files match.\n`;
+  return `---\nname: ${context.packageName.slice(1).replace('/', '-')}\ndescription: Development draft for the App-facing capabilities of ${context.displayName}; replace this description with concrete Agent trigger conditions before synchronization.\n---\n\n# ${context.displayName}\n\n> Development draft: replace every instruction below with verified, implemented behavior before registering this plugin with an App. Do not synchronize placeholder claims.\n\n## Use this Skill when\n\nDescribe the App-level user outcome that should trigger this Skill. State when the Agent should not use it.\n\n## Public surfaces\n\nList only stable package exports, routes, services, jobs, schema requirements, or UI Library items that actually exist.\n\n${capabilityPrompts || '- This plugin selected no runtime capability alongside `skills`. Document any real App-facing contract added during implementation.'}\n\n## Prerequisites\n\nList required plugin registration, authentication, permissions, configuration, and data.\n\n## App workflow\n\nGive the shortest ordered workflow an App Agent can execute. Identify which files or UI surfaces belong to the App and which belong to the plugin.\n\n## Ownership\n\nState what the plugin owns, what the App may customize, and whether generated or materialized files may be edited.\n\n## Permissions and constraints\n\nState authentication and authorization requirements separately. Document important unsupported behavior and failure modes.\n\n## Verification\n\nList observable checks that prove the integration works. Verify behavioral claims in the target App; Skill synchronization alone proves only that the files match.\n`;
 }
 
 async function formatRenderedSource(

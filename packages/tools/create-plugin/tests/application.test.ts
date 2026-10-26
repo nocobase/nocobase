@@ -13,7 +13,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
-import type { PluginCapability } from '../src/lib/capabilities.ts';
+import {
+  PLUGIN_CAPABILITIES,
+  type PluginCapability,
+} from '../src/lib/capabilities.ts';
 import { createPlugin } from '../src/lib/scaffold.ts';
 import { runCreatePluginCli } from '../src/create.ts';
 
@@ -26,6 +29,7 @@ const versions = {
   '@nocobase/dev-config': '0.1.0-beta.2',
   '@nocobase/service-provider': '0.1.0-beta.2',
   '@nocobase/db': '1.0.0-beta.2',
+  '@nocobase/jobs': '0.1.0-beta.2',
   '@oclif/core': '4.14.0',
   '@types/node': '24.0.0',
   '@types/react': '19.0.0',
@@ -140,9 +144,13 @@ describe('creating plugins in an application', () => {
   });
 
   it.each(
-    [['client.routes'], ['server.routes', 'database'], ['skills'], []].map(
-      (capabilities) => ({ capabilities }),
-    ),
+    [
+      ['client.routes'],
+      ['server.routes', 'database'],
+      ['skills'],
+      [...PLUGIN_CAPABILITIES],
+      [],
+    ].map((capabilities) => ({ capabilities })),
   )('resolves dependencies for $capabilities', async ({ capabilities }) => {
     const root = await app('packages: [packages/*]\n');
     const result = await createPlugin({
@@ -175,6 +183,8 @@ describe('creating plugins in an application', () => {
       'utf8',
     );
     expect(skill).toContain('name: my-app-app-plugin-demo');
+    expect(skill).toContain('UI Library items');
+    expect(skill).not.toContain('registry assets');
   });
 
   it('uses workspace ranges only for packages actually in the workspace', async () => {

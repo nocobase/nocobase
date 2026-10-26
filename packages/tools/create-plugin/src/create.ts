@@ -135,8 +135,6 @@ function capabilityReason(file: string): string {
     return 'client.react-providers';
   if (file === 'components.json' || file === 'client/styles.css')
     return 'derived-client-ui';
-  if (file.startsWith('registry/') || file === 'registry.config.json')
-    return 'registry';
   if (file.startsWith('skills/')) return 'skills';
   if (file === 'client/index.ts' || file === 'client/plugin.ts')
     return 'derived-client-plugin';

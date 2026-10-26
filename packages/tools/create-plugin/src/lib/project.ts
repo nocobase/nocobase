@@ -62,8 +62,9 @@ async function findProject(
     if (manifest?.nocobase?.templateKind === 'app')
       return { root, kind: 'application' };
     if (
-      (await manifestAt(path.join(root, 'packages/tools/create-plugin'))) &&
-      (await manifestAt(path.join(root, 'packages/app/app-cli')))
+      manifest?.name === 'nocobase-v3' &&
+      (await manifestAt(path.join(root, 'packages/tools/create-plugin')))
+        ?.name === '@nocobase/create-plugin'
     )
       return { root, kind: 'repository' };
     const parent = path.dirname(root);

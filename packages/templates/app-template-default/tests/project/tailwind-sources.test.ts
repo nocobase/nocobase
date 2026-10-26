@@ -101,7 +101,7 @@ describe('tailwind content sources', () => {
     }
   });
 
-  it('scans canonical Registry source exposed by a plugin', () => {
+  it('ignores obsolete plugin-owned Registry recipes', () => {
     const store = mkdtempSync(path.join(tmpdir(), 'nb3-tailwind-registry-'));
     try {
       const registry = path.join(
@@ -124,7 +124,7 @@ describe('tailwind content sources', () => {
 
       const files = contentFilesIn(store);
 
-      expect(files).toContain(path.join(realpathSync(registry), 'demo.tsx'));
+      expect(files).toEqual([]);
     } finally {
       rmSync(store, { recursive: true, force: true });
     }

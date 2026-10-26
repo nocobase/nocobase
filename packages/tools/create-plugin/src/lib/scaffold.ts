@@ -104,12 +104,6 @@ export async function createPlugin(
     packageName: names.packageName,
     directoryName: names.directoryName,
   });
-  if (project.kind === 'application' && capabilities.registry) {
-    throw new ProjectError(
-      'UNSUPPORTED_APP_CAPABILITY',
-      'Registry publishing is not an application plugin capability. Use the UI Library for editable UI.',
-    );
-  }
   const packagesDirectory = project.packagesDirectory;
   const targetDirectory = path.join(packagesDirectory, names.directoryName);
   const displayName = validateTextOption(

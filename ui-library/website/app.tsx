@@ -1,3 +1,5 @@
+import { FileComponentUiDemo } from './demo/file/file-component-ui.js';
+import { NotificationLogsUiDemo } from './demo/notification/notification-logs-ui.js';
 import { copyText } from '@nocobase/app-client';
 import {
   AlignLeft,
@@ -145,6 +147,11 @@ interface ItemPreview {
 
 // Items are not discovered: each one is wired here, and routed to its demo in `AppContent`.
 const itemPreviews: Record<string, ItemPreview> = {
+  'file-component-ui': { path: '/demo/file/file-component-ui', icon: Blocks },
+  'notification-logs-ui': {
+    path: '/demo/notification/notification-logs-ui',
+    icon: Blocks,
+  },
   'auth-centered-layout': {
     path: '/demo/auth/auth-centered-layout',
     icon: ShieldCheck,
@@ -288,6 +295,10 @@ export function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { pathname } = window.location;
+  if (pathname.startsWith('/demo/file/file-component-ui'))
+    return <FileComponentUiDemo />;
+  if (pathname.startsWith('/demo/notification/notification-logs-ui'))
+    return <NotificationLogsUiDemo />;
   if (pathname.startsWith('/demo/auth/device-approval')) {
     return <DeviceApprovalDemo />;
   }

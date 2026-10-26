@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-development
-description: Develop and maintain NocoBase v3 plugins in a NocoBase 3 source workspace, including scaffolding, shadcn UI, Client/Server/CLI contributions, database resources, Registry items, Plugin Skills, and target App registration. Use when creating or changing packages/plugins/app-plugin-* or example plugins. Not for legacy NocoBase v2 plugins or application-only development.
+description: Develop and maintain NocoBase v3 plugins in a NocoBase 3 source workspace, including scaffolding, shadcn UI, Client/Server/CLI contributions, database resources, UI Library integration, Plugin Skills, and target App registration. Use when creating or changing packages/plugins/app-plugin-* or example plugins. Not for legacy NocoBase v2 plugins or application-only development.
 ---
 
 # NocoBase Plugin Development
@@ -25,7 +25,7 @@ These English references adapt the plugin development guide into task-specific i
 | Name an `/api` path, choose its method, shape its response or error, or validate its input            | [HTTP API rules](references/http-api.md)                             |
 | Add migrations, seeds, or package resource/checksum handling                                          | [Database resources](references/database.md)                         |
 | Add or change text, locale resources, translated errors, or recipient-language messages               | [Internationalization](references/i18n.md)                           |
-| Author, publish, install, upgrade, or remove App-owned editable Client source                         | [Registry](references/registry.md)                                   |
+| Author, publish, install, upgrade, or remove App-owned editable Client source                         | [UI Library ownership](references/registry.md)                                   |
 | Expose a plugin's capabilities to the App Agent                                                       | [Plugin Skills](references/plugin-skills.md)                         |
 | Add commands, CLI exports, or CLI registration                                                        | [CLI plugins](references/cli.md)                                     |
 | Use `@nocobase/app-testing` for database, Server, Client or CLI tests and verify App integration       | [Testing and delivery](references/testing.md)                        |
@@ -51,7 +51,7 @@ When creating a page or writing a page component, refer to [Pages, routes, and m
 - Every Server plugin declares an absolute `baseDir`. Migrations, seeds, and Jobs resolve relative to it so compiled plugins use compiled resources. Migrations are explicit, self-contained, immutable after merge, and tested against a real database.
 - Plugin test fixtures come from `@nocobase/app-testing/server`, `/client` or `/cli`, declared in `devDependencies`. Use the [test directory and fixture guide](references/testing.md#use-app-testing-in-a-plugin) to select the environment, register the production plugin and keep databases and storage isolated.
 - Register Client, Server, and CLI exports explicitly in the corresponding target App composition roots. Installation, registration, Skills synchronization, and runtime behavior are separate facts; legacy manifest metadata is not runtime discovery.
-- Plugin integration knowledge is authored in `<plugin>/skills/`; the target App's `.agents/skills/` is generated output. Registry source copied into an App belongs to that App. This repository's development Skill is maintained source, distinct from either kind of output.
+- Plugin integration knowledge is authored in `<plugin>/skills/`; the target App's `.agents/skills/` is generated output. Editable UI is maintained in the UI Library; source installed into an App belongs to that App. This repository's development Skill is maintained source, distinct from either kind of output.
 - Follow the repository's dependency rules: shared runtimes and client value imports are peers, ordinary server runtime imports are dependencies, and development-only imports are devDependencies. A type reference retained in published declarations needs a consumer-resolvable contract.
 
 ## Implementation workflow
