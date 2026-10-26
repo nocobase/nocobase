@@ -38,6 +38,7 @@ import {
   AssetInput,
   AssetPatch,
   ListQuery,
+  TransactionListQuery,
   IdParams,
   FireInput,
   RequestInput,
@@ -474,7 +475,7 @@ export const equipmentRoutes = defineApiRoutes<Application>((app) => {
     r.get(
       '/' + path,
       doc('listEquipment' + path, 'List ' + path, true),
-      apiValidator('query', ListQuery),
+      apiValidator('query', TransactionListQuery),
       async (c) => {
         const p = await policies(c.get('authz'), resource, 'view');
         const q = c.req.valid('query');
@@ -485,7 +486,7 @@ export const equipmentRoutes = defineApiRoutes<Application>((app) => {
             filter,
             limit: q.pageSize,
             offset: (q.page - 1) * q.pageSize,
-            sort: (s) => [s.field('createdAt').desc(), s.field('id').desc()],
+            sort: (s) => [s.field(q.sort)[q.order](), s.field('id').desc()],
           }),
           repo.count({ filter }),
         ]);

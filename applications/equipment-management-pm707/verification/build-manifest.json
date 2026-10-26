@@ -1,6 +1,6 @@
 {
-  "archiveSha256": "ce48a613da516a52e9c0423425c87da9b7465130e76fd66bc4d69fbf49e637b6",
-  "archiveBytes": 77342179,
+  "archiveSha256": "d2ebe49422f585119e3b16f491a627e8fdf6187cdfc22ac4ebd58b9270c2ff39",
+  "archiveBytes": 77342275,
   "archiveRuntimeFilesAbsent": true,
   "template": "@nocobase/app-template-default@1.0.0-beta.81",
   "foundationSource": "0.1.0-beta.8",
@@ -10,7 +10,7 @@
     "defaultTemplateVersion": "1.0.0-beta.81",
     "templatePackage": "@nocobase/app-template-default",
     "relocatable": true,
-    "builtAt": "2026-10-26T09:52:26.501Z",
+    "builtAt": "2026-10-26T11:05:21.750Z",
     "buildTarget": {
       "platform": "linux",
       "arch": "x64",

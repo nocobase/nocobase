@@ -46,6 +46,9 @@ export const ListQuery = z.object({
     .default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
 });
+export const TransactionListQuery = ListQuery.extend({
+  sort: z.enum(['createdAt', 'statusChangedAt']).default('createdAt'),
+});
 export const IdParams = z.object({ id: z.string().min(1).max(64) });
 export const FireInput = z
   .object({

@@ -33,3 +33,12 @@ For an artifact check, extract the archive into a new absolute directory, instal
 The build plugin and production reader are both Foundation beta.8. The generated `dist/server/foundation-modules.json` is retained as generated; it marks source associations incomplete where static analysis cannot establish them. Installed global capabilities are not evidence that every module uses them. No generic Foundation changes or forced capability indicators are included.
 
 This is a single-instance SQLite preview with local storage. It does not connect to physical devices, production systems, mail, messaging or external models. Native jobs use the single-process memory configuration. Remote preview creation, secret configuration and artifact upload must use the management platform's supported native interfaces; local verification does not establish remote configuration or availability.
+
+## Native preview connection
+
+1. Confirm `equipment-pm707-preview` is still free. In Releases → Apps → Create App, create a separate Preview App with onDemand startup. Preserve existing Apps and project bindings.
+2. Verify the archive checksum, then use the new App's Deployments → Upload release with its actual source commit. Upload does not deploy the release.
+3. In Variables set `APP_SAMPLE_DATA=true` and a new secret `EQUIPMENT_SAMPLE_PASSWORD` of at least 16 characters. To use the temporary administrator credential card, leave `INITIAL_ADMIN_PASSWORD` unset: the first deployment generates it, together with the master key and public origin. Never copy another App's configuration.
+4. Deploy the Release from Deployments. Only after successful deployment can an authorized person privately claim temporary administrator credentials from Overview. If an administrator password was explicitly configured instead, use that privately retained password. Configure dedicated test access through native Users and use native password reset for existing accounts.
+5. Share only the App ID, Release ID and actual application entry URL for independent verification. Verify synthetic data, business operations, role boundaries and restart persistence there. Local archive checks do not establish a remote preview URL.
+6. Recheck the new App's actual retention settings. Current Preview defaults are stop after 10 idle minutes and hibernate after 24 hours; neither means deletion. Do not automatically remove the preview before review.

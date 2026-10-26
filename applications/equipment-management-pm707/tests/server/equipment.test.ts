@@ -592,3 +592,161 @@ test('CSV preview and atomic import refuse lifecycle and assignment injection; e
     ),
   ).toBe(true);
 });
+
+for (const [path, collection] of [
+  ['requests', 'equipmentRequests'],
+  ['maintenance', 'equipmentMaintenance'],
+  ['stocktakes', 'equipmentStocktakes'],
+] as const) {
+  test(`${path} sorts both timestamps and directions with stable scoped pagination`, async ({
+    testApp,
+    app,
+    request,
+  }) => {
+    const f = await fixture(testApp);
+    const asset = await f.create('sorting');
+    const { equipmentToken } =
+      await import('../../server/providers/equipment/index.js');
+    const repo = app.container
+      .resolve(equipmentToken)
+      .db.connection()
+      .repository(collection);
+    // Explicit timestamps cover earlier creation with later changes and ties without sleeps.
+    const dates = [
+      '2026-01-01T00:00:00.000Z',
+      '2026-01-02T00:00:00.000Z',
+      '2026-01-03T00:00:00.000Z',
+    ];
+    const rows = [
+      {
+        id: 'sort-a',
+        createdAt: dates[0],
+        statusChangedAt: dates[2],
+        status: 'pending',
+      },
+      {
+        id: 'sort-b',
+        createdAt: dates[1],
+        statusChangedAt: dates[1],
+        status: 'pending',
+      },
+      {
+        id: 'sort-c',
+        createdAt: dates[1],
+        statusChangedAt: dates[1],
+        status: 'pending',
+      },
+      {
+        id: 'sort-hidden',
+        createdAt: dates[2],
+        statusChangedAt: dates[0],
+        status: 'closed',
+      },
+    ];
+    for (const row of rows)
+      await repo.createOne({
+        values: {
+          ...row,
+          lifecycleVersion: 1,
+          ...(path === 'requests'
+            ? {
+                deviceId: asset.id,
+                kind: 'issue',
+                requesterId:
+                  row.id === 'sort-hidden'
+                    ? f.other.user.id
+                    : f.employee.user.id,
+                reason: 'Sorting fixture',
+              }
+            : path === 'maintenance'
+              ? {
+                  deviceId: asset.id,
+                  kind: 'repair',
+                  createdById: f.manager.user.id,
+                  description: 'Sorting fixture',
+                  cost: 0,
+                }
+              : {
+                  name: 'Sorting fixture',
+                  locationId: f.location.id,
+                  createdById: f.manager.user.id,
+                }),
+        },
+      });
+    expect((await request('/equipment/' + path)).status).toBe(401);
+    const list = async (session: typeof f.manager.session, query: string) => {
+      const response = await session.fetch('/equipment/' + path + '?' + query);
+      expect(response.status).toBe(200);
+      return response.json();
+    };
+    const expectations = {
+      createdAt: {
+        asc: ['sort-a', 'sort-c', 'sort-b'],
+        desc: ['sort-c', 'sort-b', 'sort-a'],
+      },
+      statusChangedAt: {
+        asc: ['sort-c', 'sort-b', 'sort-a'],
+        desc: ['sort-a', 'sort-c', 'sort-b'],
+      },
+    };
+    for (const sort of ['createdAt', 'statusChangedAt'] as const)
+      for (const order of ['asc', 'desc'] as const) {
+        const expected = expectations[sort][order];
+        const query = `sort=${sort}&order=${order}&status=pending`;
+        const full = await list(f.manager.session, query);
+        expect(full.data.map((r: { id: string }) => r.id)).toEqual(expected);
+        expect(full.meta.total).toBe(3);
+        const paged = [];
+        for (let page = 1; page <= 3; page++) {
+          const result = await list(
+            f.manager.session,
+            query + `&pageSize=1&page=${page}`,
+          );
+          expect(result.meta).toEqual({ page, pageSize: 1, total: 3 });
+          paged.push(result.data[0].id);
+        }
+        expect(paged).toEqual(expected);
+        if (path === 'requests') {
+          const scoped = await list(
+            f.employee.session,
+            `sort=${sort}&order=${order}&pageSize=1&page=2`,
+          );
+          expect(scoped.meta.total).toBe(3);
+          expect(scoped.data.map((r: { id: string }) => r.id)).toEqual([
+            expected[1],
+          ]);
+          const other = await list(
+            f.other.session,
+            `sort=${sort}&order=${order}`,
+          );
+          expect(other.meta.total).toBe(1);
+          expect(other.data[0].id).toBe('sort-hidden');
+        } else
+          expect(
+            (await f.employee.session.fetch('/equipment/' + path + '?' + query))
+              .status,
+          ).toBe(403);
+      }
+    for (const sort of [
+      'name',
+      'purchaseCost',
+      'requesterId',
+      'createdAt desc',
+    ])
+      expect(
+        (
+          await f.manager.session.fetch(
+            '/equipment/' + path + '?sort=' + encodeURIComponent(sort),
+          )
+        ).status,
+      ).toBe(400);
+    expect(
+      (await f.manager.session.fetch('/equipment/' + path + '?order=invalid'))
+        .status,
+    ).toBe(400);
+    const defaults = await list(f.manager.session, 'status=pending');
+    expect(defaults.data.map((r: { id: string }) => r.id)).toEqual(
+      expectations.createdAt.desc,
+    );
+  });
+}
