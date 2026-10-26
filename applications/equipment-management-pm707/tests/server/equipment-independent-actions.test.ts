@@ -62,12 +62,11 @@ test('each exposed business action can be saved alone without granting its sibli
         '.' +
         action.action;
       if (!(key in capabilities)) continue;
-      expect(capabilities[key], key).toBe(true);
+      expect(capabilities[key]).toBe(true);
       expect(
         Object.entries(capabilities)
           .filter(([other]) => other !== key)
           .every(([, allowed]) => allowed === false),
-        key,
       ).toBe(true);
       await sets.update('single-operation', {
         key: 'single-operation',
@@ -76,7 +75,7 @@ test('each exposed business action can be saved alone without granting its sibli
       const revoked = (
         await (await user.fetch('/equipment/capabilities')).json()
       ).data;
-      expect(revoked[key], key).toBe(false);
+      expect(revoked[key]).toBe(false);
     }
   }
 });
