@@ -93,8 +93,16 @@ export async function applyProjectEdits(
     throw error;
   } finally {
     for (const item of prepared) {
-      if (!item.keepBackup)
+      if (item.keepBackup) continue;
+      try {
         await rm(item.directory, { recursive: true, force: true });
+      } catch (error) {
+        // Cleanup must not turn a committed edit into a generation failure or hide a rollback error.
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(
+          `Warning: Could not remove temporary directory ${item.directory}: ${message}. Remove it manually when possible.\n`,
+        );
+      }
     }
   }
 }

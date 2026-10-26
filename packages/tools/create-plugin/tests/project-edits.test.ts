@@ -16,11 +16,17 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { applyProjectEdits } from '../src/lib/project-edits.ts';
 import { createPlugin } from '../src/lib/scaffold.ts';
+import { runCreatePluginCli } from '../src/create.ts';
 import type { ProjectEdit } from '../src/lib/project.ts';
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const fs = await importOriginal<typeof import('node:fs/promises')>();
-  return { ...fs, writeFile: vi.fn(fs.writeFile), rename: vi.fn(fs.rename) };
+  return {
+    ...fs,
+    writeFile: vi.fn(fs.writeFile),
+    rename: vi.fn(fs.rename),
+    rm: vi.fn(fs.rm),
+  };
 });
 const fs =
   await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
@@ -45,7 +51,47 @@ async function fixture(): Promise<{ root: string; edits: ProjectEdit[] }> {
   return { root, edits };
 }
 
+async function applicationFixture() {
+  const { root, edits } = await fixture();
+  const manifest = JSON.stringify({
+    name: 'app',
+    nocobase: { templateKind: 'app' },
+  });
+  await writeFile(edits[0]!.path, manifest);
+  const foundation = await createPlugin({
+    repoRoot: root,
+    name: 'demo',
+    empty: true,
+    dryRun: true,
+  });
+  for (const name of Object.keys(foundation.dependencies.devDependencies!)) {
+    const directory = path.join(root, 'node_modules', name);
+    await mkdir(directory, { recursive: true });
+    await writeFile(
+      path.join(directory, 'package.json'),
+      JSON.stringify({ name, version: '1.0.0' }),
+    );
+  }
+  return { root, edits, manifest };
+}
+
+function failFirstCleanup(root: string) {
+  let failedDirectory: string | undefined;
+  vi.mocked(rm).mockImplementation(async (file, options) => {
+    if (
+      String(file).startsWith(path.join(root, '.create-plugin-')) &&
+      !failedDirectory
+    ) {
+      failedDirectory = String(file);
+      throw Object.assign(new Error('Cleanup I/O failure'), { code: 'EIO' });
+    }
+    return fs.rm(file, options);
+  });
+  return () => failedDirectory;
+}
+
 afterEach(async () => {
+  vi.restoreAllMocks();
   vi.resetAllMocks();
   await Promise.all(
     directories
@@ -55,27 +101,92 @@ afterEach(async () => {
 });
 
 describe('application configuration edits', () => {
-  it('removes the generated plugin and preserves application files after a partial configuration write', async () => {
-    const { root, edits } = await fixture();
-    const manifest = JSON.stringify({
-      name: 'app',
-      nocobase: { templateKind: 'app' },
-    });
-    await writeFile(edits[0]!.path, manifest);
-    const foundation = await createPlugin({
-      repoRoot: root,
-      name: 'demo',
-      empty: true,
-      dryRun: true,
-    });
-    for (const name of Object.keys(foundation.dependencies.devDependencies!)) {
-      const directory = path.join(root, 'node_modules', name);
-      await mkdir(directory, { recursive: true });
-      await writeFile(
-        path.join(directory, 'package.json'),
-        JSON.stringify({ name, version: '1.0.0' }),
+  it.each(['api', 'json'])(
+    'keeps the committed plugin and configuration when cleanup fails through %s',
+    async (mode) => {
+      const { root } = await applicationFixture();
+      const failedDirectory = failFirstCleanup(root);
+      const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+      if (mode === 'json') {
+        const code = await runCreatePluginCli({
+          argv: ['demo', '--dir', root, '--empty', '--no-install', '--json'],
+          binary: 'create-plugin',
+          version: '0.0.1',
+        });
+        expect(code).toBe(0);
+        expect(stdout).toHaveBeenCalledTimes(1);
+        expect(JSON.parse(String(stdout.mock.calls[0]![0]))).toMatchObject({
+          ok: true,
+          status: 'success',
+        });
+      } else {
+        const synchronize = vi.fn();
+        await createPlugin({
+          directory: root,
+          name: 'demo',
+          empty: true,
+          synchronize,
+        });
+        expect(synchronize).toHaveBeenCalledWith(
+          root,
+          path.join(root, 'packages/app-plugin-demo'),
+        );
+        expect(stdout).not.toHaveBeenCalled();
+      }
+      expect(
+        JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
+          .dependencies['@nocobase/app-plugin-demo'],
+      ).toBe('workspace:*');
+      expect(
+        JSON.parse(
+          await readFile(
+            path.join(root, 'packages/app-plugin-demo/package.json'),
+            'utf8',
+          ),
+        ).name,
+      ).toBe('@nocobase/app-plugin-demo');
+      expect(
+        await readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8'),
+      ).toContain('packages/*');
+      expect(stderr).toHaveBeenCalledWith(
+        expect.stringContaining(failedDirectory()!),
       );
-    }
+      expect(stderr).toHaveBeenCalledWith(
+        expect.stringContaining('Cleanup I/O failure'),
+      );
+      expect(
+        (await readdir(root)).filter((name) =>
+          name.startsWith('.create-plugin-'),
+        ),
+      ).toEqual([path.basename(failedDirectory()!)]);
+    },
+  );
+
+  it('preserves the original error and restores configuration even when cleanup also fails', async () => {
+    const { root, edits } = await fixture();
+    const failure = new Error('Replacement failed');
+    vi.mocked(rename).mockImplementation(async (source, target) => {
+      if (target === edits[1]!.path) throw failure;
+      return fs.rename(source, target);
+    });
+    const failedDirectory = failFirstCleanup(root);
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    await expect(applyProjectEdits(edits)).rejects.toBe(failure);
+    for (const edit of edits)
+      expect(await readFile(edit.path, 'utf8')).toBe(edit.before);
+    expect(stderr).toHaveBeenCalledWith(
+      expect.stringContaining(failedDirectory()!),
+    );
+    expect(
+      (await readdir(root)).filter((name) =>
+        name.startsWith('.create-plugin-'),
+      ),
+    ).toEqual([path.basename(failedDirectory()!)]);
+  });
+
+  it('removes the generated plugin and preserves application files after a partial configuration write', async () => {
+    const { root, edits, manifest } = await applicationFixture();
     const options = {
       directory: root,
       name: 'demo',
