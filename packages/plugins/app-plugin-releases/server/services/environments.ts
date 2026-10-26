@@ -12,10 +12,12 @@ import type {
   EnvironmentCheckResult,
   EnvironmentInput,
   EnvironmentListItem,
+  EnvironmentPurpose,
   EnvironmentRecord,
   EnvironmentVariableView,
   SetEnvironmentVariableInput,
 } from '../../shared/releases.js';
+import { ENVIRONMENT_PURPOSES } from '../../shared/releases.js';
 import { AccessGuard, type Caller } from '../access/caller.js';
 import {
   capabilitiesFor,
@@ -543,6 +545,7 @@ export function decodeEnvironment(
     // Filled in from the driver by the service; nothing without one.
     capabilities: { archives: false, images: false, onDemand: false },
     sampleDataOnFirstDeploy: Boolean(row.sampleDataOnFirstDeploy),
+    purpose: row.purpose === 'preview' ? 'preview' : 'test',
     createdAt: decodeDate(row.createdAt).toISOString(),
     updatedAt: decodeDate(row.updatedAt).toISOString(),
   };
@@ -655,6 +658,7 @@ function normalizeSettings(
   defaultDormantAfterHours: number | null;
   registryId: string | null;
   sampleDataOnFirstDeploy: boolean;
+  purpose: EnvironmentPurpose;
 } {
   const publicUrl =
     input.publicUrl === undefined
@@ -678,7 +682,23 @@ function normalizeSettings(
       input.sampleDataOnFirstDeploy,
       current?.sampleDataOnFirstDeploy ?? false,
     ),
+    purpose: optionalPurpose(input.purpose, current?.purpose ?? 'test'),
   };
+}
+
+function optionalPurpose(
+  value: unknown,
+  fallback: EnvironmentPurpose,
+): EnvironmentPurpose {
+  if (value === undefined) return fallback;
+  const found = ENVIRONMENT_PURPOSES.find((purpose) => purpose === value);
+  if (!found)
+    throw new ReleasesError(
+      `An environment's purpose is one of ${ENVIRONMENT_PURPOSES.join(', ')}.`,
+      'INVALID_ENVIRONMENT_PURPOSE',
+      'INVALID_ARGUMENT',
+    );
+  return found;
 }
 
 /** The runtime policy Apps created in the environment take, validated as an App's own. */

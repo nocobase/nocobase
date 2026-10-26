@@ -812,6 +812,10 @@ const deDE: LocaleResource<typeof enUS> = {
       driver: 'Fahrer',
       runsOn: 'Läuft weiter',
       appCount: 'Apps',
+      purpose: 'Zweck',
+      purposeHint:
+        'Jede Umgebung dient einem Zweck: Pull-Request-Vorschauen oder das Testen von Releases.',
+      purposes: { preview: 'Vorschauen', test: 'Test' },
       policy: 'Richtlinie',
       publicUrl: 'Öffentliches URL-Muster',
       config: 'Einstellungen (JSON)',

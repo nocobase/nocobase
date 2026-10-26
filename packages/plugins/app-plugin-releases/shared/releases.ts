@@ -128,6 +128,13 @@ export interface EnvironmentCapabilities {
   readonly onDemand: boolean;
 }
 
+/**
+ * What an environment is for: `preview` runs pull request previews, `test` runs Apps people try a release on. An
+ * application groups its environments by it; nothing in this plugin behaves differently.
+ */
+export const ENVIRONMENT_PURPOSES = ['preview', 'test'] as const;
+export type EnvironmentPurpose = (typeof ENVIRONMENT_PURPOSES)[number];
+
 export interface EnvironmentRecord {
   readonly id: string;
   readonly name: string;
@@ -165,6 +172,8 @@ export interface EnvironmentRecord {
   readonly capabilities: EnvironmentCapabilities;
   /** An App's first deployment here loads its sample data (`APP_SAMPLE_DATA=true`, generated). */
   readonly sampleDataOnFirstDeploy: boolean;
+  /** What the environment is for. */
+  readonly purpose: EnvironmentPurpose;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -194,6 +203,8 @@ export interface EnvironmentInput {
   readonly defaultDormantAfterHours?: number | null;
   readonly registryId?: string | null;
   readonly sampleDataOnFirstDeploy?: boolean;
+  /** `test` when an environment is created without one. */
+  readonly purpose?: EnvironmentPurpose;
 }
 
 /** Settings to try before they are saved (`POST environments/check`). */

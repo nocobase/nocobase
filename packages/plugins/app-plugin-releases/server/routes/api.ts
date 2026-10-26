@@ -281,7 +281,7 @@ export function createReleasesApi(
         },
         bodyFile: 'file',
         examples: [
-          'env create staging --name Staging --driver host --protected',
+          'env create staging --name Staging --driver host --purpose test --protected',
           'env create production --file production.json',
         ],
         action: 'rel.environments/manage',

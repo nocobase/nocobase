@@ -165,7 +165,20 @@ describe('access through the application port', () => {
       driver: 'fake',
       secret: { token: 'super-secret' },
     });
-    expect(created).toMatchObject({ hasSecret: true });
+    expect(created).toMatchObject({ hasSecret: true, purpose: 'test' });
+    // What it is for: test unless said, editable, one of the two.
+    expect(
+      (
+        await harness.services.environments.update(admin, 'remote', {
+          purpose: 'preview',
+        })
+      ).purpose,
+    ).toBe('preview');
+    await expect(
+      harness.services.environments.update(admin, 'remote', {
+        purpose: 'production' as never,
+      }),
+    ).rejects.toMatchObject({ reason: 'INVALID_ENVIRONMENT_PURPOSE' });
     expect(JSON.stringify(created)).not.toContain('super-secret');
     const stored = await harness.database
       .connection()

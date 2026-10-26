@@ -40,13 +40,24 @@ import { useEnvironmentCheck } from '../hooks/use-environment-check.js';
 import { useNotify } from '../hooks/use-notify.js';
 import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
 
-export default function EnvironmentsPage(): ReactElement {
-  const outlet = useOutlet();
-  if (outlet) return <>{outlet}</>;
-  return <EnvironmentsList />;
+/** The page's heading, when the application that mounts it names the page in its own words. */
+export interface EnvironmentsPageProps {
+  readonly title?: string;
+  readonly description?: string;
 }
 
-export function EnvironmentsList(): ReactElement {
+export default function EnvironmentsPage(
+  props: EnvironmentsPageProps,
+): ReactElement {
+  const outlet = useOutlet();
+  if (outlet) return <>{outlet}</>;
+  return <EnvironmentsList {...props} />;
+}
+
+export function EnvironmentsList({
+  title,
+  description,
+}: EnvironmentsPageProps): ReactElement {
   const api = useReleasesApi();
   const me = useMe();
   const notify = useNotify();
@@ -105,6 +116,12 @@ export function EnvironmentsList(): ReactElement {
           </div>
         </div>
       ),
+    },
+    {
+      id: 'purpose',
+      header: t('ui.environments.purpose'),
+      meta: { className: 'w-24' },
+      cell: ({ row }) => t(`ui.environments.purposes.${row.original.purpose}`),
     },
     {
       id: 'driver',
@@ -240,8 +257,8 @@ export function EnvironmentsList(): ReactElement {
   return (
     <PageContainer>
       <PageHeader
-        title={t('ui.environments.title')}
-        description={t('ui.environments.description')}
+        title={title ?? t('ui.environments.title')}
+        description={description ?? t('ui.environments.description')}
         actions={
           environments.data && environments.data.length > 0 ? addButton() : null
         }

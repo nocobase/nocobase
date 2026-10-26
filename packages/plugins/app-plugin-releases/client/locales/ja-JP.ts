@@ -781,6 +781,10 @@ const jaJP: LocaleResource<typeof enUS> = {
       driver: 'ドライバー',
       runsOn: 'で実行します',
       appCount: 'アプリ数',
+      purpose: '用途',
+      purposeHint:
+        '各環境の用途は一つです：プルリクエストのプレビュー、またはリリースのテスト。',
+      purposes: { preview: 'プレビュー', test: 'テスト' },
       policy: 'ポリシー',
       publicUrl: '公開 URL パターン',
       config: '設定(JSON)',

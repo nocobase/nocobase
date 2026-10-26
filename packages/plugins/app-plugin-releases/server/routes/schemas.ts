@@ -45,6 +45,7 @@ import {
   type UpdateAppInput,
   type UpdateConfigInput,
 } from '../../shared/releases.js';
+import { ENVIRONMENT_PURPOSES } from '../../shared/releases.js';
 import type { Caller } from '../access/caller.js';
 
 const id = z.string().min(1);
@@ -245,6 +246,10 @@ const environmentFields = {
   sampleDataOnFirstDeploy: z.boolean().optional().meta({
     description:
       'An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).',
+  }),
+  purpose: z.enum(ENVIRONMENT_PURPOSES).optional().meta({
+    description:
+      'What the environment is for: `preview` (pull request previews) or `test`; `test` when created without one.',
   }),
 };
 
@@ -629,6 +634,10 @@ const environmentRecordFields = {
   defaultIdleStopMinutes: z.number().nullable(),
   defaultDormantAfterHours: z.number().nullable(),
   registryId: z.string().nullable(),
+  purpose: z.enum(ENVIRONMENT_PURPOSES).meta({
+    description:
+      'What the environment is for: `preview` (pull request previews) or `test`.',
+  }),
   sampleDataOnFirstDeploy: z.boolean().meta({
     description:
       'An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).',
