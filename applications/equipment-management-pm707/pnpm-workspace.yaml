@@ -10,7 +10,7 @@ allowBuilds:
   node-liblzma: false
 
 # Use msgpackr without its optional native accelerator or platform binary packages.
-ignoredOptionalDependencies: [ msgpackr-extract ]
+ignoredOptionalDependencies: [msgpackr-extract]
 
 # Install dependencies explicitly instead of during dev/build/start.
 # create-app installs them initially; run pnpm install after changing dependencies.

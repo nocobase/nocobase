@@ -8,6 +8,8 @@ playwright-report/
 .pack-check/
 *.tgz
 pnpm-lock.yaml
+# Preserve the package manager's exact production lock used by the independent preview.
+applications/equipment-management-pm707/verification/production-lock.yaml
 packages/app/app-host/fixtures/app-dist/**/dist/
 packages/app/app-host/fixtures/app-dist/main/
 packages/templates/app-template-default/client-old/

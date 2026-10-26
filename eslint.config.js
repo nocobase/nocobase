@@ -65,6 +65,9 @@ const scopeRootNodeConfigs = (configs) =>
   }));
 
 export default [
+  // This standalone application installs published dependencies from its own lockfile.
+  // The equipment job in v3-changeset-check.yml runs its full application lint.
+  { ignores: ['applications/equipment-management-pm707/**'] },
   ...scopeRootNodeConfigs([...base, ...node]),
   ...scopePackageConfigs(
     createNodeLibraryConfig({

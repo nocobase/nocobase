@@ -44,7 +44,9 @@ async function start() {
       throw new Error('Runtime exited ' + child.exitCode);
     try {
       if ((await fetch(base + '/api/healthz')).ok) return;
-    } catch {}
+    } catch {
+      // The listener may not be bound while the application initializes.
+    }
     await delay(250);
   }
   throw new Error('Runtime readiness timeout');

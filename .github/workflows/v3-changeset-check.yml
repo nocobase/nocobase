@@ -18,6 +18,43 @@ permissions:
   pull-requests: write
 
 jobs:
+  equipment:
+    name: Equipment application (published dependencies)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: applications/equipment-management-pm707
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: applications/equipment-management-pm707/pnpm-lock.yaml
+
+      - name: Install independent published dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint application and check types
+        run: |
+          pnpm lint
+          pnpm typecheck
+
+      - name: Verify equipment workflows and native permission boundaries
+        run: pnpm test tests/server/equipment tests/server/authorization-assignment-safety tests/server/member-role tests/database/equipment tests/client/equipment tests/client/page-permission-titles tests/client/app-locale-coverage tests/client/roles.test tests/client/user-drawer
+
   check:
     name: Validate and require changesets
     runs-on: ubuntu-latest
