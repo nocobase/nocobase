@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AuthManager, Authenticator, Storer as IStorer } from '@nocobase/auth';
+import { AuthManager, Storer as IStorer } from '@nocobase/auth';
 import { Cache } from '@nocobase/cache';
-import { Database } from '@nocobase/database';
+import { Database, Model } from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import lodash from 'lodash';
 import { AuthModel } from './model/authenticator';
 
 export class Storer implements IStorer {
@@ -42,70 +41,28 @@ export class Storer implements IStorer {
         await this.cache.delValueInObject(this.key, model.name);
         return;
       }
-      // Keep the cached configuration raw. The corresponding auth type may not have
-      // been registered yet while plugins are loading, so rendering here can destroy
-      // auth-type-specific template variables.
-      await this.cache.setValueInObject(this.key, model.name, this.toRawAuthenticator(model));
+      // Cache the model without rendering options. Its auth type may not have registered
+      // yet, and rendering before registration can destroy auth-type-specific templates.
+      await this.cache.setValueInObject(this.key, model.name, model);
     });
     this.db.on('authenticators.afterDestroy', async (model: AuthModel) => {
       await this.cache.delValueInObject(this.key, model.name);
     });
   }
 
-  private toRawAuthenticator(authenticator: any): Authenticator {
-    if (!authenticator) {
-      return authenticator;
-    }
-
-    const raw =
-      typeof authenticator.toJSON === 'function'
-        ? authenticator.toJSON()
-        : authenticator.dataValues || authenticator;
-
-    // Never mutate an ORM instance or a cached object while preparing runtime options.
-    return lodash.cloneDeep(raw);
-  }
-
-  renderJsonTemplate(authenticator: any): Authenticator {
-    const raw = this.toRawAuthenticator(authenticator);
-    if (!raw) {
-      return raw;
-    }
-
-    const $env = this.app?.environment;
-    if (!$env) {
-      return raw;
-    }
-
-    // Auth-type options may contain templates that are not environment variables.
-    // Without the registered auth config, we cannot know which keys must be omitted
-    // from environment rendering. Preserve the raw options until the type is available.
-    const config = this.authManager?.getAuthConfig(raw.authType);
-    if (!config?.auth) {
-      return raw;
-    }
-
-    raw.options = $env.renderJsonTemplate(raw.options, {
-      omit: config.auth['optionsKeysNotAllowedInEnv'],
-    });
-    return raw;
-  }
-
-  async getCache(): Promise<Authenticator[]> {
-    const authenticators = (await this.cache.get(this.key)) as Record<string, Authenticator>;
+  async getCache(): Promise<AuthModel[]> {
+    const authenticators = (await this.cache.get(this.key)) as Record<string, AuthModel>;
     if (!authenticators) {
       return [];
     }
     return Object.values(authenticators);
   }
 
-  async setCache(authenticators: Authenticator[]) {
-    const obj: Record<string, Authenticator> = {};
-    for (const authenticator of authenticators) {
-      // Store the unrendered options so a cache populated before plugin registration
-      // remains valid after the auth type is registered.
-      obj[authenticator.name] = this.toRawAuthenticator(authenticator);
-    }
+  async setCache(authenticators: AuthModel[]) {
+    const obj = authenticators.reduce((obj, authenticator) => {
+      obj[authenticator.name] = authenticator;
+      return obj;
+    }, {});
     await this.cache.set(this.key, obj);
   }
 
@@ -117,7 +74,7 @@ export class Storer implements IStorer {
       await this.setCache(authenticators);
       authenticators = await this.getCache();
     }
-    const authenticator = authenticators.find((authenticator) => authenticator.name === name) || authenticators[0];
-    return this.renderJsonTemplate(authenticator);
+    const authenticator = authenticators.find((authenticator: Model) => authenticator.name === name);
+    return authenticator || authenticators[0];
   }
 }
