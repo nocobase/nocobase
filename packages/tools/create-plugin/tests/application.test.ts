@@ -7,6 +7,7 @@ import {
   readFile,
   readdir,
   rm,
+  symlink,
   writeFile,
 } from 'node:fs/promises';
 import os from 'node:os';
@@ -75,6 +76,56 @@ async function app(
   return root;
 }
 
+async function runtimeDependency(
+  root: string,
+  runtime: string,
+  version: string,
+): Promise<void> {
+  const modules = path.join(
+    root,
+    'node_modules/.pnpm',
+    runtime.split('/').at(-1)!,
+    'node_modules',
+  );
+  await json(path.join(modules, runtime, 'package.json'), {
+    name: runtime,
+    version: versions[runtime as keyof typeof versions],
+  });
+  await json(path.join(modules, '@oclif/core/package.json'), {
+    name: '@oclif/core',
+    version,
+  });
+  const runtimeLink = path.join(root, 'node_modules', runtime);
+  await rm(runtimeLink, { recursive: true, force: true });
+  await symlink(path.join(modules, runtime), runtimeLink, 'dir');
+}
+
+function runCliPlugin(root: string): ReturnType<typeof spawnSync> {
+  // Use the application's Node resolution without pnpm's injected workspace NODE_PATH.
+  return spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(new URL('../bin/run.js', import.meta.url)),
+      'demo',
+      '--dir',
+      root,
+      '--with',
+      'cli',
+      '--no-install',
+      '--json',
+    ],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        NODE_PATH: '',
+        NOCOBASE_CREATE_PLUGIN_USE_DIST: '0',
+      },
+    },
+  );
+}
+
 afterEach(async () => {
   vi.restoreAllMocks();
   await Promise.all(
@@ -85,6 +136,78 @@ afterEach(async () => {
 });
 
 describe('creating plugins in an application', () => {
+  it.each(['dependencies', 'devDependencies', 'optionalDependencies'])(
+    'rejects a plugin already declared in %s without changing the app',
+    async (field) => {
+      const root = await app();
+      const manifestPath = path.join(root, 'package.json');
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+      manifest[field] = {
+        ...manifest[field],
+        '@my-app/app-plugin-demo': '^2.0.0',
+      };
+      await json(manifestPath, manifest);
+      const before = await readFile(manifestPath, 'utf8');
+      const workspaceBefore = await readFile(
+        path.join(root, 'pnpm-workspace.yaml'),
+        'utf8',
+      );
+      const synchronize = vi.fn();
+      await expect(
+        createPlugin({
+          directory: root,
+          name: '@my-app/app-plugin-demo',
+          empty: true,
+          synchronize,
+        }),
+      ).rejects.toMatchObject({ code: 'PACKAGE_ALREADY_DECLARED' });
+      expect(await readFile(manifestPath, 'utf8')).toBe(before);
+      expect(
+        await readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8'),
+      ).toBe(workspaceBefore);
+      expect(await readdir(root)).not.toContain('packages');
+      expect(synchronize).not.toHaveBeenCalled();
+    },
+  );
+
+  it('resolves CLI dependencies from a symlinked pnpm runtime', async () => {
+    const root = await app();
+    await rm(path.join(root, 'node_modules/@oclif/core'), { recursive: true });
+    await runtimeDependency(root, '@nocobase/app-cli', versions['@oclif/core']);
+    // A missing runtime must not prevent resolution from the installed one.
+    await rm(path.join(root, 'node_modules/@nocobase/app-server'), {
+      recursive: true,
+    });
+    const run = runCliPlugin(root);
+    expect({ status: run.status, stderr: run.stderr }).toEqual({
+      status: 0,
+      stderr: '',
+    });
+    const manifest = JSON.parse(
+      await readFile(
+        path.join(root, 'packages/app-plugin-demo/package.json'),
+        'utf8',
+      ),
+    );
+    expect(manifest.peerDependencies['@oclif/core']).toBe(
+      versions['@oclif/core'],
+    );
+  });
+
+  it('rejects conflicting dependency versions supplied by symlinked runtimes', async () => {
+    const root = await app();
+    await rm(path.join(root, 'node_modules/@oclif/core'), { recursive: true });
+    await runtimeDependency(root, '@nocobase/app-cli', versions['@oclif/core']);
+    await runtimeDependency(root, '@nocobase/app-server', '4.15.0');
+    const run = runCliPlugin(root);
+    expect(run.status).toBe(1);
+    expect(JSON.parse(String(run.stdout))).toMatchObject({
+      ok: false,
+      error: { code: 'AMBIGUOUS_DEPENDENCY' },
+    });
+    expect(await readdir(root)).not.toContain('packages');
+  });
+
   it('plans from a child directory without writing, then connects the same package to the app', async () => {
     const root = await app();
     await mkdir(path.join(root, 'client'));

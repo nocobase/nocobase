@@ -1,12 +1,9 @@
 import { constants } from 'node:fs';
-import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  resolvePluginProject,
-  ProjectError,
-  type ProjectEdit,
-} from './project.ts';
+import { resolvePluginProject, type ProjectEdit } from './project.ts';
+import { applyProjectEdits } from './project-edits.ts';
 
 import type { WorkspaceSynchronizer } from './install.ts';
 import {
@@ -162,7 +159,6 @@ export async function createPlugin(
   }
 
   let targetCreated = false;
-  const writtenEdits: ProjectEdit[] = [];
   try {
     await mkdir(packagesDirectory, { recursive: true });
     await mkdir(targetDirectory);
@@ -173,26 +169,8 @@ export async function createPlugin(
       targetDirectory,
       templateDirectory,
     });
-    for (const edit of project.edits) {
-      const current = await readFile(edit.path, 'utf8').catch(
-        (error: NodeJS.ErrnoException) => {
-          if (error.code === 'ENOENT') return undefined;
-          throw error;
-        },
-      );
-      if (current !== edit.before)
-        throw new ProjectError(
-          'PROJECT_CHANGED',
-          `${edit.path} changed during generation. Run create-plugin again.`,
-        );
-      await writeFile(edit.path, edit.after);
-      writtenEdits.push(edit);
-    }
+    await applyProjectEdits(project.edits);
   } catch (error) {
-    for (const edit of writtenEdits.reverse()) {
-      if (edit.before === undefined) await rm(edit.path);
-      else await writeFile(edit.path, edit.before);
-    }
     if (targetCreated) {
       await rm(targetDirectory, { force: true, recursive: true });
     }

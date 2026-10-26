@@ -12,6 +12,7 @@ export interface PackageManifest {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
 }
 
 export interface ProjectEdit {
@@ -105,6 +106,12 @@ async function installedManifest(
   root: string,
   name: string,
 ): Promise<PackageManifest | undefined> {
+  try {
+    root = await realpath(root);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    throw error;
+  }
   const direct = await manifestAt(path.join(root, 'node_modules', name));
   if (direct?.name === name) return direct;
   const require = createRequire(path.join(root, 'package.json'));
@@ -144,7 +151,8 @@ async function applicationProject(
   }
   if (
     manifest.dependencies?.[packageName] ||
-    manifest.devDependencies?.[packageName]
+    manifest.devDependencies?.[packageName] ||
+    manifest.optionalDependencies?.[packageName]
   ) {
     throw new ProjectError(
       'PACKAGE_ALREADY_DECLARED',
