@@ -196,15 +196,15 @@ export function changelogUrl(commit, file, version) {
   return `https://github.com/nocobase/nocobase/blob/${commit}/${file}#${version.replaceAll('.', '')}`;
 }
 
-// One row per published package. `linkOf` returns the package's changelog URL, or undefined when the tagged tree has
-// no changelog for it.
+// One row per published package, its version linking to the package's changelog. `linkOf` returns that URL, or
+// undefined when the tagged tree has no changelog for the package, which leaves the version as plain text.
 export function renderPackageTable(packages, linkOf) {
   return [
-    '| Package | Version | Changelog |',
-    '| --- | --- | --- |',
+    '| Package | Version |',
+    '| --- | --- |',
     ...packages.map((pkg) => {
       const link = linkOf(pkg);
-      return `| \`${pkg.name}\` | \`${pkg.version}\` | ${link ? `[CHANGELOG.md](${link})` : '—'} |`;
+      return `| \`${pkg.name}\` | ${link ? `[${pkg.version}](${link})` : pkg.version} |`;
     }),
   ];
 }

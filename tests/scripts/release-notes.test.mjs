@@ -35,10 +35,10 @@ test('lists every published package with a link to its changelog at the tagged c
       (pkg) => (pkg.name === '@nocobase/app-installer' ? url : undefined),
     ),
     [
-      '| Package | Version | Changelog |',
-      '| --- | --- | --- |',
-      `| \`@nocobase/app-installer\` | \`0.1.0-beta.10\` | [CHANGELOG.md](${url}) |`,
-      '| `@nocobase/unknown` | `1.0.0` | — |',
+      '| Package | Version |',
+      '| --- | --- |',
+      `| \`@nocobase/app-installer\` | [0.1.0-beta.10](${url}) |`,
+      '| `@nocobase/unknown` | 1.0.0 |',
     ],
   );
 });
