@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan Workflow"
+  },
+  {
+    "type": "file",
+    "name": "definition",
+    "label": "Định nghĩa quy trình và kiểm soát thao tác"
+  },
+  {
+    "type": "file",
+    "name": "execution",
+    "label": "Chờ, hết thời gian và thực thi tin cậy"
+  },
+  {
+    "type": "file",
+    "name": "progress",
+    "label": "Tiến độ và lịch sử xử lý"
+  }
+]

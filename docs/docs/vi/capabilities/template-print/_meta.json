@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan"
+  },
+  {
+    "type": "file",
+    "name": "usage",
+    "label": "Hướng dẫn sử dụng"
+  }
+]

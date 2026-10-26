@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Phân quyền"
+  },
+  {
+    "type": "file",
+    "name": "permission-sets",
+    "label": "Bộ quyền và phân công"
+  },
+  {
+    "type": "file",
+    "name": "data-scopes",
+    "label": "Phạm vi dữ liệu và quy tắc"
+  },
+  {
+    "type": "file",
+    "name": "default-access",
+    "label": "Quyền truy cập dữ liệu mặc định"
+  },
+  {
+    "type": "file",
+    "name": "sharing-rules",
+    "label": "Quy tắc chia sẻ"
+  },
+  {
+    "type": "file",
+    "name": "restriction-rules",
+    "label": "Quy tắc hạn chế"
+  },
+  {
+    "type": "file",
+    "name": "inspector",
+    "label": "Kiểm tra quyền"
+  }
+]

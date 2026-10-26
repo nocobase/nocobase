@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan"
+  },
+  {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Đồng bộ và gửi email"
+  },
+  {
+    "type": "file",
+    "name": "usage",
+    "label": "Các tính năng Mail khác"
+  },
+  {
+    "type": "file",
+    "name": "configuration",
+    "label": "Cấu hình hộp thư"
+  },
+  {
+    "type": "file",
+    "name": "development",
+    "label": "Tài liệu tham khảo cho lập trình viên"
+  }
+]

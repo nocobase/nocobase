@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/capabilities/notification"
+  },
+  {
+    "type": "file",
+    "name": "usage",
+    "label": "Hướng dẫn sử dụng"
+  }
+]

@@ -1,0 +1,233 @@
+{
+  "title": "Hướng dẫn sử dụng NocoBase Studio",
+  "description": "Tìm hiểu cách triển khai Studio, cấu hình Runner Agent và Git, thiết lập dự án và CI, tạo và theo dõi issue, và dùng Studio CLI.",
+  "eyebrow": "STUDIO / BẮT ĐẦU",
+  "heading": "Dẫn dắt các agent của bạn.",
+  "headingAccent": "Hoàn thành dự án của bạn.",
+  "intro": "Cài đặt NocoBase Studio, kết nối Coding Agent và repository code, rồi review task đầu tiên do agent hoàn thành trong môi trường preview.",
+  "imageHint": "Nhấp vào ảnh chụp màn hình bất kỳ để phóng to",
+  "flowLabel": "Tổng quan thiết lập và sử dụng",
+  "flowTitle": "Tổng quan thiết lập và sử dụng",
+  "flow": [
+    {
+      "title": "Triển khai Studio",
+      "description": "Chuẩn bị server, cài đặt Studio và kiểm chứng việc triển khai",
+      "chapterId": "deployment"
+    },
+    {
+      "title": "Cấu hình Runner Agent",
+      "description": "Kết nối runtime, bật agent và cấu hình project manager",
+      "chapterId": "runtimes"
+    },
+    {
+      "title": "Cấu hình Git",
+      "description": "Kết nối dịch vụ Git và tài khoản cá nhân của bạn",
+      "chapterId": "git"
+    },
+    {
+      "title": "Thiết lập dự án và CI",
+      "description": "Tạo repository, sau đó cấu hình workflow và deployment key",
+      "chapterId": "projects"
+    },
+    {
+      "title": "Tạo và review issue",
+      "description": "Dùng Runner hoặc My agents để tạo issue, theo dõi tiến độ và review bản preview",
+      "chapterId": "issues"
+    },
+    {
+      "title": "Dùng Studio CLI (tùy chọn)",
+      "description": "Để agent cục bộ quản lý Studio và điều tra issue",
+      "chapterId": "cli"
+    }
+  ],
+  "toc": "MỤC LỤC",
+  "tocToggle": "Duyệt các chương",
+  "tocTip": "Cấu hình môi trường, Git và dự án trước khi bắt đầu làm việc. Mở rộng một chương để chuyển tới từng bước cụ thể.",
+  "chapters": [
+    {
+      "id": "deployment",
+      "title": "NocoBase Studio",
+      "summary": "Cài đặt và khởi động NocoBase Studio để chuẩn bị môi trường cộng tác cho các agent.",
+      "sections": [
+        {
+          "id": "deployment-prepare",
+          "title": "Chuẩn bị server",
+          "html": "<p>Chuẩn bị một server có thể truy cập npm, Docker registry và dịch vụ Git.</p>",
+          "topics": []
+        },
+        {
+          "id": "deployment-setup",
+          "title": "Cài đặt và triển khai",
+          "html": "<p>Ví dụ này dùng tên miền và đường dẫn triển khai giả định. Hãy thay IP server, thư mục và tên miền trước khi chạy.</p><div class=\"code-block prompt-card\"><div class=\"code-heading\"><span class=\"code-title\"><svg class=\"\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/><path d=\"M7 7h10M7 11h7\"/></svg>Prompt triển khai</span><button type=\"button\" class=\"copy-button\" data-copy=\"deployment-prompt\" data-copy-status=\"Copied. You can paste it into your agent.\"><svg class=\"copy-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\"/><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"/></svg><svg class=\"copy-check\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><path d=\"m5 12 4 4L19 6\"/></svg><span data-copy-label>Sao chép prompt</span></button></div><pre id=\"deployment-prompt\"><code>Connect over SSH to root@YOUR_SERVER_IP and install and deploy NocoBase Studio.\n\nDeployment configuration:\n- Docker image: pkg-v3.nocobase.com/nocobase/studio:latest\n- Registry token: provided privately\n- Deployment directory: /root/deploy/apps/studio\n- Public URL: https://studio.example.com/main/\n- Studio base path: /main\n- Existing Caddy Compose file: /root/deploy/docker-compose.yml\n\nRequirements:\n1. Inspect existing deployments, Docker networks, and Caddy configuration first, without disrupting other services.\n2. For an existing Studio instance, preserve the database, uploads, and administrator account. For a new installation, use nocobase as the administrator, generate a random password, and save it in a server configuration file with mode 600.\n3. Configure persistent storage, automatic container restarts, and Caddy reverse proxying with HTTPS.\n4. Use unique container names and network aliases to avoid conflicts with other Studio instances.\n5. Use the same /main site URL for Studio, the CLI, agents, and repository CI. Update Git callbacks and webhook URLs accordingly.\n6. Verify container health, HTTPS access, administrator sign-in, and data persistence after a restart.\n7. Report the deployed version, URL, configuration file locations, how to retrieve the password, and verification results.</code></pre></div><aside class=\"note\"><strong>Dùng URL đầy đủ của site ở mọi nơi</strong><p>Điểm truy cập Studio trong ví dụ này là <a href=\"https://studio.example.com/main/\" target=\"_blank\" rel=\"noopener noreferrer\">https://studio.example.com/main/</a>. Dùng địa chỉ này cho CLI, kết nối máy tính, runtime và CI, bao gồm cả <code>/main</code>.</p></aside><p class=\"done\"><strong>Sẵn sàng khi</strong>HTTPS hoạt động, quản trị viên đăng nhập được, và dữ liệu vẫn còn sau khi khởi động lại container.</p>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "runtimes",
+      "title": "Runner Agent",
+      "summary": "Thêm runtime, đặt mức đồng thời, bật các agent mà Runner dùng, và chọn agent thực thi cho project manager.",
+      "sections": [
+        {
+          "id": "runtime-connect",
+          "title": "Cấu hình runtime",
+          "html": "<p>Mở <strong>Agent management → Runtimes</strong> và nhấp <strong>Add runtime</strong>. Runtime có thể chạy trên máy tính của bạn hoặc trên server; khuyến nghị dùng máy ảo cô lập.</p><figure><a class=\"screenshot\" href=\"./assets/runtime-list.png\" aria-label=\"Phóng to: Thêm runtime từ trang Runtimes.\"><img src=\"./assets/runtime-list.png\" width=\"1440\" height=\"1050\" alt=\"Thêm runtime từ trang Runtimes.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 01</span>Thêm runtime từ trang Runtimes.</figcaption></figure><ol class=\"steps\"><li>Chọn <strong>Personal</strong> hoặc <strong>Shared</strong> và chọn các công cụ lập trình có sẵn trên host.</li><li>Runtime mới mặc định cho phép <strong>3</strong> lần chạy đồng thời. Đặt <strong>Max concurrent runs</strong> phù hợp với tài nguyên của host và giới hạn của model. Ví dụ, nhập <code>10</code> để cho phép tối đa mười lần chạy cùng lúc.</li><li>Nhấp <strong>Generate install command</strong> và sao chép lệnh do phiên bản Studio hiện tại của bạn tạo ra.</li></ol><figure><a class=\"screenshot\" href=\"./assets/runtime-setup.png\" aria-label=\"Phóng to: Điều chỉnh Max concurrent runs cho host trước khi tạo lệnh cài đặt.\"><img src=\"./assets/runtime-setup.png\" width=\"1440\" height=\"1400\" alt=\"Điều chỉnh Max concurrent runs cho host trước khi tạo lệnh cài đặt.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 02</span>Điều chỉnh Max concurrent runs cho host trước khi tạo lệnh cài đặt.</figcaption></figure><p>Mỗi hệ điều hành đều có hai cách cài đặt Prompt và Manual. Sao chép prompt cho một agent trên host đích, hoặc tự chạy lệnh đăng ký dùng một lần. Với Windows, prompt đầy đủ trước tiên yêu cầu agent kiểm tra xem mình có đang chạy trong WSL Ubuntu không. Nếu không, agent phải dừng lại và yêu cầu người dùng chạy wsl --install trong PowerShell, khởi động lại Windows, rồi mở lại agent trong WSL Ubuntu và chạy lại prompt. Chỉ khi ở trong WSL Ubuntu agent mới được tiếp tục; cài Node.js 24 và các công cụ lập trình bên trong WSL, bật mirrored networking nếu không truy cập được internet. Runtime cá nhân chỉ thực thi task của chủ sở hữu; runtime dùng chung thực thi task của bất kỳ người dùng nào, với biến và secret của người đó. Hãy dùng môi trường cô lập cho cả hai phạm vi: agent có toàn quyền truy cập và runner không phải là sandbox. Xác nhận kết nối bằng nocobase-runner status. Nếu không phát hiện công cụ nào, hãy chạy lại nocobase-runner service install trong một terminal mà which codex / which claude hoạt động, rồi khởi động lại service để ghi nhận PATH. Prompt cũng đề cập đến proxy, quyền npm global và việc tránh dùng gói snap.</p><figure><a class=\"screenshot\" href=\"./assets/runtime-install.png\" aria-label=\"Phóng to: Chọn hệ điều hành và chạy lệnh vừa được tạo trên host của runtime.\"><img src=\"./assets/runtime-install.png\" width=\"1440\" height=\"1400\" alt=\"Chọn hệ điều hành và chạy lệnh vừa được tạo trên host của runtime.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 03</span>Chọn hệ điều hành và chạy lệnh vừa được tạo trên host của runtime.</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "agents-enable",
+          "title": "Bật agent",
+          "html": "<p>Khi runtime đã online, mở <strong>Agent management → Agents</strong>. Nhấp <strong>Fill in and enable</strong> cho một agent được phát hiện, hoàn tất cấu hình và bật nó để Runner dùng khi thực thi task.</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"Phóng to: Cấu hình và bật các agent do runtime cung cấp.\"><img src=\"./assets/enable-agents.png\" width=\"1440\" height=\"1050\" alt=\"Cấu hình và bật các agent do runtime cung cấp.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 04</span>Cấu hình và bật các agent do runtime cung cấp.</figcaption></figure><p>Đồng thời cấu hình agent thực thi cho <strong>Project manager</strong>: chọn một agent khả dụng trong <strong>The agent it runs with → First choice</strong>, tùy chọn chọn thêm phương án dự phòng, rồi lưu.</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"Phóng to: Chọn và lưu agent thực thi cho project manager.\"><img src=\"./assets/project-manager.png\" width=\"1440\" height=\"1050\" alt=\"Chọn và lưu agent thực thi cho project manager.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 05</span>Chọn và lưu agent thực thi cho project manager.</figcaption></figure>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "git",
+      "title": "Git",
+      "summary": "Cấu hình quyền truy cập repository và tài khoản Git cá nhân cho các dự án và đóng góp code.",
+      "sections": [
+        {
+          "id": "git-global",
+          "title": "Cấu hình kết nối Git toàn cục",
+          "html": "<p>Vị trí: <strong>Settings → Integrations → Git</strong>. Kết nối Git toàn cục cho phép Studio truy cập GitHub hoặc GitLab và làm việc với các repository code.</p><p>Nhấp <strong>Add connection</strong>, chọn GitHub hoặc GitLab và làm theo các bước ủy quyền. Chọn kết nối này khi tạo dự án; việc tạo repository mới còn cần quyền tạo repository.</p><figure><a class=\"screenshot\" href=\"./assets/git-connection.png\" aria-label=\"Phóng to: Thêm kết nối GitHub hoặc GitLab toàn cục.\"><img src=\"./assets/git-connection.png\" width=\"3456\" height=\"1992\" alt=\"Thêm kết nối GitHub hoặc GitLab toàn cục.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 06</span>Thêm kết nối GitHub hoặc GitLab toàn cục.</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "git-personal",
+          "title": "Cấu hình tài khoản Git cá nhân",
+          "html": "<p>Vị trí: <strong>Account settings → Integrations → Git</strong>. Kết nối tài khoản Git của chính bạn để gắn các đóng góp code với danh tính của bạn.</p><figure><a class=\"screenshot\" href=\"./assets/personal-git.png\" aria-label=\"Phóng to: Kết nối tài khoản Git của bạn trong phần cài đặt tài khoản.\"><img src=\"./assets/personal-git.png\" width=\"3444\" height=\"1992\" alt=\"Kết nối tài khoản Git của bạn trong phần cài đặt tài khoản.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 07</span>Kết nối tài khoản Git của bạn trong phần cài đặt tài khoản.</figcaption></figure>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "Dự án",
+      "summary": "Tạo một dự án kết nối với repository, sau đó cấu hình CI workflow và thông tin xác thực triển khai.",
+      "sections": [
+        {
+          "id": "project-create",
+          "title": "Tạo dự án",
+          "html": "<p>Cấu hình kết nối Git toàn cục trước. Mở <strong>Projects → New project</strong> và nhập tên dự án. Hướng dẫn này dùng <strong>New repository</strong>.</p><figure><a class=\"screenshot\" href=\"./assets/project-repository.png\" aria-label=\"Phóng to: Nhấp New project từ trang Projects.\"><img src=\"./assets/project-repository.png\" width=\"3456\" height=\"1992\" alt=\"Nhấp New project từ trang Projects.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 08</span>Nhấp New project từ trang Projects.</figcaption></figure><p>Chọn tài khoản hoặc tổ chức sở hữu repository, nhập tên và chế độ hiển thị, rồi chọn template khởi tạo và agent thực thi khi cần. Xem lại cấu hình và tạo dự án.</p><figure><a class=\"screenshot\" href=\"./assets/new-project.png\" aria-label=\"Phóng to: Xem lại thiết lập repository và khởi tạo, rồi tạo dự án.\"><img src=\"./assets/new-project.png\" width=\"3456\" height=\"1992\" alt=\"Xem lại thiết lập repository và khởi tạo, rồi tạo dự án.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 09</span>Xem lại thiết lập repository và khởi tạo, rồi tạo dự án.</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "ci",
+          "title": "Cấu hình CI",
+          "html": "<p>Nếu chưa cấu hình CI khi tạo dự án, hãy mở <strong>Settings → Deployment</strong> của dự án, nhấp <strong>Set up CI</strong> và làm theo hướng dẫn.</p><figure><a class=\"screenshot\" href=\"./assets/deployment-settings.png\" aria-label=\"Phóng to: Mở hướng dẫn thiết lập CI từ phần cài đặt Deployment của dự án.\"><img src=\"./assets/deployment-settings.png\" width=\"3456\" height=\"1992\" alt=\"Mở hướng dẫn thiết lập CI từ phần cài đặt Deployment của dự án.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 10</span>Mở hướng dẫn thiết lập CI từ phần cài đặt Deployment của dự án.</figcaption></figure><p>Chọn trigger, môi trường đích, thư mục ứng dụng và App ID. Với preview cho PR, chọn <strong>Pull request</strong> và <strong>Preview</strong>; dùng <code>.</code> cho Directory khi ứng dụng nằm ở thư mục gốc của repository.</p><figure><a class=\"screenshot\" href=\"./assets/ci-setup.png\" aria-label=\"Phóng to: Đặt trigger và thông tin ứng dụng, rồi dùng workflow do giao diện cung cấp.\"><img src=\"./assets/ci-setup.png\" width=\"3456\" height=\"1992\" alt=\"Đặt trigger và thông tin ứng dụng, rồi dùng workflow do giao diện cung cấp.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 11</span>Đặt trigger và thông tin ứng dụng, rồi dùng workflow do giao diện cung cấp.</figcaption></figure><ol class=\"steps\"><li>Thêm workflow do hướng dẫn cung cấp vào repository Git của bạn, ví dụ <code>.github/workflows/nb-studio-test-preview.yml</code>. Dùng nội dung do giao diện hiện tại của bạn tạo ra.</li><li>Nhấp <strong>Generate key and show it once</strong> và sao chép deployment key CI cho repository này.</li><li>Trong repository GitHub, mở <strong>Settings → Secrets and variables → Actions</strong> và thêm một <strong>Repository secret</strong>: đặt Name là <code>NB_STUDIO_API_KEY</code> và Secret là key bạn vừa sao chép.</li><li>Commit workflow và kích hoạt hoặc chạy lại CI. Xác nhận build và triển khai thành công, rồi quay lại Studio để kiểm tra kết quả được báo cáo và mở bản preview.</li></ol><aside class=\"note\"><strong>Chỉ cần cấu hình thông tin xác thực một lần</strong><p>Các lần chạy CI sau sẽ tự động đọc secret đã lưu. Hãy cập nhật khi key được xoay vòng, bị thu hồi hoặc hết hạn; tạo key thay thế cũng đòi hỏi cập nhật repository secret. Thiết lập thủ công trên trình duyệt này không cần cài Studio CLI trên máy tính của bạn.</p></aside>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "issues",
+      "title": "Issue",
+      "summary": "Tạo issue thông qua Runner Agent hoặc My agents, theo dõi tiến độ, và review kết quả bàn giao cùng bản preview trong chi tiết issue.",
+      "sections": [
+        {
+          "id": "issue-create",
+          "title": "Tạo issue",
+          "html": "",
+          "topics": [
+            {
+              "id": "issue-create-runner",
+              "title": "Thông qua Runner Agent",
+              "html": "<p>Nếu chưa cấu hình My agents, hãy nhờ một Runner Agent sắp xếp yêu cầu. Nhấp <strong>New issue</strong> trong dự án và mô tả mục tiêu cùng công việc cần hoàn thành.</p><figure><a class=\"screenshot\" href=\"./assets/runner-new-issue.png\" aria-label=\"Phóng to: Mở New issue từ dự án để bắt đầu sắp xếp công việc.\"><img src=\"./assets/runner-new-issue.png\" width=\"3456\" height=\"1992\" alt=\"Mở New issue từ dự án để bắt đầu sắp xếp công việc.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 12</span>Mở New issue từ dự án để bắt đầu sắp xếp công việc.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/runner-issue-details.png\" aria-label=\"Phóng to: Mô tả yêu cầu và xác nhận chi tiết issue được tạo ra.\"><img src=\"./assets/runner-issue-details.png\" width=\"3456\" height=\"1992\" alt=\"Mô tả yêu cầu và xác nhận chi tiết issue được tạo ra.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 13</span>Mô tả yêu cầu và xác nhận chi tiết issue được tạo ra.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/runner-issue-created.png\" aria-label=\"Phóng to: Xem lại bản nháp issue đã chuẩn bị và xác nhận tạo.\"><img src=\"./assets/runner-issue-created.png\" width=\"3456\" height=\"1992\" alt=\"Xem lại bản nháp issue đã chuẩn bị và xác nhận tạo.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 14</span>Xem lại bản nháp issue đã chuẩn bị và xác nhận tạo.</figcaption></figure>"
+            },
+            {
+              "id": "my-agents",
+              "title": "Thông qua My agents",
+              "html": "<p>Kết nối máy tính của bạn trước. Trong <strong>My agents</strong> hoặc bảng hội thoại tạo issue mới, nhấp <strong>Connect your computer</strong>, sao chép hướng dẫn và để một Coding Agent trên máy tính đó hoàn tất cài đặt và ủy quyền qua trình duyệt.</p><figure><a class=\"screenshot\" href=\"./assets/my-agents.png\" aria-label=\"Phóng to: Kết nối máy tính từ điểm vào hội thoại khi chưa có máy tính nào được kết nối.\"><img src=\"./assets/my-agents.png\" width=\"3456\" height=\"1992\" alt=\"Kết nối máy tính từ điểm vào hội thoại khi chưa có máy tính nào được kết nối.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 15</span>Kết nối máy tính từ điểm vào hội thoại khi chưa có máy tính nào được kết nối.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/computer-setup.png\" aria-label=\"Phóng to: Đưa hướng dẫn kết nối do trang hiện tại tạo ra cho Coding Agent cục bộ.\"><img src=\"./assets/computer-setup.png\" width=\"3456\" height=\"1992\" alt=\"Đưa hướng dẫn kết nối do trang hiện tại tạo ra cho Coding Agent cục bộ.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 16</span>Đưa hướng dẫn kết nối do trang hiện tại tạo ra cho Coding Agent cục bộ.</figcaption></figure><p>Khi máy tính đã online, nhấp <strong>New issue</strong> để mở một hội thoại My agent. Thảo luận yêu cầu, thống nhất phạm vi và tạo issue ngay trong hội thoại đó.</p><figure><a class=\"screenshot\" href=\"./assets/issue-conversation.png\" aria-label=\"Phóng to: Thảo luận yêu cầu trong một hội thoại My agent.\"><img src=\"./assets/issue-conversation.png\" width=\"3456\" height=\"1992\" alt=\"Thảo luận yêu cầu trong một hội thoại My agent.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 17</span>Thảo luận yêu cầu trong một hội thoại My agent.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/issue-created.png\" aria-label=\"Phóng to: Xác nhận và tạo issue trong hội thoại.\"><img src=\"./assets/issue-created.png\" width=\"3456\" height=\"1992\" alt=\"Xác nhận và tạo issue trong hội thoại.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 18</span>Xác nhận và tạo issue trong hội thoại.</figcaption></figure>"
+            }
+          ]
+        },
+        {
+          "id": "issue-follow",
+          "title": "Theo dõi issue",
+          "html": "",
+          "topics": [
+            {
+              "id": "issue-follow-my-issues",
+              "title": "My issues",
+              "html": "<p>Dùng <strong>My issues</strong> để tìm công việc bạn phụ trách hoặc cần theo dõi, rồi mở một issue để tiếp tục.</p><figure><a class=\"screenshot\" href=\"./assets/my-issues.png\" aria-label=\"Phóng to: Xem công việc của bạn trong My issues.\"><img src=\"./assets/my-issues.png\" width=\"3456\" height=\"1992\" alt=\"Xem công việc của bạn trong My issues.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 19</span>Xem công việc của bạn trong My issues.</figcaption></figure>"
+            },
+            {
+              "id": "issue-follow-my-agents",
+              "title": "My agents",
+              "html": "<p>Quay lại một hội thoại có sẵn trong <strong>My agents</strong> để tiếp tục thảo luận issue và xem công việc gắn với hội thoại đó.</p><figure><a class=\"screenshot\" href=\"./assets/my-agent-sessions.png\" aria-label=\"Phóng to: Tiếp tục một hội thoại có sẵn trong My agents.\"><img src=\"./assets/my-agent-sessions.png\" width=\"3456\" height=\"1992\" alt=\"Tiếp tục một hội thoại có sẵn trong My agents.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 20</span>Tiếp tục một hội thoại có sẵn trong My agents.</figcaption></figure>"
+            },
+            {
+              "id": "issue-follow-issues",
+              "title": "Issue",
+              "html": "<p>Dùng <strong>Issues</strong> để duyệt danh sách issue, tìm công việc theo dự án hoặc trạng thái, và mở chi tiết.</p><figure><a class=\"screenshot\" href=\"./assets/issues-list.png\" aria-label=\"Phóng to: Kiểm tra trạng thái issue trong danh sách Issues và mở một issue.\"><img src=\"./assets/issues-list.png\" width=\"3456\" height=\"1992\" alt=\"Kiểm tra trạng thái issue trong danh sách Issues và mở một issue.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 21</span>Kiểm tra trạng thái issue trong danh sách Issues và mở một issue.</figcaption></figure>"
+            }
+          ]
+        },
+        {
+          "id": "issue-details",
+          "title": "Chi tiết issue",
+          "html": "<p>Khi công việc bắt đầu, issue sẽ đi qua luồng thực thi. Dùng phần chi tiết để xem giai đoạn hiện tại, lịch sử thực thi và kết quả bàn giao.</p>",
+          "topics": [
+            {
+              "id": "issue-in-progress",
+              "title": "Đang thực hiện",
+              "html": "<p>Kiểm tra giai đoạn thực thi hiện tại và hoạt động của agent để biết việc gì đang được xử lý.</p><figure><a class=\"screenshot\" href=\"./assets/issue-in-progress.png\" aria-label=\"Phóng to: Theo dõi tiến độ thực thi trong một issue đang thực hiện.\"><img src=\"./assets/issue-in-progress.png\" width=\"3456\" height=\"1992\" alt=\"Theo dõi tiến độ thực thi trong một issue đang thực hiện.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 22</span>Theo dõi tiến độ thực thi trong một issue đang thực hiện.</figcaption></figure>"
+            },
+            {
+              "id": "issue-review",
+              "title": "Đang review",
+              "html": "<p>Khi issue đến bước review, hãy đọc báo cáo bàn giao và kết quả kiểm chứng, đồng thời kiểm tra các yêu cầu nghiệm thu. Thêm phản hồi cụ thể vào issue nếu cần thay đổi.</p><figure><a class=\"screenshot\" href=\"./assets/issue-in-review.png\" aria-label=\"Phóng to: Review kết quả bàn giao và ghi chú nghiệm thu.\"><img src=\"./assets/issue-in-review.png\" width=\"3456\" height=\"1992\" alt=\"Review kết quả bàn giao và ghi chú nghiệm thu.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 23</span>Review kết quả bàn giao và ghi chú nghiệm thu.</figcaption></figure>"
+            },
+            {
+              "id": "issue-preview",
+              "title": "Môi trường preview",
+              "html": "<p>Sau khi CI của dự án triển khai thành công, mở ứng dụng từ bản preview được liên kết với issue và kiểm tra các trang cùng hành vi của nó.</p><figure><a class=\"screenshot\" href=\"./assets/issue-preview.png\" aria-label=\"Phóng to: Mở môi trường preview của issue để kiểm tra kết quả.\"><img src=\"./assets/issue-preview.png\" width=\"3456\" height=\"1992\" alt=\"Mở môi trường preview của issue để kiểm tra kết quả.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 24</span>Mở môi trường preview của issue để kiểm tra kết quả.</figcaption></figure>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cli",
+      "title": "Studio CLI",
+      "summary": "Quản lý dự án và issue trên Studio từ một Coding Agent cục bộ và điều tra các vấn đề phức tạp hơn.",
+      "sections": [
+        {
+          "id": "cli-install",
+          "title": "Cài đặt và kết nối",
+          "html": "<p>Cài Studio CLI nếu bạn muốn quản lý Studio từ một agent cục bộ. Nhấp vào ảnh đại diện ở góc trên bên phải, chọn <strong>Use Studio in your agent</strong>, và sao chép hướng dẫn thiết lập do phiên bản Studio hiện tại của bạn tạo ra.</p><figure><a class=\"screenshot\" href=\"./assets/cli-entry.png\" aria-label=\"Phóng to: Mở điểm vào để kết nối một Coding Agent cục bộ.\"><img src=\"./assets/cli-entry.png\" width=\"3456\" height=\"1992\" alt=\"Mở điểm vào để kết nối một Coding Agent cục bộ.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 25</span>Mở điểm vào để kết nối một Coding Agent cục bộ.</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/cli-setup.png\" aria-label=\"Phóng to: Sao chép hướng dẫn cài đặt và đăng nhập Studio CLI hiện tại.\"><img src=\"./assets/cli-setup.png\" width=\"3456\" height=\"1992\" alt=\"Sao chép hướng dẫn cài đặt và đăng nhập Studio CLI hiện tại.\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>Hình 26</span>Sao chép hướng dẫn cài đặt và đăng nhập Studio CLI hiện tại.</figcaption></figure><ol class=\"steps\"><li>Máy tính của bạn cần <strong>Node.js 24 trở lên</strong> và npm. Đưa hướng dẫn thiết lập cho Coding Agent cục bộ.</li><li>Làm theo hướng dẫn trên terminal để chấp thuận đăng nhập trên trình duyệt và xác nhận phiên bản Studio đích.</li><li>Sau khi đăng nhập, kiểm tra danh tính và quyền, đọc tài liệu lệnh và cài CLI skill.</li></ol><div class=\"code-block\"><div class=\"code-heading\"><span>Kiểm tra sau khi đăng nhập</span><button type=\"button\" class=\"copy-button\" data-copy=\"cli-checks\">Sao chép</button></div><pre id=\"cli-checks\"><code>nb-studio whoami\nnb-studio docs\nnb-studio skills install</code></pre></div><aside class=\"note\"><strong>Dùng hướng dẫn từ site hiện tại của bạn</strong><p>Ảnh chụp màn hình cho biết vị trí các control. Liên kết cài đặt và thông tin xác thực tạm thời có thể hết hạn, vì vậy hãy sao chép hướng dẫn mới từ trang hiện tại.</p></aside>",
+          "topics": []
+        },
+        {
+          "id": "cli-analyze",
+          "title": "Phân tích issue bằng agent cục bộ",
+          "html": "<p>Sau khi kết nối, hãy nhờ agent cục bộ hỗ trợ các vấn đề phức tạp. Cung cấp liên kết issue và câu hỏi bạn muốn điều tra, ví dụ:</p><div class=\"code-block\"><div class=\"code-heading\"><span>Prompt phân tích issue</span><button type=\"button\" class=\"copy-button\" data-copy=\"issue-analysis-prompt\">Sao chép</button></div><pre id=\"issue-analysis-prompt\"><code>https://studio.example.com/main/issues/YOUR_ISSUE_ID\nAnalyze what is wrong with this issue and how to address it. Analysis only; do not make changes.</code></pre></div>",
+          "topics": []
+        }
+      ]
+    }
+  ],
+  "finishTitle": "Trước khi cộng tác, hãy kiểm tra từng mục",
+  "finishDescription": "Khi các bước kiểm tra này đều đạt, nhóm của bạn đã sẵn sàng cộng tác trên Studio.",
+  "checklist": [
+    "Studio truy cập được, đăng nhập hoạt động và dữ liệu được lưu bền vững",
+    "Runtime đang online với mức đồng thời phù hợp",
+    "Các agent mà Runner và project manager dùng đã được cấu hình",
+    "Quyền truy cập Git toàn cục và tài khoản Git cá nhân đã được cấu hình",
+    "Dự án được liên kết với đúng repository",
+    "CI workflow và deployment secret đã được cấu hình và bản preview truy cập được",
+    "Bạn có thể tạo issue, theo dõi trạng thái và review kết quả bàn giao",
+    "My agents hoặc Studio CLI được kết nối khi cần"
+  ],
+  "footerNote": "Ảnh chụp màn hình minh họa quy trình; thông tin xác thực đã được che. Hãy tham khảo giao diện hiện tại của bạn để biết chi tiết.",
+  "backTop": "Lên đầu trang",
+  "originalImage": "Mở ảnh gốc",
+  "close": "Đóng",
+  "skip": "Chuyển đến nội dung",
+  "copied": "Đã sao chép",
+  "copyStatus": "Đã sao chép vào clipboard",
+  "copyFallback": "Đã chọn văn bản. Nhấn Ctrl+C hoặc ⌘C để sao chép.",
+  "progress": "Tiến độ đọc",
+  "subsectionsLabel": "Mở rộng hoặc thu gọn các mục"
+}

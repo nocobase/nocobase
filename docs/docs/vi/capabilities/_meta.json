@@ -1,0 +1,101 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan"
+  },
+  {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Bắt đầu nhanh"
+  },
+  {
+    "type": "dir",
+    "name": "auth",
+    "label": "Xác thực",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "data-sources",
+    "label": "Nguồn dữ liệu",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "authorization",
+    "label": "Phân quyền",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "workflow",
+    "label": "Workflow",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "approval",
+    "label": "Phê duyệt",
+    "collapsed": true
+  },
+  {
+    "type": "file",
+    "name": "task-center",
+    "label": "Trung tâm Task"
+  },
+  {
+    "type": "dir",
+    "name": "file",
+    "label": "Tệp",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "i18n",
+    "label": "Quốc tế hóa",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "theme",
+    "label": "Theme",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "notification",
+    "label": "Thông báo",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "scheduler",
+    "label": "Tác vụ định kỳ",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "mail",
+    "label": "Mail",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-employee",
+    "label": "AI Employee",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-knowledge-base",
+    "label": "Cơ sở tri thức AI",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "template-print",
+    "label": "In theo mẫu",
+    "collapsed": true
+  }
+]

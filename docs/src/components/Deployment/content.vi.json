@@ -1,0 +1,552 @@
+{
+  "title": "Triển khai ứng dụng",
+  "intro": "Triển khai lên server của chính bạn bằng PM2 hoặc Docker, hoặc triển khai lên NocoBase Studio. Chọn một phương thức và dùng Agent hoặc làm theo các bước thủ công.",
+  "navigationLabel": "Chọn phương thức triển khai",
+  "copy": "Sao chép",
+  "copied": "Đã sao chép",
+  "copyFailed": "Sao chép thất bại. Hãy chọn và sao chép văn bản thủ công.",
+  "backHome": "Quay lại Bắt đầu nhanh",
+  "guides": [
+    {
+      "id": "pm2",
+      "label": "PM2",
+      "title": "Triển khai ứng dụng bằng PM2",
+      "description": "Build gói nén ở máy cục bộ, cài đặt và cập nhật qua SSH bằng app-installer, và để PM2 quản lý tiến trình ứng dụng.",
+      "sections": [
+        {
+          "id": "pm2-prepare",
+          "title": "1. Chuẩn bị môi trường PM2",
+          "blocks": [
+            {
+              "text": "Cài Node.js 24+ và pnpm ở máy cục bộ, và cấu hình truy cập SSH. Cài Node.js 24 và tar trên server Linux, sau đó cài PM2 (4.3+) bằng tài khoản triển khai:"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "npm install --global pm2",
+              "language": "bash"
+            },
+            {
+              "text": "Đảm bảo các phiên SSH không tương tác tìm được node và pm2. Tài khoản triển khai phải có quyền ghi vào thư mục cài đặt và thư mục cha của nó; hãy dùng một thư mục mới hoặc trống cho lần cài đặt đầu tiên."
+            }
+          ]
+        },
+        {
+          "id": "pm2-install",
+          "title": "2. Build và cài đặt với PM2",
+          "blocks": [
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar",
+              "language": "bash"
+            },
+            {
+              "text": "Gói nén được ghi vào storage/exports/dist.tar.gz. Cung cấp mật khẩu quản trị viên ban đầu qua biến môi trường cục bộ INITIAL_ADMIN_PASSWORD, rồi cài đặt:"
+            },
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng",
+              "code": "npx --yes @nocobase/app-installer@beta install \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --origin https://purchase.example.com \\\n  --base-path /main \\\n  --port 13000 --name nocobase-purchase \\\n  --set-from-env users.initialAdmin.password=INITIAL_ADMIN_PASSWORD \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "Trình cài đặt tải gói nén lên, tạo cấu hình, chạy migration và khởi động ứng dụng. Các ví dụ này dùng @beta; hãy cố định một phiên bản trình cài đặt đã kiểm thử trong CI."
+            }
+          ]
+        },
+        {
+          "id": "pm2-verify",
+          "title": "3. Cấu hình PM2 khởi động cùng hệ thống và kiểm chứng",
+          "blocks": [
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "pm2 startup",
+              "language": "bash"
+            },
+            {
+              "text": "Chạy lệnh system service mà PM2 in ra, sau đó lưu danh sách tiến trình bằng cùng tài khoản triển khai:"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "pm2 save",
+              "language": "bash"
+            },
+            {
+              "text": "Sau khi cấu hình HTTPS và reverse proxy như mô tả ở trên, kiểm tra trạng thái ứng dụng và truy cập công khai:"
+            },
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng",
+              "code": "npx --yes @nocobase/app-installer@beta status \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase --json\n\ncurl --fail --silent --show-error \\\n  https://purchase.example.com/main/api/healthz",
+              "language": "bash"
+            },
+            {
+              "text": "Xác nhận status báo result.health.ok là true và result.pending là null, và endpoint health trả về ok: true. Mở ứng dụng và kiểm chứng đăng nhập. Đồng thời kiểm tra việc tải lại trang, đăng nhập và phân quyền, và một thao tác nghiệp vụ chính. Kiểm chứng tải lên và tải xuống khi có dùng lưu trữ tệp, và tính bền vững dữ liệu sau khi khởi động lại khi thay đổi lưu trữ."
+            }
+          ]
+        },
+        {
+          "id": "pm2-update",
+          "title": "Cập nhật ứng dụng PM2",
+          "blocks": [
+            {
+              "text": "Build lại gói nén, kiểm tra status xem còn thao tác nào chưa xong, rồi chạy kiểm tra trước khi nâng cấp (preflight):"
+            },
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng",
+              "code": "npx --yes @nocobase/app-installer@beta upgrade \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "Xem lại kết quả preflight, thời gian gián đoạn và kế hoạch sao lưu, sau đó chạy lại lệnh với --yes để áp dụng bản cập nhật. Lặp lại các bước kiểm tra trạng thái và truy cập sau đó. Trình cài đặt sao lưu SQLite và cấu hình; hãy sao lưu riêng các tệp tải lên. Với cơ sở dữ liệu ngoài, hãy sao lưu trước rồi thêm --backup-done."
+            }
+          ]
+        }
+      ],
+      "skill": {
+        "id": "pm2-skill",
+        "title": "Dùng Agent để triển khai bằng PM2",
+        "blocks": [
+          {
+            "text": "Cài Skill nocobase-app-installer, mở một phiên Agent mới trong thư mục ứng dụng và gửi prompt bên dưới. Dùng Skill này cho cả cơ sở dữ liệu ngoài, rollback và CI/CD."
+          },
+          {
+            "context": "Cục bộ · thư mục gốc dự án ứng dụng",
+            "code": "npx skills@latest add nocobase/skills-v3 --skill nocobase-app-installer -g",
+            "language": "bash"
+          },
+          {
+            "context": "Gửi cho Agent",
+            "code": "Use the nocobase-app-installer Skill to deploy this application with PM2.\nSSH: deploy@server.example.com\nDirectory: /srv/apps/purchase\nPublic URL: https://purchase.example.com/main\nDatabase: SQLite\nCheck the environment and configuration, then deploy and verify.",
+            "language": "text"
+          }
+        ]
+      }
+    },
+    {
+      "id": "docker",
+      "label": "Docker",
+      "title": "Triển khai ứng dụng bằng Docker",
+      "description": "Build image bằng Dockerfile có sẵn trong ứng dụng, sau đó chạy image trên server với cấu hình và dữ liệu được mount vào. Cài Docker trên cả hai máy và đăng nhập vào image registry của bạn.",
+      "sections": [
+        {
+          "id": "docker-build",
+          "title": "1. Build và phân phối Docker image",
+          "blocks": [
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng",
+              "code": "docker build --platform linux/amd64 \\\n  -t registry.example.com/purchase:release-001 .\ndocker push registry.example.com/purchase:release-001",
+              "language": "bash"
+            },
+            {
+              "text": "Dockerfile sẽ cài dependency và build ứng dụng; không cần chạy pnpm build trước. Giữ Dockerfile.dockerignore bên cạnh để loại trừ cấu hình, secret và dữ liệu. Ví dụ này nhắm tới x64; dùng linux/arm64 cho server ARM64."
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "docker pull registry.example.com/purchase:release-001",
+              "language": "bash"
+            }
+          ]
+        },
+        {
+          "id": "docker-config",
+          "title": "2. Chuẩn bị cấu hình và dữ liệu cho Docker",
+          "blocks": [
+            {
+              "text": "Với lần triển khai đầu tiên, tạo các thư mục riêng và sinh cấu hình SQLite với các secret duy nhất. Container chạy với UID 1000 và cần quyền đọc, ghi vào các thư mục này."
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "sudo install -d -o 1000 -g 1000 -m 750 \\\n  /srv/apps/purchase /srv/apps/purchase/storage\n\ndocker run --rm \\\n  --mount type=bind,src=/srv/apps/purchase,dst=/config \\\n  registry.example.com/purchase:release-001 \\\n  node dist/cli/index.js config init \\\n  --config /config/config.yml --dialect sqlite",
+              "language": "bash"
+            },
+            {
+              "text": "Cung cấp mật khẩu quản trị viên ban đầu qua biến môi trường INITIAL_ADMIN_PASSWORD trên server, rồi ghi nó vào cấu hình:"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "docker run --rm -e INITIAL_ADMIN_PASSWORD \\\n  --mount type=bind,src=/srv/apps/purchase/config.yml,dst=/app/config.yml \\\n  registry.example.com/purchase:release-001 \\\n  node dist/cli/index.js config set --from-env \\\n  users.initialAdmin.password=INITIAL_ADMIN_PASSWORD",
+              "language": "bash"
+            },
+            {
+              "text": "Giữ config.yml và storage/ trên máy host và dùng lại chúng qua các lần cập nhật image. Tệp .env của dự án không tự động được truyền vào container; hãy cung cấp các biến bổ sung bằng cùng tùy chọn -e hoặc --env-file cho cả bước kiểm tra cấu hình lẫn khởi động."
+            }
+          ]
+        },
+        {
+          "id": "docker-start",
+          "title": "3. Khởi động và kiểm chứng Docker container",
+          "blocks": [
+            {
+              "text": "Kiểm tra cấu hình, rồi khởi động container sau khi kiểm tra đạt:"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "docker run --rm \\\n  -v /srv/apps/purchase/config.yml:/app/config.yml:ro \\\n  -v /srv/apps/purchase/storage:/app/storage \\\n  registry.example.com/purchase:release-001 \\\n  node dist/cli/index.js config check",
+              "language": "bash"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "docker run -d --name purchase \\\n  --init --restart unless-stopped --stop-timeout 60 \\\n  -p 127.0.0.1:13000:13000 \\\n  -e APP_PUBLIC_ORIGIN=https://purchase.example.com \\\n  -e APP_BASE_PATH=/main \\\n  -v /srv/apps/purchase/config.yml:/app/config.yml:ro \\\n  -v /srv/apps/purchase/storage:/app/storage \\\n  registry.example.com/purchase:release-001",
+              "language": "bash"
+            },
+            {
+              "text": "Sau khi cấu hình HTTPS và reverse proxy như mô tả ở trên, kiểm tra container và truy cập công khai:"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "docker inspect --format '{{.State.Health.Status}}' purchase\n\ncurl --fail --silent --show-error \\\n  https://purchase.example.com/main/api/healthz",
+              "language": "bash"
+            },
+            {
+              "text": "Chờ container chuyển sang trạng thái healthy, xác nhận endpoint health trả về ok: true, và kiểm chứng đăng nhập trong ứng dụng. Để điều tra lỗi, chạy docker logs --tail 100 purchase. Đồng thời kiểm tra việc tải lại trang, đăng nhập và phân quyền, và một thao tác nghiệp vụ chính. Với các thay đổi cấu hình lưu trữ bền vững, hãy xác nhận cơ sở dữ liệu và các tệp đã tải lên vẫn còn sau khi tạo lại container."
+            }
+          ]
+        },
+        {
+          "id": "docker-update",
+          "title": "Cập nhật ứng dụng Docker",
+          "blocks": [
+            {
+              "text": "Build lại và push với tag mới, ví dụ release-002, giữ lại image cũ. Pull image mới, chạy lại bước kiểm tra cấu hình với tag đó, và chỉ dừng container cũ sau khi kiểm tra đạt:"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "docker pull registry.example.com/purchase:release-002",
+              "language": "bash"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "docker stop --timeout 60 purchase",
+              "language": "bash"
+            },
+            {
+              "text": "Trong khi ứng dụng đang dừng, sao lưu config.yml, storage/ và mọi cơ sở dữ liệu ngoài. Sau khi xác nhận bản sao lưu, xóa container cũ:"
+            },
+            {
+              "context": "Server · tài khoản triển khai",
+              "code": "docker rm purchase",
+              "language": "bash"
+            },
+            {
+              "text": "Chạy lại lệnh khởi động với release-002, giữ nguyên cấu hình, các mount dữ liệu và biến môi trường, rồi lặp lại các bước kiểm tra. Khởi động lại container không cập nhật image của nó. Docker không tự động sao lưu dữ liệu; hãy kiểm tra tính tương thích của cơ sở dữ liệu trước khi quay về image cũ hơn."
+            }
+          ]
+        }
+      ],
+      "skill": {
+        "id": "docker-skill",
+        "title": "Dùng Agent để triển khai bằng Docker",
+        "blocks": [
+          {
+            "text": "Ứng dụng đã có sẵn Skill nocobase-deployment. Yêu cầu Agent dùng Skill này từ thư mục dự án, kể cả cho build đa nền tảng, phân phối offline và CI/CD."
+          },
+          {
+            "context": "Gửi cho Agent",
+            "code": "Use the nocobase-deployment Skill to deploy this application with Docker.\nSSH: deploy@server.example.com\nImage: registry.example.com/purchase:release-001\nDirectory: /srv/apps/purchase\nPublic URL: https://purchase.example.com/main\nDatabase: SQLite\nCheck the configuration and data mounts, then deploy and verify.",
+            "language": "text"
+          }
+        ]
+      }
+    },
+    {
+      "id": "studio",
+      "label": "NocoBase Studio",
+      "title": "Triển khai lên NocoBase Studio",
+      "description": "Làm theo các bước sau để build, tải lên và triển khai ứng dụng cục bộ của bạn lên một NocoBase Studio có sẵn. Chạy mọi lệnh trên máy tính cục bộ. Môi trường đích phải chấp nhận gói nén, và Studio phải xác định được repository mã nguồn của ứng dụng và xác minh được commit của nó.",
+      "skill": {
+        "id": "studio-skill",
+        "title": "Triển khai lên Studio bằng Agent",
+        "blocks": [
+          {
+            "text": "Mở coding agent trong thư mục dự án ứng dụng, thay URL và các ID bên dưới, rồi gửi prompt. Với lần kết nối đầu tiên, hãy đưa cho agent hướng dẫn thiết lập từ mục Use Studio in your agent trong menu ảnh đại diện của Studio, sau đó chấp thuận đăng nhập trên trình duyệt."
+          },
+          {
+            "context": "Gửi cho coding agent cục bộ của bạn",
+            "language": "text",
+            "code": "Use the nocobase-deployment Skill to deploy the current project to NocoBase Studio.\n\nStudio URL: https://studio.example.com/studio\nApplication ID: purchase\nEnvironment ID: preview\n\nReuse the existing CLI connection, then build, upload, and deploy.\nPreserve existing configuration and data during updates; ask me for any missing required information.\nCheck deployment status, error logs, and application access. Return the application URL and verification results.\nIf approval is required, submit a request and report its current status."
+          }
+        ]
+      },
+      "sections": [
+        {
+          "id": "studio-cli",
+          "title": "1. Cài đặt CLI",
+          "blocks": [
+            {
+              "text": "Mở Use Studio in your agent từ menu ảnh đại diện của Studio. Sao chép lệnh cài đặt CLI ở đó và chạy trong terminal Bash cục bộ. Dùng nguyên lệnh đầy đủ do trang tạo ra; ví dụ bên dưới chỉ minh họa định dạng. Bỏ qua bước cài đặt nếu CLI đã có sẵn."
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "curl -fsSL https://studio.example.com/studio/api/agents/dist/installScript \\\n  | sh -s -- --token '<download-token>'",
+              "language": "bash"
+            },
+            {
+              "text": "Sau khi cài đặt, kiểm tra lệnh đã khả dụng:"
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "export PATH=\"$HOME/.local/bin:$PATH\"\nnb-studio --version",
+              "language": "bash"
+            }
+          ]
+        },
+        {
+          "id": "studio-login",
+          "title": "2. Đăng nhập Studio",
+          "blocks": [
+            {
+              "text": "Thay URL bằng URL Studio của bạn, bao gồm cả đường dẫn triển khai như /studio. Hướng dẫn này đặt tên kết nối cục bộ là studio. Nếu bạn đã đăng nhập vào đúng Studio cần dùng, hãy chuyển thẳng tới whoami để kiểm tra kết nối."
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "nb-studio --profile studio login \\\n  --server https://studio.example.com/studio",
+              "language": "bash"
+            },
+            {
+              "text": "Kiểm tra mã xác minh và chấp thuận đăng nhập trên trình duyệt, sau đó kiểm tra danh tính:"
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "nb-studio --profile studio whoami --json",
+              "language": "bash"
+            }
+          ]
+        },
+        {
+          "id": "studio-app",
+          "title": "3. Chọn ứng dụng",
+          "blocks": [
+            {
+              "text": "Liệt kê các ứng dụng và tìm ID của ứng dụng cần triển khai:"
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "nb-studio --profile studio app list --json",
+              "language": "bash"
+            },
+            {
+              "text": "Các lệnh sau dùng purchase; hãy thay bằng ID ứng dụng bạn chọn. Nếu chưa có ứng dụng, hãy tạo một ứng dụng trong Release management → Apps trên Studio, chọn một môi trường chấp nhận gói nén, và hoàn tất liên kết mã nguồn cần thiết cho việc tải lên."
+            }
+          ]
+        },
+        {
+          "id": "studio-build",
+          "title": "4. Build ở máy cục bộ",
+          "blocks": [
+            {
+              "text": "Chạy các lệnh này từ thư mục gốc của dự án ứng dụng trên máy cục bộ. Ví dụ này nhắm tới Linux x64 và Node.js 24; hãy điều chỉnh tùy chọn build cho môi trường của bạn:"
+            },
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng · Bash",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar",
+              "language": "bash"
+            },
+            {
+              "text": "Gói triển khai được tạo tại storage/exports/dist.tar.gz."
+            }
+          ]
+        },
+        {
+          "id": "studio-upload",
+          "title": "5. Tải gói nén lên",
+          "blocks": [
+            {
+              "text": "Tải gói nén lên bằng kết nối ở bước 2. Thay <commit-sha> bằng SHA commit đầy đủ dùng cho lần build này, là commit mà Studio phải xác minh được:"
+            },
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng · Bash",
+              "code": "nb-studio --profile studio release upload \\\n  --app purchase \\\n  --sha '<commit-sha>' \\\n  --file storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "Xác nhận result.data.superseded là false và có result.data.release, rồi sao chép result.data.release.id cho bước tiếp theo. Việc tải lên không triển khai ứng dụng."
+            }
+          ]
+        },
+        {
+          "id": "studio-deploy",
+          "title": "6. Triển khai",
+          "blocks": [
+            {
+              "text": "Thay <release-id> bằng ID trả về ở trên, rồi kiểm tra cấu hình bắt buộc:"
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "nb-studio --profile studio app env list purchase \\\n  --release '<release-id>' --json",
+              "language": "bash"
+            },
+            {
+              "text": "Nếu có mục nào hiển thị missing: true, hãy điền vào tab Variables của ứng dụng trên Studio. Với môi trường không được bảo vệ, triển khai bằng:"
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "nb-studio --profile studio app deploy purchase \\\n  --release '<release-id>' --wait true --json",
+              "language": "bash"
+            },
+            {
+              "text": "Nếu môi trường yêu cầu phê duyệt, hãy gửi yêu cầu triển khai thay vào đó và kiểm tra kết quả sau khi được phê duyệt:"
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "nb-studio --profile studio deploy request purchase \\\n  --release '<release-id>' --json",
+              "language": "bash"
+            },
+            {
+              "text": "--wait true chờ tối đa khoảng 100 giây. Nếu việc triển khai vẫn đang xếp hàng, đang chạy hoặc đang chờ phê duyệt, hãy tiếp tục kiểm tra như mô tả ở bước 7."
+            }
+          ]
+        },
+        {
+          "id": "studio-verify",
+          "title": "7. Kiểm tra trạng thái và log lỗi",
+          "blocks": [
+            {
+              "text": "Kiểm tra bản ghi triển khai, trạng thái ứng dụng và log lỗi:"
+            },
+            {
+              "context": "Cục bộ · terminal Bash",
+              "code": "nb-studio --profile studio deploy list purchase --limit 5 --json\nnb-studio --profile studio app get purchase --json\nnb-studio --profile studio app logs purchase --level error --json",
+              "language": "bash"
+            },
+            {
+              "text": "Tìm lần triển khai có releaseId khớp với lần tải lên này. Xác nhận status là succeeded và app.currentDeploymentId từ app get khớp với id của nó. Mở result.data.url để kiểm chứng đăng nhập và các luồng nghiệp vụ chính. Với ứng dụng khởi động theo yêu cầu hoặc đang ngủ, hãy truy cập trước để đánh thức, rồi xác nhận runtime.state là running."
+            },
+            {
+              "text": "Thông tin đăng nhập quản trị viên ban đầu do Studio tạo có trên tab Overview của ứng dụng, chừng nào chúng còn được lưu giữ và chưa bị bỏ qua."
+            }
+          ]
+        },
+        {
+          "id": "studio-update",
+          "title": "Cập nhật ứng dụng trên Studio",
+          "blocks": [
+            {
+              "text": "Giữ nguyên ID ứng dụng, cấu hình và lưu trữ hiện có. Sao lưu cơ sở dữ liệu và các tệp đã tải lên trước khi cập nhật."
+            },
+            {
+              "text": "Build lại và tải gói nén lên, thay <commit-sha> bằng SHA commit đầy đủ của mã nguồn đã cập nhật. Tải lên lại cùng ứng dụng và SHA sẽ dùng lại release đã có; hãy dùng commit mã nguồn mới khi nội dung build thay đổi:"
+            },
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng · Bash",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar\n\nnb-studio --profile studio release upload \\\n  --app purchase \\\n  --sha '<commit-sha>' \\\n  --file storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "Sau khi xác nhận lần tải lên trả về một release hợp lệ, thay <release-id> bằng result.data.release.id. Hoàn tất cấu hình bắt buộc như ở bước 6. Chạy lệnh bên dưới với môi trường không được bảo vệ; nếu cần phê duyệt thì gửi yêu cầu triển khai thay vào đó."
+            },
+            {
+              "context": "Cục bộ · thư mục gốc dự án ứng dụng · Bash",
+              "code": "nb-studio --profile studio app deploy purchase \\\n  --release '<release-id>' --wait true --json",
+              "language": "bash"
+            },
+            {
+              "text": "Sau khi triển khai, làm theo bước 7 để xác nhận lần triển khai này đã thành công và kiểm tra log lỗi, đăng nhập và các luồng nghiệp vụ chính."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "legacyAnchors": {
+    "app-installer": "pm2",
+    "通过-pm2-部署应用": "pm2",
+    "通过-docker-部署应用": "docker",
+    "deploy-an-application-with-pm2": "pm2",
+    "deploy-an-application-with-docker": "docker",
+    "部署前准备": "docker-config",
+    "before-you-deploy": "docker-config",
+    "部署后检查": "docker-start",
+    "docker-release-checks": "docker-start",
+    "更新-docker-部署": "docker-update",
+    "update-a-docker-deployment": "docker-update",
+    "deploy": "pm2",
+    "first-deployment": "pm2",
+    "update-an-existing-deployment": "pm2-update",
+    "pm2-management": "pm2-verify",
+    "pipeline-integration": "pm2-skill",
+    "recovery-and-special-cases": "pm2-skill",
+    "prepare-the-runner-and-server": "pm2-prepare",
+    "build-the-deployment-archive": "pm2-install",
+    "install-the-application": "pm2-install",
+    "configure-startup-and-access": "pm2-verify",
+    "verify-the-deployment": "pm2-verify",
+    "roll-back-a-release": "pm2-skill",
+    "external-databases-and-file-backups": "pm2-skill",
+    "ssh-interruption-and-unknown-state": "pm2-skill",
+    "migration-checksum-changes": "pm2-skill",
+    "view-command-help": "pm2-skill",
+    "docker-first-deployment": "docker",
+    "docker-management": "docker-start",
+    "docker-ci": "docker-skill",
+    "docker-recovery": "docker-skill",
+    "docker-distribute": "docker-build",
+    "docker-verify": "docker-start",
+    "docker-rollback": "docker-skill",
+    "docker-offline": "docker-skill",
+    "docker-prebuilt": "docker-skill",
+    "docker-multiplatform": "docker-skill",
+    "docker-cdn": "docker-skill",
+    "docker-database": "docker-skill",
+    "选择部署方式": "deployment-title",
+    "choose-a-deployment-method": "deployment-title",
+    "应用部署": "deployment-title",
+    "application-deployment": "deployment-title",
+    "示例环境与访问": "deployment-example",
+    "example-environment-and-access": "deployment-example",
+    "studio-prepare": "studio-cli"
+  },
+  "layout": {
+    "eyebrow": "HƯỚNG DẪN TRIỂN KHAI",
+    "flowLabel": "Luồng triển khai ứng dụng",
+    "contents": "Trên trang này",
+    "agentAction": "Triển khai bằng Agent",
+    "manualAction": "Xem các bước thủ công",
+    "flowTitle": "Từ build đến vận hành",
+    "flowArtifacts": "Sản phẩm triển khai",
+    "flowImage": "Docker image",
+    "flowStages": [
+      {
+        "title": "Build",
+        "description": "Tạo gói nén hoặc image"
+      },
+      {
+        "title": "Triển khai",
+        "description": "Cấu hình và khởi động"
+      },
+      {
+        "title": "Kiểm chứng",
+        "description": "Kiểm tra health và đăng nhập"
+      }
+    ]
+  },
+  "environment": {
+    "id": "deployment-example",
+    "title": "Môi trường ví dụ và truy cập cho PM2 / Docker",
+    "summary": "Linux x64 · SQLite",
+    "description": "Hướng dẫn PM2 và Docker dùng các ví dụ bên dưới. Hãy thay server, thư mục triển khai và URL công khai bằng thông tin của bạn trước khi chạy lệnh. Triển khai trên Studio dùng môi trường do quản trị viên cấu hình và URL hiển thị trên trang App đích.",
+    "parameters": [
+      {
+        "label": "Môi trường",
+        "value": "Linux x64 · SQLite"
+      },
+      {
+        "label": "Thư mục triển khai",
+        "value": "/srv/apps/purchase"
+      },
+      {
+        "label": "URL công khai",
+        "value": "https://purchase.example.com/main"
+      },
+      {
+        "label": "Upstream của proxy",
+        "value": "127.0.0.1:13000"
+      }
+    ],
+    "accessId": "deployment-access",
+    "accessTitle": "Cấu hình truy cập công khai",
+    "accessSteps": [
+      "Trỏ purchase.example.com tới server đích và cấu hình chứng chỉ TLS cho HTTPS.",
+      "Cấu hình reverse proxy trên cùng server, chuyển tiếp tới 127.0.0.1:13000 và giữ nguyên đường dẫn /main.",
+      "Bật hỗ trợ WebSocket và chuyển tiếp host công khai cùng giao thức tới ứng dụng."
+    ],
+    "note": "Các lệnh triển khai bên dưới không cấu hình DNS, chứng chỉ hay reverse proxy. Hãy hoàn tất các thiết lập này trước khi kiểm chứng truy cập công khai."
+  }
+}

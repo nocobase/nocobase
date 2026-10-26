@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan AI Employee"
+  },
+  {
+    "type": "file",
+    "name": "page-context",
+    "label": "Ngữ cảnh trang"
+  },
+  {
+    "type": "file",
+    "name": "business-data",
+    "label": "Truy vấn nghiệp vụ"
+  },
+  {
+    "type": "file",
+    "name": "business-actions",
+    "label": "Thao tác nghiệp vụ"
+  },
+  {
+    "type": "file",
+    "name": "work-rules",
+    "label": "Trách nhiệm và quy tắc làm việc"
+  }
+]

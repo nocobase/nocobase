@@ -1,0 +1,32 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan"
+  },
+  {
+    "type": "file",
+    "name": "password",
+    "label": "Xác thực bằng mật khẩu và tài khoản"
+  },
+  {
+    "type": "file",
+    "name": "api-keys",
+    "label": "API Key"
+  },
+  {
+    "type": "file",
+    "name": "sign-in-methods",
+    "label": "Thêm phương thức đăng nhập"
+  },
+  {
+    "type": "file",
+    "name": "protecting-access",
+    "label": "Bảo vệ trang và API"
+  },
+  {
+    "type": "file",
+    "name": "login-pages",
+    "label": "Tùy chỉnh trang đăng nhập"
+  }
+]

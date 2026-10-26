@@ -1,0 +1,1689 @@
+{
+  "auth": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Xác thực</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg></span><h1>Xác thực</h1></div><p class=\"auth-lead\">Cho đúng người vào ứng dụng của bạn.</p><p class=\"auth-intro\">Đăng nhập bằng mật khẩu, kết nối nhà cung cấp danh tính của công ty, hoặc cho phép script dùng API Key. Mô tả quy tắc tài khoản cho Agent và tái sử dụng các năng lực xác thực của ứng dụng.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Có sẵn trong template</span><h3>Tài khoản và phiên đăng nhập</h3><p>Đăng nhập bằng mật khẩu, trang đăng ký và khôi phục mật khẩu, xử lý phiên đăng nhập và đăng xuất. API Key dùng để định danh các request từ chương trình.</p></article><article><span class=\"badge\">Cần cấu hình</span><h3>Đăng ký và email</h3><p>Định nghĩa quy tắc đăng ký và mật khẩu. Xác minh email và khôi phục mật khẩu cần một kênh gửi mail hoạt động và được tích hợp vào luồng xác thực.</p></article><article><span class=\"badge\">Cần tích hợp</span><h3>Đăng nhập bằng tài khoản công ty và bên thứ ba</h3><p>Kết nối nhà cung cấp danh tính và định nghĩa cách liên kết tài khoản. Các phương thức đăng nhập này không được bật mặc định.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản xác thực\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/auth/password\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Danh tính và quyền truy cập là hai việc khác nhau</h3><p>Xác thực xác định người dùng là ai. Phân quyền quyết định người dùng đó được truy cập những trang, bản ghi và thao tác nào.</p></article><article><h3>Kiểm tra toàn bộ vòng đời phiên đăng nhập</h3><p>Kiểm chứng việc đăng xuất, hết hạn, vô hiệu hóa và kích hoạt lại tài khoản. Bảo vệ cả API phía server chứ không chỉ các trang.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/authorization/\"><strong>Phân quyền <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/auth/password\"><strong>Xác thực bằng mật khẩu và tài khoản <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/auth/sign-in-methods\"><strong>Thêm phương thức đăng nhập <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/auth/api-keys\"><strong>API Key <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/auth/login-pages\"><strong>Tùy chỉnh trang đăng nhập <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/auth/protecting-access\"><strong>Bảo vệ trang và API <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/auth/protecting-access#account-lifecycle-and-deployment\"><strong>Bảo vệ trang và API <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "staff",
+        "title": "Ứng dụng chỉ dành cho nhân viên",
+        "summary": "Cho phép quản trị viên quản lý tài khoản nhân viên mà không mở đăng ký tự do.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Cho phép quản trị viên quản lý tài khoản nhân viên mà không mở đăng ký tự do."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Tìm kiếm, lọc và tạo tài khoản nhân viên.",
+          "Đăng ký tự do bị tắt ở cả giao diện lẫn server.",
+          "Vô hiệu hóa tài khoản sẽ thu hồi các phiên đăng nhập hiện có nhưng vẫn giữ nguyên bản ghi nghiệp vụ."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-employee-accounts-en.png",
+        "imageAlt": "Ví dụ xác thực: Ứng dụng chỉ dành cho nhân viên",
+        "doc": "/capabilities/auth/password"
+      },
+      {
+        "id": "password",
+        "title": "Yêu cầu về mật khẩu",
+        "summary": "Áp dụng cùng quy tắc mật khẩu mới khi tạo tài khoản và khi đặt lại mật khẩu.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Áp dụng cùng quy tắc mật khẩu mới khi tạo tài khoản và khi đặt lại mật khẩu."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Biểu mẫu giải thích độ dài tối thiểu là 12 ký tự.",
+          "Cả client và server đều từ chối mật khẩu mới không đáp ứng quy tắc.",
+          "Nhân viên hiện có vẫn đăng nhập được bằng mật khẩu hiện tại."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "doc": "/capabilities/auth/password",
+        "image": "northstar-password-policy-en.png",
+        "imageAlt": "Ví dụ xác thực: Yêu cầu về mật khẩu"
+      },
+      {
+        "id": "recovery",
+        "title": "Khôi phục mật khẩu",
+        "summary": "Kết nối việc gửi email với các trang khôi phục mật khẩu sẵn có.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Kết nối việc gửi email với các trang khôi phục mật khẩu sẵn có."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Một hộp thư thật nhận được liên kết đặt lại với đúng URL của ứng dụng.",
+          "Mật khẩu mới hoạt động và mật khẩu cũ không còn đăng nhập được.",
+          "Liên kết đã hết hạn hoặc đã dùng không thể dùng lại, và email không tồn tại không làm lộ việc tài khoản có tồn tại hay không."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "doc": "/capabilities/auth/password",
+        "image": "northstar-forgot-password-en.png",
+        "imageAlt": "Ví dụ xác thực: Khôi phục mật khẩu"
+      },
+      {
+        "id": "sso",
+        "title": "Đăng nhập bằng tài khoản công ty",
+        "summary": "Dùng một nhà cung cấp danh tính độc lập của công ty và tách việc tạo tài khoản khỏi phân quyền.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Dùng một nhà cung cấp danh tính độc lập của công ty và tách việc tạo tài khoản khỏi phân quyền."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Đăng nhập bằng mật khẩu vẫn khả dụng, và đăng nhập bằng tài khoản công ty sẽ chuyển hướng tới nhà cung cấp danh tính.",
+          "Cho phép truy cập sẽ trả về đúng danh tính; hủy bỏ thì không đăng nhập.",
+          "Đăng nhập nhiều lần không tạo trùng hoặc gộp nhầm tài khoản; tài khoản mới không tự động nhận quyền quản trị viên."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-company-consent-en.png",
+        "imageAlt": "Ví dụ xác thực: Đăng nhập bằng tài khoản công ty",
+        "doc": "/capabilities/auth/sign-in-methods"
+      },
+      {
+        "id": "api",
+        "title": "Truy cập bằng script",
+        "summary": "Đọc các đơn vận tải được phép xem bằng API Key của một nhân viên.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Đọc các đơn vận tải được phép xem bằng API Key của một nhân viên."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Script trả về các trường đơn hàng như mong đợi, trong phạm vi của người dùng.",
+          "Key được lấy từ biến môi trường và không bao giờ xuất hiện trong code hay log.",
+          "Thông tin xác thực đã bị thu hồi hoặc hết hạn sẽ trả về lỗi thay vì một kết quả thành công rỗng."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-keys-en.png",
+        "imageAlt": "Ví dụ xác thực: Truy cập bằng script",
+        "doc": "/capabilities/auth/api-keys"
+      },
+      {
+        "id": "brand",
+        "title": "Nhận diện thương hiệu trang đăng nhập",
+        "summary": "Tùy biến trang đăng nhập Northstar mà không thay đổi hành vi xác thực.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Tùy biến trang đăng nhập Northstar mà không thay đổi hành vi xác thực."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Nhận diện thương hiệu vận tải và biểu mẫu hoạt động tốt trên cả desktop lẫn di động.",
+          "Ẩn/hiện mật khẩu, thông báo lỗi và khôi phục mật khẩu vẫn dùng được.",
+          "Đăng ký tự do bị tắt ở server, các component đăng ký vẫn được giữ lại để tái sử dụng."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-branded-login-en.png",
+        "imageAlt": "Ví dụ xác thực: Nhận diện thương hiệu trang đăng nhập",
+        "doc": "/capabilities/auth/login-pages"
+      },
+      {
+        "id": "protect",
+        "title": "Trang và API",
+        "summary": "Giữ trang giới thiệu dịch vụ vận tải ở chế độ công khai, đồng thời bảo vệ đơn hàng nội bộ và dữ liệu khách hàng.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Giữ trang giới thiệu dịch vụ vận tải ở chế độ công khai, đồng thời bảo vệ đơn hàng nội bộ và dữ liệu khách hàng."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Khách truy cập đọc được thông tin công khai mà không nhận được bản ghi nội bộ.",
+          "Các trang nội bộ chuyển hướng khách chưa đăng nhập tới trang đăng nhập.",
+          "API nội bộ kiểm soát danh tính và phân quyền nghiệp vụ ở phía server."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "doc": "/capabilities/auth/protecting-access",
+        "image": "northstar-public-services-en.png",
+        "imageAlt": "Ví dụ xác thực: Trang và API"
+      }
+    ],
+    "promptKey": "auth"
+  },
+  "data-sources": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Nguồn dữ liệu</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0\"/></svg></span><h1>Nguồn dữ liệu</h1></div><p class=\"auth-lead\">Dùng dữ liệu sẵn có ở nơi nghiệp vụ của bạn cần.</p><p class=\"auth-intro\">Chọn cơ sở dữ liệu cho ứng dụng và kết nối cơ sở dữ liệu ngoài để dùng thông tin sẵn có trong các trang nghiệp vụ.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Cơ sở dữ liệu chính</span><h3>Dữ liệu do ứng dụng sở hữu</h3><p>Lưu các bản ghi mà ứng dụng này sở hữu và quản lý.</p></article><article><span class=\"badge\">Cơ sở dữ liệu ngoài</span><h3>Dữ liệu nghiệp vụ sẵn có</h3><p>Đọc hoặc cập nhật một cơ sở dữ liệu sẵn có theo các quy tắc truy cập và quyền sở hữu rõ ràng.</p></article><article><span class=\"badge\">Cấu hình kết nối</span><h3>Thông tin xác thực và schema</h3><p>Chuẩn bị loại cơ sở dữ liệu, thông tin xác thực phía server, cấu trúc bảng và ánh xạ trường.</p></article></div></section>\n<section><div class=\"section-head\"><h2>Lựa chọn cơ sở dữ liệu</h2><p>Có sẵn loại cấu hình không có nghĩa là mọi driver đều đã được cài. Thay đổi cơ sở dữ liệu của một ứng dụng đang chạy cần có kế hoạch migration.</p></div><div class=\"database-table\"><table><thead><tr><th>Cơ sở dữ liệu</th><th>Loại</th></tr></thead><tbody><tr><td>SQLite</td><td><code>sqlite</code></td></tr><tr><td>PostgreSQL</td><td><code>postgres</code></td></tr><tr><td>MySQL / MariaDB</td><td><code>mysql</code></td></tr><tr><td>Microsoft SQL Server</td><td><code>mssql</code></td></tr><tr><td>Oracle Database</td><td><code>oracle</code></td></tr><tr><td>Dameng</td><td><code>dameng</code></td></tr><tr><td>KingbaseES</td><td><code>kingbase</code></td></tr><tr><td>OceanBase</td><td><code>oceanbase</code></td></tr></tbody></table></div></section><section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản nguồn dữ liệu\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/data-sources/usage\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Quyết định đọc, ghi hay đồng bộ</h3><p>Đọc dữ liệu ngoài trong một trang không cần sao chép dữ liệu đó vào cơ sở dữ liệu chính. Hãy coi việc đồng bộ là một yêu cầu riêng.</p></article><article><h3>Đối chiếu bản ghi và bảo vệ quyền truy cập</h3><p>Xác định khóa nghiệp vụ ổn định, các trường được phép, và ai được xem hoặc thay đổi thông tin bên ngoài.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/data-sources/usage\"><strong>Hướng dẫn sử dụng <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/\"><strong>Phân quyền <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/scheduler/\"><strong>Tác vụ định kỳ <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "settlement",
+        "status": "Ví dụ nghiệp vụ",
+        "title": "Dữ liệu quyết toán bên ngoài",
+        "summary": "Hiển thị thông tin quyết toán bên cạnh thông tin khách hàng mà không cần nhập vào cơ sở dữ liệu chính.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Hiển thị thông tin quyết toán bên cạnh thông tin khách hàng mà không cần nhập vào cơ sở dữ liệu chính."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Mã khách hàng khớp với đúng bản ghi quyết toán bên ngoài.",
+          "Trang chỉ rõ nguồn dữ liệu ngoài và không sửa đổi các bảng của nguồn đó.",
+          "Thông tin xác thực nằm ở phía server và quyền truy cập tuân theo đúng phạm vi nghiệp vụ dự kiến."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-settlement-en.png",
+        "imageAlt": "Ví dụ nguồn dữ liệu: Dữ liệu quyết toán bên ngoài",
+        "doc": "/capabilities/data-sources/usage"
+      }
+    ],
+    "promptKey": "data-sources"
+  },
+  "authorization": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Phân quyền</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg></span><h1>Phân quyền</h1></div><p class=\"auth-lead\">Cấp cho mỗi người đúng quyền truy cập mà công việc của họ cần.</p><p class=\"auth-intro\">Định nghĩa vai trò, thao tác và phạm vi bản ghi. Yêu cầu Agent áp dụng cùng quy tắc cho cả trang lẫn API phía server.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Năng lực tái sử dụng</span><h3>Bộ quyền</h3><p>Nhóm các quyền nghiệp vụ theo trách nhiệm và gán cho những người dùng phù hợp.</p></article><article><span class=\"badge\">Cấu hình nghiệp vụ</span><h3>Phạm vi dữ liệu</h3><p>Gắn quy tắc truy cập với các trường nghiệp vụ như người sở hữu, tài xế được phân công hoặc nhóm.</p></article><article><span class=\"badge\">Kiểm chứng kết quả</span><h3>Kiểm tra quyền</h3><p>Kiểm tra quyền thực tế có hiệu lực và thử nghiệm với các tài khoản có trách nhiệm khác nhau.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản phân quyền\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/authorization/permission-sets\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Ẩn một nút không phải là phân quyền</h3><p>Kiểm soát quyền ở phía server. Các request API trực tiếp phải tuân theo cùng quy tắc với giao diện.</p></article><article><h3>Kết hợp quy tắc một cách có chủ đích</h3><p>Hiểu rõ phạm vi mặc định, chia sẻ và hạn chế trước khi kết hợp chúng. Kiểm chứng kết quả cuối cùng với người dùng thật.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/auth/\"><strong>Xác thực <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/permission-sets\"><strong>Bộ quyền và phân công <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/data-scopes\"><strong>Phạm vi dữ liệu và quy tắc <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/default-access\"><strong>Quyền truy cập dữ liệu mặc định <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/sharing-rules\"><strong>Quy tắc chia sẻ <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/restriction-rules\"><strong>Quy tắc hạn chế <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/inspector\"><strong>Kiểm tra quyền <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "permission-sets",
+        "title": "Vai trò và phân công",
+        "summary": "Định nghĩa trách nhiệm cho nhân viên phụ trách khách hàng, điều phối viên và tài xế.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Định nghĩa trách nhiệm cho nhân viên phụ trách khách hàng, điều phối viên và tài xế."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Mỗi vai trò chỉ thấy những trang và thao tác dành cho công việc của mình.",
+          "Gán một bộ quyền nghiệp vụ không cấp quyền quản trị viên.",
+          "Các request API trực tiếp áp dụng cùng quyền như giao diện."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-team-access-en.png",
+        "imageAlt": "Ví dụ phân quyền: Vai trò và phân công",
+        "doc": "/capabilities/authorization/permission-sets"
+      },
+      {
+        "id": "data-scopes",
+        "title": "Phạm vi bản ghi",
+        "summary": "Dùng quyền sở hữu và phân công để hiển thị các bản ghi khác nhau trên cùng một trang.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Dùng quyền sở hữu và phân công để hiển thị các bản ghi khác nhau trên cùng một trang."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Nhân viên phụ trách khách hàng thấy các đơn hàng mình sở hữu, còn tài xế thấy công việc được giao.",
+          "Điều phối viên có thể xem phạm vi liên nhóm đã thống nhất.",
+          "Danh sách, chi tiết và API cập nhật áp dụng cùng quy tắc bản ghi."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-alice-orders-en.png",
+        "imageAlt": "Ví dụ phân quyền: Phạm vi bản ghi",
+        "doc": "/capabilities/authorization/data-scopes"
+      },
+      {
+        "id": "default-access",
+        "title": "Quyền truy cập mặc định",
+        "summary": "Cho phép người dùng có quyền xem tương ứng đọc các đơn hàng đã hoàn thành.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Cho phép người dùng có quyền xem tương ứng đọc các đơn hàng đã hoàn thành."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Đơn hàng đã hoàn thành xuất hiện trong phạm vi mặc định đã cấu hình.",
+          "Người dùng vẫn cần quyền thao tác tương ứng.",
+          "Các giai đoạn khác vẫn chịu sự điều chỉnh của các quy tắc phạm vi dự kiến."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-default-after-en.png",
+        "imageAlt": "Ví dụ phân quyền: Quyền truy cập mặc định",
+        "doc": "/capabilities/authorization/default-access"
+      },
+      {
+        "id": "sharing-rules",
+        "title": "Quy tắc chia sẻ",
+        "summary": "Cho phép Bob giúp duyệt một đơn hàng của Alice mà không mở toàn bộ bản ghi của cô ấy.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Cho phép Bob giúp duyệt một đơn hàng của Alice mà không mở toàn bộ bản ghi của cô ấy."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Bob có thể xem đơn hàng được chia sẻ riêng.",
+          "Các đơn hàng không liên quan vẫn nằm ngoài phạm vi truy cập của Bob.",
+          "Gỡ quy tắc chia sẻ sẽ thu hồi quyền truy cập bổ sung."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-sharing-after-en.png",
+        "imageAlt": "Ví dụ phân quyền: Quy tắc chia sẻ",
+        "doc": "/capabilities/authorization/sharing-rules"
+      },
+      {
+        "id": "restriction-rules",
+        "title": "Quy tắc hạn chế",
+        "summary": "Giới hạn quyền truy cập đơn hàng của Bob trong khoảng giá trị được chỉ định.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Giới hạn quyền truy cập đơn hàng của Bob trong khoảng giá trị được chỉ định."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Đơn hàng trong hạn mức đã cấu hình truy cập được khi các quyền khác cho phép.",
+          "Đơn hàng vượt hạn mức bị loại khỏi danh sách và các request trực tiếp.",
+          "Kiểm chứng sự tương tác với phạm vi mặc định và quy tắc chia sẻ."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-restriction-after-en.png",
+        "imageAlt": "Ví dụ phân quyền: Quy tắc hạn chế",
+        "doc": "/capabilities/authorization/restriction-rules"
+      },
+      {
+        "id": "inspector",
+        "title": "Kiểm tra quyền",
+        "summary": "Giải thích vì sao Bob có thể truy cập một đơn hàng cụ thể.",
+        "status": "Ví dụ nghiệp vụ",
+        "decisions": [
+          ["Phạm vi", "Giải thích vì sao Bob có thể truy cập một đơn hàng cụ thể."],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Kết quả kiểm tra chỉ rõ người dùng, thao tác và bản ghi đang được đánh giá.",
+          "Kết quả có hiệu lực khớp với hành vi thực tế của trang và API.",
+          "Có thể truy vết các bộ quyền và quy tắc phạm vi liên quan."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-inspector-en.png",
+        "imageAlt": "Ví dụ phân quyền: Kiểm tra quyền",
+        "doc": "/capabilities/authorization/inspector"
+      }
+    ],
+    "promptKey": "authorization"
+  },
+  "workflow": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Workflow</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-workflow\" aria-hidden=\"true\"><rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"></path><rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\"></rect></svg></span><h1>Workflow</h1></div><p class=\"auth-lead\">Biến các giai đoạn nghiệp vụ thành một quy trình đáng tin cậy.</p><p class=\"auth-intro\">Điều phối chuyển trạng thái, tác vụ chạy nền, chờ, rẽ nhánh và hết thời gian, đồng thời giữ cho tiến độ và lịch sử luôn hiển thị rõ.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Định nghĩa quy trình</span><h3>Giai đoạn và thao tác</h3><p>Xác định giai đoạn hiện tại, các thao tác được phép, thông tin bắt buộc và ai được thực hiện.</p></article><article><span class=\"badge\">Xử lý thực thi</span><h3>Chờ và retry</h3><p>Chạy tác vụ nền với hành vi thành công, thất bại, retry và hết thời gian rõ ràng.</p></article><article><span class=\"badge\">Hiển thị tiến độ</span><h3>Lịch sử xử lý</h3><p>Hiển thị giai đoạn hiện tại cùng các thao tác của người dùng hoặc hệ thống đã dẫn đến giai đoạn đó.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản Workflow\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/workflow/definition\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Kiểm tra chuyển trạng thái ở phía server</h3><p>Trang nên hiển thị các thao tác khả dụng, còn server kiểm tra giai đoạn hiện tại, quyền và các trường bắt buộc.</p></article><article><h3>Làm cho retry trở nên an toàn</h3><p>Thực thi lặp lại không được nhân đôi tác động nghiệp vụ. Giữ đủ lịch sử để hiểu được lỗi và quá trình khôi phục.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/approval/\"><strong>Tổng quan phê duyệt <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/notification/\"><strong>Thông báo <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/scheduler/\"><strong>Tác vụ định kỳ <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "definition-0",
+        "title": "Chuyển trạng thái nghiệp vụ",
+        "summary": "Đưa đơn hàng qua các bước điều phối, tiếp nhận, giao hàng và hoàn thành với quy tắc rõ ràng.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Đưa đơn hàng qua các bước điều phối, tiếp nhận, giao hàng và hoàn thành với quy tắc rõ ràng."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Chỉ những thao tác được phép ở giai đoạn hiện tại mới khả dụng.",
+          "Server kiểm tra dữ liệu bắt buộc và quyền chuyển trạng thái.",
+          "Các lần gửi đồng thời không ghi đè lên một lần chuyển trạng thái đã hoàn tất."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-process-before-en.png",
+        "imageAlt": "Ví dụ Workflow: Chuyển trạng thái nghiệp vụ",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/workflow/definition"
+      },
+      {
+        "id": "execution-0",
+        "title": "Báo cáo chạy nền",
+        "summary": "Tạo báo cáo CSV chạy nền, có hiển thị tiến độ và hành vi retry.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Tạo báo cáo CSV chạy nền, có hiển thị tiến độ và hành vi retry."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Yêu cầu chuyển từ đang xếp hàng sang đang chạy rồi đến kết quả cuối cùng.",
+          "Báo cáo thành công cung cấp đúng tệp để tải xuống.",
+          "Retry không tạo tệp trùng lặp, và lỗi cuối cùng vẫn được hiển thị."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-workflow-export-completed-en.png",
+        "imageAlt": "Ví dụ Workflow: Báo cáo chạy nền",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/workflow/execution"
+      },
+      {
+        "id": "progress-0",
+        "title": "Lịch sử xử lý",
+        "summary": "Cho thấy đơn hàng đã đến giai đoạn hiện tại như thế nào.",
+        "decisions": [
+          ["Phạm vi", "Cho thấy đơn hàng đã đến giai đoạn hiện tại như thế nào."],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Lịch sử ghi lại người thực hiện, thời gian, thao tác và giai đoạn trước và sau.",
+          "Thao tác của hệ thống được phân biệt với thao tác của nhân viên.",
+          "Tiến độ và lịch sử vẫn còn sau khi tải lại trang và sau khi hoàn tất."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-process-completed-en.png",
+        "imageAlt": "Ví dụ Workflow: Lịch sử xử lý",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/workflow/progress"
+      }
+    ],
+    "promptKey": "workflow"
+  },
+  "approval": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Phê duyệt</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg></span><h1>Phê duyệt</h1></div><p class=\"auth-lead\">Làm rõ quyết định, trách nhiệm và tiến độ.</p><p class=\"auth-intro\">Kết nối các năng lực phê duyệt bản Pro cho định tuyến theo điều kiện, duyệt chung, thêm người duyệt và chuyển giao.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Năng lực bản Pro</span><h3>Tuyến phê duyệt</h3><p>Chọn giai đoạn và người duyệt dựa trên thông tin nghiệp vụ của yêu cầu.</p></article><article><span class=\"badge\">Quy tắc duyệt</span><h3>Duyệt chung và duyệt bởi bất kỳ ai</h3><p>Xác định cần tất cả hay chỉ cần một người duyệt đủ điều kiện đồng ý.</p></article><article><span class=\"badge\">Xử lý yêu cầu</span><h3>Trả lại, rút lại và thông báo</h3><p>Giải thích điều gì xảy ra khi cần thêm thông tin, khi yêu cầu bị rút lại, hoặc khi cần thông báo cho ai đó.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản phê duyệt\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/approval/stages\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Phê duyệt là một quyết định nghiệp vụ</h3><p>Một yêu cầu được phê duyệt không tự động chi tiền hay thực hiện thao tác nghiệp vụ khác, trừ khi bạn triển khai việc đó một cách tường minh.</p></article><article><h3>Giữ cho các thay đổi truy vết được</h3><p>Ghi lại người duyệt, ý kiến, thay đổi tuyến duyệt và người chịu trách nhiệm cho bước tiếp theo.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/workflow/\"><strong>Tổng quan Workflow <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/notification/\"><strong>Thông báo <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "stages-0",
+        "title": "Phê duyệt theo điều kiện",
+        "summary": "Định tuyến các yêu cầu vận tải đặc biệt theo khoản phụ phí.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Định tuyến các yêu cầu vận tải đặc biệt theo khoản phụ phí."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Bản xem trước hiển thị tuyến duyệt và người duyệt dự kiến.",
+          "Yêu cầu vượt ngưỡng tiếp tục chuyển sang bộ phận tài chính sau khi quản lý phê duyệt.",
+          "Phê duyệt ghi nhận quyết định mà không tự động thực hiện thanh toán."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-approval-review-en.png",
+        "imageAlt": "Ví dụ phê duyệt: Phê duyệt theo điều kiện",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/approval/stages"
+      },
+      {
+        "id": "joint-review-0",
+        "title": "Duyệt chung và duyệt bởi bất kỳ ai",
+        "summary": "Dùng quyết định nhất trí cho hàng hóa đặc biệt và duyệt bởi bất kỳ ai cho điều phối thông thường.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Dùng quyết định nhất trí cho hàng hóa đặc biệt và duyệt bởi bất kỳ ai cho điều phối thông thường."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Duyệt chung chờ cho đến khi có đủ mọi phê duyệt bắt buộc.",
+          "Việc từ chối tuân theo quy tắc từ chối đã cấu hình và ghi lại lý do.",
+          "Duyệt bởi bất kỳ ai sẽ hoàn tất khi một người duyệt đủ điều kiện phê duyệt."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-approval-all-waiting-en.png",
+        "imageAlt": "Ví dụ phê duyệt: Duyệt chung và duyệt bởi bất kỳ ai",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/approval/joint-review"
+      },
+      {
+        "id": "handover-0",
+        "title": "Thêm hoặc chuyển giao người duyệt",
+        "summary": "Cho phép thêm người duyệt và chuyển giao có kiểm soát trong bước quản lý phê duyệt.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Cho phép thêm người duyệt và chuyển giao có kiểm soát trong bước quản lý phê duyệt."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Chỉ những người đủ điều kiện mới có thể được chọn.",
+          "Task gốc, người duyệt mới, lý do và các ý kiến đều truy vết được.",
+          "Tuyến duyệt hiển thị phản ánh đúng trình tự duyệt thực tế."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-approval-handover-flow-en.png",
+        "imageAlt": "Ví dụ phê duyệt: Thêm hoặc chuyển giao người duyệt",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/approval/handover"
+      },
+      {
+        "id": "requests-0",
+        "title": "Trả lại và rút lại",
+        "summary": "Cho phép người nộp yêu cầu bổ sung thông tin còn thiếu hoặc rút lại yêu cầu chưa hoàn tất.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Cho phép người nộp yêu cầu bổ sung thông tin còn thiếu hoặc rút lại yêu cầu chưa hoàn tất."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Yêu cầu bị trả lại có thể được sửa và gửi lại mà vẫn giữ các ý kiến.",
+          "Người duyệt không thể thao tác trên các task đã bị rút lại.",
+          "Trả lại, từ chối và rút lại có trạng thái và bước tiếp theo riêng biệt."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-approval-return-flow-en.png",
+        "imageAlt": "Ví dụ phê duyệt: Trả lại và rút lại",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/approval/requests"
+      },
+      {
+        "id": "requests-1",
+        "title": "Đồng gửi để nắm thông tin",
+        "summary": "Giúp nhân viên phụ trách khách hàng nắm được thông tin mà không phải trở thành người duyệt.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Giúp nhân viên phụ trách khách hàng nắm được thông tin mà không phải trở thành người duyệt."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Các yêu cầu được đồng gửi xuất hiện trong danh sách của người nhận.",
+          "Người nhận có thể xem tiến độ và xác nhận đã đọc yêu cầu.",
+          "Được đồng gửi không đồng nghĩa với có quyền phê duyệt."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ phê duyệt: Đồng gửi để nắm thông tin",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/approval/requests"
+      },
+      {
+        "id": "requests-2",
+        "title": "Hết thời gian và nhận việc",
+        "summary": "Thiết lập nhắc nhở, chuyển cấp và quy tắc nhận việc cho các task duyệt của nhóm.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Thiết lập nhắc nhở, chuyển cấp và quy tắc nhận việc cho các task duyệt của nhóm."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Người phụ trách hiện tại và hạn chót đều được hiển thị.",
+          "Task quá hạn tuân theo thời điểm nhắc nhở và chuyển cấp đã cấu hình.",
+          "Việc nhận và trả lại task đều giữ lịch sử phân bổ."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ phê duyệt: Hết thời gian và nhận việc",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/approval/requests"
+      }
+    ],
+    "promptKey": "approval"
+  },
+  "scheduler": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Tác vụ định kỳ</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-calendar-clock\" aria-hidden=\"true\"><path d=\"M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5\"></path><path d=\"M16 2v4\"></path><path d=\"M8 2v4\"></path><path d=\"M3 10h5\"></path><path d=\"M17.5 17.5 16 16.3V14\"></path><circle cx=\"16\" cy=\"16\" r=\"6\"></circle></svg></span><h1>Tác vụ định kỳ</h1></div><p class=\"auth-lead\">Chạy công việc thường lệ vào đúng thời điểm.</p><p class=\"auth-intro\">Mô tả việc cần chạy, khi nào chạy và ai nhận kết quả. Xem lịch chạy và lịch sử thực thi.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Lịch chạy</span><h3>Thời gian và múi giờ</h3><p>Chỉ định ngày trong tuần, khoảng thời gian lặp hoặc lịch theo ngày với múi giờ tường minh.</p></article><article><span class=\"badge\">Thao tác nghiệp vụ</span><h3>Nhắc nhở và báo cáo</h3><p>Kết nối tác vụ với các truy vấn, cập nhật hoặc thông báo nghiệp vụ đã được phân quyền.</p></article><article><span class=\"badge\">Vận hành</span><h3>Lịch sử thực thi</h3><p>Cho phép quản trị viên xem các lần chạy và tạm dừng hoặc tiếp tục tác vụ khi cần.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản tác vụ định kỳ\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/scheduler/usage\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Xác định thời gian chính xác</h3><p>Thời gian không có múi giờ có thể cho kết quả ngoài dự kiến sau khi triển khai. Hãy xác nhận lần thực thi kế tiếp theo lịch.</p></article><article><h3>Tránh tác động trùng lặp</h3><p>Định nghĩa quy tắc retry và xử lý trùng lặp cho thông báo, báo cáo và đồng bộ.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/scheduler/usage\"><strong>Hướng dẫn sử dụng <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/notification/\"><strong>Thông báo <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/data-sources/\"><strong>Nguồn dữ liệu <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "reminder",
+        "title": "Nhắc nhở điều phối",
+        "summary": "Thông báo cho trưởng nhóm điều phối về các đơn hàng đang chờ vào sáng các ngày trong tuần.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Thông báo cho trưởng nhóm điều phối về các đơn hàng đang chờ vào sáng các ngày trong tuần."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Lần chạy kế tiếp khớp với 9:00 sáng giờ Bắc Kinh vào một ngày trong tuần.",
+          "Một thông báo tổng hợp các đơn hàng đang chờ; không có đơn hàng thì không gửi thông báo.",
+          "Quản trị viên có thể xem các lần chạy và tạm dừng hoặc tiếp tục tác vụ."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-scheduler-en.png",
+        "imageAlt": "Ví dụ tác vụ định kỳ: Nhắc nhở điều phối",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/scheduler/usage"
+      },
+      {
+        "id": "time",
+        "title": "Thay đổi lịch chạy",
+        "summary": "Dời một nhắc nhở hiện có sang 10:00 sáng mà không thay đổi hành vi nghiệp vụ.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Dời một nhắc nhở hiện có sang 10:00 sáng mà không thay đổi hành vi nghiệp vụ."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Lần thực thi kế tiếp dùng lịch ngày trong tuần và múi giờ đã cập nhật.",
+          "Phạm vi đơn hàng, người nhận và nội dung giữ nguyên.",
+          "Tác vụ hiện có được cập nhật thay vì tạo bản trùng lặp."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ tác vụ định kỳ: Thay đổi lịch chạy",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/scheduler/usage"
+      },
+      {
+        "id": "report",
+        "title": "Báo cáo hằng tuần",
+        "summary": "Tạo bản tổng hợp doanh số của tuần trước theo lịch định kỳ.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Tạo bản tổng hợp doanh số của tuần trước theo lịch định kỳ."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Kỳ báo cáo bao trùm đúng tuần trước như dự kiến.",
+          "Doanh thu, số lượng và tổng theo khu vực khớp với các bản ghi nguồn.",
+          "Trưởng nhóm kinh doanh nhận được liên kết và quản trị viên có thể xem lịch sử thực thi."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ tác vụ định kỳ: Báo cáo hằng tuần",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/scheduler/usage"
+      },
+      {
+        "id": "sync",
+        "title": "Đồng bộ trạng thái khách hàng",
+        "summary": "Cập nhật trạng thái khách hàng từ một hệ thống hiện có mà vẫn giữ nguyên các trường khác.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Cập nhật trạng thái khách hàng từ một hệ thống hiện có mà vẫn giữ nguyên các trường khác."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Tác vụ chạy theo chu kỳ mười phút đã cấu hình.",
+          "Mã định danh khách hàng khớp với đúng các bản ghi dự kiến.",
+          "Chỉ trạng thái thay đổi; các thông tin khách hàng khác được giữ nguyên."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ tác vụ định kỳ: Đồng bộ trạng thái khách hàng",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/scheduler/usage"
+      }
+    ],
+    "promptKey": "scheduler"
+  },
+  "notification": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Thông báo</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-bell\" aria-hidden=\"true\"><path d=\"M10.268 21a2 2 0 0 0 3.464 0\"></path><path d=\"M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326\"></path></svg></span><h1>Thông báo</h1></div><p class=\"auth-lead\">Gửi đến mọi người những thông tin nghiệp vụ họ cần.</p><p class=\"auth-intro\">Gửi tin nhắn trong ứng dụng hoặc email khi có sự kiện nghiệp vụ, kèm liên kết hữu ích và kết quả gửi truy vết được.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Sự kiện nghiệp vụ</span><h3>Người nhận và nội dung</h3><p>Chỉ định ai nhận tin nhắn, khi nào gửi và tin nhắn mở bản ghi nghiệp vụ nào.</p></article><article><span class=\"badge\">Kênh gửi</span><h3>Trong ứng dụng và email</h3><p>Dùng năng lực thông báo của ứng dụng và cấu hình các kênh gửi bên ngoài khi cần.</p></article><article><span class=\"badge\">Vận hành</span><h3>Nhật ký gửi</h3><p>Xem trạng thái gửi và các lần thử mà không làm lộ thông tin xác thực của dịch vụ.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản thông báo\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/notification/usage\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Thông báo không thay đổi quyết định</h3><p>Gửi thất bại không được hoàn tác kết quả phê duyệt hay trạng thái vận tải đã lưu.</p></article><article><h3>Tôn trọng ranh giới tài khoản</h3><p>Người dùng xem tin nhắn của chính mình. Nhật ký gửi dành cho quản trị cần quyền truy cập riêng.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/notification/usage\"><strong>Hướng dẫn sử dụng <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/scheduler/\"><strong>Tác vụ định kỳ <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/mail/\"><strong>Mail <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "progress",
+        "title": "Nhắc nhở tiến độ",
+        "summary": "Gửi trạng thái của đơn hàng hiện tại tới trung tâm tin nhắn của người dùng đang thao tác.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Gửi trạng thái của đơn hàng hiện tại tới trung tâm tin nhắn của người dùng đang thao tác."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Tin nhắn có số đơn hàng, tuyến đường và trạng thái.",
+          "Liên kết mở đúng đơn hàng theo đường dẫn triển khai thực tế.",
+          "Gửi lặp lại cùng một phiên bản không tạo tin nhắn trùng hoặc thay đổi đơn hàng."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-notification-en.png",
+        "imageAlt": "Ví dụ thông báo: Nhắc nhở tiến độ",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/notification/usage"
+      },
+      {
+        "id": "approval",
+        "title": "Kết quả phê duyệt",
+        "summary": "Chỉ thông báo cho người nộp yêu cầu khi phê duyệt đã có kết quả cuối cùng.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Chỉ thông báo cho người nộp yêu cầu khi phê duyệt đã có kết quả cuối cùng."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Yêu cầu đang chờ không tạo thông báo kết quả.",
+          "Mỗi kết quả đã lưu chỉ thông báo cho người nộp yêu cầu một lần.",
+          "Gửi thất bại không hoàn tác quyết định phê duyệt."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ thông báo: Kết quả phê duyệt",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/notification/usage"
+      },
+      {
+        "id": "email",
+        "title": "Kênh email",
+        "summary": "Gửi kết quả phê duyệt qua email bên cạnh trung tâm tin nhắn.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Gửi kết quả phê duyệt qua email bên cạnh trung tâm tin nhắn."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Địa chỉ người nhận lấy từ tài khoản thực của người nộp yêu cầu.",
+          "Thiếu email thì tin nhắn trong ứng dụng vẫn được gửi.",
+          "Bản ghi gửi theo từng kênh được hiển thị mà không làm lộ thông tin xác thực."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-notification-logs-en.png",
+        "imageAlt": "Ví dụ thông báo: Kênh email",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/notification/usage"
+      }
+    ],
+    "promptKey": "notification"
+  },
+  "mail": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Email</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-mail\" aria-hidden=\"true\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"></rect><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"></path></svg></span><h1>Email</h1></div><p class=\"auth-lead\">Giữ các cuộc trao đổi nghiệp vụ gần với các bản ghi liên quan.</p><p class=\"auth-intro\">Kết nối hộp thư của nhân viên để đọc, trả lời, sắp xếp thư và liên kết thư từ với các bản ghi nghiệp vụ.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Kết nối trước</span><h3>Hộp thư nhân viên</h3><p>Chuẩn bị thông tin kết nối của nhà cung cấp và ủy quyền của tài khoản.</p></article><article><span class=\"badge\">Công việc hằng ngày</span><h3>Đọc và trả lời</h3><p>Cung cấp giao diện hộp thư, chuỗi thư, tệp đính kèm và trả lời phù hợp với ứng dụng.</p></article><article><span class=\"badge\">Ngữ cảnh nghiệp vụ</span><h3>Thư từ liên quan</h3><p>Liên kết thư với khách hàng hoặc các bản ghi khác theo quyền truy cập của người dùng.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản email\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/mail/quick-start\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Hộp thư là của riêng từng người</h3><p>Giữ các tài khoản đã kết nối và thư của mỗi nhân viên trong phạm vi được phép.</p></article><article><h3>Kiểm chứng với nhà cung cấp thực tế</h3><p>Việc kết nối, đồng bộ và gửi thư phụ thuộc vào nhà cung cấp mail và cấu hình của nhà cung cấp đó.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/notification/\"><strong>Thông báo <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/file/\"><strong>Tệp <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "quick-start-0",
+        "title": "Nhận và trả lời",
+        "summary": "Kết nối hộp thư của nhân viên và xử lý thư từ nghiệp vụ.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Kết nối hộp thư của nhân viên và xử lý thư từ nghiệp vụ."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Hộp thư đã kết nối đồng bộ đúng các thư mong đợi.",
+          "Thư trả lời dùng đúng tài khoản và cuộc hội thoại dự kiến.",
+          "Nhân viên khác không thể truy cập hộp thư mà họ không được phép."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-mail-reading-en.png",
+        "imageAlt": "Ví dụ email: Nhận và trả lời",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/mail/quick-start"
+      },
+      {
+        "id": "usage-1",
+        "title": "Chữ ký email",
+        "summary": "Cung cấp cho nhân viên một chữ ký thống nhất khi gửi email công việc.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Cung cấp cho nhân viên một chữ ký thống nhất khi gửi email công việc."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Chữ ký xuất hiện trong đúng các luồng soạn thư và trả lời dự kiến.",
+          "Thông tin riêng của từng nhân viên chính xác.",
+          "Nội dung hiện có không bị ghi đè ngoài ý muốn."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-mail-signatures-en.png",
+        "imageAlt": "Ví dụ email: Chữ ký email",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-2",
+        "title": "Mẫu email tiến độ",
+        "summary": "Tái sử dụng mẫu thư tiến độ vận tải với dữ liệu nghiệp vụ hiện tại.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Tái sử dụng mẫu thư tiến độ vận tải với dữ liệu nghiệp vụ hiện tại."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Các trường của mẫu được điền từ đúng đơn hàng.",
+          "Người dùng có thể xem lại thư trước khi gửi.",
+          "Giá trị bị thiếu được xử lý tường minh thay vì gửi đi các placeholder chưa được thay thế."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-mail-template-applied-en.png",
+        "imageAlt": "Ví dụ email: Mẫu email tiến độ",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-3",
+        "title": "Thư từ với khách hàng",
+        "summary": "Đọc các email liên quan khi đang xem bản ghi khách hàng.",
+        "decisions": [
+          ["Phạm vi", "Đọc các email liên quan khi đang xem bản ghi khách hàng."],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Giao diện hiển thị thư từ của đúng khách hàng dự kiến.",
+          "Áp dụng đồng thời quyền với hộp thư và quyền với khách hàng.",
+          "Mở một thư vẫn giữ nguyên ngữ cảnh cuộc hội thoại."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-customer-mail-en.png",
+        "imageAlt": "Ví dụ email: Thư từ với khách hàng",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-4",
+        "title": "Email tiến độ đơn hàng",
+        "summary": "Gửi cập nhật vận tải từ ngữ cảnh nghiệp vụ của đơn hàng.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Gửi cập nhật vận tải từ ngữ cảnh nghiệp vụ của đơn hàng."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Người nhận và dữ liệu đơn hàng chính xác.",
+          "Thư được gửi từ hộp thư nhân viên đã được phép.",
+          "Lỗi gửi được hiển thị mà không làm thay đổi tiến độ vận tải."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-order-mail-en.png",
+        "imageAlt": "Ví dụ email: Email tiến độ đơn hàng",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/mail/usage"
+      }
+    ],
+    "promptKey": "mail"
+  },
+  "file": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Tệp</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-paperclip\" aria-hidden=\"true\"><path d=\"M13.234 20.252 21 12.3\"></path><path d=\"m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486\"></path></svg></span><h1>Tệp</h1></div><p class=\"auth-lead\">Giữ tài liệu gắn liền với nghiệp vụ mà chúng phục vụ.</p><p class=\"auth-intro\">Tải lên, xem trước và tải xuống các tệp gắn với bản ghi, với quyền truy cập do quyền nghiệp vụ quyết định.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Trường nghiệp vụ</span><h3>Tệp đính kèm và ảnh đại diện</h3><p>Chọn bản ghi nhận một hay nhiều tệp và cho phép những định dạng nào.</p></article><article><span class=\"badge\">Lưu trữ</span><h3>Tải lên và lưu trữ</h3><p>Kết nối kho lưu trữ tệp và lưu quan hệ giữa mỗi tệp với bản ghi nghiệp vụ của nó.</p></article><article><span class=\"badge\">Truy cập</span><h3>Xem trước và tải xuống</h3><p>Cung cấp các thao tác với tệp hữu ích mà không vượt qua quyền của bản ghi cha.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản tệp\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/file/usage\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Gỡ liên kết không phải là xóa</h3><p>Nêu rõ việc gỡ tệp đính kèm chỉ gỡ quan hệ hay xóa luôn tệp đã lưu.</p></article><article><h3>Bảo vệ truy cập trực tiếp</h3><p>Người dùng không truy cập được bản ghi thì không được có quyền truy cập chỉ nhờ biết URL của tệp.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/file/usage\"><strong>Hướng dẫn sử dụng <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/\"><strong>Phân quyền <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/notification/\"><strong>Thông báo <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "attachments",
+        "title": "Tệp đính kèm đơn hàng",
+        "summary": "Giữ chứng từ vận tải gắn với đơn hàng tương ứng.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Giữ chứng từ vận tải gắn với đơn hàng tương ứng."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Tệp đính kèm đã lưu vẫn hiển thị khi mở lại đơn hàng.",
+          "Xem trước và tải xuống tuân theo quyền truy cập đơn hàng.",
+          "Gỡ một tệp đính kèm sẽ gỡ liên kết nhưng vẫn giữ tệp đã lưu."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-attachments-en.png",
+        "imageAlt": "Ví dụ tệp: Tệp đính kèm đơn hàng",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/file/usage"
+      },
+      {
+        "id": "avatar",
+        "title": "Ảnh đại diện nhân viên",
+        "summary": "Gắn một ảnh đại diện có thể thay thế cho mỗi nhân viên.",
+        "decisions": [
+          ["Phạm vi", "Gắn một ảnh đại diện có thể thay thế cho mỗi nhân viên."],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Mỗi nhân viên có tối đa một ảnh đại diện được chọn.",
+          "Thay ảnh sẽ cập nhật cả danh sách lẫn trang chi tiết.",
+          "Ảnh đại diện mới vẫn còn sau khi tải lại trang."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ tệp: Ảnh đại diện nhân viên",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/file/usage"
+      }
+    ],
+    "promptKey": "file"
+  },
+  "template-print": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">In theo mẫu</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-printer\" aria-hidden=\"true\"><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"></path><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\"></path><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\"></rect></svg></span><h1>In theo mẫu</h1></div><p class=\"auth-lead\">Tạo chứng từ nghiệp vụ từ chính các mẫu của bạn.</p><p class=\"auth-intro\">Đưa cho Agent một mẫu Office và yêu cầu nghiệp vụ để triển khai việc tạo và tải xuống chứng từ.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Gói hướng dẫn</span><h3>Skill và ví dụ</h3><p>Gói này cung cấp hướng dẫn triển khai, không phải engine render hay giao diện in dựng sẵn.</p></article><article><span class=\"badge\">Triển khai trong ứng dụng</span><h3>Mẫu và dữ liệu</h3><p>Ánh xạ các bản ghi nghiệp vụ được phép vào các trường của mẫu và các dòng chi tiết lặp lại.</p></article><article><span class=\"badge\">Chuyển đổi tùy chọn</span><h3>Xuất PDF</h3><p>Tạo PDF cần công cụ chuyển đổi và font phù hợp với cách render được chọn.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản in theo mẫu\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/template-print/usage\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Đọc dữ liệu được phép ở phía server</h3><p>Không chấp nhận phạm vi dữ liệu hay đường dẫn mẫu tùy ý từ trình duyệt.</p></article><article><h3>Kiểm chứng môi trường triển khai</h3><p>Kiểm tra font, hình ảnh, bảng, phân trang và lỗi chuyển đổi trên chính máy chạy ứng dụng.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/file/\"><strong>Tệp <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/\"><strong>Phân quyền <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "docx",
+        "title": "Tạo chứng từ vận tải",
+        "summary": "Điền dữ liệu đơn vận tải được phép vào một mẫu Word có sẵn.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Điền dữ liệu đơn vận tải được phép vào một mẫu Word có sẵn."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Các trường và dòng chi tiết lặp lại khớp với đơn hàng nguồn.",
+          "Tệp DOCX mở được bình thường và giữ đúng bố cục dự kiến.",
+          "Không thể dùng đơn hàng không được phép hoặc đường dẫn mẫu tùy ý."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ in theo mẫu: Tạo chứng từ vận tải",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/template-print/usage"
+      },
+      {
+        "id": "pdf",
+        "title": "Tải xuống PDF",
+        "summary": "Thêm bước chuyển đổi sau khi tạo DOCX thành công.",
+        "decisions": [
+          ["Phạm vi", "Thêm bước chuyển đổi sau khi tạo DOCX thành công."],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Môi trường triển khai có sẵn dịch vụ chuyển đổi và font cần thiết.",
+          "Chữ tiếng Trung, hình ảnh, bảng và phân trang khớp với kết quả mong đợi.",
+          "Lỗi chuyển đổi được báo rõ ràng và vẫn có thể tải xuống DOCX."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ in theo mẫu: Tải xuống PDF",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/template-print/usage"
+      }
+    ],
+    "promptKey": "templatePrint"
+  },
+  "i18n": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Ngôn ngữ</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-languages\" aria-hidden=\"true\"><path d=\"m5 8 6 6\"></path><path d=\"m4 14 6-6 2-3\"></path><path d=\"M2 5h12\"></path><path d=\"M7 2h1\"></path><path d=\"m22 22-5-10-5 10\"></path><path d=\"M14 18h6\"></path></svg></span><h1>Ngôn ngữ</h1></div><p class=\"auth-lead\">Dùng ứng dụng bằng ngôn ngữ mà nhóm của bạn cần.</p><p class=\"auth-intro\">Thêm bản dịch cho giao diện và server, cấu hình ngôn ngữ mặc định và giữ lựa chọn ngôn ngữ của từng người.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Tùy chọn người dùng</span><h3>Chuyển đổi ngôn ngữ</h3><p>Cung cấp các ngôn ngữ được hỗ trợ và giữ lựa chọn đã lưu của người dùng.</p></article><article><span class=\"badge\">Cấu hình ứng dụng</span><h3>Ngôn ngữ mặc định</h3><p>Đặt ngôn ngữ mặc định cho khách truy cập chưa lưu tùy chọn ngôn ngữ.</p></article><article><span class=\"badge\">Bảo trì bản dịch</span><h3>Độ phủ và fallback</h3><p>Dịch thông điệp phía client và server, và kiểm chứng hành vi fallback khi thiếu văn bản.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản ngôn ngữ\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/i18n/usage\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Dịch văn bản giao diện, không dịch bản ghi nghiệp vụ</h3><p>Tên khách hàng và dữ liệu nghiệp vụ không tự động được dịch khi đổi ngôn ngữ giao diện.</p></article><article><h3>Kiểm chứng cả hai phía</h3><p>Kiểm tra lỗi validation và lỗi server, cũng như menu, biểu mẫu và nút bấm.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/i18n/usage\"><strong>Hướng dẫn sử dụng <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/theme/\"><strong>Theme <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "add",
+        "title": "Thêm một ngôn ngữ",
+        "summary": "Thêm tiếng Tây Ban Nha cho giao diện và các thông điệp server.",
+        "decisions": [
+          ["Phạm vi", "Thêm tiếng Tây Ban Nha cho giao diện và các thông điệp server."],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Tiếng Tây Ban Nha xuất hiện trong menu ngôn ngữ.",
+          "Menu, biểu mẫu và phản hồi từ server dùng đúng bản dịch mong đợi.",
+          "Ngôn ngữ đã chọn vẫn nhất quán sau khi chuyển trang."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-workspace-cn.png",
+        "imageAlt": "Ví dụ ngôn ngữ: Thêm một ngôn ngữ",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/i18n/usage"
+      },
+      {
+        "id": "default",
+        "title": "Ngôn ngữ mặc định",
+        "summary": "Chọn ngôn ngữ đầu tiên cho người dùng chưa lưu tùy chọn.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Chọn ngôn ngữ đầu tiên cho người dùng chưa lưu tùy chọn."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Một trình duyệt mới hiển thị ngôn ngữ mặc định đã cấu hình.",
+          "Các tùy chọn đã lưu trước đó giữ nguyên.",
+          "Thuộc tính lang của tài liệu khớp với ngôn ngữ đang dùng."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ ngôn ngữ: Ngôn ngữ mặc định",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/i18n/usage"
+      },
+      {
+        "id": "fallback",
+        "title": "Hoàn thiện bản dịch",
+        "summary": "Tìm các văn bản tiếng Tây Ban Nha còn thiếu mà không sửa đổi bản ghi nghiệp vụ.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Tìm các văn bản tiếng Tây Ban Nha còn thiếu mà không sửa đổi bản ghi nghiệp vụ."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Các chỗ thiếu bản dịch ở client và server đều được bổ sung.",
+          "Fallback tuân theo thứ tự đã cấu hình.",
+          "Kiểm tra locale đạt và tên khách hàng không bị thay đổi."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ ngôn ngữ: Hoàn thiện bản dịch",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/i18n/usage"
+      }
+    ],
+    "promptKey": "i18n"
+  },
+  "theme": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Theme</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-palette\" aria-hidden=\"true\"><circle cx=\"13.5\" cy=\"6.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"17.5\" cy=\"10.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"8.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"6.5\" cy=\"12.5\" r=\".5\" fill=\"currentColor\"></circle><path d=\"M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z\"></path></svg></span><h1>Theme</h1></div><p class=\"auth-lead\">Làm cho ứng dụng mang dấu ấn của tổ chức bạn.</p><p class=\"auth-intro\">Điều chỉnh màu sắc, kiểu chữ và mật độ hiển thị mà vẫn giữ giao diện sáng và tối rõ ràng, dễ dùng.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Điểm khởi đầu</span><h3>Comfortable và Compact</h3><p>Chọn mật độ hiển thị phù hợp với công việc trước khi thay đổi từng giá trị thiết kế.</p></article><article><span class=\"badge\">Giao diện cá nhân</span><h3>Chọn theme</h3><p>Cho phép người dùng chọn trong số các theme và chế độ hiển thị có sẵn của ứng dụng.</p></article><article><span class=\"badge\">Thay đổi ứng dụng</span><h3>Sửa, thêm hoặc xóa</h3><p>Yêu cầu Agent tinh chỉnh một theme hiện có hoặc triển khai một theme thương hiệu riêng.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản theme\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/theme/usage\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Lựa chọn cá nhân khác với thay đổi code</h3><p>Chọn theme chỉ ảnh hưởng đến tùy chọn giao diện của người dùng. Thêm hoặc thay đổi theme sẽ sửa đổi thiết kế có sẵn của ứng dụng.</p></article><article><h3>Kiểm tra cả chế độ sáng và tối</h3><p>Kiểm chứng độ tương phản, bảng, biểu mẫu, hình ảnh và nội dung bên thứ ba ở mỗi chế độ hiển thị được hỗ trợ.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/theme/usage\"><strong>Hướng dẫn sử dụng <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/i18n/\"><strong>Chuyển đổi ngôn ngữ <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "adjust",
+        "title": "Sửa một theme",
+        "summary": "Tinh chỉnh màu sắc và độ bo góc của Compact mà vẫn giữ mật độ và kiểu chữ.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Tinh chỉnh màu sắc và độ bo góc của Compact mà vẫn giữ mật độ và kiểu chữ."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Màu chủ đạo và độ bo góc thay đổi theo yêu cầu.",
+          "Cỡ chữ và khoảng cách gọn của Compact giữ nguyên.",
+          "Biểu mẫu và bảng vẫn dễ đọc ở các chế độ hiển thị được hỗ trợ."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-appearance-en.png",
+        "imageAlt": "Ví dụ theme: Sửa một theme",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/theme/usage"
+      },
+      {
+        "id": "brand",
+        "title": "Thêm theme thương hiệu",
+        "summary": "Cung cấp một theme Northstar riêng bên cạnh các lựa chọn hiện có.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Cung cấp một theme Northstar riêng bên cạnh các lựa chọn hiện có."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Theme mới khả dụng, kèm tên đã được dịch.",
+          "Các theme Comfortable và Compact hiện có vẫn khả dụng.",
+          "Cả chế độ sáng và tối đều có chữ và control dễ đọc."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-brand-light-en.png",
+        "imageAlt": "Ví dụ theme: Thêm theme thương hiệu",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/theme/usage"
+      },
+      {
+        "id": "remove",
+        "title": "Xóa một theme",
+        "summary": "Xóa một theme không dùng đến và kiểm chứng các lựa chọn giao diện còn lại.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Xóa một theme không dùng đến và kiểm chứng các lựa chọn giao diện còn lại."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Theme đã xóa không còn xuất hiện trong bộ chọn.",
+          "Người dùng từng chọn theme đó được chuyển sang một giao diện hợp lệ còn lại.",
+          "Các theme khác vẫn hoạt động bình thường."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ theme: Xóa một theme",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/theme/usage"
+      }
+    ],
+    "promptKey": "theme"
+  },
+  "ai-employee": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">AI Employee</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"8\" width=\"16\" height=\"12\" rx=\"3\"/><path d=\"M12 8V4H9M2 12v4m20-4v4M9 12v2m6-2v2m-6 3h6\"/></svg></span><h1>AI Employee</h1></div><p class=\"auth-lead\">Trao cho ứng dụng của bạn một trợ lý với trách nhiệm rõ ràng.</p><p class=\"auth-intro\">Kết nối ngữ cảnh trang, các truy vấn nghiệp vụ được phép và các thao tác được cho phép tường minh với một trợ lý dùng dịch vụ model của bạn.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Kết nối model</span><h3>Trách nhiệm của trợ lý</h3><p>Chọn một dịch vụ model đã cấu hình và giải thích phạm vi công việc của trợ lý.</p></article><article><span class=\"badge\">Ngữ cảnh nghiệp vụ</span><h3>Trang và bản ghi</h3><p>Cung cấp bản ghi hiện tại và dữ liệu được phép thông qua các thao tác do ứng dụng sở hữu.</p></article><article><span class=\"badge\">Thao tác được phép</span><h3>Truy vấn và thay đổi</h3><p>Bắt đầu với truy vấn, sau đó định nghĩa tường minh những thay đổi trợ lý được phép thực hiện.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản AI Employee\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/ai-employee/\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Trợ lý tuân theo quyền nghiệp vụ</h3><p>Không mở rộng quyền truy cập vượt quá quyền của người dùng và các thao tác được phép của trợ lý.</p></article><article><h3>Giữ ngữ cảnh luôn cập nhật</h3><p>Khi người dùng chuyển bản ghi, hãy cập nhật ngữ cảnh và tránh trộn lẫn thông tin từ trang trước.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/ai-knowledge-base/\"><strong>Tổng quan cơ sở tri thức AI <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/authorization/\"><strong>Phân quyền <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "index-0",
+        "title": "Trợ lý vận tải",
+        "summary": "Bắt đầu với một trợ lý giải thích đơn hàng và trả lời các truy vấn nghiệp vụ được phép.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Bắt đầu với một trợ lý giải thích đơn hàng và trả lời các truy vấn nghiệp vụ được phép."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Trợ lý dùng dịch vụ model đã cấu hình.",
+          "Truy vấn tuân theo phạm vi dữ liệu của người dùng.",
+          "Không có thay đổi đơn hàng hay thông báo nào xảy ra nếu chưa bật tường minh các thao tác tương ứng."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ AI Employee: Trợ lý vận tải",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/ai-employee/"
+      },
+      {
+        "id": "page-context-0",
+        "title": "Ngữ cảnh đơn hàng hiện tại",
+        "summary": "Giữ đơn hàng hiện tại hiển thị bên cạnh cuộc hội thoại với trợ lý.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Giữ đơn hàng hiện tại hiển thị bên cạnh cuộc hội thoại với trợ lý."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Trợ lý đọc đúng đơn hàng thông qua các thao tác được phép.",
+          "Chuyển đơn hàng sẽ cập nhật ngữ cảnh.",
+          "Câu trả lời cung cấp liên kết nghiệp vụ liên quan mà không trộn lẫn các bản ghi."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-ai-order-context-en.png",
+        "imageAlt": "Ví dụ AI Employee: Ngữ cảnh đơn hàng hiện tại",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/ai-employee/page-context"
+      },
+      {
+        "id": "business-data-0",
+        "title": "Truy vấn nghiệp vụ",
+        "summary": "Tìm các đơn hàng đang chờ theo khách hàng, giai đoạn hoặc tuyến đường.",
+        "decisions": [
+          ["Phạm vi", "Tìm các đơn hàng đang chờ theo khách hàng, giai đoạn hoặc tuyến đường."],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Kết quả nằm trong phạm vi quyền dữ liệu của người dùng hiện tại.",
+          "Thẻ đơn hàng hiển thị thông tin hữu ích và mở đúng bản ghi.",
+          "Kết quả rỗng và câu hỏi tiếp theo được xử lý rõ ràng."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-ai-order-query-en.png",
+        "imageAlt": "Ví dụ AI Employee: Truy vấn nghiệp vụ",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/ai-employee/business-data"
+      }
+    ],
+    "promptKey": "ai-employee"
+  },
+  "ai-knowledge-base": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Cơ sở tri thức AI</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực ứng dụng</b><i></i><span>Dùng khi cần</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-book-open\" aria-hidden=\"true\"><path d=\"M12 7v14\"></path><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\"></path></svg></span><h1>Cơ sở tri thức AI</h1></div><p class=\"auth-lead\">Trả lời câu hỏi kèm nguồn mà nhóm của bạn có thể kiểm tra.</p><p class=\"auth-intro\">Sắp xếp tri thức nghiệp vụ và kết nối truy xuất để trợ lý có thể trả lời kèm tham chiếu tới các tài liệu liên quan.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Chọn một kịch bản →</a><a class=\"secondary\" href=\"#provided\">Khám phá năng lực</a></div></div><aside class=\"identity\"><p>Từ yêu cầu nghiệp vụ đến tính năng hoạt động được</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Mô tả</strong><small>Yêu cầu của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Xây dựng</strong><small>Cùng Agent của bạn</small></div><span>→</span><div class=\"identity-box\"><strong>Kiểm chứng</strong><small>Trong ứng dụng của bạn</small></div></div><footer>Tái sử dụng năng lực sẵn có và làm rõ quy tắc nghiệp vụ, tích hợp cùng kết quả mong đợi.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#provided\">Năng lực</a><a href=\"#scenarios\">Kịch bản và prompt</a><a href=\"#boundaries\">Cần biết</a><a href=\"#references\">Đọc thêm</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>Những gì đã sẵn sàng, và những gì cần tích hợp?</h2><p>Bắt đầu từ các năng lực sẵn có của ứng dụng và xác định phần cấu hình hoặc phần triển khai nghiệp vụ bạn cần.</p></div><div class=\"availability\"><article><span class=\"badge\">Tổ chức tri thức</span><h3>Tài liệu và không gian</h3><p>Sắp xếp bài viết và tệp thành tri thức nghiệp vụ dễ đọc, dễ tìm kiếm.</p></article><article><span class=\"badge\">Tích hợp truy xuất</span><h3>Model và lập chỉ mục</h3><p>Kết nối dịch vụ model, truy xuất và lập chỉ mục thông qua ứng dụng.</p></article><article><span class=\"badge\">Truy cập và câu trả lời</span><h3>Nguồn và quyền</h3><p>Hiển thị liên kết nguồn và giữ việc truy xuất trong phạm vi tri thức được phép.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Bắt đầu từ một kịch bản nghiệp vụ</h2><p>Các ví dụ này dùng ứng dụng vận tải của Northstar. Điều chỉnh tên và quy tắc, rồi gửi prompt cho Agent phát triển trong dự án ứng dụng của bạn.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Kịch bản cơ sở tri thức AI\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/ai-knowledge-base/\">Tài liệu liên quan →</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>Cần biết trước khi sử dụng</h2><p>Kiểm chứng các ranh giới này cùng với tính năng nghiệp vụ.</p></div><div class=\"rules\"><article><h3>Câu trả lời cần có bằng chứng</h3><p>Khi không tìm thấy tài liệu hỗ trợ, hãy nói rõ điều đó thay vì tự bịa ra chính sách công ty.</p></article><article><h3>Quyền truy cập tri thức vẫn quan trọng</h3><p>Tuân thủ quy tắc truy cập tài liệu và không gian làm việc khi tìm kiếm, đọc và soạn câu trả lời.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Khi bạn cần thêm chi tiết</h2><p>Dùng các hướng dẫn này cho việc cấu hình, sử dụng hằng ngày và phát triển.</p></div><div class=\"resources\"><a href=\"/capabilities/ai-employee/\"><strong>Tổng quan AI Employee <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a><a href=\"/capabilities/file/\"><strong>Tệp <span>→</span></strong><p>Đọc hướng dẫn chi tiết.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Tất cả năng lực</a><a href=\"/\">Trang chủ tài liệu →</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "index-0",
+        "title": "Kết nối trung tâm tri thức",
+        "summary": "Sắp xếp quy định và sổ tay vận tải với các nguồn có thể tìm kiếm.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Sắp xếp quy định và sổ tay vận tải với các nguồn có thể tìm kiếm."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Thư mục, bài viết và tệp đọc được trong phạm vi cho phép.",
+          "Kết quả tìm kiếm và câu trả lời của trợ lý trỏ tới các nguồn liên quan.",
+          "Truy xuất và lập chỉ mục dùng các dịch vụ đã cấu hình của ứng dụng."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": null,
+        "imageAlt": "Ví dụ cơ sở tri thức AI: Kết nối trung tâm tri thức",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/ai-knowledge-base/"
+      },
+      {
+        "id": "answers-0",
+        "title": "Câu trả lời dựa trên nguồn",
+        "summary": "Trả lời câu hỏi nghiệp vụ bằng tài liệu vận tải được phép.",
+        "decisions": [
+          [
+            "Phạm vi",
+            "Trả lời câu hỏi nghiệp vụ bằng tài liệu vận tải được phép."
+          ],
+          [
+            "Triển khai thực hiện",
+            "Yêu cầu Agent tái sử dụng các năng lực sẵn có của ứng dụng và xác định mọi cấu hình cần thiết."
+          ],
+          [
+            "Kiểm chứng",
+            "Xác nhận kết quả nghiệp vụ và quy tắc truy cập bằng các bước kiểm tra bên dưới."
+          ]
+        ],
+        "checks": [
+          "Câu trả lời có tham chiếu tới tài liệu hoặc đoạn văn liên quan.",
+          "Thiếu bằng chứng thì báo rõ, không tự bịa ra chính sách.",
+          "Nội dung bị hạn chế không bị lộ qua truy xuất hay câu trả lời."
+        ],
+        "note": "Các màn hình này minh họa một ứng dụng Northstar đã được tùy biến. Hãy điều chỉnh yêu cầu và kiểm chứng kết quả trong ứng dụng của chính bạn.",
+        "image": "northstar-ai-knowledge-answer-en.png",
+        "imageAlt": "Ví dụ cơ sở tri thức AI: Câu trả lời dựa trên nguồn",
+        "status": "Ví dụ nghiệp vụ",
+        "doc": "/capabilities/ai-knowledge-base/answers"
+      }
+    ],
+    "promptKey": "ai-knowledge-base"
+  },
+  "task-center": {
+    "markup": "<a class=\"skip\" href=\"#content\">Chuyển đến nội dung</a><main class=\"auth-page\" id=\"content\"><nav class=\"crumbs\" aria-label=\"Đường dẫn điều hướng\"><a href=\"/\">Tài liệu</a><span>/</span><a href=\"/#capabilities\">Năng lực</a><span>/</span><span aria-current=\"page\">Trung tâm Task</span></nav><section class=\"auth-hero\"><div><div class=\"section-label\"><b>Năng lực</b><i></i><span>Công việc cá nhân</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg></span><h1>Trung tâm Task</h1></div><p class=\"auth-lead\">Một nơi duy nhất cho những công việc cần bạn chú ý.</p><p class=\"auth-intro\">Yêu cầu Agent kết nối phê duyệt, nhận thiết bị và các công việc khác: tạo mục công việc cá nhân, mở chi tiết, xử lý công việc và giữ trạng thái cùng số lượng luôn khớp nhau.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Bắt đầu →</a><a class=\"secondary\" href=\"#scenarios\">Sao chép prompt</a></div></div><aside class=\"identity\"><p>Công việc cá nhân dựa trên bản ghi nghiệp vụ thực tế</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Sự kiện nghiệp vụ</strong><small>Giao cho người nhận</small></div><div class=\"identity-box\"><strong>Mục công việc cá nhân</strong><small>Tìm công việc của bạn</small></div><div class=\"identity-box\"><strong>Thao tác nghiệp vụ</strong><small>Đồng bộ kết quả</small></div></div><footer>Đang chờ · Đã hoàn thành · Đã hủy. Quy tắc nghiệp vụ quyết định ai được thao tác.</footer></aside></section><nav class=\"anchor-nav\" aria-label=\"Trên trang này\"><a href=\"#overview\">Khi nào nên dùng</a><a href=\"#scenarios\">Thử ngay</a><a href=\"#references\">Năng lực liên quan</a></nav><section id=\"overview\"><div class=\"section-head\"><h2>Khi nào nên dùng và cải thiện được gì</h2></div><div class=\"rules\"><article><h3>Khi công việc trải rộng trên nhiều nghiệp vụ khác nhau</h3><p>Một quản lý cần một nơi xem chung các đơn xin nghỉ phép và đề nghị thanh toán chi phí đang chờ duyệt. Một nhân viên cần nộp chứng từ còn thiếu và xác nhận đã nhận thiết bị.</p><p>Dùng Trung tâm Task khi công việc cá nhân nằm rải rác ở nhiều nghiệp vụ khác nhau.</p></article><article><h3>Tìm việc nhanh và theo dõi dễ dàng</h3><p>Mở một điểm truy cập duy nhất để xem những gì cần bạn chú ý và đi vào nghiệp vụ liên quan để xử lý.</p><p>Giảm việc chuyển qua lại và bỏ sót task. Trạng thái và số lượng được cập nhật cho thấy việc nào đã xong và việc nào còn lại.</p></article></div></section><section id=\"scenarios\"><div class=\"section-head\"><h2>Thử bốn bước trong dự án của bạn</h2><p>Bắt đầu với các bước 1–4, sau đó chọn các kịch bản tùy chọn. Sao chép prompt cho Agent trong dự án ứng dụng của bạn và kiểm tra kết quả.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Các bước tích hợp Trung tâm Task\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Các quyết định cần đưa ra\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Gửi cho Agent của bạn</span><small>Điều chỉnh theo nghiệp vụ của bạn</small></div><textarea id=\"scenario-prompt\" aria-label=\"Prompt kịch bản\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Khôi phục mặc định</button><button class=\"primary\" id=\"copy\">Sao chép prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Kiểm chứng kết quả</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">Đây là checklist kiểm tra thủ công, không phải test tự động. Các lựa chọn chỉ được giữ trong lần truy cập trang này.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>Xem ảnh chụp màn hình ví dụ</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Giao diện ứng dụng ví dụ; các trang nghiệp vụ của bạn có thể khác.</p></details><a id=\"scenario-doc\" href=\"/capabilities/approval/stages\">Đọc prompt dạng Markdown ↗</a></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Năng lực và tài liệu liên quan</h2></div><div class=\"resources\"><a href=\"/capabilities/approval/\"><strong>Phê duyệt ↗</strong><p>Cấu hình tuyến phê duyệt và quy tắc xử lý.</p></a><a href=\"/capabilities/notification/\"><strong>Thông báo ↗</strong><p>Thêm nhắc nhở cho công việc nghiệp vụ.</p></a><a href=\"/capabilities/task-center.md\"><strong>Tài liệu Markdown ↗</strong><p>Đọc hoặc tải xuống hướng dẫn đầy đủ cho Agent của bạn.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Quay lại danh sách năng lực</a><a href=\"#scenarios\">Bắt đầu xây dựng ↑</a></nav><footer class=\"end\"><span>NocoBase 3 · Tài liệu</span><span>Mã nguồn mở · Tự host · Tự chọn model và Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "promptKey": "task-center",
+    "scenarios": [
+      {
+        "id": "start",
+        "title": "Bắt đầu với My tasks",
+        "summary": "Gom công việc cá nhân về một nơi thay vì phải kiểm tra từng trang nghiệp vụ.",
+        "decisions": [
+          ["Ví dụ", "Một quản lý mở My tasks từ thanh điều hướng."]
+        ],
+        "checks": [
+          "Người dùng đã đăng nhập thấy công việc của chính mình và trạng thái trống.",
+          "Tìm công việc theo nghiệp vụ và trạng thái."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "1. Tạo một mục công việc",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "approvals",
+        "title": "Đưa phê duyệt nghỉ phép và chi phí vào",
+        "summary": "Cho quản lý một nơi duy nhất để tìm các đơn đang chờ họ quyết định.",
+        "decisions": [
+          [
+            "Ví dụ",
+            "Phê duyệt nghỉ phép và chi phí của một quản lý xuất hiện cùng nhau."
+          ]
+        ],
+        "checks": [
+          "Chuyển giao sẽ hủy công việc của người nhận cũ và tạo công việc đang chờ cho người nhận mới.",
+          "Chỉ những thao tác phê duyệt đang được cung cấp mới xuất hiện."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "2. Kết nối phê duyệt",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "handling",
+        "title": "Mở chi tiết và thực hiện thao tác",
+        "summary": "Mở một task, dùng các thao tác mà nghiệp vụ cho phép, và làm mới sau khi xử lý.",
+        "decisions": [
+          [
+            "Ví dụ",
+            "Phê duyệt một khoản chi phí sẽ chuyển nó sang đã hoàn thành và giảm số lượng đang chờ."
+          ]
+        ],
+        "checks": [
+          "Chỉ những người được phép xử lý công việc mới xem được chi tiết và thao tác.",
+          "Xử lý xong sẽ làm mới danh sách và mọi số đếm liên quan."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "3. Xử lý công việc",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "verification",
+        "title": "Thử luồng với hai tài khoản",
+        "summary": "Yêu cầu Agent kiểm chứng với công việc nghiệp vụ thực tế, sau đó tự mình thử.",
+        "decisions": [
+          [
+            "Ví dụ",
+            "Alex xử lý công việc của Alex; Jordan không thể đọc hay xử lý các mục công việc cá nhân của Alex."
+          ]
+        ],
+        "checks": [
+          "Đã kiểm chứng sự cô lập giữa hai tài khoản.",
+          "Các kịch bản đã chạy và chưa chạy được báo cáo riêng."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "4. Kiểm chứng kết quả",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "ordinary",
+        "title": "Kết nối công việc thông thường",
+        "summary": "Nhận thiết bị, bổ sung chứng từ và xác nhận giao hàng có thể là task mà không cần giai đoạn phê duyệt.",
+        "decisions": [
+          [
+            "Ví dụ",
+            "Cấp EQ-001 cho Alex sẽ tạo công việc; xác nhận đã nhận sẽ hoàn thành công việc đó."
+          ]
+        ],
+        "checks": [
+          "Cùng một công việc không xuất hiện hai lần.",
+          "Nhận thành công sẽ hoàn thành mục công việc; nhận thất bại thì mục vẫn ở trạng thái đang chờ."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "Nhận thiết bị",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "dashboard",
+        "title": "Xem còn bao nhiêu việc",
+        "summary": "Hiển thị số lượng đang chờ mà không cần mở toàn bộ danh sách.",
+        "decisions": [
+          [
+            "Ví dụ",
+            "Hai task chi phí và một task thiết bị cho ra badge tổng hợp mọi nguồn là 3."
+          ]
+        ],
+        "checks": [
+          "Số đếm trên dashboard khớp với danh sách task mà nó mở ra.",
+          "Bộ lọc nghiệp vụ hiển thị công việc tương ứng; chuyển tài khoản thì chỉ hiển thị công việc của tài khoản đó."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "Badge trên dashboard",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "reassignment",
+        "title": "Chuyển công việc cho người khác",
+        "summary": "Hủy mục công việc chưa xong của người nhận cũ và tạo công việc cho người nhận mới.",
+        "decisions": [
+          [
+            "Ví dụ",
+            "Công việc thiết bị chuyển từ Alex sang Jordan; chỉ Jordan mới có thể xác nhận đã nhận."
+          ]
+        ],
+        "checks": [
+          "Người nhận cũ không thể xử lý công việc đã được giao lại.",
+          "Lịch sử đã hoàn thành được giữ lại; công việc chưa xong bị hủy theo quy định."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "Giao lại",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "history",
+        "title": "Đưa công việc hiện có vào trung tâm",
+        "summary": "Hiển thị công việc cũ và mới cùng nhau trong một ứng dụng đang được sử dụng.",
+        "decisions": [
+          [
+            "Ví dụ",
+            "Quá trình backfill bị tạm dừng được tiếp tục mà không khôi phục trạng thái đang chờ đè lên các công việc đã hoàn thành trực tuyến."
+          ]
+        ],
+        "checks": [
+          "Các lô bị gián đoạn được tiếp tục mà không tạo mục trùng lặp.",
+          "Công việc đã hoàn thành không bao giờ trở lại trạng thái đang chờ."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "Công việc lịch sử",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "notifications",
+        "title": "Thông báo cho người nhận khi có công việc đến",
+        "summary": "Thông báo báo hiệu có việc cần làm; việc hoàn thành vẫn diễn ra trong nghiệp vụ.",
+        "decisions": [
+          [
+            "Ví dụ",
+            "Đọc một nhắc nhở nhận thiết bị không hoàn thành task."
+          ]
+        ],
+        "checks": [
+          "Mỗi sự kiện nghiệp vụ và người nhận chỉ có một nhắc nhở.",
+          "Đọc không hoàn thành task; gửi thất bại không hoàn tác các thao tác ghi nghiệp vụ."
+        ],
+        "note": "Thử với bản ghi test trước, sau đó điều chỉnh theo nghiệp vụ của bạn.",
+        "status": "Nhắc nhở",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      }
+    ]
+  }
+}

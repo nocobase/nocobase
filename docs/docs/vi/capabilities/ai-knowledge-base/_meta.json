@@ -1,0 +1,32 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan cơ sở tri thức AI"
+  },
+  {
+    "type": "file",
+    "name": "organize",
+    "label": "Sắp xếp và nhập tài liệu"
+  },
+  {
+    "type": "file",
+    "name": "search",
+    "label": "Đọc và tìm kiếm"
+  },
+  {
+    "type": "file",
+    "name": "answers",
+    "label": "Trả lời dựa trên tri thức"
+  },
+  {
+    "type": "file",
+    "name": "access",
+    "label": "Quyền truy cập và cộng tác"
+  },
+  {
+    "type": "file",
+    "name": "maintenance",
+    "label": "Phiên bản và trạng thái xử lý"
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan phê duyệt"
+  },
+  {
+    "type": "file",
+    "name": "stages",
+    "label": "Nhiều giai đoạn và định tuyến theo điều kiện"
+  },
+  {
+    "type": "file",
+    "name": "joint-review",
+    "label": "Duyệt chung và quy tắc quyết định"
+  },
+  {
+    "type": "file",
+    "name": "handover",
+    "label": "Thêm người duyệt và chuyển giao"
+  },
+  {
+    "type": "file",
+    "name": "requests",
+    "label": "Xử lý yêu cầu và tiến độ"
+  }
+]
