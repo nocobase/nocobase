@@ -99,7 +99,7 @@ export class Storer implements IStorer {
     return Object.values(authenticators);
   }
 
-  async setCache(authenticators: AuthModel[]) {
+  async setCache(authenticators: Authenticator[]) {
     const obj: Record<string, Authenticator> = {};
     for (const authenticator of authenticators) {
       // Store the unrendered options so a cache populated before plugin registration
