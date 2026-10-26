@@ -38,6 +38,18 @@ class BasicAuth extends Auth {
   async getIdentity() {
     return null;
   }
+
+  getAuthenticator() {
+    return this.authenticator;
+  }
+
+  getResolvedOptions() {
+    return this.options;
+  }
+}
+
+class LDAPTestAuth extends BasicAuth {
+  static readonly optionsKeysNotAllowedInEnv = ['ldap.filter'];
 }
 
 describe('auth-manager', () => {
@@ -88,6 +100,58 @@ describe('auth-manager', () => {
 
     expect(auth).toBeInstanceOf(BasicAuth);
     expect(auth.options).toEqual({ builtin: true });
+  });
+
+  it('should render options while preserving authenticator model methods and memoize rendering', async () => {
+    const originalFilter = '(sAMAccountName={{account}})';
+    const authenticator: any = {
+      name: 'ldap-test',
+      authType: 'ldap',
+      options: {
+        ldap: { filter: originalFilter },
+        url: '{{$env.LDAP_URL}}',
+      },
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      findUser: vi.fn(),
+    };
+    storer.set(authenticator.name, authenticator);
+    authManager.registerTypes('ldap', { auth: LDAPTestAuth });
+
+    const renderJsonTemplate = vi.fn((options: any) => ({
+      ...options,
+      ldap: { ...options.ldap },
+      url: 'ldaps://ldap.example.test',
+    }));
+    const ctx = {
+      app: {
+        environment: { renderJsonTemplate },
+      },
+    } as any as Context;
+
+    const firstAuth = (await authManager.get('ldap-test', ctx)) as LDAPTestAuth;
+    expect(firstAuth.getAuthenticator()).toBe(authenticator);
+    expect(typeof firstAuth.getAuthenticator().findUser).toBe('function');
+    expect(firstAuth.getResolvedOptions()).toEqual({
+      ldap: { filter: originalFilter },
+      url: 'ldaps://ldap.example.test',
+    });
+    expect(authenticator.options.url).toBe('{{$env.LDAP_URL}}');
+    expect(renderJsonTemplate).toHaveBeenCalledWith(authenticator.options, {
+      omit: ['ldap.filter'],
+    });
+
+    const secondAuth = (await authManager.get('ldap-test', ctx)) as LDAPTestAuth;
+    expect(secondAuth.getAuthenticator()).toBe(authenticator);
+    expect(renderJsonTemplate).toHaveBeenCalledTimes(1);
+
+    // Saving updated options must invalidate the memoized rendered copy.
+    authenticator.options = {
+      ...authenticator.options,
+      url: '{{$env.LDAP_URL}}/updated',
+    };
+    authenticator.updatedAt = new Date('2026-01-02T00:00:00.000Z');
+    await authManager.get('ldap-test', ctx);
+    expect(renderJsonTemplate).toHaveBeenCalledTimes(2);
   });
 
   it('should list types', () => {
