@@ -1,18 +1,7 @@
+import { translator } from '../../scripts/interaction-messages.mjs';
+
 export function initializeOverview(root, scenarios, lang = 'cn') {
-  const messages = {
-    复制: 'Copy',
-    复制提示词: 'Copy prompt',
-    提示词: ' prompt',
-    ' 项已检查': ' checked',
-    '提示词已复制，可发送给应用项目中的 Agent':
-      'Prompt copied. Send it to the Agent in your application project.',
-    '复制未成功，请选中文字手动复制':
-      'Copy failed. Select the text and copy it manually.',
-    已复制: 'Copied',
-    '已复制，可以粘贴到 Agent 中': 'Copied. Paste it into your Agent.',
-    使用文档: 'Documentation',
-  };
-  const t = (text) => (lang === 'cn' ? text : (messages[text] ?? text));
+  const t = translator(lang);
   const copyIcon =
     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
   const checkIcon =

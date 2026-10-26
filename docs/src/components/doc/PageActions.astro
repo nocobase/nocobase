@@ -4,6 +4,7 @@
  * the same file `llms.txt` links to, fetched when the reader asks for it rather than embedded in the page.
  */
 import { absoluteUrl } from '../../../shared/site.ts';
+import { uiText } from '../../lib/ui-text.ts';
 
 interface Props {
   language: string;
@@ -12,30 +13,9 @@ interface Props {
 }
 
 const { language, markdownPath } = Astro.props;
-const cn = language === 'cn';
+const text = uiText(language).pageActions;
 const markdownUrl = absoluteUrl(markdownPath);
-const prompt = cn
-  ? `阅读 ${markdownUrl}，我想询问关于它的问题。`
-  : `Read ${markdownUrl}, I want to ask questions about it.`;
-const text = cn
-  ? {
-      copy: '复制 Markdown',
-      copied: '已复制',
-      failed: '复制失败',
-      more: '更多操作',
-      link: '复制 Markdown 链接',
-      chatgpt: '在 ChatGPT 中打开',
-      claude: '在 Claude 中打开',
-    }
-  : {
-      copy: 'Copy Markdown',
-      copied: 'Copied',
-      failed: 'Copy failed',
-      more: 'More actions',
-      link: 'Copy Markdown link',
-      chatgpt: 'Open in ChatGPT',
-      claude: 'Open in Claude',
-    };
+const prompt = text.prompt.replace('{url}', markdownUrl);
 ---
 
 <div class='page-actions' data-pagefind-ignore>

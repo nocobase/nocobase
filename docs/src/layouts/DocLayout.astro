@@ -4,7 +4,7 @@
  * contents from its `##` and `###` headings, and previous and next links that follow the sidebar.
  */
 import { render, type CollectionEntry } from 'astro:content';
-import { localizePath } from '../../shared/languages.ts';
+import { getLanguage, localizePath } from '../../shared/languages.ts';
 import { absoluteUrl } from '../../shared/site.ts';
 import PageActions from '../components/doc/PageActions.astro';
 import PrevNext from '../components/doc/PrevNext.astro';
@@ -17,6 +17,7 @@ import {
   type DocPage,
 } from '../lib/pages.ts';
 import { buildSidebars, flattenLinks, sidebarFor } from '../lib/sidebar.ts';
+import { uiText } from '../lib/ui-text.ts';
 import BaseLayout from './BaseLayout.astro';
 import '../styles/doc.css';
 
@@ -35,7 +36,7 @@ const position = sequence.findIndex(({ href }) => href === page.path);
 const prev = position > 0 ? sequence[position - 1] : undefined;
 const next = position >= 0 ? sequence[position + 1] : undefined;
 const toc = headings.filter(({ depth }) => depth === 2 || depth === 3);
-const cn = page.language === 'cn';
+const text = uiText(page.language);
 
 // Breadcrumbs follow the route: every ancestor that is itself a page, then the page.
 const ancestors = page.route
@@ -52,7 +53,7 @@ const structuredData = [
     '@type': 'TechArticle',
     headline: page.title,
     description: page.description,
-    inLanguage: cn ? 'zh-CN' : 'en',
+    inLanguage: getLanguage(page.language).htmlLang,
     url: absoluteUrl(page.path),
     mainEntityOfPage: absoluteUrl(page.path),
     isPartOf: {
@@ -66,19 +67,11 @@ const structuredData = [
     itemListElement: trail.map((item, index) => ({
       '@type': 'ListItem',
       position: index + 1,
-      name:
-        item.kind === 'home'
-          ? cn
-            ? 'NocoBase 文档'
-            : 'NocoBase Documentation'
-          : item.title,
+      name: item.kind === 'home' ? text.siteName : item.title,
       item: absoluteUrl(item.path),
     })),
   },
 ];
-const text = cn
-  ? { menu: '菜单', onThisPage: '目录', sidebar: '文档导航' }
-  : { menu: 'Menu', onThisPage: 'On this page', sidebar: 'Documentation' };
 ---
 
 <BaseLayout
@@ -149,10 +142,7 @@ const text = cn
       )}
     </aside>
   </div>
-  <dialog
-    class='image-viewer'
-    aria-label={cn ? '图片预览' : 'Image preview'}
-  ></dialog>
+  <dialog class='image-viewer' aria-label={text.imagePreview}></dialog>
 </BaseLayout>
 
 <script>

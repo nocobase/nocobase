@@ -1,4 +1,6 @@
 ---
+import { uiText } from '../../lib/ui-text.ts';
+
 interface Props {
   language: string;
   prev?: { text: string; href: string };
@@ -6,22 +8,18 @@ interface Props {
 }
 
 const { language, prev, next } = Astro.props;
-const cn = language === 'cn';
+const text = uiText(language);
 ---
 
 {(prev || next) && (
-  <nav
-    class='prev-next'
-    aria-label={cn ? '翻页' : 'Pagination'}
-    data-pagefind-ignore
-  >
+  <nav class='prev-next' aria-label={text.pagination} data-pagefind-ignore>
     {prev ? (
       <a
         class='prev-next__item prev-next__item--prev'
         href={prev.href}
         rel='prev'
       >
-        <span class='prev-next__label'>{cn ? '上一页' : 'Previous page'}</span>
+        <span class='prev-next__label'>{text.previousPage}</span>
         <span class='prev-next__title'>
           <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true'>
             <path
@@ -43,7 +41,7 @@ const cn = language === 'cn';
         href={next.href}
         rel='next'
       >
-        <span class='prev-next__label'>{cn ? '下一页' : 'Next page'}</span>
+        <span class='prev-next__label'>{text.nextPage}</span>
         <span class='prev-next__title'>
           {next.text}
           <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true'>

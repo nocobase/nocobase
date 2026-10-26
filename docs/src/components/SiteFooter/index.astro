@@ -1,16 +1,12 @@
 ---
+import { uiText } from '../../lib/ui-text.ts';
+
 /** The closing line every page ends with; the hand-built pages carry the same text in their own markup. */
 interface Props {
   language: string;
 }
 
-const text =
-  Astro.props.language === 'cn'
-    ? ['NocoBase 3 · 开发文档', '开源 · 私有部署 · 自选模型与 Agent']
-    : [
-        'NocoBase 3 · Documentation',
-        'Open source · Self-hosted · Your choice of models and Agents',
-      ];
+const text = uiText(Astro.props.language).footer;
 ---
 
 <footer class='site-footer'>

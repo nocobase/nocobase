@@ -1,6 +1,8 @@
 ---
+import { pickLanguage } from '../../../shared/languages.ts';
 import chinese from './content.json';
 import english from './content.en.json';
+import vietnamese from './content.vi.json';
 import './index.scss';
 
 interface Props {
@@ -8,7 +10,10 @@ interface Props {
 }
 
 const { language } = Astro.props;
-const content = language === 'cn' ? chinese : english;
+const content = pickLanguage(
+  { cn: chinese, en: english, vi: vietnamese },
+  language,
+);
 const assets = import.meta.glob<string>('./assets/*.png', {
   eager: true,
   query: '?url',

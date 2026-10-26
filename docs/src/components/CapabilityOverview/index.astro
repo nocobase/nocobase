@@ -5,10 +5,13 @@
  */
 import { getImage } from 'astro:assets';
 import type { LanguageLink } from '../../lib/language-menu.ts';
+import { getLanguage, pickLanguage } from '../../../shared/languages.ts';
 import cnHome from '../FullHome/data.json';
 import enHome from '../FullHome/data.en.json';
+import viHome from '../FullHome/data.vi.json';
 import cnPages from './pages.json';
 import enPages from './pages.en.json';
+import viPages from './pages.vi.json';
 import { headerMarkup } from '../SiteHeader/markup.ts';
 import './index.scss';
 
@@ -19,12 +22,14 @@ interface Props {
 }
 
 const { language, module, languageLinks } = Astro.props;
-const cn = language === 'cn';
-const pages = (cn ? cnPages : enPages) as Record<
+const pages = pickLanguage(
+  { cn: cnPages, en: enPages, vi: viPages },
+  language,
+) as Record<
   string,
   { markup: string; promptKey: string; scenarios: Scenario[] }
 >;
-const home = cn ? cnHome : enHome;
+const home = pickLanguage({ cn: cnHome, en: enHome, vi: viHome }, language);
 const page = pages[module];
 
 interface Scenario {
@@ -77,7 +82,7 @@ const data = JSON.stringify(scenarios).replace(/</g, '\\u003c');
 
 <div
   class='capability-overview'
-  lang={cn ? 'zh-CN' : 'en'}
+  lang={getLanguage(language).htmlLang}
   data-language={language}
   data-pagefind-body
   set:html={markup}

@@ -7,10 +7,13 @@ import {
   withLanguageMenu,
   type LanguageLink,
 } from '../../lib/language-menu.ts';
+import { localizePath, pickLanguage } from '../../../shared/languages.ts';
 import cnContent from './data.json';
 import enContent from './data.en.json';
 import cnMarkup from './markup.json';
 import enMarkup from './markup.en.json';
+import viContent from './data.vi.json';
+import viMarkup from './markup.vi.json';
 import '../../styles/legacy-typography.css';
 import './index.scss';
 
@@ -22,19 +25,26 @@ interface Props {
 }
 
 const { language, languageLinks, capabilityHrefs } = Astro.props;
-const cn = language === 'cn';
 const markup = withLanguageMenu(
-  cn ? cnMarkup : enMarkup,
+  pickLanguage({ cn: cnMarkup, en: enMarkup, vi: viMarkup }, language),
   language,
   languageLinks,
 );
 const data = JSON.stringify({
-  content: cn ? cnContent : enContent,
+  content: pickLanguage(
+    { cn: cnContent, en: enContent, vi: viContent },
+    language,
+  ),
   capabilityHrefs,
 }).replace(/</g, '\\u003c');
 ---
 
-<div class='docs-full-home' data-language={language} set:html={markup} />
+<div
+  class='docs-full-home'
+  data-language={language}
+  data-base={localizePath(language, '/')}
+  set:html={markup}
+/>
 <script type='application/json' id='docs-full-home-data' set:html={data} />
 <script>
   import '../../scripts/language-menu.ts';

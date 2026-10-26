@@ -1,0 +1,35 @@
+---
+/** The NocoBase Studio guide of each language. It is a hand-written page: no Markdown source, not in `llms.txt`. */
+import type { GetStaticPaths } from 'astro';
+import { LANGUAGES, pickLanguage } from '../../../shared/languages.ts';
+import StudioGuide from '../../components/StudioGuide/index.astro';
+import chinese from '../../components/StudioGuide/content.json';
+import english from '../../components/StudioGuide/content.en.json';
+import vietnamese from '../../components/StudioGuide/content.vi.json';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export const getStaticPaths = (() =>
+  LANGUAGES.map(({ key, base }) => ({
+    params: { base: base.replace(/^\/|\/$/g, '') || undefined },
+    props: { language: key },
+  }))) satisfies GetStaticPaths;
+
+interface Props {
+  language: string;
+}
+
+const { language } = Astro.props;
+const content = pickLanguage(
+  { cn: chinese, en: english, vi: vietnamese },
+  language,
+);
+---
+
+<BaseLayout
+  language={language}
+  route='/studio'
+  title={content.title}
+  description={content.description}
+>
+  <StudioGuide language={language} />
+</BaseLayout>

@@ -2218,7 +2218,7 @@
   }
 }
 
-.capability-overview[lang='en'] {
+.capability-overview:not(:lang(zh)) {
   .decisions > div {
     grid-template-columns: 110px minmax(0, 1fr);
   }

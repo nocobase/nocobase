@@ -5,8 +5,10 @@ import image1 from './assets/image-1.jpeg';
 import image2 from './assets/image-2.jpeg';
 import image3 from './assets/image-3.jpeg';
 import image4 from './assets/image-4.jpeg';
+import { pickLanguage } from '../../../shared/languages.ts';
 import cnMarkup from './markup.json';
 import enMarkup from './markup.en.json';
+import viMarkup from './markup.vi.json';
 import '../../styles/legacy-typography.css';
 import './index.scss';
 
@@ -15,7 +17,10 @@ interface Props {
 }
 
 const images = [image0, image1, image2, image3, image4];
-const source = Astro.props.language === 'cn' ? cnMarkup : enMarkup;
+const source = pickLanguage(
+  { cn: cnMarkup, en: enMarkup, vi: viMarkup },
+  Astro.props.language,
+);
 const markup = images.reduce(
   (html, image, index) =>
     html.replaceAll(

@@ -4,7 +4,7 @@ Rules for editing anything under `docs/`. [README.md](README.md) is the full aut
 
 ## Which Files Hold What
 
-- **Content**: Markdown pages in `docs/<lang>/**/*.md(x)` (`en` and `cn`), sidebars in `_meta.json`, `llms.txt` grouping in `docs/<lang>/_nav.json`, images in `docs/<lang>/capabilities/assets/`, downloads in `docs/<lang>/public/` (served at `/downloads/…` and `/zh-CN/downloads/…`).
+- **Content**: Markdown pages in `docs/<lang>/**/*.md(x)` (`en`, `cn` and `vi`), sidebars in `_meta.json`, `llms.txt` grouping in `docs/<lang>/_nav.json`, images in `docs/<lang>/capabilities/assets/`, downloads in `docs/<lang>/public/` (served at `/downloads/…` and `/zh-CN/downloads/…`).
 - **Hand-built page copy**: home page `src/components/FullHome/markup*.json` and `data*.json`, the 2 vs 3 comparison `src/components/ArchitecturePitch/markup*.json` and `assets/`, the capability overviews `src/components/CapabilityOverview/pages*.json`, the header `src/components/SiteHeader/header.{cn,en}.json` (every page except the home page, which has its own top bar in its markup), the footer `src/components/SiteFooter/index.astro` (the home page and overviews carry their own footer in their markup).
 - **Deployment guide**: `src/components/Deployment/content*.json` supplies the visible copy; keep the commands and anchors aligned with `docs/<lang>/deployment.md`. Its dedicated Astro route and browser script preserve tabs, section links and command copying.
 - **Framework**: `astro.config.ts`, `shared/`, the rest of `src/`, `scripts/`, `tests/`, `.github/workflows/v3-docs.yml`. Change it only when the task is about the site itself, and read `.agents/rules/docs-site.md` first.
@@ -17,7 +17,7 @@ Rules for editing anything under `docs/`. [README.md](README.md) is the full aut
 ## Pitfalls
 
 - The Markdown twins of hand-built pages (`docs/<lang>/index.md`, `nocobase-2-vs-3.mdx`, the capability overview sources such as `capabilities/auth/index.mdx` and `capabilities/file.md`) are not rendered. Their frontmatter feeds the page's `<title>`, description and keywords, and their body feeds the `.md` copy and `llms.txt`. Change visible copy in the JSON, then update the twin to match.
-- In the hand-built pages' JSON, the file without a suffix (`markup.json`, `data.json`, `pages.json`) is Chinese and `.en.json` is English. The header names both: `header.cn.json`, `header.en.json`. Edit both languages.
+- In the hand-built pages' JSON, the file without a suffix (`markup.json`, `data.json`, `pages.json`) is Chinese, `.en.json` is English and `.vi.json` is Vietnamese. The header names them `header.cn.json`, `header.en.json`, `header.vi.json`. Edit every language.
 - Never hand-write public URLs in Markdown for other documentation pages; link to the source file relatively (`../auth/index.md`, `./api-keys.md#create`). Only downloads in `public/` and hand-written `.astro` pages are linked by public path.
 - Never change URL shapes, `build.format` or file names of published pages: published URLs are indexed and the CDN maps extensionless URLs to `<path>/index.html`.
 - Every page exists in both languages; `cn` is the baseline `check.sh` compares against. A hand-written page with only one language passes `translations={['en']}` to `BaseLayout`.

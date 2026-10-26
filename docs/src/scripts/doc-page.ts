@@ -63,7 +63,30 @@ document.addEventListener('click', (event) => {
     });
 });
 
-// Code blocks: a copy button on each.
+// Code blocks: a copy button on each, labelled in the document's language (`<html lang>`).
+const CODE_COPY_TEXT: Record<
+  string,
+  { label: string; copy: string; copied: string; failed: string }
+> = {
+  en: {
+    label: 'Copy code',
+    copy: 'Copy',
+    copied: 'Copied',
+    failed: 'Copy failed',
+  },
+  'zh-CN': {
+    label: '复制代码',
+    copy: '复制',
+    copied: '已复制',
+    failed: '复制失败',
+  },
+  vi: {
+    label: 'Sao chép code',
+    copy: 'Sao chép',
+    copied: 'Đã sao chép',
+    failed: 'Sao chép thất bại',
+  },
+};
 document.querySelectorAll<HTMLPreElement>('.doc-content pre').forEach((pre) => {
   const wrapper = document.createElement('div');
   wrapper.className = 'code-block';
@@ -72,11 +95,12 @@ document.querySelectorAll<HTMLPreElement>('.doc-content pre').forEach((pre) => {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'code-block__copy';
-  const cn = document.documentElement.lang === 'zh-CN';
-  button.setAttribute('aria-label', cn ? '复制代码' : 'Copy code');
-  button.dataset.copied = cn ? '已复制' : 'Copied';
-  button.dataset.failed = cn ? '复制失败' : 'Copy failed';
-  button.innerHTML = `<span>${cn ? '复制' : 'Copy'}</span>`;
+  const text =
+    CODE_COPY_TEXT[document.documentElement.lang] ?? CODE_COPY_TEXT.en;
+  button.setAttribute('aria-label', text.label);
+  button.dataset.copied = text.copied;
+  button.dataset.failed = text.failed;
+  button.innerHTML = `<span>${text.copy}</span>`;
   button.addEventListener('click', async () =>
     flash(button, await copyText(pre.innerText.replace(/\n$/, ''))),
   );

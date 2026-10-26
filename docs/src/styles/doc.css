@@ -635,7 +635,7 @@
   color: var(--docs-ink);
 }
 
-html[lang='en'] .doc-outline__title {
+html:not(:lang(zh)) .doc-outline__title {
   text-transform: uppercase;
 }
 

@@ -1,6 +1,7 @@
 import { localizePath } from '../../shared/languages.ts';
 import { routeKey } from '../../shared/routes.ts';
 import { findPage, type DocPage } from './pages.ts';
+import { uiText } from './ui-text.ts';
 
 /**
  * The sidebar, built from the `_meta.json` files next to the pages they order — the same files and the same entry
@@ -53,11 +54,6 @@ function readMeta(
 function isIndex(source: string): boolean {
   return /(^|\/)index\.mdx?$/.test(source);
 }
-
-const BACK_TO_CAPABILITIES: Record<string, string> = {
-  en: '← All capabilities',
-  cn: '← 全部应用能力',
-};
 
 class SidebarBuilder {
   constructor(
@@ -220,10 +216,7 @@ export function buildSidebars(
     sidebars.push({
       root,
       items: [
-        builder.link(
-          BACK_TO_CAPABILITIES[language] ?? BACK_TO_CAPABILITIES.en,
-          '/#capabilities',
-        ),
+        builder.link(uiText(language).backToCapabilities, '/#capabilities'),
         { type: 'divider', dashed: false },
         { type: 'section', text: module.label ?? module.name ?? '' },
         ...builder.directory(root),

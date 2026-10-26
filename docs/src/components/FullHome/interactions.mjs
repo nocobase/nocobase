@@ -1,26 +1,15 @@
+import { translator } from '../../scripts/interaction-messages.mjs';
+
 /**
  * Make the home page's prompt cards and prompt dialog interactive. `content` is the page language's `data*.json`,
  * which the page embeds, and `capabilityHrefs` maps a capability id to its overview page URL.
  */
 export function initializeHomepage(root, lang, content, capabilityHrefs) {
-  const messages = {
-    复制: 'Copy',
-    复制提示词: 'Copy prompt',
-    提示词: ' prompt',
-    ' 项已检查': ' checked',
-    '提示词已复制，可发送给应用项目中的 Agent':
-      'Prompt copied. Send it to the Agent in your application project.',
-    '复制未成功，请选中文字手动复制':
-      'Copy failed. Select the text and copy it manually.',
-    已复制: 'Copied',
-    '已复制，可以粘贴到 Agent 中': 'Copied. Paste it into your Agent.',
-    使用文档: 'Documentation',
-  };
-  const t = (text) => (lang === 'cn' ? text : (messages[text] ?? text));
+  const t = translator(lang);
   const { icons, data, capabilityIcons, promptLibrary } = content;
   const capabilityHref = (id) =>
     capabilityHrefs[id] ??
-    (lang === 'cn' ? '/zh-CN' : '') + '/capabilities/' + id + '/';
+    (root.dataset.base ?? '/') + 'capabilities/' + id + '/';
   const dialog = root.querySelector('dialog');
   const editor = root.querySelector('#prompt-editor');
   const tablist = root.querySelector('.prompt-tabs');
@@ -121,11 +110,9 @@ export function initializeHomepage(root, lang, content, capabilityHrefs) {
       (entry.description || desc) +
       '</p><div class="cardfoot"><button type="button" aria-haspopup="dialog" aria-label="' +
       title +
-      (lang === 'cn' ? '：查看 ' : ': View ') +
-      count +
-      (lang === 'cn' ? ' 个提示词">查看提示词（' : ' prompts">View prompts (') +
-      count +
-      (lang === 'cn' ? '）' : ')') +
+      t('：查看 {n} 个提示词', { n: count }) +
+      '">' +
+      t('查看提示词（{n}）', { n: count }) +
       icons.ArrowRight +
       '</button><a href="' +
       capabilityHref(id) +

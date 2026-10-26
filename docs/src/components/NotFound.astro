@@ -5,13 +5,14 @@
  */
 import { getLanguage } from '../../shared/languages.ts';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { uiText } from '../lib/ui-text.ts';
 
 interface Props {
   language: string;
 }
 
 const { language } = Astro.props;
-const cn = language === 'cn';
+const text = uiText(language);
 ---
 
 <BaseLayout
@@ -26,10 +27,10 @@ const cn = language === 'cn';
 >
   <main class='not-found'>
     <p class='not-found__code'>404</p>
-    <h1 class='not-found__title'>{cn ? '页面未找到' : 'PAGE NOT FOUND'}</h1>
+    <h1 class='not-found__title'>{text.notFoundTitle}</h1>
     <div class='not-found__divider'></div>
     <a class='not-found__home' href={getLanguage(language).base}>
-      {cn ? '返回首页' : 'Take me home'}
+      {text.notFoundHome}
     </a>
   </main>
 </BaseLayout>

@@ -3,8 +3,14 @@ import SiteHeader from '../SiteHeader/index.astro';
 import type { LanguageLink } from '../../lib/language-menu.ts';
 import AgentIcon from './AgentIcon.astro';
 import Blocks from './Blocks.astro';
+import {
+  getLanguage,
+  localizePath,
+  pickLanguage,
+} from '../../../shared/languages.ts';
 import chinese from './content.json';
 import english from './content.en.json';
+import vietnamese from './content.vi.json';
 import './index.scss';
 
 interface Props {
@@ -13,8 +19,11 @@ interface Props {
 }
 
 const { language, languageLinks } = Astro.props;
-const content = language === 'cn' ? chinese : english;
-const home = language === 'cn' ? '/zh-CN/#start' : '/#start';
+const content = pickLanguage(
+  { cn: chinese, en: english, vi: vietnamese },
+  language,
+);
+const home = `${localizePath(language, '/')}#start`;
 const selectedGuide = content.guides[0];
 const stepNumber = (title: string) =>
   title.match(/^(\d+)\. /)?.[1]?.padStart(2, '0') ?? '↻';
@@ -22,7 +31,7 @@ const stepNumber = (title: string) =>
 
 <div
   class='deployment-page'
-  lang={language === 'cn' ? 'zh-CN' : 'en'}
+  lang={getLanguage(language).htmlLang}
   data-legacy-anchors={JSON.stringify(content.legacyAnchors)}
 >
   <SiteHeader language={language} languageLinks={languageLinks} />

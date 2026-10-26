@@ -1,4 +1,5 @@
 import { getLanguage, LANGUAGES } from '../../shared/languages.ts';
+import { uiText } from './ui-text.ts';
 
 export interface LanguageLink {
   language: string;
@@ -25,7 +26,7 @@ export function languageMenu(
   links: readonly LanguageLink[],
 ): string {
   const { label, key } = getLanguage(current);
-  const cn = key === 'cn';
+  const text = uiText(key);
   const items = LANGUAGES.map((language) => {
     const href =
       links.find((link) => link.language === language.key)?.href ??
@@ -34,7 +35,7 @@ export function languageMenu(
       ? `<span lang="${language.htmlLang}" aria-current="page">${language.label}</span>`
       : `<a href="${escapeAttribute(href)}" lang="${language.htmlLang}" hreflang="${language.hreflang}" rel="alternate" data-keep-location>${language.label}</a>`;
   }).join('');
-  return `<details class="docs-language-menu"><summary aria-label="${cn ? '切换语言' : 'Change language'}">${label}</summary><nav aria-label="${cn ? '语言' : 'Languages'}">${items}</nav></details>`;
+  return `<details class="docs-language-menu"><summary aria-label="${text.changeLanguage}">${label}</summary><nav aria-label="${text.languages}">${items}</nav></details>`;
 }
 
 export function withLanguageMenu(

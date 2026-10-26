@@ -22,7 +22,7 @@ export type PageKind =
 
 export interface DocPage {
   entry: DocEntry;
-  /** Source language key, `en` or `cn`. */
+  /** Source language key from `shared/languages.ts`: `en`, `cn`, `vi`. */
   language: string;
   /** Language-neutral route with its exact trailing-slash shape: `/capabilities/auth/`, `/capabilities/file`. */
   route: string;
