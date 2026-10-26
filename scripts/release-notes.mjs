@@ -8,10 +8,16 @@
 // Everything is read out of the tagged commit with `git show`, never from the
 // working tree, so notes for any past release can be rendered at any later time.
 //
+// The notes open with the release's section of the root CHANGELOG.md, which
+// scripts/changelog.mjs wrote into the release commit from the pull requests'
+// descriptions, followed by the published packages and their own changelogs.
+//
 // Usage:
 //   node scripts/release-notes.mjs <aggregate-tag>            print the notes
 //   node scripts/release-notes.mjs <aggregate-tag> --packages print `name@version` per line
 import { execFileSync } from 'node:child_process';
+
+import { extractReleaseSection } from './changelog.mjs';
 
 const AGGREGATE_PATTERN = /^release(-beta)?\/\d{4}-\d{2}-\d{2}\.\d+$/u;
 // GitHub rejects bodies over 125,000 characters. Leave room below that limit;
@@ -224,6 +230,13 @@ export function deduplicateDependencyUpdates(section) {
   return output.join('\n');
 }
 
+// The release's section of the root CHANGELOG.md, followed by a heading for the package details. A release cut before
+// the changelog existed, or one whose changelog step failed, has no section and renders the packages alone.
+export function renderChangelogLines(changelog, tag) {
+  const section = changelog ? extractReleaseSection(changelog, tag) : undefined;
+  return section ? [section, '', '## Packages', ''] : [];
+}
+
 export function renderReleaseNotes(tag) {
   const { batch, channel } = parseAggregateTag(tag);
   // The aggregate tag and the release branch share a name while a release is in
@@ -254,6 +267,10 @@ export function renderReleaseNotes(tag) {
   }
   const label = channel === 'beta' ? 'Beta release' : 'Stable release';
   const lines = [
+    ...renderChangelogLines(
+      gitOrUndefined(['show', `${commit}:CHANGELOG.md`]),
+      tag,
+    ),
     `${label} \`${batch}\` published ${packages.length} package${packages.length === 1 ? '' : 's'}.`,
     '',
     '| Package | Version |',
