@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.8
+
+### Patch Changes
+
+- d61fff2: Recognize proven official authorization identity continuation and pure local documentation factories when collecting API dependencies. Keep unknown extensions, authority escapes and terminating paths conservative. Add the identity-resolution success condition to version-1 manifests; builders and readers must be upgraded and rolled back together because earlier readers reject this condition.
+
 ## 0.1.0-beta.7
 
 ### Patch Changes
