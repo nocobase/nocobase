@@ -1,3 +1,4 @@
+import { ProjectError } from './lib/project.ts';
 import { formatHelp, parseCreatePluginArgs } from './lib/flags.ts';
 import {
   failureEnvelope,
@@ -25,6 +26,19 @@ export interface RunCreatePluginCliOptions {
 }
 
 function classifyCreatePluginError(error: unknown): JsonCliError {
+  if (error instanceof ProjectError)
+    return {
+      code: error.code,
+      message: error.message,
+      suggestions: [
+        {
+          message:
+            error.code === 'INSTALL_FAILED'
+              ? 'Run pnpm install in the reported project root, then register the generated plugin. Do not create it again.'
+              : 'Resolve the application configuration issue and run create-plugin again.',
+        },
+      ],
+    };
   const message = error instanceof Error ? error.message : String(error);
   if (message.startsWith('No plugin capabilities were selected.')) {
     return {
@@ -155,6 +169,7 @@ export async function runCreatePluginCli(
     }
 
     const result = await createPlugin({
+      directory: input.flags.directory,
       description: input.flags.description,
       displayName: input.flags.displayName,
       dryRun: input.flags.dryRun,
@@ -174,6 +189,12 @@ export async function runCreatePluginCli(
               packageName: result.packageName,
               targetDirectory: result.targetDirectory,
             },
+            project: result.project,
+            projectEdits: result.projectEdits.map((edit) => ({
+              path: edit.path,
+              content: edit.after,
+            })),
+            dependencies: result.dependencies,
             requestedCapabilities: input.flags.capabilities,
             capabilities: result.capabilities,
             derivedStructure: {
@@ -198,10 +219,19 @@ export async function runCreatePluginCli(
               input.flags.dryRun || !input.flags.install
                 ? []
                 : ['CI=true pnpm install --no-frozen-lockfile'],
-            nextSteps: [
-              `pnpm --filter ${result.packageName} check`,
-              `pnpm nocobase plugin register ${result.shortName} --workspace-root . --app app-template-default`,
-            ],
+            nextSteps:
+              result.project.kind === 'application'
+                ? [
+                    ...(input.flags.dryRun || !input.flags.install
+                      ? ['pnpm install']
+                      : []),
+                    `pnpm --filter ${result.packageName} check`,
+                    `pnpm nocobase plugin register ${result.packageName} --no-install`,
+                  ]
+                : [
+                    `pnpm --filter ${result.packageName} check`,
+                    `pnpm nocobase plugin register ${result.shortName} --workspace-root . --app app-template-default`,
+                  ],
           },
           input.flags.dryRun ? 'success-noop' : 'success',
         ),
@@ -212,6 +242,8 @@ export async function runCreatePluginCli(
       process.stdout.write(
         `Would create ${result.packageName} at ${result.targetDirectory}\n`,
       );
+      for (const edit of result.projectEdits)
+        process.stdout.write(`  Update ${edit.path}\n`);
       for (const file of result.files) {
         process.stdout.write(`  ${file}\n`);
       }
@@ -225,6 +257,12 @@ export async function runCreatePluginCli(
       process.stdout.write(
         'Skipped dependency installation. Run CI=true pnpm install --no-frozen-lockfile before committing.\n',
       );
+    }
+    if (result.project.kind === 'application') {
+      process.stdout.write(
+        `From ${result.project.root}, run pnpm nocobase plugin register ${result.packageName} --no-install after installing dependencies.\n`,
+      );
+      return 0;
     }
     process.stdout.write(
       `Next: register ${result.packageName} in the target application's package.json.\n`,

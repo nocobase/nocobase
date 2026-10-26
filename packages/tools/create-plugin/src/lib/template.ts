@@ -16,6 +16,8 @@ export const DEFAULT_TEMPLATE_DIRECTORY = fileURLToPath(
 const placeholderPattern = /__NOCOBASE_[A-Z0-9_]+__/gu;
 
 export interface PluginTemplateContext extends PluginNames {
+  readonly resolveDependency?: (name: string, range: string) => Promise<string>;
+  readonly privatePackage?: boolean;
   readonly datePrefix: string;
   readonly description: string;
   readonly displayName: string;
@@ -267,13 +269,18 @@ export function renderTemplateValue(
 ): string {
   const replacements = new Map(replacementEntries(context));
 
-  return value.replace(placeholderPattern, (placeholder) => {
-    const replacement = replacements.get(placeholder);
-    if (replacement === undefined) {
-      throw new Error(`Unknown template placeholder: ${placeholder}`);
-    }
-    return replacement;
-  });
+  return value
+    .replace(
+      'nocobase-app-plugin-__NOCOBASE_SHORT_NAME__',
+      context.packageName.slice(1).replace('/', '-'),
+    )
+    .replace(placeholderPattern, (placeholder) => {
+      const replacement = replacements.get(placeholder);
+      if (replacement === undefined) {
+        throw new Error(`Unknown template placeholder: ${placeholder}`);
+      }
+      return replacement;
+    });
 }
 
 async function collectTemplateFiles(
@@ -333,7 +340,7 @@ export async function listTemplateFiles(
   );
 }
 
-async function renderManifest(
+export async function renderManifest(
   context: PluginTemplateContext,
   capabilities: PluginCapabilities,
 ): Promise<string> {
@@ -516,6 +523,14 @@ async function renderManifest(
     devDependencies['tw-animate-css'] = 'catalog:';
   }
 
+  if (context.resolveDependency) {
+    for (const entries of [dependencies, peerDependencies, devDependencies]) {
+      for (const [name, range] of Object.entries(entries)) {
+        entries[name] = await context.resolveDependency(name, range);
+      }
+    }
+  }
+
   // Compiled plugins resolve resources from baseDir inside dist; only that runtime tree is published.
   const files = ['dist', 'README.md', 'CHANGELOG.md'];
   if (capabilities.skills) files.push('skills');
@@ -529,6 +544,7 @@ async function renderManifest(
 
   const manifest = {
     name: context.packageName,
+    ...(context.privatePackage ? { private: true } : {}),
     displayName: context.displayName,
     description: context.description,
     version: '0.0.1',
@@ -783,7 +799,7 @@ function renderSkill(
     .filter(Boolean)
     .join('\n');
 
-  return `---\nname: nocobase-app-plugin-${context.shortName}\ndescription: Development draft for the App-facing capabilities of ${context.displayName}; replace this description with concrete Agent trigger conditions before synchronization.\n---\n\n# ${context.displayName}\n\n> Development draft: replace every instruction below with verified, implemented behavior before registering this plugin with an App. Do not synchronize placeholder claims.\n\n## Use this Skill when\n\nDescribe the App-level user outcome that should trigger this Skill. State when the Agent should not use it.\n\n## Public surfaces\n\nList only stable package exports, routes, services, jobs, schema requirements, or registry assets that actually exist.\n\n${capabilityPrompts || '- This plugin selected no runtime capability alongside `skills`. Document any real App-facing contract added during implementation.'}\n\n## Prerequisites\n\nList required plugin registration, authentication, permissions, configuration, and data.\n\n## App workflow\n\nGive the shortest ordered workflow an App Agent can execute. Identify which files or UI surfaces belong to the App and which belong to the plugin.\n\n## Ownership\n\nState what the plugin owns, what the App may customize, and whether generated or materialized files may be edited.\n\n## Permissions and constraints\n\nState authentication and authorization requirements separately. Document important unsupported behavior and failure modes.\n\n## Verification\n\nList observable checks that prove the integration works. Verify behavioral claims in the target App; Skill synchronization alone proves only that the files match.\n`;
+  return `---\nname: ${context.packageName.slice(1).replace('/', '-')}\ndescription: Development draft for the App-facing capabilities of ${context.displayName}; replace this description with concrete Agent trigger conditions before synchronization.\n---\n\n# ${context.displayName}\n\n> Development draft: replace every instruction below with verified, implemented behavior before registering this plugin with an App. Do not synchronize placeholder claims.\n\n## Use this Skill when\n\nDescribe the App-level user outcome that should trigger this Skill. State when the Agent should not use it.\n\n## Public surfaces\n\nList only stable package exports, routes, services, jobs, schema requirements, or registry assets that actually exist.\n\n${capabilityPrompts || '- This plugin selected no runtime capability alongside `skills`. Document any real App-facing contract added during implementation.'}\n\n## Prerequisites\n\nList required plugin registration, authentication, permissions, configuration, and data.\n\n## App workflow\n\nGive the shortest ordered workflow an App Agent can execute. Identify which files or UI surfaces belong to the App and which belong to the plugin.\n\n## Ownership\n\nState what the plugin owns, what the App may customize, and whether generated or materialized files may be edited.\n\n## Permissions and constraints\n\nState authentication and authorization requirements separately. Document important unsupported behavior and failure modes.\n\n## Verification\n\nList observable checks that prove the integration works. Verify behavioral claims in the target App; Skill synchronization alone proves only that the files match.\n`;
 }
 
 async function formatRenderedSource(

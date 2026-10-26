@@ -1,6 +1,12 @@
 import { constants } from 'node:fs';
-import { access, mkdir, rm } from 'node:fs/promises';
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+
+import {
+  resolvePluginProject,
+  ProjectError,
+  type ProjectEdit,
+} from './project.ts';
 
 import type { WorkspaceSynchronizer } from './install.ts';
 import {
@@ -14,6 +20,7 @@ import {
   DEFAULT_TEMPLATE_DIRECTORY,
   listTemplateFiles,
   renderTemplate,
+  renderManifest,
   type PluginTemplateContext,
 } from './template.ts';
 
@@ -26,12 +33,16 @@ export interface CreatePluginOptions {
   readonly name: string;
   readonly now?: Date;
   readonly repoRoot?: string;
+  readonly directory?: string;
   readonly synchronize?: WorkspaceSynchronizer;
   readonly templateDirectory?: string;
   readonly empty?: boolean;
 }
 
 export interface CreatePluginResult {
+  readonly project: { kind: 'application' | 'repository'; root: string };
+  readonly projectEdits: readonly ProjectEdit[];
+  readonly dependencies: Record<string, Record<string, string>>;
   readonly capabilities: PluginCapabilities;
   readonly directoryName: string;
   readonly files: readonly string[];
@@ -87,9 +98,19 @@ export async function createPlugin(
   }
   const capabilities = normalizePluginCapabilities(requestedCapabilities);
   const names = createPluginNames(options.name);
-  const resolvedRepoRoot = path.resolve(options.repoRoot ?? process.cwd());
-  // Plugins live under `packages/plugins/`, which is where `packages/README.md` says a product plugin belongs.
-  const packagesDirectory = path.join(resolvedRepoRoot, 'packages', 'plugins');
+  const project = await resolvePluginProject({
+    directory: options.directory,
+    repoRoot: options.repoRoot,
+    packageName: names.packageName,
+    directoryName: names.directoryName,
+  });
+  if (project.kind === 'application' && capabilities.registry) {
+    throw new ProjectError(
+      'UNSUPPORTED_APP_CAPABILITY',
+      'Registry publishing is not an application plugin capability. Use the UI Library for editable UI.',
+    );
+  }
+  const packagesDirectory = project.packagesDirectory;
   const targetDirectory = path.join(packagesDirectory, names.directoryName);
   const displayName = validateTextOption(
     options.displayName ?? `${toTitleCase(names.shortName)} App Plugin`,
@@ -103,6 +124,8 @@ export async function createPlugin(
   const snakeName = names.shortName.replaceAll('-', '_');
   const context: PluginTemplateContext = {
     ...names,
+    resolveDependency: project.resolveDependency,
+    privatePackage: project.kind === 'application',
     datePrefix,
     description,
     displayName,
@@ -112,7 +135,7 @@ export async function createPlugin(
   const templateDirectory =
     options.templateDirectory ?? DEFAULT_TEMPLATE_DIRECTORY;
 
-  await access(packagesDirectory, constants.W_OK);
+  await access(project.root, constants.W_OK);
   if (await pathExists(targetDirectory)) {
     throw new Error(`Target already exists: ${targetDirectory}`);
   }
@@ -122,7 +145,17 @@ export async function createPlugin(
     context,
     capabilities,
   );
+  const manifest = JSON.parse(
+    await renderManifest(context, capabilities),
+  ) as Record<string, Record<string, string>>;
   const result: CreatePluginResult = {
+    project: { kind: project.kind, root: project.root },
+    projectEdits: project.edits,
+    dependencies: Object.fromEntries(
+      ['dependencies', 'peerDependencies', 'devDependencies']
+        .filter((field) => manifest[field])
+        .map((field) => [field, manifest[field]]),
+    ),
     capabilities,
     directoryName: names.directoryName,
     files,
@@ -135,7 +168,9 @@ export async function createPlugin(
   }
 
   let targetCreated = false;
+  const writtenEdits: ProjectEdit[] = [];
   try {
+    await mkdir(packagesDirectory, { recursive: true });
     await mkdir(targetDirectory);
     targetCreated = true;
     await renderTemplate({
@@ -144,7 +179,26 @@ export async function createPlugin(
       targetDirectory,
       templateDirectory,
     });
+    for (const edit of project.edits) {
+      const current = await readFile(edit.path, 'utf8').catch(
+        (error: NodeJS.ErrnoException) => {
+          if (error.code === 'ENOENT') return undefined;
+          throw error;
+        },
+      );
+      if (current !== edit.before)
+        throw new ProjectError(
+          'PROJECT_CHANGED',
+          `${edit.path} changed during generation. Run create-plugin again.`,
+        );
+      await writeFile(edit.path, edit.after);
+      writtenEdits.push(edit);
+    }
   } catch (error) {
+    for (const edit of writtenEdits.reverse()) {
+      if (edit.before === undefined) await rm(edit.path);
+      else await writeFile(edit.path, edit.before);
+    }
     if (targetCreated) {
       await rm(targetDirectory, { force: true, recursive: true });
     }
@@ -153,7 +207,7 @@ export async function createPlugin(
 
   if (options.install ?? true) {
     (options.synchronize ?? synchronizeWorkspace)(
-      resolvedRepoRoot,
+      project.root,
       targetDirectory,
     );
   }
