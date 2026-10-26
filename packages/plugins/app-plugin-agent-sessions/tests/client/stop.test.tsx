@@ -89,7 +89,7 @@ describe('stopping a session', () => {
     const client = new QueryClient();
     const failure = vi.fn();
     let replaceItems!: (value: TranscriptItem[]) => void;
-    let rejectRequest = true;
+    let rejectRequest: boolean | 'stale' = true;
     const calls: ApiCall[] = [];
     function Surface({
       items,
@@ -125,8 +125,15 @@ describe('stopping a session', () => {
           calls.push(call);
           if (rejectRequest)
             return Response.json(
-              { error: { message: 'Unavailable' } },
-              { status: 503 },
+              {
+                error: {
+                  message: 'Unavailable',
+                  ...(rejectRequest === 'stale'
+                    ? { reason: 'AGENT_SESSIONS_STOP_TARGET_CHANGED' }
+                    : {}),
+                },
+              },
+              { status: rejectRequest === 'stale' ? 400 : 503 },
             );
         }
         return { data: null };
@@ -155,5 +162,16 @@ describe('stopping a session', () => {
     await screen.findByRole('button', { name: 'first:idle' });
     fireEvent.click(screen.getByRole('button', { name: 'first:idle' }));
     expect(calls).toHaveLength(2);
+    rejectRequest = 'stale';
+    act(() => replaceItems([prompt('D', 'running')]));
+    fireEvent.click(screen.getByRole('button', { name: 'first:idle' }));
+    await waitFor(() => expect(calls).toHaveLength(3));
+    await screen.findByRole('button', { name: 'first:idle' });
+    // A definitive stale-target response must not trap the UI in retries of the old turn.
+    rejectRequest = false;
+    act(() => replaceItems([prompt('E', 'running')]));
+    fireEvent.click(screen.getByRole('button', { name: 'first:idle' }));
+    await waitFor(() => expect(calls).toHaveLength(4));
+    expect(calls[3]?.json).toEqual({ promptId: 'E' });
   });
 });

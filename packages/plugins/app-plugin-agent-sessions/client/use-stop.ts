@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { ApiClientError } from '@nocobase/app-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCancel } from './api.js';
 import { sessionMemoryKey, useSessionMemory } from './use-session-memory.js';
@@ -83,7 +84,14 @@ export function useStop(
             ?.started !== next.started
         )
           return;
-        setRequest({ ...next, phase: 'failed' });
+        // A definitive race rejection did not accept this stop. Let a new explicit action select the
+        // refreshed turn; transport failures instead retain the original target for a safe retry.
+        setRequest(
+          error instanceof ApiClientError &&
+            error.reason === 'AGENT_SESSIONS_STOP_TARGET_CHANGED'
+            ? null
+            : { ...next, phase: 'failed' },
+        );
         fail(error);
       },
     });
