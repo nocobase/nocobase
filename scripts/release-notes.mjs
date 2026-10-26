@@ -8,45 +8,19 @@
 // Everything is read out of the tagged commit with `git show`, never from the
 // working tree, so notes for any past release can be rendered at any later time.
 //
+// The notes open with the release's section of the root CHANGELOG.md, which
+// scripts/changelog.mjs wrote into the release commit from the pull requests'
+// descriptions, followed by a table of the published packages, each linking to
+// its own CHANGELOG.md at the tagged commit.
+//
 // Usage:
 //   node scripts/release-notes.mjs <aggregate-tag>            print the notes
 //   node scripts/release-notes.mjs <aggregate-tag> --packages print `name@version` per line
 import { execFileSync } from 'node:child_process';
 
+import { extractReleaseSection } from './changelog.mjs';
+
 const AGGREGATE_PATTERN = /^release(-beta)?\/\d{4}-\d{2}-\d{2}\.\d+$/u;
-// GitHub rejects bodies over 125,000 characters. Leave room below that limit;
-// UTF-16 length also conservatively counts non-BMP characters twice.
-export const RELEASE_BODY_LIMIT = 120_000;
-
-export function fitReleaseNotes(header, sections) {
-  const render = (bodies, notice = '') =>
-    `${header}${notice}\n\n${bodies.join('\n\n')}\n`;
-  const bodies = sections.map(({ full }) => full);
-  const full = render(bodies);
-  if (full.length <= RELEASE_BODY_LIMIT) return full;
-
-  const notice =
-    '\n\n_Some long package entries are linked to their full changelogs to fit GitHub’s release body limit._';
-  // Replace whole sections, largest savings first, so Markdown stays intact and
-  // the remaining entries keep their original order and complete content.
-  const candidates = sections
-    .map(({ full, compact }, index) => ({
-      index,
-      compact,
-      savings: full.length - compact.length,
-    }))
-    .filter(({ savings }) => savings > 0)
-    .sort((left, right) => right.savings - left.savings);
-  let length = full.length + notice.length;
-  for (const { index, compact, savings } of candidates) {
-    bodies[index] = compact;
-    length -= savings;
-    if (length <= RELEASE_BODY_LIMIT) return render(bodies, notice);
-  }
-  throw new Error(
-    `Release notes exceed ${RELEASE_BODY_LIMIT} characters even with compact changelog links`,
-  );
-}
 
 function git(args) {
   return execFileSync('git', args, {
@@ -99,37 +73,14 @@ export function readPackagesFromTags(tags) {
     );
 }
 
-// Reads `## <version>` out of a CHANGELOG, stopping at the next `## ` heading.
-// Changesets writes exactly one such heading per released version.
-export function extractChangelogSection(changelog, version) {
-  const lines = changelog.replaceAll('\r\n', '\n').split('\n');
-  const heading = `## ${version}`;
-  const start = lines.findIndex((line) => line.trimEnd() === heading);
-  if (start === -1) return undefined;
-
-  let end = lines.length;
-  for (let index = start + 1; index < lines.length; index += 1) {
-    if (/^##\s/u.test(lines[index])) {
-      end = index;
-      break;
-    }
-  }
-  return (
-    lines
-      .slice(start + 1, end)
-      .join('\n')
-      .trim() || undefined
-  );
-}
-
 // Lists the directory of every published package in the tagged tree, as a path relative to `packages/`.
 //
 // Both layouts have to work. `packages/` was flat until the repository regrouped it into
 // `packages/<category>/<package>`, so a tag cut before that move points at a tree whose manifests sit one level deep,
 // while a tag cut after it points at a tree two levels deep. Release notes are rendered from whichever commit the tag
 // names, including tags from before the move, and a layout mismatch fails silently: `resolveDirectories` just returns
-// an empty map and every package renders as "no changelog entry". Reading the tree itself rather than assuming a depth
-// keeps both eras — and any later regrouping — working.
+// an empty map and every package renders without its changelog link. Reading the tree itself rather than assuming a
+// depth keeps both eras — and any later regrouping — working.
 //
 // `-r` walks the whole tree, so it also reports manifests nested inside a package: `app-host` ships five of them under
 // `fixtures/app-dist/`. A nested manifest is never a published package, and keeping it would let it overwrite the entry
@@ -184,44 +135,11 @@ export function resolveDirectories(commit, directories, { cwd } = {}) {
   return byName;
 }
 
-// Changesets can repeat a commit once per dependency change. Collapse each
-// generated run into one summary, keeping every distinct commit and leaving
-// the following dependency/version list attached to that summary.
-export function deduplicateDependencyUpdates(section) {
-  const output = [];
-  const commits = new Set();
-  let fence;
-  const flush = () => {
-    if (commits.size === 0) return;
-    output.push(`- Updated dependencies ${[...commits].join(', ')}`);
-    commits.clear();
-  };
-
-  for (const line of section.split('\n')) {
-    const marker = /^ {0,3}(`{3,}|~{3,})(.*)$/u.exec(line);
-    if (fence) {
-      if (
-        marker &&
-        marker[1][0] === fence[0] &&
-        marker[1].length >= fence.length &&
-        marker[2].trim() === ''
-      ) {
-        fence = undefined;
-      }
-      output.push(line);
-      continue;
-    }
-    if (marker) fence = marker[1];
-    const update = /^- Updated dependencies (\[[\da-f]+\])$/u.exec(line);
-    if (update) {
-      commits.add(update[1]);
-    } else {
-      flush();
-      output.push(line);
-    }
-  }
-  flush();
-  return output.join('\n');
+// The release's section of the root CHANGELOG.md, followed by a heading for the package table. A release cut before
+// the changelog existed, or one whose changelog step failed, has no section and renders the table alone.
+export function renderChangelogLines(changelog, tag) {
+  const section = changelog ? extractReleaseSection(changelog, tag) : undefined;
+  return section ? [section, '', '## Packages', ''] : [];
 }
 
 export function renderReleaseNotes(tag) {
@@ -245,8 +163,8 @@ export function renderReleaseNotes(tag) {
     findPackageDirectories(commit),
   );
   // Resolving nothing while package tags exist means the tree was read but no manifest matched a published name — a
-  // layout or tooling change the lookup no longer understands. Rendering would still "succeed", emitting a full set of
-  // "no changelog entry" placeholders that reads like a release with no changes, so fail instead of publishing that.
+  // layout or tooling change the lookup no longer understands. Rendering would still "succeed", emitting a table with no
+  // changelog links at all, so fail instead of publishing that.
   if (directories.size === 0) {
     throw new Error(
       `No package directories in ${commit} matched the ${packages.length} package tags for ${tag}`,
@@ -254,35 +172,41 @@ export function renderReleaseNotes(tag) {
   }
   const label = channel === 'beta' ? 'Beta release' : 'Stable release';
   const lines = [
+    ...renderChangelogLines(
+      gitOrUndefined(['show', `${commit}:CHANGELOG.md`]),
+      tag,
+    ),
     `${label} \`${batch}\` published ${packages.length} package${packages.length === 1 ? '' : 's'}.`,
     '',
+    ...renderPackageTable(packages, (pkg) => {
+      const directory = directories.get(pkg.name);
+      if (!directory) return undefined;
+      const file = `packages/${directory}/CHANGELOG.md`;
+      if (gitOrUndefined(['cat-file', '-e', `${commit}:${file}`]) === undefined)
+        return undefined;
+      return changelogUrl(commit, file, pkg.version);
+    }),
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+// Links a package's CHANGELOG.md at the tagged commit, scrolled to the version's `## <version>` heading, whose anchor
+// GitHub derives by dropping the dots.
+export function changelogUrl(commit, file, version) {
+  return `https://github.com/nocobase/nocobase/blob/${commit}/${file}#${version.replaceAll('.', '')}`;
+}
+
+// One row per published package, its version linking to the package's changelog. `linkOf` returns that URL, or
+// undefined when the tagged tree has no changelog for the package, which leaves the version as plain text.
+export function renderPackageTable(packages, linkOf) {
+  return [
     '| Package | Version |',
     '| --- | --- |',
-    ...packages.map((pkg) => `| \`${pkg.name}\` | \`${pkg.version}\` |`),
+    ...packages.map((pkg) => {
+      const link = linkOf(pkg);
+      return `| \`${pkg.name}\` | ${link ? `[${pkg.version}](${link})` : pkg.version} |`;
+    }),
   ];
-
-  const sections = packages.map((pkg) => {
-    const directory = directories.get(pkg.name);
-    const changelog = directory
-      ? gitOrUndefined(['show', `${commit}:packages/${directory}/CHANGELOG.md`])
-      : undefined;
-    const section = changelog
-      ? extractChangelogSection(changelog, pkg.version)
-      : undefined;
-    const heading = `## \`${pkg.name}@${pkg.version}\``;
-    const full = `${heading}\n\n${section ? deduplicateDependencyUpdates(section) : '_No changelog entry was recorded for this version._'}`;
-    const changelogUrl = directory
-      ? `https://github.com/nocobase/nocobase/blob/${commit}/packages/${directory}/CHANGELOG.md#${pkg.version.replaceAll('.', '')}`
-      : undefined;
-    return {
-      full,
-      compact: changelogUrl
-        ? `${heading}\n\n[Full changelog for this version](${changelogUrl})`
-        : full,
-    };
-  });
-
-  return fitReleaseNotes(lines.join('\n'), sections);
 }
 
 export function formatPackageList(tag) {
