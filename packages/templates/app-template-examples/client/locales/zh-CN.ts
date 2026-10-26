@@ -7,6 +7,34 @@ const zhCN: AppResource = {
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
   ...agentChatZhCN,
+  knowledge: {
+    indexing: '知识库索引',
+    title: '知识库',
+    spaces: { default: '默认知识库' },
+    chat: {
+      title: '发起知识库 AI 对话',
+      description: '选择本次对话的知识库检索策略。',
+      strategy: '知识库检索策略',
+      onDemand: '按需检索',
+      onDemandDescription:
+        '涉及内部知识或明确要求检索时查询；一般问候和不依赖知识库的问题可直接回答。',
+      always: '每次检索',
+      alwaysDescription:
+        '指示 AI 每次回答新问题前先检索知识库；资料不足或没有匹配内容时如实说明。',
+      policyNote:
+        '此策略用于新对话并在该对话中持续生效；属于模型指令，不保证模型一定执行检索。',
+      start: '开始对话',
+      starting: '正在创建…',
+      expired: '登录已过期，请重新登录后发起对话。',
+      forbidden: '你没有发起此对话的权限，请联系管理员授权。',
+      failed: '无法创建对话，请检查模型配置后重试。',
+      unknown:
+        '创建结果尚不确定，对话可能已存在。请先查看聊天历史，不要重复创建。',
+      history: '查看聊天历史',
+      signIn: '重新登录',
+      retry: '重试',
+    },
+  },
   aiFormFill: {
     title: 'AI 辅助填表',
     description: '用一句话描述需求，让 AI 帮你填写表单。',

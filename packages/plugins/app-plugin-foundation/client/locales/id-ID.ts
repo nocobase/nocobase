@@ -6,6 +6,7 @@ const idID: FoundationResource = {
     foundation: 'Fondasi aplikasi',
   },
   page: {
+    identified: 'Teridentifikasi {{value}}',
     counted: 'Terhitung: {{value}}',
     partial: 'Sebagian data menunggu pembaruan',
     title: 'Fondasi aplikasi',
@@ -37,6 +38,7 @@ const idID: FoundationResource = {
     successPath: 'Permintaan API berhasil: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Database tersedia',
+      authorizationIdentityResolved: 'Identitas otorisasi terselesaikan',
       authenticated: 'Autentikasi diterima',
       bodyWithinLimit: 'Isi permintaan berada dalam batas ukuran',
       validInput: 'Validasi input berhasil',
@@ -131,9 +133,9 @@ const idID: FoundationResource = {
     collectionResults: '{{count}} koleksi cocok',
     previousPage: 'Sebelumnya',
     nextPage: 'Berikutnya',
-    countRecords: 'Hitung catatan bisnis',
+    countRecords: 'Hitung rekaman',
     recordsOnDemand:
-      'Catatan bisnis dihitung sesuai permintaan. Basis data besar mungkin memerlukan waktu lebih lama.',
+      'Menghitung tabel teridentifikasi sesuai permintaan, tanpa tabel sistem yang dikenal. Basis data besar mungkin memerlukan waktu lebih lama.',
     recordsCountedAt: 'Catatan dihitung {{time}}',
 
     businessModules: 'Modul bisnis terkait',
@@ -281,12 +283,12 @@ const idID: FoundationResource = {
   facts: {
     fileCollectionsPartial: '{{count}} koleksi berkas terhitung: {{names}}.',
     collectionOwnershipUnknown:
-      'Ditemukan ekstensi runtime tanpa klasifikasi. Kepemilikan koleksi belum pasti; angka bisnis disembunyikan.',
+      'Tabel sistem NocoBase yang dikenal dikecualikan. Kepemilikan tabel lain belum teridentifikasi; hasil pembacaan ini bukan total khusus bisnis atau seluruh aplikasi.',
     noApplicationCollections:
-      'Lapisan data berjalan, aplikasi belum memiliki koleksi sendiri.',
+      'Belum ada tabel data tambahan yang teridentifikasi.',
     applicationCollectionsPreview:
-      'Aplikasi ini memiliki {{count}} koleksi, termasuk {{names}}.',
-    applicationCollections: '{{count}} koleksi milik aplikasi: {{names}}.',
+      '{{count}} tabel data teridentifikasi, termasuk {{names}}.',
+    applicationCollections: '{{count}} tabel data teridentifikasi: {{names}}.',
     relations: '{{count}} relasi menghubungkannya.',
     fileCollections: '{{count}} koleksi berkas: {{names}}.',
     accounts: '{{count}} akun memakai autentikasi NocoBase.',
@@ -332,8 +334,8 @@ const idID: FoundationResource = {
     caching: 'Cache',
   },
   metrics: {
-    businessRecords: 'catatan bisnis',
-    businessCollections: 'koleksi bisnis',
+    businessRecords: 'rekaman',
+    businessCollections: 'tabel data',
     views: 'tampilan',
     fields: 'kolom',
     relations: 'relasi',

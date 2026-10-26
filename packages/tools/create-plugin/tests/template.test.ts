@@ -132,14 +132,6 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'client/plugin.ts',
     'vitest.config.ts',
   ],
-  registry: [
-    'client/styles.css',
-    'components.json',
-    'registry/component-ui/README.md',
-    'registry/component-ui/index.ts',
-    'registry/component-ui/plugin-feature-card.tsx',
-    'registry.config.json',
-  ],
   cli: [
     'cli/index.ts',
     'cli/info.ts',
@@ -263,7 +255,6 @@ describe('bundled capability templates', () => {
       ['database', 'server.service-providers', 'server.routes'],
     ],
     ['App Agent integration', ['server.routes', 'skills']],
-    ['editable UI distribution', ['client.components', 'registry']],
   ] as const)('composes the exact %s file set', async (_name, capabilities) => {
     const files = await listTemplateFiles(
       DEFAULT_TEMPLATE_DIRECTORY,

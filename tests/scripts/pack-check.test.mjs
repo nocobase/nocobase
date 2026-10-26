@@ -237,11 +237,11 @@ test('prebuilt mode keeps every prepack step except the package build', () => {
   assert.deepEqual(prepackStepsWithoutBuild('pnpm build'), []);
   assert.deepEqual(prepackStepsWithoutBuild('pnpm run build'), []);
   assert.deepEqual(
-    prepackStepsWithoutBuild('pnpm registry:build && pnpm build'),
-    ['pnpm registry:build'],
+    prepackStepsWithoutBuild('pnpm assets:build && pnpm build'),
+    ['pnpm assets:build'],
   );
-  assert.deepEqual(prepackStepsWithoutBuild('pnpm registry:build'), [
-    'pnpm registry:build',
+  assert.deepEqual(prepackStepsWithoutBuild('pnpm assets:build'), [
+    'pnpm assets:build',
   ]);
   assert.deepEqual(prepackStepsWithoutBuild(undefined), []);
 });
@@ -254,7 +254,7 @@ test('every workspace prepack script is understood by prebuilt mode', async () =
     const prepack = manifest.scripts?.prepack;
     if (prepack === undefined) continue;
     for (const step of prepackStepsWithoutBuild(prepack)) {
-      assert.equal(step, 'pnpm registry:build', manifest.name);
+      assert.equal(step, 'pnpm assets:build', manifest.name);
     }
   }
 });

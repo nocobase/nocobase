@@ -1,5 +1,6 @@
 {
   "icons": {
+    "UserRoundCheck": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-user-round-check\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"8\" r=\"5\"></circle><path d=\"M2 21a8 8 0 0 1 13.3-6\"></path><path d=\"m16 19 2 2 4-4\"></path></svg>",
     "KeyRound": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg>",
     "ShieldCheck": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg>",
     "Workflow": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-workflow\" aria-hidden=\"true\"><rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"></path><rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\"></rect></svg>",
@@ -58,6 +59,13 @@
       "",
       "Connect Pro approval capabilities for conditional routes, joint reviews, added reviewers, and handovers.",
       ""
+    ],
+    [
+      "task-center",
+      "Task Center",
+      "✓",
+      "Bring approvals, equipment collection and other personal work together with shared status filters and counts.",
+      "Managers handle leave requests, expenses and other applications every day. They want one place to see everything waiting for their attention without checking each business separately.\nAdd a My tasks page where each person sees only their own pending, completed and cancelled items, with a count for each."
     ],
     [
       "scheduler",
@@ -128,6 +136,7 @@
     "Database",
     "ShieldCheck",
     "Workflow",
+    "UserRoundCheck",
     "ListChecks",
     "CalendarClock",
     "Bell",
@@ -421,6 +430,48 @@
         "answers-0": {
           "label": "Source-based answers",
           "text": "Let Northstar's Transport assistant use the transport procedures space.\nRetrieve relevant material before answering procedural questions. Include document and passage links.\nSay when no supporting material was found; do not invent company rules.\nProvide a conversation panel in the knowledge center with the original text visible beside the answer.\nRespect the knowledge scopes available to the current user and assistant, including restricted finance material."
+        }
+      }
+    },
+    "task-center": {
+      "title": "Task Center",
+      "description": "Bring approvals, equipment collection and other personal work together with shared status filters and counts.",
+      "prompts": {
+        "start": {
+          "label": "1. Create an entry",
+          "text": "Managers handle leave requests, expenses and other applications every day. They want one place to see everything waiting for their attention without checking each business separately.\nAdd a My tasks page where each person sees only their own pending, completed and cancelled items, with a count for each."
+        },
+        "approvals": {
+          "label": "2. Connect approvals",
+          "text": "Include existing leave and expense requests in My tasks, showing their type and number to the person responsible for approval. Keep the approval rules unchanged.\nAfter a transfer, only the new approver needs to handle the request. Withdrawn requests no longer need approval. Do not show the same work twice."
+        },
+        "handling": {
+          "label": "3. Handle work",
+          "text": "I want to open a task, read the application and approve it, or confirm receipt when collecting equipment.\nAfter handling, move the item to completed and update the remaining count. Only people allowed to handle it may act. Explain withdrawn items and stop further handling."
+        },
+        "verification": {
+          "label": "4. Verify results",
+          "text": "Try the flow with two test accounts, Alex and Jordan: receive work, open details, handle it and check the remaining count.\nConfirm neither can see or handle the other’s personal work, repeated clicks do not create duplicate work, and failed handling is not shown as complete. Tell me what was verified and give me a path to try myself."
+        },
+        "ordinary": {
+          "label": "Equipment collection",
+          "text": "When equipment is ready for collection, show the collection record in the assigned employee’s My tasks. Let them open it, review the equipment and confirm receipt.\nSuccessful collection completes the item; an administrator withdrawing the issue cancels it. Do not show the same record twice, and keep it pending if collection fails."
+        },
+        "dashboard": {
+          "label": "Dashboard badge",
+          "text": "Show how many things I still need to handle on the home page. Clicking the number should open the matching task list.\nUpdate the count and list after each item is handled. Show “No pending work” when there is none. After switching accounts, show only the new account’s work."
+        },
+        "reassignment": {
+          "label": "Reassignment",
+          "text": "An administrator needs to reassign equipment that Alex has not collected to Jordan. Alex should no longer need or be able to confirm receipt; Jordan should see and handle the collection record.\nKeep completed collection history unchanged and avoid duplicate tasks if the reassignment is repeated."
+        },
+        "history": {
+          "label": "Historical work",
+          "text": "There are already unfinished approvals and equipment collections in this application. Let the responsible people find these in the new My tasks page while retaining the original business records.\nDo not miss new work, ask people to handle completed work again or show duplicate items. If preparation is interrupted, continue next time without starting over."
+        },
+        "notifications": {
+          "label": "Reminders",
+          "text": "When equipment is ready, remind the assigned employee inside the application and let them open the collection record from the reminder.\nRemind them only once per issue. Reading the reminder does not mean equipment has been collected; complete the task only after the employee confirms receipt successfully. A missing reminder must not prevent collection."
         }
       }
     }

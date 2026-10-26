@@ -117,6 +117,8 @@ export interface KnowledgeViewLabels {
 export interface KnowledgeViewProps {
   /** The application supplies its authorized directory and global search; single-space mode remains the default. */
   readonly directory?: KnowledgeDirectorySource;
+  /** Application-owned actions beside the sidebar title; omitted by default. */
+  readonly titleActions?: ReactNode;
   /** The space shown, with the spaces it inherits. */
   readonly space: SpaceRef;
   readonly labels?: KnowledgeViewLabels;
@@ -246,6 +248,7 @@ export function KnowledgeView({
   accessDetails,
   className,
   directory,
+  titleActions,
 }: KnowledgeViewProps): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   useKnowledgeRefresh();
@@ -604,6 +607,7 @@ export function KnowledgeView({
 
   const sidebar = (
     <KnowledgeSidebar
+      headingActions={titleActions}
       spaces={
         directory
           ? catalog.entries.map((entry) => ({

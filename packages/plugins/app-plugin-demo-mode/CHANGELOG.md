@@ -1,5 +1,49 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.2
+
+### Patch Changes
+
+- 14e042c: Automatically use secure, partitioned authentication cookies for HTTPS demo deployments so visitors can stay signed in inside a cross-site iframe. Preserve explicit deployment overrides and the existing cookie policy for HTTP development and non-demo applications.
+
+## 0.2.0-beta.1
+
+### Patch Changes
+
+- f5b51a4: Restore the compact Demo Mode header menu with smaller text, tighter spacing, a narrower dropdown and the application's primary color. Keep account preloading, pending and retry states, keyboard access, and location-preserving switching unchanged.
+- Updated dependencies [d78f586]
+  - @nocobase/app-plugin-agents@1.0.0-beta.26
+
+## 0.2.0-beta.0
+
+### Minor Changes
+
+- 97d20de: Replace floating and avatar-menu account switching with a standalone DemoModeMenu for application headers. The dropdown combines the demo environment notice, account names and roles, and the current-account check, with preloading and retryable account switching. Applications must mount the new client/menu component in their header and remove the former DemoAccountMenu, accountSwitcher and showFloatingAccountSwitcher integration.
+
+  Replace calls to the former demoModeReactProviders factory with the static reactProviders export from client/react-providers.
+
+  Ensure account switching reloads the document even when the destination differs only by its hash, so the previous account's client state is discarded while preserving the requested location.
+
+### Patch Changes
+
+- 4001a6e: Make the demo settings page read-only by removing data generation, clear, reset and dataset language controls while retaining status, progress, scheduled reset details and account entry links.
+
+  Remove unused settings controls, mutation error messages and obsolete presentation guidance.
+
+- e525be3: Expire matching legacy unpartitioned authentication cookies when Demo Mode issues partitioned sign-in cookies, preserving custom cookie names and scopes and cross-site iframe sessions. Verify the new session before reloading the demo home page so rejected cookies cannot cause an automatic sign-in reload loop.
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [671e1b3]
+- Updated dependencies [e5d61bd]
+- Updated dependencies [7fbcda4]
+- Updated dependencies [7fbcda4]
+  - @nocobase/app-plugin-agents@1.0.0-beta.25
+
+## 0.2.0-beta
+
 ## 0.1.0-beta.3
 
 ### Minor Changes

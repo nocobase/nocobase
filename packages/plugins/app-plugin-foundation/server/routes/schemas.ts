@@ -20,7 +20,7 @@ export const OverviewQuery: z.ZodObject<
   }),
   countRecords: z.stringbool().optional().meta({
     description:
-      'Explicitly query every business table for exact row counts. Omitted on ordinary page loads and refreshes.',
+      'Explicitly count records in observed tables outside the known system catalog, without asserting business ownership or an application-wide total. Omitted on ordinary page loads and refreshes.',
   }),
 });
 
@@ -32,7 +32,7 @@ export const CollectionsQuery: z.ZodType<{ offset: number; search: string }> =
     }),
     search: z.string().max(200).default('').meta({
       description:
-        'Case-insensitive search across all application Collection names and titles.',
+        'Case-insensitive search across observed non-system-catalog Collection names and titles.',
     }),
   });
 export const CollectionItemSchema: z.ZodType<
@@ -77,7 +77,10 @@ const FactSchema = z
 
 const MetricSchema = z
   .object({
-    key: z.string(),
+    key: z.string().meta({
+      description:
+        'Data-modeling keys businessCollections and businessRecords retain their legacy names. They count observed tables outside the known system catalog, not proven business ownership or application-wide totals.',
+    }),
     value: z.number().nullable().meta({
       description: 'Null when it could not be read; never a stand-in zero.',
     }),

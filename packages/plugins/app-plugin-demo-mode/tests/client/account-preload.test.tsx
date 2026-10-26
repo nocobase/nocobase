@@ -4,42 +4,20 @@ import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import demoMode from '../../client/index.js';
-import { DemoAccountMenu } from '../../client/account-menu.js';
+import { DemoModeMenu } from '../../client/menu.js';
 import { useDemoAccounts } from '../../client/accounts.js';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '../../client/components/ui/dropdown-menu.js';
-
 const ann = { username: 'ann', name: 'Ann', role: 'Admin', current: true };
 const bob = { username: 'bob', name: 'Bob', role: 'Reviewer', current: false };
-const options = {
-  accountSwitcher: 'menu',
-  showFloatingAccountSwitcher: false,
-} as const;
-
 afterEach(() => vi.useRealTimers());
 
-function AccountMenu() {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger>Open account menu</DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DemoAccountMenu />
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-it('preloads before the account menu opens and shows its submenu on hover without another request or delay', async () => {
+it('preloads accounts and opens the header menu on hover without another request or delay', async () => {
   let reads = 0;
   let complete!: (value: unknown) => void;
   const pending = new Promise((resolve) => {
     complete = resolve;
   });
-  await renderWithApp(<AccountMenu />, {
-    plugins: [demoMode(options)],
+  await renderWithApp(<DemoModeMenu />, {
+    plugins: [demoMode()],
     route: '/projects',
     fetch: answerApi((call) => {
       if (call.path === 'demoMode/status') return { data: { enabled: true } };
@@ -51,12 +29,9 @@ it('preloads before the account menu opens and shows its submenu on hover withou
     }),
   });
   await waitFor(() => expect(reads).toBe(1));
-  expect(
-    screen.queryByRole('menuitem', { name: 'Account: Ann' }),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   await act(async () => complete({ data: [ann, bob] }));
-  fireEvent.click(screen.getByRole('button', { name: 'Open account menu' }));
-  const trigger = screen.getByRole('menuitem', { name: 'Account: Ann' });
+  const trigger = screen.getByRole('button', { name: /Demo mode/u });
   vi.useFakeTimers();
   fireEvent.mouseEnter(trigger);
   fireEvent.mouseMove(trigger);
@@ -95,7 +70,7 @@ it('shares pending loads and refreshes every consumer after a data change during
       <AccountList />
     </>,
     {
-      plugins: [demoMode(options)],
+      plugins: [demoMode()],
       route: '/projects',
       fetch: answerApi((call) => {
         if (call.path === 'demoMode/status') return { data: { enabled: true } };
@@ -116,7 +91,7 @@ it('shares pending loads and refreshes every consumer after a data change during
 it('keeps loaded accounts visible if a background refresh fails', async () => {
   let reads = 0;
   await renderWithApp(<AccountList refreshable />, {
-    plugins: [demoMode(options)],
+    plugins: [demoMode()],
     route: '/projects',
     fetch: answerApi((call) => {
       if (call.path === 'demoMode/status') return { data: { enabled: true } };

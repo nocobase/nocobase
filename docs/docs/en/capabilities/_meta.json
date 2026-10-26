@@ -40,6 +40,11 @@
     "collapsed": true
   },
   {
+    "type": "file",
+    "name": "task-center",
+    "label": "Task Center"
+  },
+  {
     "type": "dir",
     "name": "file",
     "label": "Files",

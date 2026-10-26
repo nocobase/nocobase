@@ -15,13 +15,15 @@ it('enters Super Admin before rendering the home page and preserves the applicat
   });
   const calls: string[] = [];
   await renderWithApp(<p>Protected home page</p>, {
-    plugins: [demoMode({ showFloatingAccountSwitcher: false })],
+    plugins: [demoMode()],
     server: {
       publicBasePath: '/main',
       fetch: answerApi((call) => {
         calls.push(`${call.method} ${call.path}`);
         if (call.path === 'demoMode/status') return { data: { enabled: true } };
         if (call.path === 'demoMode/accounts/signInDefault') return session;
+        if (call.method === 'GET' && call.path === 'auth/get-session')
+          return { user: { id: 'admin' } };
         return new Response(null, { status: 404 });
       }),
     },
@@ -45,7 +47,7 @@ it.each([false, 'failure'])(
   'opens the normal home page when sign-in returns %s',
   async (result) => {
     await renderWithApp(<p>Normal home page</p>, {
-      plugins: [demoMode({ showFloatingAccountSwitcher: false })],
+      plugins: [demoMode()],
       fetch: answerApi((call) => {
         if (call.path === 'demoMode/status') return { data: { enabled: true } };
         if (result === 'failure') return new Response(null, { status: 500 });
@@ -66,7 +68,7 @@ it.each([
   async ({ route, enabled }) => {
     const calls: string[] = [];
     await renderWithApp(<p>Application page</p>, {
-      plugins: [demoMode({ showFloatingAccountSwitcher: false })],
+      plugins: [demoMode()],
       route,
       fetch: answerApi((call) => {
         calls.push(call.path);
@@ -76,5 +78,39 @@ it.each([
     expect(await screen.findByText('Application page')).toBeVisible();
     await waitFor(() => expect(calls).toContain('demoMode/status'));
     expect(calls).not.toContain('demoMode/accounts/signInDefault');
+  },
+);
+
+it.each(['missing', 'failure'])(
+  'does not reload when the browser session is %s after successful automatic sign-in',
+  async (result) => {
+    const replace = vi.fn();
+    vi.stubGlobal('location', { origin: 'http://localhost', replace });
+    const calls: string[] = [];
+    await renderWithApp(<p>Normal home page</p>, {
+      plugins: [demoMode()],
+      fetch: answerApi((call) => {
+        calls.push(`${call.method} ${call.path}`);
+        if (call.path === 'demoMode/status') return { data: { enabled: true } };
+        if (
+          call.method === 'POST' &&
+          call.path === 'demoMode/accounts/signInDefault'
+        )
+          return { data: { signedIn: true } };
+        if (call.method === 'GET' && call.path === 'auth/get-session')
+          return result === 'missing'
+            ? Response.json(null)
+            : new Response(null, { status: 500 });
+        return new Response(null, { status: 404 });
+      }),
+    });
+    expect(await screen.findByText('Normal home page')).toBeVisible();
+    expect(replace).not.toHaveBeenCalled();
+    expect(
+      calls.filter((call) => call === 'POST demoMode/accounts/signInDefault'),
+    ).toHaveLength(1);
+    expect(
+      calls.filter((call) => call === 'GET auth/get-session'),
+    ).toHaveLength(1);
   },
 );

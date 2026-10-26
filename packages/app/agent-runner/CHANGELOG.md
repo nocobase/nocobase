@@ -1,5 +1,13 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- 7fbcda4: Retain bounded partial conversation replies after native cancellation or token-limit termination, preserving output redaction and completed-block deduplication.
+
+  Drain native cancellation snapshots through the worker before acknowledging cancellation, sharing the existing five-second stop budget across tool stop, results and final events. Recognize the Claude SDK abort exception by its exported type even when its class name is minified.
+
 ## 0.1.0-beta.19
 
 ### Patch Changes

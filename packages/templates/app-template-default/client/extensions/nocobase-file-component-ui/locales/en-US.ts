@@ -1,0 +1,47 @@
+import type { LocaleResource } from '@nocobase/i18n';
+const messages = {
+  'files.ooxmlLoadFailed': 'Unable to render this Office Open XML file.',
+  'files.ooxmlLoadTimedOut':
+    'The preview did not finish loading within {{minutes}} minutes.',
+  'files.previewRequestFailed': 'Preview request failed ({{status}}).',
+  uploadFailed: 'File upload failed.',
+  fileLimitReached: 'The maximum number of files has been reached.',
+  fileTooLarge: 'File exceeds the maximum size.',
+  fileTypeNotAllowed: 'File type is not allowed.',
+  removalFailed: 'File removal failed.',
+  urlNotAllowed: 'File URL is not allowed.',
+  downloadFailed: 'File download failed.',
+  invalidUrl: 'File URL is missing or not allowed.',
+  pdfPreviewFailed: 'Unable to load the PDF preview.',
+  pdfPreviewMarkup: 'The file URL returned HTML or XML instead of a PDF.',
+  previewFailed: 'Unable to load the file preview.',
+  'files.empty': 'No files.',
+  'files.preview': 'Preview',
+  'files.download': 'Download',
+  'files.remove': 'Remove',
+  'files.chooseMany': 'Choose files',
+  'files.chooseOne': 'Choose file',
+  'files.retry': 'Retry',
+  'files.done': 'Done',
+  'files.uploading': 'Uploading',
+  'files.failed': 'Failed',
+  'files.pending': 'Pending',
+  'files.previous': 'Previous file',
+  'files.next': 'Next file',
+  'files.loadingPreview': 'Loading preview...',
+  'files.downloadFile': 'Download file',
+  'files.previewUnavailable': 'Preview is unavailable for this file type.',
+  'files.imageFailed':
+    'This image could not be displayed. It may be corrupted or in an unsupported format.',
+  'files.officeFailed': 'Office Online could not load this file.',
+  'files.officeUrl':
+    'Office Online requires an internet-accessible absolute file URL.',
+  'files.cancelFile': 'Cancel {{filename}}',
+  'files.status.uploading': 'Uploading',
+  'files.status.pending': 'Pending',
+  'files.status.error': 'Failed',
+};
+
+const resource: { fileUi: typeof messages } = { fileUi: messages };
+export type FileUiResource = LocaleResource<typeof resource>;
+export default resource;

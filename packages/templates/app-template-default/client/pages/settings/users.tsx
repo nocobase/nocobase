@@ -360,7 +360,7 @@ export default function UsersPage(): ReactElement {
                 },
               );
             })
-            .join(', ') || '—',
+            .join(', ') || t('settings.noAssignedRoles'),
       },
       {
         id: 'actions',

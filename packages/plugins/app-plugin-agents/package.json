@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-agents",
   "displayName": "Agents",
   "description": "Agents for NocoBase applications: agents, the model services online agents call, their runs and conversations, and the runners people connect to run them (registration, the long-poll claim, slots, the sweeper, build jobs, and the runner and CLI tarballs the application serves).",
-  "version": "1.0.0-beta.24",
+  "version": "1.0.0-beta.26",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -286,7 +286,7 @@
     "@ai-sdk/moonshotai": "catalog:",
     "@ai-sdk/openai": "catalog:",
     "@ai-sdk/openai-compatible": "catalog:",
-    "@ai-sdk/provider-utils": "5.0.54",
+    "@ai-sdk/provider-utils": "catalog:",
     "@nocobase/agent-protocol": "workspace:^",
     "@nocobase/app-cli-client": "workspace:^",
     "@nocobase/cli-envelope": "workspace:^",

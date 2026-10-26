@@ -46,6 +46,10 @@ jobs:
     defaults:
       run:
         working-directory: release-source
+    # Pull requests read lets the changelog step read the descriptions of the pull requests this release contains.
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       tag: ${{ steps.batch.outputs.name }}
       batch: ${{ steps.batch.outputs.value }}
@@ -211,6 +215,29 @@ jobs:
             echo "| --- | --- |"
             node scripts/list-package-versions.mjs --table
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # The root CHANGELOG.md and CHANGELOG.zh-CN.md gain this release's section, written by scripts/changelog.mjs from
+      # the type and bilingual changelog of each pull request merged since the previous stable release, together with
+      # those the betas listed that no stable section lists yet (.github/pull_request_template.md). The release commit
+      # carries both files, so even a promotion with no changesets now pushes a release branch and merges it back. The
+      # script comes from the workflow tooling checkout and reads pull requests with this job's read-only token. Best
+      # effort: a failure warns, puts both files back as they were, and the release goes on without the section.
+      - name: Write the changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.batch.outputs.name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if ! node ../scripts/changelog.mjs --tag "$TAG" --repo "$REPO" --root .; then
+            echo "::warning::Writing the changelog failed; $TAG has no changelog section."
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+              if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
+                git checkout HEAD -- "$file"
+              else
+                rm -f -- "$file"
+              fi
+            done
+          fi
 
       - name: Save prepared release source
         id: state

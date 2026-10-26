@@ -2,7 +2,7 @@
 
 This is a NocoBase 3 application. Do not apply globally installed NocoBase 2 Skills. You are building the application itself — its pages, its API, its database tables. Everything under this directory is application-owned source code that you may edit directly.
 
-Do not create a plugin to add a feature. Plugins are separately published packages for capabilities shared across several applications; building one for this application's own feature adds a package boundary, a version, and a release process to work that belongs in `client/` and `server/`. Create one only when the user explicitly asks for a reusable published package.
+Do not create a plugin to add a feature. Plugins are separately published packages for capabilities shared across several applications; building one for this application's own feature adds a package boundary, a version, and a release process to work that belongs in `client/` and `server/`. Create one only when the user explicitly asks for a reusable published package. Ordinary internal workspace packages under `packages/` may share code without becoming plugins or being published; follow [internal packages](.agents/rules/workspace.md) when the application needs that boundary.
 
 ## Default template scope
 
@@ -16,7 +16,7 @@ This file stays at most 32 KB and must not grow without bound, because every age
 
 - Application-specific guidance — including what a change to this application's structure, shell or conventions needs the next agent to know — goes in `.agents/rules/<topic>.md`. Update the relevant file, or add one, and add or update its entry in the [index](#index) below rather than writing the detail here.
 - Framework-wide guidance lives in the synchronized Skills under `.agents/skills/`. Link to it, never copy it here; when it is wrong for every application, correct it upstream in `@nocobase/app-skills`.
-- `tests/logic/agents-md.test.ts` enforces the size limit and checks that the links here and in `.agents/rules/` resolve.
+- `tests/project/agents-md.test.ts` enforces the size limit and checks that the links here and in `.agents/rules/` resolve.
 
 ## Load the development skills
 
@@ -61,7 +61,7 @@ A bare create-app shows Home to signed-in users and System settings → App foun
 
 Declare every page in `client/routes.ts` with `defineAppRoutes()` and keep its component behind a lazy `componentLoader` whose module default-exports it. Never write the deployment base path such as `/main` into a route — the runtime restores it. `auth` controls browser navigation only and is not server security. Declare `navigation` on the route to put it in a menu, and always declare `authz` on the first page of every path; the page id identifies stored page grants, so changing it requires migrating the grants that reference it. Read [pages and routes](.agents/skills/nocobase-app-development/references/frontend/references/page.md), and [overlays](.agents/skills/nocobase-app-development/references/frontend/references/overlay.md) before implementing dialogs, drawers or close guards.
 
-Every route listed as a page permission needs a localized display name: use its existing navigation/breadcrumb title, or add its application route name to `client/pages/settings/page-permission-titles.ts` for an overlay or other page with no title metadata. Do not add breadcrumbs/menus just to label an overlay. Run `tests/logic/page-permission-titles.test.ts`; it requires non-empty English/Chinese labels and rejects missing or stale mappings. Never rename route/permission ids or change `authz` to fix display text.
+Every route listed as a page permission needs a localized display name: use its existing navigation/breadcrumb title, or add its application route name to `client/pages/settings/page-permission-titles.ts` for an overlay or other page with no title metadata. Do not add breadcrumbs/menus just to label an overlay. Run `tests/client/page-permission-titles.test.ts`; it requires non-empty English/Chinese labels and rejects missing or stale mappings. Never rename route/permission ids or change `authz` to fix display text.
 
 ### Components and styling
 
@@ -101,7 +101,7 @@ When reporting or opening this application's address, use the `Local:` URL print
 
 Scope all verification — formatting, lint, type checking, tests, builds and runtime checks — to the affected files, projects, or packages and their affected consumers. Do not run full-application or workspace-wide checks, or an aggregate `pnpm check`, as a routine step after each edit. Documentation-only changes need formatting and link checks for the changed documents, not type checking, runtime tests, or builds. Report which checks ran, their scope, and any unverified behavior.
 
-Add tests for what you changed — a route's authenticated, unauthenticated, and unauthorized responses; a migration's `up` and `down` against a real database; a page's actual behavior — in `tests/`, never beside the source; browser tests go in `tests/playwright/`. Start page tests from `tests/components/page-harness.test.tsx`, which keeps application hooks real and supplies external responses through the test fixture. See [testing and verification](.agents/skills/nocobase-app-development/references/testing.md).
+Add tests for what you changed — a route's authenticated, unauthenticated, and unauthorized responses; a migration's `up` and `down` against a real database; a page's actual behavior — in `tests/`, never beside the source; browser tests go in `tests/playwright/`. Start page tests from `tests/client/page-harness.test.tsx`, which keeps application hooks real and supplies external responses through the test fixture. See [testing and verification](.agents/skills/nocobase-app-development/references/testing.md).
 
 For any UI work, start with [the frontend workflow](.agents/skills/nocobase-app-development/references/frontend/ui-workflow.md), which decides the workflow and routes to the styling rules, the theme token contract and the rest.
 
@@ -120,6 +120,7 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 
 | Read                                                                   | When                                                                                                         |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [.agents/rules/workspace.md](.agents/rules/workspace.md)               | Adding internal packages or changing workspace development and validation                                    |
 | [.agents/rules/components.md](.agents/rules/components.md)             | Adding or changing a component, a shadcn primitive, a UI Library item, or the visual design                  |
 | [.agents/rules/shell.md](.agents/rules/shell.md)                       | Changing layouts, the header, sidebar, breadcrumbs, the account menu or loading indicators                   |
 | [.agents/rules/build-and-deploy.md](.agents/rules/build-and-deploy.md) | Changing the build, packing a deployment, the Docker image, `CDN_BASE_URL`, or building for another platform |
@@ -128,4 +129,4 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 
 Assign application business roles to explicitly identified users through the prepared User management role-assignment UI. Never seed a business permission set onto `authenticated:*`, broaden the inherited platform `member` role, or write startup reconciliation that grants access to everyone merely to make a feature usable. Unchecked actions in one role do not revoke grants inherited from another. If the user explicitly requests a global default role, first deliver a permission-protected administration control that shows its recipients and allows changing or removing the assignment; show inherited roles and their source in user access details. Without that UI, use explicit user assignments and explain the limitation. Keep page access independent from business operations.
 
-Run `pnpm exec vitest run tests/logic/authorization-assignment-safety.test.ts` after permission initialization changes and before delivery. It boots the real application on an isolated database and inspects initialized wildcard assignments and the inherited member role. Keep this test in generated applications. An intentional global default requires explicit user authorization, a working administration surface and corresponding acceptance tests before deliberately updating the expected baseline; do not delete, skip or loosen the guard to make tests pass. Test an ordinary user with only the configured role: inspect all effective grant sources and verify both hidden buttons and rejected direct API calls.
+Run `pnpm exec vitest run tests/server/authorization-assignment-safety.test.ts` after permission initialization changes and before delivery. It boots the real application on an isolated database and inspects initialized wildcard assignments and the inherited member role. Keep this test in generated applications. An intentional global default requires explicit user authorization, a working administration surface and corresponding acceptance tests before deliberately updating the expected baseline; do not delete, skip or loosen the guard to make tests pass. Test an ordinary user with only the configured role: inspect all effective grant sources and verify both hidden buttons and rejected direct API calls.

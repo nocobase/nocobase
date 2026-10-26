@@ -1,5 +1,27 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.51
+
+### Patch Changes
+
+- 25e7bd3: Make Member a visible, editable creation default and honor explicitly empty role lists. Initialize new person accounts transactionally across existing creation paths. Preserve existing Member grants and users through a new transactional seed before removing the global assignment, without restoring later role removals. Keep protected administrators and authenticated account basics unchanged.
+
+  Stop old account writers and upgrade Authentication, Authorization, and Users together before applying database tasks and reopening traffic. Existing applications must also merge the updated template user pages and translations; plugin upgrades do not replace application-owned source. Restore a database backup with matching old packages if rollback is required.
+
+## 0.1.0-beta.50
+
+### Patch Changes
+
+- 0c34e7e: Organize application tests by client, server, database, CLI and project source domains, with separate jsdom and Node Vitest projects. Keep browser tests in Playwright, run Node suites sequentially, use real application fixtures in home, inbox, sidebar permission and layout tests, and update the bundled testing guidance and commands.
+
+  Replace mocked authentication, permission hooks and article/numeric API clients in existing template tests with real application, cookie and database fixtures. Verify actual session revocation, persisted permission changes, successful retries and saved article contents. Keep deliberate network failures and delayed responses at the transport boundary.
+
+## 0.1.0-beta.49
+
+### Patch Changes
+
+- 2e5823a: Register Knowledge indexing configuration and both vector database types in the application templates, document their deployment settings, and guide application development through the supported configuration contract.
+
 ## 0.1.0-beta.48
 
 ### Patch Changes

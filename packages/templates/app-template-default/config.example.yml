@@ -158,6 +158,34 @@ snowflake:
 # scheduler:
 #   jobs: redis
 
+# Knowledge owns one global index shared by all spaces; these are server-only instance definitions.
+# Declaring instances does not enable indexing. Select an instance and Embedding model in Knowledge's
+# global index dialog, then explicitly confirm the all-space rebuild and possible model charges.
+# Agents supplies Embedding models only; its vector collections are not used.
+# knowledge:
+#   # Optional: select an existing host jobs configuration by name; omitted follows jobs.default.
+#   # jobs: redis
+#   indexing:
+#     local:
+#       name: Local semantic index
+#       type: sqlite-vec
+#       # Relative to application storage; use one shared file on one host, not separate pod-local files.
+#       file: knowledge/vectors.sqlite
+#     shared:
+#       name: Shared PostgreSQL index
+#       type: pgvector
+#       # Supply real credentials privately. An administrator must install vector and create this schema.
+#       url: postgresql://kb_user:replace-with-the-password@127.0.0.1:5432/knowledge
+#       schema: knowledge_index
+#       # Deployment-owned generation table prefix (default: knowledge); not a page setting.
+#       table: knowledge
+#       # Optional TLS settings; ca/cert/key are PEM contents, not file paths.
+#       # ssl:
+#       #   rejectUnauthorized: true
+#       #   ca: replace-with-the-ca-pem
+#       #   cert: replace-with-the-client-certificate-pem
+#       #   key: replace-with-the-client-private-key-pem
+
 # Mail is registered by default. Configure mailbox provider instances before connecting accounts.
 # See .agents/skills/nocobase-app-plugin-mail/references/configuration-and-accounts.md.
 mail:

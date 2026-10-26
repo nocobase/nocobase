@@ -1,5 +1,33 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- d78f586: Pin official AI SDK providers to the compatible ai/provider-utils release set to prevent independent provider patch upgrades from breaking Agents builds. The workspace also constrains Ollama's provider-utils dependency; independently installed applications must manage Ollama's transitive dependency alignment themselves.
+
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 2e5823a: Use the OpenAI-compatible SDK for Alibaba Qwen embeddings while preserving its existing chat SDK, service base URL, credentials, and dimension selection. Version Alibaba Knowledge embedding identities so generations created with the former native transport require an explicit rebuild instead of silently reusing vectors across the protocol change.
+- 2e5823a: Allow Knowledge indexing to use a manually entered fixed Embedding model ID as well as catalog suggestions, including services with empty model lists. Keep unlisted models behind an explicit server-only gateway opt-in, preserve service and model-kind checks, and learn unknown vector dimensions from indexing responses without probing on edit or save. Rename the Chinese settings title and remove duplicate dialog close controls and standalone configuration headings.
+
+  Show deployment guidance whenever no indexing instances are configured, including when earlier settings remain saved. Preserve those settings without presenting a stale form or old progress as configurable.
+
+  Simplify zero-instance guidance and localize a clearer Agent configuration prompt: inspect supported indexing types, let the user choose, and edit knowledge.indexing in the actual config.yaml or existing config.yml without assuming a vector backend.
+
+- 2e5823a: Add permission-filtered all-space Knowledge search and person-only search/read CLI commands for native OnlineAgent credentials. Register optional global Knowledge instructions with on-demand and always retrieval policies through existing context variables, preserving session snapshots and scoped credential restrictions.
+
+  Export the existing native credential type for optional plugin integration.
+
+- 2e5823a: Enable bash and skill as the default tools for new native OnlineAgent sessions, while preserving explicit tool overrides, saved session configuration, lazy sandbox creation, and Runner isolation.
+- 2e5823a: Resolve OnlineAgent configuration in two phases so every prompt template receives final, independently normalized variables while prompt composition remains ordered and HTTP variables remain limited to selected-scope declarations. Preserve saved session snapshots without reevaluating global prompts on variable-only updates.
+- 671e1b3: Retire the pending runner-agent state and obsolete discovery/cleanup interfaces. Migrate unused legacy discoveries away, preserving records with any run, business reference or audit other than automatic system creation as disabled. Ignore creation audits only when action is created and actorUserId is null, regardless of revision or change contents; delete those audits through the existing cascade when removing an otherwise unused agent, and mark models as added only for enabled or disabled runner agents. Deleted agents and their cascaded audits cannot be restored by rolling back the data migration; review custom application references before upgrading. Align all supported Agent page translations with explicit model addition.
+- e5d61bd: Simplify runtime status to show online concurrency settings and optional per-tool limits, removing capacity diagnostics from the list and details.
+- 7fbcda4: Restore completed runner reasoning summaries from existing run events in conversation history without changing message storage or model context.
+- 7fbcda4: Render every logical assistant response as one bubble with ordered text and reasoning. Keep response identity and complete input/output groups consistent across live previews, cancellation and paginated history.
+
 ## 1.0.0-beta.24
 
 ### Patch Changes

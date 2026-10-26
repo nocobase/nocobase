@@ -6,6 +6,7 @@ const viVN: FoundationResource = {
     foundation: 'Nền tảng ứng dụng',
   },
   page: {
+    identified: 'Đã nhận diện {{value}}',
     counted: 'Đã thống kê {{value}}',
     partial: 'Một số dữ liệu đang chờ cập nhật',
     title: 'Nền tảng ứng dụng',
@@ -35,6 +36,7 @@ const viVN: FoundationResource = {
     successPath: 'Yêu cầu API thành công: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Cơ sở dữ liệu khả dụng',
+      authorizationIdentityResolved: 'Đã xác định danh tính phân quyền',
       authenticated: 'Xác thực được chấp nhận',
       bodyWithinLimit: 'Nội dung yêu cầu trong giới hạn kích thước',
       validInput: 'Kiểm tra đầu vào thành công',
@@ -129,9 +131,9 @@ const viVN: FoundationResource = {
     collectionResults: '{{count}} bộ sưu tập phù hợp',
     previousPage: 'Trước',
     nextPage: 'Tiếp',
-    countRecords: 'Đếm bản ghi nghiệp vụ',
+    countRecords: 'Đếm bản ghi',
     recordsOnDemand:
-      'Tổng bản ghi nghiệp vụ được đếm khi cần. Cơ sở dữ liệu lớn có thể mất nhiều thời gian hơn.',
+      'Đếm theo yêu cầu các bảng đã nhận diện, loại trừ bảng hệ thống đã biết. Cơ sở dữ liệu lớn có thể mất nhiều thời gian hơn.',
     recordsCountedAt: 'Đã đếm bản ghi {{time}}',
 
     businessModules: 'Mô-đun nghiệp vụ liên quan',
@@ -277,12 +279,11 @@ const viVN: FoundationResource = {
   facts: {
     fileCollectionsPartial: 'Đã thống kê {{count}} bộ sưu tập tệp: {{names}}.',
     collectionOwnershipUnknown:
-      'Phát hiện phần mở rộng lúc chạy chưa phân loại. Chưa xác nhận bộ sưu tập thuộc bên nào nên ẩn số liệu nghiệp vụ.',
-    noApplicationCollections:
-      'Lớp dữ liệu đang chạy, ứng dụng chưa có bộ sưu tập riêng.',
+      'Đã loại trừ các bảng hệ thống NocoBase đã biết. Quyền sở hữu các bảng khác đang chờ nhận diện; kết quả đọc này không phải tổng riêng nghiệp vụ hay toàn ứng dụng.',
+    noApplicationCollections: 'Chưa nhận diện thêm bảng dữ liệu nào.',
     applicationCollectionsPreview:
-      'Ứng dụng có {{count}} bộ sưu tập, bao gồm {{names}}.',
-    applicationCollections: '{{count}} bộ sưu tập riêng: {{names}}.',
+      'Đã nhận diện {{count}} bảng dữ liệu, gồm {{names}}.',
+    applicationCollections: 'Đã nhận diện {{count}} bảng dữ liệu: {{names}}.',
     relations: '{{count}} quan hệ kết nối chúng.',
     fileCollections: '{{count}} bộ sưu tập tệp: {{names}}.',
     accounts: '{{count}} tài khoản dùng xác thực NocoBase.',
@@ -326,8 +327,8 @@ const viVN: FoundationResource = {
     caching: 'Bộ nhớ đệm',
   },
   metrics: {
-    businessRecords: 'bản ghi nghiệp vụ',
-    businessCollections: 'bộ sưu tập nghiệp vụ',
+    businessRecords: 'bản ghi',
+    businessCollections: 'bảng dữ liệu',
     views: 'khung nhìn',
     fields: 'trường',
     relations: 'quan hệ',

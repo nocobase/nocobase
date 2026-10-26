@@ -6,6 +6,7 @@ import {
 } from '@nocobase/app-server/router';
 import type { Context } from 'hono';
 
+import { KnowledgeIndexingValidationError } from '../indexing/types.js';
 import { KnowledgeError } from '../errors.js';
 
 /** The error domain of every knowledge route. */
@@ -13,6 +14,9 @@ export const KNOWLEDGE_ERROR_DOMAIN = 'knowledge';
 
 /** A 409 of the services is one of three kinds; everything else it refuses is the state's doing. */
 const CONFLICTS: Readonly<Record<string, ApiErrorStatus>> = {
+  INDEXING_REVISION_CONFLICT: 'ABORTED',
+  INDEXING_REQUEST_CONFLICT: 'ABORTED',
+  INDEXING_SNAPSHOT_CONFLICT: 'ABORTED',
   KNOWLEDGE_VERSION_CONFLICT: 'ABORTED',
   KNOWLEDGE_PROPOSAL_STALE: 'ABORTED',
   KNOWLEDGE_SLUG_TAKEN: 'ALREADY_EXISTS',
@@ -24,6 +28,12 @@ const CONFLICTS: Readonly<Record<string, ApiErrorStatus>> = {
 const PRECONDITIONS = new Set([
   'FILES_UNAVAILABLE',
   'SEMANTIC_SEARCH_UNAVAILABLE',
+  'INDEXING_DISABLED',
+  'INDEXING_UNAVAILABLE',
+  'INDEXING_JOBS_UNAVAILABLE',
+  'INDEXING_MODEL_CHANGED',
+  'INDEXING_TARGET_NOT_CURRENT',
+  'INDEXING_TARGET_OWNERSHIP_CONFLICT',
 ]);
 
 function statusOf(error: KnowledgeError): ApiErrorStatus {
@@ -89,6 +99,24 @@ export function knowledgeErrorHandler(
   error: Error,
   context: Context,
 ): Response {
+  if (error instanceof KnowledgeIndexingValidationError)
+    return apiErrorHandler(
+      new ApiError({
+        status: 'INVALID_ARGUMENT',
+        reason: 'INDEXING_OPTIONS_INVALID',
+        domain: KNOWLEDGE_ERROR_DOMAIN,
+        message: 'Invalid Knowledge indexing options.',
+        fieldViolations: error.issues.map((issue) => ({
+          field:
+            issue.field.length <= 200 &&
+            /^[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/.test(issue.field)
+              ? 'options.' + issue.field
+              : 'options',
+          description: 'Invalid indexing value.',
+        })),
+      }),
+      context,
+    );
   return apiErrorHandler(
     error instanceof KnowledgeError ? knowledgeApiError(error) : error,
     context,

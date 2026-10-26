@@ -30,7 +30,6 @@ CAPABILITIES
   client.react-providers
   client.locales
   cli
-  registry
   skills
 
 OPTIONS
@@ -77,7 +76,7 @@ Plugins with the `database` capability run `nocobase-db-manifests` after TypeScr
 
 ## Installing client UI with shadcn
 
-Every plugin with client code includes `components.json`, `client/styles.css`, shadcn tooling, and the `@nocobase` registry. Selecting `registry` is needed only to publish the plugin's own editable source recipes. A component-only plugin can install UI directly:
+Every plugin with client code includes `components.json`, `client/styles.css`, shadcn tooling, and the `@nocobase` registry. Editable source is published by the UI Library. A component-only plugin can install UI directly:
 
 ```bash
 pnpm plugin:create feature-card --with client.components

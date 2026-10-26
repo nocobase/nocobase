@@ -36,6 +36,7 @@ const listed: DemoAccountSummary[] = [
 
 let testDatabase: TestDatabase;
 let auth: Auth;
+let ordinaryAuth: Auth;
 let enabled: boolean;
 let quickSignIn: boolean;
 let accounts: DemoAccountSummary[];
@@ -142,6 +143,7 @@ beforeAll(async () => {
     emailAndPassword: { enabled: true },
     session: { storeSessionInDatabase: true },
   });
+  ordinaryAuth = auth;
   const users = createUserAdministrationService({
     auth,
     connection: database.connection(),
@@ -180,6 +182,7 @@ beforeAll(async () => {
 });
 afterAll(() => testDatabase.destroy());
 beforeEach(() => {
+  auth = ordinaryAuth;
   enabled = true;
   quickSignIn = true;
   accounts = listed;
@@ -207,6 +210,11 @@ describe('demo quick sign-in', () => {
     expect(await response.json()).toEqual({
       data: { username: 'ann', name: 'Ann', role: 'Admin', current: true },
     });
+    expect(
+      response.headers
+        .getSetCookie()
+        .some((cookie) => /Max-Age=0/i.test(cookie)),
+    ).toBe(false);
     const cookie = cookieOf(response);
     expect(await signedInUser(cookie)).toBe(ids.ann);
     const list = (await (
@@ -310,4 +318,69 @@ describe('demo quick sign-in', () => {
     expect(response.status).toBe(403);
     expect(await signedInUser(cookie)).toBe(ids.ann);
   });
+});
+
+describe('partitioned demo sign-in cookies', () => {
+  it.each([
+    { route: '/demoMode/accounts/signInDefault', username: 'owner' },
+    { route: '/demoMode/accounts/bob/signIn', username: 'bob' },
+  ])(
+    'removes conflicting ordinary cookies when entering through $route',
+    async ({ route, username }) => {
+      auth = new Auth({
+        connection: testDatabase.database.connection(),
+        baseURL: `${ORIGIN}/api/auth`,
+        secret: 'development-secret-at-least-32-characters',
+        emailAndPassword: { enabled: true },
+        session: { storeSessionInDatabase: true },
+        advanced: {
+          cookiePrefix: 'demo-custom',
+          useSecureCookies: true,
+          defaultCookieAttributes: {
+            domain: 'localhost',
+            path: '/api',
+            secure: true,
+            sameSite: 'none',
+            partitioned: true,
+          },
+        },
+      });
+      const stale =
+        '__Secure-demo-custom.session_token=expired-before-partitioning';
+      const response = await call('POST', route, {
+        cookie: `${stale}; unrelated=keep`,
+      });
+      expect(response.status).toBe(200);
+      const cookies = response.headers.getSetCookie();
+      const issued = cookies.filter((cookie) =>
+        /; Partitioned(?:;|$)/i.test(cookie),
+      );
+      expect(
+        issued.some((cookie) =>
+          cookie.startsWith('__Secure-demo-custom.session_token='),
+        ),
+      ).toBe(true);
+      for (const cookie of issued) {
+        const name = cookie.slice(0, cookie.indexOf('='));
+        const expired = cookies.find((header) =>
+          header.startsWith(`${name}=;`),
+        );
+        expect(expired).toContain('Max-Age=0');
+        expect(expired).toContain('Domain=localhost');
+        expect(expired).toContain('Path=/api');
+        expect(expired).toContain('; Secure');
+        expect(expired).not.toMatch(/; Partitioned(?:;|$)/i);
+      }
+      expect(cookies.every((cookie) => !cookie.startsWith('unrelated='))).toBe(
+        true,
+      );
+      const cookie = issued.map((header) => header.split(';')[0]).join('; ');
+      expect(await signedInUser(cookie)).toBe(ids[username]);
+      const returning = await call('POST', '/demoMode/accounts/signInDefault', {
+        cookie,
+      });
+      expect(await returning.json()).toEqual({ data: { signedIn: false } });
+      expect(returning.headers.getSetCookie()).toEqual([]);
+    },
+  );
 });

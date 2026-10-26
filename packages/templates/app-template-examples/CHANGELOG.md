@@ -1,5 +1,67 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.65
+
+### Patch Changes
+
+- 25e7bd3: Make Member a visible, editable creation default and honor explicitly empty role lists. Initialize new person accounts transactionally across existing creation paths. Preserve existing Member grants and users through a new transactional seed before removing the global assignment, without restoring later role removals. Keep protected administrators and authenticated account basics unchanged.
+
+  Stop old account writers and upgrade Authentication, Authorization, and Users together before applying database tasks and reopening traffic. Existing applications must also merge the updated template user pages and translations; plugin upgrades do not replace application-owned source. Restore a database backup with matching old packages if rollback is required.
+
+- Updated dependencies [25e7bd3]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-authorization@1.0.0-beta.32
+  - @nocobase/app-plugin-users@2.0.0-beta.10
+
+## 1.0.0-beta.64
+
+### Patch Changes
+
+- 0c34e7e: Organize application tests by client, server, database, CLI and project source domains, with separate jsdom and Node Vitest projects. Keep browser tests in Playwright, run Node suites sequentially, use real application fixtures in home, inbox, sidebar permission and layout tests, and update the bundled testing guidance and commands.
+
+  Replace mocked authentication, permission hooks and article/numeric API clients in existing template tests with real application, cookie and database fixtures. Verify actual session revocation, persisted permission changes, successful retries and saved article contents. Keep deliberate network failures and delayed responses at the transport boundary.
+
+- Updated dependencies [9de4995]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.7
+
+## 1.0.0-beta.63
+
+### Minor Changes
+
+- 2e5823a: Use a single default knowledge space in Examples and replace the knowledge page's indexing shortcut with an AI chat launcher that persists an explicitly selected retrieval policy in each new conversation. Removed space registrations no longer grant access, while existing documents remain stored and indexing settings stay available separately.
+
+### Patch Changes
+
+- 2e5823a: Enable Knowledge in the Examples application with a System management directory for the default, Sales and Engineering spaces, permission-filtered cross-space search, and access governed by existing permission sets.
+- b51bc80: Register App Foundation in Examples with its protected administrator menu, page and API, keeping unrestricted access required. Preserve page-to-capability associations through the Foundation CLI build hook so source-free deployments retain recognized database usage.
+- b51bc80: Reuse validated compiled page associations within each application instance while refreshing dynamic evidence normally. Show a lightweight initial collecting placeholder, retain known counts during refresh, and group the Examples Foundation menu with system management.
+- b51bc80: Preserve proven normal-success API dependencies with explicit database and framework middleware conditions in Foundation details and source-free builds. Retain unknown and terminating path barriers, and cover the Examples Articles build and request rejection behavior.
+- 2e5823a: Add shared dialog and standalone Knowledge indexing settings with type-owned forms, on-demand Embedding catalogs, per-instance drafts and zero-configuration guidance. Move the pgvector generation table prefix into deployment configuration and prevent browser options from overriding it. Add a permission-protected Examples settings page and synchronize deployment examples in both templates. Separate index enablement into a dedicated switch, retain rendered forms and drafts across toggles, show document progress with hover-only failure counts, and place rebuild controls in the footer. Display the selected instance type beside its selector. Keep settings fields, progress and footer vertically stacked in both standalone and dialog layouts. Remove duplicate standalone back navigation and scope labels. Make indexing entry placement application-owned: add a generic title-action slot and remove built-in page/back navigation from the reusable settings components. Add an Examples Knowledge indexing menu immediately below Knowledge.
+
+  Explain the sqlite-vec and pgvector vector database options in two setup cards, followed by concrete configuration-file, restart and enablement steps. Provide a separate localized Agent prompt that checks available types, waits for the user’s choice and confirms configuration changes and paid operations.
+
+- 2e5823a: Register Knowledge indexing configuration and both vector database types in the application templates, document their deployment settings, and guide application development through the supported configuration contract.
+- Updated dependencies [2e5823a]
+- Updated dependencies [b51bc80]
+- Updated dependencies [b51bc80]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [b51bc80]
+- Updated dependencies [b51bc80]
+- Updated dependencies [354db9b]
+- Updated dependencies [3eb340c]
+- Updated dependencies [671e1b3]
+- Updated dependencies [e5d61bd]
+- Updated dependencies [7fbcda4]
+- Updated dependencies [7fbcda4]
+  - @nocobase/app-plugin-agents@1.0.0-beta.25
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.12
+  - @nocobase/app-plugin-foundation@0.1.0-beta.6
+
 ## 1.0.0-beta.62
 
 ### Patch Changes

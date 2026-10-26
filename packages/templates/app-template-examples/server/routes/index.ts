@@ -20,6 +20,7 @@ import { structuredExtractionRoutes } from './structured-extraction.js';
 import { EXAMPLES_APP_TAGS as tags } from './domain.js';
 import { ExampleGreeting } from './schemas.js';
 import { aiTranslationRoutes } from './ai-translation.js';
+import { knowledgeDirectoryRoutes } from './knowledge-directory.js';
 
 import { appExampleServiceToken } from '../providers/index.js';
 
@@ -92,6 +93,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   numericExamplesRoutes,
   aiTranslationRoutes,
   structuredExtractionRoutes,
+  knowledgeDirectoryRoutes,
 ];
 
 export default routes;

@@ -1,9 +1,9 @@
 /**
- * Which Collections NocoBase itself keeps, by the package that creates them. Everything an application's database holds
- * that no entry here claims is the application's own data.
+ * Which Collections the current NocoBase catalog recognizes as system data, by the package that creates them.
+ * Remaining Collections are observed data, with no guarantee of business ownership.
  *
  * This is a version adapter: it names the Collections the NocoBase packages of this release create. A package that adds
- * a Collection under a new name must be added here, or its records are counted as the application's.
+ * a Collection under a new name must be added here to exclude it from the observed non-catalog statistics.
  */
 interface SystemCollectionOwner {
   readonly packageName: string;
@@ -51,7 +51,7 @@ const SYSTEM_COLLECTION_OWNERS: readonly SystemCollectionOwner[] = [
   { packageName: '@nocobase/app-plugin-releases', pattern: /^rel[A-Z]/ },
 ];
 
-/** The NocoBase package that keeps a Collection, or `undefined` for one of the application's own. */
+/** The NocoBase package that keeps a Collection, or `undefined` when its ownership is not classified here. */
 export function systemCollectionOwner(name: string): string | undefined {
   return SYSTEM_COLLECTION_OWNERS.find(
     (owner) =>

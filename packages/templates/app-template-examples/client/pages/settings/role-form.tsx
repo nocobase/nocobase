@@ -31,6 +31,7 @@ import {
   useNavigate,
   useOutletContext,
   useParams,
+  useResolvedPath,
 } from 'react-router';
 import { RouteChildPage } from '#components/route-child-page';
 import { BackButton } from '#components/back-button';
@@ -122,7 +123,10 @@ function RoleEditor(): ReactElement {
     : canUpdate &&
       (!request.data?.data.protection ||
         request.data.data.protection.allow.includes('update'));
-  const closeTo = { pathname: '/settings/roles', search: location.search };
+  const closeTo = {
+    pathname: useResolvedPath('..').pathname,
+    search: location.search,
+  };
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (options.error || !catalog || (!creating && request.error)) return;

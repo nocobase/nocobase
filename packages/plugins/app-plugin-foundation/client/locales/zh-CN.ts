@@ -6,6 +6,7 @@ const zhCN: FoundationResource = {
     foundation: '应用底座',
   },
   page: {
+    identified: '已识别 {{value}}',
     counted: '已统计 {{value}}',
     partial: '部分数据待更新',
     title: '应用底座',
@@ -34,6 +35,7 @@ const zhCN: FoundationResource = {
     successPath: '成功路径的 API 请求：{{method}} {{path}}',
     conditions: {
       databaseAvailable: '数据库可用',
+      authorizationIdentityResolved: '授权身份解析成功',
       authenticated: '身份认证通过',
       bodyWithinLimit: '请求体未超过大小限制',
       validInput: '输入校验通过',
@@ -125,8 +127,9 @@ const zhCN: FoundationResource = {
     collectionResults: '共 {{count}} 张匹配的数据表',
     previousPage: '上一页',
     nextPage: '下一页',
-    countRecords: '统计业务数据量',
-    recordsOnDemand: '业务数据总量按需统计，数据库较大时可能需要更长时间。',
+    countRecords: '统计记录数',
+    recordsOnDemand:
+      '按需统计已识别表的记录，排除已知系统表。大型数据库可能需要较长时间。',
     recordsCountedAt: '数据量统计于 {{time}}',
 
     businessModules: '关联业务模块',
@@ -259,11 +262,11 @@ const zhCN: FoundationResource = {
   facts: {
     fileCollectionsPartial: '已统计 {{count}} 张文件表：{{names}}。',
     collectionOwnershipUnknown:
-      '发现尚未归类的运行时扩展，部分数据表的归属无法确认，暂不展示业务统计数。',
-    noApplicationCollections: '数据层已在运行，本系统还没有自己的数据表。',
+      '已排除目录中已知的 NocoBase 系统表。其余表的归属待识别；这里展示实际读取结果，不代表纯业务或全应用总量。',
+    noApplicationCollections: '尚未识别到其他数据表。',
     applicationCollectionsPreview:
-      '本系统自有 {{count}} 张数据表，包含 {{names}} 等。',
-    applicationCollections: '本系统自有 {{count}} 张数据表：{{names}}。',
+      '已识别 {{count}} 张数据表，包括 {{names}}。',
+    applicationCollections: '已识别 {{count}} 张数据表：{{names}}。',
     relations: '它们之间有 {{count}} 个关联关系。',
     fileCollections: '{{count}} 张文件表：{{names}}。',
     accounts: '{{count}} 个账号通过 NocoBase 认证登录。',
@@ -306,8 +309,8 @@ const zhCN: FoundationResource = {
     caching: '缓存',
   },
   metrics: {
-    businessRecords: '条业务数据',
-    businessCollections: '张业务数据表',
+    businessRecords: '记录',
+    businessCollections: '数据表',
     views: '个视图',
     fields: '个字段',
     relations: '个关联关系',

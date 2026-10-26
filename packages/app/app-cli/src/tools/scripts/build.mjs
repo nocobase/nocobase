@@ -279,6 +279,24 @@ fs.rmSync(distDir, { recursive: true, force: true });
 // hook writing to a directory about to be deleted would succeed, leave nothing behind, and report nothing wrong.
 runHookStage(buildHooks, 'beforeBuild', run);
 
+// `^...` selects every workspace package this one depends on, transitively, which is exactly the set whose `dist`
+// the steps below read. Spelling the set out by hand drifted instead: `@nocobase/config` was missing from the list
+// and a template built on its own failed at "Generate server package" with `Missing ../../libs/config/dist`.
+//
+// Only needed when a template is built alone. `pnpm -r build` already orders dependencies first, and it runs the two
+// templates concurrently — where each plugin's build clears its `dist` before tsc refills it, so one template can
+// observe the other's empty `dist` and fail with a misleading "Missing .../dist".
+//
+// A generated application can own packages too. Build them before typechecking or bundling either application half;
+// their declarations and client exports may point to dist, which does not exist on a clean checkout.
+if (process.env.NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD !== '1') {
+  run('Build workspace dependencies', 'pnpm', [
+    '--filter',
+    `${appPackageName}^...`,
+    'build',
+  ]);
+}
+
 run('Typecheck client', 'pnpm', ['exec', 'tsc']);
 run('Typecheck tooling', 'pnpm', ['exec', 'tsc', '-p', 'tsconfig.node.json']);
 // `vite.config.ts` reads only the environment it is given, so the `.env` files are resolved here with the process
@@ -291,22 +309,6 @@ run('Build client', 'pnpm', ['exec', 'vite', 'build'], {
   },
 });
 runHookStage(buildHooks, 'afterClientBuild', run);
-// `^...` selects every workspace package this one depends on, transitively, which is exactly the set whose `dist`
-// the steps below read. Spelling the set out by hand drifted instead: `@nocobase/config` was missing from the list
-// and a template built on its own failed at "Generate server package" with `Missing ../../libs/config/dist`.
-//
-// Only needed when a template is built alone. `pnpm -r build` already orders dependencies first, and it runs the two
-// templates concurrently — where each plugin's build clears its `dist` before tsc refills it, so one template can
-// observe the other's empty `dist` and fail with a misleading "Missing .../dist".
-//
-// In a generated application there is no workspace to select from, so pnpm matches nothing and exits successfully.
-if (process.env.NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD !== '1') {
-  run('Build server workspace dependencies', 'pnpm', [
-    '--filter',
-    `${appPackageName}^...`,
-    'build',
-  ]);
-}
 run('Build server', 'pnpm', ['exec', 'tsc', '-p', 'tsconfig.server.json']);
 run('Rewrite server path aliases', 'pnpm', [
   'exec',

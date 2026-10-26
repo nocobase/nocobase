@@ -38,18 +38,14 @@ export const fullDirectories = [
 // that exemption no longer exists.
 export const pathDependencies = [
   {
-    // The Registry tests of file and notification build their stand-in application from the default template's
-    // shadcn primitives and node_modules; the template depends on both plugins, so neither can declare it.
+    // File's integration test builds a receiving application; the template depends on File.
     path: 'packages/templates/app-template-default/',
-    consumers: [
-      '@nocobase/app-plugin-file',
-      '@nocobase/app-plugin-notification',
-    ],
+    consumers: ['@nocobase/app-plugin-file'],
   },
   {
-    // notification's vitest.config.ts copies the shadcn primitives its Registry item imports.
-    path: 'packages/plugins/app-plugin-agents/client/components/ui/',
-    consumers: ['@nocobase/app-plugin-notification'],
+    // File's Skill integration test installs the maintained UI Library source.
+    path: 'ui-library/registry/file/',
+    consumers: ['@nocobase/app-plugin-file'],
   },
   // The installed-client regression reads each template's actual Vitest configuration and setup. Both templates
   // depend on app-testing, so it cannot declare them without a cycle.

@@ -7,13 +7,20 @@ const resource = {
     configuration: 'Demo configuration',
     configure: 'Configure',
   },
+  menu: {
+    label: 'Demo mode',
+    switchAccount: 'Switch account',
+    title: 'This is a demo environment',
+    description: 'Data resets automatically every day. Changes are not saved.',
+    accountsDescription:
+      'Switch to an account below to see what each role can access.',
+    loading: 'Loading accounts…',
+  },
   accounts: {
-    menu: 'Account: {{name}}',
     title: 'Accounts',
     description:
       'Enter the demo as any of these accounts to see what each of them sees.',
     enter: 'Enter',
-    signedInAs: 'Signed in as {{name}} · Switch',
     current: 'Current',
     entering: 'Entering…',
     failed: 'Could not enter this account.',
@@ -29,24 +36,16 @@ const resource = {
     refresh: 'Refresh',
     retry: 'Try again',
     busy: 'Demo data is being generated or cleared',
-    busyHelp:
-      'Wait for the current data operation to finish before starting another.',
+    busyHelp: 'Please wait for the current data operation to finish.',
     disabled: {
       title: 'This application is not a demo',
       help: 'Demo mode is off. A deployment turns it on with NOCOBASE_DEMO_MODE=true.',
     },
-    cancel: 'Cancel',
     errors: {
       failed: 'The request did not complete. Try again.',
-      conflict: 'Another administrator saved this setting first.',
-      busy: 'Demo data is being generated or cleared. Try again when it finishes.',
-      exists: 'Demo data is already generated. Reset it instead.',
       demoModeRequired: 'This works only while demo mode is on.',
-      accountConflict:
-        'A demo username belongs to an account the demo does not own.',
-      unavailable: 'This application provides no demo data.',
       signedOut: 'Your session has ended. Sign in again.',
-      denied: 'You do not have permission to manage the demo.',
+      denied: 'You do not have permission to view the demo settings.',
     },
     data: {
       title: 'Demo data',
@@ -65,37 +64,10 @@ const resource = {
         clearing: 'Clearing',
         generating: 'Generating again',
       },
-      absentSummary:
-        'Generate the demo data to fill the application with a story visitors can explore.',
-      language: 'Language',
-      clear: 'Clear',
-      reset: 'Reset',
-      generate: 'Generate',
+      absentSummary: 'No demo data has been generated yet.',
       failed: 'The last run did not finish',
-      readOnly:
-        'You can view the demo data; generating, resetting and clearing need the manage permission.',
       unavailable: 'No demo data',
       unavailableHelp: 'This application does not register a demo dataset.',
-      cleared: 'Demo data cleared',
-      resetStarted: 'Resetting the demo data',
-      importStarted: 'Generating the demo data',
-      confirm: {
-        import: {
-          title: 'Generate the demo data?',
-          description:
-            'The demo data is generated in {{language}}, and its demo accounts are turned on.',
-        },
-        reset: {
-          title: 'Reset the demo data?',
-          description:
-            'All business data in this instance is deleted, including what visitors added, and the demo data is generated again in {{language}}.',
-        },
-        clear: {
-          title: 'Clear the demo data?',
-          description:
-            'All business data in this instance is deleted, including what visitors added, and the demo accounts are turned off. Settings and administrators stay.',
-        },
-      },
     },
     visitors: {
       unavailable: 'No accounts can be entered right now.',

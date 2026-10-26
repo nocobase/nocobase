@@ -1,6 +1,5 @@
 ---
 "@nocobase/create-plugin": patch
-"@nocobase/app-plugin-registry-example": patch
 ---
 
 Prepare every plugin with client code for shadcn installation using package-local imports, a generation stylesheet, and the NocoBase registry configuration, without requiring the registry publishing capability.

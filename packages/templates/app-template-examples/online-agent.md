@@ -1,6 +1,14 @@
 # OnlineAgent example
 
-This Examples-only integration uses the Agents plugin's public chat SDK and model configuration route. The basic native chat example runs OnlineAgent directly with a configured chat model, without a Runner, custom Agent, tools or Skills; the separate AI Form Fill demonstration below explicitly selects its application-owned proposal tool scope. It does not add a plugin API or modify the Default template.
+This Examples-only integration uses the Agents plugin's public chat SDK and model configuration route. The basic native chat example runs OnlineAgent directly with a configured chat model, without a Runner or custom Agent, using the native bash/skill defaults; the separate AI Form Fill demonstration below explicitly selects its application-owned proposal tool scope. It does not add a plugin API or modify the Default template.
+
+## Knowledge chat
+
+The Knowledge page (`/knowledge`) shows only the application's default knowledge space. Sales and engineering Knowledge registrations are removed; existing stored documents are not deleted, but their removed spaces are no longer accessible or included in search. Other sales business pages are unaffected. Existing indexing administration remains available at `/knowledge/indexing` with its own permission checks.
+
+Click the AI icon beside the Knowledge heading, choose **On-demand retrieval** or **Retrieve for every question**, then select **Start chat**. On-demand searches for internal facts or explicit retrieval requests; the other policy instructs at least one search before answering each new question and disclosure when evidence is missing. This is model guidance, not enforced tool execution or a compliance guarantee. Both options use the existing Knowledge search/read CLI and current user's permissions, without new grants or an additional retrieval service.
+
+Selecting or cancelling alone makes no conversation or model request. Start chat creates an empty native conversation with the chosen policy and opens the shared panel; it does not send a question. The server snapshots the resolved prompt and variables for that conversation, including subsequent turns. Choose the other policy through the Knowledge icon to start another conversation; historical sessions are not rewritten. A lost creation response can leave an empty conversation: check history rather than automatically repeating creation. Model setup uses the existing Models page and configured default; no provider credential belongs in this launcher.
 
 ## Model reasoning
 
@@ -24,7 +32,7 @@ Models is visible only with `settings:agents.services` **read** permission; serv
 
 DeepSeek image capability is owned by the Agents plugin's `server/online/search/capabilities.ts`, not this application's configuration. The exact `deepseek-flash` model on Provider `deepseek` at the official effective base URL `https://api.deepseek.com` permits only JPEG, PNG, GIF and WebP, as documented in the [official image guide](https://api-docs.deepseek.com/zh-cn/guides/vision) and [model capability table](https://api-docs.deepseek.com/zh-cn/quick_start/pricing), checked on October 23, 2026. This works with any service name. Pro, legacy model aliases, custom endpoints and other image types receive no default image grant; the existing application file, text and count limits remain unchanged.
 
-Keep API keys in Models. `agents.fileInputs.profiles` remains a deployment-policy override, not the place to duplicate known Provider capabilities. To disable image forwarding, supply an exact service/model/Provider/protocol/endpoint profile with `nativeMediaTypes: []`; `profiles: []` removes overrides and restores the shared defaults. A stale explicit profile still fails closed. Other supported documents still use local text extraction; this does not enable PDF-native input, OCR, remote document extraction, web search or automatic resend. The offline regression `tests/logic/agents-file-inputs.test.ts` loads the application configuration and inspects a real DeepSeek SDK image request with synthetic bytes and intercepted fetch; it does not establish live Provider acceptance.
+Keep API keys in Models. `agents.fileInputs.profiles` remains a deployment-policy override, not the place to duplicate known Provider capabilities. To disable image forwarding, supply an exact service/model/Provider/protocol/endpoint profile with `nativeMediaTypes: []`; `profiles: []` removes overrides and restores the shared defaults. A stale explicit profile still fails closed. Other supported documents still use local text extraction; this does not enable PDF-native input, OCR, remote document extraction, web search or automatic resend. The offline regression `tests/server/agents-file-inputs.test.ts` loads the application configuration and inspects a real DeepSeek SDK image request with synthetic bytes and intercepted fetch; it does not establish live Provider acceptance.
 
 ## Configure agents and runtimes
 
@@ -77,7 +85,7 @@ The demo creates no business tables, task records, polling endpoint, history pag
 Focused verification uses local fixtures rather than paid providers:
 
 ```bash
-pnpm exec vitest run tests/components/ai-translation.test.tsx tests/logic/ai-translation.test.ts tests/logic/ai-translation-helper.test.ts
+pnpm exec vitest run tests/client/ai-translation.test.tsx tests/server/ai-translation.test.ts tests/server/ai-translation-helper.test.ts
 ```
 
 These tests cover the real structured-generation HTTP chain, ordinary-member access, scoped-key denial, input limits, model selection, safe errors, bounded observation and late cleanup, as well as loading, validation, translations and identity isolation in the UI. They do not establish translation quality or connectivity to an external provider.
@@ -120,7 +128,7 @@ Read the installed `@nocobase/app-plugin-agents/docs/ai-forms.md` for the export
 From this application directory, the form-specific validation entry points are:
 
 ```bash
-pnpm exec vitest run tests/components/ai-form-proposal.test.tsx tests/logic/ai-form-fill.test.ts
+pnpm exec vitest run tests/client/ai-form-proposal.test.tsx tests/server/ai-form-fill.test.ts
 pnpm exec playwright test tests/playwright/ai-form-fill.test.ts
 ```
 
@@ -133,7 +141,7 @@ When using `tests/fixtures/online-agent-browser-server.ts`, rebuild the affected
 Run the focused tests from this application directory:
 
 ```bash
-pnpm exec vitest run tests/components/online-agent-*.test.tsx tests/logic/agents-online.test.ts
+pnpm exec vitest run tests/client/online-agent-*.test.tsx tests/server/agents-online.test.ts
 ```
 
 The component tests cover identity transitions, late mutation/Undo isolation, delayed upload callbacks, shared SDK Chat ownership, mobile draft retention, model readiness and refresh races, localized notices, permission-aware links, Stop and read-error recovery. The HTTP integration test starts the real Examples standalone composition with disposable databases and storage through `@nocobase/app-testing`. It uses this application's local OpenAI-compatible HTTP fixture, not mocked application responses, plugin-internal test files or external models. It verifies authentication, authorization, encrypted-key redaction, model configuration and connection checking, streamed events, saved history, continuation context, conversation ownership and cancellation.
@@ -151,7 +159,7 @@ Open **Agents → Structured Extraction** (`/ai-structured-extraction`). Switch 
 Run its focused checks from this application's directory:
 
 ```bash
-pnpm exec vitest run tests/logic/structured-extraction.test.ts tests/logic/structured-extraction-service.test.ts
+pnpm exec vitest run tests/server/structured-extraction.test.ts tests/server/structured-extraction-service.test.ts
 ```
 
 ## Integration and upgrades

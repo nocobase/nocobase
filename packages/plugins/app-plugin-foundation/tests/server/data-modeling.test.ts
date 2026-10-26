@@ -53,7 +53,7 @@ async function application() {
   } as unknown as DatabaseManager;
   const container = new ServiceContainer();
   container.instance(databaseManagerToken, database);
-  const createService = (timeout = 1000) =>
+  const createService = (timeout = 1000, unknown = false) =>
     new DefaultFoundationService({
       container,
       rootDir,
@@ -61,9 +61,169 @@ async function application() {
       hasClient: true,
       collectors: [dataModeling],
       collectorTimeoutMs: timeout,
+      runtimeProviders: () =>
+        unknown
+          ? [
+              {
+                name: '@vendor/app-plugin-unknown',
+                evidence: 'serverRegistration',
+              },
+            ]
+          : [],
     });
   return { get, database, createService };
 }
+
+it('keeps observed statistics and explicit counts when a registered extension has no ownership adapter', async () => {
+  const { createService, database, get } = await application();
+  const service = createService(1000, true);
+  const overview = await service.overview({ countRecords: true });
+  const data = overview.capabilities[0]!;
+  expect(data.status).toBe('active');
+  expect(data.metrics).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ key: 'businessCollections', value: 1 }),
+      expect.objectContaining({ key: 'views', value: 1 }),
+      expect.objectContaining({ key: 'fields', value: 1 }),
+      expect.objectContaining({ key: 'relations', value: 1 }),
+      expect.objectContaining({ key: 'businessRecords', value: 7 }),
+    ]),
+  );
+  expect(data.issues).toEqual([]);
+  expect(JSON.stringify(overview)).not.toContain(
+    'extensionCollectionOwnership',
+  );
+  expect(await service.collections({ offset: 0, search: '' })).toMatchObject({
+    total: 2,
+  });
+  const refreshed = await service.overview({ refresh: true });
+  expect(refreshed.recordCountCheckedAt).toBe(overview.recordCountCheckedAt);
+  expect(refreshed.capabilities[0]!.metrics).toContainEqual(
+    expect.objectContaining({
+      key: 'businessRecords',
+      value: 7,
+      checkedAt: overview.recordCountCheckedAt,
+    }),
+  );
+  const otherApplication = await application();
+  const isolated = await otherApplication.createService(1000, true).overview();
+  expect(isolated.recordCountCheckedAt).toBeUndefined();
+  expect(isolated.capabilities[0]!.metrics).toContainEqual(
+    expect.objectContaining({ key: 'businessRecords', value: null }),
+  );
+  // Changing the catalog invalidates both the observed count and its date, even with an unknown extension.
+  vi.spyOn(database, 'collections').mockReturnValue({
+    list: async () => ({ items: [] }),
+    get,
+  } as never);
+  const changed = await service.overview({ refresh: true });
+  expect(changed.recordCountCheckedAt).toBeUndefined();
+  expect(changed.capabilities[0]!.metrics).toContainEqual(
+    expect.objectContaining({
+      key: 'businessRecords',
+      value: 0,
+      complete: true,
+    }),
+  );
+});
+
+it.each([false, true])(
+  'separates observed data from known system tables with unknown registration=%s',
+  async (unknown) => {
+    const { get, database, createService } = await application();
+    const list = vi.fn(async () => ({
+      items: [
+        { name: 'orders', kind: 'table', tableName: 'orders' },
+        {
+          name: 'unclassifiedExtensionState',
+          kind: 'table',
+          tableName: 'unclassifiedExtensionState',
+        },
+        { name: 'user', kind: 'table', tableName: 'user' },
+      ],
+    }));
+    vi.spyOn(database, 'collections').mockReturnValue({ list, get } as never);
+    const count = vi.fn(async () => 7);
+    const repository = vi
+      .spyOn(database, 'repository')
+      .mockReturnValue({ count } as never);
+    get.mockImplementation(async (name) =>
+      name === 'unclassifiedExtensionState'
+        ? undefined
+        : ({
+            name,
+            fields: [{ name: 'id', type: 'integer' }],
+          } as CollectionDefinition),
+    );
+    const service = createService(1000, unknown);
+    const initial = (await service.overview()).capabilities[0]!;
+    expect(repository).not.toHaveBeenCalled();
+    expect(initial).toMatchObject({
+      status: 'active',
+      completeness: 'partial',
+      issues: [
+        { code: 'SOURCE_UNREADABLE', source: 'unclassifiedExtensionState' },
+      ],
+    });
+    expect(initial.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'businessCollections',
+          value: 2,
+          complete: true,
+        }),
+        expect.objectContaining({
+          key: 'systemCollections',
+          value: 1,
+          complete: true,
+        }),
+        expect.objectContaining({ key: 'fields', value: 1, complete: false }),
+        expect.objectContaining({ key: 'businessRecords', value: null }),
+      ]),
+    );
+    // The legacy key counts observed tables, including an unclassified table; it does not claim business ownership.
+    const counted = await service.overview({ countRecords: true });
+    expect(repository.mock.calls.map(([name]) => name)).toEqual([
+      'orders',
+      'unclassifiedExtensionState',
+    ]);
+    expect(counted.capabilities[0]!.metrics).toContainEqual(
+      expect.objectContaining({ key: 'businessRecords', value: 14 }),
+    );
+    get.mockResolvedValue(undefined);
+    const noDefinitions = (await createService(1000, unknown).overview())
+      .capabilities[0]!;
+    expect(
+      noDefinitions.metrics
+        .filter((item) => ['fields', 'relations'].includes(item.key))
+        .every((item) => item.value === null),
+    ).toBe(true);
+    get.mockImplementation(
+      async (name) => ({ name, fields: [] }) as CollectionDefinition,
+    );
+    count.mockResolvedValue(0);
+    const recovered = await service.overview({
+      refresh: true,
+      countRecords: true,
+    });
+    expect(recovered.capabilities[0]).toMatchObject({
+      status: 'active',
+      completeness: 'complete',
+      issues: [],
+    });
+    expect(recovered.capabilities[0]!.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'fields', value: 0, complete: true }),
+        expect.objectContaining({ key: 'relations', value: 0, complete: true }),
+        expect.objectContaining({
+          key: 'businessRecords',
+          value: 0,
+          complete: true,
+        }),
+      ]),
+    );
+  },
+);
 
 it.each(['missing', 'throwing'] as const)(
   'isolates a %s definition and retains known catalog and schema totals',

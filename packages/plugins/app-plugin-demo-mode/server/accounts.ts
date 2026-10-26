@@ -3,6 +3,7 @@ import type { Auth } from '@nocobase/app-plugin-authentication';
 import type { DatabaseManager } from '@nocobase/db';
 
 import { demoDataError } from './errors.js';
+import { migratePartitionedCookies } from './sign-in-cookies.js';
 import type { DemoAccountSummary } from '../shared/data.js';
 
 import type { DemoSignInAccount } from '../shared/accounts.js';
@@ -97,7 +98,7 @@ export class DemoAccountSignIn {
         role: account.role,
         current: true,
       },
-      cookies: response.headers.getSetCookie(),
+      cookies: migratePartitionedCookies(response.headers.getSetCookie()),
     };
   }
 
