@@ -238,7 +238,7 @@ export async function planSkillsSync({
       }
       owners.set(skill.name, skill.packageName);
       copies.push({
-        files: await listFiles(skill.sourcePath),
+        files: await listFiles(skill.sourcePath, { excludeDependencies: true }),
         packageName: skill.packageName,
         skillName: skill.name,
         sourcePath: skill.sourcePath,
@@ -318,7 +318,16 @@ export async function applySkillsSync(
     if (!(await isSameSkill(copy))) {
       await mkdir(plan.skillsRoot, { recursive: true });
       await rm(copy.targetPath, { force: true, recursive: true });
-      await cp(copy.sourcePath, copy.targetPath, { recursive: true });
+      await cp(copy.sourcePath, copy.targetPath, {
+        recursive: true,
+        // Source workspaces may install dependencies inside executable Skill examples.
+        // Match packaged Skills: copy the example source, never its installed dependencies.
+        filter: (entry) =>
+          !path
+            .relative(copy.sourcePath, entry)
+            .split(path.sep)
+            .includes('node_modules'),
+      });
     }
     await linkClaudeSkill(plan.appRoot, copy.skillName);
   }
@@ -765,10 +774,14 @@ async function readDirectoryEntries(
   }
 }
 
-async function listFiles(root: string): Promise<string[]> {
+async function listFiles(
+  root: string,
+  { excludeDependencies = false }: { excludeDependencies?: boolean } = {},
+): Promise<string[]> {
   const files: string[] = [];
   const walk = async (directory: string, prefix: string): Promise<void> => {
     for (const entry of await readDirectoryEntries(directory)) {
+      if (excludeDependencies && entry.name === 'node_modules') continue;
       const relativePath =
         prefix === '' ? entry.name : `${prefix}/${entry.name}`;
       if (entry.isDirectory()) {

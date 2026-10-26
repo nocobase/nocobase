@@ -122,6 +122,65 @@ describe('pluginSkillPrefix', () => {
 });
 
 describe('skills synchronization', () => {
+  it('excludes installed example dependencies and removes copies left by an older sync', async () => {
+    const name = 'nocobase-app-plugin-development';
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      dependencies: { '@nocobase/app-skills': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/app-skills', { [name]: '# guide' });
+    const source = path.join(
+      appRoot,
+      'node_modules/@nocobase/app-skills/skills',
+      name,
+    );
+    const external = path.join(appRoot, 'dependency-store');
+    await mkdir(external);
+    await writeFile(path.join(external, 'package.json'), '{}');
+    await mkdir(path.join(source, 'assets/example/node_modules'), {
+      recursive: true,
+    });
+    await writeFile(path.join(source, 'assets/example/run.mjs'), '// example');
+    await symlink(
+      external,
+      path.join(source, 'assets/example/node_modules/dep'),
+      'dir',
+    );
+    await writeAppSkill(appRoot, name, '# guide');
+    const target = path.join(appRoot, '.agents/skills', name);
+    await mkdir(path.join(target, 'assets/example/node_modules'), {
+      recursive: true,
+    });
+    await symlink(
+      external,
+      path.join(target, 'assets/example/node_modules/dep'),
+      'dir',
+    );
+    await writeFile(path.join(target, 'assets/example/run.mjs'), '// example');
+    const { appPackageName, plugins } = await resolveInstalledPlugins({
+      appRoot,
+    });
+    const plan = await planSkillsSync({ appPackageName, appRoot, plugins });
+    expect(
+      plan.copies
+        .flatMap((copy) => copy.files)
+        .some((file) => file.includes('node_modules')),
+    ).toBe(false);
+    await applySkillsSync(plan);
+    await expect(
+      lstat(path.join(target, 'assets/example/node_modules')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(
+      await readFile(path.join(target, 'assets/example/run.mjs'), 'utf8'),
+    ).toBe('// example');
+    expect(await readFile(path.join(external, 'package.json'), 'utf8')).toBe(
+      '{}',
+    );
+    const before = (await stat(path.join(target, 'SKILL.md'))).mtimeMs;
+    await syncApp(appRoot);
+    expect((await stat(path.join(target, 'SKILL.md'))).mtimeMs).toBe(before);
+  });
+
   it('replaces a project link with a real copy without altering the identical global target', async () => {
     const name = 'nocobase-app-plugin-development';
     const appRoot = await createApp();
