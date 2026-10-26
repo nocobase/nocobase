@@ -27,6 +27,7 @@ export function FilePreviewDialog({
   initialIndex = 0,
   open,
   onOpenChange,
+  onDownload,
   download: allowDownload = true,
   labels,
   onError,
@@ -39,6 +40,7 @@ export function FilePreviewDialog({
       files={files}
       initialIndex={normalizedIndex}
       onOpenChange={onOpenChange}
+      onDownload={onDownload}
       download={allowDownload}
       labels={labels}
       onError={onError}
@@ -50,6 +52,7 @@ interface OpenFilePreviewDialogProps {
   readonly files: readonly FileRecord[];
   readonly initialIndex: number;
   readonly onOpenChange: (open: boolean) => void;
+  readonly onDownload?: FilePreviewDialogProps['onDownload'];
   readonly download: boolean;
   readonly labels?: FileUiLabels;
   readonly onError?: (error: Error) => void;
@@ -63,6 +66,7 @@ function OpenFilePreviewDialog(
     files,
     initialIndex,
     onOpenChange,
+    onDownload,
     download: allowDownload,
     labels,
     onError,
@@ -125,7 +129,7 @@ function OpenFilePreviewDialog(
                 variant='ghost'
                 aria-label={`${downloadLabel}: ${file.filename}`}
                 onClick={() =>
-                  void downloadFile(file).catch((error: unknown) =>
+                  void downloadFile(file, onDownload).catch((error: unknown) =>
                     reportDownloadError(onError, error),
                   )
                 }
@@ -143,8 +147,8 @@ function OpenFilePreviewDialog(
             onDownload={
               allowDownload
                 ? () =>
-                    void downloadFile(file).catch((error: unknown) =>
-                      reportDownloadError(onError, error),
+                    void downloadFile(file, onDownload).catch(
+                      (error: unknown) => reportDownloadError(onError, error),
                     )
                 : undefined
             }
@@ -155,7 +159,14 @@ function OpenFilePreviewDialog(
   );
 }
 
-async function downloadFile(file: FileRecord): Promise<void> {
+async function downloadFile(
+  file: FileRecord,
+  onDownload?: FilePreviewDialogProps['onDownload'],
+): Promise<void> {
+  if (onDownload) {
+    await onDownload(file);
+    return;
+  }
   const raw = file.contentUrl;
   const url = raw ? resolveSafeFileUrl(raw) : undefined;
   if (!url) throw new Error('File URL is not allowed.');

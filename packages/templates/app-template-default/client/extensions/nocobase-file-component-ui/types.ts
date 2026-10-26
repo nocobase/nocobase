@@ -47,6 +47,8 @@ export interface FilePreviewDialogProps {
   readonly initialIndex?: number;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  /** Override downloads for both the toolbar and preview fallbacks. */
+  readonly onDownload?: (file: FileRecord) => void | Promise<void>;
   readonly onError?: (error: Error) => void;
   readonly download?: boolean;
   readonly labels?: FileUiLabels;

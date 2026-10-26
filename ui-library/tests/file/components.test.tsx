@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
@@ -7,6 +13,11 @@ import {
   type FileRecord,
 } from '@nocobase/app-plugin-file/client';
 import { createApiClient } from '@nocobase/app-client';
+import {
+  createTestI18nRuntime,
+  TestI18nProvider,
+} from '@nocobase/i18n/testing';
+import enUS from '../../registry/file/file-component-ui/locales/en-US.js';
 import {
   FileUploadField,
   FileList,
@@ -195,6 +206,80 @@ it('downloads the returned contentUrl and rejects unsafe links without a legacy 
   await waitFor(() => expect(onError).toHaveBeenCalled());
   expect(click).toHaveBeenCalledOnce();
 });
+
+it('uses the custom download callback for images, including preview navigation and failures', async () => {
+  const click = vi
+    .spyOn(HTMLAnchorElement.prototype, 'click')
+    .mockImplementation(() => undefined);
+  const onDownload = vi.fn();
+  const first = record({ filename: 'first.png', mimeType: 'image/png' });
+  const second = record({
+    id: 'second',
+    filename: 'second.png',
+    mimeType: 'image/png',
+  });
+  const user = userEvent.setup();
+  const runtime = await createTestI18nRuntime({
+    application: { namespace: 'app', resources: enUS },
+  });
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <FileList files={[first, second]} onDownload={onDownload} />
+    </TestI18nProvider>,
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Preview: first.png' }));
+  const dialog = within(screen.getByRole('dialog'));
+  await user.click(dialog.getByRole('button', { name: 'Download: first.png' }));
+  expect(onDownload).toHaveBeenNthCalledWith(1, first);
+
+  await user.click(dialog.getByRole('button', { name: 'Next file' }));
+  await user.click(
+    dialog.getByRole('button', { name: 'Download: second.png' }),
+  );
+  expect(onDownload).toHaveBeenNthCalledWith(2, second);
+
+  fireEvent.error(dialog.getByAltText('second.png'));
+  await user.click(dialog.getByRole('button', { name: 'Download file' }));
+  expect(onDownload).toHaveBeenNthCalledWith(3, second);
+  expect(onDownload).toHaveBeenCalledTimes(3);
+  expect(click).not.toHaveBeenCalled();
+});
+
+it.each(['throw', 'reject'] as const)(
+  'reports a custom preview download failure when the callback chooses to %s',
+  async (failure) => {
+    const error = new Error('Download authorization failed.');
+    const onDownload = vi.fn(() => {
+      if (failure === 'throw') throw error;
+      return Promise.reject(error);
+    });
+    const onError = vi.fn();
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+    const runtime = await createTestI18nRuntime({
+      application: { namespace: 'app', resources: enUS },
+    });
+    const user = userEvent.setup();
+    render(
+      <TestI18nProvider runtime={runtime}>
+        <FilePreviewDialog
+          files={[record({ filename: 'photo.png', mimeType: 'image/png' })]}
+          open
+          onOpenChange={() => undefined}
+          onDownload={onDownload}
+          onError={onError}
+        />
+      </TestI18nProvider>,
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Download: photo.png' }),
+    );
+    await waitFor(() => expect(onError).toHaveBeenCalledWith(error));
+    expect(click).not.toHaveBeenCalled();
+  },
+);
 
 it('previews a Repository record as text and shows safe image thumbnails', async () => {
   const fetcher = vi.fn(async () => new Response('Invoice details'));

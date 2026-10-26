@@ -19,3 +19,5 @@ Run `pnpm exec shadcn add @nocobase/file-component-ui` in a consuming project. I
 Merge each installed `locales/<locale>.ts` default export into the matching application or consuming plugin resource, before local overrides. The block uses the current namespace, with English defaults; it does not require the original plugin namespace for presentation. All ten existing translations are included.
 
 `FileList` adapts File records to the shared `attachment-list` component, preserving URL validation, download callbacks, and full file previews. The upload field accepts the repository's `uploadOne` and `deleteOne` operations. Preview sources keep their existing installed paths.
+
+`FilePreviewDialog.onDownload` overrides downloads from both its toolbar and preview fallbacks, receives the currently displayed record, and may return a promise. Failures are forwarded to `onError`; `download={false}` hides both download actions. `FileList` forwards its custom download callback to the preview dialog so image downloads use the same handler as other files.

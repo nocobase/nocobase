@@ -135,6 +135,7 @@ export function FileList(inputProps: FileListProps): ReactElement {
         initialIndex={previewIndex}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
+        onDownload={onDownload}
         labels={labels}
         onError={onError}
       />
