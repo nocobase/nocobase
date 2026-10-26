@@ -4,7 +4,7 @@ This directory restores the complete equipment application from source revision 
 
 ## Build
 
-Install dependencies with `pnpm install --frozen-lockfile`. Build with `bash scripts/rebuild-final.sh` from this directory. The script retains the reviewed production resolutions in `docs/deployment/production-lock.yaml`, uses the official CLI to compile the application and generate the Foundation manifest, reinstalls production dependencies with the frozen lock, retargets native modules and packages `storage/exports/dist.tar.gz`.
+Install dependencies with `pnpm install --frozen-lockfile`. Build with `bash scripts/rebuild-final.sh` from this directory. The script retains the reviewed production resolutions in `docs/deployment/production-lock.yaml`, uses the official CLI to compile the application and generate the Foundation manifest, reinstalls production dependencies offline with the frozen lock after the initial build has populated the cache, retargets native modules and packages `storage/exports/dist.tar.gz`.
 
 The earlier rebuild helper incorrectly passed target flags to clean-dist-bin, which interprets its first argument as a directory. The corrected script invokes clean-dist-bin without arguments and supplies platform flags only to retarget-native. Both the clean build and the archive must pass before upload.
 
