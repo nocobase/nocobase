@@ -156,6 +156,10 @@ When `NOCOBASE_DEMO_MODE=true`, visitors enter any enabled person account withou
 
 Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in and automatic home-page sign-in. It defaults to `true` and has no environment variable.
 
+When Demo Mode is enabled and `app.publicOrigin` is an HTTPS URL, the Server plugin automatically defaults `auth.advanced.defaultCookieAttributes` to `sameSite: none`, `secure: true` and `partitioned: true` before Authentication is created. This lets a demo keep its session inside a cross-site iframe without application-specific authentication code. Set the application's public HTTPS origin even when a reverse proxy terminates TLS; HTTP development, an unspecified public origin and ordinary deployments keep their existing cookie policy. Explicit deployment configuration takes precedence; to retain same-site cookies, set `sameSite: lax` and `partitioned: false` together. Restart after changing the origin or cookie policy. Cookie names, domains, paths and other authentication options are preserved.
+
+Quick sign-in expires matching legacy unpartitioned authentication cookies before issuing their partitioned replacements. Automatic home entry verifies the next request has a usable session before reloading, so browsers that reject cookies fall back to normal entry instead of repeatedly reloading.
+
 Place `DemoModeMenu` in the application's top header actions, before the assistant, appearance and avatar controls. It is a standalone “Demo mode · Switch account” button, with the environment explanation and account list in one dropdown. Hovering or clicking opens it; selecting an account reloads the current location, and a check marks the current account. Use the same component in the guest header when the application has one:
 
 ```tsx

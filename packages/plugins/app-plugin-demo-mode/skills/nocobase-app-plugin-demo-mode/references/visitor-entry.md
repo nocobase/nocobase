@@ -6,7 +6,9 @@ The Client plugin automatically signs anonymous home-page visitors in as an exis
 
 For a direct link, use `<base path>/demo-sign-in?as=<username>&redirect=/path`. The redirect is application-relative: under `/main`, `/tasks` opens `/main/tasks`. Sign-in reloads the page to discard the previous account's client state.
 
-When Authentication uses partitioned cookies for iframe embedding, quick sign-in expires matching legacy unpartitioned authentication cookies automatically, preserving the configured names, domains and paths. Automatic home entry verifies that the browser sends a usable session before reloading; rejected cookies fall back to normal entry instead of repeated reloads.
+An enabled Demo Mode deployment whose `app.publicOrigin` is HTTPS automatically defaults Authentication cookies to `SameSite=None; Secure; Partitioned`, including when TLS terminates at a reverse proxy. Set the public origin to the visitor-facing HTTPS origin; no application-specific `server/config/auth.ts` code or extra Cookie configuration is needed. HTTP development, an unspecified public origin and deployments with Demo Mode disabled keep their existing policy. Explicit deployment values under `auth.advanced.defaultCookieAttributes` override these defaults; set `sameSite: lax` together with `partitioned: false` to opt out. Restart the application after changing the origin or cookie policy.
+
+Quick sign-in expires matching legacy unpartitioned authentication cookies automatically, preserving the configured names, domains and paths. Automatic home entry verifies that the browser sends a usable session before reloading; rejected cookies fall back to normal entry instead of repeated reloads. Verify an embedded demo from a different site as well as in its own tab: the issued session cookie must include `SameSite=None; Secure; Partitioned`, and the subsequent `/api/auth/get-session` request must recognize the visitor.
 
 ## Required header entry
 

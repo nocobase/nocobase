@@ -1,4 +1,5 @@
 import { demoConfigurationRuntimeToken } from '../configuration/runtime-token.js';
+import type { AppIdentityConfig } from '@nocobase/app-server/config';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
@@ -39,6 +40,26 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
     const guard = new DemoWriteGuard();
     this.app.container.instance(demoWriteGuardToken, guard);
     if (!settings.enabled) return;
+
+    // Register defaults before Authentication's lazy service is created. Only HTTPS demos can use these cookies;
+    // ordinary deployments and HTTP development keep their existing policy. Deployment overrides still win.
+    if (
+      this.app.config
+        .get<AppIdentityConfig>('app')
+        ?.publicOrigin?.startsWith('https://')
+    ) {
+      this.app.config.mergeDefaults({
+        auth: {
+          advanced: {
+            defaultCookieAttributes: {
+              sameSite: 'none',
+              secure: true,
+              partitioned: true,
+            },
+          },
+        },
+      });
+    }
 
     this.guard = guard;
     // The root router runs this before every route, including those contributed later and the WebSocket upgrade.
