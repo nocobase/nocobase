@@ -57,7 +57,7 @@ describe('storer', () => {
     const cacheManager = new CacheManager();
     cache = await cacheManager.createCache({ name: 'test' });
     db = new MockDB(data);
-    storer = new Storer({ db, cache });
+    storer = new Storer({ db, cache, authManager: {} as any });
   });
 
   afterEach(() => {
@@ -101,7 +101,7 @@ describe('storer', () => {
     expect(authenticators['test3']).toBeDefined();
   });
 
-  it('should preserve raw template options until the auth type is registered', async () => {
+  it('should keep raw authenticator model methods and templates in cache', async () => {
     const originalFilter = '(sAMAccountName={{account}})';
     const ldapAuthenticator = {
       name: 'ldap',
@@ -111,79 +111,23 @@ describe('storer', () => {
         ldap: { filter: originalFilter },
         url: '{{$env.LDAP_URL}}',
       },
+      findUser: () => 'user',
     };
     db = new MockDB([ldapAuthenticator]);
+    storer = new Storer({ db, cache, authManager: {} as any });
 
-    let authConfig: any;
-    const renderJsonTemplate = jest.fn((options: any, settings: any = {}) => {
-      const result = JSON.parse(JSON.stringify(options));
-      if (!settings.omit?.includes('ldap.filter')) {
-        result.ldap.filter = result.ldap.filter.replace('{{account}}', '');
-      }
-      result.url = 'https://ldap.example.test';
-      return result;
-    });
-    const app = {
-      environment: { renderJsonTemplate },
-    };
-    const authManager = {
-      getAuthConfig: jest.fn(() => authConfig),
-    };
-    storer = new Storer({
-      app: app as any,
-      db,
-      cache,
-      authManager: authManager as any,
-    });
-
-    // A cache miss before LDAP registration must not render or mutate the template.
-    const beforeRegistration = await storer.get('ldap');
-    expect(beforeRegistration.options.ldap.filter).toBe(originalFilter);
-    expect(renderJsonTemplate).not.toHaveBeenCalled();
+    const loaded = await storer.get('ldap');
+    expect(loaded).toBe(ldapAuthenticator);
+    expect(loaded.options.ldap.filter).toBe(originalFilter);
+    expect(typeof (loaded as any).findUser).toBe('function');
 
     const cached = (await cache.get('authenticators')) as any;
+    expect(cached.ldap).toBe(ldapAuthenticator);
     expect(cached.ldap.options.ldap.filter).toBe(originalFilter);
-
-    // Once LDAP is registered, render using its options exclusion list.
-    authConfig = {
-      auth: {
-        optionsKeysNotAllowedInEnv: ['ldap.filter'],
-      },
-    };
-    const afterRegistration = await storer.get('ldap');
-    expect(renderJsonTemplate).toHaveBeenCalledWith(ldapAuthenticator.options, {
-      omit: ['ldap.filter'],
-    });
-    expect(afterRegistration.options.ldap.filter).toBe(originalFilter);
-    expect(afterRegistration.options.url).toBe('https://ldap.example.test');
-
-    // Rendering a response must not overwrite the raw value held in the cache.
-    const cachedAfterRendering = (await cache.get('authenticators')) as any;
-    expect(cachedAfterRendering.ldap.options.ldap.filter).toBe(originalFilter);
-  });
-
-  it('should not render authenticator options in afterSave before auth type registration', async () => {
-    const originalFilter = '(sAMAccountName={{account}})';
-    const ldapAuthenticator = {
-      name: 'ldap',
-      authType: 'LDAP',
-      enabled: true,
-      options: {
-        ldap: { filter: originalFilter },
-      },
-    };
-    const renderJsonTemplate = jest.fn();
-    storer = new Storer({
-      app: { environment: { renderJsonTemplate } } as any,
-      db,
-      cache,
-      authManager: { getAuthConfig: () => undefined } as any,
-    });
 
     await db.emitAsync('authenticators.afterSave', ldapAuthenticator);
-
-    const cached = (await cache.get('authenticators')) as any;
-    expect(renderJsonTemplate).not.toHaveBeenCalled();
-    expect(cached.ldap.options.ldap.filter).toBe(originalFilter);
+    const saved = (await cache.get('authenticators')) as any;
+    expect(saved.ldap).toBe(ldapAuthenticator);
+    expect(saved.ldap.options.ldap.filter).toBe(originalFilter);
   });
 });
