@@ -373,56 +373,60 @@ export class SourceEvidence {
           ts.isSatisfiesExpression(node) ||
           ts.isTypeAssertionExpression(node) ||
           ts.isNonNullExpression(node);
-        while (
-          (ts.isPropertyAccessExpression(owner.parent) ||
-            ts.isElementAccessExpression(owner.parent) ||
-            transparent(owner.parent)) &&
-          owner.parent.expression === owner
-        )
-          owner = owner.parent;
+        for (;;) {
+          const parent = owner.parent;
+          if (
+            (ts.isPropertyAccessExpression(parent) ||
+              ts.isElementAccessExpression(parent) ||
+              transparent(parent)) &&
+            parent.expression === owner
+          )
+            owner = parent;
+          else if (
+            ts.isConditionalExpression(parent) &&
+            (parent.whenTrue === owner || parent.whenFalse === owner)
+          )
+            owner = parent;
+          else break;
+        }
         const parent = owner.parent;
-        if (
-          (ts.isBinaryExpression(parent) &&
-            parent.left === owner &&
-            parent.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
-            parent.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
-          ts.isDeleteExpression(parent) ||
-          ts.isPrefixUnaryExpression(parent) ||
-          ts.isPostfixUnaryExpression(parent)
-        )
-          valid = false;
-        if (
-          ts.isCallExpression(parent) &&
-          (parent.arguments.some((argument) => argument === owner) ||
-            (parent.expression === owner && owner !== node)) &&
-          !allowArgument(parent)
-        )
-          valid = false;
-        if (ts.isVariableDeclaration(parent) && parent.initializer === owner)
-          valid = false;
-        if (
+        if (ts.isCallExpression(parent)) {
+          const initializer = declaration.initializer;
+          valid =
+            allowArgument(parent) ||
+            (parent.expression === owner &&
+              owner === node &&
+              !!initializer &&
+              (ts.isArrowFunction(initializer) ||
+                ts.isFunctionExpression(initializer)));
+        } else if (
           ts.isShorthandPropertyAssignment(parent) ||
           ts.isPropertyAssignment(parent) ||
-          ts.isArrayLiteralExpression(parent) ||
-          ts.isExportSpecifier(parent)
+          ts.isSpreadAssignment(parent) ||
+          ts.isSpreadElement(parent) ||
+          ts.isArrayLiteralExpression(parent)
         ) {
           let context: ts.Node = parent;
           while (
             ts.isShorthandPropertyAssignment(context.parent) ||
             ts.isPropertyAssignment(context.parent) ||
+            ts.isSpreadAssignment(context.parent) ||
+            ts.isSpreadElement(context.parent) ||
             ts.isArrayLiteralExpression(context.parent) ||
             ts.isObjectLiteralExpression(context.parent) ||
             transparent(context.parent)
           )
             context = context.parent;
-          if (
-            !ts.isCallExpression(context.parent) ||
-            !allowArgument(context.parent)
-          )
-            valid = false;
-        }
-        if (ts.isExportAssignment(parent) || ts.isReturnStatement(parent))
+          valid =
+            ts.isCallExpression(context.parent) &&
+            allowArgument(context.parent);
+        } else if (!(
+          ts.isConditionalExpression(parent) && parent.condition === owner
+        )) {
+          // Every other use can escape or modify the value, including expression-bodied
+          // closures and assignment RHSs. Unknown contexts cannot establish immutability.
           valid = false;
+        }
       }
       ts.forEachChild(node, visit);
     };

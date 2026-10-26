@@ -447,3 +447,20 @@ it('recognizes quoted registration keys with the same meaning as identifier keys
     '@nocobase/db',
   );
 });
+
+it.each([
+  'external(()=>opts);',
+  'external(()=>((opts)));',
+  'externalValue=(opts);',
+  'new External((opts));',
+  'external({...opts});',
+  'external(({value:(opts)}));',
+  'external(true?(opts):{});',
+  '(opts).summary=unknown;',
+])('rejects unproven documentation object use: %s', async (use) => {
+  const source = routes
+    .replace('const doc=', `const opts={};${use}const doc=`)
+    .replace('operationId,summary,tags:', '...opts,operationId,summary,tags:');
+  const result = await collectModuleSources(await fixture(source));
+  expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+});
