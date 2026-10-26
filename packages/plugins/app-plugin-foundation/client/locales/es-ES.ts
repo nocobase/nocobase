@@ -39,6 +39,7 @@ const esES: FoundationResource = {
     successPath: 'Solicitud API correcta: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Base de datos disponible',
+      authorizationIdentityResolved: 'Identidad de autorización resuelta',
       authenticated: 'Autenticación aceptada',
       bodyWithinLimit: 'El cuerpo de la solicitud respeta el límite de tamaño',
       validInput: 'Validación de entrada correcta',

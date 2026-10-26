@@ -141,6 +141,7 @@ export interface FoundationCollectionPage {
 export const FOUNDATION_API_CONDITIONS = [
   'databaseAvailable',
   'authenticated',
+  'authorizationIdentityResolved',
   'bodyWithinLimit',
   'validInput',
 ] as const;

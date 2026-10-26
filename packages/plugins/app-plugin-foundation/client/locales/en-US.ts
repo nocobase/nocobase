@@ -38,6 +38,7 @@ const enUS = {
     successPath: 'Successful API request: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Database is available',
+      authorizationIdentityResolved: 'Authorization identity is resolved',
       authenticated: 'Authentication is accepted',
       bodyWithinLimit: 'Request body is within the limit',
       validInput: 'Input validation succeeds',

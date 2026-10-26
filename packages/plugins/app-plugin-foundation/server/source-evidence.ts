@@ -7,6 +7,7 @@ export interface EvidenceSource {
 
 /** Package-local value reachability. The host never loads dependencies, libraries or application code. */
 export class SourceEvidence {
+  public authorizationIdentityResolved = false;
   private readonly checker: ts.TypeChecker;
   private readonly sources: Map<string, EvidenceSource>;
   private readonly services = new Map<ts.Declaration, ts.Expression[]>();
@@ -330,6 +331,89 @@ export class SourceEvidence {
         return results;
       });
     });
+  }
+
+  /** A const binding is insufficient when its object or function escapes or is written through. */
+  public immutable(
+    declaration: ts.VariableDeclaration,
+    allowArgument: (call: ts.CallExpression) => boolean = () => false,
+  ): boolean {
+    if (
+      !ts.isIdentifier(declaration.name) ||
+      !ts.isVariableDeclarationList(declaration.parent) ||
+      !(declaration.parent.flags & ts.NodeFlags.Const) ||
+      (ts.isVariableStatement(declaration.parent.parent) &&
+        !!ts
+          .getModifiers(declaration.parent.parent)
+          ?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword))
+    )
+      return false;
+    const symbol = this.symbol(declaration.name);
+    let valid = true;
+    let visits = 0;
+    const visit = (node: ts.Node): void => {
+      if (++visits > 100_000) valid = false;
+      if (!valid || ts.isTypeNode(node)) return;
+      if (
+        ts.isIdentifier(node) &&
+        node !== declaration.name &&
+        this.symbol(node) === symbol
+      ) {
+        let owner: ts.Node = node;
+        while (
+          (ts.isPropertyAccessExpression(owner.parent) ||
+            ts.isElementAccessExpression(owner.parent)) &&
+          owner.parent.expression === owner
+        )
+          owner = owner.parent;
+        const parent = owner.parent;
+        if (
+          (ts.isBinaryExpression(parent) &&
+            parent.left === owner &&
+            parent.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+            parent.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
+          ts.isDeleteExpression(parent) ||
+          ts.isPrefixUnaryExpression(parent) ||
+          ts.isPostfixUnaryExpression(parent)
+        )
+          valid = false;
+        if (
+          ts.isCallExpression(parent) &&
+          (parent.arguments.some((argument) => argument === owner) ||
+            (parent.expression === owner && owner !== node)) &&
+          !allowArgument(parent)
+        )
+          valid = false;
+        if (ts.isVariableDeclaration(parent) && parent.initializer === owner)
+          valid = false;
+        if (
+          ts.isShorthandPropertyAssignment(parent) ||
+          ts.isPropertyAssignment(parent) ||
+          ts.isArrayLiteralExpression(parent) ||
+          ts.isExportSpecifier(parent)
+        ) {
+          let context: ts.Node = parent;
+          while (
+            ts.isShorthandPropertyAssignment(context.parent) ||
+            ts.isPropertyAssignment(context.parent) ||
+            ts.isArrayLiteralExpression(context.parent) ||
+            ts.isObjectLiteralExpression(context.parent)
+          )
+            context = context.parent;
+          if (
+            !ts.isCallExpression(context.parent) ||
+            !allowArgument(context.parent)
+          )
+            valid = false;
+        }
+        if (ts.isExportAssignment(parent) || ts.isReturnStatement(parent))
+          valid = false;
+      }
+      ts.forEachChild(node, visit);
+    };
+    // An unexported lexical binding cannot be referenced outside its own module. Export aliases are rejected above.
+    visit(declaration.getSourceFile());
+    return valid;
   }
 
   /** Resolve local value aliases and re-exports without executing a module. */

@@ -38,6 +38,7 @@ const idID: FoundationResource = {
     successPath: 'Permintaan API berhasil: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Database tersedia',
+      authorizationIdentityResolved: 'Identitas otorisasi terselesaikan',
       authenticated: 'Autentikasi diterima',
       bodyWithinLimit: 'Isi permintaan berada dalam batas ukuran',
       validInput: 'Validasi input berhasil',

@@ -1,6 +1,7 @@
 import ts from 'typescript';
 import type { FoundationApiCondition } from '../shared/foundation.js';
 import type { SourceEvidence } from './source-evidence.js';
+import { documentationContract } from './documentation-contract.js';
 import { returned } from './request-evidence.js';
 
 /** Match a value import's identity, not the spelling of a local function or variable. */
@@ -217,6 +218,7 @@ export function middlewareContract(
     call.arguments.length === 1
   )
     return { conditions: [] };
+  if (documentationContract(call, analysis)) return { conditions: [] };
   if (
     importedContract(
       call.expression,
@@ -252,6 +254,40 @@ export function middlewareContract(
         { kind: 'bodyWithinLimit', source: 'hono/body-limit#bodyLimit' },
       ],
     };
+  if (
+    analysis.authorizationIdentityResolved &&
+    ts.isPropertyAccessExpression(call.expression) &&
+    !call.expression.questionDotToken &&
+    call.expression.name.text === 'middleware' &&
+    call.arguments.length === 0
+  ) {
+    const receivers = analysis.values(call.expression.expression);
+    if (
+      receivers.length === 1 &&
+      [
+        '@nocobase/app-plugin-authorization',
+        '@nocobase/app-plugin-authorization/server',
+      ].some((module) =>
+        containerCall(
+          receivers[0],
+          'resolve',
+          module,
+          'authorizationToken',
+          analysis,
+        ),
+      )
+    )
+      return {
+        providers: ['@nocobase/app-plugin-authorization'],
+        conditions: [
+          {
+            kind: 'authorizationIdentityResolved',
+            source:
+              '@nocobase/app-plugin-authorization#authorizationToken.middleware',
+          },
+        ],
+      };
+  }
   if (
     ts.isPropertyAccessExpression(call.expression) &&
     !call.expression.questionDotToken &&

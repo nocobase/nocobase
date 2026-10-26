@@ -35,6 +35,7 @@ const zhTW: FoundationResource = {
     successPath: '成功路徑的 API 請求：{{method}} {{path}}',
     conditions: {
       databaseAvailable: '資料庫可用',
+      authorizationIdentityResolved: '授權身分解析成功',
       authenticated: '身分驗證通過',
       bodyWithinLimit: '請求內容未超過大小限制',
       validInput: '輸入驗證通過',

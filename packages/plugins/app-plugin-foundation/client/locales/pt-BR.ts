@@ -39,6 +39,7 @@ const ptBR: FoundationResource = {
     successPath: 'Requisição de API bem-sucedida: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Banco de dados disponível',
+      authorizationIdentityResolved: 'Identidade de autorização resolvida',
       authenticated: 'Autenticação aceita',
       bodyWithinLimit: 'Corpo da requisição dentro do limite de tamanho',
       validInput: 'Validação de entrada bem-sucedida',
