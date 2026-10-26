@@ -34,7 +34,7 @@ minimumReleaseAgeExclude:
   - '@nocobase/app-plugin-agents@1.0.0-beta.25'
   - '@nocobase/app-plugin-authentication@2.0.0-beta.15'
   - '@nocobase/app-plugin-authorization@1.0.0-beta.32'
-  - '@nocobase/app-plugin-foundation@0.1.0-beta.7'
+  - '@nocobase/app-plugin-foundation@0.1.0-beta.8'
   - '@nocobase/app-plugin-knowledge@0.1.0-beta.12'
   - '@nocobase/app-plugin-users@2.0.0-beta.10'
   - '@nocobase/app-skills@0.1.0-beta.51'

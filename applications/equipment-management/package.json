@@ -141,7 +141,7 @@
     "@nocobase/app-plugin-authz-sharing-rules": "^1.0.0-beta.15",
     "@nocobase/app-plugin-database-explorer": "^1.0.0-beta.16",
     "@nocobase/app-plugin-file": "^1.0.0-beta.26",
-    "@nocobase/app-plugin-foundation": "^0.1.0-beta.7",
+    "@nocobase/app-plugin-foundation": "0.1.0-beta.8",
     "@nocobase/app-plugin-i18n": "^1.0.0-beta.18",
     "@nocobase/app-plugin-knowledge": "^0.1.0-beta.12",
     "@nocobase/app-plugin-mail": "^1.0.0-beta.17",
