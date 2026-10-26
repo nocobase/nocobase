@@ -341,7 +341,7 @@ Prefer `--dry-run --json` when an Agent needs a plan. Every dry run answers `suc
 
 `plugin inspect` proves only that readable static registration surfaces agree. It does not execute commands or hooks, start Runtime contributions, evaluate permissions, test behavior, or replace package and App validation.
 
-From the repository root, pass `--workspace-root .`: the command selects `app-template-default` unless `--app` is supplied, resolves plugin packages from workspace directories, and records `workspace:^`. A generated App runs the same implementation from its own directory, resolves installed packages from `node_modules`, and keeps its installed version range.
+From the repository root, pass `--workspace-root .`: the command selects `app-template-default` unless `--app` is supplied, resolves plugin packages from workspace directories, and records `workspace:^`. An independent App runs from its own root and can register both local workspace plugins and published dependencies. Local plugins keep their workspace dependency; published plugins keep the requested registry range. Use the full package name for custom scopes and follow [registration](registration.md#register-a-local-plugin-in-an-app).
 
 ## Verification
 

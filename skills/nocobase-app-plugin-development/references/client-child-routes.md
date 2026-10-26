@@ -347,6 +347,5 @@ There is no Settings or Dev route surface; `defineAppRoutes()` is the only Clien
 4. Use back and forward; selected navigation must match the URL.
 5. Check menus, translations, clickable parent links, expand buttons and mobile navigation.
 6. Deny parent access and verify children cannot load; deny explicit child access independently.
-7. For Settings/Dev, verify the intended navigation and Dev production exclusion.
 
 Add behavior tests before implementation, confirm the expected failure, then implement and rerun. Run lint, typecheck, test and build for affected packages. Report commands, outcomes and any skipped checks.

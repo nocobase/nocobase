@@ -97,14 +97,15 @@ Declare the package's source and compiled targets in `package.json`:
 
 Keep existing `publishConfig` fields when adding these mappings. Set `compilerOptions.customConditions` to `["development"]` in the plugin's NodeNext tsconfig so shadcn and TypeScript find the source files. TypeScript resolves the `.js` targets to `.ts` or `.tsx` sources and leaves the `#` import in emitted JavaScript; pnpm replaces the published mappings with unconditional `dist/client` targets, including when the consuming application selects `development`. No TS `paths` or Vite alias is needed, and installed imports need no rewrite. An import of a directory needs an exact mapping to its `index.js`.
 
-Keep `shadcn`, `tailwindcss`, and `tw-animate-css` in `devDependencies`. Put packages imported as values by the generated Client source in `peerDependencies`, commonly `@base-ui/react`, `class-variance-authority`, `cn`, and `lucide-react` when used. Generated primitives import `cn` from the `cn` package, which stays a package import; do not add `clsx` or `tailwind-merge`. Use the workspace catalog entries and remove generated dependencies that the retained source does not import.
+Keep `shadcn`, `tailwindcss`, and `tw-animate-css` in `devDependencies`. Put packages imported as values by the generated Client source in `peerDependencies`, commonly `@base-ui/react`, `class-variance-authority`, `cn`, and `lucide-react` when used. Generated primitives import `cn` from the `cn` package, which stays a package import; do not add `clsx` or `tailwind-merge`. In the source repository, use workspace catalog entries; in an independent App, preserve compatible versions from its installed dependencies. Remove generated dependencies that the retained source does not import, then run the package-manager install from the owning workspace root.
 
-Run the CLI from the plugin directory and add only primitives required by the current feature:
+Run the CLI in the plugin’s scope and add only primitives required by the current feature. From the App root:
 
 ```bash
-cd packages/plugins/app-plugin-audit-log
-pnpm exec shadcn add button card dialog
+pnpm --filter @nocobase/app-plugin-audit-log exec shadcn add button card dialog
 ```
+
+Use the plugin’s actual package name. The same filter works from the source-repository root; do not install into the host App when the plugin owns the components.
 
 Do not use `--overwrite` over customized primitives without reviewing and accepting the diff. Use the generated plugin's `components.json`, stylesheet, and package import mappings; see `ui-library/USAGE.md` for maintained installation examples.
 
@@ -122,7 +123,15 @@ Use the shared theme contract for all plugin UI: [theme tokens](theme-tokens.md)
 
 ## Copy page and route components into the plugin
 
-When a plugin needs the application's page structure or route overlays, copy the UI Library components that provide them into `<plugin>/client/components/` and maintain them as plugin-owned code. Inside this repository, copy each file an item lists in `ui-library/registry/components/registry.json` from `ui-library/registry/components/<path>` to its `target`, as `ui-library/USAGE.md` describes, rather than running `shadcn add`. These are source references, not runtime imports from the host App. Reuse an existing plugin copy before adding another.
+When a plugin needs page structure or route overlays, install the UI Library components into `<plugin>/client/components/` and maintain them as plugin-owned code. In an independent App, use the generated plugin’s `components.json` and its `@nocobase` registry. For page layout, run from the App root:
+
+```bash
+pnpm --filter @nocobase/app-plugin-audit-log exec shadcn add @nocobase/page-container @nocobase/page-header
+```
+
+Select other items from the table below as needed. Check the resulting diff and runtime imports: move Client value dependencies added by the installer (for example, `cn`) to `peerDependencies`, and ensure `react` and `react-router` are peers when the retained code imports them at runtime. Preserve compatible versions, install from the App root, then run the plugin checks. Reuse existing customized copies instead of overwriting them.
+
+In the NocoBase source repository, copy each file an item lists in `ui-library/registry/components/registry.json` from `ui-library/registry/components/<path>` to its `target`, as `ui-library/USAGE.md` describes, rather than running `shadcn add`. These are source references, not runtime imports from the host App. Reuse an existing plugin copy before adding another.
 
 | Need                                   | Item                           | Installs into `client/components/`                                                            |
 | -------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------- |
@@ -133,7 +142,7 @@ When a plugin needs the application's page structure or route overlays, copy the
 
 Copy every file an item lists: `route-dialog` and `route-drawer` share `route-overlay.tsx` and the one Context `use-route-overlay.ts` declares, so a plugin that uses both keeps a single copy of each. Their imports remain unchanged: `cn` comes from the `cn` package and `#components/ui/<name>` resolves the plugin's own primitives through its package mappings. Generate missing primitives with the workflow above. Declare the packages each item lists in `dependencies` as peers. Keep these copies private unless an approved public export is required.
 
-The way back from a page below another one is not a UI Library item: copy `BackButton` from an application template's `client/components/back-button.tsx`, such as `packages/templates/app-template-default/client/components/back-button.tsx`, into the plugin's `client/components/` the same way.
+The way back from a page below another one is not a UI Library item. If needed, inspect the target App’s `client/components/back-button.tsx` and copy a self-contained implementation into the plugin’s `client/components/`; adapt its imports and locale keys to the plugin. In the source repository the template example is `packages/templates/app-template-default/client/components/back-button.tsx`. Never import the App’s private modules at runtime; if that component is unavailable in the installed App version, implement the required navigation with its installed router API.
 
 The overlays' close button reads `routeOverlay.close`, and `BackButton` reads `navigation.back`. Add them to the plugin's own `client/locales/` resources in every supported language (`Close` and `Back` in English, `关闭` and `返回` in Chinese, for example) and register the lazy locale manifest in its Client declaration; see [internationalization](i18n.md). Do not rely on the host App providing the key. Under the plugin's own route, the copied overlay inherits the plugin namespace; if it is intentionally exported for another owner to render, bind that namespace explicitly as described in the internationalization guide.
 

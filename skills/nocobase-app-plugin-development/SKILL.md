@@ -1,11 +1,15 @@
 ---
 name: nocobase-app-plugin-development
-description: Develop and maintain NocoBase v3 plugins in a NocoBase 3 source workspace, including scaffolding, shadcn UI, Client/Server/CLI contributions, database resources, UI Library integration, Plugin Skills, and target App registration. Use when creating or changing packages/plugins/app-plugin-* or example plugins. Not for legacy NocoBase v2 plugins or application-only development.
+description: Create and maintain NocoBase 3 plugins inside an existing App or a NocoBase 3 source workspace, including Client, Server, CLI, database resources, UI Library integration, Plugin Skills, and registration. Use for App-local plugins under packages/ and source-workspace plugins or examples. Not for creating an App, application-only feature work, or legacy NocoBase 2 plugins.
 ---
 
 # NocoBase Plugin Development
 
-Use this Skill for plugin source development in the NocoBase 3 repository. Read the applicable `AGENTS.md` and inspect the target plugin and App before editing. Confirm the workspace contains `packages/tools/create-plugin/`, `packages/app/app-client/`, `packages/app/app-server/`, and `pnpm-workspace.yaml`. A `packages/plugins/` directory alone does not identify v3; do not apply the legacy `Plugin` class, `src/client-v2/`, or `nb scaffold plugin` protocol here.
+Use this Skill to develop a plugin in the user’s existing NocoBase 3 App. Read that App’s `AGENTS.md`, relevant installed Skills, and the plugin before editing. An App created by create-app identifies itself with `nocobase.templateKind: "app"` in `package.json`; its local plugins belong in `packages/`. Start from an installed App with working dependencies. If no App exists, use the available `nocobase-create-app` Skill first, then return here. Do not download the NocoBase source repository as a prerequisite.
+
+Also support work explicitly targeting the NocoBase 3 source repository. Identify that environment by `packages/tools/create-plugin/`, `packages/app/app-client/`, `packages/app/app-server/`, and `pnpm-workspace.yaml`; its plugins live in `packages/plugins/` or `packages/examples/`. Follow the appropriate environment in [scaffolding](references/plugin-foundation.md) and [registration](references/registration.md). A directory name alone does not identify v3; do not apply the legacy `Plugin` class, `src/client-v2/`, or `nb scaffold plugin` protocol here.
+
+Repository paths mentioned in references are source lookup locations, not prerequisites for an independent App. In an App, use its installed package exports, declarations, README files, and synchronized Skills to verify the APIs for that version. If the installed creation tool or App CLI lacks App-workspace support, report which package needs upgrading; do not compensate by hand-building a scaffold or switching the user to source-repository development.
 
 ## Choose the relevant references
 
@@ -41,7 +45,7 @@ When creating a page or writing a page component, refer to [Pages, routes, and m
 
 - Use shadcn components for interactive UI primitives such as buttons, inputs, dialogs, selects, and Tabs. Read the component reference before UI work. Keep plugin-owned components in the plugin and align `components.json` with its package-local `#` imports and published `dist` mappings. Use the shared theme tokens for color, typography, spacing, size, radius, and shadow.
 - Use child routes for page-level navigation Tabs by default, even when the user does not mention routing. Declare each Tab's content as a child route, render `Outlet` in the parent page component, and derive the active Tab from the URL. When the parent URL is opened without a child route, redirect to the default accessible Tab by replacing the current history entry and preserving query parameters. Opening an explicit Tab URL must retain that Tab's selection. Follow an explicit user request for a different interaction.
-- Create plugins with `pnpm plugin:create` and explicit capabilities, including `cli` when needed. Preview with `--dry-run --json`. Keep the generated runtime-aware shared development configuration.
+- In an existing App, create plugins with `pnpm create @nocobase/plugin@beta` and explicit capabilities, including `cli` when needed. In the source repository, use `pnpm plugin:create`. Preview with `--dry-run --json`, check the target and project edits, then apply the same capability selection. Keep the generated runtime-aware shared development configuration; see [scaffolding](references/plugin-foundation.md).
 - Keep declarations static and free of startup side effects. Lazy-load page components, locale messages, heavy SDKs, and genuinely optional features at their leaf boundaries. Pages are Routes, components are public/source exports, and neither is a separate runtime loader.
 - Translate all plugin copy into the ten [supported languages](references/i18n.md#ship-all-ten-supported-languages) (`en-US`, `zh-CN`, `zh-TW`, `ja-JP`, `es-ES`, `pt-BR`, `fr-FR`, `de-DE`, `vi-VN`, `id-ID`) in every Client and Server locale manifest, typed with the complete `en-US` resource. Libraries the plugin depends on that ship translations, such as `@nocobase/i18n` for `@nocobase/app-plugin-i18n`, are completed to all ten as well. A new or changed key is translated into all ten in the same change; application templates are exempt.
 - Reuse the host's API client through `useApiClient()` or `apiClientToken`; do not construct another application API client. Define shared service contracts and owner-created Tokens before implementations; consumers import the original Token.
@@ -52,7 +56,7 @@ When creating a page or writing a page component, refer to [Pages, routes, and m
 - Plugin test fixtures come from `@nocobase/app-testing/server`, `/client` or `/cli`, declared in `devDependencies`. Use the [test directory and fixture guide](references/testing.md#use-app-testing-in-a-plugin) to select the environment, register the production plugin and keep databases and storage isolated.
 - Register Client, Server, and CLI exports explicitly in the corresponding target App composition roots. Installation, registration, Skills synchronization, and runtime behavior are separate facts; legacy manifest metadata is not runtime discovery.
 - Plugin integration knowledge is authored in `<plugin>/skills/`; the target App's `.agents/skills/` is generated output. Editable UI is maintained in the UI Library; source installed into an App belongs to that App. This repository's development Skill is maintained source, distinct from either kind of output.
-- Follow the repository's dependency rules: shared runtimes and client value imports are peers, ordinary server runtime imports are dependencies, and development-only imports are devDependencies. A type reference retained in published declarations needs a consumer-resolvable contract.
+- Follow the target project’s dependency rules: shared runtimes and client value imports are peers, ordinary server runtime imports are dependencies, and development-only imports are devDependencies. A type reference retained in published declarations needs a consumer-resolvable contract.
 
 ## Implementation workflow
 

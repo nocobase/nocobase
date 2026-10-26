@@ -51,7 +51,7 @@ npx skills@latest add nocobase/skills-v3 --skill nocobase-create-app -g
 
 The lightweight `nocobase/skills-v3` repository distributes the Skills from `v3-develop/skills/` without downloading the application repository. Add `-a claude-code`, or another agent's name, to install for one agent only. `nocobase/skills` remains the NocoBase 2 source.
 
-For an agent working in a fork or another checkout, install the plugin development Skill explicitly; this source checkout links it already:
+For an agent developing plugins in an existing App, a fork or another checkout, install the plugin development Skill explicitly; this source checkout links it already:
 
 ```bash
 npx skills@latest add nocobase/skills-v3 --skill nocobase-app-plugin-development -g
