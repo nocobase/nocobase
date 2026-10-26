@@ -37,6 +37,8 @@ import path from 'node:path';
 const PACKAGE_SCOPE = '@nocobase/';
 const KEBAB_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const PLUGIN_PACKAGE_PREFIX = '@nocobase/app-plugin-';
+const PLUGIN_DEVELOPMENT_SKILL = 'nocobase-app-plugin-development';
+const APP_SKILLS_PACKAGE = '@nocobase/app-skills';
 const OWNERSHIP_FILE = path.join('.agents', '.skills-sync.json');
 
 /** Directory, relative to a package root, that holds its App-facing skills. */
@@ -164,12 +166,14 @@ export async function collectPluginSkills({
     if (
       !KEBAB_PATTERN.test(entry.name) ||
       !entry.name.startsWith(SKILL_NAME_PREFIX) ||
-      (packageName.startsWith(PLUGIN_PACKAGE_PREFIX)
-        ? !isOwnedSkillName(prefix, entry.name)
-        : entry.name.startsWith('nocobase-app-plugin-'))
+      (entry.name === PLUGIN_DEVELOPMENT_SKILL
+        ? packageName !== APP_SKILLS_PACKAGE
+        : packageName.startsWith(PLUGIN_PACKAGE_PREFIX)
+          ? !isOwnedSkillName(prefix, entry.name)
+          : entry.name.startsWith('nocobase-app-plugin-'))
     ) {
       throw new Error(
-        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a nocobase- prefixed kebab-case name; plugin skills must use their package prefix ${prefix}, and nocobase-app-plugin-* names are reserved for their owning plugins.`,
+        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a nocobase- prefixed kebab-case name; plugin skills must use their package prefix ${prefix}, and nocobase-app-plugin-* names are reserved for their owning plugins except nocobase-app-plugin-development, owned only by @nocobase/app-skills.`,
       );
     }
     skills.push({
@@ -352,6 +356,7 @@ export async function planPackageSkillRemovals(
     )) {
       if (
         entry.isDirectory() &&
+        entry.name !== PLUGIN_DEVELOPMENT_SKILL &&
         isOwnedSkillName(prefix, entry.name) &&
         (ownership[entry.name] === undefined ||
           ownership[entry.name] === packageName)
@@ -546,6 +551,7 @@ function findOwningPlugin(
   sources: readonly PluginSkills[],
   skillName: string,
 ): PluginSkills | undefined {
+  if (skillName === PLUGIN_DEVELOPMENT_SKILL) return undefined;
   let owner: PluginSkills | undefined;
   for (const source of sources) {
     // Only the legacy plugin contract grants ownership by prefix. Other packages

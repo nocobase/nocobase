@@ -116,6 +116,128 @@ describe('pluginSkillPrefix', () => {
 });
 
 describe('skills synchronization', () => {
+  it('syncs, upgrades and removes the shared plugin development Skill with package ownership', async () => {
+    const name = 'nocobase-app-plugin-development';
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      dependencies: { '@nocobase/app-skills': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/app-skills', {
+      [name]: '# version one',
+    });
+    const source = path.join(
+      appRoot,
+      'node_modules/@nocobase/app-skills/skills',
+      name,
+    );
+    await mkdir(path.join(source, 'references'), { recursive: true });
+    await writeFile(
+      path.join(source, 'references/contracts.md'),
+      '# contracts',
+    );
+    await syncApp(appRoot);
+    const target = path.join(appRoot, '.agents/skills', name);
+    expect(
+      await readFile(path.join(target, 'references/contracts.md'), 'utf8'),
+    ).toBe('# contracts');
+    expect(
+      await readFile(
+        path.join(appRoot, '.claude/skills', name, 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# version one');
+    expect(
+      JSON.parse(
+        await readFile(path.join(appRoot, '.agents/.skills-sync.json'), 'utf8'),
+      ),
+    ).toEqual({ [name]: '@nocobase/app-skills' });
+    await writeFile(path.join(source, 'SKILL.md'), '# version two');
+    await syncApp(appRoot);
+    expect(await readFile(path.join(target, 'SKILL.md'), 'utf8')).toBe(
+      '# version two',
+    );
+    expect(
+      await planPackageSkillRemovals(
+        appRoot,
+        '@nocobase/app-plugin-development',
+      ),
+    ).toEqual([]);
+    await removePackageSkills(appRoot, '@nocobase/app-skills');
+    await expect(lstat(target)).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      lstat(path.join(appRoot, '.claude/skills', name)),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it.each(['@nocobase/other', '@nocobase/app-plugin-development'])(
+    'rejects %s claiming the shared development Skill without modifying project files',
+    async (packageName) => {
+      const appRoot = await createApp();
+      await declareDependencies(appRoot, {
+        dependencies: { [packageName]: '1' },
+      });
+      await installPlugin(appRoot, packageName, {
+        'nocobase-app-plugin-development': '# impostor',
+      });
+      await writeAppSkill(
+        appRoot,
+        'nocobase-app-plugin-development',
+        '# existing',
+      );
+      await expect(syncApp(appRoot)).rejects.toThrow(
+        'owned only by @nocobase/app-skills',
+      );
+      expect(
+        await readFile(
+          path.join(
+            appRoot,
+            '.agents/skills/nocobase-app-plugin-development/SKILL.md',
+          ),
+          'utf8',
+        ),
+      ).toBe('# existing');
+    },
+  );
+
+  it('does not grant app-skills other plugin names or similarly named suffixes', async () => {
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      dependencies: { '@nocobase/app-skills': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/app-skills', {
+      'nocobase-app-plugin-development-extra': '# extra',
+    });
+    await expect(syncApp(appRoot)).rejects.toThrow('Invalid skill directory');
+  });
+
+  it('never infers shared development Skill ownership from a legacy plugin prefix', async () => {
+    const appRoot = await createApp({
+      '@nocobase/app-plugin-development': { enabled: true },
+    });
+    await installPlugin(appRoot, '@nocobase/app-plugin-development');
+    await writeAppSkill(
+      appRoot,
+      'nocobase-app-plugin-development',
+      '# untracked project guidance',
+    );
+    expect(
+      await planPackageSkillRemovals(
+        appRoot,
+        '@nocobase/app-plugin-development',
+      ),
+    ).toEqual([]);
+    await syncApp(appRoot);
+    expect(
+      await readFile(
+        path.join(
+          appRoot,
+          '.agents/skills/nocobase-app-plugin-development/SKILL.md',
+        ),
+        'utf8',
+      ),
+    ).toBe('# untracked project guidance');
+  });
+
   it('copies every skill a registered plugin ships', async () => {
     const appRoot = await createApp({
       '@nocobase/app-plugin-demo': { enabled: true },

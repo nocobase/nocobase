@@ -38,6 +38,8 @@ The diff is information. Decide each file yourself and write every edit by hand 
 
 Never: overwrite the application with a fresh template copy; bump `defaultTemplateVersion` without merging the source; resolve a conflict by discarding the user's side; run `git checkout --`, `git restore`, `git reset --hard`, `git stash`, `git clean`, or `rm -rf` against the working tree; regenerate with `create-app` and copy the user's code across.
 
+When the App already supplies the project plugin development Skill, check for a missed [global plugin Skill migration](references/plugin-development-skill.md) even if no template version change is needed. This cleanup does not advance `defaultTemplateVersion`.
+
 ## 1. Secure a way back
 
 Git project: require a clean tree (ask the user to commit anything outstanding — do not stash or commit it for them), record `git rev-parse HEAD`, then `git checkout -b template-upgrade-<target>`. Editing the project directly is safe on a branch, and it is what lets `typecheck`/`test`/`build` actually run.
@@ -92,7 +94,7 @@ These are published tarballs, not Git checkouts — they carry only what `files`
 diff -rq "$WORK/$BASE" "$WORK/$TARGET"
 ```
 
-`Files ... differ` is modified, `Only in TARGET` added, `Only in BASE` removed. Read the substantive ones with `diff -u`. Use the actual BASE → TARGET changes and the project's current state to decide what applies. The target template's `@nocobase/app-skills` dependency identifies the shared guidance shipped for that release; inspect that package's relevant references when a changed framework contract needs explanation. Check [edge cases](references/edge-cases.md) for generated configuration, synchronized Skills, and migration history that the template diff cannot describe.
+`Files ... differ` is modified, `Only in TARGET` added, `Only in BASE` removed. Read the substantive ones with `diff -u`. Use the actual BASE → TARGET changes and the project's current state to decide what applies. The target template's `@nocobase/app-skills` dependency identifies the shared guidance shipped for that release; inspect that package's relevant references when a changed framework contract needs explanation. Check [edge cases](references/edge-cases.md) for generated configuration, synchronized Skills, and migration history that the template diff cannot describe. When the target package introduces the project plugin development Skill, read [its migration procedure](references/plugin-development-skill.md), inspect same-named global installations, and include their exact cleanup and recovery in the upgrade plan.
 
 When the upgrade changes application migrations or registered plugins that supply migrations, read [database upgrades](references/database-upgrades.md) during planning, before starting the target application. Review the affected packages' upgrade notes as well as the template diff: a dependency update can change database behavior without adding a migration file to the application. Include any documented checksum correction, data prerequisite, and irreversible migration in the upgrade and recovery plan. A Git branch protects source, not the database.
 
@@ -160,6 +162,8 @@ pnpm typecheck && pnpm test && pnpm lint && pnpm build
 ```
 
 `pnpm install` can retain older transitive dependencies in `pnpm-lock.yaml` even after the template raises a direct dependency. Run `pnpm dedupe` to refresh compatible resolutions before synchronizing Skills from the final `node_modules`. Review and include the resulting lockfile changes in the upgrade. If type checking still reports incompatible types from two versions of the same package, follow [dependency resolution conflicts](references/edge-cases.md#dependency-resolution-conflicts) before changing application code.
+
+After synchronization, complete the applicable [global plugin Skill migration](references/plugin-development-skill.md): verify the project replacement before removing the old global installation, then report cleanup and session reload requirements.
 
 `typecheck` is doing real work here — it catches the broken import a removal left behind. Before starting the application against retained data, complete the applicable [database upgrade checks](references/database-upgrades.md); startup may apply migrations automatically. Then run the application and check what the delta touched: sign-in, the user's pages, navigation, locale switching, any new migration. Passing commands are not evidence the application still behaves. For a theme or shell change, also complete the [theme upgrade checks](references/theme-upgrade.md); token changes alone do not verify the application-owned consumers.
 

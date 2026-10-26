@@ -20,6 +20,8 @@ This file stays at most 32 KB and must not grow without bound, because every age
 
 ## Load the development skills
 
+For creating or maintaining a plugin in this App, read [the project plugin development Skill](.agents/skills/nocobase-app-plugin-development/SKILL.md). It ships with `@nocobase/app-skills`; do not install a global copy. If an older global Skill has the same name, read this project's file by path and follow the upgrade Skill's migration guidance to retire the global copy after verifying the replacement.
+
 `pnpm install` runs `pnpm nocobase skills sync` through the application's `postinstall` hook. If `.agents/skills/nocobase-app-development/` is missing, install dependencies from the application root; if install scripts were disabled or synchronized Skills are stale, run `pnpm nocobase skills sync` explicitly.
 
 [`.agents/skills/nocobase-app-development/SKILL.md`](.agents/skills/nocobase-app-development/SKILL.md) holds the detailed guidance behind this file. Read it first — it routes to the reference that matches your task. Read the one page your task needs, not the whole directory.

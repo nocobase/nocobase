@@ -6390,44 +6390,44 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
-  skills/nocobase-app-plugin-development/assets/testing-example:
+  packages/app/app-skills/skills/nocobase-app-plugin-development/assets/testing-example:
     devDependencies:
       '@nocobase/app-cli':
         specifier: workspace:*
-        version: link:../../../../packages/app/app-cli
+        version: link:../../../../../app-cli
       '@nocobase/app-client':
         specifier: workspace:*
-        version: link:../../../../packages/app/app-client
+        version: link:../../../../../app-client
       '@nocobase/app-plugin-authentication':
         specifier: workspace:*
-        version: link:../../../../packages/plugins/app-plugin-authentication
+        version: link:../../../../../../plugins/app-plugin-authentication
       '@nocobase/app-plugin-authorization':
         specifier: workspace:*
-        version: link:../../../../packages/plugins/app-plugin-authorization
+        version: link:../../../../../../plugins/app-plugin-authorization
       '@nocobase/app-server':
         specifier: workspace:*
-        version: link:../../../../packages/app/app-server
+        version: link:../../../../../app-server
       '@nocobase/app-testing':
         specifier: workspace:*
-        version: link:../../../../packages/tools/app-testing
+        version: link:../../../../../../tools/app-testing
       '@nocobase/authorization':
         specifier: workspace:*
-        version: link:../../../../packages/libs/authorization
+        version: link:../../../../../../libs/authorization
       '@nocobase/db':
         specifier: workspace:*
-        version: link:../../../../packages/libs/db
+        version: link:../../../../../../libs/db
       '@nocobase/db-sqlite':
         specifier: workspace:*
-        version: link:../../../../packages/libs/db-sqlite
+        version: link:../../../../../../libs/db-sqlite
       '@nocobase/dev-config':
         specifier: workspace:*
-        version: link:../../../../packages/tools/dev-config
+        version: link:../../../../../../tools/dev-config
       '@nocobase/i18n':
         specifier: workspace:*
-        version: link:../../../../packages/libs/i18n
+        version: link:../../../../../../libs/i18n
       '@nocobase/service-provider':
         specifier: workspace:*
-        version: link:../../../../packages/libs/service-provider
+        version: link:../../../../../../libs/service-provider
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0

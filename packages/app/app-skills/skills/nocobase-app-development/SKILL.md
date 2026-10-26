@@ -11,6 +11,8 @@ metadata:
 
 # NocoBase 3 application development
 
+When the task creates or maintains a reusable plugin under this App's `packages/`, read `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by its explicit project path. It ships alongside this Skill in `@nocobase/app-skills`. Use this application's guidance for App-owned features and the plugin Skill for plugin-owned contracts and packaging; do not install the older global plugin development Skill.
+
 Use this Skill when building a complete application or an individual feature: business and administration pages, endpoints, data, services and their tests.
 
 Do not use it to develop a published plugin package. Plugin development has its own protocol and lives in a separate repository.

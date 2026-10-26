@@ -58,3 +58,6 @@ packages/app/app-skills/skills/nocobase-app-development/references/frontend/shad
 .changeset/*.md
 .changeset/pre/
 !.changeset/README.md
+
+# Preserve the migrated plugin guide and its checked examples without unrelated reformatting.
+/packages/app/app-skills/skills/nocobase-app-plugin-development/

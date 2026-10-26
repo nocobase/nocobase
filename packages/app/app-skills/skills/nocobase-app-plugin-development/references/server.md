@@ -166,7 +166,7 @@ Both executors come from the application's jobs service, `jobExecutorServiceToke
 
 ### One-off jobs
 
-A job is a class extending `Job<TPayload>` with a stable `static jobName` and a constructor that takes only its payload. The Provider that owns the executor registers every class and sets the executor up in `start()`, and shuts it down in `shutdown()`. In an App, `pnpm create @nocobase/plugin@beta notice-jobs --with server.jobs` generates this shape; in the source repository use `pnpm plugin:create notice-jobs --with server.jobs`. A job that calls a Service gets it by closure: the Provider creates the class with a factory that captures the Service and registers that class, as Notification's `createDeliveryJob(channelManager)` does. Each executor keeps its own registry, so the class that registered is the one that runs.
+A job is a class extending `Job<TPayload>` with a stable `static jobName` and a constructor that takes only its payload. The Provider that owns the executor registers every class and sets the executor up in `start()`, and shuts it down in `shutdown()`. In an App, `pnpm create @nocobase/plugin@beta notice-jobs --with server.jobs` generates this shape. A job that calls a Service gets it by closure: the Provider creates the class with a factory that captures the Service and registers that class, as Notification's `createDeliveryJob(channelManager)` does. Each executor keeps its own registry, so the class that registered is the one that runs.
 
 ```ts
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';

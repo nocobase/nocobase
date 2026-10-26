@@ -15,7 +15,7 @@ Read this reference when connecting a plugin to an App or changing its installed
 
 The current CLI writes the plugin into App `dependencies`, including moving a matching declaration out of `devDependencies`. It discovers registered plugins from the union of explicit Client, Server, and CLI composition roots. Do not recreate the old `nocobase.plugins` management map or treat an `enabled` field as runtime discovery; unregister still cleans legacy entries when present.
 
-An App can consume local plugins from its `packages/` workspace with `workspace:*` and published plugins with registry version ranges. The NocoBase source repository uses its own local packages and `workspace:^`. Installation makes a package resolvable; registration connects its runtime entries.
+An App can consume local plugins from its `packages/` workspace with `workspace:*` and published plugins with registry version ranges. Installation makes a package resolvable; registration connects its runtime entries.
 
 ## Register a local plugin in an App
 
@@ -28,20 +28,9 @@ pnpm nocobase plugin register @nocobase/app-plugin-audit-log --no-install --json
 
 Use the full package name, including a custom scope when applicable. Inspect the planned changes to `client/plugins.ts`, `server/plugins.ts` and `cli/plugins.ts`; only exported runtime entries are registered. Preserve existing entries and options. `--no-install` is appropriate because creation has already installed the workspace dependency; if generation used `--no-install`, run `pnpm install` first. Registration synchronizes shipped Skills by default.
 
-Run the plugin’s `check`, then the target App’s relevant checks and `pnpm build`; verify the feature in the running App. A local plugin needs no npm publication to participate in App build and deployment. For registration from the NocoBase source repository, use the next section instead.
+Run the plugin’s `check`, then the target App’s relevant checks and `pnpm build`; verify the feature in the running App. A local plugin needs no npm publication to participate in App build and deployment.
 
-## Register a plugin from the source repository
-
-Run from the repository root, with the chosen App's directory name or full package name:
-
-```bash
-pnpm nocobase plugin register audit-log --workspace-root . --app app-template-default --dry-run --json
-pnpm nocobase plugin register audit-log --workspace-root . --app app-template-default --json
-```
-
-Inspect the preview before applying it. `--app` defaults to `app-template-default`; specify it explicitly when multiple Apps are relevant. Registration uses actual exports to decide which composition roots to change and synchronizes plugin Skills by default. It appends new registrations rather than resolving business-specific ordering requirements.
-
-Create/register workflows can pass `--no-install` to creation and install once during registration. Registration also accepts `--no-install` when installation is already coordinated separately. Respect the user's dependency-install constraints and report any remaining install requirement.
+## Runtime composition
 
 Client registration calls a factory; Server registration uses the definition itself:
 
@@ -64,7 +53,7 @@ Pass documented typed Client options in the App composition root when needed. Do
 ## Install without enabling
 
 ```bash
-pnpm nocobase plugin register audit-log --workspace-root . --app app-template-default --disabled --json
+pnpm nocobase plugin register @nocobase/app-plugin-audit-log --disabled --json
 ```
 
 `--disabled` installs the dependency without adding Client, Server, or CLI registrations. Skills still synchronize by default because they are integration knowledge, not runtime code; add `--no-skills` only when that is the intended result. The flag does not neutralize manual registrations already present in composition roots. Inspect those roots when disabling an existing integration and remove only the intended entries.

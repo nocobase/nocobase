@@ -97,7 +97,7 @@ Declare the package's source and compiled targets in `package.json`:
 
 Keep existing `publishConfig` fields when adding these mappings. Set `compilerOptions.customConditions` to `["development"]` in the plugin's NodeNext tsconfig so shadcn and TypeScript find the source files. TypeScript resolves the `.js` targets to `.ts` or `.tsx` sources and leaves the `#` import in emitted JavaScript; pnpm replaces the published mappings with unconditional `dist/client` targets, including when the consuming application selects `development`. No TS `paths` or Vite alias is needed, and installed imports need no rewrite. An import of a directory needs an exact mapping to its `index.js`.
 
-Keep `shadcn`, `tailwindcss`, and `tw-animate-css` in `devDependencies`. Put packages imported as values by the generated Client source in `peerDependencies`, commonly `@base-ui/react`, `class-variance-authority`, `cn`, and `lucide-react` when used. Generated primitives import `cn` from the `cn` package, which stays a package import; do not add `clsx` or `tailwind-merge`. In the source repository, use workspace catalog entries; in an independent App, preserve compatible versions from its installed dependencies. Remove generated dependencies that the retained source does not import, then run the package-manager install from the owning workspace root.
+Keep `shadcn`, `tailwindcss`, and `tw-animate-css` in `devDependencies`. Put packages imported as values by the generated Client source in `peerDependencies`, commonly `@base-ui/react`, `class-variance-authority`, `cn`, and `lucide-react` when used. Generated primitives import `cn` from the `cn` package, which stays a package import; do not add `clsx` or `tailwind-merge`. Preserve compatible versions from the App’s installed dependencies; source contributors follow their repository-local dependency rules. Remove generated dependencies that the retained source does not import, then run the package-manager install from the owning workspace root.
 
 Run the CLI in the plugin’s scope and add only primitives required by the current feature. From the App root:
 
@@ -131,7 +131,7 @@ pnpm --filter @nocobase/app-plugin-audit-log exec shadcn add @nocobase/page-cont
 
 Select other items from the table below as needed. Check the resulting diff and runtime imports: move Client value dependencies added by the installer (for example, `cn`) to `peerDependencies`, and ensure `react` and `react-router` are peers when the retained code imports them at runtime. Preserve compatible versions, install from the App root, then run the plugin checks. Reuse existing customized copies instead of overwriting them.
 
-In the NocoBase source repository, copy each file an item lists in `ui-library/registry/components/registry.json` from `ui-library/registry/components/<path>` to its `target`, as `ui-library/USAGE.md` describes, rather than running `shadcn add`. These are source references, not runtime imports from the host App. Reuse an existing plugin copy before adding another.
+Source contributors use the repository-local UI Library copy workflow. Reuse an existing plugin copy before adding another; never import private host components at runtime.
 
 | Need                                   | Item                           | Installs into `client/components/`                                                            |
 | -------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------- |

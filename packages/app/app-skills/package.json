@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-skills",
   "version": "0.1.0-beta.51",
-  "description": "Agent Skills for developing, upgrading and deploying NocoBase applications.",
+  "description": "Agent Skills for developing applications and plugins, upgrading and deploying NocoBase applications.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -10,7 +10,11 @@
   },
   "prettier": "@nocobase/dev-config/prettier",
   "files": [
-    "skills"
+    "skills",
+    "!skills/**/node_modules",
+    "!skills/**/storage",
+    "!skills/**/dist",
+    "!skills/**/coverage"
   ],
   "publishConfig": {
     "access": "public"
