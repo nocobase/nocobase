@@ -114,9 +114,14 @@ export interface SkillsSyncPlan {
  * `nocobase-app-plugin-scheduler` and `nocobase-app-plugin-scheduler-<suffix>`.
  */
 export function pluginSkillPrefix(packageName: string): string {
+  const custom =
+    /^@([a-z0-9][a-z0-9-]*)\/(app-plugin-[a-z0-9]+(?:-[a-z0-9]+)*)$/u.exec(
+      packageName,
+    );
+  if (custom) return `${custom[1]}-${custom[2]}`;
   if (!packageName.startsWith(PACKAGE_SCOPE)) {
     throw new Error(
-      `Plugin package name must start with ${PACKAGE_SCOPE}, found ${packageName}.`,
+      `Plugin package name must start with ${PACKAGE_SCOPE} or be a scoped app-plugin package, found ${packageName}.`,
     );
   }
   const unscopedName = packageName.slice(PACKAGE_SCOPE.length);
@@ -163,13 +168,14 @@ export async function collectPluginSkills({
     }
     if (
       !KEBAB_PATTERN.test(entry.name) ||
-      !entry.name.startsWith(SKILL_NAME_PREFIX) ||
-      (packageName.startsWith(PLUGIN_PACKAGE_PREFIX)
+      (packageName.startsWith(PLUGIN_PACKAGE_PREFIX) ||
+      !packageName.startsWith(PACKAGE_SCOPE)
         ? !isOwnedSkillName(prefix, entry.name)
-        : entry.name.startsWith('nocobase-app-plugin-'))
+        : !entry.name.startsWith(SKILL_NAME_PREFIX) ||
+          entry.name.startsWith('nocobase-app-plugin-'))
     ) {
       throw new Error(
-        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a nocobase- prefixed kebab-case name; plugin skills must use their package prefix ${prefix}, and nocobase-app-plugin-* names are reserved for their owning plugins.`,
+        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugin skills must use their package prefix ${prefix}, and nocobase-app-plugin-* names are reserved for their owning plugins.`,
       );
     }
     skills.push({
@@ -239,7 +245,11 @@ export async function planSkillsSync({
 
   const removals: SkillRemoval[] = [];
   for (const entry of await readDirectoryEntries(skillsRoot)) {
-    if (!entry.isDirectory() || !entry.name.startsWith(SKILL_NAME_PREFIX)) {
+    if (
+      !entry.isDirectory() ||
+      (!entry.name.startsWith(SKILL_NAME_PREFIX) &&
+        previousOwnership[entry.name] === undefined)
+    ) {
       continue;
     }
     if (owners.has(entry.name)) {
@@ -498,7 +508,7 @@ export function formatSkillsSyncSummary(
 
 function normalizePluginPackageName(name: string): string {
   const trimmed = name.trim();
-  return trimmed.startsWith(PACKAGE_SCOPE)
+  return trimmed.startsWith('@')
     ? trimmed
     : `${PACKAGE_SCOPE}app-plugin-${trimmed}`;
 }
@@ -567,7 +577,11 @@ function readDependencyNames(value: unknown): string[] {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return [];
   }
-  return Object.keys(value).filter((name) => name.startsWith(PACKAGE_SCOPE));
+  return Object.keys(value).filter(
+    (name) =>
+      name.startsWith(PACKAGE_SCOPE) ||
+      /^@[a-z0-9][a-z0-9-]*\/app-plugin-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(name),
+  );
 }
 
 async function readSkillsOwnership(
@@ -585,14 +599,17 @@ async function readSkillsOwnership(
     throw new Error(`Invalid skills ownership in ${filePath}.`);
   }
   for (const [name, owner] of Object.entries(value)) {
+    if (!KEBAB_PATTERN.test(name) || typeof owner !== 'string') {
+      throw new Error(`Invalid skills ownership in ${filePath}.`);
+    }
+    const prefix = pluginSkillPrefix(owner);
     if (
-      !KEBAB_PATTERN.test(name) ||
-      !name.startsWith(SKILL_NAME_PREFIX) ||
-      typeof owner !== 'string'
+      owner.startsWith(PACKAGE_SCOPE)
+        ? !name.startsWith(SKILL_NAME_PREFIX)
+        : !isOwnedSkillName(prefix, name)
     ) {
       throw new Error(`Invalid skills ownership in ${filePath}.`);
     }
-    pluginSkillPrefix(owner);
   }
   return value as Record<string, string>;
 }

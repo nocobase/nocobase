@@ -32,7 +32,9 @@
   "dependencies": {
     "@nocobase/cli-envelope": "workspace:^",
     "@nocobase/dev-config": "workspace:^",
-    "prettier": "catalog:"
+    "prettier": "catalog:",
+    "yaml": "catalog:",
+    "semver": "^7.8.5"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -40,7 +42,7 @@
     "publint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "yaml": "catalog:"
+    "@types/semver": "^7.7.1"
   },
   "publishConfig": {
     "access": "public"
