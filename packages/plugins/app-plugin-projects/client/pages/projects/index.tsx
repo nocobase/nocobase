@@ -1,7 +1,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { FolderKanbanIcon, PlusIcon, SearchIcon } from 'lucide-react';
-import { type ReactElement, useState } from 'react';
+import { type ReactElement, useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router';
 
 import { pmKeys } from '../../api/keys.js';
@@ -51,8 +51,13 @@ export default function ProjectsPage(): ReactElement {
   ) : null;
 
   const needle = search.trim().toLowerCase();
-  const rows = (projects.data ?? []).filter(
-    (project) => !needle || project.name.toLowerCase().includes(needle),
+  // Child-route navigation must not look like new data to the table and reset its page.
+  const rows = useMemo(
+    () =>
+      (projects.data ?? []).filter(
+        (project) => !needle || project.name.toLowerCase().includes(needle),
+      ),
+    [projects.data, needle],
   );
 
   let content: ReactElement;
