@@ -5,6 +5,7 @@ import path from 'node:path';
 import { afterEach, expect, it } from 'vitest';
 import { resolveAppRuntime } from '@nocobase/app-server/runtime';
 import appRuntime from '../../server/runtime.js';
+import { createStandaloneServer } from '../../server/standalone.js';
 const roots: string[] = [];
 afterEach(async () => {
   await Promise.all(
@@ -53,4 +54,26 @@ it('rejects a short supplied value during config validation', async () => {
   expect(
     issues.some((issue) => issue.path === 'equipment.samplePassword'),
   ).toBe(true);
+});
+
+it('refuses requested sample startup when the deployment omitted the private value', async () => {
+  const root = await mkdtemp(
+    path.join(os.tmpdir(), 'equipment-sample-preflight-'),
+  );
+  roots.push(root);
+  const configPath = path.join(root, 'config.yml');
+  await writeFile(configPath, '{}');
+  await expect(
+    createStandaloneServer({
+      env: {
+        APP_STORAGE_DIR: path.join(root, 'storage'),
+        APP_CONFIG_FILE: configPath,
+        APP_SAMPLE_DATA: 'true',
+        INITIAL_ADMIN_PASSWORD: randomBytes(24).toString('base64url'),
+        SECRETS_KEYS: '1:' + randomBytes(32).toString('hex'),
+      },
+    }),
+  ).rejects.toThrow(
+    'Synthetic equipment initialization requires a private EQUIPMENT_SAMPLE_PASSWORD',
+  );
 });

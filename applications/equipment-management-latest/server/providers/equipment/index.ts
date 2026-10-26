@@ -38,6 +38,13 @@ export default class EquipmentProvider extends ServiceProvider<Application> {
     });
   }
   override async boot(): Promise<void> {
+    if (this.app.config.get<boolean>('app.sampleData') === true) {
+      const password = this.app.config.get<unknown>('equipment.samplePassword');
+      if (typeof password !== 'string' || password.length < 16)
+        throw new Error(
+          'Synthetic equipment initialization requires a private EQUIPMENT_SAMPLE_PASSWORD of at least 16 characters. Set it through the native App variable before first deployment.',
+        );
+    }
     registerEquipmentSample(
       this.app,
       this.app.container.resolve(equipmentToken),
