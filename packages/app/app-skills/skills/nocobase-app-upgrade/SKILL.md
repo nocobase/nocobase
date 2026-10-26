@@ -102,6 +102,8 @@ When BASE → TARGET changes Realtime contracts, read [Realtime upgrades](refere
 
 When BASE → TARGET changes notification contracts, read [Notification upgrades](references/notification-upgrade.md) during planning. Include application-owned test-send forms, API clients, permissions, log pages, E2E fixtures and custom channel extensions in step 5; distinguish removed TestAdapter APIs from deprecated registration and configuration APIs that remain compatible.
 
+When the template changes list-return behavior, read [list navigation upgrades](references/list-navigation-upgrade.md). Merge the routing context, breadcrumb and back-link sources together, and examine application-owned detail links and forms; updating dependencies alone does not update these copied sources.
+
 Then ask the project which of those files it has also touched:
 
 ```bash

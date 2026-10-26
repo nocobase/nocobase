@@ -70,6 +70,42 @@ async function listFiles(
 }
 
 describe('createPlugin', () => {
+  it('detects the source repository from a child directory without reading another package', async () => {
+    const repoRoot = await createTestRepo();
+    const generatorDirectory = path.join(
+      repoRoot,
+      'packages/tools/create-plugin',
+    );
+    await mkdir(generatorDirectory, { recursive: true });
+    await writeFile(
+      path.join(repoRoot, 'package.json'),
+      JSON.stringify({ name: 'nocobase-v3', private: true }),
+    );
+    await writeFile(
+      path.join(generatorDirectory, 'package.json'),
+      JSON.stringify({ name: '@nocobase/create-plugin' }),
+    );
+    const options = {
+      directory: generatorDirectory,
+      name: 'audit-log',
+      empty: true,
+      dryRun: true,
+    };
+    const result = await createPlugin(options);
+    expect(result.project).toEqual({ kind: 'repository', root: repoRoot });
+    expect(result.targetDirectory).toBe(
+      path.join(repoRoot, 'packages/plugins/app-plugin-audit-log'),
+    );
+
+    await writeFile(
+      path.join(repoRoot, 'package.json'),
+      JSON.stringify({ name: 'unrelated-workspace', private: true }),
+    );
+    await expect(createPlugin(options)).rejects.toMatchObject({
+      code: 'APP_NOT_FOUND',
+    });
+  });
+
   it('resolves package imports to development sources without compiler aliases', async () => {
     const result = await createWith(['client.components']);
     const root = result.targetDirectory;

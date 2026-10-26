@@ -97,6 +97,12 @@ async function syncApp(appRoot: string, plugin?: string): Promise<void> {
 }
 
 describe('pluginSkillPrefix', () => {
+  it('includes a custom plugin scope in the ownership prefix', () => {
+    expect(pluginSkillPrefix('@my-app/app-plugin-demo')).toBe(
+      'my-app-app-plugin-demo',
+    );
+  });
+
   it('drops the scope and keeps the package name', () => {
     expect(pluginSkillPrefix('@nocobase/app-plugin-scheduler')).toBe(
       'nocobase-app-plugin-scheduler',
@@ -204,7 +210,11 @@ describe('skills synchronization', () => {
     ).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
-  it.each(['@nocobase/other', '@nocobase/app-plugin-development'])(
+  it.each([
+    '@nocobase/other',
+    '@nocobase/app-plugin-development',
+    '@acme/app-plugin-development',
+  ])(
     'rejects %s claiming the shared development Skill without modifying project files',
     async (packageName) => {
       const appRoot = await createApp();
@@ -1058,4 +1068,30 @@ describe('package skill removal', () => {
       code: 'ENOENT',
     });
   });
+});
+
+it('synchronizes and removes recorded custom-scope skills without touching local guidance', async () => {
+  const appRoot = await createApp();
+  const packageName = '@my-app/app-plugin-demo';
+  await declareDependencies(appRoot, {
+    dependencies: { [packageName]: 'workspace:*' },
+  });
+  await installPlugin(appRoot, packageName, {
+    'my-app-app-plugin-demo': '# Plugin integration',
+  });
+  await writeAppSkill(appRoot, 'my-local-guide', '# Keep');
+  await syncApp(appRoot);
+  expect(
+    await readFile(
+      path.join(appRoot, '.agents/skills/my-app-app-plugin-demo/SKILL.md'),
+      'utf8',
+    ),
+  ).toBe('# Plugin integration');
+  await rm(path.join(appRoot, 'node_modules', packageName, 'skills'), {
+    recursive: true,
+  });
+  await syncApp(appRoot);
+  expect(await readdir(path.join(appRoot, '.agents/skills'))).toEqual([
+    'my-local-guide',
+  ]);
 });
