@@ -1,5 +1,12 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.28
+
+### Patch Changes
+
+- 7770b46: Support internal workspace packages while keeping the application at the project root. Generate workspace package patterns, build dependencies before client compilation, watch reachable internal sources, and document independent package checks and deployment exports.
+- 7770b46: Provide a runnable internal workspace package example with declaration watching, clarify the single-application layout, and fail package checks when an internal package lacks its check script. Keep the public development listener available during server restarts so shared-source HMR requests can wait for the replacement backend.
+
 ## 1.0.0-beta.27
 
 ### Patch Changes
