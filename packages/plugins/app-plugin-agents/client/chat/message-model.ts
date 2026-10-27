@@ -213,7 +213,7 @@ export interface ChatMessageSegment {
 export function chatMessageSegments(
   messages: readonly AppUIMessage[],
 ): ChatMessageSegment[] {
-  return messages
+  const segments = messages
     .flatMap((message) => {
       const partIndexes = message.parts.flatMap((part, index) =>
         (part.type === 'text' &&
@@ -244,28 +244,54 @@ export function chatMessageSegments(
           },
         ];
       if (message.role === 'assistant') {
-        // Runner history and previews already share one logical SDK message per response. Source records
-        // position its parts; they must not turn opening text, reasoning and the answer into separate bubbles.
+        // Source records position parts of one SDK response. Adjacent sources are joined after all
+        // messages are ordered, so an intervening card or user message remains between its replies.
         const visible = new Set(partIndexes);
         const ordered = [...sources]
           .sort((a, b) => a.seq - b.seq)
           .filter((source) => visible.has(source.partIndex));
-        return [
-          {
-            key: message.id,
-            message,
-            partIndexes: [
-              ...new Set([
-                ...ordered.map((source) => source.partIndex),
-                ...partIndexes,
-              ]),
-            ],
-            seq: ordered[0]?.seq ?? message.metadata?.seq,
-            at: ordered[0]?.createdAt ?? message.metadata?.createdAt ?? '',
-            first: true,
-            last: true,
-          },
-        ];
+        const groups = new Map<
+          string,
+          { indexes: number[]; seq: number; at: string }
+        >();
+        const placed = new Set<number>();
+        for (const source of ordered) {
+          if (placed.has(source.partIndex)) continue;
+          const group = groups.get(source.recordId) ?? {
+            indexes: [],
+            seq: source.seq,
+            at: source.createdAt ?? message.metadata?.createdAt ?? '',
+          };
+          group.indexes.push(source.partIndex);
+          groups.set(source.recordId, group);
+          placed.add(source.partIndex);
+        }
+        const entries = [...groups];
+        // SDK parts without source metadata stay with the latest known part of their response.
+        if (!entries.length)
+          return [
+            {
+              key: message.id,
+              message,
+              partIndexes,
+              seq: message.metadata?.seq,
+              at: message.metadata?.createdAt ?? '',
+              first: true,
+              last: true,
+            },
+          ];
+        entries
+          .at(-1)![1]
+          .indexes.push(...partIndexes.filter((index) => !placed.has(index)));
+        return entries.map(([recordId, group], index) => ({
+          key: index === 0 ? message.id : `${message.id}:${recordId}`,
+          message,
+          partIndexes: group.indexes,
+          seq: group.seq,
+          at: group.at,
+          first: index === 0,
+          last: index === entries.length - 1,
+        }));
       }
       const groups = new Map<
         string,
@@ -299,6 +325,20 @@ export function chatMessageSegments(
         ? a.seq - b.seq
         : a.at.localeCompare(b.at),
     );
+  const merged: (Omit<ChatMessageSegment, 'partIndexes'> & {
+    partIndexes: number[];
+  })[] = [];
+  for (const segment of segments) {
+    const previous = merged.at(-1);
+    if (
+      segment.message.role === 'assistant' &&
+      previous?.message === segment.message
+    ) {
+      previous.partIndexes.push(...segment.partIndexes);
+      merged[merged.length - 1] = { ...previous, last: segment.last };
+    } else merged.push({ ...segment, partIndexes: [...segment.partIndexes] });
+  }
+  return merged;
 }
 // ---------------------------------------------------------------------------------------------------------------------
 // The step line of the answering run

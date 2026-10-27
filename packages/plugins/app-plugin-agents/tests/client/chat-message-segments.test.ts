@@ -475,3 +475,144 @@ it.each(['streaming', 'done'] as const)(
     expect(chatMessageSegments([message])[0].key).toBe(segments[0].key);
   },
 );
+
+it.each(['streaming', 'done'] as const)(
+  'splits a %s response only where a visible card or user message interrupts its sources',
+  (state) => {
+    for (const role of ['system', 'user'] as const) {
+      const message: AppUIMessage = {
+        id: 'response',
+        role: 'assistant',
+        parts: [
+          { type: 'text', text: 'Opening A', state: 'done' },
+          { type: 'reasoning', text: 'Thought A', state: 'done' },
+          { type: 'reasoning', text: 'Thought B', state: 'done' },
+          { type: 'text', text: 'Answer B', state },
+        ],
+        metadata: {
+          ...metadata,
+          seq: 2,
+          sourceRecords: [
+            { recordId: 'opening', seq: 2, partId: 'a', partIndex: 0 },
+            { recordId: 'thought-a', seq: 3, partId: 'ta', partIndex: 1 },
+            { recordId: 'thought-b', seq: 5, partId: 'tb', partIndex: 2 },
+            { recordId: 'answer', seq: 6, partId: 'b', partIndex: 3 },
+          ],
+        },
+      };
+      const barrier: AppUIMessage = {
+        id: 'barrier',
+        role,
+        metadata: { ...metadata, seq: 4 },
+        parts:
+          role === 'user'
+            ? [{ type: 'text', text: 'User question' }]
+            : [
+                {
+                  type: 'data-notice',
+                  data: { type: 'news', title: 'Task update' },
+                },
+              ],
+      };
+      const original = structuredClone([message, barrier]);
+      const segments = chatMessageSegments([barrier, message]);
+      expect(
+        segments.map((segment) => [
+          segment.message.id,
+          segment.partIndexes,
+          segment.seq,
+          segment.first,
+          segment.last,
+        ]),
+      ).toEqual([
+        ['response', [0, 1], 2, true, false],
+        ['barrier', [0], 4, true, true],
+        ['response', [2, 3], 5, false, true],
+      ]);
+      expect(segments[0].message).toBe(message);
+      expect(segments[2].message).toBe(message);
+      expect(
+        new Set(
+          segments
+            .filter((segment) => segment.message.role === 'assistant')
+            .map((segment) => segment.message),
+        ).size,
+      ).toBe(1);
+      expect([message, barrier]).toEqual(original);
+      // Removing an invisible card does not fragment otherwise continuous reasoning and text.
+      expect(
+        chatMessageSegments([
+          message,
+          { ...barrier, role: 'system', parts: [completed] },
+        ]),
+      ).toMatchObject([
+        { key: 'response', partIndexes: [0, 1, 2, 3], first: true, last: true },
+      ]);
+    }
+  },
+);
+
+it('keeps segment anchors and the original message as parts grow and interleaved history arrives', () => {
+  const opening: AppUIMessage = {
+    id: 'response',
+    role: 'assistant',
+    parts: [{ type: 'text', text: 'A', state: 'done' }],
+    metadata: {
+      ...metadata,
+      seq: 2,
+      sourceRecords: [{ recordId: 'a', seq: 2, partId: 'a', partIndex: 0 }],
+    },
+  };
+  const complete: AppUIMessage = {
+    ...opening,
+    parts: [
+      ...opening.parts,
+      { type: 'text', text: 'B', state: 'done' },
+      { type: 'text', text: 'C', state: 'streaming' },
+    ],
+    metadata: {
+      ...opening.metadata!,
+      sourceRecords: [
+        ...opening.metadata!.sourceRecords!,
+        { recordId: 'b', seq: 4, partId: 'b', partIndex: 1 },
+      ],
+    },
+  };
+  const card: AppUIMessage = {
+    id: 'card',
+    role: 'system',
+    metadata: { ...metadata, seq: 3 },
+    parts: [
+      { type: 'data-notice', data: { type: 'news', title: 'Task update' } },
+    ],
+  };
+  const firstKey = chatMessageSegments([opening])[0].key;
+  const beforeHistory = chatMessageSegments([complete]);
+  expect(beforeHistory).toHaveLength(1);
+  expect(beforeHistory[0].key).toBe(firstKey);
+  const segments = chatMessageSegments([complete, card]);
+  expect(segments.map((segment) => [segment.key, segment.partIndexes])).toEqual(
+    [
+      [firstKey, [0]],
+      ['card', [0]],
+      ['response:b', [1, 2]],
+    ],
+  );
+  expect(chatMessageSegments([card, complete])).toEqual(segments);
+  const canonical = {
+    ...complete,
+    metadata: {
+      ...complete.metadata!,
+      sourceRecords: [
+        ...complete.metadata!.sourceRecords!,
+        { recordId: 'c', seq: 5, partId: 'c', partIndex: 2 },
+      ],
+    },
+    parts: complete.parts.map((part) =>
+      part.type === 'text' ? { ...part, state: 'done' as const } : part,
+    ),
+  };
+  expect(
+    chatMessageSegments([canonical, card]).map((segment) => segment.key),
+  ).toEqual(segments.map((segment) => segment.key));
+});

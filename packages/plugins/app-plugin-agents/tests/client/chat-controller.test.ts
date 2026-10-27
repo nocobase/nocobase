@@ -714,17 +714,21 @@ it('keeps live independent notices in source order without letting SDK deltas ap
   ).toHaveLength(1);
   const { chatMessageSegments } = await import('../../client/chat.js');
   const segments = chatMessageSegments(f.controller.chat('c1').messages);
-  expect(segments.map((segment) => segment.seq)).toEqual([2, 3]);
+  expect(segments.map((segment) => segment.seq)).toEqual([2, 3, 4]);
   expect(segments[0].message.id).toBe('answer');
-  expect(segments[0].partIndexes).toEqual([0, 1]);
+  expect(segments[0].partIndexes).toEqual([0]);
+  expect(segments[1].message).toEqual(notice);
+  expect(segments[2].message).toBe(segments[0].message);
+  expect(segments[2].partIndexes).toEqual([1]);
   expect(
-    segments[0].partIndexes.map((index) => segments[0].message.parts[index]),
+    [segments[0], segments[2]].flatMap((segment) =>
+      segment.partIndexes.map((index) => segment.message.parts[index]),
+    ),
   ).toEqual([
     { type: 'text', text: 'First', state: 'done' },
     { type: 'text', text: 'Second', state: 'done' },
   ]);
   expect(segments[0].message.metadata).toEqual(final);
-  expect(segments[1].message).toEqual(notice);
 });
 it('continues approval on its stable assistant while later independent notifications are read during the response', async () => {
   const f = fixture();

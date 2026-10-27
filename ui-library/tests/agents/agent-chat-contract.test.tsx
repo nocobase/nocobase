@@ -247,18 +247,38 @@ it('preserves stable source segments and complete SDK objects without manufactur
     metadata: { ...metadata, seq: 3, createdAt: '2026-01-01T00:00:02Z' },
   };
   const segments = chatMessageSegments([logical, notification]);
-  expect(segments.map((segment) => segment.seq)).toEqual([2, 3]);
+  expect(segments.map((segment) => segment.seq)).toEqual([2, 3, 4]);
   expect(segments[0].message).toBe(logical);
-  expect(segments[0].partIndexes).toEqual([0, 1]);
-  expect(segments[0].partIndexes.map((index) => logical.parts[index])).toEqual(
-    logical.parts,
-  );
-  expect(segments[0]).toMatchObject({ first: true, last: true });
+  expect(segments[0].partIndexes).toEqual([0]);
+  expect(segments[0]).toMatchObject({ first: true, last: false });
   expect(segments[1].message).toBe(notification);
+  expect(segments[2].message).toBe(logical);
+  expect(segments[2].partIndexes).toEqual([1]);
+  expect(segments[2]).toMatchObject({ first: false, last: true });
   expect(segments.map((segment) => segment.key)).toEqual(
     chatMessageSegments([logical, notification]).map((segment) => segment.key),
   );
   expect(new Set(segments.map((segment) => segment.message.id)).size).toBe(2);
+  render(
+    <ol>
+      {segments.map((segment) => (
+        <MessageItem
+          key={segment.key}
+          message={segment.message}
+          segment={segment}
+          agentName={() => 'Agent'}
+        />
+      ))}
+    </ol>,
+    { wrapper },
+  );
+  const items = screen.getAllByRole('listitem');
+  expect(items).toHaveLength(3);
+  expect(items[0]).toHaveTextContent('First');
+  expect(items[0]).not.toHaveTextContent('Second');
+  expect(items[1]).toHaveTextContent('English fallback');
+  expect(items[2]).toHaveTextContent('Second');
+  expect(items[2]).not.toHaveTextContent('First');
 });
 it('keeps Composer toolbar and notice injections through send and independent Stop', () => {
   const send = vi.fn(() => true),
