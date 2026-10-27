@@ -17,6 +17,12 @@ description: >-
 
 Use `@nocobase/app-plugin-demo-mode` for a dedicated demo with its own database and storage. The plugin supplies data lifecycle, visitor accounts, write protection, management components and optional simulation. The application supplies its business records, cleanup and external adapters. Simulation adapters and demo chat are enabled by default once integrated, without AI switches on the management page; the application chooses which flows to connect.
 
+## Visitor language and appearance
+
+Demo Mode automatically isolates the Users API preferences `locale`, `theme.mode` and `theme.preset` in application-scoped browser-session cookies. Visitors sharing an account do not overwrite one another; switching demo accounts retains the visitor's choices. Do not allow `userPreferences` merely to enable these controls, and do not change Users or application preference synchronization for this isolation. Other preference keys still use account storage and need the usual write exception if visitors may save them. Ordinary deployments are unchanged.
+
+Set the site's initial language through `i18n.defaultLocale` (the application's `APP_DEFAULT_LOCALE` mapping), independently of the demo dataset language. Appearance defaults use `client.app.defaultColorScheme` and `client.app.defaultTheme`; fallbacks are `system` and the template's `compact` preset. A fresh visitor receives these defaults even if the shared account stored another choice. Check two independent browser sessions using the same account, account switching, refresh, and a fresh session; a browser restoring its previous session may retain session cookies. Existing browser caches can briefly paint their previous values before the preference response is reconciled.
+
 ## Check that this Skill applies
 
 Demo Mode refuses ordinary writes, resets data daily and deletes all business data on clear/reset. Apply it only when the user asks for a demo deployment with those properties, names this plugin or Demo Mode, or the application already depends on it. Otherwise use the matching workflow:

@@ -47,7 +47,7 @@ The plugin is off until the deployment switches it on:
 
 `session` and `verification`, the Better Auth tables signing in and out writes, are always allowed, except to routes that end or change other sessions — any path ending in `revoke-sessions`, `revoke-other-sessions`, `revoke-session`, `update-session` or their camelCase forms, such as the users plugin's `users/:userId/revokeSessions` — so a visitor of a shared demo account cannot sign everyone else out.
 
-For deployment defaults, set `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=userPreferences,orderItems` and restart the application. Names are comma-separated, trimmed and deduplicated; case is preserved. The variable replaces `demoMode.allowCollections` when set (an empty value clears that deployment list); built-in authentication exceptions remain. These deployment-owned `fixedCollections` combine with the administrator's saved `collections`, so removing a UI selection does not revoke a deployment exception. Business authorization still applies.
+For deployment defaults, set `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=orderItems` and restart the application. Names are comma-separated, trimmed and deduplicated; case is preserved. The variable replaces `demoMode.allowCollections` when set (an empty value clears that deployment list); built-in authentication exceptions remain. These deployment-owned `fixedCollections` combine with the administrator's saved `collections`, so removing a UI selection does not revoke a deployment exception. Business authorization still applies.
 
 ## What it does
 
@@ -56,6 +56,14 @@ A root-router middleware runs every HTTP request, including the WebSocket upgrad
 A refused request is answered with the standard error body, `400 FAILED_PRECONDITION`, reason `DEMO_READ_ONLY`, domain `demoMode`, and a `localizedMessage` in the request's language, whatever the route made of the failure. The response carries `Server-Timing: demo-read-only`, which the Client plugin reads through `PerformanceObserver` to show a toast, whichever client sent the request. A route that catches the failure and still succeeds keeps its answer, unmarked: pages often make best-effort writes while reading, and the visitor changed nothing. The Client plugin reads the enabled flag from the public `GET /api/demoMode/status` and shows nothing until a change is refused.
 
 At startup the plugin sends a probe write through every connection and refuses to start if one is not refused, so an upgrade that breaks the hook cannot silently leave a demo writable.
+
+## Visitor preferences
+
+In Demo Mode, the existing Users preference API stores `locale`, `theme.mode` and `theme.preset` in browser-session cookies scoped to the application, rather than on the shared account. Visitors can change language, light/dark mode and color preset independently, including when they switch demo accounts. No `userPreferences` write exception is needed for these three keys, and allowing that collection does not disable their isolation. Other preferences retain the Users plugin's account storage and normal write guard.
+
+A new visitor receives `i18n.defaultLocale` (normally set by `APP_DEFAULT_LOCALE`), `client.app.defaultColorScheme` and `client.app.defaultTheme`, with fallbacks `en-US`, `system` and `compact`. Historical account choices are ignored for these keys. Deleting a choice restores the site default. The cookies have no persistent expiry and contain only validated presentation identifiers; HTTPS deployments use Secure, HttpOnly, SameSite=None and Partitioned cookies for embedded demos. Browser session restoration may preserve session cookies, as it does login sessions. Existing client-side caches may briefly paint their previous values until the preferences request completes.
+
+This behavior is enabled only by Demo Mode. Ordinary deployments continue saving preferences per account. No change to an application's preference controls or to the Users plugin is required.
 
 ## Finding what to allow
 
