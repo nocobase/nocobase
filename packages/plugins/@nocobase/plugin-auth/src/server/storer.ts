@@ -113,9 +113,9 @@ export class Storer implements IStorer {
     const authenticator =
       authenticators.find((authenticator: Model) => authenticator.name === name) || authenticators[0];
     if (authenticator && !(authenticator as any)[RENDERED] && this.getAuthConfig(authenticator.authType)) {
-      const rendered = this.renderJsonTemplate(authenticator);
-      await this.cache.setValueInObject(this.key, authenticator.name, rendered);
-      return rendered;
+      // Render the cached entry in place. Re-writing it by name could resurrect an entry that was
+      // disabled or deleted while its options were being rendered.
+      return this.renderJsonTemplate(authenticator);
     }
     return authenticator;
   }

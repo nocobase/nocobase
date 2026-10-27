@@ -277,4 +277,26 @@ describe('storer with a not yet registered auth type', () => {
     const authenticators = await cache.get('authenticators');
     expect(authenticators['ldap1'].dataValues.options.ldap.bindPassword).toBe('pass{{literal}}');
   });
+
+  it('should not republish an authenticator removed during a lazy read', async () => {
+    await storer.get('ldap1');
+    registerLdapAuthType();
+
+    const readCache = storer.getCache.bind(storer);
+    let removed = false;
+    (storer as any).getCache = async () => {
+      const authenticators = await readCache();
+      // Remove the entry after the lazy read captured it, before the options are rendered.
+      if (!removed) {
+        removed = true;
+        await db.emitAsync('authenticators.afterSave', { ...createAuthenticator('ldap1', 'LDAP'), enabled: false });
+      }
+      return authenticators;
+    };
+
+    const authenticator = await storer.get('ldap1');
+    expect(authenticator.dataValues.options.ldap.bindPassword).toBe('pass{{literal}}');
+    const authenticators = (await cache.get('authenticators')) || {};
+    expect(authenticators['ldap1']).toBeUndefined();
+  });
 });
