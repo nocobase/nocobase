@@ -158,7 +158,7 @@ it('recovers from a load error to the real empty state', async () => {
     },
   });
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Unable to load this list.',
+    'Unable to load list',
   );
   offline = false;
   fireEvent.click(screen.getByRole('button', { name: 'Retry' }));

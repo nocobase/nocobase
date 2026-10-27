@@ -130,7 +130,7 @@ it('reports a failed load and offers a retry', async () => {
     );
   await mount();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Unable to load this list.',
+    'Unable to load list',
   );
   expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible();
 });
