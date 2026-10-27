@@ -64,6 +64,60 @@ it.each(['Answer', 'Over-redacted preview'])(
     ).toEqual(f.state.detail);
   },
 );
+it('keeps a live runner response while reconciling an older saved snapshot', async () => {
+  const f = fixture(),
+    output = f.output();
+  f.state.detail = {
+    ...f.state.detail,
+    mode: 'runner',
+    execution: { status: 'running' },
+  };
+  f.state.messages = [
+    {
+      id: 'answer',
+      role: 'assistant',
+      metadata: { ...metadata, seq: 2 },
+      parts: [{ type: 'text', text: 'Opening', state: 'done' }],
+    },
+  ];
+  await f.controller.loadHistory('c1');
+  f.controller.receive('c1', f.state.detail);
+  await vi.waitFor(() => expect(output.attached).toBe(true));
+  output.emit({
+    type: 'start',
+    messageId: 'answer',
+    messageMetadata: { ...metadata, seq: 2 },
+  });
+  output.emit({ type: 'text-start', id: 'part' });
+  output.emit({ type: 'text-delta', id: 'part', delta: 'Live answer' });
+  await vi.waitFor(() =>
+    expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+      'Live answer',
+    ),
+  );
+  await f.controller.refresh('c1');
+  expect(f.controller.chat('c1').status).toBe('streaming');
+  expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+    'Live answer',
+  );
+  f.state.messages = [
+    {
+      ...f.state.messages[0],
+      metadata: { ...metadata, seq: 2, revision: 1 },
+      parts: [{ type: 'text', text: 'Saved answer', state: 'done' }],
+    },
+  ];
+  f.state.detail = { ...f.state.detail, execution: { status: 'idle' } };
+  output.emit({ type: 'text-end', id: 'part' });
+  output.emit({ type: 'finish' });
+  output.close();
+  await vi.waitFor(() => expect(f.controller.chat('c1').status).toBe('ready'));
+  await f.controller.refresh('c1');
+  expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+    'Saved answer',
+  );
+});
+
 it('appends SDK deltas in place and protects the active message against an older history snapshot', async () => {
   const f = fixture(),
     output = f.output();

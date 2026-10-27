@@ -599,7 +599,7 @@ export class ChatController {
       const receiving =
         chat.status === 'submitted' || chat.status === 'streaming';
       const activeId =
-        receiving && chat.messages.at(-1)?.id === detail.execution?.messageId
+        receiving && chat.messages.at(-1)?.role === 'assistant'
           ? chat.messages.at(-1)?.id
           : undefined;
       chat.messages = mergeUIMessages(
