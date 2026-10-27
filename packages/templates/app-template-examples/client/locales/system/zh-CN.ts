@@ -5,6 +5,13 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  formFeedback: {
+    field: '此字段的值未通过校验，请检查并修改后重试。',
+    invalid: '请检查标记的字段后重试。',
+    failed: '保存失败，已保留您的输入，请重试。',
+    network: '无法连接，请检查网络后重试。已保留您的输入。',
+    denied: '当前权限无法提交此表单。已保留您的输入。',
+  },
   flowDiagram: {
     controls: '流程图控制',
     fitView: '适应画布',

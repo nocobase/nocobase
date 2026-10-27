@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import {
   useSettingsLeave,
   useSettingsData,
@@ -228,7 +229,9 @@ function RoleEditor(): ReactElement {
         ) : (
           !request.error &&
           !options.error && (
-            <form
+            <FeedbackForm
+              submitting={busy}
+              error={error}
               onSubmit={(event) => void save(event)}
               noValidate
               className='flex flex-col gap-6'
@@ -238,6 +241,7 @@ function RoleEditor(): ReactElement {
                   <Label htmlFor='role-key'>{t('settings.key')} *</Label>
                   <Input
                     id='role-key'
+                    name='key'
                     required
                     value={roleKey}
                     disabled={!creating || !allowed || busy}
@@ -262,6 +266,7 @@ function RoleEditor(): ReactElement {
                   <Label htmlFor='role-name'>{t('settings.roleName')} *</Label>
                   <Input
                     id='role-name'
+                    name='title'
                     required
                     value={name}
                     disabled={!allowed || busy}
@@ -342,7 +347,7 @@ function RoleEditor(): ReactElement {
                   </Button>
                 )}
               </div>
-            </form>
+            </FeedbackForm>
           )
         )}
         {leave.dialog}

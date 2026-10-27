@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import { useState } from 'react';
 import { Check, Plus, ChevronDown, Ellipsis } from 'lucide-react';
 import { cn } from 'cn';
@@ -322,7 +323,9 @@ export function CategoryManager({
               {t('workflows.categoryDialogHelp')}
             </DialogDescription>
           </DialogHeader>
-          <form
+          <FeedbackForm
+            submitting={busy}
+            error={error}
             className='space-y-4'
             onSubmit={(event) => {
               event.preventDefault();
@@ -332,6 +335,7 @@ export function CategoryManager({
             <label className='grid gap-2'>
               {t('workflows.categoryName')}
               <Input
+                name='title'
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 required
@@ -389,7 +393,7 @@ export function CategoryManager({
                 {t('workflows.save')}
               </Button>
             </div>
-          </form>
+          </FeedbackForm>
         </DialogContent>
       </Dialog>
       <Dialog

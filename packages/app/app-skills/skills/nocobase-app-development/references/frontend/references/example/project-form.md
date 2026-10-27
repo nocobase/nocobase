@@ -6,10 +6,11 @@ Part of the [projects worked example](../example.md).
 
 **Add first**: `yes n | pnpm exec shadcn add alert field select`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
 
-Rules: [`form.md`](../form.md). The fields are name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). The form renders no buttons: the container puts the submit button outside the `<form>` and links it through `formId`.
+Rules: [`form.md`](../form.md). The fields are name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). The form renders no buttons: the container puts the submit button outside the `<FeedbackForm>` and links it through `formId`.
 
 ```tsx
 // client/pages/projects/project-form.tsx
+import { FeedbackForm } from '#components/feedback-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -41,7 +42,7 @@ import { PROJECT_STATUSES, type Project } from './types.js';
 export interface ProjectFormProps {
   /** When editing, pass the latest record, just loaded; omit it when creating. */
   readonly project?: Project;
-  /** The `<form>` id. When the submit button is outside the form, the button sets `form={formId}`. */
+  /** The `<FeedbackForm>` id. When the submit button is outside the form, the button sets `form={formId}`. */
   readonly formId: string;
   /** Called after a successful save with the record the endpoint returned. The form has already shown the success message. */
   readonly onSubmitted: (project: Project) => void;
@@ -85,6 +86,7 @@ export function ProjectForm({
 
   // No generic: the types are inferred from zodResolver(schema).
   const form = useForm({
+    shouldFocusError: false,
     resolver: zodResolver(schema),
     defaultValues: {
       name: project?.name ?? '',
@@ -136,7 +138,7 @@ export function ProjectForm({
         form.setError(
           'name',
           { message: t('projects.form.nameTaken') },
-          { shouldFocus: true },
+          { shouldFocus: false },
         );
       } else if (apiError?.status === 401) {
         // The session ended. Keep the input and let the user choose to sign in again (SessionExpiredAlert below).
@@ -169,7 +171,12 @@ export function ProjectForm({
   const rootError = form.formState.errors.root;
 
   return (
-    <form id={formId} noValidate onSubmit={(event) => void onSubmit(event)}>
+    <FeedbackForm
+      validationErrors={form.formState.errors}
+      id={formId}
+      noValidate
+      onSubmit={(event) => onSubmit(event)}
+    >
       <FieldGroup>
         {rootError?.type === 'sessionExpired' ? (
           <SessionExpiredAlert />
@@ -257,7 +264,7 @@ export function ProjectForm({
           )}
         />
       </FieldGroup>
-    </form>
+    </FeedbackForm>
   );
 }
 ```
@@ -265,7 +272,7 @@ export function ProjectForm({
 | Prop                             | Description                                                                                                                                            |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `project`                        | When editing, the latest record, just loaded; omit it when creating                                                                                    |
-| `formId`                         | The `<form>` id; a submit button outside the form sets `form={formId}`. Also the prefix of the field ids, so two stacked forms do not collide          |
+| `formId`                         | The `<FeedbackForm>` id; a submit button outside the form sets `form={formId}`. Also the prefix of the field ids, so two stacked forms do not collide  |
 | `onSubmitted(project)`           | The save succeeded; the argument is the record the endpoint returned. The form has already shown the success message; the caller must not show another |
 | `onSubmittingChange(submitting)` | `true` when submission starts, `false` when it ends; on success, `false` comes before `onSubmitted` is called                                          |
 | `onNotFound()`                   | When editing, the endpoint returned 404                                                                                                                |

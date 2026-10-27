@@ -5,18 +5,23 @@
       "type": "registry:block",
       "title": "Auth Forms",
       "description": "Password sign-in, sign-up, reset-request and reset forms. Use them on authentication pages. Presentational: wire onSubmit to the headless actions of @nocobase/app-plugin-authentication/client/actions, as the templates' client/pages/auth/ pages do.",
-      "categories": ["authentication"],
+      "categories": [
+        "authentication"
+      ],
       "meta": {
         "group": "Authentication",
         "iframeHeight": 720
       },
-      "dependencies": ["lucide-react@^0.487.0"],
+      "dependencies": [
+        "lucide-react@^0.487.0"
+      ],
       "registryDependencies": [
         "alert",
         "button",
         "field",
         "input",
-        "input-group"
+        "input-group",
+        "@nocobase/feedback-form"
       ],
       "docs": "Presentational: each form calls onSubmit(values) and renders what it is given (submitting, error, fieldErrors, labels with English defaults). Wire onSubmit to @nocobase/app-plugin-authentication/client/actions (the templates' client/pages/auth/ pages are the reference), pass translated labels, and put links in forgotPasswordLink and footer.",
       "files": [
@@ -62,13 +67,21 @@
       "type": "registry:block",
       "title": "Auth Methods",
       "description": "Switches between several sign-in methods in tabs and lists single sign-on providers below them. Use it on a sign-in page offering more than a password. Presentational: each method's content is a form you wire, such as auth-forms over @nocobase/app-plugin-authentication.",
-      "categories": ["authentication"],
+      "categories": [
+        "authentication"
+      ],
       "meta": {
         "group": "Authentication",
         "iframeHeight": 640
       },
-      "dependencies": ["cn@^0.4.0"],
-      "registryDependencies": ["button", "field", "tabs"],
+      "dependencies": [
+        "cn@^0.4.0"
+      ],
+      "registryDependencies": [
+        "button",
+        "field",
+        "tabs"
+      ],
       "docs": "Pass methods as {id, label, content}; tabs appear only with more than one. Pass providers as {id, label, icon, onClick or href}; from three providers on they become icon buttons. Labels have English defaults; pass translated ones.",
       "files": [
         {
@@ -83,13 +96,19 @@
       "type": "registry:block",
       "title": "Auth Centered Layout",
       "description": "The page around an authentication form: the brand above a card in the middle of a muted page. Use it for sign-in, sign-up, password and device pages without a brand panel; the templates use auth-split-layout instead.",
-      "categories": ["authentication"],
+      "categories": [
+        "authentication"
+      ],
       "meta": {
         "group": "Authentication",
         "iframeHeight": 720
       },
-      "dependencies": ["cn@^0.4.0"],
-      "registryDependencies": ["card"],
+      "dependencies": [
+        "cn@^0.4.0"
+      ],
+      "registryDependencies": [
+        "card"
+      ],
       "docs": "Render AuthCenteredLayout as the whole page of a sign-in, sign-up or password route, with the form as its children.",
       "files": [
         {
@@ -104,12 +123,16 @@
       "type": "registry:block",
       "title": "Auth Split Layout",
       "description": "The page around an authentication form: the form on the left and the application's own content on the right of a wide screen. Use it for sign-in, sign-up and password pages; the templates' client/pages/auth/shared.tsx renders it.",
-      "categories": ["authentication"],
+      "categories": [
+        "authentication"
+      ],
       "meta": {
         "group": "Authentication",
         "iframeHeight": 720
       },
-      "dependencies": ["cn@^0.4.0"],
+      "dependencies": [
+        "cn@^0.4.0"
+      ],
       "docs": "Render AuthSplitLayout as the whole page of a sign-in, sign-up or password route, with the form as its children and the application's own content in aside, shown from the xl breakpoint up.",
       "files": [
         {
@@ -124,7 +147,9 @@
       "type": "registry:block",
       "title": "Device Approval",
       "description": "The /device page where a signed-in person approves or denies the sign-in of a CLI or another device (RFC 8628 device authorization). Use it when a CLI signs in through the browser. Wired: calls Better Auth's device endpoints through useAuthentication() from @nocobase/app-plugin-authentication/client.",
-      "categories": ["authentication"],
+      "categories": [
+        "authentication"
+      ],
       "meta": {
         "group": "Authentication",
         "iframeHeight": 640
@@ -135,7 +160,14 @@
         "cn@^0.4.0",
         "lucide-react@^0.487.0"
       ],
-      "registryDependencies": ["alert", "button", "field", "input", "spinner"],
+      "registryDependencies": [
+        "alert",
+        "button",
+        "field",
+        "input",
+        "spinner",
+        "@nocobase/feedback-form"
+      ],
       "docs": "Needs wiring before it works: enable deviceAuthorization() and bearer() in server/config/auth.ts, add an application migration creating Better Auth's deviceCode table, and register deviceAuthorizationClient() in client/config/auth.ts. Render DeviceApproval on a /device route only signed-in people reach (auth: 'optional', sending others to /login?redirect=), passing ?user_code= as userCode, and spread locales/ into client/locales/. The authentication plugin's Skill (references/better-auth-plugins.md) has the details.",
       "files": [
         {

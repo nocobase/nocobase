@@ -83,6 +83,7 @@ export function DefaultAccessEditor({
           <Input
             id={`${id}-key`}
             name='ruleKey'
+            data-field-path='key'
             value={ruleKey}
             required
             disabled={existing || readOnly}
@@ -108,6 +109,7 @@ export function DefaultAccessEditor({
           >
             <SelectTrigger
               id={`${id}-resource`}
+              data-field-path='resource'
               className='w-full'
               aria-invalid={Boolean(resourceError)}
               aria-describedby={

@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import {
   useId,
   useState,
@@ -91,14 +92,16 @@ export function PasswordRegistrationForm({
     (event: { target: { value: string } }): void =>
       setValues((current) => ({ ...current, [field]: event.target.value }));
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
     event.preventDefault();
     if (values.password !== values.confirmation) {
       setMismatch(true);
       return;
     }
     setMismatch(false);
-    void onSubmit({
+    await onSubmit({
       name: values.name.trim(),
       username: values.username.trim(),
       email: values.email.trim(),
@@ -106,16 +109,25 @@ export function PasswordRegistrationForm({
     });
   };
 
-  const confirmationError = mismatch ? labels.passwordMismatch : undefined;
+  const confirmationError =
+    mismatch && values.password !== values.confirmation
+      ? labels.passwordMismatch
+      : undefined;
 
   return (
-    <form className={className} onSubmit={handleSubmit}>
+    <FeedbackForm
+      submitting={submitting}
+      error={error}
+      className={className}
+      onSubmit={handleSubmit}
+    >
       <FieldGroup>
         <AuthField error={fieldErrors?.name} id={ids.name} label={labels.name}>
           <Input
             autoComplete='name'
             autoFocus
             id={ids.name}
+            name='name'
             onChange={set('name')}
             required
             value={values.name}
@@ -130,6 +142,7 @@ export function PasswordRegistrationForm({
           <Input
             autoComplete='username'
             id={ids.username}
+            name='username'
             onChange={set('username')}
             required
             value={values.username}
@@ -144,6 +157,7 @@ export function PasswordRegistrationForm({
           <Input
             autoComplete='email'
             id={ids.email}
+            name='email'
             onChange={set('email')}
             required
             type='email'
@@ -159,6 +173,7 @@ export function PasswordRegistrationForm({
           <Input
             autoComplete='new-password'
             id={ids.password}
+            name='password'
             onChange={set('password')}
             required
             type='password'
@@ -174,6 +189,7 @@ export function PasswordRegistrationForm({
           <Input
             autoComplete='new-password'
             id={ids.confirmation}
+            name='confirmation'
             onChange={set('confirmation')}
             required
             type='password'
@@ -188,6 +204,6 @@ export function PasswordRegistrationForm({
           </Button>
         </AuthFormSubmit>
       </FieldGroup>
-    </form>
+    </FeedbackForm>
   );
 }

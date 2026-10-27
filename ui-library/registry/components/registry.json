@@ -489,6 +489,21 @@
           "target": "client/components/setup-readiness-state.ts"
         }
       ]
+    },
+    {
+      "name": "feedback-form",
+      "type": "registry:component",
+      "title": "Feedback Form",
+      "description": "Preserves form input, maps safe field errors and focuses the first editable error in layout order. Preinstalled in the templates.",
+      "categories": ["form"],
+      "dependencies": ["@nocobase/app-client", "@nocobase/i18n"],
+      "files": [
+        {
+          "path": "feedback-form.tsx",
+          "type": "registry:component",
+          "target": "client/components/feedback-form.tsx"
+        }
+      ]
     }
   ]
 }

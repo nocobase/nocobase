@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import {
   useId,
   useState,
@@ -63,19 +64,27 @@ export function PasswordResetRequestForm({
   const emailId = `${useId()}-email`;
   const [email, setEmail] = useState('');
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
     event.preventDefault();
-    void onSubmit({ email: email.trim() });
+    await onSubmit({ email: email.trim() });
   };
 
   return (
-    <form className={className} onSubmit={handleSubmit}>
+    <FeedbackForm
+      submitting={submitting}
+      error={error}
+      className={className}
+      onSubmit={handleSubmit}
+    >
       <FieldGroup>
         <AuthField error={fieldErrors?.email} id={emailId} label={labels.email}>
           <Input
             autoComplete='email'
             autoFocus
             id={emailId}
+            name='email'
             onChange={(event) => setEmail(event.target.value)}
             required
             type='email'
@@ -94,6 +103,6 @@ export function PasswordResetRequestForm({
           </Button>
         </AuthFormSubmit>
       </FieldGroup>
-    </form>
+    </FeedbackForm>
   );
 }

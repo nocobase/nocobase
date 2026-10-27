@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import {
   useSettingsLeave,
   useSettingsData,
@@ -458,7 +459,9 @@ function UserEditor(): ReactElement {
         <SettingsLoading />
       ) : (
         !data.error && (
-          <form
+          <FeedbackForm
+            submitting={busy}
+            error={error}
             id={formId}
             ref={formRef}
             onSubmit={(event) => {
@@ -544,7 +547,7 @@ function UserEditor(): ReactElement {
                 )}
               </div>
             ))}
-          </form>
+          </FeedbackForm>
         )
       )}
       {leave.dialog}

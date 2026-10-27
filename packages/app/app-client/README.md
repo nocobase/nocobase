@@ -419,3 +419,9 @@ The host's client also exposes `watch(topic, callbacks)`, which returns a handle
 ## Inspecting registered plugins
 
 `runtime.registeredPlugins` is a frozen list of explicit Client plugin package names, including plugins that contribute only locales or services. It contains no plugin options or executable contributions. It describes registration, not configuration or actual use; older hand-composed runtimes may omit it.
+
+## Form failure feedback
+
+`FormFeedback` owns transient errors for one mounted form; it never changes input, attachments or navigation. Register stable field descriptors with live path/value/access getters and layout anchors. Capture `begin()` at submission, pass that attempt to `invalid()` or `failure()`, and call `focus(summaryElement)` after rendering the result. `clear(id)` clears an edited field; `clear()` invalidates pending attempts after success. `formFeedbackErrors()` adapts nested React Hook Form errors without adding a dependency on that library.
+
+The templates' copied `FeedbackForm` component supplies native field discovery, a keyboard-accessible summary, inline errors and preserved `aria-describedby` help associations. Register explicit descriptors for unmounted tabs, collapses, repeated rows and extension controls; `reveal()` must resolve after controls mount, and access/editability are checked again before focus. Permissions/business hiding must be distinct from inactive layout. Server violations map by submitted path to stable identity and unchanged value, and only trusted application error mappings supply user copy. See the application Skills' form reference and form-feedback source-upgrade checklist for integration and compatibility.

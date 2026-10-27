@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import {
   useId,
   useState,
@@ -71,13 +72,20 @@ export function PasswordLoginForm({
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
     event.preventDefault();
-    void onSubmit({ identifier: identifier.trim(), password });
+    await onSubmit({ identifier: identifier.trim(), password });
   };
 
   return (
-    <form className={className} onSubmit={handleSubmit}>
+    <FeedbackForm
+      submitting={submitting}
+      error={error}
+      className={className}
+      onSubmit={handleSubmit}
+    >
       <FieldGroup>
         <AuthField
           error={fieldErrors?.identifier}
@@ -88,6 +96,7 @@ export function PasswordLoginForm({
             autoComplete='username'
             autoFocus
             id={identifierId}
+            name='identifier'
             onChange={(event) => setIdentifier(event.target.value)}
             required
             value={identifier}
@@ -104,6 +113,7 @@ export function PasswordLoginForm({
             autoComplete='current-password'
             hideLabel={labels.hidePassword}
             id={passwordId}
+            name='password'
             onChange={(event) => setPassword(event.target.value)}
             required
             showLabel={labels.showPassword}
@@ -118,6 +128,6 @@ export function PasswordLoginForm({
           </Button>
         </AuthFormSubmit>
       </FieldGroup>
-    </form>
+    </FeedbackForm>
   );
 }

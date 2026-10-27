@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import {
   useCan,
@@ -360,7 +361,9 @@ function DefaultAccessFormBody(): ReactElement {
             {!creating && !initial ? (
               <p role='status'>{t('settings.missing')}</p>
             ) : (
-              <form
+              <FeedbackForm
+                submitting={busy}
+                error={error}
                 ref={formRef}
                 noValidate
                 className='flex flex-col gap-6'
@@ -487,7 +490,7 @@ function DefaultAccessFormBody(): ReactElement {
                     </Button>
                   )}
                 </div>
-              </form>
+              </FeedbackForm>
             )}
             {!creating && !initial && (
               <Button variant='outline' onClick={close}>

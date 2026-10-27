@@ -85,6 +85,7 @@ Password sign-in, sign-up, reset-request and reset forms. Use them on authentica
 - Install: `yes n | pnpm exec shadcn add @nocobase/auth-forms`
 - Installs to: `client/extensions/nocobase-auth-forms/`
 - Plugin dependencies: none
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/auth-forms-demo` (`pnpm exec shadcn view @nocobase/auth-forms-demo`)
 - After installing: Presentational: each form calls onSubmit(values) and renders what it is given (submitting, error, fieldErrors, labels with English defaults). Wire onSubmit to @nocobase/app-plugin-authentication/client/actions (the templates' client/pages/auth/ pages are the reference), pass translated labels, and put links in forgotPasswordLink and footer.
 
@@ -129,6 +130,7 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 - Install: `yes n | pnpm exec shadcn add @nocobase/device-approval`
 - Installs to: `client/extensions/nocobase-device-approval/`
 - Plugin dependencies: `@nocobase/app-plugin-authentication`
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/device-approval-demo` (`pnpm exec shadcn view @nocobase/device-approval-demo`)
 - After installing: Needs wiring before it works: enable deviceAuthorization() and bearer() in server/config/auth.ts, add an application migration creating Better Auth's deviceCode table, and register deviceAuthorizationClient() in client/config/auth.ts. Render DeviceApproval on a /device route only signed-in people reach (auth: 'optional', sending others to /login?redirect=), passing ?user_code= as userCode, and spread locales/ into client/locales/. The authentication plugin's Skill (references/better-auth-plugins.md) has the details.
 
@@ -352,6 +354,15 @@ Standard TanStack Table v8 table with controlled server pagination and sorting, 
 - Plugin dependencies: none
 - Example: `@nocobase/data-table-demo` (`pnpm exec shadcn view @nocobase/data-table-demo`)
 - After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.
+
+### feedback-form
+
+Preserves form input, maps safe field errors and focuses the first editable error in layout order. Preinstalled in the templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/feedback-form`
+- Installs to: `client/components/feedback-form.tsx`
+- Plugin dependencies: none
 
 ## Page layout
 
