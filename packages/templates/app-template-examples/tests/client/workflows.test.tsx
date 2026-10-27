@@ -520,12 +520,12 @@ describe('workflow management pages', () => {
       await view(<ExecutionsPage />, 'en-US', `/workflows/executions${query}`);
       expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
       expect(
-        screen.queryByText(enUS.workflows.noExecutions),
+        screen.queryByText(enUS.listFeedback.empty),
       ).not.toBeInTheDocument();
       await waitFor(() => expect(finish).toBeDefined());
       finish?.({ data: [], meta: { page: 1, pageSize: 20, total: 0 } });
       const empty = await screen.findByText(
-        query ? enUS.listFeedback.noResults : enUS.workflows.noExecutions,
+        query ? enUS.listFeedback.noResults : enUS.listFeedback.empty,
       );
       expect(empty.closest('[role=status]')).toBeInTheDocument();
       expect(screen.queryByRole('table')).not.toBeInTheDocument();
@@ -923,7 +923,7 @@ it('retains loaded definitions while refreshing and exposes the busy state', asy
   expect(screen.getByRole('button', { name: 'Refresh' })).toBeDisabled();
   expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
   finish?.({ data: [] });
-  await screen.findByText('No workflow definitions.');
+  await screen.findByText(enUS.listFeedback.empty);
 });
 
 it('keeps a failed category draft and saves its trimmed name and order', async () => {

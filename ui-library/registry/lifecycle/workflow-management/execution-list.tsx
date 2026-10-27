@@ -25,7 +25,7 @@ export interface WorkflowExecutionListProps {
   loading: boolean;
   filters: ReactNode;
   status?: ReactNode;
-  empty: ReactNode;
+  empty?: ReactNode;
   labels: {
     refresh: string;
     record: string;

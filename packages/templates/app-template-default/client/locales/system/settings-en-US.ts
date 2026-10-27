@@ -50,10 +50,6 @@ const settings = {
     records: 'Selected records ({{count}})',
     retained: 'Retain existing configuration',
     search: 'Search business objects or keys',
-    empty: 'No default data scopes',
-    emptyHint:
-      'Create a rule to configure baseline access for a business object.',
-    readOnlyEmpty: 'Ask an administrator to configure baseline data access.',
     noResources:
       'Every available business object already has a default rule, or no configurable objects are registered.',
     unsupported:

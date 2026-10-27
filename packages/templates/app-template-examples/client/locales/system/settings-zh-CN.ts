@@ -44,9 +44,6 @@ const settings = {
     records: '指定记录（{{count}} 条）',
     retained: '保留现有配置',
     search: '搜索业务对象或标识',
-    empty: '暂无默认数据范围',
-    emptyHint: '新建规则，为业务对象配置基础数据访问范围。',
-    readOnlyEmpty: '请联系管理员配置基础数据访问范围。',
     noResources: '可用业务对象均已配置默认规则，或当前没有可配置的业务对象。',
     unsupported:
       '此规则包含当前插件目录中不存在的配置，已保留原值并以只读方式展示。',

@@ -343,7 +343,7 @@ it('keeps failed deletion in its confirmation and deletes only after explicit co
   expect(screen.getByRole('alertdialog')).toBeVisible();
   expect(screen.queryByText('Private server detail')).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Delete', exact: true }));
-  await screen.findByText(enUS.settings.defaultAccess.empty);
+  await screen.findByText(enUS.listFeedback.empty);
   expect(deletes).toBe(2);
 });
 it('retains the create draft when the server rejects a duplicate and shows a contextual error', async () => {
@@ -520,9 +520,7 @@ it('hides the create entry for a read-only empty list', async () => {
     ),
   });
   const label = enUS.settings.defaultAccess.new;
-  expect(
-    await screen.findByText(enUS.settings.defaultAccess.readOnlyEmpty),
-  ).toBeVisible();
+  expect(await screen.findByText(enUS.listFeedback.empty)).toBeVisible();
   expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
 });
@@ -775,16 +773,14 @@ it.each(['transport', 'server'])(
     await userEvent.click(
       screen.getByRole('button', { name: 'Delete', exact: true }),
     );
-    expect(
-      await screen.findByText(enUS.settings.defaultAccess.empty),
-    ).toBeVisible();
+    expect(await screen.findByText(enUS.listFeedback.empty)).toBeVisible();
     expect(screen.getByRole('alertdialog')).toBeVisible();
     expect(screen.getByText(enUS.settings.failed)).toBeVisible();
     await userEvent.click(
       screen.getByRole('button', { name: 'Cancel', exact: true }),
     );
     await waitFor(() =>
-      expect(screen.getByText(enUS.settings.defaultAccess.empty)).toBeVisible(),
+      expect(screen.getByText(enUS.listFeedback.empty)).toBeVisible(),
     );
     expect(writes).toBe(1);
   },
