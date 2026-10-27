@@ -12,7 +12,7 @@ import { FieldGroup } from '#components/ui/field';
 import { Input } from '#components/ui/input';
 
 import { invalidProps } from './field-props.js';
-import { AuthField, AuthFormStatus, AuthFormSubmit } from './form-parts.js';
+import { AuthField, AuthFormSubmit } from './form-parts.js';
 
 export interface PasswordResetValues {
   readonly password: string;
@@ -87,6 +87,7 @@ export function PasswordResetForm({
     <FeedbackForm
       submitting={submitting}
       error={error}
+      errorContent={error}
       className={className}
       onSubmit={handleSubmit}
     >
@@ -126,7 +127,7 @@ export function PasswordResetForm({
             {...invalidProps(confirmationId, confirmationError)}
           />
         </AuthField>
-        {error ? <AuthFormStatus type='error'>{error}</AuthFormStatus> : null}
+
         <AuthFormSubmit footer={footer}>
           <Button
             className='w-full'

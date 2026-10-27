@@ -326,6 +326,7 @@ export function CategoryManager({
           <FeedbackForm
             submitting={busy}
             error={error}
+            errorContent={t('workflows.saveFailed')}
             className='space-y-4'
             onSubmit={(event) => {
               event.preventDefault();
@@ -373,11 +374,6 @@ export function CategoryManager({
                 ))}
               </div>
             </fieldset>
-            {error && (
-              <p role='alert' className='text-destructive'>
-                {t('workflows.saveFailed')}
-              </p>
-            )}
             <div className='flex justify-end gap-2'>
               <Button
                 type='button'

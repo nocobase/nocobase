@@ -12,7 +12,7 @@ import { FieldGroup } from '#components/ui/field';
 import { Input } from '#components/ui/input';
 
 import { invalidProps } from './field-props.js';
-import { AuthField, AuthFormStatus, AuthFormSubmit } from './form-parts.js';
+import { AuthField, AuthFormSubmit } from './form-parts.js';
 
 export interface PasswordRegistrationValues {
   readonly name: string;
@@ -118,6 +118,7 @@ export function PasswordRegistrationForm({
     <FeedbackForm
       submitting={submitting}
       error={error}
+      errorContent={error}
       className={className}
       onSubmit={handleSubmit}
     >
@@ -197,7 +198,7 @@ export function PasswordRegistrationForm({
             {...invalidProps(ids.confirmation, confirmationError)}
           />
         </AuthField>
-        {error ? <AuthFormStatus type='error'>{error}</AuthFormStatus> : null}
+
         <AuthFormSubmit footer={footer}>
           <Button className='w-full' disabled={submitting} type='submit'>
             {submitting ? labels.submitting : labels.submit}

@@ -12,7 +12,7 @@ import { FieldGroup } from '#components/ui/field';
 import { Input } from '#components/ui/input';
 
 import { invalidProps } from './field-props.js';
-import { AuthField, AuthFormStatus, AuthFormSubmit } from './form-parts.js';
+import { AuthField, AuthFormSubmit } from './form-parts.js';
 import { PasswordInput } from './password-input.js';
 
 export interface PasswordLoginValues {
@@ -83,6 +83,7 @@ export function PasswordLoginForm({
     <FeedbackForm
       submitting={submitting}
       error={error}
+      errorContent={error}
       className={className}
       onSubmit={handleSubmit}
     >
@@ -121,7 +122,7 @@ export function PasswordLoginForm({
             {...invalidProps(passwordId, fieldErrors?.password)}
           />
         </AuthField>
-        {error ? <AuthFormStatus type='error'>{error}</AuthFormStatus> : null}
+
         <AuthFormSubmit footer={footer}>
           <Button className='w-full' disabled={submitting} type='submit'>
             {submitting ? labels.submitting : labels.submit}

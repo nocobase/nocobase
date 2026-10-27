@@ -216,7 +216,6 @@ function RoleEditor(): ReactElement {
         />
         <SettingsError error={request.error} retry={request.reload} />
         <SettingsError error={options.error} retry={options.reload} />
-        <SettingsError error={error} />
         {error instanceof Error &&
           'status' in error &&
           error.status === 409 && (
@@ -232,6 +231,7 @@ function RoleEditor(): ReactElement {
             <FeedbackForm
               submitting={busy}
               error={error}
+              errorContent={<SettingsError error={error} inline />}
               onSubmit={(event) => void save(event)}
               noValidate
               className='flex flex-col gap-6'

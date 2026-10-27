@@ -454,7 +454,6 @@ function UserEditor(): ReactElement {
     <>
       <SettingsError error={data.error} retry={data.reload} />
       <SettingsError error={options.error} retry={options.reload} />
-      <SettingsError error={error} />
       {!creating && data.loading ? (
         <SettingsLoading />
       ) : (
@@ -462,6 +461,7 @@ function UserEditor(): ReactElement {
           <FeedbackForm
             submitting={busy}
             error={error}
+            errorContent={<SettingsError error={error} inline />}
             id={formId}
             ref={formRef}
             onSubmit={(event) => {

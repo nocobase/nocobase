@@ -17,6 +17,7 @@ import {
   useSyncExternalStore,
   type ComponentProps,
   type ReactElement,
+  type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -29,6 +30,8 @@ export interface FeedbackFormProps extends Omit<
   ) => void | Promise<void>;
   /** Pass the caught request error; input state continues to belong to the caller. */
   readonly error?: unknown;
+  /** Trusted application copy/actions for a request failure; never pass raw server content. */
+  readonly errorContent?: ReactNode;
   readonly submitting?: boolean;
   /** For unmounted tabs, repeated rows and extension controls, register stable descriptors. */
   readonly feedback?: FormFeedback;
@@ -42,6 +45,7 @@ export function FeedbackForm({
   children,
   onSubmit,
   error,
+  errorContent,
   feedback: supplied,
   fieldMessage,
   validationErrors,
@@ -349,14 +353,19 @@ export function FeedbackForm({
         }
       }}
     >
-      {state.message && (
+      {(state.message ||
+        (!attemptSequence && Boolean(error) && errorContent != null)) && (
         <div
           ref={summaryRef}
           role='alert'
           tabIndex={-1}
           className='space-y-2 text-sm text-destructive'
         >
-          <p>{state.message}</p>
+          {error && errors.length === 0 && errorContent != null ? (
+            errorContent
+          ) : (
+            <p>{state.message}</p>
+          )}
           {errors.length > 0 && (
             <ul>
               {errors.map((entry) => (

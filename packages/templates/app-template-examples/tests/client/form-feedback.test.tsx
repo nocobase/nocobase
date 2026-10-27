@@ -1,5 +1,6 @@
 import { ApiClientError } from '@nocobase/app-client';
 import { useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
 import {
@@ -35,6 +36,48 @@ beforeEach(() => {
 });
 
 describe('feedback forms', () => {
+  it('keeps trusted business copy in one summary and clears it after retry', async () => {
+    function BusinessForm() {
+      const [error, setError] = useState<unknown>();
+      const [attempts, setAttempts] = useState(0);
+      return (
+        <FeedbackForm
+          error={error}
+          errorContent='Business rule: review the request.'
+          onSubmit={(event) => {
+            event.preventDefault();
+            setAttempts(attempts + 1);
+            setError(
+              attempts === 0 ? new Error('private server details') : undefined,
+            );
+          }}
+        >
+          <label htmlFor='business-name'>Name</label>
+          <input id='business-name' name='name' defaultValue='Draft' />
+          <button>Save</button>
+        </FeedbackForm>
+      );
+    }
+    await mount(<BusinessForm />);
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Business rule: review the request.',
+      ),
+    );
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByLabelText('Name')).toHaveValue('Draft');
+    expect(document.body.textContent).not.toContain('private server details');
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Corrected' },
+    });
+    expect(screen.getByLabelText('Name')).toHaveValue('Corrected');
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
+    );
+  });
+
   it('ignores a superseded rejection without moving focus on the next edit', async () => {
     let rejectFirst!: (error: unknown) => void;
     let attempts = 0;

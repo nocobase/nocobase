@@ -364,6 +364,7 @@ function DefaultAccessFormBody(): ReactElement {
               <FeedbackForm
                 submitting={busy}
                 error={error}
+                errorContent={<SettingsError error={error} inline />}
                 ref={formRef}
                 noValidate
                 className='flex flex-col gap-6'
@@ -372,7 +373,6 @@ function DefaultAccessFormBody(): ReactElement {
                   void save();
                 }}
               >
-                <SettingsError error={error} />
                 {message && (
                   <Alert variant='destructive'>
                     <AlertDescription>

@@ -357,6 +357,7 @@ export default function ArticlesPage(): ReactElement {
           <FeedbackForm
             submitting={saving}
             error={saveError}
+            errorContent={t('articles.saveError')}
             onSubmit={(event) => void save(event)}
             className='contents'
           >
@@ -423,11 +424,6 @@ export default function ArticlesPage(): ReactElement {
                   </SelectContent>
                 </Select>
               </div>
-              {Boolean(saveError) && (
-                <p role='alert' className='text-sm text-destructive'>
-                  {t('articles.saveError')}
-                </p>
-              )}
             </div>
             <div className='flex justify-end gap-2'>
               <Button

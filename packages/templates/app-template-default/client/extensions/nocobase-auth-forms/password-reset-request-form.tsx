@@ -75,6 +75,7 @@ export function PasswordResetRequestForm({
     <FeedbackForm
       submitting={submitting}
       error={error}
+      errorContent={error}
       className={className}
       onSubmit={handleSubmit}
     >
@@ -92,9 +93,7 @@ export function PasswordResetRequestForm({
             {...invalidProps(emailId, fieldErrors?.email)}
           />
         </AuthField>
-        {error ? (
-          <AuthFormStatus type='error'>{error}</AuthFormStatus>
-        ) : success ? (
+        {!error && success ? (
           <AuthFormStatus type='success'>{labels.success}</AuthFormStatus>
         ) : null}
         <AuthFormSubmit footer={footer}>
