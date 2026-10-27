@@ -295,7 +295,14 @@ export interface ConversationService {
   askOwnerFromRun(
     run: Pick<Run, 'subject' | 'actorUserId'>,
     question: string,
+    issue?: string,
   ): Promise<ConversationDetail>;
+  /** Settles only a question about this issue asked before its recorded resumption. */
+  settleOwnerQuestion(
+    id: string,
+    issue: string,
+    resumedAt: string,
+  ): Promise<boolean>;
   /** `homeOf` for a stored run, by id: the conversation what the run did goes back to, or null. */
   ofRunId(runId: string): Promise<ConversationRef | null>;
   /** Where the application registers what conversations may be tied to, and ties them. */

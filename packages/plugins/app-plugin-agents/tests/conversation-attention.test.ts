@@ -194,6 +194,82 @@ describe('what conversations need of their owner', () => {
     expect((await domain().get(ALICE, id)).needsYou?.reason).toBe('failed');
   });
 
+  it('records optional task association through the run API and only settles matching older questions', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ name: 'PM' });
+    const runner = await h.registerRunner();
+    const id = (await domain().create(ALICE, { agentId })).id;
+    await domain().send(ALICE, id, { content: 'Review the plan.' });
+    const [payload] = await claim(h, runner);
+    const runToken = payload.cli.credential.content.token as string;
+    const ask = (body: unknown, token = runToken) =>
+      h.request('POST', '/agents/runs/current/conversation/askOwner', {
+        runToken: token,
+        body,
+      });
+    expect((await ask({ question: 'Proceed?', issue: '' })).status).toBe(400);
+    expect(
+      (await ask({ question: 'Proceed?', issue: 'PM-721' }, 'invalid')).status,
+    ).toBe(401);
+    expect((await ask({ question: 'Proceed?', issue: 'PM-721' })).status).toBe(
+      200,
+    );
+    const askedAt = h.clock.now().toISOString();
+    const row = () =>
+      h.database
+        .connection()
+        .repository('agConversations')
+        .findOne({ filter: { id } });
+    expect((await row())?.metadata).toMatchObject({
+      ownerQuestion: { issue: 'PM-721', askedAt },
+    });
+    expect(await domain().settleOwnerQuestion(id, 'PM-721', askedAt)).toBe(
+      false,
+    );
+    h.clock.advance(1000);
+    const resumedAt = h.clock.now().toISOString();
+    expect(await domain().settleOwnerQuestion(id, 'PM-722', resumedAt)).toBe(
+      false,
+    );
+    expect(await domain().settleOwnerQuestion(id, 'PM-721', 'invalid')).toBe(
+      false,
+    );
+    const changed: AgentsEvent[] = [];
+    const stop = h.services.events.on('conversation.changed', (event) => {
+      changed.push(event);
+    });
+    expect(await domain().settleOwnerQuestion(id, 'PM-721', resumedAt)).toBe(
+      true,
+    );
+    expect(await domain().settleOwnerQuestion(id, 'PM-721', resumedAt)).toBe(
+      false,
+    );
+    stop();
+    expect(changed).toHaveLength(1);
+    expect((await domain().get(ALICE, id)).needsYou).toBeNull();
+    h.clock.advance(1000);
+    await ask({ question: 'A new plan?', issue: 'PM-721' });
+    expect(await domain().settleOwnerQuestion(id, 'PM-721', resumedAt)).toBe(
+      false,
+    );
+    await ask({ question: 'An unrelated question?' });
+    expect((await row())?.metadata).toMatchObject({ ownerQuestion: null });
+    h.clock.advance(1000);
+    expect(
+      await domain().settleOwnerQuestion(
+        id,
+        'PM-721',
+        h.clock.now().toISOString(),
+      ),
+    ).toBe(false);
+    // A direct answer still settles a linked question through the existing send path.
+    await ask({ question: 'Proceed now?', issue: 'PM-721' });
+    await turn(runner, payload.run.id, 'Proceed now?');
+    await domain().send(ALICE, id, { content: 'Yes.' });
+    expect((await domain().get(ALICE, id)).needsYou).toBeNull();
+    expect(await counts()).toMatchObject({ needsYou: 0 });
+  });
+
   it('wakes a Runner OnlineAgent conversation with news only when asked', async () => {
     h = await createHarness();
     const runner = await h.registerRunner();
