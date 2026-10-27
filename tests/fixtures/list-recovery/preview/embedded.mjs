@@ -30,8 +30,8 @@ export async function createServer(scope) {
     );
   }
   const admin = carrier.config.get('users.initialAdmin');
-  const keyMaterial =
-    carrier.config.get('secrets.keys') || carrier.config.get('auth.secret');
+  const keys = carrier.config.get('secrets.keys');
+  const keyMaterial = keys?.length ? keys : carrier.config.get('auth.secret');
   if (!admin?.password || !keyMaterial) {
     throw new Error(
       'Acceptance preview requires native initial administrator and signing configuration',

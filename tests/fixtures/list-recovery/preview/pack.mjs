@@ -3,6 +3,7 @@ import {
   copyFile,
   mkdir,
   readFile,
+  realpath,
   rename,
   stat,
   writeFile,
@@ -20,7 +21,9 @@ export async function packSamples(carrierDir, manifestFile) {
     if (!sample?.sourceDir || !sample.target || sample.status !== 'verified') {
       throw new Error(`Unverified acceptance sample: ${id}`);
     }
-    const source = path.resolve(path.dirname(manifestFile), sample.sourceDir);
+    const source = await realpath(
+      path.resolve(path.dirname(manifestFile), sample.sourceDir),
+    );
     if (sources.has(source))
       throw new Error('Acceptance samples must have independent sources');
     sources.add(source);
@@ -29,6 +32,13 @@ export async function packSamples(carrierDir, manifestFile) {
     );
     if (pkg.nocobase?.defaultTemplateVersion !== sample.target) {
       throw new Error(`Incomplete template upgrade: ${id}`);
+    }
+    const template = `@nocobase/app-template-${id.split('-')[0]}`;
+    if (
+      pkg.nocobase.templatePackage !== template ||
+      sample.template !== template
+    ) {
+      throw new Error(`Wrong template identity: ${id}`);
     }
     if (
       id.endsWith('-upgraded') &&
@@ -44,6 +54,14 @@ export async function packSamples(carrierDir, manifestFile) {
       if (!(await stat(path.join(source, file))).isFile())
         throw new Error(`Missing sample build: ${id}`);
     }
+  }
+  try {
+    await stat(path.join(carrierDir, 'dist/server/carrier-embedded.js'));
+    throw new Error(
+      'Acceptance archive is already packaged; rebuild the carrier first',
+    );
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
   }
   const target = path.join(carrierDir, 'dist/acceptance');
   await mkdir(target, { recursive: true });

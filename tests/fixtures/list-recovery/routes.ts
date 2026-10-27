@@ -1,5 +1,9 @@
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
-import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
+import {
+  authorizationToken,
+  type AuthorizationEnv,
+} from '@nocobase/app-plugin-authorization/server';
+import type { Application } from '@nocobase/app-server/application';
 import { databaseManagerToken } from '@nocobase/db';
 import {
   defineApiRoutes,
@@ -9,9 +13,9 @@ import {
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 // This isolated verification fixture uses the real native auth and retained application database.
-export default defineApiRoutes(({ container }) => {
+export default defineApiRoutes<Application>(({ container }) => {
   const router = new Hono();
-  const routes = new Hono();
+  const routes = new Hono<AuthorizationEnv>();
   routes.onError(apiErrorHandler);
   const auth = container.resolve(authenticationToken);
   const authz = container.resolve(authorizationToken);
@@ -39,6 +43,8 @@ export default defineApiRoutes(({ container }) => {
       if (!Number.isSafeInteger(count) || count < 0 || count > 1000)
         throw new ApiError({
           status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_COUNT',
+          domain: 'list-recovery-fixture',
           message: 'Invalid count',
         });
       await repo.deleteMany({ filter: { deleted: false } });
@@ -72,11 +78,13 @@ export default defineApiRoutes(({ container }) => {
       )
         throw new ApiError({
           status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_PAGE',
+          domain: 'list-recovery-fixture',
           message: 'Invalid page',
         });
       const q = c.req.query('q') ?? '',
         status = c.req.query('status') ?? '';
-      const filter = {
+      const filter: NonNullable<Parameters<typeof repo.count>[0]> = {
         filter: (f) =>
           f.and([
             f.boolean('deleted').isFalse(),
@@ -116,6 +124,8 @@ export default defineApiRoutes(({ container }) => {
       if (!body.costCenter?.trim())
         throw new ApiError({
           status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_COST_CENTER',
+          domain: 'list-recovery-fixture',
           message: 'Cost center is required',
         });
       return c.json({ data: { valid: true } });
@@ -128,10 +138,17 @@ export default defineApiRoutes(({ container }) => {
       const id = c.req.param('id'),
         current = await repo.findOne({ filter: { id } });
       if (!current || current.deleted)
-        throw new ApiError({ status: 'NOT_FOUND', message: 'Loan not found' });
+        throw new ApiError({
+          status: 'NOT_FOUND',
+          reason: 'LOAN_NOT_FOUND',
+          domain: 'list-recovery-fixture',
+          message: 'Loan not found',
+        });
       if (current.protected)
         throw new ApiError({
           status: 'FAILED_PRECONDITION',
+          reason: 'PROTECTED_LOAN',
+          domain: 'list-recovery-fixture',
           httpStatus: 409,
           message: 'Approved loan is protected',
         });

@@ -22,6 +22,7 @@ if (!process.env.E2E_USERNAME || !process.env.E2E_PASSWORD)
     'Provide native credentials for the explicitly authorized test application through the process environment.',
   );
 const sample = process.env.SAMPLE_ID ?? kind;
+const appPath = new URL(base).pathname.replace(/\/$/, '');
 const browser = await chromium.launch();
 const context = await browser.newContext({
   locale: 'en-US',
@@ -35,13 +36,13 @@ let reads = 0;
 page.on('pageerror', (error) => errors.push(error.message));
 page.on('request', (request) => {
   const url = new URL(request.url());
-  if (url.pathname.startsWith('/main/api/loans')) {
+  if (url.pathname.startsWith(`${appPath}/api/loans`)) {
     requests.push({
       method: request.method(),
       path: url.pathname,
       query: url.search,
     });
-    if (request.method() === 'GET' && url.pathname === '/main/api/loans')
+    if (request.method() === 'GET' && url.pathname === `${appPath}/api/loans`)
       reads++;
   }
 });
@@ -62,7 +63,7 @@ const expectedContext = {
   tab: 'active',
 };
 const assertQuery = (url, pageNumber) => {
-  expect(url.pathname).toBe('/main/loans');
+  expect(url.pathname).toBe(`${appPath}/loans`);
   expect(Object.fromEntries(url.searchParams)).toEqual({
     ...expectedContext,
     page: String(pageNumber),
@@ -96,7 +97,7 @@ const controls = async () => {
 const verifyList = async (total, pageNumber, ids) => {
   await expect(page).toHaveURL(
     (url) =>
-      url.pathname === '/main/loans' &&
+      url.pathname === `${appPath}/loans` &&
       url.searchParams.get('page') === String(pageNumber),
   );
   await expect(page.getByTestId('total')).toHaveText(
@@ -151,9 +152,15 @@ const enter = async (count) => {
     .getByRole('textbox', { name: 'Search loans', exact: true })
     .fill('Loan 1');
   await expect(page).toHaveURL((url) => url.searchParams.get('q') === 'Loan 1');
+  await expect(page.getByTestId('query')).toHaveText(
+    new URL(page.url()).search,
+  );
   await page.getByLabel('Loan status', { exact: true }).selectOption('open');
   await expect(page).toHaveURL(
     (url) => url.searchParams.get('status') === 'open',
+  );
+  await expect(page.getByTestId('query')).toHaveText(
+    new URL(page.url()).search,
   );
   await page.getByLabel('Sort loans', { exact: true }).selectOption('desc');
   await expect(page).toHaveURL(
@@ -161,17 +168,26 @@ const enter = async (count) => {
       url.searchParams.get('sort') === 'name' &&
       url.searchParams.get('order') === 'desc',
   );
+  await expect(page.getByTestId('query')).toHaveText(
+    new URL(page.url()).search,
+  );
   await page.getByLabel('Loans per page', { exact: true }).selectOption('20');
   await expect(page).toHaveURL(
     (url) =>
       url.searchParams.get('pageSize') === '20' &&
       url.searchParams.get('order') === 'desc',
   );
+  await expect(page.getByTestId('query')).toHaveText(
+    new URL(page.url()).search,
+  );
   await page.getByRole('tab', { name: 'Active loans', exact: true }).click();
   await expect(page).toHaveURL(
     (url) =>
       url.searchParams.get('tab') === 'active' &&
       url.searchParams.get('order') === 'desc',
+  );
+  await expect(page.getByTestId('query')).toHaveText(
+    new URL(page.url()).search,
   );
   await expect(page.getByTestId('total')).toHaveText(
     `Matching total: ${count - 99}`,
@@ -191,7 +207,7 @@ const enter = async (count) => {
   await expect(
     page.getByRole('heading', { name: 'Loan 100', exact: true }),
   ).toBeVisible();
-  expect(new URL(page.url()).pathname).toBe('/main/loans/100');
+  expect(new URL(page.url()).pathname).toBe(`${appPath}/loans/100`);
   const breadcrumb = page
     .getByRole('navigation', { name: 'Breadcrumb', exact: true })
     .getByRole('link', { name: 'Equipment loans', exact: true });

@@ -10,6 +10,7 @@ import {
   sampleIds,
 } from '../fixtures/list-recovery/preview/routing.mjs';
 import { addBasePathToHtmlResponse } from '../../packages/app/app-host/src/redirects.ts';
+import { packSamples } from '../fixtures/list-recovery/preview/pack.mjs';
 
 test('each sample receives its own app-local path and the unchanged mutation', async () => {
   for (const id of sampleIds) {
@@ -149,6 +150,42 @@ test('embedded samples receive isolated paths and lifecycle disposal', async () 
     assert.equal(globalThis.__previewDisposed.length, 4);
   } finally {
     delete globalThis.__previewDisposed;
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('packaging rejects incomplete upgrades before modifying the carrier', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'list-preview-pack-'));
+  try {
+    const manifest = path.join(root, 'manifest.json');
+    await writeFile(manifest, JSON.stringify({ samples: {} }));
+    await assert.rejects(
+      packSamples(root, manifest),
+      /Unverified acceptance sample/,
+    );
+    const source = path.join(root, 'default-new');
+    await mkdir(source);
+    await writeFile(
+      path.join(source, 'package.json'),
+      JSON.stringify({ nocobase: { defaultTemplateVersion: 'base' } }),
+    );
+    await writeFile(
+      manifest,
+      JSON.stringify({
+        samples: {
+          'default-new': {
+            sourceDir: 'default-new',
+            target: 'target',
+            status: 'verified',
+          },
+        },
+      }),
+    );
+    await assert.rejects(
+      packSamples(root, manifest),
+      /Incomplete template upgrade/,
+    );
+  } finally {
     await rm(root, { recursive: true, force: true });
   }
 });

@@ -17,6 +17,7 @@ if (!process.env.E2E_USERNAME || !process.env.E2E_PASSWORD)
     'Provide native credentials for the explicitly authorized test application through the process environment.',
   );
 const sample = process.env.SAMPLE_ID ?? kind;
+const appPath = new URL(base).pathname.replace(/\/$/, '');
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   locale: 'en-US',
@@ -28,7 +29,10 @@ page.on('pageerror', (e) => errors.push(e.message));
 const logs = [];
 let reads = 0;
 page.on('request', (r) => {
-  if (r.method() === 'GET' && new URL(r.url()).pathname === '/main/api/loans')
+  if (
+    r.method() === 'GET' &&
+    new URL(r.url()).pathname === `${appPath}/api/loans`
+  )
     reads++;
 });
 const go = async (query) => {
@@ -61,7 +65,7 @@ try {
   const swagger = await page.request.get(`${base}api/swagger`);
   expect(swagger.ok()).toBeTruthy();
   const paths = (await swagger.json()).paths;
-  expect(paths['/api/loans'] ?? paths['/main/api/loans']).toBeTruthy();
+  expect(paths['/api/loans'] ?? paths[`${appPath}/api/loans`]).toBeTruthy();
   await mkdir(path.join(work, 'evidence'), { recursive: true });
   if (kind === 'before') {
     await reset(21);
@@ -151,7 +155,7 @@ try {
           (await snapshot()).data.find((row) => row.id === '001').deleted,
       )
       .toBeTruthy();
-    expect(new URL(page.url()).pathname).toBe('/main/loans/001');
+    expect(new URL(page.url()).pathname).toBe(`${appPath}/loans/001`);
     expect(new URL(page.url()).searchParams.get('page')).toBe('3');
     expect(reads).toBe(0);
     await page.goBack();
