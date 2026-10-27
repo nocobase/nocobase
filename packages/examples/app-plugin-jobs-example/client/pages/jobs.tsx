@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import {
+  createRealtimeRefresh,
   realtimeClientToken,
   useApiClient,
   useService,
@@ -56,16 +57,12 @@ export default function JobsPage(): ReactElement {
     let active = true;
     // Subscribing opens the WebSocket, and leaving the page unsubscribes: the
     // client closes the connection once no page listens to any topic.
-    const unsubscribe = realtime.subscribe<JobTask>(
-      JOB_TASKS_TOPIC,
-      (event) => {
-        if (active) setTasks((current) => mergeJobTask(current, event.payload));
+    const refresh = createRealtimeRefresh(load, { delayMs: 0 });
+    const subscription = realtime.watch<JobTask>(JOB_TASKS_TOPIC, {
+      onEvent: ({ payload }) => {
+        if (active) setTasks((current) => mergeJobTask(current, payload));
       },
-    );
-    const stopOpen = realtime.onOpen(() => {
-      // Changes published while the socket was down are not replayed, so
-      // every (re)connection reloads the list it may have missed.
-      void load();
+      onReady: () => refresh.request(),
     });
 
     async function load(): Promise<void> {
@@ -81,11 +78,11 @@ export default function JobsPage(): ReactElement {
       }
     }
 
-    void load();
+    refresh.request();
     return () => {
       active = false;
-      stopOpen();
-      unsubscribe();
+      subscription.close();
+      refresh.close();
     };
   }, [api, realtime]);
 

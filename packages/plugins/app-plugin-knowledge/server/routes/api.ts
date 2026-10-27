@@ -40,6 +40,7 @@ import {
   describeRoute,
   listResponse,
   parseApiInput,
+  resolver,
 } from '@nocobase/app-server/router';
 import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
@@ -76,8 +77,9 @@ import {
   CreateDocBody,
   DocParams,
   FileQuery,
+  KnowledgeCapabilitiesSchema,
   KnowledgeChunkingConfigSchema,
-  KnowledgeDocIndexSchema,
+  KnowledgeDocIndexResponseSchema,
   KnowledgeDocSchema,
   KnowledgeEffectiveAccessSchema,
   KnowledgeEmptyMetaSchema,
@@ -303,6 +305,7 @@ async function bodyFile(
  */
 export function createKnowledgeTicketRoutes(knowledge: Knowledge): Hono {
   const routes = new Hono();
+  if (!knowledge.proposals.enabled()) return routes;
   routes.onError(knowledgeErrorHandler);
   routes.post(
     '/:ticketId/redeem',
@@ -411,11 +414,19 @@ const docActions = {
 } as const;
 
 /** The knowledge API on a router of its own; `viewerOf` names the caller. */
+export interface KnowledgeRouteOptions {
+  readonly acceptOnlineAgent?: boolean;
+}
 export function createKnowledgeRoutes(
   knowledge: Knowledge,
   viewerOf: (context: Context) => KnowledgeReader,
   spaces: (space: SpaceRef) => SpaceRef | null,
+  options: KnowledgeRouteOptions = {},
 ): Hono {
+  const readSecurity: Pick<Parameters<typeof describeRoute>[0], 'security'> =
+    options.acceptOnlineAgent
+      ? { security: [{ cookieAuth: [] }, { apiKeyAuth: [] }, { runToken: [] }] }
+      : {};
   const spaceOf = (space: SpaceRef): SpaceRef => check.space(space, spaces);
   const routes = new Hono();
   routes.onError(knowledgeErrorHandler);
@@ -425,6 +436,41 @@ export function createKnowledgeRoutes(
   const docParam = apiValidator('param', DocParams);
   const proposalParam = apiValidator('param', ProposalParams);
   const fileQuery = apiValidator('query', FileQuery);
+
+  const semanticSearchUnavailable = apiErrorResponse(
+    400,
+    'The application has no such space (`INVALID_SCOPE`), or no knowledge indexer is registered (`SEMANTIC_SEARCH_UNAVAILABLE`, `FAILED_PRECONDITION`).',
+  );
+  const requireSemanticSearch = () => {
+    if (!knowledge.indexing.enabled())
+      throw invalid(
+        'SEMANTIC_SEARCH_UNAVAILABLE',
+        'Semantic search requires a registered knowledge indexer.',
+      );
+  };
+  routes.get(
+    '/capabilities',
+    describeRoute({
+      tags,
+      summary: 'Get the knowledge base capabilities',
+      operationId: 'knowledgeGetCapabilities',
+      description:
+        'For signed-in callers. Availability reflects proposal configuration and whether the application registered a knowledge indexer.',
+      responses: {
+        200: dataResponse(KnowledgeCapabilitiesSchema),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+      },
+      ...cliRoute(false),
+    }),
+    (c) =>
+      c.json({
+        data: {
+          semanticSearch: knowledge.indexing.enabled(),
+          proposals: knowledge.proposals.enabled(),
+        },
+      }),
+  );
 
   routes.get(
     '/spaces',
@@ -460,28 +506,47 @@ export function createKnowledgeRoutes(
     '/search',
     describeRoute({
       tags,
-      summary: 'Search the documents of a space',
+      summary: 'Search readable knowledge sections',
+      ...readSecurity,
       operationId: 'knowledgeSearchDocs',
       description:
-        'Search over the space and the spaces it inherits, in what the caller may read: every search provider’s ranking (keywords, and meaning where the application adds it) fused, cut at the application’s minimum relevance and reranked when it sets a rerank model; the best `pageSize` sections, each with an excerpt. `explain=true` adds how each was ranked for someone who manages the space or the search settings. A ranking has no next page, so `meta` is empty.',
+        'Search over the space and the spaces it inherits, in what the caller may read: every search provider’s ranking (keywords, and meaning where the application adds it) fused, cut at the application’s minimum relevance and reranked when it sets a rerank model; the best `pageSize` sections, each with an excerpt. `explain=true` requires a registered knowledge indexer and adds how each was ranked for someone who manages the space or the search settings. A ranking has no next page, so `meta` is empty.',
       responses: {
         200: listResponse(KnowledgeHitSchema, KnowledgeEmptyMetaSchema),
         ...apiErrorResponses,
-        400: unknownSpace,
+        400: apiErrorResponse(
+          400,
+          'The application has no such space (`INVALID_SCOPE`), or no knowledge indexer is registered for search diagnostics (`SEMANTIC_SEARCH_UNAVAILABLE`).',
+        ),
         404: spaceNotFound,
       },
-      // The knowledge page's search; `kb search` searches the caller's spaces.
-      ...cliRoute(false),
+      ...cliRoute({
+        command: 'kb search',
+        identities: ['person'],
+        flags: { scopeId: OWNER_FLAG, pageSize: { name: 'limit' } },
+        columns: ['docId', 'title', 'excerpt'],
+      }),
     }),
     apiValidator('query', SearchQuery),
     async (c) => {
       const query = c.req.valid('query');
+      if (query.explain === 'true') requireSemanticSearch();
       // The best `pageSize` hits by rank; a ranking has no next page.
       return c.json({
-        data: await docs.search(viewer(c), spaceOf(query), query.q, {
-          ...(query.pageSize ? { limit: query.pageSize } : {}),
-          explain: query.explain === 'true',
-        }),
+        data: await (query.scope === undefined
+          ? docs.searchAll(viewer(c), query.q, {
+              limit: query.pageSize,
+              explain: query.explain === 'true',
+            })
+          : docs.search(
+              viewer(c),
+              spaceOf({ scope: query.scope, scopeId: query.scopeId }),
+              query.q,
+              {
+                limit: query.pageSize,
+                explain: query.explain === 'true',
+              },
+            )),
         meta: {},
       });
     },
@@ -494,11 +559,11 @@ export function createKnowledgeRoutes(
       summary: 'Get how a space is cut into sections',
       operationId: 'knowledgeGetChunking',
       description:
-        'For someone who reads the space: the application’s default chunking, the space’s own override and the one in effect, and whether its documents are being cut again.',
+        'Requires a registered knowledge indexer. For someone who reads the space: the application’s default chunking, the space’s own override and the one in effect, and whether its documents are being cut again.',
       responses: {
         200: dataResponse(KnowledgeChunkingConfigSchema),
         ...apiErrorResponses,
-        400: unknownSpace,
+        400: semanticSearchUnavailable,
         404: spaceNotFound,
       },
       ...cliRoute({
@@ -507,13 +572,15 @@ export function createKnowledgeRoutes(
       }),
     }),
     apiValidator('query', SpaceOnlyQuery),
-    async (c) =>
-      c.json({
+    async (c) => {
+      requireSemanticSearch();
+      return c.json({
         data: await knowledge.chunking.get(
           viewer(c),
           spaceOf(c.req.valid('query')),
         ),
-      }),
+      });
+    },
   );
   routes.put(
     '/chunking',
@@ -522,13 +589,13 @@ export function createKnowledgeRoutes(
       summary: 'Set how a space is cut into sections',
       operationId: 'knowledgeUpdateChunking',
       description:
-        'Requires `manage` on the space. `override` replaces the application’s default for this space, or null follows it again. When the chunking in effect changes, every document of the space is cut again in the background, and re-indexed when semantic search is on.',
+        'Requires a registered knowledge indexer and `manage` on the space. `override` replaces the application’s default for this space, or null follows it again. When the chunking in effect changes, every document of the space is cut again in the background, and re-indexed when semantic search is on.',
       responses: {
         200: dataResponse(KnowledgeChunkingConfigSchema),
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The application has no such space (`INVALID_SCOPE`), or the chunking is out of range (`INVALID_CHUNKING`).',
+          'The application has no such space (`INVALID_SCOPE`), the chunking is out of range (`INVALID_CHUNKING`), or no knowledge indexer is registered (`SEMANTIC_SEARCH_UNAVAILABLE`).',
         ),
         404: spaceNotFound,
       },
@@ -542,6 +609,7 @@ export function createKnowledgeRoutes(
     apiValidator('json', ChunkingBody),
     async (c) => {
       const body = c.req.valid('json');
+      requireSemanticSearch();
       return c.json({
         data: await knowledge.chunking.set(
           viewer(c),
@@ -579,7 +647,10 @@ export function createKnowledgeRoutes(
       );
       return c.json({
         data: found ?? [],
-        meta: { enabled: found !== null },
+        meta: {
+          enabled: found !== null,
+          notifications: knowledge.indexing.notifications(),
+        },
       });
     },
   );
@@ -702,13 +773,17 @@ export function createKnowledgeRoutes(
       tags,
       summary: 'Get a document at its current version',
       operationId: 'knowledgeGetDoc',
+      ...readSecurity,
       responses: {
         200: dataResponse(KnowledgeDocSchema),
         ...apiErrorResponses,
         404: docNotFoundResponse,
       },
-      // The knowledge page's reader; `kb read` reads a document by slug or id.
-      ...cliRoute(false),
+      ...cliRoute({
+        command: 'kb read',
+        args: ['docId'],
+        identities: ['person'],
+      }),
     }),
     docParam,
     async (c) =>
@@ -996,7 +1071,14 @@ export function createKnowledgeRoutes(
       description:
         'Its sections at the current version: headings, lines and length, and with semantic search on where each stands in the index (`pending`, `done`, or `failed` with why).',
       responses: {
-        200: dataResponse(KnowledgeDocIndexSchema),
+        200: {
+          description: 'Index snapshot and notification coverage.',
+          content: {
+            'application/json': {
+              schema: resolver(KnowledgeDocIndexResponseSchema),
+            },
+          },
+        },
         ...apiErrorResponses,
         404: docNotFoundResponse,
       },
@@ -1008,6 +1090,7 @@ export function createKnowledgeRoutes(
     docParam,
     async (c) =>
       c.json({
+        meta: { notifications: knowledge.indexing.notifications() },
         data: await knowledge.indexing.doc(
           viewer(c),
           c.req.valid('param').docId,
@@ -1023,7 +1106,14 @@ export function createKnowledgeRoutes(
       description:
         'Requires `edit`. Queues its sections for embedding again, the failed ones included; nothing happens while semantic search is off. Answers where they stand.',
       responses: {
-        200: dataResponse(KnowledgeDocIndexSchema),
+        200: {
+          description: 'Index snapshot and notification coverage.',
+          content: {
+            'application/json': {
+              schema: resolver(KnowledgeDocIndexResponseSchema),
+            },
+          },
+        },
         ...apiErrorResponses,
         404: docNotFoundResponse,
       },
@@ -1035,6 +1125,7 @@ export function createKnowledgeRoutes(
     docParam,
     async (c) =>
       c.json({
+        meta: { notifications: knowledge.indexing.notifications() },
         data: await knowledge.indexing.reindex(
           viewer(c),
           c.req.valid('param').docId,
@@ -1135,6 +1226,7 @@ export function createKnowledgeRoutes(
       }),
   );
 
+  if (!proposals.enabled()) return routes;
   // Fixed segments before `/proposals/:proposalId`.
   routes.get(
     '/proposals',

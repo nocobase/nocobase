@@ -1,4 +1,3 @@
-import { AGENT_TOOLS } from '@nocobase/agent-protocol';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -8,6 +7,7 @@ import {
   registerCommand,
   upgradeCommand,
 } from '../../client/lib/install.js';
+import { noCodingToolsFound } from '../../client/lib/runner-tools.js';
 import runtimesEnUS from '../../client/locales/runtimes.en-US.js';
 import runtimesZhCN from '../../client/locales/runtimes.zh-CN.js';
 import {
@@ -36,7 +36,7 @@ function runner(
     protocolVersion: 3,
     features: ['input'],
     tools: [{ kind: 'claude', version: '2.1.0', authenticated: true }],
-    enabledTools: null,
+    enabledTools: ['claude'],
     trust: 'ownerOnly',
     ownerUserId: 'u1',
     ownerName: 'Alice',
@@ -70,7 +70,9 @@ describe('install commands', () => {
     expect(
       installCommand('linux', 'http://localhost:3000/main', 't'),
     ).toContain('http://localhost:3000/main/api/agents/dist/installScript');
-    expect(installCommand('windows', 'https://x', 't')).toBeNull();
+    expect(installCommand('windows', 'https://x', 't')).toBe(
+      installCommand('linux', 'https://x', 't'),
+    );
     expect(registerCommand('https://x', 't')).toBe(
       'nocobase-runner register --server https://x --token t && nocobase-runner service install',
     );
@@ -81,6 +83,23 @@ describe('install commands', () => {
     expect(runtimesZhCN.connect.nodeRequired).toContain('Node.js 24');
     expect(runtimesEnUS.connect.run).not.toContain('no Node.js needed');
     expect(runtimesZhCN.connect.run).not.toContain('无需 Node.js');
+  });
+
+  it('starts Windows prompts with the WSL Ubuntu stop condition in both languages', () => {
+    expect(runtimesEnUS.connect.promptWindows).toMatch(
+      /^FIRST, determine whether you are running inside WSL Ubuntu/u,
+    );
+    expect(runtimesEnUS.connect.promptWindows).toContain('STOP');
+    expect(runtimesEnUS.connect.promptWindows).toContain(
+      'open the agent inside WSL Ubuntu and run this prompt again',
+    );
+    expect(runtimesZhCN.connect.promptWindows).toMatch(
+      /^首先判断你自己是否运行在 WSL Ubuntu 中/u,
+    );
+    expect(runtimesZhCN.connect.promptWindows).toContain('立即停止');
+    expect(runtimesZhCN.connect.promptWindows).toContain('重新执行这段提示词');
+    expect(runtimesEnUS.connect.windowsPowerShell).toContain('Install WSL');
+    expect(runtimesZhCN.connect.windowsPowerShell).toContain('安装 WSL');
   });
 
   it('update nocobase-runner, and reinstall anything else', () => {
@@ -107,24 +126,24 @@ describe('install commands', () => {
 });
 
 describe('a runner at a glance', () => {
-  it('lists exactly the tools a runner reported, whatever is enabled', () => {
+  it('lists reported tools and selected tools awaiting detection in catalog order', () => {
     const tools = [
       { kind: 'claude' as const, authenticated: true },
       { kind: 'codex' as const, authenticated: false },
     ];
-    // Turning claude off from "every tool" stores every other protocol tool.
-    const enabledTools = AGENT_TOOLS.filter((tool) => tool !== 'claude');
-    const off = runner('r1', { tools, enabledTools });
-    expect(listedTools(off)).toEqual(['claude', 'codex']);
+    const off = runner('r1', { tools, enabledTools: ['gemini', 'codex'] });
+    expect(listedTools(off)).toEqual(['claude', 'codex', 'gemini']);
     expect(toolState(off, 'claude')).toBe('off');
     expect(toolState(off, 'codex')).toBe('signedOut');
+    expect(toolState(off, 'gemini')).toBe('checking');
     expect(listedTools(runner('r2', { tools, enabledTools: ['pi'] }))).toEqual([
       'claude',
       'codex',
+      'pi',
     ]);
-    expect(
-      listedTools(runner('r3', { tools: [], enabledTools: null })),
-    ).toEqual([]);
+    expect(listedTools(runner('r3', { tools: [], enabledTools: [] }))).toEqual(
+      [],
+    );
   });
 
   it('says the tool state of each tool', () => {
@@ -136,9 +155,27 @@ describe('a runner at a glance', () => {
     expect(toolState(one, 'claude')).toBe('off');
     expect(toolState(one, 'codex')).toBe('signedIn');
     expect(toolState(runner('r4', { enabledTools: ['pi'] }), 'pi')).toBe(
-      'notInstalled',
+      'checking',
     );
   });
+
+  it.each([
+    ['checking', false, 'checking'],
+    ['notInstalled', false, 'notInstalled'],
+    ['needsLogin', false, 'signedOut'],
+    ['failed', false, 'failed'],
+    ['ready', true, 'signedIn'],
+  ] as const)(
+    'shows the reported %s state distinctly',
+    (status, authenticated, expected) => {
+      const reported = runner('r1', {
+        enabledTools: ['gemini'],
+        tools: [{ kind: 'gemini', status, authenticated }],
+      });
+      expect(listedTools(reported)).toEqual(['gemini']);
+      expect(toolState(reported, 'gemini')).toBe(expected);
+    },
+  );
 
   it('is busy while every slot is taken', () => {
     expect(runnerActivity(runner('r1', { draining: 'updatePending' }))).toBe(
@@ -168,6 +205,9 @@ describe('a runner at a glance', () => {
         workspaces: [],
       },
     });
+    expect(runnerActivity(runner('r1', { draining: 'diskLow' }))).toBe(
+      'low_disk',
+    );
     expect(runnerActivity(low)).toBe('low_disk');
     expect(runnerActivity({ ...low, status: 'offline' })).toBe('offline');
     expect(runnerActivity({ ...low, workspaceUsage: null })).toBe('busy');
@@ -179,22 +219,30 @@ describe('a runner at a glance', () => {
       name: 'Coder',
       modelEntries: [{ tool: 'claude' as const, model: null }],
     };
-    expect(runnerTakesAgent(runner('r1'), coder)).toBe(true);
+    expect(runnerTakesAgent(runner('r1'), coder, Date.now())).toBe(true);
     expect(
-      runnerTakesAgent(runner('r1'), {
-        ...coder,
-        modelEntries: [{ tool: 'codex', model: null }],
-      }),
+      runnerTakesAgent(
+        runner('r1'),
+        {
+          ...coder,
+          modelEntries: [{ tool: 'codex', model: null }],
+        },
+        Date.now(),
+      ),
     ).toBe(false);
     // Any of its tools will do; an entry naming a model needs the runner to report it.
     expect(
-      runnerTakesAgent(runner('r1'), {
-        ...coder,
-        modelEntries: [
-          { tool: 'codex', model: null },
-          { tool: 'claude', model: 'opus' },
-        ],
-      }),
+      runnerTakesAgent(
+        runner('r1'),
+        {
+          ...coder,
+          modelEntries: [
+            { tool: 'codex', model: null },
+            { tool: 'claude', model: 'opus' },
+          ],
+        },
+        Date.now(),
+      ),
     ).toBe(false);
     const reporting = runner('r1', {
       tools: [
@@ -206,10 +254,14 @@ describe('a runner at a glance', () => {
       ],
     });
     expect(
-      runnerTakesAgent(reporting, {
-        ...coder,
-        modelEntries: [{ tool: 'claude', model: 'opus' }],
-      }),
+      runnerTakesAgent(
+        reporting,
+        {
+          ...coder,
+          modelEntries: [{ tool: 'claude', model: 'opus' }],
+        },
+        Date.now(),
+      ),
     ).toBe(true);
     // A run that failed `modelUnavailable` there keeps it off that runner until it reports the tool's models anew.
     const marked = {
@@ -224,18 +276,58 @@ describe('a runner at a glance', () => {
       ],
     };
     expect(
-      runnerTakesAgent(marked, {
-        ...coder,
-        modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
-      }),
+      runnerTakesAgent(
+        marked,
+        {
+          ...coder,
+          modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
+        },
+        Date.now(),
+      ),
     ).toBe(false);
-    expect(runsEntry(marked, { tool: 'claude', model: null })).toBe(true);
+    expect(runsEntry(marked, { tool: 'claude', model: null }, Date.now())).toBe(
+      true,
+    );
     expect(reportedModels(reporting, 'claude')).toEqual(['claude-opus-5-5']);
     expect(
-      runnerTakesAgent(runner('r1', { policy: { agents: ['Rev*'] } }), coder),
+      runnerTakesAgent(
+        runner('r1', { policy: { agents: ['Rev*'] } }),
+        coder,
+        Date.now(),
+      ),
     ).toBe(false);
     expect(
-      runnerTakesAgent(runner('r1', { policy: { agents: ['Cod*'] } }), coder),
+      runnerTakesAgent(
+        runner('r1', { policy: { agents: ['Cod*'] } }),
+        coder,
+        Date.now(),
+      ),
     ).toBe(true);
+  });
+});
+
+describe('missing coding tools', () => {
+  it('handles empty and explicitly missing reports without confusing login or pending detection', () => {
+    expect(noCodingToolsFound({ tools: [] })).toBe(true);
+    expect(
+      noCodingToolsFound({
+        tools: [
+          { kind: 'codex', authenticated: false, status: 'notInstalled' },
+        ],
+      }),
+    ).toBe(true);
+    for (const status of [
+      'checking',
+      'failed',
+      'needsLogin',
+      'ready',
+      undefined,
+    ] as const) {
+      expect(
+        noCodingToolsFound({
+          tools: [{ kind: 'claude', authenticated: false, status }],
+        }),
+      ).toBe(false);
+    }
   });
 });

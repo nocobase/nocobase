@@ -31,7 +31,43 @@ import {
   routeAcceptsScheme,
 } from '@nocobase/app-server/router';
 import { databaseAdapter } from './better-auth/database-adapter.js';
-import { createAuthMiddleware } from 'better-auth/api';
+import { createAuthEndpoint, createAuthMiddleware } from 'better-auth/api';
+import { setSessionCookie } from 'better-auth/cookies';
+import { z } from 'zod';
+
+// No HTTP path: only trusted server code can invoke this through Auth.signInUser().
+const trustedSessionPlugin = {
+  id: 'nocobase-trusted-session',
+  endpoints: {
+    signInUser: createAuthEndpoint(
+      {
+        method: 'POST',
+        body: z.object({ userId: z.string().min(1) }),
+      },
+      async (context) => {
+        const user = await context.context.internalAdapter.findUserById(
+          context.body.userId,
+        );
+        if (!user || Reflect.get(user, 'deletedAt') != null)
+          throw APIError.from('NOT_FOUND', {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found.',
+          });
+        const session = await context.context.internalAdapter.createSession(
+          user.id,
+          true,
+        );
+        if (!session)
+          throw APIError.from('UNAUTHORIZED', {
+            code: 'SESSION_CREATION_FAILED',
+            message: 'Could not create a session.',
+          });
+        await setSessionCookie(context, { session, user }, true);
+        return context.json({ success: true });
+      },
+    ),
+  },
+} satisfies BetterAuthPlugin;
 
 export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   connection: DatabaseConnection;
@@ -91,6 +127,8 @@ export interface GetSessionOptions {
    * deciding whether a request may read the API documentation, passes `true`.
    */
   readonly disableRefresh?: boolean;
+  /** Check stored session state even when the browser carries a cached session. */
+  readonly disableCookieCache?: boolean;
 }
 
 /** One operation of Better Auth's OpenAPI description, as its generator writes it. */
@@ -160,6 +198,25 @@ export class Auth {
   private readonly resetPolicy: PasswordResetPolicy;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
+  private userInitializers = new Set<
+    (
+      user: Record<string, unknown>,
+      connection: DatabaseConnection,
+    ) => Promise<void>
+  >();
+
+  /** Trusted initialization in the same transaction as the first user insert. */
+  addUserInitializer(
+    initializer: (
+      user: Record<string, unknown>,
+      connection: DatabaseConnection,
+    ) => Promise<void>,
+  ): () => void {
+    this.userInitializers.add(initializer);
+    return () => {
+      this.userInitializers.delete(initializer);
+    };
+  }
 
   constructor(options: AuthOptions) {
     const { connection, passwordReset, passwordResetServices, ...config } =
@@ -216,8 +273,17 @@ export class Auth {
     this.auth = betterAuth({
       ...config,
       appName: config.appName ?? 'NocoBase3',
-      database: databaseAdapter(connection),
-      plugins: [...(plugins ?? []), this.resetPolicy.plugin()],
+      database: databaseAdapter(connection, {
+        initializeUser: async (user, transaction) => {
+          for (const initialize of this.userInitializers)
+            await initialize(user, transaction);
+        },
+      }),
+      plugins: [
+        ...(plugins ?? []),
+        this.resetPolicy.plugin(),
+        trustedSessionPlugin,
+      ],
       hooks: {
         ...config.hooks,
         // Delegate the original middleware with its header/response envelope intact.
@@ -383,6 +449,25 @@ export class Auth {
     );
   }
 
+  /**
+   * Creates an ordinary browser session after a trusted caller has authorized this sign-in. Has no HTTP endpoint;
+   * callers own their access policy. Session hooks, disabled/service-account checks and cookie configuration apply.
+   */
+  signInUser(
+    userId: string,
+    request: Request,
+    options: AuthRequestOptions = {},
+  ): Promise<Response> {
+    return this.resetPolicy.runRequest(options.clientAddress, () =>
+      this.auth.api.signInUser({
+        body: { userId },
+        headers: request.headers,
+        request,
+        asResponse: true,
+      }),
+    );
+  }
+
   passwordResetAvailable(): boolean {
     return this.resetPolicy.available;
   }
@@ -401,7 +486,10 @@ export class Auth {
     }
     const session = await this.auth.api.getSession({
       headers,
-      ...(options.disableRefresh ? { query: { disableRefresh: true } } : {}),
+      query: {
+        disableRefresh: options.disableRefresh,
+        disableCookieCache: options.disableCookieCache,
+      },
     });
     if (!session) return null;
     const user = await this.connection.query
@@ -594,6 +682,7 @@ export class Auth {
     const bound = new Auth({ ...this.options, connection });
     bound.scopedCredentialChecks = this.scopedCredentialChecks;
     bound.credentialResolvers = this.credentialResolvers;
+    bound.userInitializers = this.userInitializers;
     return bound;
   }
 

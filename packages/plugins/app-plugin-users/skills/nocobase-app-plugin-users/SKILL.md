@@ -22,9 +22,11 @@ user, account, or Session storage.
 - Server contracts: `userManagementServiceToken`,
   `userRoleScopeRegistryToken`, `UserRoleScope`, and related types from
   `@nocobase/app-plugin-users/server/tokens`.
-- HTTP API: `GET /api/users` (`page`, `pageSize`, `q`, `status`, `roleScope`, `role`; answers `{ data, meta: { page, pageSize, total } }`), `GET /api/users/options`, `POST /api/users`, `PATCH /api/users/:userId`, `DELETE /api/users/:userId?confirm=true`, `POST /api/users/:userId/disable|enable|resetPassword|revokeSessions`, and `PUT /api/users/:userId/roleScopes/:scope`. The running application documents each one, with request and response schemas, at `/api/swagger/docs` (JSON at `/api/swagger`) under the `Users` tag. Failures use the standard error body; branch on `error.reason`, such as `USER_NOT_FOUND`, `SELF_DELETE_NOT_ALLOWED`, `LAST_ASSIGNMENT` or `USER_EMAIL_CONFLICT`.
+- HTTP API: `GET /api/users` (`page`, `pageSize`, `q`, `status`, `roleScope`, `role`, `sort=name`, `order=asc|desc`; answers `{ data, meta: { page, pageSize, total } }`), `GET /api/users/options`, `GET /api/users/:userId` (latest managed profile and role scopes, requires `user/read`, 404 for absent accounts), `POST /api/users`, `PATCH /api/users/:userId`, `DELETE /api/users/:userId?confirm=true`, `POST /api/users/:userId/disable|enable|resetPassword|revokeSessions`, and `PUT /api/users/:userId/roleScopes/:scope`. The running application documents each one, with request and response schemas, at `/api/swagger/docs` (JSON at `/api/swagger`) under the `Users` tag. Failures use the standard error body; branch on `error.reason`, such as `USER_NOT_FOUND`, `SELF_DELETE_NOT_ALLOWED`, `LAST_ASSIGNMENT` or `USER_EMAIL_CONFLICT`.
 
-Every HTTP route requires Authentication and Authorization. Routes check the `user` record type with one of `read`, `create`, `update`, `disable`, `enable`, `assign-role`, `reset-password`, `revoke-sessions` or `delete`. Account creation checks both `create` and `assign-role`. `delete` is permitted only while an application role scope can clean a deleted user up.
+`UsersClient.update(userId, { name?, username?, email?, roleScopes? })` supports one atomic editor Save. Profile fields require `update`; submitted `roleScopes` additionally require `assign-role`. A roles-only payload requires `assign-role` without `update`. The service validates scope values, runs each applicable target-account guard, and commits profile changes and all submitted scope replacements in the caller-owned transaction, notifying permission clients only after commit. Omitted scopes are preserved. Keep the existing per-scope PUT for callers needing only one scope. Do not implement a combined Save as sequential profile and role requests: a later failure would leave a partially saved account.
+
+Every HTTP route requires Authentication and Authorization. Routes check the `user` record type with the applicable action from `read`, `create`, `update`, `disable`, `enable`, `assign-role`, `reset-password`, `revoke-sessions` or `delete`. Account creation checks both `create` and `assign-role`. `delete` is permitted only while an application role scope can clean a deleted user up.
 
 ## Register the plugin
 
@@ -49,6 +51,8 @@ Use the `DatabaseConnection` passed to each scope method. This is the
 caller-owned transaction used to keep account creation or state changes atomic
 with role assignments. Do not open an unrelated transaction and do not write
 Authentication's internal tables.
+
+Guard who may act on whom with `assertCanAdminister(userId, actorId, action, connection)`: the management API calls it for `update`, `disable`, `enable`, `reset-password`, `revoke-sessions` and `assign-role` with the authenticated actor, in the action's transaction and before anything changes, after authorization of the action itself has passed. Throw a `UserRoleScopeError` to refuse, for example when someone who is not an application owner resets an owner's password; the route answers `FAILED_PRECONDITION` with the scope's reason. Service callers that pass no `actorId` are the application's own server-side work and are not asked. Deletion has its own `assertCanDelete(userId, actorId, connection)`.
 
 For a required single-role scope, set `selection: 'single'` and
 `requiredOnCreate: true`. Reject invalid values in the scope and enforce
@@ -113,3 +117,7 @@ New accounts register directly from the invitation link with a name and password
 Deletion uses `DELETE /api/users/:userId?confirm=true` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Historical user identities are retained but cannot sign in or appear in management lists.
 
 Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.
+
+## Creation defaults and existing applications
+
+Apply an option scope’s `defaultValue` only when creating a new account. An explicit empty array takes precedence; editing uses saved roles and never reapplies defaults. Member is a visible direct role that can be removed. A roleless person retains authenticated account basics but no role-granted business access. Upgrade Authentication, Authorization, and Users together, stop old writers before applying database tasks, and merge the template user pages and translations separately: upgrading plugins does not replace application-owned source. The new Authorization seed preserves existing users before removing Member’s global assignment; never recreate that assignment in application seeds or startup reconciliation.

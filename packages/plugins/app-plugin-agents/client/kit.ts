@@ -29,6 +29,9 @@ import {
 } from './components/variables/variables-panel.js';
 import { useAgentsApi } from './hooks/use-agents-api.js';
 import { useAgentText } from './hooks/use-vocabulary.js';
+import { useQuotaExpiry } from './hooks/use-quota-expiry.js';
+import { useRealtimeTopic } from './hooks/use-realtime-topic.js';
+import { RUNNERS_TOPIC } from '../shared/realtime.js';
 import { pickerAgentOf } from './lib/agents.js';
 import { RunnerAgentsSection as RunnerAgents } from './pages/agents/runner-agents.js';
 import { agentsQueryClient, withAgents } from './query.js';
@@ -137,7 +140,7 @@ export const VariablesSection: ComponentType<ScopeSectionProps> =
 export const ScopedVariablesSection: ComponentType<ScopedVariablesSectionProps> =
   withAgents(ScopedVariables);
 /**
- * The agents discovered from runners, as the Agent page lists them, with enabling and editing for those who manage
+ * The runner agents, as the Agent page lists them, with adding and editing for those who manage
  * agents: for an application that composes its own Agent page.
  */
 export const RunnerAgentsSection: ComponentType = withAgents(RunnerAgents);
@@ -188,6 +191,7 @@ export function useAgentOptions(): AgentOptions {
     agentsQueryClient(),
   );
   const list = agents.data ?? [];
+  useQuotaExpiry(list);
   const offered = list.filter((agent) => agent.status === 'enabled');
   return {
     loading: agents.isPending,
@@ -204,3 +208,37 @@ export function useAgentOptions(): AgentOptions {
     },
   };
 }
+
+/** One candidate, including an application's system agent, using the viewer-scoped detail API. */
+export function useAgentOption(agentId: string): ChatAgent | null {
+  const api = useAgentsApi();
+  const text = useAgentText();
+  const cache = agentsQueryClient();
+  const result = useQuery(
+    {
+      queryKey: agentsKeys.agent(agentId),
+      queryFn: () => api.agent(agentId),
+      staleTime: 30_000,
+    },
+    cache,
+  );
+  useQuotaExpiry(result.data ? [result.data] : []);
+  useRealtimeTopic(RUNNERS_TOPIC, () => {
+    void cache.invalidateQueries(
+      { queryKey: agentsKeys.agent(agentId) },
+      { cancelRefetch: false },
+    );
+  });
+  return result.data
+    ? pickerAgentOf(result.data, text.name(result.data))
+    : null;
+}
+
+export {
+  AgentQuotaHint,
+  QuotaLabel,
+  QuotaQueueHint,
+} from './components/quota-status.js';
+export { compactDateTime, quotaWindowLabel } from './lib/format.js';
+
+export { useQuotaClock } from './hooks/use-quota-expiry.js';

@@ -23,7 +23,7 @@ import type {
   CallerKind,
 } from '../core/callers/index.js';
 import { SECURITY_SCHEMES } from '../routes/openapi.js';
-import { runIdentityOf } from './run-credential.js';
+import { callerIdentityOf } from './run-credential.js';
 
 const IDENTITY_OF: Readonly<Record<CallerKind, CliIdentity>> = {
   run: 'run',
@@ -54,12 +54,15 @@ export function bindCliSurface(options: CliSurfaceOptions): CliSurface {
   const { cli } = options;
 
   async function callerOf(identity: CallerIdentity): Promise<CliCaller> {
+    const snapshot = options.gate.manifestPermissions
+      ? await options.gate.manifestPermissions(identity)
+      : { actions: await options.gate.allowed(identity) };
     const caller: CliCaller = {
       kind: IDENTITY_OF[identity.kind],
       userId: identity.userId,
       displayName: identity.displayName,
       ...(identity.run ? { runId: identity.run.run.id } : {}),
-      actions: await options.gate.allowed(identity),
+      ...snapshot,
     };
     return caller;
   }
@@ -88,7 +91,7 @@ export function bindCliSurface(options: CliSurfaceOptions): CliSurface {
     cli.addIdentityScheme(SECURITY_SCHEMES.runToken, 'run'),
     cli.addCaller(async (context) => {
       const identity = context.req.header(HEADERS.runToken)
-        ? runIdentityOf(
+        ? callerIdentityOf(
             (await options.auth().getSession(context.req.raw.headers)) ??
               undefined,
           )

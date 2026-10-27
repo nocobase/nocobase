@@ -6,7 +6,7 @@
  * - the queue: priority, then age; a failed attempt with a retryable reason goes back to the queue while attempts
  *   remain;
  * - the claim: the same long-poll hands out runs and jobs, from the same runner slots. A runner fits a job when its
- *   owner let it take jobs (`acceptJobs`), it reports the executor's feature (`jobs.build`), it is shared with the team
+ *   owner let it take jobs (`acceptJobs`), it reports the executor's feature (`jobs.build`), it is shared with all users
  *   or belongs to the person who started the job, the job names no runner or names it, and its owner's local policy
  *   lets it check out the job's repository. The claim is one transaction: a guarded update takes the job, the kind's
  *   `prepare` gives the spec, stored variables it names are opened for this runner through the application's secret
@@ -61,6 +61,7 @@ import {
   covers,
   stringArray,
   truncateBytes,
+  withoutNul,
 } from '../kernel/values.js';
 import { absentRunners } from '../runners/index.js';
 import {
@@ -583,7 +584,8 @@ export function createJobService(deps: JobServiceDeps): JobService {
         };
       }),
 
-    async events(runner, jobId, request) {
+    async events(runner, jobId, reported) {
+      const request = withoutNul(reported);
       const outcome = await tx.run(async (unit) => {
         const { conn } = unit;
         const job = await held(conn, runner, jobId);
@@ -676,8 +678,9 @@ export function createJobService(deps: JobServiceDeps): JobService {
         };
       }),
 
-    complete: (runner, jobId, request) =>
+    complete: (runner, jobId, reported) =>
       tx.run(async (unit) => {
+        const request = withoutNul(reported);
         const job = await held(unit.conn, runner, jobId);
         if (request.result.kind !== job.executor)
           throw invalid(
@@ -696,8 +699,9 @@ export function createJobService(deps: JobServiceDeps): JobService {
         return { status: ended.status };
       }),
 
-    fail: (runner, jobId, request) =>
+    fail: (runner, jobId, reported) =>
       tx.run(async (unit) => {
+        const request = withoutNul(reported);
         const job = await held(unit.conn, runner, jobId);
         const outcome = await requeueJob(
           unit,

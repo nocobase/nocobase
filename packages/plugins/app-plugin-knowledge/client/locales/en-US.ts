@@ -2,6 +2,155 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 // The wording of the knowledge base's page and components, in the plugin's namespace (`ACCESS_NAMESPACE`).
 const enUS = {
+  indexing: {
+    failedDocumentCount: 'Failed documents: {{count}}',
+    enabled: 'Enable indexing',
+    enabledHint:
+      'Turn off to use text search only. Changes take effect after saving.',
+    chooseInstance: 'Select an indexing instance',
+    documentProgress: 'Document progress',
+    pendingDocuments: 'Pending documents',
+    failedDocuments: 'Failed documents',
+    preparedChunks: 'Chunks prepared',
+    committedChunks: 'Chunks committed',
+    agentPrompt:
+      'Help me configure knowledge base indexing in this NocoBase 3 application.\n\nRead the application’s AGENTS.md and check the indexing types (type) actually available here. Knowledge currently offers two vector database options: SQLite with sqlite-vec (type sqlite-vec, a local file) and PostgreSQL with pgvector (type pgvector, requiring the vector extension). Explain the available options and their requirements for this deployment. Let me choose before continuing; do not decide for me.\n\nAfter I choose, ask for the necessary information: the index file location for SQLite, or database connection details and whether the vector extension is ready for PostgreSQL. Do not show passwords or API keys.\n\nShow the proposed configuration and get my confirmation before writing it under knowledge.indexing in the application’s config.yaml. Preserve other settings. If the application uses config.yml, edit that existing file instead of creating another one.\n\nValidate the configuration safely and explain how to restart the application. Get my confirmation before restarting or installing dependencies. Then guide me back to index settings to enable indexing, select the instance and an embedding model, and save. Ask for confirmation before calling paid models or rebuilding indexes.',
+    databases: {
+      sqlite: {
+        name: 'SQLite vector database',
+        description:
+          'Uses the sqlite-vec vector extension to keep the index in a local SQLite file on the application server. No separate database service is needed; suitable for single-host deployments.',
+      },
+      pgvector: {
+        name: 'PostgreSQL vector database',
+        description:
+          'Uses the pgvector vector extension to store and search vectors in PostgreSQL. Prepare a database connection and enable the vector extension. Suitable for an existing PostgreSQL service or multiple application servers sharing an index.',
+      },
+    },
+    setupTitle: 'Configuration steps',
+    setup: {
+      instance:
+        'Open the application’s config.yaml and add an instance under knowledge.indexing, including its name, type and local file path or database connection details.',
+      restart:
+        'Save the file and restart the application to load the configuration.',
+      enable:
+        'Reopen index settings, enable indexing, select the new instance and an embedding model, then save.',
+    },
+    agentHandoff:
+      'If you are unfamiliar with configuration files, copy the prompt below and ask a development Agent to help.',
+    global: 'All knowledge spaces',
+    back: 'Back to knowledge',
+    configuration: 'Index configuration',
+    typeHint:
+      'Instances are grouped by type. Each type owns its form; not every index needs an Embedding model.',
+    typeForm: 'Configuration form provided by this type',
+    openPage: 'Open standalone settings',
+    emptyTitle: 'Configure a vector database first',
+    emptyDescription:
+      'Knowledge indexing needs a vector database to store and retrieve document vectors. Choose one of the following options and add it to the application’s config.yaml:',
+    agentTitle: 'Configuration prompt',
+    copyPrompt: 'Copy configuration prompt',
+    promptCopied: 'Configuration prompt copied. Nothing has been executed.',
+    promptCopyFallback:
+      'Automatic copying is unavailable. The prompt is selected; copy it manually.',
+    promptLabel: 'Configuration prompt for your development Agent',
+    rebuildHint: 'Changes require index rebuilding',
+    editHint: 'Edit configuration to save',
+    confirmRetryEmbedding:
+      'Retry only failed documents in every knowledge space. Embedding calls may incur charges; completed work is not rebuilt.',
+    confirmRetry:
+      'Retry only failed documents in every knowledge space. Completed work is not rebuilt; index service resources will be used.',
+    confirmResources:
+      'This affects every knowledge space and rebuilds its index. This type does not require Embedding calls, but consumes index storage and service resources. The published index remains available until its replacement is ready.',
+    deploymentPg:
+      'Connection, Schema and table prefix are managed in deployment configuration, not this form.',
+    deploymentFile:
+      'The index file path is managed in deployment configuration, not this form.',
+    errors: {
+      configurationChanged:
+        'Index/model settings have changed. The old generation cannot be retried under the new settings. Review the settings and rebuild all spaces if needed (Embedding costs may apply).',
+      modelAuth:
+        'Embedding authentication failed. Check the model service API key, access permissions and endpoint region.',
+      modelQuota:
+        'Embedding quota or credit is exhausted. Check the model account before retrying.',
+      modelRateLimit:
+        'The Embedding service is rate-limiting requests. Wait before retrying.',
+      modelConfig:
+        'The saved Embedding model is unavailable, changed or unsupported. Review the model service and model selection.',
+      modelInput:
+        'The Embedding input is too long. Review the document chunk sizes.',
+      modelPolicy:
+        'The Embedding service rejected the input under its content policy. Review the affected content.',
+      modelResponse:
+        'The Embedding service returned invalid vectors. Check model compatibility and vector dimensions.',
+      modelUnavailable:
+        'The Embedding service could not be reached or is temporarily unavailable. Check its endpoint and network.',
+      storageAuth:
+        'Index storage authentication failed. Check the database user, password and connection settings.',
+      storagePermission:
+        'Index storage denied the operation or is read-only. Check schema and table permissions.',
+      storageSchema:
+        'The index database, schema or required table is unavailable. Check the deployment and schema.',
+      storageUnavailable:
+        'Index storage could not be reached or the connection was interrupted. Check the address, port and network.',
+      storageBusy:
+        'Index storage is busy or encountered a transaction conflict. Wait for the host retry policy.',
+      timeout:
+        'An indexing operation timed out. Check storage and model service availability before retrying.',
+      vectorExtension:
+        'PostgreSQL is missing the vector extension. Ask the database administrator to install it.',
+      ownership:
+        'The index target ownership or structure does not match. Verify the instance resource; do not delete unrelated tables.',
+      dependencies:
+        'An indexing instance, extension or host jobs configuration is unavailable. Check deployment configuration and restart if needed.',
+    },
+    invalidValue: 'Check this value.',
+    title: 'Knowledge index settings',
+    description: 'Configure search indexing for all knowledge spaces.',
+    progress: 'Indexing progress',
+    instance: 'Indexing instance',
+    off: 'Off — use text search only',
+    missingForm:
+      'This instance’s configuration form is unavailable. Saved options are preserved.',
+    statusFailed: 'Unable to refresh indexing status.',
+    loadFailed:
+      'Unable to load index settings. Check your access and try again.',
+    saveFailed: 'The request was not accepted. Your draft was retained.',
+    conflict:
+      'Index settings changed elsewhere. Reload the latest revision without discarding your draft, then review and save again.',
+    saved: 'Request accepted. Indexing continues in the background.',
+    workFailed:
+      'Some indexing work failed. Review the instance and model service, then retry.',
+    rebuild: 'Rebuild all spaces',
+    retry: 'Retry failed work',
+    confirmTitle: 'Confirm global index change',
+    confirmRebuild:
+      'This affects every knowledge space and may re-embed all documents, incur model charges, and require additional storage. The current index remains available until its replacement is ready.',
+    confirmDisable:
+      'This disables index retrieval for every knowledge space. Text search remains available. Cleanup runs in the background.',
+    discardTitle: 'Discard unsaved changes?',
+    discardDescription: 'Your unsaved index settings will be lost.',
+    discard: 'Discard changes',
+    confirm: 'Confirm',
+    documents:
+      'Documents: {{done}} / {{total}} · Pending: {{pending}} · Failed: {{failed}}',
+    chunks: 'Chunks prepared: {{prepared}} · Committed: {{committed}}',
+    availability: {
+      disabled: 'Disabled — text search only',
+      unavailable: 'Index unavailable — text search remains available',
+      building: 'Building index',
+      ready: 'Index ready',
+      degraded: 'Index degraded — text search remains available',
+    },
+    table: 'Table name',
+    modelService: 'Model service',
+    model: 'Embedding model',
+    chooseService: 'Choose a model service',
+    chooseModel: 'Choose or enter a model name',
+    loadingModels: 'Loading embedding models…',
+    modelsUnavailable:
+      'Embedding models are unavailable. Check the model service and try again.',
+  },
   // What the plugin registers with the authorization plugin (`server/providers/authorization.ts`).
   access: {
     businessSection: 'Knowledge',
@@ -93,6 +242,8 @@ const enUS = {
       failedHint: 'Some sections failed to embed after every attempt.',
       reason: 'Reason: {{reason}}',
       retry: 'Index again',
+      refreshFailed: 'Unable to refresh indexing status',
+      retryRefresh: 'Retry refresh',
       queued: 'Queued for indexing again',
     },
     chunks: {
@@ -294,6 +445,7 @@ const enUS = {
       reload: 'Reload',
     },
     history: {
+      by: 'by {{name}}',
       title: 'History',
       current: 'Current',
       fromProposal: 'From a proposal',
@@ -356,12 +508,12 @@ const enUS = {
         none: 'No access',
       },
       title: 'Space access',
-      description: 'Who may read, propose and edit in {{space}}.',
+      description: 'Who may access {{space}}.',
       yours: 'Your access',
       actions: {
         read: 'Read the documents and search them',
         propose: 'Propose changes for someone who may edit to decide',
-        edit: 'Edit, organize and verify documents, and decide proposals',
+        edit: 'Edit, organize and verify documents',
         manage: 'Change who may access each folder and article',
       },
       allowed: 'Allowed',

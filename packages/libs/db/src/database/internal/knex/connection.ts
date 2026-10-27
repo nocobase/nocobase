@@ -21,6 +21,9 @@ import type {
   RepositoryRecord,
 } from '../../../repository/types.js';
 import { bindPolicies } from './policy-bound-connection.js';
+import { createRestrictedDatabase } from '../restricted-database.js';
+import type { RestrictedDatabase } from '../../restricted-database.js';
+import type { DatabasePolicyMap } from '../../policy-map.js';
 import { RepositoryListenerConnection } from './listener-connection.js';
 import { RepositoryError } from '../../../repository/errors.js';
 import type {
@@ -37,10 +40,7 @@ import type {
 import { RepositoryMutationRegistry } from '../../../repository/internal/events/registry.js';
 import { explainStrategy } from '../../../repository/internal/events/strategy.js';
 import { registerUnobservedRepositories } from '../../../repository/internal/events/unobserved.js';
-import type {
-  NormalizedRepositoryPolicy,
-  RepositoryPolicy,
-} from '../../../repository/policy/types.js';
+import type { NormalizedRepositoryPolicy } from '../../../repository/policy/types.js';
 import { KnexSchemaAdapter } from '../../../schema/internal/knex/adapter.js';
 import type {
   DatabaseCapabilities,
@@ -356,10 +356,15 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     };
   }
 
+  restrict<P, const TCollection extends string>(
+    policies: DatabasePolicyMap<P, TCollection>,
+    principal: P,
+  ): RestrictedDatabase<TCollection> {
+    return createRestrictedDatabase(this, policies, principal);
+  }
+
   withPolicies<P>(
-    policies: Readonly<
-      Record<string, RepositoryPolicy | ((principal: P) => RepositoryPolicy)>
-    >,
+    policies: DatabasePolicyMap<P>,
     principal: P,
   ): ScopedDatabaseConnection {
     return bindPolicies(this, policies, principal);

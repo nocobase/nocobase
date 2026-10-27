@@ -1,0 +1,1689 @@
+{
+  "auth": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Authentication</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg></span><h1>Authentication</h1></div><p class=\"auth-lead\">Let the right people into your application.</p><p class=\"auth-intro\">Sign in with passwords, connect a company identity provider, or let scripts use API keys. Describe your account rules to the Agent and reuse the application&#x27;s authentication capabilities.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Included in the template</span><h3>Accounts and sessions</h3><p>Password sign-in, registration and password-recovery pages, session handling, and sign-out. API keys identify programmatic requests.</p></article><article><span class=\"badge\">Configuration required</span><h3>Registration and email</h3><p>Define registration and password rules. Email verification and password recovery require a working mail channel and integration with the authentication flow.</p></article><article><span class=\"badge\">Integration required</span><h3>Company and third-party sign-in</h3><p>Connect an identity provider and define account linking. These sign-in options are not enabled by default.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Authentication scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/auth/password\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Identity and access are different</h3><p>Authentication identifies the user. Authorization determines which pages, records, and actions that user can access.</p></article><article><h3>Check the whole session lifecycle</h3><p>Verify sign-out, expiration, account disabling, and re-enabling. Protect server APIs as well as pages.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/authorization/\"><strong>Authorization <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/auth/password\"><strong>Password authentication and accounts <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/auth/sign-in-methods\"><strong>Adding sign-in methods <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/auth/api-keys\"><strong>API keys <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/auth/login-pages\"><strong>Customizing sign-in pages <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/auth/protecting-access\"><strong>Protecting pages and APIs <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/auth/protecting-access#account-lifecycle-and-deployment\"><strong>Protecting pages and APIs <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "staff",
+        "title": "Employee-only application",
+        "summary": "Let administrators manage employee accounts without opening self-registration.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Let administrators manage employee accounts without opening self-registration."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Search, filter, and create employee accounts.",
+          "Self-registration is disabled in both the interface and server.",
+          "Disabling an account revokes existing sessions while preserving business records."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-employee-accounts-en.png",
+        "imageAlt": "Authentication example: Employee-only application",
+        "doc": "/capabilities/auth/password"
+      },
+      {
+        "id": "password",
+        "title": "Password requirements",
+        "summary": "Apply the same new-password rules when creating accounts and resetting passwords.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Apply the same new-password rules when creating accounts and resetting passwords."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Forms explain the minimum length of 12 characters.",
+          "Both client and server reject new passwords that do not meet the rule.",
+          "Existing employees can still sign in with their current passwords."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "doc": "/capabilities/auth/password",
+        "image": "northstar-password-policy-en.png",
+        "imageAlt": "Authentication example: Password requirements"
+      },
+      {
+        "id": "recovery",
+        "title": "Password recovery",
+        "summary": "Connect email delivery to the existing password-recovery pages.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Connect email delivery to the existing password-recovery pages."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "A real mailbox receives a reset link using the correct application URL.",
+          "The new password works and the old password no longer signs in.",
+          "Expired or used links cannot be reused, and unknown emails do not reveal account existence."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "doc": "/capabilities/auth/password",
+        "image": "northstar-forgot-password-en.png",
+        "imageAlt": "Authentication example: Password recovery"
+      },
+      {
+        "id": "sso",
+        "title": "Company sign-in",
+        "summary": "Use an independent company identity provider and keep account creation separate from permissions.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Use an independent company identity provider and keep account creation separate from permissions."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Password sign-in remains available and company sign-in redirects to the identity provider.",
+          "Allowing access returns the correct identity; cancelling does not sign in.",
+          "Repeated sign-in does not duplicate or incorrectly merge accounts; new accounts receive no automatic administrator permissions."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-company-consent-en.png",
+        "imageAlt": "Authentication example: Company sign-in",
+        "doc": "/capabilities/auth/sign-in-methods"
+      },
+      {
+        "id": "api",
+        "title": "Script access",
+        "summary": "Read authorized transport orders with an employee's API key.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Read authorized transport orders with an employee's API key."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The script returns the expected order fields within the user's scope.",
+          "The Key comes from the environment and never appears in code or logs.",
+          "Revoked or expired credentials produce an error rather than an empty success result."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-keys-en.png",
+        "imageAlt": "Authentication example: Script access",
+        "doc": "/capabilities/auth/api-keys"
+      },
+      {
+        "id": "brand",
+        "title": "Sign-in branding",
+        "summary": "Customize the Northstar sign-in page without changing authentication behavior.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Customize the Northstar sign-in page without changing authentication behavior."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The transport branding and form work on desktop and mobile.",
+          "Password visibility, errors, and password recovery remain usable.",
+          "Self-registration is disabled on the server, with reusable registration components retained."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-branded-login-en.png",
+        "imageAlt": "Authentication example: Sign-in branding",
+        "doc": "/capabilities/auth/login-pages"
+      },
+      {
+        "id": "protect",
+        "title": "Pages and APIs",
+        "summary": "Keep the transport introduction public while protecting internal orders and customer data.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Keep the transport introduction public while protecting internal orders and customer data."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Visitors can read public information without receiving internal records.",
+          "Internal pages redirect unauthenticated visitors to sign-in.",
+          "Internal APIs enforce identity and business authorization on the server."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "doc": "/capabilities/auth/protecting-access",
+        "image": "northstar-public-services-en.png",
+        "imageAlt": "Authentication example: Pages and APIs"
+      }
+    ],
+    "promptKey": "auth"
+  },
+  "data-sources": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Data sources</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0\"/></svg></span><h1>Data sources</h1></div><p class=\"auth-lead\">Use existing data where your business needs it.</p><p class=\"auth-intro\">Choose an application database and connect external databases to use existing information in business pages.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Primary database</span><h3>Application-owned data</h3><p>Store the records that this application owns and manages.</p></article><article><span class=\"badge\">External database</span><h3>Existing business data</h3><p>Read or update an existing database according to explicit access and ownership rules.</p></article><article><span class=\"badge\">Connection configuration</span><h3>Credentials and schema</h3><p>Prepare the database type, server-side credentials, table structure, and field mapping.</p></article></div></section>\n<section><div class=\"section-head\"><h2>Database choices</h2><p>Available configuration types do not imply that every driver is installed. Changing an existing application database requires a migration plan.</p></div><div class=\"database-table\"><table><thead><tr><th>Database</th><th>Type</th></tr></thead><tbody><tr><td>SQLite</td><td><code>sqlite</code></td></tr><tr><td>PostgreSQL</td><td><code>postgres</code></td></tr><tr><td>MySQL / MariaDB</td><td><code>mysql</code></td></tr><tr><td>Microsoft SQL Server</td><td><code>mssql</code></td></tr><tr><td>Oracle Database</td><td><code>oracle</code></td></tr><tr><td>Dameng</td><td><code>dameng</code></td></tr><tr><td>KingbaseES</td><td><code>kingbase</code></td></tr><tr><td>OceanBase</td><td><code>oceanbase</code></td></tr></tbody></table></div></section><section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Data sources scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/data-sources/usage\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Decide whether to read, write, or synchronize</h3><p>Reading external data in a page does not require copying it into the primary database. Make synchronization a separate requirement.</p></article><article><h3>Match records and protect access</h3><p>Identify stable business keys, allowed fields, and who can view or change external information.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/data-sources/usage\"><strong>Usage guide <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/\"><strong>Authorization <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/scheduler/\"><strong>Scheduled tasks <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "settlement",
+        "status": "Business example",
+        "title": "External settlement data",
+        "summary": "Show settlement information beside customer details without importing it into the primary database.",
+        "decisions": [
+          [
+            "Scope",
+            "Show settlement information beside customer details without importing it into the primary database."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The customer number matches the correct external settlement record.",
+          "The page identifies the external source and does not modify its tables.",
+          "Credentials remain on the server and access follows the intended business scope."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-settlement-en.png",
+        "imageAlt": "Data sources example: External settlement data",
+        "doc": "/capabilities/data-sources/usage"
+      }
+    ],
+    "promptKey": "data-sources"
+  },
+  "authorization": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Authorization</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg></span><h1>Authorization</h1></div><p class=\"auth-lead\">Give each person the access their work requires.</p><p class=\"auth-intro\">Define roles, actions, and record scopes. Ask the Agent to apply the same rules to pages and server APIs.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Reusable capability</span><h3>Permission sets</h3><p>Group business permissions by responsibility and assign them to the appropriate users.</p></article><article><span class=\"badge\">Business configuration</span><h3>Data scopes</h3><p>Connect access rules to business fields such as the owner, assigned driver, or team.</p></article><article><span class=\"badge\">Verify the result</span><h3>Permission inspection</h3><p>Inspect the effective permissions and test with accounts that have different responsibilities.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Authorization scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/authorization/permission-sets\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Hiding a button is not authorization</h3><p>Enforce permissions on the server. Direct API requests must follow the same rules as the interface.</p></article><article><h3>Combine rules deliberately</h3><p>Understand default scope, sharing, and restrictions before combining them. Verify the final result with real users.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/auth/\"><strong>Authentication <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/permission-sets\"><strong>Permission sets and assignments <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/data-scopes\"><strong>Data scopes and rules <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/default-access\"><strong>Default data access <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/sharing-rules\"><strong>Sharing rules <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/restriction-rules\"><strong>Restriction rules <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/inspector\"><strong>Inspecting permissions <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "permission-sets",
+        "title": "Roles and assignments",
+        "summary": "Define responsibilities for account managers, dispatchers, and drivers.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Define responsibilities for account managers, dispatchers, and drivers."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Each role sees only the pages and actions intended for its work.",
+          "Assigning a business permission set does not grant administrator access.",
+          "Direct API requests enforce the same permissions as the interface."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-team-access-en.png",
+        "imageAlt": "Authorization example: Roles and assignments",
+        "doc": "/capabilities/authorization/permission-sets"
+      },
+      {
+        "id": "data-scopes",
+        "title": "Record scopes",
+        "summary": "Use ownership and assignments to show different records on the same page.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Use ownership and assignments to show different records on the same page."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Account managers see the orders they own and drivers see assigned work.",
+          "Dispatchers can inspect the agreed cross-team scope.",
+          "Lists, details, and update APIs apply the same record rules."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-alice-orders-en.png",
+        "imageAlt": "Authorization example: Record scopes",
+        "doc": "/capabilities/authorization/data-scopes"
+      },
+      {
+        "id": "default-access",
+        "title": "Default access",
+        "summary": "Allow users with the relevant view permission to read completed orders.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Allow users with the relevant view permission to read completed orders."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Completed orders appear within the configured default scope.",
+          "Users still need the underlying operation permission.",
+          "Other stages remain governed by the intended scope rules."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-default-after-en.png",
+        "imageAlt": "Authorization example: Default access",
+        "doc": "/capabilities/authorization/default-access"
+      },
+      {
+        "id": "sharing-rules",
+        "title": "Sharing rules",
+        "summary": "Let Bob help review one of Alice's orders without opening all of her records.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Let Bob help review one of Alice's orders without opening all of her records."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Bob can view the specifically shared order.",
+          "Unrelated orders remain outside his access scope.",
+          "Removing the sharing rule removes the additional access."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-sharing-after-en.png",
+        "imageAlt": "Authorization example: Sharing rules",
+        "doc": "/capabilities/authorization/sharing-rules"
+      },
+      {
+        "id": "restriction-rules",
+        "title": "Restriction rules",
+        "summary": "Restrict Bob's order access to the specified amount range.",
+        "status": "Business example",
+        "decisions": [
+          [
+            "Scope",
+            "Restrict Bob's order access to the specified amount range."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Orders within the configured limit are accessible when other permissions allow it.",
+          "Orders above the limit are excluded from lists and direct requests.",
+          "Verify the interaction with default scope and sharing rules."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-restriction-after-en.png",
+        "imageAlt": "Authorization example: Restriction rules",
+        "doc": "/capabilities/authorization/restriction-rules"
+      },
+      {
+        "id": "inspector",
+        "title": "Inspect permissions",
+        "summary": "Explain why Bob can access a particular order.",
+        "status": "Business example",
+        "decisions": [
+          ["Scope", "Explain why Bob can access a particular order."],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The inspection identifies the user, action, and record being evaluated.",
+          "The effective result matches actual page and API behavior.",
+          "Relevant permission sets and scope rules can be traced."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-inspector-en.png",
+        "imageAlt": "Authorization example: Inspect permissions",
+        "doc": "/capabilities/authorization/inspector"
+      }
+    ],
+    "promptKey": "authorization"
+  },
+  "workflow": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Workflow</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-workflow\" aria-hidden=\"true\"><rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"></path><rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\"></rect></svg></span><h1>Workflow</h1></div><p class=\"auth-lead\">Turn business stages into a reliable process.</p><p class=\"auth-intro\">Coordinate transitions, background work, waits, branches, and timeouts while keeping progress and history visible.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Define the process</span><h3>Stages and actions</h3><p>Specify the current stage, allowed actions, required information, and who can act.</p></article><article><span class=\"badge\">Handle execution</span><h3>Waits and retries</h3><p>Run background work with clear success, failure, retry, and timeout behavior.</p></article><article><span class=\"badge\">Show progress</span><h3>Processing history</h3><p>Display the current stage and the user or system actions that led to it.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Workflow scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/workflow/definition\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Validate transitions on the server</h3><p>A page should show available actions, while the server checks the current stage, permissions, and required fields.</p></article><article><h3>Make retries safe</h3><p>Repeated execution must not duplicate business effects. Keep enough history to understand failures and recovery.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/approval/\"><strong>Approval overview <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/notification/\"><strong>Notifications <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/scheduler/\"><strong>Scheduled tasks <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "definition-0",
+        "title": "Business transitions",
+        "summary": "Move orders through dispatch, acceptance, delivery, and completion with explicit rules.",
+        "decisions": [
+          [
+            "Scope",
+            "Move orders through dispatch, acceptance, delivery, and completion with explicit rules."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Only actions allowed in the current stage are available.",
+          "The server checks required data and transition permissions.",
+          "Concurrent submissions do not overwrite an already completed transition."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-process-before-en.png",
+        "imageAlt": "Workflow example: Business transitions",
+        "status": "Business example",
+        "doc": "/capabilities/workflow/definition"
+      },
+      {
+        "id": "execution-0",
+        "title": "Background reports",
+        "summary": "Generate a CSV report in the background with visible progress and retry behavior.",
+        "decisions": [
+          [
+            "Scope",
+            "Generate a CSV report in the background with visible progress and retry behavior."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The request moves from queued to running and then a final result.",
+          "Successful reports provide the correct downloadable file.",
+          "Retries do not create duplicate files, and final failures remain visible."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-workflow-export-completed-en.png",
+        "imageAlt": "Workflow example: Background reports",
+        "status": "Business example",
+        "doc": "/capabilities/workflow/execution"
+      },
+      {
+        "id": "progress-0",
+        "title": "Processing history",
+        "summary": "Show how an order reached its current stage.",
+        "decisions": [
+          ["Scope", "Show how an order reached its current stage."],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "History records the actor, time, action, and before-and-after stages.",
+          "System actions are distinguished from employee actions.",
+          "Progress and history remain available after refreshing and completion."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-process-completed-en.png",
+        "imageAlt": "Workflow example: Processing history",
+        "status": "Business example",
+        "doc": "/capabilities/workflow/progress"
+      }
+    ],
+    "promptKey": "workflow"
+  },
+  "approval": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Approval</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg></span><h1>Approval</h1></div><p class=\"auth-lead\">Make decisions, responsibilities, and progress clear.</p><p class=\"auth-intro\">Connect Pro approval capabilities for conditional routes, joint reviews, added reviewers, and handovers.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Pro capability</span><h3>Approval routes</h3><p>Choose stages and reviewers according to the request&#x27;s business information.</p></article><article><span class=\"badge\">Review rules</span><h3>Joint and any-one reviews</h3><p>Define whether everyone or any eligible reviewer must agree.</p></article><article><span class=\"badge\">Request handling</span><h3>Return, withdraw, and notify</h3><p>Explain what happens when more information is needed, a request is withdrawn, or someone needs to be informed.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Approval scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/approval/stages\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Approval is a business decision</h3><p>An approved request does not automatically pay money or perform another business action unless you explicitly implement it.</p></article><article><h3>Keep changes traceable</h3><p>Record reviewers, opinions, route changes, and the person responsible for the next step.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/workflow/\"><strong>Workflow overview <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/notification/\"><strong>Notifications <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "stages-0",
+        "title": "Conditional approval",
+        "summary": "Route special transport requests according to the additional fee.",
+        "decisions": [
+          [
+            "Scope",
+            "Route special transport requests according to the additional fee."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The preview shows the expected route and reviewers.",
+          "Requests above the threshold continue to finance after manager approval.",
+          "Approval records the decision without automatically making a payment."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-approval-review-en.png",
+        "imageAlt": "Approval example: Conditional approval",
+        "status": "Business example",
+        "doc": "/capabilities/approval/stages"
+      },
+      {
+        "id": "joint-review-0",
+        "title": "Joint and any-one review",
+        "summary": "Use unanimous decisions for special cargo and any-one approval for routine dispatch.",
+        "decisions": [
+          [
+            "Scope",
+            "Use unanimous decisions for special cargo and any-one approval for routine dispatch."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Joint review waits for every required approval.",
+          "A rejection follows the configured rejection rule and records a reason.",
+          "Any-one review completes when an eligible reviewer approves."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-approval-all-waiting-en.png",
+        "imageAlt": "Approval example: Joint and any-one review",
+        "status": "Business example",
+        "doc": "/capabilities/approval/joint-review"
+      },
+      {
+        "id": "handover-0",
+        "title": "Add or transfer reviewers",
+        "summary": "Allow controlled additions and handovers during manager approval.",
+        "decisions": [
+          [
+            "Scope",
+            "Allow controlled additions and handovers during manager approval."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Only eligible people can be selected.",
+          "The original task, new reviewer, reason, and opinions remain traceable.",
+          "The displayed route reflects the actual review sequence."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-approval-handover-flow-en.png",
+        "imageAlt": "Approval example: Add or transfer reviewers",
+        "status": "Business example",
+        "doc": "/capabilities/approval/handover"
+      },
+      {
+        "id": "requests-0",
+        "title": "Return and withdraw",
+        "summary": "Let applicants supply missing information or withdraw unfinished requests.",
+        "decisions": [
+          [
+            "Scope",
+            "Let applicants supply missing information or withdraw unfinished requests."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Returned requests can be corrected and resubmitted while retaining opinions.",
+          "Withdrawn tasks can no longer be acted on by reviewers.",
+          "Return, rejection, and withdrawal have distinct states and next steps."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-approval-return-flow-en.png",
+        "imageAlt": "Approval example: Return and withdraw",
+        "status": "Business example",
+        "doc": "/capabilities/approval/requests"
+      },
+      {
+        "id": "requests-1",
+        "title": "Copy for information",
+        "summary": "Keep the responsible account manager informed without making them a reviewer.",
+        "decisions": [
+          [
+            "Scope",
+            "Keep the responsible account manager informed without making them a reviewer."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Copied requests appear in the recipient's list.",
+          "The recipient can read progress and acknowledge the request.",
+          "Being copied does not grant approval authority."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Approval example: Copy for information",
+        "status": "Business example",
+        "doc": "/capabilities/approval/requests"
+      },
+      {
+        "id": "requests-2",
+        "title": "Timeouts and claiming",
+        "summary": "Set reminders, escalation, and claim rules for team review tasks.",
+        "decisions": [
+          [
+            "Scope",
+            "Set reminders, escalation, and claim rules for team review tasks."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The current owner and deadline are visible.",
+          "Overdue tasks follow the configured reminder and escalation timing.",
+          "Claiming and releasing tasks preserve allocation history."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Approval example: Timeouts and claiming",
+        "status": "Business example",
+        "doc": "/capabilities/approval/requests"
+      }
+    ],
+    "promptKey": "approval"
+  },
+  "scheduler": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Scheduled tasks</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-calendar-clock\" aria-hidden=\"true\"><path d=\"M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5\"></path><path d=\"M16 2v4\"></path><path d=\"M8 2v4\"></path><path d=\"M3 10h5\"></path><path d=\"M17.5 17.5 16 16.3V14\"></path><circle cx=\"16\" cy=\"16\" r=\"6\"></circle></svg></span><h1>Scheduled tasks</h1></div><p class=\"auth-lead\">Run routine work at the right time.</p><p class=\"auth-intro\">Describe what should run, when it should run, and who should receive the result. Inspect schedules and execution history.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Schedule</span><h3>Time and timezone</h3><p>Specify weekdays, intervals, or a calendar schedule with an explicit timezone.</p></article><article><span class=\"badge\">Business action</span><h3>Reminders and reports</h3><p>Connect the task to authorized business queries, updates, or notifications.</p></article><article><span class=\"badge\">Operations</span><h3>Execution history</h3><p>Let administrators inspect runs and pause or resume tasks as required.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Scheduled tasks scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/scheduler/usage\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Define the time precisely</h3><p>A time without a timezone can produce unexpected results after deployment. Confirm the next scheduled execution.</p></article><article><h3>Avoid duplicate effects</h3><p>Define retry and duplicate-handling rules for notifications, reports, and synchronization.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/scheduler/usage\"><strong>Usage guide <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/notification/\"><strong>Notifications <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/data-sources/\"><strong>Data sources <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "reminder",
+        "title": "Dispatch reminder",
+        "summary": "Notify the dispatch lead about pending orders on weekday mornings.",
+        "decisions": [
+          [
+            "Scope",
+            "Notify the dispatch lead about pending orders on weekday mornings."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The next run matches 9:00 a.m. Beijing time on a weekday.",
+          "One notification summarizes pending orders; no orders means no notification.",
+          "Administrators can inspect runs and pause or resume the task."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-scheduler-en.png",
+        "imageAlt": "Scheduled tasks example: Dispatch reminder",
+        "status": "Business example",
+        "doc": "/capabilities/scheduler/usage"
+      },
+      {
+        "id": "time",
+        "title": "Change the schedule",
+        "summary": "Move an existing reminder to 10:00 a.m. without changing its business behavior.",
+        "decisions": [
+          [
+            "Scope",
+            "Move an existing reminder to 10:00 a.m. without changing its business behavior."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The next execution uses the updated weekday schedule and timezone.",
+          "Order scope, recipients, and content remain unchanged.",
+          "The existing task is updated instead of creating a duplicate."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Scheduled tasks example: Change the schedule",
+        "status": "Business example",
+        "doc": "/capabilities/scheduler/usage"
+      },
+      {
+        "id": "report",
+        "title": "Weekly report",
+        "summary": "Generate the previous week's sales summary on a recurring schedule.",
+        "decisions": [
+          [
+            "Scope",
+            "Generate the previous week's sales summary on a recurring schedule."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The reporting period covers the intended previous week.",
+          "Revenue, counts, and regional totals match the source records.",
+          "The sales lead receives a link and administrators can inspect execution history."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Scheduled tasks example: Weekly report",
+        "status": "Business example",
+        "doc": "/capabilities/scheduler/usage"
+      },
+      {
+        "id": "sync",
+        "title": "Customer status sync",
+        "summary": "Update customer status from an existing system while preserving other fields.",
+        "decisions": [
+          [
+            "Scope",
+            "Update customer status from an existing system while preserving other fields."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The task runs at the configured ten-minute interval.",
+          "Customer identifiers match the intended records.",
+          "Only status changes; other customer information is preserved."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Scheduled tasks example: Customer status sync",
+        "status": "Business example",
+        "doc": "/capabilities/scheduler/usage"
+      }
+    ],
+    "promptKey": "scheduler"
+  },
+  "notification": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Notifications</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-bell\" aria-hidden=\"true\"><path d=\"M10.268 21a2 2 0 0 0 3.464 0\"></path><path d=\"M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326\"></path></svg></span><h1>Notifications</h1></div><p class=\"auth-lead\">Deliver the business information people need.</p><p class=\"auth-intro\">Send in-app messages or email when business events occur, with useful links and traceable delivery results.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Business event</span><h3>Recipients and content</h3><p>Specify who receives the message, when to send it, and which business record it opens.</p></article><article><span class=\"badge\">Delivery channel</span><h3>In-app and email</h3><p>Use the application&#x27;s notification capability and configure external delivery channels where required.</p></article><article><span class=\"badge\">Operations</span><h3>Delivery logs</h3><p>Inspect delivery status and attempts without exposing service credentials.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Notifications scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/notification/usage\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>A notification does not change the decision</h3><p>Delivery failure must not undo an already saved approval result or transport status.</p></article><article><h3>Respect account boundaries</h3><p>Users see their own messages. Administrative delivery logs require separate access permissions.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/notification/usage\"><strong>Usage guide <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/scheduler/\"><strong>Scheduled tasks <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/mail/\"><strong>Mail <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "progress",
+        "title": "Progress reminder",
+        "summary": "Send the current order's status to the acting user's message center.",
+        "decisions": [
+          [
+            "Scope",
+            "Send the current order's status to the acting user's message center."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The message includes the order number, route, and status.",
+          "The link opens the correct order under the actual deployment path.",
+          "Repeated sends of the same version do not duplicate messages or change the order."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-notification-en.png",
+        "imageAlt": "Notifications example: Progress reminder",
+        "status": "Business example",
+        "doc": "/capabilities/notification/usage"
+      },
+      {
+        "id": "approval",
+        "title": "Approval result",
+        "summary": "Notify the applicant only after approval has a final result.",
+        "decisions": [
+          [
+            "Scope",
+            "Notify the applicant only after approval has a final result."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Pending requests produce no result notification.",
+          "Each saved result notifies the applicant only once.",
+          "Delivery failure does not undo the approval decision."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Notifications example: Approval result",
+        "status": "Business example",
+        "doc": "/capabilities/notification/usage"
+      },
+      {
+        "id": "email",
+        "title": "Email channel",
+        "summary": "Send approval results by email as well as through the message center.",
+        "decisions": [
+          [
+            "Scope",
+            "Send approval results by email as well as through the message center."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The recipient address comes from the actual applicant account.",
+          "Missing email still allows the in-app message.",
+          "Per-channel delivery records are visible without revealing credentials."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-notification-logs-en.png",
+        "imageAlt": "Notifications example: Email channel",
+        "status": "Business example",
+        "doc": "/capabilities/notification/usage"
+      }
+    ],
+    "promptKey": "notification"
+  },
+  "mail": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Email</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-mail\" aria-hidden=\"true\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"></rect><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"></path></svg></span><h1>Email</h1></div><p class=\"auth-lead\">Keep business conversations close to the records they concern.</p><p class=\"auth-intro\">Connect employee mailboxes to read, reply, organize messages, and relate correspondence to business records.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Connect first</span><h3>Employee mailboxes</h3><p>Prepare the provider&#x27;s connection information and the account&#x27;s authorization.</p></article><article><span class=\"badge\">Daily work</span><h3>Read and reply</h3><p>Provide mailbox, thread, attachment, and reply interfaces suited to the application.</p></article><article><span class=\"badge\">Business context</span><h3>Related correspondence</h3><p>Connect messages to customers or other records under the user&#x27;s access permissions.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Email scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/mail/quick-start\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Mailbox access is personal</h3><p>Keep each employee&#x27;s connected accounts and messages within their authorized scope.</p></article><article><h3>Validate the actual provider</h3><p>Connection, synchronization, and delivery depend on the mail provider and its configuration.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/notification/\"><strong>Notifications <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/file/\"><strong>Files <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "quick-start-0",
+        "title": "Receive and reply",
+        "summary": "Connect an employee mailbox and handle business correspondence.",
+        "decisions": [
+          [
+            "Scope",
+            "Connect an employee mailbox and handle business correspondence."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The connected mailbox synchronizes expected messages.",
+          "Replies use the intended account and conversation.",
+          "Other employees cannot access an unauthorized mailbox."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-mail-reading-en.png",
+        "imageAlt": "Email example: Receive and reply",
+        "status": "Business example",
+        "doc": "/capabilities/mail/quick-start"
+      },
+      {
+        "id": "usage-1",
+        "title": "Email signatures",
+        "summary": "Give employees a consistent signature when sending business email.",
+        "decisions": [
+          [
+            "Scope",
+            "Give employees a consistent signature when sending business email."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The signature appears in the intended compose and reply flows.",
+          "Employee-specific details are correct.",
+          "Existing content is not unexpectedly overwritten."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-mail-signatures-en.png",
+        "imageAlt": "Email example: Email signatures",
+        "status": "Business example",
+        "doc": "/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-2",
+        "title": "Progress email templates",
+        "summary": "Reuse a transport-progress message template with current business data.",
+        "decisions": [
+          [
+            "Scope",
+            "Reuse a transport-progress message template with current business data."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Template fields are filled from the correct order.",
+          "Users can review the message before sending.",
+          "Missing values are handled explicitly rather than sending unresolved placeholders."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-mail-template-applied-en.png",
+        "imageAlt": "Email example: Progress email templates",
+        "status": "Business example",
+        "doc": "/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-3",
+        "title": "Customer correspondence",
+        "summary": "Read relevant email while viewing a customer record.",
+        "decisions": [
+          ["Scope", "Read relevant email while viewing a customer record."],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The view shows correspondence for the intended customer.",
+          "Mailbox and customer permissions both apply.",
+          "Opening a message preserves its conversation context."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-customer-mail-en.png",
+        "imageAlt": "Email example: Customer correspondence",
+        "status": "Business example",
+        "doc": "/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-4",
+        "title": "Order progress email",
+        "summary": "Send a transport update from the order's business context.",
+        "decisions": [
+          [
+            "Scope",
+            "Send a transport update from the order's business context."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The recipient and order data are correct.",
+          "The message uses the authorized employee mailbox.",
+          "Sending failures are visible without changing transport progress."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-order-mail-en.png",
+        "imageAlt": "Email example: Order progress email",
+        "status": "Business example",
+        "doc": "/capabilities/mail/usage"
+      }
+    ],
+    "promptKey": "mail"
+  },
+  "file": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Files</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-paperclip\" aria-hidden=\"true\"><path d=\"M13.234 20.252 21 12.3\"></path><path d=\"m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486\"></path></svg></span><h1>Files</h1></div><p class=\"auth-lead\">Keep documents attached to the business they support.</p><p class=\"auth-intro\">Upload, preview, and download files associated with records, with business permissions governing access.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Business field</span><h3>Attachments and avatars</h3><p>Choose whether a record accepts one file or several and which formats it allows.</p></article><article><span class=\"badge\">Storage</span><h3>Upload and persistence</h3><p>Connect file storage and save the relationship between each file and its business record.</p></article><article><span class=\"badge\">Access</span><h3>Preview and download</h3><p>Provide useful file actions without bypassing the parent record&#x27;s permissions.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Files scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/file/usage\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Unlinking is not deleting</h3><p>State whether removing an attachment only removes its relationship or also deletes the stored file.</p></article><article><h3>Protect direct access</h3><p>A user who cannot access the record should not gain access merely by knowing a file URL.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/file/usage\"><strong>Usage guide <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/\"><strong>Authorization <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/notification/\"><strong>Notifications <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "attachments",
+        "title": "Order attachments",
+        "summary": "Keep transport documents associated with the relevant order.",
+        "decisions": [
+          [
+            "Scope",
+            "Keep transport documents associated with the relevant order."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Saved attachments remain visible when the order is reopened.",
+          "Preview and download follow order access permissions.",
+          "Removing an attachment unlinks it while preserving the stored file."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-attachments-en.png",
+        "imageAlt": "Files example: Order attachments",
+        "status": "Business example",
+        "doc": "/capabilities/file/usage"
+      },
+      {
+        "id": "avatar",
+        "title": "Employee avatars",
+        "summary": "Associate one replaceable avatar with each employee.",
+        "decisions": [
+          ["Scope", "Associate one replaceable avatar with each employee."],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Each employee has at most one selected avatar.",
+          "Replacing an image updates lists and details.",
+          "The new avatar remains after refreshing."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Files example: Employee avatars",
+        "status": "Business example",
+        "doc": "/capabilities/file/usage"
+      }
+    ],
+    "promptKey": "file"
+  },
+  "template-print": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Template printing</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-printer\" aria-hidden=\"true\"><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"></path><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\"></path><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\"></rect></svg></span><h1>Template printing</h1></div><p class=\"auth-lead\">Generate business documents from your own templates.</p><p class=\"auth-intro\">Give the Agent an Office template and business requirements to implement document generation and download.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Guidance package</span><h3>Skills and examples</h3><p>The package provides implementation guidance, not a ready-made rendering engine or printing interface.</p></article><article><span class=\"badge\">Application implementation</span><h3>Templates and data</h3><p>Map authorized business records to template fields and repeating line items.</p></article><article><span class=\"badge\">Optional conversion</span><h3>PDF output</h3><p>PDF generation requires the conversion tools and fonts appropriate to the rendering approach.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Template printing scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/template-print/usage\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Read authorized data on the server</h3><p>Do not accept arbitrary data scopes or template paths from the browser.</p></article><article><h3>Verify the deployment environment</h3><p>Check fonts, images, tables, pagination, and conversion failures on the machine that runs the application.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/file/\"><strong>Files <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/\"><strong>Authorization <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "docx",
+        "title": "Generate a transport document",
+        "summary": "Fill a supplied Word template with authorized transport-order data.",
+        "decisions": [
+          [
+            "Scope",
+            "Fill a supplied Word template with authorized transport-order data."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Fields and repeating line items match the source order.",
+          "The DOCX opens correctly and preserves the intended layout.",
+          "Unauthorized orders or arbitrary template paths cannot be used."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Template printing example: Generate a transport document",
+        "status": "Business example",
+        "doc": "/capabilities/template-print/usage"
+      },
+      {
+        "id": "pdf",
+        "title": "PDF download",
+        "summary": "Add conversion after successful DOCX generation.",
+        "decisions": [
+          ["Scope", "Add conversion after successful DOCX generation."],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The deployment environment has the required conversion service and fonts.",
+          "Chinese text, images, tables, and pagination match the expected result.",
+          "Conversion failures are reported clearly and DOCX download remains available."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Template printing example: PDF download",
+        "status": "Business example",
+        "doc": "/capabilities/template-print/usage"
+      }
+    ],
+    "promptKey": "templatePrint"
+  },
+  "i18n": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Languages</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-languages\" aria-hidden=\"true\"><path d=\"m5 8 6 6\"></path><path d=\"m4 14 6-6 2-3\"></path><path d=\"M2 5h12\"></path><path d=\"M7 2h1\"></path><path d=\"m22 22-5-10-5 10\"></path><path d=\"M14 18h6\"></path></svg></span><h1>Languages</h1></div><p class=\"auth-lead\">Use the application in the language your team needs.</p><p class=\"auth-intro\">Add interface and server translations, configure the default language, and preserve individual language choices.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">User preference</span><h3>Switch languages</h3><p>Offer supported languages and preserve the user&#x27;s saved choice.</p></article><article><span class=\"badge\">Application configuration</span><h3>Default language</h3><p>Set the default for visitors who have not saved a language preference.</p></article><article><span class=\"badge\">Translation maintenance</span><h3>Coverage and fallback</h3><p>Translate client and server messages and verify missing-text fallback behavior.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Languages scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/i18n/usage\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Translate interface text, not business records</h3><p>Customer names and business data are not automatically translated when the interface language changes.</p></article><article><h3>Verify both sides</h3><p>Check validation and server errors as well as menus, forms, and buttons.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/i18n/usage\"><strong>Usage guide <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/theme/\"><strong>Themes <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "add",
+        "title": "Add a language",
+        "summary": "Add Spanish across the interface and server messages.",
+        "decisions": [
+          ["Scope", "Add Spanish across the interface and server messages."],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Spanish appears in the language menu.",
+          "Menus, forms, and server feedback use the expected translations.",
+          "The selected language remains consistent after navigation."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-workspace-cn.png",
+        "imageAlt": "Languages example: Add a language",
+        "status": "Business example",
+        "doc": "/capabilities/i18n/usage"
+      },
+      {
+        "id": "default",
+        "title": "Default language",
+        "summary": "Choose the first language for users without a saved preference.",
+        "decisions": [
+          [
+            "Scope",
+            "Choose the first language for users without a saved preference."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "A fresh browser displays the configured default.",
+          "Existing saved preferences remain unchanged.",
+          "The document's lang attribute matches the active language."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Languages example: Default language",
+        "status": "Business example",
+        "doc": "/capabilities/i18n/usage"
+      },
+      {
+        "id": "fallback",
+        "title": "Complete translations",
+        "summary": "Find missing Spanish text without modifying business records.",
+        "decisions": [
+          [
+            "Scope",
+            "Find missing Spanish text without modifying business records."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Client and server translation gaps are addressed.",
+          "Fallback follows the configured order.",
+          "The locale check passes and customer names are unchanged."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Languages example: Complete translations",
+        "status": "Business example",
+        "doc": "/capabilities/i18n/usage"
+      }
+    ],
+    "promptKey": "i18n"
+  },
+  "theme": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Themes</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-palette\" aria-hidden=\"true\"><circle cx=\"13.5\" cy=\"6.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"17.5\" cy=\"10.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"8.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"6.5\" cy=\"12.5\" r=\".5\" fill=\"currentColor\"></circle><path d=\"M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z\"></path></svg></span><h1>Themes</h1></div><p class=\"auth-lead\">Make the application feel like your organization.</p><p class=\"auth-intro\">Adjust colors, typography, and density while preserving clear, usable light and dark appearances.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Starting points</span><h3>Comfortable and Compact</h3><p>Choose a density that fits the work before changing individual design values.</p></article><article><span class=\"badge\">Personal appearance</span><h3>Theme selection</h3><p>Let users choose among the application&#x27;s available themes and appearances.</p></article><article><span class=\"badge\">Application changes</span><h3>Modify, add, or remove</h3><p>Ask the Agent to refine an existing theme or implement a separate brand theme.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Themes scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/theme/usage\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>Personal selection and code changes differ</h3><p>Choosing a theme affects the user&#x27;s appearance preference. Adding or changing a theme modifies the application&#x27;s available design.</p></article><article><h3>Check both light and dark</h3><p>Verify contrast, tables, forms, images, and third-party content in each supported appearance.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/theme/usage\"><strong>Usage guide <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/i18n/\"><strong>Language switching <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "adjust",
+        "title": "Modify a theme",
+        "summary": "Refine Compact colors and radii while preserving density and typography.",
+        "decisions": [
+          [
+            "Scope",
+            "Refine Compact colors and radii while preserving density and typography."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The primary color and corner radii change as requested.",
+          "Font sizes and compact spacing remain unchanged.",
+          "Forms and tables remain readable in supported appearances."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-appearance-en.png",
+        "imageAlt": "Themes example: Modify a theme",
+        "status": "Business example",
+        "doc": "/capabilities/theme/usage"
+      },
+      {
+        "id": "brand",
+        "title": "Add a brand theme",
+        "summary": "Provide a separate Northstar theme alongside existing choices.",
+        "decisions": [
+          [
+            "Scope",
+            "Provide a separate Northstar theme alongside existing choices."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The new theme is available with translated names.",
+          "Existing Comfortable and Compact themes remain available.",
+          "Both light and dark appearances have readable text and controls."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-brand-light-en.png",
+        "imageAlt": "Themes example: Add a brand theme",
+        "status": "Business example",
+        "doc": "/capabilities/theme/usage"
+      },
+      {
+        "id": "remove",
+        "title": "Remove a theme",
+        "summary": "Remove an unused theme and verify the remaining appearance choices.",
+        "decisions": [
+          [
+            "Scope",
+            "Remove an unused theme and verify the remaining appearance choices."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The removed theme no longer appears in the selector.",
+          "Users previously selecting it receive a valid remaining appearance.",
+          "Other themes continue to work."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "Themes example: Remove a theme",
+        "status": "Business example",
+        "doc": "/capabilities/theme/usage"
+      }
+    ],
+    "promptKey": "theme"
+  },
+  "ai-employee": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">AI employees</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"8\" width=\"16\" height=\"12\" rx=\"3\"/><path d=\"M12 8V4H9M2 12v4m20-4v4M9 12v2m6-2v2m-6 3h6\"/></svg></span><h1>AI employees</h1></div><p class=\"auth-lead\">Give your application an assistant with a clear responsibility.</p><p class=\"auth-intro\">Connect page context, authorized business queries, and explicitly allowed actions to an assistant using your model service.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Model connection</span><h3>Assistant responsibilities</h3><p>Select a configured model service and explain the assistant&#x27;s scope of work.</p></article><article><span class=\"badge\">Business context</span><h3>Pages and records</h3><p>Supply the current record and authorized data through application-owned operations.</p></article><article><span class=\"badge\">Allowed actions</span><h3>Queries and changes</h3><p>Start with queries, then explicitly define which changes the assistant may perform.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"AI employees scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/ai-employee/\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>The assistant follows business permissions</h3><p>Do not expand access beyond the user and the assistant&#x27;s allowed operations.</p></article><article><h3>Keep context current</h3><p>When the user changes records, update the context and avoid mixing information from a previous page.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/ai-knowledge-base/\"><strong>AI knowledge bases overview <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/authorization/\"><strong>Authorization <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "index-0",
+        "title": "Transport assistant",
+        "summary": "Start with an assistant that explains orders and answers authorized business queries.",
+        "decisions": [
+          [
+            "Scope",
+            "Start with an assistant that explains orders and answers authorized business queries."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The assistant uses the configured model service.",
+          "Queries respect the user's data scope.",
+          "No order changes or notifications happen without explicitly enabled actions."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "AI employees example: Transport assistant",
+        "status": "Business example",
+        "doc": "/capabilities/ai-employee/"
+      },
+      {
+        "id": "page-context-0",
+        "title": "Current order context",
+        "summary": "Keep the current order visible beside its assistant conversation.",
+        "decisions": [
+          [
+            "Scope",
+            "Keep the current order visible beside its assistant conversation."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "The assistant reads the correct order through authorized operations.",
+          "Switching orders updates the context.",
+          "Answers provide relevant business links without mixing records."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-ai-order-context-en.png",
+        "imageAlt": "AI employees example: Current order context",
+        "status": "Business example",
+        "doc": "/capabilities/ai-employee/page-context"
+      },
+      {
+        "id": "business-data-0",
+        "title": "Business queries",
+        "summary": "Find pending orders by customer, stage, or route.",
+        "decisions": [
+          ["Scope", "Find pending orders by customer, stage, or route."],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Results stay within the current user's data permissions.",
+          "Order cards show useful information and open the correct record.",
+          "Empty results and follow-up questions are handled clearly."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-ai-order-query-en.png",
+        "imageAlt": "AI employees example: Business queries",
+        "status": "Business example",
+        "doc": "/capabilities/ai-employee/business-data"
+      }
+    ],
+    "promptKey": "ai-employee"
+  },
+  "ai-knowledge-base": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">AI knowledge base</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>Application capabilities</b><i></i><span>Use as needed</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-book-open\" aria-hidden=\"true\"><path d=\"M12 7v14\"></path><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\"></path></svg></span><h1>AI knowledge base</h1></div><p class=\"auth-lead\">Answer questions with sources your team can inspect.</p><p class=\"auth-intro\">Organize business knowledge and connect retrieval so an assistant can answer with references to relevant documents.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Choose a scenario \u2192</a><a class=\"secondary\" href=\"#provided\">Explore the capability</a></div></div><aside class=\"identity\"><p>From a business requirement to a working feature</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Describe</strong><small>Your requirements</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Build</strong><small>With your Agent</small></div><span>\u2192</span><div class=\"identity-box\"><strong>Verify</strong><small>In your application</small></div></div><footer>Reuse existing capabilities and make business rules, integrations, and expected results explicit.</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#provided\">Capabilities</a><a href=\"#scenarios\">Scenarios and prompts</a><a href=\"#boundaries\">What to know</a><a href=\"#references\">Further reading</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>What is ready, and what needs integration?</h2><p>Start with the application's existing capabilities and identify the configuration or business implementation you need.</p></div><div class=\"availability\"><article><span class=\"badge\">Knowledge organization</span><h3>Documents and spaces</h3><p>Organize articles and files into readable, searchable business knowledge.</p></article><article><span class=\"badge\">Retrieval integration</span><h3>Models and indexing</h3><p>Connect model services, retrieval, and indexing through the application.</p></article><article><span class=\"badge\">Access and answers</span><h3>Sources and permissions</h3><p>Show source links and keep retrieval within the permitted knowledge scope.</p></article></div></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>Start with a business scenario</h2><p>These examples use Northstar's transport application. Adapt the names and rules, then send the prompt to the development Agent in your application project.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"AI knowledge base scenarios\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/ai-knowledge-base/\">Related documentation \u2192</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>What to know before you use it</h2><p>Verify these boundaries alongside the business feature.</p></div><div class=\"rules\"><article><h3>An answer needs evidence</h3><p>When no supporting material is found, say so instead of inventing company policy.</p></article><article><h3>Knowledge access still matters</h3><p>Respect document and workspace access rules when searching, reading, and composing answers.</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>When you need more detail</h2><p>Use these guides for configuration, daily use, and development.</p></div><div class=\"resources\"><a href=\"/capabilities/ai-employee/\"><strong>AI employees overview <span>\u2192</span></strong><p>Read the detailed guide.</p></a><a href=\"/capabilities/file/\"><strong>Files <span>\u2192</span></strong><p>Read the detailed guide.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">\u2190 All capabilities</a><a href=\"/\">Documentation home \u2192</a></nav><footer class=\"end\"><span>NocoBase 3 \u00b7 Documentation</span><span>Open source \u00b7 Self-hosted \u00b7 Your choice of models and Agents</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "scenarios": [
+      {
+        "id": "index-0",
+        "title": "Connect a knowledge center",
+        "summary": "Organize transport rules and manuals with searchable sources.",
+        "decisions": [
+          [
+            "Scope",
+            "Organize transport rules and manuals with searchable sources."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Folders, articles, and files are readable within the allowed scope.",
+          "Search and assistant answers point to relevant sources.",
+          "Retrieval and indexing use the application's configured services."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": null,
+        "imageAlt": "AI knowledge base example: Connect a knowledge center",
+        "status": "Business example",
+        "doc": "/capabilities/ai-knowledge-base/"
+      },
+      {
+        "id": "answers-0",
+        "title": "Source-based answers",
+        "summary": "Answer business questions using permitted transport documentation.",
+        "decisions": [
+          [
+            "Scope",
+            "Answer business questions using permitted transport documentation."
+          ],
+          [
+            "Implementation",
+            "Ask the Agent to reuse the application\u2019s existing capabilities and identify any required configuration."
+          ],
+          [
+            "Verification",
+            "Confirm the business result and access rules using the checks below."
+          ]
+        ],
+        "checks": [
+          "Answers include relevant document or passage references.",
+          "Missing evidence is reported without inventing policy.",
+          "Restricted content is not exposed through retrieval or answers."
+        ],
+        "note": "These screens illustrate a customized Northstar application. Adapt the requirements and verify the result in your own application.",
+        "image": "northstar-ai-knowledge-answer-en.png",
+        "imageAlt": "AI knowledge base example: Source-based answers",
+        "status": "Business example",
+        "doc": "/capabilities/ai-knowledge-base/answers"
+      }
+    ],
+    "promptKey": "ai-knowledge-base"
+  },
+  "task-center": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\"><nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Task Center</span></nav><section class=\"auth-hero\"><div><div class=\"section-label\"><b>Capability</b><i></i><span>Personal work</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg></span><h1>Task Center</h1></div><p class=\"auth-lead\">One place for the work that needs your attention.</p><p class=\"auth-intro\">Ask your Agent to connect approvals, equipment collection and other work: create personal entries, open details, handle work and keep states and counts aligned.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Get started →</a><a class=\"secondary\" href=\"#scenarios\">Copy a prompt</a></div></div><aside class=\"identity\"><p>Personal work driven by actual business records</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Business event</strong><small>Assign recipients</small></div><div class=\"identity-box\"><strong>Personal entry</strong><small>Find your work</small></div><div class=\"identity-box\"><strong>Business action</strong><small>Sync the result</small></div></div><footer>Pending · Completed · Cancelled. Business rules determine who may act.</footer></aside></section><nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#overview\">When to use it</a><a href=\"#scenarios\">Try it</a><a href=\"#references\">Related capabilities</a></nav><section id=\"overview\"><div class=\"section-head\"><h2>When to use it and what improves</h2></div><div class=\"rules\"><article><h3>When work spans different businesses</h3><p>A manager needs one view of leave and expense requests awaiting approval. An employee needs to submit missing documents and confirm equipment collection.</p><p>Use Task Center when personal work is scattered across different businesses.</p></article><article><h3>Find work quickly and keep track</h3><p>Open one entry point to see what needs your attention and enter the relevant business to handle it.</p><p>Reduce switching and overlooked tasks. Updated states and counts show what is finished and what remains.</p></article></div></section><section id=\"scenarios\"><div class=\"section-head\"><h2>Try four steps in your project</h2><p>Start with steps 1–4, then choose optional scenarios. Copy a prompt to the Agent in your application project and check the result.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Task Center integration steps\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/approval/stages\">Read prompts in Markdown ↗</a></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Related capabilities and documentation</h2></div><div class=\"resources\"><a href=\"/capabilities/approval/\"><strong>Approval ↗</strong><p>Configure approval routes and handling rules.</p></a><a href=\"/capabilities/notification/\"><strong>Notifications ↗</strong><p>Add reminders to business work.</p></a><a href=\"/capabilities/task-center.md\"><strong>Markdown documentation ↗</strong><p>Read or download the full guide for your Agent.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Back to capabilities</a><a href=\"#scenarios\">Start building ↑</a></nav><footer class=\"end\"><span>NocoBase 3 · Documentation</span><span>Open source · Self-hosted · Your choice of model and Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "promptKey": "task-center",
+    "scenarios": [
+      {
+        "id": "start",
+        "title": "Start with My tasks",
+        "summary": "Bring personal work into one place instead of checking each business page.",
+        "decisions": [
+          ["Example", "A manager opens My tasks from the navigation."]
+        ],
+        "checks": [
+          "Signed-in users see their own work and empty states.",
+          "Find work by business and status."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "1. Create an entry",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "approvals",
+        "title": "Bring in leave and expense approvals",
+        "summary": "Give managers one place to find applications waiting for their decision.",
+        "decisions": [
+          [
+            "Example",
+            "One manager’s leave and expense approvals appear together."
+          ]
+        ],
+        "checks": [
+          "Transfers cancel former recipients and create pending work for new ones.",
+          "Only currently offered approval actions appear."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "2. Connect approvals",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "handling",
+        "title": "Open details and take action",
+        "summary": "Open a task, use the actions the business allows, and refresh after handling.",
+        "decisions": [
+          [
+            "Example",
+            "Approving an expense moves it to completed and reduces the pending count."
+          ]
+        ],
+        "checks": [
+          "Only people allowed to handle the work can view details and act.",
+          "Handling refreshes lists and all related counts."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "3. Handle work",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "verification",
+        "title": "Try the flow with two accounts",
+        "summary": "Ask the Agent to verify real business work, then try it yourself.",
+        "decisions": [
+          [
+            "Example",
+            "Alex handles Alex’s work; Jordan cannot read or handle Alex’s personal entries."
+          ]
+        ],
+        "checks": [
+          "Isolation between two accounts is verified.",
+          "Executed and unexecuted scenarios are reported separately."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "4. Verify results",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "ordinary",
+        "title": "Connect ordinary work",
+        "summary": "Collection, missing documents and delivery confirmation can be tasks without approval stages.",
+        "decisions": [
+          [
+            "Example",
+            "Issuing EQ-001 to Alex creates work; confirming receipt completes it."
+          ]
+        ],
+        "checks": [
+          "The same work does not appear twice.",
+          "Successful collection completes the item; failed collection leaves it pending."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Equipment collection",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "dashboard",
+        "title": "See how much work remains",
+        "summary": "Show the pending count without opening the full list.",
+        "decisions": [
+          [
+            "Example",
+            "Two expense tasks and one equipment task give an all-source badge of 3."
+          ]
+        ],
+        "checks": [
+          "The dashboard count matches the task list it opens.",
+          "Business filters show matching work; switching accounts shows only that account’s work."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Dashboard badge",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "reassignment",
+        "title": "Transfer work to someone else",
+        "summary": "Cancel the former recipient’s unfinished entry and create work for the new recipient.",
+        "decisions": [
+          [
+            "Example",
+            "Equipment work moves from Alex to Jordan; only Jordan can confirm receipt."
+          ]
+        ],
+        "checks": [
+          "Former recipients cannot handle reassigned work.",
+          "Completed history is retained; unfinished work is cancelled as specified."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Reassignment",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "history",
+        "title": "Bring existing work into the center",
+        "summary": "Show old and new work together in an application already in use.",
+        "decisions": [
+          [
+            "Example",
+            "A paused backfill resumes without restoring pending status over online completion."
+          ]
+        ],
+        "checks": [
+          "Interrupted batches resume without duplicate entries.",
+          "Completed work never becomes pending again."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Historical work",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "notifications",
+        "title": "Notify recipients when work arrives",
+        "summary": "A notification signals work to do; completion still happens in the business.",
+        "decisions": [
+          [
+            "Example",
+            "Reading a collection reminder does not complete the task."
+          ]
+        ],
+        "checks": [
+          "One reminder per business event and recipient.",
+          "Reading does not complete tasks; delivery failure does not undo business writes."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Reminders",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      }
+    ]
+  }
+}

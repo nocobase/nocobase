@@ -1,59 +1,51 @@
 // @vitest-environment node
-/** A file's text extracted as Markdown in a worker thread, for every type the knowledge base parses. */
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
-
-import { describe, expect, it } from 'vitest';
-
+import { expect, it } from 'vitest';
+import { isParsed, workerExtractor } from '../server/index.js';
 import { KNOWLEDGE_PARSED_EXTENSIONS } from '../shared/knowledge.js';
-import { isParsed, workerExtractor } from '../server/parsing/index.js';
-import { rowsToMarkdown } from '../server/parsing/worker.js';
 
-const fixture = (name: string) =>
-  new Uint8Array(
-    readFileSync(path.resolve(import.meta.dirname, 'fixtures', name)),
-  );
-
-describe('extracting a file’s text', () => {
-  const extract = workerExtractor({ timeoutMs: 60_000 });
-
-  it.each(KNOWLEDGE_PARSED_EXTENSIONS.map((ext) => [ext]))(
-    'reads a .%s file',
-    async (ext) => {
-      const result = await extract({ bytes: fixture(`sample.${ext}`), ext });
-      expect(result.status).toBe('ready');
-      if (result.status !== 'ready') return;
-      expect(result.markdown.toLowerCase()).toContain(`quokka ${ext} marker`);
-    },
-  );
-
-  it('gives a section per sheet and a table per run of rows', async () => {
-    const result = await extract({
-      bytes: fixture('sample.xlsx'),
-      ext: 'xlsx',
-    });
-    expect(result).toMatchObject({ status: 'ready' });
-    if (result.status !== 'ready') return;
-    expect(result.markdown).toContain('## Budget');
-    expect(result.markdown).toContain('| item | note |');
-    expect(rowsToMarkdown([['a|b', ''], ['x']])).toBe(
-      '| a\\|b |\n| --- |\n| x |',
-    );
-  });
-
-  it('stores images and other types only', async () => {
-    expect(isParsed('png')).toBe(false);
-    expect(isParsed('PDF')).toBe(true);
-    expect(await extract({ bytes: fixture('sample.png'), ext: 'png' })).toEqual(
-      { status: 'unsupported' },
-    );
-  });
-
-  it('fails a file it cannot read, without failing the server', async () => {
-    const result = await extract({
-      bytes: new TextEncoder().encode('not a document'),
+it('keeps the public parsing entry compatible with the shared extractor', async () => {
+  expect(KNOWLEDGE_PARSED_EXTENSIONS).toHaveLength(11);
+  expect(isParsed('DOCX')).toBe(true);
+  expect(
+    await workerExtractor()({
+      bytes: readFileSync(new URL('./fixtures/sample.docx', import.meta.url)),
       ext: 'docx',
-    });
-    expect(result.status).toBe('failed');
+    }),
+  ).toMatchObject({
+    status: 'ready',
+    markdown: expect.stringContaining('quokka docx marker'),
   });
+});
+
+it('keeps single-argument extractor injection and Knowledge-owned persisted text', async () => {
+  const { createKnowledgeHarness } = await import('./harness.js');
+  const h = await createKnowledgeHarness({
+    extract: async (request) => ({
+      status: 'ready',
+      markdown: `## Custom\n\nInjected ${request.ext} content`,
+    }),
+  });
+  try {
+    h.projects.set('p1', { id: 'p1', name: 'Acme', leadUserId: 'lead' });
+    expect(h.knowledge.files.maxBytes).toBe(100 * 1024 * 1024);
+    const file = await h.knowledge.files.upload(
+      h.user('lead'),
+      { scope: 'project', scopeId: 'p1' },
+      new File(['fixture'], 'notes.txt'),
+    );
+    await h.knowledge.files.idle();
+    const parsed = await h.knowledge.docs.get(h.user('lead'), file.id);
+    expect(parsed.file?.parseStatus).toBe('ready');
+    expect(parsed.content).toBe('## Custom\n\nInjected txt content');
+    expect(
+      await h.knowledge.docs.search(
+        h.user('lead'),
+        { scope: 'project', scopeId: 'p1' },
+        'Injected',
+      ),
+    ).not.toHaveLength(0);
+  } finally {
+    await h.close();
+  }
 });

@@ -14,16 +14,6 @@ packages/templates/app-template-default/client-old/
 packages/templates/app-template-default/registry/
 packages/tools/create-plugin/template/
 
-# 文档站的这五个目录是从 @rspress/core 的 ejectable theme 逐字复制过来的，升级 rspress 时靠和上游同名文件
-# 做 diff 来判断改了什么，格式化会把每个文件整体重写、让 diff 失去意义。docs/.prettierignore 里列的是同一批
-# 路径——两份都要有：这份管从仓库根跑的 prettier（pre-commit hook、pnpm format:all），那份管在 docs/ 里跑的。
-# docs 的其余文件用的是和全仓一样的 @nocobase/dev-config 预设，正常格式化。
-docs/theme/components/Nav/
-docs/theme/components/NavHamburger/
-docs/theme/components/NavScreen/
-docs/theme/components/Search/
-docs/theme/components/HomeHero/
-
 # Skills are prose written for agents to read, not source this repository's formatter should reflow. `.agents/skills/`
 # and `.claude/skills/` hold symbolic links — into `skills/`, written by scripts/sync-skills.mjs here, and into
 # `.agents/skills/` in an application, written by `nocobase skills sync` — so formatting through one would check the
@@ -68,3 +58,6 @@ packages/app/app-skills/skills/nocobase-app-development/references/frontend/shad
 .changeset/*.md
 .changeset/pre/
 !.changeset/README.md
+
+# Preserve the migrated plugin guide and its checked examples without unrelated reformatting.
+/packages/app/app-skills/skills/nocobase-app-plugin-development/

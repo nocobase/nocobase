@@ -20,7 +20,7 @@ const runWaitZhCN: RunWaitLocale = {
       toolUnavailable: '工具未登录、被禁用或模型不可用（{{tool}}）',
       noSharedRunner: '仅他人的个人执行机在线',
       missingFeatures: '没有运行环境支持 {{features}}',
-      secretsNotAllowed: '需要团队运行环境：{{variables}} 仅限团队运行环境',
+      secretsNotAllowed: '需要共享运行环境：{{variables}} 仅限共享运行环境',
       sameWorkActive: '等前一个运行结束',
       concurrencyFull: '并发已满（{{active}}/{{limit}}）',
       runnersBusy: '可承接的执行机满载',

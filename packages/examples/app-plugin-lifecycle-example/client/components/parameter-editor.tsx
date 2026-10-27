@@ -1,4 +1,12 @@
-import { useId, useState, type ReactElement } from 'react';
+import { createUuid } from '@nocobase/app-client';
+import {
+  useEffect,
+  useId,
+  useState,
+  useImperativeHandle,
+  type Ref,
+  type ReactElement,
+} from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { JsonObject, ReviewerSelection } from '@nocobase/lifecycle';
 import type { ParameterGroupView } from '../../shared/parameter-configuration.js';
@@ -11,12 +19,19 @@ import { Button } from './ui/button.js';
 import { Input } from './ui/input.js';
 import { Textarea } from './textarea.js';
 
-function requestKey(): string {
-  return (
-    globalThis.crypto?.randomUUID?.() ??
-    `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  );
-}
+const businessParameterFields = new Set([
+  'paymentWindowMinutes',
+  'escalateAfterMinutes',
+  'waitMinutes',
+  'querySeconds',
+  'pollSeconds',
+  'maxMinutes',
+  'periodMinutes',
+  'dunningMinutes',
+  'maxDunning',
+  'reopenDays',
+]);
+
 function ReviewerRuleEditor({
   value,
   api,
@@ -156,12 +171,21 @@ export function ParameterEditor({
   actor,
   onSaved,
   onBusyChange,
+  onDirtyChange,
   embedded = false,
+  saveRef,
+  hideRevision = false,
 }: {
+  readonly saveRef?: Ref<{
+    save: () => Promise<boolean>;
+    values: () => JsonObject | undefined;
+  }>;
+  readonly hideRevision?: boolean;
   readonly group: ParameterGroupView;
   readonly api: ParameterApi;
   readonly actor: string;
   readonly onSaved?: (group: ParameterGroupView) => void;
+  readonly onDirtyChange?: (dirty: boolean) => void;
   readonly onBusyChange?: (busy: boolean) => void;
   readonly embedded?: boolean;
 }): ReactElement {
@@ -170,8 +194,11 @@ export function ParameterEditor({
   const [draft, setDraft] = useState<JsonObject>(() =>
     structuredClone(group.values),
   );
+  const [baseline, setBaseline] = useState(group.values);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
   const [revision, setRevision] = useState(group.revision);
-  const [requestId, setRequestId] = useState(requestKey);
+  const [requestId, setRequestId] = useState(createUuid);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [conflict, setConflict] = useState<ParameterGroupView>();
@@ -183,19 +210,23 @@ export function ParameterEditor({
   );
   const change = (key: string, value: JsonObject[string]): void => {
     setDraft((previous) => ({ ...previous, [key]: value }));
-    setRequestId(requestKey());
+    setRequestId(createUuid());
     setNote('');
   };
-  const save = async (): Promise<void> => {
+  const save = async (): Promise<boolean> => {
+    if (Object.values(objectErrors).some(Boolean)) return false;
     setBusy(true);
     onBusyChange?.(true);
     setNote('');
     try {
       const saved = await api.save(group.key, draft, revision, requestId);
+      setBaseline(saved.values);
+      setDraft(saved.values);
       setRevision(saved.revision);
       setConflict(undefined);
       setNote(t('parameters.saved'));
       onSaved?.(saved);
+      return true;
     } catch (error) {
       setNote(errorMessage(error));
       if (
@@ -211,11 +242,18 @@ export function ParameterEditor({
           setNote(errorMessage(readError));
         }
       }
+      return false;
     } finally {
       setBusy(false);
       onBusyChange?.(false);
     }
   };
+  useImperativeHandle(saveRef, () => ({
+    values: () =>
+      Object.values(objectErrors).some(Boolean) ? undefined : draft,
+    save: async () =>
+      Object.values(objectErrors).some(Boolean) ? false : !dirty || save(),
+  }));
   return (
     <section
       className={
@@ -226,28 +264,34 @@ export function ParameterEditor({
     >
       <div>
         <h3 className='font-medium'>{group.title}</h3>
-        <p className='text-sm text-muted-foreground'>
-          {t('parameters.revision', { revision })} ·{' '}
-          {group.origin === 'default' && revision === 0
-            ? t('parameters.codeDefaults')
-            : t('parameters.databaseVersion')}
-        </p>
+        {!hideRevision && (
+          <p className='text-sm text-muted-foreground'>
+            {t('parameters.revision', { revision })} ·{' '}
+            {group.origin === 'default' && revision === 0
+              ? t('parameters.codeDefaults')
+              : t('parameters.databaseVersion')}
+          </p>
+        )}
       </div>
       {Object.entries(group.fields).map(([key, field]) => (
         <div key={key} className='space-y-2'>
           <label htmlFor={`${id}:${key}`} className='text-sm font-medium'>
-            {field.title}
+            {businessParameterFields.has(key)
+              ? t(`parameters.fields.${key}.title`)
+              : field.title}
           </label>
           <p className='text-xs text-muted-foreground'>
-            {[
-              ...new Set(
-                group.uses
-                  .filter((use) => use.field === key)
-                  .map((use) => use.readMode),
-              ),
-            ]
-              .map((mode) => t(`parameters.${mode}Effect`))
-              .join(' · ')}
+            {businessParameterFields.has(key)
+              ? t(`parameters.fields.${key}.description`)
+              : [
+                  ...new Set(
+                    group.uses
+                      .filter((use) => use.field === key)
+                      .map((use) => use.readMode),
+                  ),
+                ]
+                  .map((mode) => t(`parameters.${mode}Effect`))
+                  .join(' · ')}
           </p>
           {field.type === 'reviewers' ? (
             <ReviewerRuleEditor
@@ -264,7 +308,11 @@ export function ParameterEditor({
             />
           ) : field.type === 'boolean' ? (
             <Choice
-              label={field.title}
+              label={
+                businessParameterFields.has(key)
+                  ? t(`parameters.fields.${key}.title`)
+                  : field.title
+              }
               value={draft[key] === true ? 'true' : 'false'}
               disabled={!group.canUpdate || busy}
               options={[
@@ -321,16 +369,6 @@ export function ParameterEditor({
           )}
         </div>
       ))}
-      <div className='space-y-1 text-xs text-muted-foreground'>
-        {group.uses.map((use) => (
-          <p key={`${use.lifecycle}:${use.field}`}>
-            {use.lifecycle} · {use.field} · {use.readMode} ·{' '}
-            {use.bindings
-              .map((binding) => binding.state ?? binding.transition)
-              .join(', ')}
-          </p>
-        ))}
-      </div>
       {note && (
         <p role='status' className='text-sm'>
           {note}
@@ -349,7 +387,7 @@ export function ParameterEditor({
             onClick={() => {
               setRevision(conflict.revision);
               setConflict(undefined);
-              setRequestId(requestKey());
+              setRequestId(createUuid());
             }}
           >
             {t('parameters.keepDraft')}
@@ -357,18 +395,18 @@ export function ParameterEditor({
         </div>
       )}
       <div className='flex flex-wrap items-center gap-2'>
-        {group.canUpdate ? (
+        {group.canUpdate && !saveRef ? (
           <Button
             disabled={busy || Object.values(objectErrors).some(Boolean)}
             onClick={() => void save()}
           >
             {t('parameters.save')}
           </Button>
-        ) : (
+        ) : !group.canUpdate ? (
           <p className='text-sm text-muted-foreground'>
             {t('parameters.readOnly')}
           </p>
-        )}
+        ) : null}
         {hasReviewers && group.canUpdate && (
           <Button
             variant='outline'

@@ -25,6 +25,7 @@ import {
 import {
   readConnections,
   readSettings,
+  writeSettings,
   runnerClient,
 } from '../src/lib/config.ts';
 import { runnerPaths } from '../src/lib/home.ts';
@@ -43,6 +44,7 @@ import { PROTOCOL_VERSION, RUNNER_ROUTES } from '../src/protocol/index.ts';
 import { FakeServer, waitFor } from './fake-server.ts';
 import {
   cliEnv,
+  cli,
   registerRunner,
   removeDir,
   tempDir,
@@ -213,11 +215,10 @@ describe('served tarballs', () => {
 
   beforeEach(async () => {
     server = new FakeServer();
+    server.capacity = { slots: 2, toolSlots: {} };
     await server.listen();
     home = tempDir('nocobase-runner-update-home-');
     await registerRunner(server.url, cliEnv(home), [
-      '--slots',
-      '2',
       '--cli',
       `appcli=${writeFakeCli(home)}`,
     ]);
@@ -275,7 +276,7 @@ describe('served tarballs', () => {
   });
 
   it.each(['graceful', 'forced'] as const)(
-    'interrupts a running tool (%s), preserves its local head and removes worktrees before installing, reporting zero capacity',
+    'interrupts a running tool (%s), preserves its worktree and uncommitted files before installing, reporting zero capacity',
     async (mode) => {
       vi.stubEnv('NOCOBASE_RUNNER_ADAPTER', 'echo');
       const remote = makeRemote(home);
@@ -299,10 +300,12 @@ describe('served tarballs', () => {
           turn: `write upgrade.txt preserved\n${mode === 'forced' ? 'hang-hard' : 'hang'}`,
         },
       });
+      // The Claude limit is the application's own, sent in heartbeat answers.
+      server.capacity = { slots: 2, toolSlots: { claude: 2 } };
       const paths = runnerPaths(home, `${home}-work`);
       const apply = vi.fn(async () => {
         expect(run.fail?.reason).toBe('runnerUpgrade');
-        expect(existsSync(String(run.start?.workDir))).toBe(false);
+        expect(existsSync(String(run.start?.workDir))).toBe(true);
       });
       const daemon = new RunnerDaemon({
         paths,
@@ -314,7 +317,6 @@ describe('served tarballs', () => {
           cancelGraceMs: mode === 'forced' ? 1 : 10_000,
           killGraceMs: mode === 'forced' ? 1 : 5_000,
         },
-        toolSlots: { claude: 2 },
         log: () => {},
         selfUpdate: {
           installation: { prefix: home, current: path.join(home, 'current') },
@@ -362,10 +364,19 @@ describe('served tarballs', () => {
         )
           .split('\n')
           .filter(Boolean);
-        expect(refs).toHaveLength(1);
-        expect(git(['show', `${refs[0]}:upgrade.txt`], cache)).toBe(
-          'preserved',
-        );
+        expect(refs).toEqual([]);
+        expect(
+          readFileSync(
+            path.join(String(run.start?.workDir), 'repo/upgrade.txt'),
+            'utf8',
+          ),
+        ).toBe('preserved');
+        expect(
+          git(
+            ['status', '--porcelain'],
+            path.join(String(run.start?.workDir), 'repo'),
+          ),
+        ).toContain('upgrade.txt');
         const heartbeats = [...server.runners.values()]
           .flatMap((runner) => runner.heartbeats)
           .filter((heartbeat) => heartbeat.load.draining === 'updatePending');
@@ -415,7 +426,7 @@ describe('served tarballs', () => {
     const apply = vi.fn(async () => {
       for (const run of [existing, late]) {
         expect(run.fail?.reason).toBe('runnerUpgrade');
-        expect(existsSync(String(run.start?.workDir))).toBe(false);
+        expect(existsSync(String(run.start?.workDir))).toBe(true);
       }
       expect(daemon.activeRuns).toEqual([]);
     });
@@ -473,6 +484,7 @@ describe('served tarballs', () => {
     let pendingClaim: Promise<number> | undefined;
     let responseSpy: ReturnType<typeof vi.spyOn> | undefined;
     try {
+      await daemon.heartbeat(link);
       await daemon['claimFrom'](link, 1, false);
       await waitFor(
         () =>
@@ -532,15 +544,18 @@ describe('served tarballs', () => {
       )
         .split('\n')
         .filter(Boolean);
-      expect(refs).toHaveLength(2);
-      for (const key of ['existing', 'late']) {
-        const ref = refs.find((ref) =>
-          git(['ls-tree', '--name-only', ref], cache).includes(`${key}.txt`),
-        );
-        expect(ref).toBeDefined();
-        expect(git(['show', `${ref}:${key}.txt`], cache)).toBe('preserved');
-      }
-      expect(existsSync(String(late.start?.workDir))).toBe(false);
+      expect(refs).toEqual([]);
+      for (const [key, run] of [
+        ['existing', existing],
+        ['late', late],
+      ] as const)
+        expect(
+          readFileSync(
+            path.join(String(run.start?.workDir), `repo/${key}.txt`),
+            'utf8',
+          ),
+        ).toBe('preserved');
+      expect(existsSync(String(late.start?.workDir))).toBe(true);
       expect(server.lastHeartbeat()?.load).toMatchObject({
         free: 0,
         draining: 'updatePending',
@@ -553,6 +568,71 @@ describe('served tarballs', () => {
       responseSpy?.mockRestore();
       cancelSpy.mockRestore();
       exitSpy.mockRestore();
+    }
+  });
+
+  it('reports draining with zero total and tool capacity before installing, one heartbeat at a time', async () => {
+    server.capacity = { slots: 2, toolSlots: { claude: 1 } };
+    const paths = runnerPaths(home, `${home}-work`);
+    const reported = () =>
+      server.runners.values().next().value!.heartbeats.at(-1)?.load;
+    let atInstall: ReturnType<typeof reported>;
+    const apply = vi.fn(async () => {
+      atInstall = reported();
+    });
+    const daemon = new RunnerDaemon({
+      paths,
+      settings: await readSettings(paths),
+      connections: [await connection()],
+      adapters: new Map(),
+      timings: FAST_TIMINGS,
+      log: () => {},
+      selfUpdate: {
+        installation: { prefix: home, current: path.join(home, 'current') },
+        apply,
+      },
+    });
+    const link = daemon['links'][0]!;
+    const request = link.client.request.bind(link.client);
+    let inFlight = 0;
+    let overlapped = false;
+    const requestSpy = vi
+      .spyOn(link.client, 'request')
+      .mockImplementation(async (...args) => {
+        if (args[1] !== RUNNER_ROUTES.heartbeat) return request(...args);
+        overlapped ||= inFlight > 0;
+        inFlight += 1;
+        try {
+          return await request(...args);
+        } finally {
+          inFlight -= 1;
+        }
+      });
+    try {
+      await daemon.heartbeat(link);
+      expect(reported()).toMatchObject({ slots: 2, free: 2 });
+      server.upgrade = {
+        minVersion: '0.0.0',
+        latestVersion: '99.0.0',
+        downloadUrl: '/update',
+        sha256: 'a'.repeat(64),
+        reason: 'test',
+      };
+      // The heartbeat that learns of the update has already reported free capacity.
+      await daemon.heartbeat(link);
+      await waitFor(() => daemon.updatedTo === '99.0.0', 30_000);
+      await daemon.wait();
+      expect(apply).toHaveBeenCalledOnce();
+      expect(atInstall).toMatchObject({
+        draining: 'updatePending',
+        slots: 2,
+        free: 0,
+        tools: { claude: { slots: 1, free: 0 } },
+      });
+      expect(overlapped).toBe(false);
+    } finally {
+      await daemon.stop();
+      requestSpy.mockRestore();
     }
   });
 
@@ -592,6 +672,7 @@ describe('served tarballs', () => {
     await daemon.start();
     await daemon.wait();
     expect(daemon.updatedTo).toBe(next);
+    expect(daemon.exitCode).toBe(75);
     expect(readlinkSync(path.join(prefix, 'current'))).toBe(`versions/${next}`);
     expect(
       readFileSync(
@@ -607,6 +688,65 @@ describe('served tarballs', () => {
     // none.
     expect(readlinkSync(path.join(prefix, 'node'))).toBe(process.execPath);
     expect(logs.join('\n')).toContain(`updated to nocobase-runner ${next}`);
+  });
+
+  it('explicitly restarts an installed service after a manual update, even when its daemon is stopped', async () => {
+    const prefix = path.join(scratch, 'manual-service-update');
+    installation(prefix, runnerVersion());
+    const next = '99.0.8';
+    const bytes = tarball('nocobase-runner', next);
+    server.distFiles.set(`nocobase-runner/${next}/runner.tar.gz`, bytes);
+    server.resolution.artifact = {
+      product: 'nocobase-runner',
+      version: next,
+      target: 'linux-x64',
+      url: `/api/agents/dist/products/nocobase-runner/versions/${next}/files/runner.tar.gz`,
+      sha256: sha256(bytes),
+      size: bytes.length,
+      channel: 'stable',
+    };
+    const paths = runnerPaths(home, `${home}-work`);
+    await writeSettings(
+      {
+        ...(await readSettings(paths)),
+        serviceLabel: 'com.example.manual-update',
+      },
+      paths,
+    );
+    const bin = path.join(home, 'fake-service-bin');
+    mkdirSync(bin);
+    const calls = path.join(home, 'service-calls.json');
+    for (const name of ['systemctl', 'launchctl']) {
+      const executable = path.join(bin, name);
+      writeFileSync(
+        executable,
+        `#!${process.execPath}\nimport { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)));\n`,
+      );
+      chmodSync(executable, 0o755);
+    }
+    const result = await cli(
+      ['update'],
+      cliEnv(home, {
+        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+        NOCOBASE_RUNNER_INSTALLATION: path.join(
+          prefix,
+          'versions',
+          runnerVersion(),
+        ),
+      }),
+    );
+    expect(result.stderr).toBe('');
+    expect(result.code).toBe(0);
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe(`versions/${next}`);
+    expect(JSON.parse(readFileSync(calls, 'utf8'))).toEqual(
+      process.platform === 'darwin'
+        ? [
+            'kickstart',
+            '-k',
+            `gui/${process.getuid?.() ?? 501}/com.example.manual-update`,
+          ]
+        : ['--user', 'restart', 'com.example.manual-update.service'],
+    );
   });
 
   it('only logs an update when it is not an installation its service supervises', async () => {

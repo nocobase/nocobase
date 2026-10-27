@@ -18,6 +18,8 @@
  *   so a runner without a recent enough `claude` reports Claude Code
  *   unavailable and is offered no Claude runs.
  */
+import { boundedOutputText, StreamOutput } from './stream-output.ts';
+import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access, realpath, stat } from 'node:fs/promises';
@@ -25,7 +27,7 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { AbortError, query } from '@anthropic-ai/claude-agent-sdk';
 import type {
   ModelInfo,
   Options,
@@ -35,6 +37,7 @@ import type {
 } from '@anthropic-ai/claude-agent-sdk';
 
 import { classifyClaudeFailure } from './classify.ts';
+import { claudeQuota } from './quota.ts';
 import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
@@ -232,6 +235,14 @@ export class ClaudeAdapter implements AgentAdapter {
     };
   }
 
+  private program(): Promise<string | undefined> {
+    return findOnPath('claude', this.options.searchPath);
+  }
+
+  async fingerprint(): Promise<string> {
+    return programFingerprint(await this.program());
+  }
+
   features(): RunnerFeature[] {
     return ['steer'];
   }
@@ -329,8 +340,8 @@ export class ClaudeAdapter implements AgentAdapter {
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
   }> {
-    const { exec, minVersion, searchPath } = this.options;
-    const found = await findOnPath('claude', searchPath);
+    const { exec, minVersion } = this.options;
+    const found = await this.program();
     if (!found)
       return {
         detection: { installed: false, authenticated: false },
@@ -367,6 +378,7 @@ export class ClaudeAdapter implements AgentAdapter {
 }
 
 class ClaudeRun {
+  private quotaRejected = false;
   private readonly events = new Channel<AdapterEvent>();
   private input = new Channel<SDKUserMessage>();
   private recovered = false;
@@ -424,6 +436,8 @@ class ClaudeRun {
       result: this.done,
     };
   }
+
+  private readonly streaming = new StreamOutput((event) => this.emit(event));
 
   private emit(event: Omit<AdapterEvent, 'at'>): void {
     this.events.push({ at: new Date().toISOString(), ...event });
@@ -508,7 +522,7 @@ class ClaudeRun {
       allowDangerouslySkipPermissions: true,
       env: { ...session.env },
       abortController: this.abortController,
-      includePartialMessages: false,
+      includePartialMessages: session.outputBlocks === true,
       stderr: (data: string) => {
         this.stderrTail = (this.stderrTail + data).slice(-8192);
         this.stderrLines.push(...data.split('\n').filter(Boolean));
@@ -597,6 +611,8 @@ class ClaudeRun {
       this.input.close();
     }
     const result = this.outcome(thrown);
+    if (this.session.outputBlocks)
+      this.streaming.end(this.stopping && thrown instanceof AbortError);
     if (result.error)
       this.emit({
         type: 'error',
@@ -646,7 +662,13 @@ class ClaudeRun {
     } else {
       return { ...base, exit: 'completed', summary: r.result };
     }
-    return { ...base, exit: 'error', error: classifyClaudeFailure(signal) };
+    return {
+      ...base,
+      exit: 'error',
+      error: this.quotaRejected
+        ? { reason: 'toolQuota', message: 'Claude account quota exhausted.' }
+        : classifyClaudeFailure(signal),
+    };
   }
 
   /**
@@ -692,8 +714,149 @@ class ClaudeRun {
     }
   }
 
+  private readonly partialMessages = new Map<
+    string,
+    {
+      id: string;
+      blocks: Map<
+        number,
+        { type: string; text: string; assigned: boolean; truncated: boolean }
+      >;
+    }
+  >();
+  private readonly completedEnvelopes = new Set<string>();
+  private partialBlockCount = 0;
+  private onPartial(
+    message: Extract<SDKMessage, { type: 'stream_event' }>,
+  ): void {
+    const parent = message.parent_tool_use_id ?? '';
+    const event = message.event;
+    if (event.type === 'message_start') {
+      if (!this.partialMessages.has(parent) && this.partialMessages.size >= 64)
+        return;
+      this.partialBlockCount -=
+        this.partialMessages.get(parent)?.blocks.size ?? 0;
+      this.partialMessages.set(parent, {
+        id: event.message.id,
+        blocks: new Map(),
+      });
+      return;
+    }
+    const state = this.partialMessages.get(parent);
+    if (!state) return;
+    const meta = parent ? { parentToolUseId: parent } : {};
+    if (
+      event.type === 'message_delta' &&
+      event.delta.stop_reason === 'max_tokens'
+    ) {
+      for (const index of state.blocks.keys())
+        this.streaming.finishPartial(`${parent}:${state.id}:${index}`);
+      return;
+    }
+    if (
+      (event.type === 'content_block_start' ||
+        event.type === 'content_block_delta') &&
+      !state.blocks.has(event.index) &&
+      this.partialBlockCount >= 64
+    )
+      return;
+    if (event.type === 'content_block_start') {
+      const block = event.content_block;
+      const text =
+        block.type === 'text'
+          ? block.text
+          : block.type === 'thinking'
+            ? block.thinking
+            : '';
+      if (!state.blocks.has(event.index)) this.partialBlockCount++;
+      state.blocks.set(event.index, {
+        type: block.type,
+        text: boundedOutputText(text),
+        truncated: Buffer.byteLength(text) > MAX_EVENT_TEXT_BYTES,
+        assigned: false,
+      });
+      if (text && (block.type === 'text' || block.type === 'thinking'))
+        this.streaming.delta(
+          `${parent}:${state.id}:${event.index}`,
+          block.type === 'text' ? 'text' : 'thinking',
+          text,
+          meta,
+        );
+    } else if (event.type === 'content_block_delta') {
+      const delta = event.delta;
+      if (delta.type !== 'text_delta' && delta.type !== 'thinking_delta')
+        return;
+      const type = delta.type === 'text_delta' ? 'text' : 'thinking';
+      const text = delta.type === 'text_delta' ? delta.text : delta.thinking;
+      const block = state.blocks.get(event.index) ?? {
+        type,
+        text: '',
+        truncated: false,
+        assigned: false,
+      };
+      if (!state.blocks.has(event.index)) this.partialBlockCount++;
+      if (!block.truncated) {
+        const candidate = block.text + text;
+        block.text = boundedOutputText(candidate);
+        block.truncated = block.text.length < candidate.length;
+      }
+      state.blocks.set(event.index, block);
+      this.streaming.delta(
+        `${parent}:${state.id}:${event.index}`,
+        type,
+        text,
+        meta,
+      );
+    }
+  }
+  private completePartial(
+    message: Extract<SDKMessage, { type: 'assistant' }>,
+    block:
+      { type: 'text'; text: string } | { type: 'thinking'; thinking: string },
+  ): void {
+    const parent = message.parent_tool_use_id ?? '';
+    const text = block.type === 'text' ? block.text : block.thinking;
+    const identity = `${message.uuid}:${message.message.content.indexOf(block as never)}`;
+    if (this.completedEnvelopes.has(identity)) return;
+    this.completedEnvelopes.add(identity);
+    const state = this.partialMessages.get(parent);
+    const candidates =
+      state?.id === message.message.id
+        ? [...state.blocks].filter(
+            ([, item]) =>
+              !item.assigned &&
+              item.type === block.type &&
+              text.startsWith(item.text),
+          )
+        : [];
+    const found =
+      candidates.find(([, item]) => item.text === text) ?? candidates[0];
+    if (
+      !found &&
+      state?.id === message.message.id &&
+      [...state.blocks.values()].some(
+        (item) =>
+          item.assigned &&
+          item.type === block.type &&
+          text.startsWith(item.text),
+      )
+    )
+      return;
+    if (found) found[1].assigned = true;
+    const key = `${parent}:${message.message.id}:${found ? found[0] : message.uuid + ':' + message.message.content.indexOf(block as never)}`;
+    this.streaming.complete(
+      key,
+      block.type === 'text' ? 'text' : 'thinking',
+      text,
+      parent ? { parentToolUseId: parent } : {},
+    );
+  }
+
   private onMessage(message: SDKMessage): void {
     switch (message.type) {
+      case 'stream_event':
+        if (this.session.outputBlocks) this.onPartial(message);
+        return;
       case 'system':
         this.onSystem(message);
         return;
@@ -708,25 +871,31 @@ class ClaudeRun {
           : {};
         for (const block of message.message.content) {
           if (block.type === 'text') {
-            const capped = capText(block.text);
-            this.emit({
-              type: 'text',
-              content: capped.text,
-              meta: {
-                ...parent,
-                ...(capped.truncated ? { truncated: true } : {}),
-              },
-            });
+            if (this.session.outputBlocks) this.completePartial(message, block);
+            else {
+              const capped = capText(block.text);
+              this.emit({
+                type: 'text',
+                content: capped.text,
+                meta: {
+                  ...parent,
+                  ...(capped.truncated ? { truncated: true } : {}),
+                },
+              });
+            }
           } else if (block.type === 'thinking') {
-            const capped = capText(block.thinking);
-            this.emit({
-              type: 'thinking',
-              content: capped.text,
-              meta: {
-                ...parent,
-                ...(capped.truncated ? { truncated: true } : {}),
-              },
-            });
+            if (this.session.outputBlocks) this.completePartial(message, block);
+            else {
+              const capped = capText(block.thinking);
+              this.emit({
+                type: 'thinking',
+                content: capped.text,
+                meta: {
+                  ...parent,
+                  ...(capped.truncated ? { truncated: true } : {}),
+                },
+              });
+            }
           } else if (
             block.type === 'tool_use' ||
             block.type === 'server_tool_use' ||
@@ -782,15 +951,21 @@ class ClaudeRun {
             meta: { message: message.error },
           });
         return;
-      case 'rate_limit_event':
-        if (message.rate_limit_info.status !== 'allowed') {
-          this.emit({
-            type: 'status',
-            content: 'rateLimit',
-            meta: { ...message.rate_limit_info },
-          });
-        }
+      case 'rate_limit_event': {
+        const quota = claudeQuota(
+          message.rate_limit_info,
+          this.model ?? this.session.model,
+        );
+        this.emit({ type: 'status', content: 'quota', meta: { quota } });
+        if (
+          message.rate_limit_info.status === 'rejected' &&
+          !['allowed', 'allowed_warning'].includes(
+            message.rate_limit_info.overageStatus ?? '',
+          )
+        )
+          this.quotaRejected = true;
         return;
+      }
       default:
         return;
     }

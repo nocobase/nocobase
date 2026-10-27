@@ -1,3 +1,4 @@
+import { fileInputFailureTitles } from '../../shared/file-input-failures.js';
 import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 import { expect, it } from 'vitest';
 
@@ -66,5 +67,101 @@ it.each([
     expect(text).toContain('Coding agent');
     expect(text).toContain(reason);
     expect(text).not.toContain('English fallback');
+  },
+);
+
+it.each([
+  ['en-US', 'Cancellation requested.'],
+  ['zh-CN', '已请求取消。'],
+] as const)(
+  'renders historical runCancelled as a request, never confirmation, in %s',
+  async (locale, expected) => {
+    const namespace = '@nocobase/app-plugin-agents';
+    const runtime = await createTestI18nRuntime({
+      locale,
+      namespaces: { [namespace]: locales },
+    });
+    const text = noticeText(
+      runtime.getFixedT(namespace, locale),
+      { code: 'runCancelled', runId: 'still-running' },
+      'You stopped the agent.',
+      () => 'Agent',
+    );
+    expect(text).toBe(expected);
+    expect(text).not.toMatch(/stopped|已停止|已取消/i);
+  },
+);
+
+it.each(['en-US', 'zh-CN'] as const)(
+  'localizes every file failure and safely handles historical/unknown notices in %s',
+  async (locale) => {
+    const namespace = '@nocobase/app-plugin-agents';
+    const runtime = await createTestI18nRuntime({
+      locale,
+      namespaces: { [namespace]: locales },
+    });
+    const t = runtime.getFixedT(namespace, locale);
+    for (const [reason, title] of Object.entries(fileInputFailureTitles)) {
+      const actual = noticeText(
+        t,
+        {
+          code: 'news',
+          type: 'failed',
+          title,
+          params: { fileInputReason: reason },
+        },
+        '',
+        () => '',
+      );
+      expect(actual).toBe(t(`chat.fileInputFailures.${reason}`));
+      expect(actual).not.toContain('chat.fileInputFailures.');
+      if (locale === 'en-US') expect(actual).toBe(title);
+      if (locale === 'zh-CN') expect(actual).not.toBe(title);
+    }
+    for (const reason of ['constructor', '__proto__', 'private-provider-key']) {
+      expect(
+        noticeText(
+          t,
+          {
+            code: 'news',
+            type: 'failed',
+            title: 'private-provider-key',
+            params: { fileInputReason: reason },
+          },
+          '',
+          () => '',
+        ),
+      ).toBe(t('chat.fileInputFailures.preparationFailed'));
+    }
+    expect(
+      noticeText(
+        t,
+        { code: 'news', type: 'failed', title: 'Interrupted' },
+        '',
+        () => '',
+      ),
+    ).toBe(t('chat.executionFailed'));
+    expect(
+      noticeText(
+        t,
+        { code: 'news', type: 'other', title: 'Custom public notice' },
+        '',
+        () => '',
+      ),
+    ).toBe('Custom public notice');
+    expect(
+      noticeText(
+        t,
+        {
+          code: 'news',
+          type: 'failed',
+          title: 'Interrupted',
+          params: { fileInputReason: 'imageCapability' },
+        },
+        '',
+        () => '',
+        () => 'Application wording',
+      ),
+    ).toBe('Application wording');
   },
 );

@@ -1,6 +1,6 @@
 /**
- * The agent collection, `agAgents`. Only this file reads or writes it. An agent removed by an earlier version keeps its
- * row with `deletedAt`, so the runs, comments and conversations that name it still show its name; lists leave it out.
+ * The agent collection, `agAgents`. Only this file reads or writes it. A removed manually kept agent retains its row with
+ * `deletedAt`, so the runs, comments and conversations that name it still show its name; lists leave it out.
  */
 import type { DatabaseConnection, Repository } from '@nocobase/db';
 
@@ -8,6 +8,7 @@ import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
 
 import {
   AGENT_STATUSES,
+  effortsFor,
   type Agent,
   type AgentName,
   type AgentSource,
@@ -84,6 +85,29 @@ export function entriesOf(value: unknown): RunnerModelEntry[] {
   return entries;
 }
 
+/** A runner agent is one tool and model; a stored entry may supply its existing reasoning effort. */
+export function runnerModelEntries(
+  record: Pick<AgentRecord, 'source' | 'tool' | 'model' | 'modelEntries'>,
+): RunnerModelEntry[] {
+  if (record.source !== 'runner' || !isTool(record.tool))
+    return entriesOf(record.modelEntries);
+  const model = text(record.model);
+  const existing = entriesOf(record.modelEntries).find(
+    (entry) => entry.tool === record.tool && entry.model === model,
+  );
+  return [
+    {
+      tool: record.tool,
+      model,
+      effort: existing
+        ? existing.effort
+        : effortsFor({ tool: record.tool }).includes('medium')
+          ? 'medium'
+          : null,
+    },
+  ];
+}
+
 /** A stored `{ key, ns }` i18n reference, or null. */
 function i18nTextOf(value: unknown): I18nText | null {
   const object = jsonObject(value);
@@ -96,12 +120,13 @@ export function toAgent(record: AgentRecord): Agent {
   const toolPolicy =
     record.toolPolicy === null ? null : jsonObject(record.toolPolicy);
   const source: AgentSource = record.source === 'system' ? 'system' : 'runner';
+  const isRunner = record.source === 'runner';
   const status: AgentStatus =
-    record.deletedAt || record.archivedAt
+    !isRunner && (record.deletedAt || record.archivedAt)
       ? 'disabled'
       : (AGENT_STATUSES as readonly string[]).includes(record.status)
         ? (record.status as AgentStatus)
-        : 'pending';
+        : 'disabled';
   return {
     id: record.id,
     name: record.name,
@@ -113,7 +138,7 @@ export function toAgent(record: AgentRecord): Agent {
     status,
     tool: isTool(record.tool) ? record.tool : null,
     model: record.model,
-    modelEntries: entriesOf(record.modelEntries),
+    modelEntries: runnerModelEntries(record),
     instructions: record.instructions,
     actions: stringArray(record.actions),
     confirmChanges: record.confirmChanges === 'always' ? 'always' : 'larger',
@@ -150,13 +175,13 @@ export async function findAgents(
   return new Map(records.map((record) => [record.id, toAgent(record)]));
 }
 
-/** Whether the agent is gone, or was removed by an earlier version (its row kept for the names in its history). */
+/** Whether the agent is gone, or a manually kept agent was removed by an earlier version. */
 export async function isRemoved(
   conn: DatabaseConnection,
   id: string,
 ): Promise<boolean> {
   const record = await agentsRepo(conn).findOne({ filter: { id } });
-  return !record || record.deletedAt !== null;
+  return !record || (record.source !== 'runner' && record.deletedAt !== null);
 }
 
 /** The names of agents by id, removed ones included: runs name them. */
@@ -189,7 +214,8 @@ export async function agentDirectory(
 /** The agents not removed, by name. */
 export async function listAgents(conn: DatabaseConnection): Promise<Agent[]> {
   const records = await agentsRepo(conn).findMany({
-    filter: (f) => f.date('deletedAt').empty(),
+    filter: (f) =>
+      f.or([f.date('deletedAt').empty(), f.string('source').eq('runner')]),
     sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
   });
   return records.map(toAgent);

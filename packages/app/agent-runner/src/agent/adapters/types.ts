@@ -15,6 +15,7 @@ import type {
   RunEventType,
   RunnerFeature,
   ToolCapabilities,
+  ToolStatusReason,
 } from '../../protocol/index.ts';
 
 export type { FailureReason, RunEventType, RunnerFeature };
@@ -93,9 +94,16 @@ export interface ToolDetection {
   version?: string;
   path?: string;
   authenticated: boolean;
+  status?: 'checking' | 'notInstalled' | 'needsLogin' | 'ready' | 'failed';
+  /** Why `status` is what it is, when known; reported on as `ToolInfo.statusReason`. Optional: no adapter must set it. */
+  statusReason?: ToolStatusReason;
+  /** The tool's own words about its status, redacted and bounded; reported on as `ToolInfo.statusDetail`. */
+  statusDetail?: string;
 }
 
 export interface AdapterSession {
+  /** Conversation-only incremental transport, negotiated by the server. */
+  outputBlocks?: boolean;
   /** Absolute path the agent works in (the checked-out worktree). */
   workDir: string;
   /** The first user message of the run. */
@@ -153,6 +161,8 @@ export interface AdapterHandle {
 
 export interface AgentAdapter {
   kind: ToolKind;
+  /** Checks program identity without starting it. */
+  fingerprint?(): Promise<string>;
   detect(signal?: AbortSignal): Promise<ToolDetection>;
   /** Fresh capability discovery, independent of cached installation detection. No method means unsupported. */
   detectModels?(signal: AbortSignal): Promise<ToolCapabilities>;

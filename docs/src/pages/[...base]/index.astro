@@ -1,0 +1,56 @@
+---
+/** The home page of each language. Its markup carries its own header and footer. */
+import type { GetStaticPaths } from 'astro';
+import { localizePath } from '../../../shared/languages.ts';
+import FullHome from '../../components/FullHome/index.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  getPages,
+  staticPathsOf,
+  translationsOf,
+  type DocPage,
+} from '../../lib/pages.ts';
+
+export const getStaticPaths = (() =>
+  staticPathsOf('home')) satisfies GetStaticPaths;
+
+interface Props {
+  page: DocPage;
+}
+
+const { page } = Astro.props;
+const pages = await getPages();
+const translations = translationsOf(pages, page.route);
+const capabilityHrefs = Object.fromEntries(
+  pages
+    .filter(
+      ({ language, kind, route }) =>
+        language === page.language &&
+        (kind === 'capability-overview' ||
+          (kind === 'doc' && /^\/capabilities\/[^/]+$/.test(route))),
+    )
+    .map(({ module, route, path }) => [module ?? route.split('/')[2], path]),
+);
+---
+
+<BaseLayout
+  language={page.language}
+  route={page.route}
+  title={page.title}
+  fullTitle
+  description={page.description}
+  keywords={page.keywords}
+  translations={translations}
+  header={false}
+  footer={false}
+  layout='home'
+>
+  <FullHome
+    language={page.language}
+    languageLinks={translations.map((language) => ({
+      language,
+      href: localizePath(language, page.route),
+    }))}
+    capabilityHrefs={capabilityHrefs}
+  />
+</BaseLayout>

@@ -1,9 +1,10 @@
+import { requestToolDetection } from '../../runners/tool-detection.js';
 /**
  * The people-facing runners API, mounted at `/api/agents/runners` beside the runner protocol (`runner.ts`): runners
  * and registration tokens. Every route is behind the guard the route contribution passes (a signed-in user and their
  * authorization context); what each caller may do is checked here.
  *
- * - `agents.runners` read/manage: every runner; adding a team runner, and revoking and deleting any runner. Revoking
+ * - `agents.runners` read/manage: every runner; adding a shared runner, and revoking and deleting any runner. Revoking
  *   someone else's runner is an emergency measure: its owner is told, and the server log records who did it.
  * - Changing a runner (its name, slots, coding tools, policy and trust) is its owner's alone, because the runner is
  *   their machine with their tools' sign-ins and credentials: a manager who could share it with the team would send
@@ -18,6 +19,12 @@
  *   (`runnerForViewer`).
  */
 import {
+  runnerListItem,
+  workspaceCategory,
+  workspaceSummary,
+} from '../../../shared/runners.js';
+import {
+  AgentToolSchema,
   MIN_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
 } from '@nocobase/agent-protocol';
@@ -42,10 +49,15 @@ import type {
   RunnerWorkTarget,
 } from '../../../shared/runners.js';
 import type { Agents } from '../../composition.js';
-import { runnerForViewer } from '../../core/runs/runner-view.js';
+import {
+  runnerForViewer,
+  runnerPublicData,
+} from '../../core/runs/runner-view.js';
 import { upgradeFor } from '../../distribution/index.js';
 import { forbidden, notFound } from '../../kernel/errors.js';
 import { domainRouter } from '../../kernel/http.js';
+import { z } from 'zod';
+import { ACTIVE, runsRepo } from '../../core/runs/run.store.js';
 import { tags } from '../openapi.js';
 import {
   RegistrationTokenInputSchema,
@@ -58,6 +70,8 @@ import {
   RunnerRecentRunSchema,
   RunnerSchema,
   RunnerSummarySchema,
+  RunnerWorkspaceSchema,
+  RunnerWorkspacePageMetaSchema,
   RunnerListItemSchema,
 } from '../schemas.js';
 
@@ -106,7 +120,7 @@ export function createAdminRoutes(
     ...apiErrorResponses,
     403: apiErrorResponse(
       403,
-      "Only the runner's owner may change it; a manager of runners (`agents.runners` manage) only once its owner can no longer act.",
+      'Only the owner may edit personal tools. A manager of runners (`agents.runners` manage) may edit shared tools, and other settings only once the owner can no longer act.',
     ),
     404: notVisible,
   };
@@ -119,10 +133,30 @@ export function createAdminRoutes(
     404: notVisible,
   };
 
+  const grants = new WeakMap<AdminCaller, Map<string, Promise<boolean>>>();
+  const can = (
+    who: AdminCaller,
+    item: SettingsItem,
+    action: SettingsAction,
+  ): Promise<boolean> => {
+    let cached = grants.get(who);
+    if (!cached) {
+      cached = new Map();
+      grants.set(who, cached);
+    }
+    const key = `${item}/${action}`;
+    let value = cached.get(key);
+    if (!value) {
+      value = who.can(item, action);
+      cached.set(key, value);
+    }
+    return value;
+  };
+
   /** Whether the caller sees every runner: `agents.runners` read, or `agents.agents` read (to pick where one runs). */
   const seesEveryRunner = async (who: AdminCaller): Promise<boolean> =>
-    (await who.can('agents.runners', 'read')) ||
-    (await who.can('agents.agents', 'read'));
+    (await can(who, 'agents.runners', 'read')) ||
+    (await can(who, 'agents.agents', 'read'));
 
   /** Whether the caller may wake at least one agent; asked once per request. */
   const usesAgents = new WeakMap<AdminCaller, Promise<boolean>>();
@@ -150,6 +184,7 @@ export function createAdminRoutes(
   const runnerRights = async (
     context: Context<AdminEnv>,
     runner: Runner,
+    inactive?: ReadonlySet<string>,
   ): Promise<{
     readonly see: boolean;
     readonly edit: boolean;
@@ -158,8 +193,13 @@ export function createAdminRoutes(
   }> => {
     const who = caller(context);
     const own = runner.ownerUserId === who.userId;
-    const revoke = own || (await who.can('agents.runners', 'manage'));
-    const edit = own || (revoke && (await ownerGone(runner)));
+    const revoke = own || (await can(who, 'agents.runners', 'manage'));
+    const edit =
+      own ||
+      (revoke &&
+        (inactive
+          ? !runner.ownerUserId || inactive.has(runner.ownerUserId)
+          : await ownerGone(runner)));
     const see = revoke || (await seesEveryRunner(who));
     const machine = revoke || (see && (await mayUseAgents(who)));
     return { see, edit, revoke, machine };
@@ -177,39 +217,38 @@ export function createAdminRoutes(
     context: Context<AdminEnv>,
     runner: Runner,
     takes: ReadonlyMap<string, readonly RunnerWorkTarget[]>,
-  ): Promise<RunnerSummary> => {
-    const rights = await runnerRights(context, runner);
-    const held = await services.slots.held(services.tx.read(), runner.id);
+    prefetched?: {
+      readonly held: ReadonlyMap<
+        string,
+        { runs: number; jobs: number; byTool: Record<string, number> }
+      >;
+      readonly inactive: ReadonlySet<string>;
+    },
+  ): Promise<Omit<RunnerSummary, 'recentRunsCount'>> => {
+    const rights = await runnerRights(context, runner, prefetched?.inactive);
+    const held =
+      prefetched?.held.get(runner.id) ??
+      (await services.slots.held(services.tx.read(), runner.id));
+    const visible = runnerForViewer(runner, rights.machine);
     return {
-      ...runnerForViewer(runner, rights.machine),
+      ...visible,
       activeRuns: held.runs,
       activeJobs: held.jobs,
       activeByTool: held.byTool ?? {},
       takes: takes.get(runner.id) ?? [],
       canManage: rights.edit,
+      canManageTools:
+        runner.ownerUserId === caller(context).userId ||
+        (runner.trust === 'team' &&
+          (await can(caller(context), 'agents.runners', 'manage'))),
       canChangeTrust: rights.edit,
       canRevoke: rights.revoke,
+      canClearQuota: rights.revoke,
       updateVersion:
         (await upgradeFor(services.dist, runner))?.latestVersion ?? null,
       requiredProtocol: { min: MIN_PROTOCOL_VERSION, max: PROTOCOL_VERSION },
       offersJobs: services.jobs.kinds().length > 0,
     };
-  };
-
-  /** The runner named in the path if the caller may change it: 404 when they may not see it, 403 when not theirs. */
-  const editableRunner = async (
-    context: Context<AdminEnv>,
-  ): Promise<Runner> => {
-    const runner = await services.runners.get(
-      context.req.param('runnerId') ?? '',
-    );
-    const rights = await runnerRights(context, runner);
-    if (!rights.see) throw notFound('Runner');
-    if (!rights.edit)
-      throw forbidden(
-        "Only the runner's owner may change it; a manager of runners only once its owner can no longer act.",
-      );
-    return runner;
   };
 
   /** The runner named in the path if the caller may revoke or delete it: 404 when they may not see it, else 403. */
@@ -260,28 +299,61 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        "Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own. Workspace usage contains totals only; use runtime get (GET /agents/runners/:runnerId) for directory diagnostics.",
+        "Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own. Workspace usage contains totals only; use runtime workspaces (GET /agents/runners/:runnerId/workspaces) for directory diagnostics.",
       responses: {
         200: listResponse(RunnerListItemSchema),
         ...apiErrorResponses,
       },
     }),
     async (context) => {
+      const all = await services.runners.list({ workspaceDetails: false });
+      const conn = services.tx.read();
+      const inactive = await services.people.inactive(conn, [
+        ...new Set(
+          all.flatMap((runner) =>
+            runner.ownerUserId ? [runner.ownerUserId] : [],
+          ),
+        ),
+      ]);
+      const jobs = await services.slots.jobsByRunner(conn);
+      const runs = await runsRepo(conn).findMany({
+        filter: (f) =>
+          f.or([...ACTIVE.map((status) => f.string('status').eq(status))]),
+        select: (s) => s.fields('runnerId', 'tool'),
+      });
+      const held = new Map<
+        string,
+        { runs: number; jobs: number; byTool: Record<string, number> }
+      >(
+        all.map((runner) => [
+          runner.id,
+          {
+            runs: 0,
+            jobs: jobs.get(runner.id) ?? 0,
+            byTool: {},
+          },
+        ]),
+      );
+      for (const run of runs) {
+        const item = run.runnerId ? held.get(run.runnerId) : undefined;
+        if (item) {
+          item.runs++;
+          if (run.tool)
+            item.byTool[run.tool] = (item.byTool[run.tool] ?? 0) + 1;
+        }
+      }
       const visible: Runner[] = [];
-      for (const runner of await services.runners.list({
-        workspaceDetails: false,
-      }))
-        if ((await runnerRights(context, runner)).see) visible.push(runner);
+      for (const runner of all)
+        if ((await runnerRights(context, runner, inactive)).see)
+          visible.push(runner);
       const takes = await takesOf(visible);
       const data = await Promise.all(
         visible.map(async (runner): Promise<RunnerListItem> => {
-          const summary = await summarizeRunner(context, runner, takes);
-          const { workspaceUsage, ...rest } = summary;
-          if (workspaceUsage) {
-            const { workspaces: _workspaces, ...totals } = workspaceUsage;
-            return { ...rest, workspaceUsage: totals };
-          }
-          return { ...rest, workspaceUsage };
+          const summary = await summarizeRunner(context, runner, takes, {
+            held,
+            inactive,
+          });
+          return runnerListItem(summary);
         }),
       );
       return context.json({ data, meta: { total: data.length } });
@@ -311,7 +383,7 @@ export function createAdminRoutes(
       const query = context.req.valid('query');
       const result = await services.runners.listRegistrationTokens({
         ...query,
-        ...((await who.can('agents.runners', 'manage'))
+        ...((await can(who, 'agents.runners', 'manage'))
           ? {}
           : { createdById: who.userId }),
       });
@@ -333,7 +405,7 @@ export function createAdminRoutes(
         examples: ['runtime token create --trust team'],
       }),
       description:
-        'A one-time token the install script registers a runner with; the token is shown only in this answer. Anyone signed in may add a personal runner; a runner shared with the team (`trust: team`) needs `agents.runners` manage.',
+        'A one-time token the install script registers a runner with; the token is shown only in this answer. Anyone signed in may add a personal runner; a runner shared with all users (`trust: team`) needs `agents.runners` manage.',
       responses: {
         201: dataResponse(RegistrationTokenSchema, 'Created.'),
         ...apiErrorResponses,
@@ -345,10 +417,10 @@ export function createAdminRoutes(
       const input = context.req.valid('json');
       if (
         input.trust === 'team' &&
-        !(await who.can('agents.runners', 'manage'))
+        !(await can(who, 'agents.runners', 'manage'))
       )
         throw forbidden(
-          'Adding a runner shared with the team needs agents.runners manage permission.',
+          'Adding a runner shared with all users needs agents.runners manage permission.',
         );
       return context.json(
         {
@@ -369,7 +441,7 @@ export function createAdminRoutes(
       summary: 'Get a runner',
       operationId: 'agentsGetRunner',
       description:
-        'Includes directory diagnostics in workspaceUsage.workspaces for callers allowed to see the machine; other callers receive an empty directory array and the same totals.',
+        'Overview settings and workspace totals only. Directory details and recent run rows load from their own endpoints when the tab opens.',
       ...cliRoute({
         command: 'runtime get',
         args: ['runnerId'],
@@ -385,7 +457,19 @@ export function createAdminRoutes(
     async (context) => {
       const runner = await visibleRunner(context);
       return context.json({
-        data: await summarizeRunner(context, runner, await takesOf([runner])),
+        data: {
+          ...(await summarizeRunner(
+            context,
+            {
+              ...runner,
+              workspaceUsage: runner.workspaceUsage
+                ? { ...workspaceSummary(runner.workspaceUsage), workspaces: [] }
+                : null,
+            },
+            await takesOf([runner]),
+          )),
+          recentRunsCount: await services.runnerView.recentCount(runner.id),
+        },
       });
     },
   );
@@ -481,22 +565,38 @@ export function createAdminRoutes(
         flags: { runnerId: { name: 'runtime' } },
       }),
       description:
-        "Its owner's alone, a manager of runners (`agents.runners` manage) included; a runner whose owner can no longer act (none recorded, or disabled or deleted) is changed by managers of runners.",
+        'Owners may change their runners. Managers of runners (`agents.runners` manage) may change shared tool selections and request detection, but cannot change personal tools or other settings of a runner with an active owner.',
       responses: { 200: dataResponse(RunnerSchema), ...editErrors },
     }),
     runnerParam,
-    async (context, next) => {
-      context.set('runnerToManage', await editableRunner(context));
-      await next();
-    },
     apiValidator('json', RunnerPatchInput),
-    async (context) =>
-      context.json({
-        data: await services.runners.update(
-          context.get('runnerToManage').id,
-          context.req.valid('json'),
-        ),
-      }),
+    async (context) => {
+      const runner = await visibleRunner(context);
+      const patch = context.req.valid('json');
+      const rights = await runnerRights(context, runner);
+      const toolsOnly = Object.keys(patch).every(
+        (key) => key === 'enabledTools' || key === 'redetectTools',
+      );
+      const owner = runner.ownerUserId === caller(context).userId;
+      const toolsAllowed =
+        owner ||
+        (runner.trust === 'team' &&
+          (await can(caller(context), 'agents.runners', 'manage')));
+      if (
+        !(toolsOnly ? toolsAllowed : rights.edit) ||
+        ((patch.enabledTools !== undefined || patch.redetectTools) &&
+          !toolsAllowed)
+      )
+        throw forbidden(
+          'Only the owner may edit personal tools; shared tools may also be edited by runner managers.',
+        );
+      const { redetectTools, ...settings } = patch;
+      const saved = Object.keys(settings).length
+        ? await services.runners.update(runner.id, settings)
+        : runner;
+      if (redetectTools) requestToolDetection(runner.id);
+      return context.json({ data: runnerPublicData(saved) });
+    },
   );
   router.post(
     '/:runnerId/revoke',
@@ -534,7 +634,7 @@ export function createAdminRoutes(
         );
       // What it held goes back to the queue now rather than at the next sweep.
       await services.sweeper.sweep();
-      return context.json({ data: revoked });
+      return context.json({ data: runnerPublicData(revoked) });
     },
   );
   router.delete(
@@ -569,5 +669,141 @@ export function createAdminRoutes(
     },
   );
 
+  router.post(
+    '/:runnerId/quota/clear',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Clear a runtime quota mark',
+      operationId: 'agentsClearRunnerQuota',
+      ...cliRoute({
+        command: 'runtime quota clear',
+        args: ['runnerId'],
+        flags: { runnerId: { name: 'runtime' } },
+      }),
+      responses: {
+        204: emptyResponse(),
+        ...apiErrorResponses,
+        403: apiErrorResponse(
+          403,
+          'Only the runtime owner or a runtime administrator may clear an unknown-reset quota mark.',
+        ),
+        404: notVisible,
+        400: apiErrorResponse(
+          400,
+          'A known reset clears automatically (QUOTA_RESET_KNOWN, FAILED_PRECONDITION).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'A concurrent quota change requires retrying (REVISION_CONFLICT).',
+        ),
+      },
+    }),
+    runnerParam,
+    apiValidator(
+      'json',
+      z.strictObject({
+        tool: AgentToolSchema.describe(
+          'The coding tool whose unknown-reset mark is selected.',
+        ),
+        scope: z
+          .enum(['tool', 'provider', 'model'])
+          .describe('The scope of the selected quota mark.'),
+        target: z
+          .string()
+          .max(200)
+          .describe('The provider or model id; empty for a whole-tool mark.'),
+        window: z
+          .string()
+          .min(1)
+          .max(100)
+          .describe('The selected usage window.'),
+      }),
+    ),
+    async (context) => {
+      const runner = await revocableRunner(context);
+      await services.runners.clearQuota(runner.id, context.req.valid('json'));
+      return context.body(null, 204);
+    },
+  );
+  router.get(
+    '/:runnerId/workspaces',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Read runtime workspace diagnostics',
+      operationId: 'agentsRunnerWorkspaces',
+      ...cliRoute({
+        command: 'runtime workspaces',
+        args: ['runnerId'],
+        flags: { runnerId: { name: 'runtime' } },
+      }),
+      responses: {
+        200: listResponse(RunnerWorkspaceSchema, RunnerWorkspacePageMetaSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    runnerParam,
+    apiValidator(
+      'query',
+      z.object({
+        page: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .default(1)
+          .describe('One-based workspace page.'),
+        pageSize: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(50)
+          .describe('Workspace rows per page, from 1 to 100.'),
+        status: z
+          .enum(['all', 'active', 'retained', 'ended'])
+          .default('all')
+          .describe(
+            'All directories, active subjects, retained directories needing verification, or ended directories eligible for cleanup.',
+          ),
+      }),
+    ),
+    async (context) => {
+      const runner = await services.runners.get(
+        context.req.valid('param').runnerId,
+      );
+      const rights = await runnerRights(context, runner);
+      if (!rights.see) throw notFound('Runner');
+      const visible = runnerForViewer(
+        {
+          ...runner,
+          workspaceUsage: runner.workspaceUsage
+            ? workspaceSummary(runner.workspaceUsage)
+            : null,
+        },
+        rights.machine,
+      );
+      const query = context.req.valid('query');
+      const usage = visible.workspaceUsage;
+      const rows = (usage?.workspaces ?? []).filter(
+        (workspace) =>
+          query.status === 'all' ||
+          workspaceCategory(workspace) === query.status,
+      );
+      const { workspaces: _rows, ...totals } = usage ?? { workspaces: [] };
+      return context.json({
+        data: rows.slice(
+          (query.page - 1) * query.pageSize,
+          query.page * query.pageSize,
+        ),
+        meta: {
+          total: rows.length,
+          page: query.page,
+          pageSize: query.pageSize,
+          usage: usage ? totals : null,
+        },
+      });
+    },
+  );
   return router;
 }

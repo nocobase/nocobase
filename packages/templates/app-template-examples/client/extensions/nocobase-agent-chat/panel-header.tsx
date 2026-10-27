@@ -1,0 +1,266 @@
+import { useConversationActions } from './conversation-actions.js';
+import {
+  useChatPanel,
+  useConversation,
+} from '@nocobase/app-plugin-agents/client/chat';
+import {
+  CONVERSATION_TITLE_MAX,
+  type ConversationDetail,
+  type ConversationMode,
+} from '@nocobase/app-plugin-agents/shared/conversations';
+import {
+  ArrowLeftRightIcon,
+  HistoryIcon,
+  Maximize2Icon,
+  Minimize2Icon,
+  PlusIcon,
+  XIcon,
+} from 'lucide-react';
+import { useState, type ReactElement } from 'react';
+
+import { Button } from '#components/ui/button';
+import { Input } from '#components/ui/input';
+import { cn } from 'cn';
+
+import { AgentLine } from './agent-status.js';
+import { useChatTranslation } from './chat-i18n.js';
+import { useChatMode, type ChatMode } from './chat-mode.js';
+
+const TOUCH = "size-9 shrink-0 [&_svg:not([class*='size-'])]:size-4";
+
+/** What the panel calls a mode, or `fallback` while only one is configured. */
+function modeTitle(
+  t: ReturnType<typeof useChatTranslation>['t'],
+  chat: ChatMode,
+  fallback: string,
+): string {
+  return chat.switchable && chat.mode ? t(`chat.modes.${chat.mode}`) : fallback;
+}
+
+/** "+": a new conversation in the current mode; a neutral icon button like the header's others. */
+export function NewConversationButton(): ReactElement {
+  const { t } = useChatTranslation();
+  const chat = useChatMode();
+  return (
+    <Button
+      variant='ghost'
+      size='icon-sm'
+      className={TOUCH}
+      aria-label={t('chat.newConversation')}
+      title={t('chat.newConversation')}
+      onClick={chat.startNew}
+      data-testid='chat-new-conversation'
+    >
+      <PlusIcon />
+    </Button>
+  );
+}
+
+/** The switch to the other mode; nothing while only one is configured. */
+export function ModeSwitchButton(): ReactElement | null {
+  const { t } = useChatTranslation();
+  const chat = useChatMode();
+  const other: ConversationMode | null = chat.other;
+  if (!other) return null;
+  const label = t(
+    other === 'online'
+      ? 'chat.modes.switchToOnline'
+      : 'chat.modes.switchToRunner',
+  );
+  return (
+    <Button
+      variant='ghost'
+      size='icon-sm'
+      className={TOUCH}
+      aria-label={label}
+      title={label}
+      onClick={() => chat.switchTo(other)}
+      data-testid='chat-mode-switch'
+      data-mode={chat.mode ?? undefined}
+    >
+      <ArrowLeftRightIcon />
+    </Button>
+  );
+}
+
+/** The conversation list's own header while the panel covers the content: the mode's name, then "+". */
+export function PanelHistoryHeader(): ReactElement {
+  const { t } = useChatTranslation();
+  const chat = useChatMode();
+  return (
+    <div
+      className='flex min-h-12 shrink-0 items-center gap-2 border-b px-3.5 py-1.5'
+      data-testid='chat-history-header'
+    >
+      <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
+        {modeTitle(t, chat, t('chat.history.title'))}
+      </h2>
+      <NewConversationButton />
+    </div>
+  );
+}
+
+export function PanelHeader({
+  compact,
+}: {
+  /** The full-screen mobile form: no width toggle. */
+  readonly compact: boolean;
+}): ReactElement {
+  const { t } = useChatTranslation();
+  const panel = useChatPanel();
+  const chat = useChatMode();
+  const expanded = panel.mode === 'expanded';
+  // While the panel covers the content the list stays on the left, so the header is the conversation's alone.
+  const split = expanded && !compact;
+  const history = !split && panel.view === 'history';
+  const detail = useConversation(panel.conversationId);
+  const conversation = detail.data ?? null;
+  const shownTitle = history
+    ? modeTitle(t, chat, t('chat.history.title'))
+    : conversation
+      ? conversation.title?.trim() || t('chat.untitled')
+      : split
+        ? t('chat.newConversation')
+        : modeTitle(t, chat, t('chat.newConversation'));
+
+  return (
+    <header className='flex min-h-12 shrink-0 flex-col justify-center gap-1 border-b px-3 py-1.5'>
+      <div className='flex min-w-0 items-center gap-0.5'>
+        <ConversationTitle
+          conversation={history ? null : conversation}
+          shown={shownTitle}
+        />
+        {split ? null : (
+          <>
+            <NewConversationButton />
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              className={TOUCH}
+              aria-label={t('chat.history.title')}
+              title={t('chat.history.title')}
+              aria-pressed={history}
+              onClick={() => panel.setView(history ? 'chat' : 'history')}
+              data-testid='chat-history-button'
+            >
+              <HistoryIcon />
+            </Button>
+          </>
+        )}
+        <ModeSwitchButton />
+        {compact ? null : (
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            className={TOUCH}
+            aria-label={expanded ? t('chat.restoreSize') : t('chat.expand')}
+            title={expanded ? t('chat.restoreSize') : t('chat.expand')}
+            onClick={() => {
+              panel.setView('chat');
+              panel.setMode(expanded ? 'docked' : 'expanded');
+              panel.focusComposer();
+            }}
+            data-testid='chat-expand'
+          >
+            {expanded ? <Minimize2Icon /> : <Maximize2Icon />}
+          </Button>
+        )}
+        <Button
+          variant='ghost'
+          size='icon-sm'
+          className={TOUCH}
+          aria-label={t('chat.close')}
+          title={t('chat.close')}
+          onClick={panel.closeChat}
+        >
+          <XIcon />
+        </Button>
+      </div>
+      {!history && conversation ? (
+        <AgentLine conversation={conversation} />
+      ) : null}
+    </header>
+  );
+}
+
+/**
+ * A conversation's title as a heading; clicking it renames the conversation in place (Enter saves, Escape cancels).
+ * Without a conversation it is plain text (`shown`). The panel's header and the full-page view share it.
+ */
+export function ConversationTitle({
+  conversation,
+  shown,
+  level = 2,
+  className,
+}: {
+  readonly conversation: ConversationDetail | null;
+  readonly shown: string;
+  readonly level?: 1 | 2;
+  /** The text's size and weight. */
+  readonly className?: string;
+}): ReactElement {
+  const { t } = useChatTranslation();
+  const actions = useConversationActions();
+  const [renaming, setRenaming] = useState(false);
+  const [title, setTitle] = useState('');
+  const Heading = level === 1 ? 'h1' : 'h2';
+  const text = className ?? 'text-sm font-semibold';
+
+  function save(): void {
+    setRenaming(false);
+    const next = title.trim().slice(0, CONVERSATION_TITLE_MAX);
+    if (conversation && next && next !== conversation.title)
+      actions.rename.mutate({ id: conversation.id, title: next });
+  }
+
+  if (renaming && conversation)
+    return (
+      <Input
+        autoFocus
+        value={title}
+        maxLength={CONVERSATION_TITLE_MAX}
+        className='h-8 flex-1'
+        aria-label={t('chat.rename')}
+        onChange={(event) => setTitle(event.target.value)}
+        onBlur={save}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+            event.preventDefault();
+            save();
+          } else if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            setRenaming(false);
+          }
+        }}
+      />
+    );
+  return (
+    <Heading className='min-w-0 flex-1'>
+      {conversation ? (
+        <button
+          type='button'
+          className={cn(
+            'block max-w-full truncate rounded-md px-1 text-left hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
+            text,
+          )}
+          title={t('chat.renameHint', { title: shown })}
+          onClick={() => {
+            setTitle(conversation.title ?? '');
+            setRenaming(true);
+          }}
+          data-testid='chat-title'
+        >
+          {shown}
+        </button>
+      ) : (
+        <span
+          className={cn('block truncate px-1', text)}
+          data-testid='chat-title'
+        >
+          {shown}
+        </span>
+      )}
+    </Heading>
+  );
+}

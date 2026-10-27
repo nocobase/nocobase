@@ -75,7 +75,7 @@ export interface RunRecord {
   readonly directoryKey: string | null;
   readonly claimFailures: number;
   readonly payloadFingerprint: string | null;
-  /** While queued: the variables for team runners only that kept a personal runner off it (`VariableRef[]`). */
+  /** While queued: the variables for shared runners only that kept a personal runner off it (`VariableRef[]`). */
   readonly teamOnlyVariables?: JsonColumn;
   /** While held: the repository URLs its runner may ask credentials for on demand (`RunGit.onDemand`); null otherwise. */
   readonly gitCredentialUrls?: JsonColumn;
@@ -276,6 +276,7 @@ export function toRun(record: RunRecord): Run {
     finishedAt: record.finishedAt,
     lastActivityAt: record.lastActivityAt,
     cancelRequestedAt: record.cancelRequestedAt,
+    cancelledById: record.cancelledById,
     failureReason: record.failureReason as FailureReason | null,
     failureDetail: record.failureDetail,
     summary: record.summary,

@@ -33,8 +33,10 @@ import {
   type NpmUpgradeNotice,
   type DistResolution,
   NPM_UPGRADE_FEATURE,
+  NATIVE_AGENT_TOOLS,
   DIST_ACCEPT_NPM,
   distAccepts,
+  type AgentTool,
   type WorkspaceReporting,
   type WorkspacesRequest,
   type WorkspacesResponse,
@@ -209,6 +211,9 @@ export class FakeServer {
   uploadStatus: number | undefined;
   /** The slots the registration token carries; registration answers the runner's own, else these, else 1. */
   tokenSlots: number | undefined;
+  capacity:
+    | { slots: number; toolSlots: Partial<Record<AgentTool, number>> }
+    | undefined = { slots: 1, toolSlots: {} };
   /**
    * While set, heartbeat answers announce workspace reports and the workspaces route answers `workspaceAnswer`;
    * otherwise the route does not exist, as on an application that predates it.
@@ -484,8 +489,22 @@ export class FakeServer {
     };
   }
 
+  enabledTools: readonly string[] = NATIVE_AGENT_TOOLS;
+  detectTools = false;
+  requests = 0;
+  authFailure:
+    | { route: string; reason: 'RUNNER_REVOKED' | 'RUNNER_KEY_INVALID' }
+    | undefined;
+
   private routes(): void {
     const { app } = this;
+
+    app.use('*', async (c, next) => {
+      this.requests += 1;
+      if (this.authFailure?.route === c.req.path)
+        return error(c, 401, this.authFailure.reason);
+      return next();
+    });
 
     app.post(RUNNER_ROUTES.register, async (c) => {
       const body = (await c.req.json()) as RegisterRequest;
@@ -505,6 +524,7 @@ export class FakeServer {
       this.runners.set(id, runner);
       return ok(c, {
         ...(this.options.app === undefined ? {} : { app: this.options.app }),
+        enabledTools: this.enabledTools,
         runnerId: id,
         runnerKey: runner.key,
         heartbeatIntervalMs: this.options.heartbeatIntervalMs,
@@ -561,7 +581,10 @@ export class FakeServer {
         .map(([id]) => id);
       return ok(c, {
         ok: true,
+        ...(this.capacity ? { capacity: this.capacity } : {}),
         serverTime: new Date().toISOString(),
+        enabledTools: this.enabledTools,
+        detectTools: this.detectTools,
         ...(this.protocolVersion === undefined
           ? {}
           : { protocolVersion: this.protocolVersion }),

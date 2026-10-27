@@ -1,3 +1,4 @@
+import { groupFoundationNavigation } from '@nocobase/app-plugin-foundation/client';
 import { Workflow } from 'lucide-react';
 import type { RouteNavigationItem } from '../routing/route-navigation.js';
 
@@ -10,7 +11,7 @@ export function groupWorkflowNavigation(
     '@nocobase/app-plugin-office-flows-example',
   ]);
   const isWorkflow = (item: RouteNavigationItem) =>
-    owners.has(item.route.packageName) || item.route.name === 'workflows';
+    owners.has(item.route.packageName);
   const roots = items.filter(isWorkflow);
   if (!roots.length) return items;
   const flatten = (
@@ -54,25 +55,56 @@ export function groupWorkflowNavigation(
     },
     children,
   });
-  const sections = [
-    group(
-      'workflowBusiness',
-      'workflows.businessGroup',
-      pages.filter((item) => !management.has(item.route.name)),
-      true,
-    ),
-    group(
-      'workflowManagement',
-      'workflows.managementGroup',
-      pages.filter((item) => management.has(item.route.name)),
-      true,
-    ),
-  ].filter((item) => item.children.length);
-  const combined = group('workflowNavigation', 'workflows.group', sections);
+  const business = pages.filter((item) => !management.has(item.route.name));
+  const combined = group(
+    'workflowNavigation',
+    'workflows.businessGroup',
+    business,
+  );
   const first = items.findIndex(isWorkflow);
   return items.flatMap((item, index) =>
-    index === first ? [combined] : isWorkflow(item) ? [] : [item],
+    index === first
+      ? business.length
+        ? [combined]
+        : []
+      : isWorkflow(item)
+        ? []
+        : [item],
   );
 }
 
-export const transformNavigation = groupWorkflowNavigation;
+export function transformNavigation(
+  items: RouteNavigationItem[],
+): RouteNavigationItem[] {
+  return groupFoundationNavigation(
+    collapsePermissionNavigation(groupWorkflowNavigation(items)),
+    'systemManagement',
+  );
+}
+
+/** One sidebar entry opens the first readable tab; original routes and guards remain unchanged. */
+export function collapsePermissionNavigation(
+  items: RouteNavigationItem[],
+): RouteNavigationItem[] {
+  return items.map((item) => {
+    if (item.route.name !== 'permissionManagement')
+      return {
+        ...item,
+        children: collapsePermissionNavigation([...item.children]),
+      };
+    const first = item.children[0];
+    if (!first) return item;
+    return {
+      route: {
+        ...first.route,
+        name: item.route.name,
+        navigation: item.route.navigation,
+      },
+      children: [],
+      activeRouteKeys: item.children.map(
+        (child) =>
+          `${child.route.packageName}:${child.route.path}:${child.route.id}`,
+      ),
+    };
+  });
+}

@@ -35,12 +35,9 @@ import { DEFAULT_MIN_FREE_DISK, type FreeSpace } from './size.ts';
 export interface RunnerSettings {
   /** Shown in every application; the host name by default. */
   name: string;
-  /** Runs at once across every application; `start --slots` overrides it. */
-  slots: number;
-  /**
-   * Runs of each coding tool at once across every application, beside `slots` (`register --slots claude=2,codex=1`); a
-   * tool left out is bounded by `slots` only.
-   */
+  /** Legacy fallback for servers that do not send capacity. New commands never configure this. */
+  slots?: number;
+  /** Legacy tool limits, retained until every existing connection supports online capacity. */
   toolSlots?: ToolSlots;
   /**
    * The Node.js and pnpm agents get (`config set agent-tools`): the runner's own, first on their PATH (`runner`, the
@@ -72,15 +69,15 @@ export interface RunnerSettings {
   models?: ModelListOverrides;
   /**
    * How long a working directory stays unused before its regenerable build artifacts go (`config set artifact-ttl
-   * 2h`), in milliseconds; absent for `DEFAULT_ARTIFACT_TTL_MS`, 0 when the owner turned it off.
+   * 24h`), in milliseconds; absent for `DEFAULT_ARTIFACT_TTL_MS`, 0 when the owner turned it off.
    */
   artifactTtlMs?: number;
   /** The directory names removed as regenerable build artifacts (`config set artifact-patterns`); absent for the defaults. */
   artifactPatterns?: string[];
 }
 
-/** Two hours unused before a working directory's regenerable build artifacts go. */
-export const DEFAULT_ARTIFACT_TTL_MS: number = 2 * 60 * 60 * 1000;
+/** Twenty-four hours unused before a working directory's regenerable build artifacts go. */
+export const DEFAULT_ARTIFACT_TTL_MS: number = 24 * 60 * 60 * 1000;
 /** The directories removed as regenerable build artifacts, by name. */
 export const DEFAULT_ARTIFACT_PATTERNS: readonly string[] = [
   'node_modules',
@@ -163,7 +160,11 @@ function storedFreeSpace(value: unknown): FreeSpace | null | undefined {
   return undefined;
 }
 
+export type RevocationReason = 'RUNNER_REVOKED' | 'RUNNER_KEY_INVALID';
+
 export interface AppRegistration {
+  /** Last tool selection received from the server; never a local override. */
+  enabledTools?: readonly AgentTool[];
   /** The file name: the application's id, or its address when it sent none. */
   key: string;
   app: RunApp;
@@ -176,6 +177,7 @@ export interface AppRegistration {
   /** Where an application CLI lives on this machine, by command name; wins over what a run says. */
   cli: Record<string, string>;
   registeredAt: string;
+  revoked?: { at: string; reason: RevocationReason };
 }
 
 export interface AppConnection {
@@ -195,7 +197,7 @@ export async function readSettings(
   const minFree = storedFreeSpace(stored?.minFreeDisk);
   return {
     name: stored?.name ?? defaultRunnerName(),
-    slots: stored?.slots ?? 1,
+    ...(stored?.slots === undefined ? {} : { slots: stored.slots }),
     ...(toolSlots.success &&
     toolSlots.data !== undefined &&
     Object.keys(toolSlots.data).length > 0
@@ -291,6 +293,24 @@ export async function writeConnection(
   await writeJsonAtomic(
     registrationPath(paths, key),
     connection.registration,
+    0o600,
+  );
+}
+
+/** Persist revocation without rewriting the runner key. */
+export async function markRevoked(
+  registration: AppRegistration,
+  reason: RevocationReason,
+  paths: RunnerPaths,
+): Promise<void> {
+  const file = registrationPath(paths, registration.key);
+  const current = (await readJson<AppRegistration>(file)) ?? registration;
+  await writeJsonAtomic(
+    file,
+    {
+      ...current,
+      revoked: { at: new Date().toISOString(), reason },
+    },
     0o600,
   );
 }

@@ -6,6 +6,7 @@ import type {
   AgentInfo,
   SessionChoice,
   SessionEvent,
+  SessionStartup,
   SessionState,
 } from '@nocobase/acp-bridge/protocol';
 
@@ -17,6 +18,7 @@ export type {
   PromptPart,
   SessionChoice,
   SessionEvent,
+  SessionStartup,
   SessionState,
 } from '@nocobase/acp-bridge/protocol';
 
@@ -131,6 +133,8 @@ export interface Session {
   readonly title: string;
   readonly titleSource: 'owner' | 'agent' | 'message';
   readonly state: SessionState | null;
+  /** What the bridge is doing to open its agent, null once it is open. */
+  readonly startup: SessionStartup | null;
   /** The choices its owner made, by `SessionChoice` id. */
   readonly settings: Readonly<Record<string, string>>;
   /** A turn is running. */
@@ -140,6 +144,8 @@ export interface Session {
   /** Whether its computer is connected; false once the computer is removed. */
   readonly computerOnline: boolean;
   readonly lastSeq: number;
+  /** Committed read position; permissions are independent of reading. */
+  readonly seenSeq: number;
   /** The project it works for, when its owner chose one. */
   readonly project: SessionProject | null;
   readonly links: readonly SessionLink[];

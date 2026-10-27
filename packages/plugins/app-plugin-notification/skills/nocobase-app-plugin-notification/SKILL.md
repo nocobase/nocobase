@@ -4,8 +4,8 @@ description: 'Use when agents need to integrate, configure, send, inspect, or di
 argument-hint: '[action: explain|integrate|configure|send|inspect|diagnose] [channel-or-notification-id]'
 allowed-tools: Bash, Read, Write, Grep, Glob
 owner: notification
-version: 1.0.1
-last-reviewed: 2026-09-21
+version: 2.0.0
+last-reviewed: 2026-10-21
 risk-level: medium
 metadata:
   domain-owner: '@nocobase/app-plugin-notification'
@@ -17,13 +17,13 @@ metadata:
 Inspect the application's registered plugins and effective notification configuration before changing integration code. Missing required input blocks an actual send; use the recipient and Channel scope already authorized in the conversation and ask only for missing information.
 
 1. Read [Notification concepts](references/notification-concepts.md) for package ownership and delivery status semantics.
-2. For plugin registration, configuration, migrations, or test APIs, read [Integration and configuration](references/integration-and-configuration.md). Configure a Channel name mapped to one flat Provider configuration.
+2. For plugin registration, configuration, migrations, or log APIs, read [Integration and configuration](references/integration-and-configuration.md). Configure a Channel name mapped to one flat configuration with `type` (`provider` remains a compatibility alias).
 3. For sending or typed consumers, read [Sending notifications](references/sending-notifications.md). Resolve `notificationServiceToken`; construct complete messages keyed by Channel name and use native recipient addresses. Validate the intended external effect before sending.
 4. For failures and retries, read [Delivery diagnostics](references/delivery-diagnostics.md). Preserve Notification, Delivery, Attempt, and retry-audit history; distinguish accepted submission from final delivery.
-5. For custom transports, read [Channel and Provider extensions](references/channel-and-provider-extensions.md). Register globally unique Provider definitions through `notificationExtensionRegistryToken` and retain the queue/lease/retry lifecycle.
+5. For custom transports, read [Channel type extensions](references/channel-and-provider-extensions.md). Register classes implementing `ChannelInstance` with `registerChannelType` through `notificationExtensionRegistryToken` and retain the queue/lease/retry lifecycle. Use deprecated `registerChannel()` / `registerProvider()` only when maintaining legacy compatibility code or its tests; official implementations and examples use the class API.
 6. Verify changed packages and consumers with lint, typecheck, tests, and build. Cover atomic validation, independent delivery, recipient rules, and retries bound to original identities.
 
-The test API requires authentication and its test header; submission additionally requires `notification:test` `send`. A test notification is a real send. Select only the Channel and provide the fields required by its message type. Credentials stay on the server.
+For delivery diagnostics, exercise the normal business notification flow or use a server-side script resolving `notificationServiceToken` with complete message input. Use an authorized recipient and inspect the returned notification ID in the logs. Credentials stay on the server.
 
 ## High-impact actions and rollback
 

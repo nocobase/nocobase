@@ -18,6 +18,7 @@ import {
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+import { taskInvalidationToken } from '../task-realtime.js';
 
 import {
   CreateTaskInput,
@@ -206,6 +207,7 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
           .execute();
 
         const task = (await findTask(database, id))!;
+        await announce([userId, assigneeId]);
         await sendTaskNotification(notifications, task, assigneeId, 'assigned');
         return context.json(
           { data: (await toTaskViews(database, [task]))[0] },
@@ -243,9 +245,6 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
         const task = await participantTask(database, id, actorId);
 
         const input = context.req.valid('json');
-        const title = input.title ?? task.title;
-        const description = input.description ?? task.description;
-        const status = input.status ?? task.status;
         const assigneeId = input.assigneeId ?? task.assigneeId;
         if (assigneeId !== task.assigneeId && actorId !== task.creatorId)
           throw new ApiError({
@@ -265,16 +264,14 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
           .connection()
           .query.updateTable(TASKS)
           .set({
-            title,
-            description,
-            status,
-            assigneeId,
+            ...input,
             updatedAt: toDatabaseDatetime(updatedAt),
           })
           .where('id', '=', id)
           .execute();
 
         const updated = (await findTask(database, id))!;
+        await announce([task.creatorId, task.assigneeId, updated.assigneeId]);
         const recipientIds = [
           task.creatorId,
           task.assigneeId,
@@ -300,6 +297,19 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
       },
     );
 
+    async function announce(userIds: readonly string[]): Promise<void> {
+      const topic = container.resolve(taskInvalidationToken);
+      // An unavailable transport must never make a committed write look unsuccessful.
+      await Promise.all(
+        [...new Set(userIds)].map((id) =>
+          topic
+            .publishFor(id, { changed: true })
+            .catch((error: unknown) =>
+              console.error('Task invalidation failed.', error),
+            ),
+        ),
+      );
+    }
     return router as unknown as Hono;
   });
 

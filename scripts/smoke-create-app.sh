@@ -17,7 +17,7 @@
 #     --registry http://localhost:4873 \
 #     --create-app-version 0.1.0-beta.12 \
 #     --template @nocobase/app-template-default@0.1.0-beta.12 \
-#     [--workdir DIR] [--timeout SECONDS] [--dialect DIALECT] [--config FILE] [--json]
+#     [--workdir DIR] [--timeout SECONDS] [--dialect DIALECT] [--config FILE] [--json] [--internal-packages]
 
 set -euo pipefail
 
@@ -30,6 +30,7 @@ APP_NAME='crm'
 DIALECT=''
 CONFIG=''
 JSON_OUTPUT=0
+INTERNAL_PACKAGES=0
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 while [ $# -gt 0 ]; do
@@ -42,6 +43,7 @@ while [ $# -gt 0 ]; do
     --dialect) DIALECT="$2"; shift 2 ;;
     --config) CONFIG="$2"; shift 2 ;;
     --json) JSON_OUTPUT=1; shift ;;
+    --internal-packages) INTERNAL_PACKAGES=1; shift ;;
     --app-name) APP_NAME="$2"; shift 2 ;;
     -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
@@ -169,6 +171,12 @@ echo "::group::Synchronize NocoBase package Skills"
 pnpm nocobase skills sync
 echo "::endgroup::"
 
+if [ "$INTERNAL_PACKAGES" = 1 ]; then
+  echo "::group::Add and check the Skill's internal package example"
+  node "$SCRIPT_DIR/smoke-internal-packages.mjs" setup "$APP_DIR"
+  echo "::endgroup::"
+fi
+
 echo "::group::Test the application with pnpm test"
 if ! pnpm test 2>&1 | tee "$TEST_LOG"; then
   echo "::endgroup::"
@@ -192,7 +200,7 @@ READY_MARKER='App dev server ready'
 # Killing the pnpm process alone would leave vite and tsx running, and the job would hang waiting on them. `setsid`
 # would do the same thing but does not exist on macOS, where this script is also run by hand.
 set -m
-NOCOBASE_STRICT_STARTUP=true pnpm dev > "$DEV_LOG" 2>&1 &
+NOCOBASE_STRICT_STARTUP=$([ "$INTERNAL_PACKAGES" = 1 ] && echo false || echo true) pnpm dev > "$DEV_LOG" 2>&1 &
 APP_PID=$!
 set +m
 
@@ -207,6 +215,9 @@ stop_app() {
     kill -KILL -"$APP_PID" 2>/dev/null || true
   fi
   wait "$APP_PID" 2>/dev/null || true
+  if [ "$INTERNAL_PACKAGES" = 1 ]; then
+    node "$SCRIPT_DIR/smoke-internal-packages.mjs" restore "$APP_DIR"
+  fi
 }
 trap stop_app EXIT
 trap 'exit 130' INT
@@ -326,6 +337,9 @@ if grep -qF 'Failed to load job from ' "$DEV_LOG"; then
 fi
 
 echo "Application is serving at $APP_URL"
+if [ "$INTERNAL_PACKAGES" = 1 ]; then
+  node "$SCRIPT_DIR/smoke-internal-packages.mjs" dev "$APP_DIR" "$APP_URL"
+fi
 
 if ! curl -fsS --noproxy '*' --max-time 30 "$APP_URL" -o /dev/null; then
   echo "::endgroup::"
@@ -362,6 +376,9 @@ APP_PID=$!
 set +m
 trap stop_app EXIT
 wait_for_production 'pnpm start' "$START_URL" "$START_LOG"
+if [ "$INTERNAL_PACKAGES" = 1 ]; then
+  node "$SCRIPT_DIR/smoke-internal-packages.mjs" verify "$APP_DIR" "$START_URL/"
+fi
 echo "::endgroup::"
 
 # The production process must be gone before the deployed copy starts, so a request cannot be answered by the wrong one.
@@ -421,6 +438,10 @@ if ! (cd "$DEPLOY_DIR/dist" && APP_CONFIG_FILE="$DEPLOY_DIR/config.yml" pnpm noc
   exit 1
 fi
 
+if [ "$INTERNAL_PACKAGES" = 1 ]; then
+  trap stop_app EXIT
+  node "$SCRIPT_DIR/smoke-internal-packages.mjs" hide "$APP_DIR"
+fi
 DEPLOY_PORT=$(free_port)
 DEPLOY_URL="http://127.0.0.1:$DEPLOY_PORT$APP_PATH"
 : > "$DEPLOY_LOG"
@@ -436,6 +457,9 @@ set +m
 cd "$APP_DIR"
 trap stop_app EXIT
 wait_for_production 'the deployed archive' "$DEPLOY_URL" "$DEPLOY_LOG"
+if [ "$INTERNAL_PACKAGES" = 1 ]; then
+  node "$SCRIPT_DIR/smoke-internal-packages.mjs" verify "$APP_DIR" "$DEPLOY_URL/"
+fi
 echo "::endgroup::"
 
 stop_app

@@ -1,7 +1,13 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircleIcon, ScissorsIcon } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import { useSearchParams } from 'react-router';
 
 import {
@@ -41,6 +47,7 @@ import { useNotify } from '../../hooks/use-notify.js';
 import { usePmApi } from '../../hooks/use-pm-api.js';
 import { emptyIntakeDraft, useIntakeDraft } from '../../kit/intake-draft.js';
 import { IntakeAgentSlot } from '../../kit/page-slots.js';
+import { IntakeAgentSlotContext } from '../../kit/page-context.js';
 import { planKeys, usePlanApi } from '../../kit/plans/api.js';
 import {
   PlanEditor,
@@ -137,6 +144,7 @@ export function IntakePanel({
   const plan = usePlanQuery(draftId);
   const job = useIntakeJob(jobId);
   const availability = useIntakeAiAvailability();
+  const ownOrganizer = useContext(IntakeAgentSlotContext);
   const projects = useQuery({
     queryKey: pmKeys.projects,
     queryFn: () => api.projects(),
@@ -484,11 +492,11 @@ export function IntakePanel({
               </Button>
             </div>
           </div>
-          {availability?.reason === 'noAgent' ? (
+          {!ownOrganizer && availability?.reason === 'noAgent' ? (
             <p className='text-xs text-muted-foreground'>
               {t('intakeAi.unavailable.noAgent')}
             </p>
-          ) : aiReady && availability.waits ? (
+          ) : !ownOrganizer && aiReady && availability.waits ? (
             <p className='text-xs text-muted-foreground'>
               {t('intakeAi.waitsHint')}
             </p>

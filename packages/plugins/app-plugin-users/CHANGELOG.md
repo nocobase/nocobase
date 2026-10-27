@@ -1,5 +1,163 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.10
+
+### Patch Changes
+
+- 25e7bd3: Make Member a visible, editable creation default and honor explicitly empty role lists. Initialize new person accounts transactionally across existing creation paths. Preserve existing Member grants and users through a new transactional seed before removing the global assignment, without restoring later role removals. Keep protected administrators and authenticated account basics unchanged.
+
+  Stop old account writers and upgrade Authentication, Authorization, and Users together before applying database tasks and reopening traffic. Existing applications must also merge the updated template user pages and translations; plugin upgrades do not replace application-owned source. Restore a database backup with matching old packages if rollback is required.
+
+- Updated dependencies [25e7bd3]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-authorization@1.0.0-beta.32
+
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- d3d4c5d: Preserve standard settings list position across details and edits, display localized role names, and support scoped member configuration with a safe return destination. Keep unsupported workflow ordering static and document the shared navigation contract without changing stored permissions or business configuration.
+
+  Provide contextual setup readiness components and a live required-role membership adapter in both templates, with typed unavailable states and safe configuration links. Guide builders to connect feature-specific initialization checks to authorized business services without startup scans, automatic grants or fabricated relationship defaults.
+
+  Explain empty user and role lists when creation is unavailable, report the specific completed account action, and distinguish invalid requests and generic data conflicts from retryable failures without changing permissions or discarding input.
+
+  Simplify user management to one edit drawer for basic information and roles, with underlined names as the edit entry and inline account controls, a searchable role picker, one atomic Save and shared leave guards. Preserve legacy URLs and resolve return paths from the actual route mount so remapped settings pages retain their list context.
+
+  Allow user profile fields and submitted role scopes to be updated in one transaction, requiring each affected action independently and preserving omitted scopes and legacy profile-only callers.
+
+  Keep localized pagination summaries on one line with content-sized widths and wrap complete control groups at narrow widths, preventing Chinese labels from splitting under desktop table layouts.
+
+  Use quiet, consistent outlined account-action buttons and semantic green enabled/gray disabled status badges in user management, keeping existing action confirmations and authorization.
+
+  Standardize clickable record fields through RecordLink: foreground text at rest, an underline on hover, and visible keyboard focus. Reuse it for user, role, data-scope and example workflow record links while preserving native navigation and list query context.
+
+- f8f64ad: Remove the Notification TestAdapter protocol, built-in form descriptors, generic test-send routes and permission, and test client methods. Channel classes now implement only their delivery lifecycle. Existing send/sendTransient contracts, retries, logs, and inbox records remain unchanged.
+
+  Applications should remove test buttons and test API clients, then verify delivery through their business flows or a server-side send() call. Log pages must read provider identities from recorded deliveries rather than test target metadata. Update the notification Skill and example guidance to match, and republish consumers against the new notification package line.
+
+  Explicitly include Node.js types in both application templates' client typechecks, whose shared contracts reference server package sources in the workspace, so compilation no longer depends on the removed notification test imports to load those types.
+
+- Updated dependencies [f8f64ad]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-plugin-notification@2.0.0-beta.0
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+
+## 2.0.0-beta.8
+
+### Minor Changes
+
+- 799c227: Let an application role scope refuse who acts on whom. A scope's optional `assertCanAdminister(userId, actorId, action, connection)` is called for `update`, `disable`, `enable`, `reset-password`, `revoke-sessions` and `assign-role` with the authenticated actor, inside the action's transaction and before anything changes; a refusal answers `FAILED_PRECONDITION`. An application can then keep, for example, anyone but an owner from resetting an owner's password. The management service's account methods take the actor as an optional last argument; calls without one are not checked.
+
+### Patch Changes
+
+- Updated dependencies [62da032]
+  - @nocobase/app-client@4.0.0-beta.1
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+
+## 2.0.0-beta.7
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.0
+
+## 2.0.0-beta.6
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-client@4.0.0-beta.0
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.29
+  - @nocobase/app-plugin-notification@1.0.0-beta.28
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/i18n@2.0.0-beta.0
+  - @nocobase/authorization@1.0.0-beta.14
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- eb4b081: Include application-owned user and role administration in the application templates, with dynamic permission categories, scope controls, independently saved role assignments and conflict-safe role updates. Add authorized latest-user reads and stable server-side name sorting. A new reversible authorization migration adds a revision token to existing permission sets; clients may supply the token to reject stale updates atomically while existing callers remain compatible.
+
+  Deliver administration automatically whenever an application uses configurable capabilities, including process definitions, standard diagrams, supported parameters and authorized execution history. Refresh the shared process canvas and installed lifecycle examples with semantic node cards, execution status, a dotted background and accessible viewport controls. Refine the cards with type icons and separate status footers, parameter badges, outlined edge labels, motion-aware active transitions and canvas summaries; reserve space for controls when sizing the graph.
+
+  Keep bare Default applications Home-only. Supply reusable administration routes and reconcile core user and permission management and additional settings throughout development according to the business capabilities actually used, independently of the iteration number. Examples registers the prepared settings because it already contains business features.
+
+  Ship a standard TanStack Table v8 DataTable and companions in both application templates, including controlled server pagination and sorting. Reuse it in user administration and instruct application agents to reuse the provided implementation and repair incompatible dependencies instead of substituting custom table engines.
+
+  Proactively declare configurable business thresholds and reviewer rules during process development without requiring an explicit user prompt. Reconcile validated, authorized parameters and diagram bindings throughout iteration, preserve snapshot and task semantics, and expose real transition-bound configuration in the shared diagram.
+
+  Extend capability-driven administration guidance to non-workflow business parameters, dictionaries, document numbering, operation records, organization relationships, enabled authentication features, notifications, integrations, document processing, AI/knowledge and shared business defaults. Include concrete persistence, authorization, concurrency and acceptance contracts, while preserving Home-only creation and deployment-owned configuration.
+
+  Standardize process administration as a directory-first DataTable even for a single process, with process-scoped definition, explicit node configuration and execution records. Reconcile additional registered processes into the same directory, validate process identifiers and permission scopes server-side, and preserve list navigation state.
+
+  Compact the shared permission editor into resource rows with wrapping action checkboxes, adjacent scope selectors and optional atomic visible-group selection. Synchronize both templates and document source upgrade integration without overwriting application-specific grants or role policies.
+
+  Improve process readability with optional node descriptions and configuration actions, an initial readable zoom bound, overview navigation and focus-driven panning. Document bounded-canvas composition and explicit full-definition access when technical paths are hidden.
+
+  Render single-action page permissions as one title checkbox, omit redundant per-resource counters and bulk toggles, and use localized breadcrumb titles for pages without navigation entries.
+
+  Keep record-scope controls inline with action checkboxes, remove redundant single-scope captions, and localize raw collection scope labels in the template permission models.
+
+  Default lifecycle diagrams to a vertical, automatically sized canvas with readable narrow-screen sizing and top-positioned viewport controls, while preserving explicit compact-view overrides. Require capability-driven process directory, definition/design, node configuration and execution-history delivery in new applications without adding unused settings to bare Home-only apps.
+
+  Bind parameterized custom record scopes to native filter conditions with a reusable draft editor, preserve object selections and independent scope policies, and reject incomplete custom filter grants at the authorization HTTP boundary. Keep no-record scopes explicit and verify saved scopes against real list/detail/write endpoints.
+
+- 49f61b9: Show optional settings permissions separately from business actions in CLI identity output, and explain run-token-only permissions. Add available-command typo suggestions, a hint for truncated text, and clean shutdown when a pipe closes early. Describe route schema inputs so generated CLI help and reference tables explain their parameters. The manifest identity and whoami JSON result gain an optional settings list; command admission and authorization are unchanged.
+- Updated dependencies [98b3862]
+- Updated dependencies [1cdbaf4]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [c0b7537]
+- Updated dependencies [eb4b081]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-client@3.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/app-plugin-authentication@2.0.0-beta.10
+  - @nocobase/app-plugin-authorization@1.0.0-beta.28
+  - @nocobase/authorization@1.0.0-beta.14
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+
 ## 2.0.0-beta.4
 
 ### Patch Changes

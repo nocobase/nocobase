@@ -18,15 +18,25 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useHref, useLocation, useNavigate } from 'react-router';
 
-import type { ConversationSource } from '../../shared/conversations.js';
+import type {
+  ConversationMode,
+  ConversationSource,
+  PageContextRef,
+  PageUIContext,
+} from '../../shared/conversations.js';
+import { clonePageUIContext } from '../../shared/page-ui-context.js';
 import {
   clampSelection,
   itemKey,
+  FILTER_KEY,
   parseSourceAttribute,
   SELECTION_KEY,
   SOURCE_ATTRIBUTE,
+  snapshotUIContext,
+  uiItemKey,
+  type ChatUIContextSource,
   type ChatContextFilter,
   type ChatContextItem,
   type ChatSelection,
@@ -42,6 +52,8 @@ import {
   type ChatPanelState,
   type ChatPanelView,
 } from './panel-state.js';
+import { readLastAgent, rememberLastAgent } from './agent-mode.js';
+import { ChatClientProvider } from './controller.js';
 import { useChatRealtime } from './use-chat.js';
 
 export const CHAT_PANEL_ID = 'agents-chat-panel';
@@ -51,15 +63,23 @@ export const CHAT_PANEL_ATTRIBUTE = 'data-agents-chat';
 export interface OpenChatOptions {
   /** An object kept in the context until the next message is sent ("Ask agent"). */
   readonly pin?: ChatContextItem;
-  /** Text put into the composer; never sent on its own. */
+  /** Registered browser UI sources included atomically with opening this chat; never read until send. */
+  readonly uiSources?: readonly PageContextRef[];
+  /** Text put into the composer; never sent on its own. An explicit empty string is retained. */
   readonly draft?: string;
-  /** Open this conversation; null opens a new one; left out keeps the current one. */
+  /** Open this conversation; null always resets to a fresh composer; left out keeps the current one. */
   readonly conversationId?: string | null;
   /** The agent a new conversation goes to. */
   readonly agentId?: string | null;
   /** Where a conversation started from here comes from: `askAgent` for a button on a page. */
   readonly source?: ConversationSource;
   readonly view?: ChatPanelView;
+}
+
+interface ContextChange {
+  readonly revision: number;
+  readonly pin: ChatContextItem | undefined;
+  readonly uiSources: readonly PageContextRef[] | undefined;
 }
 
 export interface ChatDraft {
@@ -75,14 +95,17 @@ export interface ChatPanelValue extends ChatPanelState {
   readonly toggleChat: () => void;
   readonly setMode: (mode: ChatPanelMode) => void;
   readonly setView: (view: ChatPanelView) => void;
-  /** Shows a conversation; null starts a new one, with `agentId` when given. */
+  /** Shows a conversation; null starts a fresh one. Preserve the composer only for executor changes or first-send promotion. */
   readonly selectConversation: (
     conversationId: string | null,
     agentId?: string | null,
+    options?: { readonly preserveComposer?: boolean },
   ) => void;
   readonly pinned: readonly ChatContextItem[];
   readonly clearPinned: () => void;
   readonly draft: ChatDraft | null;
+  /** Changes only when a fresh composer is requested, not on close/reopen or first-send promotion. */
+  readonly composerRevision: number;
   /** Where the next new conversation comes from; back to `panel` once it is created. */
   readonly source: ConversationSource;
   readonly resetSource: () => void;
@@ -96,9 +119,23 @@ export interface ChatPanelValue extends ChatPanelState {
   readonly openPage: ((conversationId: string) => void) | null;
   /** The full-page view's path of a conversation; null without one. */
   readonly conversationPath: ((conversationId: string) => string) | null;
+  /** Switches the panel to one kind of agent (`online` or `runner`); null goes back to choosing it from the agents. */
+  readonly setAgentMode?: (mode: ConversationMode | null) => void;
+  /** The agent last used for a new conversation, remembered per application and `memoryScope`; null when none. */
+  readonly lastAgentId?: string | null;
+  /** Remembers the agent a new conversation went to, so the next one starts with it. */
+  readonly rememberAgent?: (agentId: string) => void;
 }
 
 export interface ChatSourcesValue {
+  /** All available UI sources; registration does not upload or select them. */
+  readonly uiSources: readonly ChatUIContextSource[];
+  readonly selectedUIKeys: ReadonlySet<string>;
+  readonly registerUI: (source: ChatUIContextSource) => () => void;
+  /** Explicit user intent, separate from source/form registration. */
+  readonly selectUI: (source: PageContextRef, selected?: boolean) => void;
+  /** Reads latest values of the currently selected sources and detaches them. */
+  readonly snapshotUI: () => Promise<PageUIContext | undefined>;
   readonly items: readonly ChatContextItem[];
   readonly filter: ChatContextFilter | null;
   readonly selection: ChatSelection | null;
@@ -134,6 +171,11 @@ const ChatSourcesContext = createContext<ChatSourcesValue | null>(null);
 function noop(): void {}
 
 const NO_SOURCES: ChatSourcesValue = {
+  uiSources: [],
+  selectedUIKeys: new Set(),
+  registerUI: () => noop,
+  selectUI: noop,
+  snapshotUI: async () => undefined,
   items: [],
   filter: null,
   selection: null,
@@ -159,6 +201,7 @@ const UNAVAILABLE: ChatPanelValue = {
   pinned: [],
   clearPinned: noop,
   draft: null,
+  composerRevision: 0,
   source: 'panel',
   resetSource: noop,
   registerComposer: () => noop,
@@ -189,9 +232,15 @@ function focusIsInPanel(): boolean {
 export function ChatProvider({
   available = true,
   conversationPath,
+  memoryScope,
   children,
 }: {
   readonly available?: boolean;
+  /**
+   * Who the panel remembers things for in `localStorage`, such as the agent last used: pass the signed-in person's id.
+   * The application's base path is added, so two applications on one origin keep theirs apart.
+   */
+  readonly memoryScope?: string;
   /**
    * Where the application shows one conversation as a page of its own (for example, `/chat/:conversationId`). With it, the
    * panel offers "Open full page" for a conversation, and the agent-chat block's `ChatConversationPage` moves between
@@ -207,6 +256,24 @@ export function ChatProvider({
   const [state, setState] = useState<ChatPanelState>(() => readPanelState());
   const [pinned, setPinned] = useState<readonly ChatContextItem[]>([]);
   const [draft, setDraft] = useState<ChatDraft | null>(null);
+  const [composerRevision, setComposerRevision] = useState(0);
+  const [contextChange, setContextChange] = useState<ContextChange | null>(
+    null,
+  );
+  const conversationRef = useRef(state.conversationId);
+  useLayoutEffect(() => {
+    conversationRef.current = state.conversationId;
+  }, [state.conversationId]);
+  const resetComposer = useCallback((options: OpenChatOptions = {}) => {
+    setComposerRevision((revision) => revision + 1);
+    setDraft(null);
+    setPinned([]);
+    setContextChange((current) => ({
+      revision: (current?.revision ?? 0) + 1,
+      pin: options.pin,
+      uiSources: options.uiSources,
+    }));
+  }, []);
   const [source, setSource] = useState<ConversationSource>('panel');
   const composerFocusRef = useRef<(() => void) | null>(null);
   const focusWantedRef = useRef(false);
@@ -214,6 +281,22 @@ export function ChatProvider({
   const draftNonceRef = useRef(0);
 
   useEffect(() => writePanelState(state), [state]);
+
+  const base = useHref('/');
+  const memoryKey = memoryScope ? `${base}:${memoryScope}` : base;
+  const [lastAgent, setLastAgent] = useState(() => ({
+    key: memoryKey,
+    id: readLastAgent(memoryKey),
+  }));
+  if (lastAgent.key !== memoryKey)
+    setLastAgent({ key: memoryKey, id: readLastAgent(memoryKey) });
+  const rememberAgent = useCallback(
+    (agentId: string) => {
+      rememberLastAgent(memoryKey, agentId);
+      setLastAgent({ key: memoryKey, id: agentId });
+    },
+    [memoryKey],
+  );
 
   const focusComposer = useCallback(() => {
     focusWantedRef.current = true;
@@ -242,6 +325,19 @@ export function ChatProvider({
       if (!focusIsInPanel() && document.activeElement instanceof HTMLElement)
         returnFocusRef.current = document.activeElement;
       const view = options.view ?? 'chat';
+      const fresh =
+        options.conversationId !== undefined &&
+        (options.conversationId === null ||
+          options.conversationId !== conversationRef.current);
+      if (fresh) resetComposer(options);
+      else if (options.pin || options.uiSources !== undefined)
+        setContextChange((current) => ({
+          revision: current?.revision ?? 0,
+          pin: options.pin,
+          uiSources: options.uiSources,
+        }));
+      if (options.conversationId !== undefined)
+        conversationRef.current = options.conversationId;
       setState((current) => ({
         ...current,
         open: true,
@@ -252,6 +348,8 @@ export function ChatProvider({
             : options.conversationId,
         newAgentId:
           options.agentId === undefined ? current.newAgentId : options.agentId,
+        // An agent asked for decides the panel's mode.
+        agentMode: options.agentId ? null : (current.agentMode ?? null),
       }));
       if (options.source) setSource(options.source);
       const pin = options.pin;
@@ -261,13 +359,13 @@ export function ChatProvider({
             ? current
             : [...current, pin],
         );
-      if (options.draft) {
+      if (options.draft !== undefined) {
         draftNonceRef.current += 1;
         setDraft({ text: options.draft, nonce: draftNonceRef.current });
       }
       if (view === 'chat') focusComposer();
     },
-    [focusComposer],
+    [focusComposer, resetComposer],
   );
 
   const closeChat = useCallback(() => {
@@ -365,11 +463,16 @@ export function ChatProvider({
   const [seenSearch, setSeenSearch] = useState<string | null>(null);
   if (available && location.search !== seenSearch) {
     setSeenSearch(location.search);
-    const next = panelStateFromSearch(
-      new URLSearchParams(location.search),
-      state,
-    );
-    if (next) setState(next);
+    const params = new URLSearchParams(location.search);
+    const next = panelStateFromSearch(params, state);
+    if (next) {
+      if (
+        next.conversationId !== state.conversationId ||
+        params.get(CHAT_PARAM)?.trim() === 'new'
+      )
+        resetComposer();
+      setState(next);
+    }
   }
   const { pathname, search, hash } = location;
   useEffect(() => {
@@ -392,7 +495,12 @@ export function ChatProvider({
       toggleChat,
       setMode: (mode) => setState((current) => ({ ...current, mode })),
       setView: (view) => setState((current) => ({ ...current, view })),
-      selectConversation: (conversationId, agentId) =>
+      selectConversation: (conversationId, agentId, options) => {
+        const changed = conversationId !== conversationRef.current;
+        if ((conversationId === null || changed) && !options?.preserveComposer)
+          resetComposer();
+        else if (changed) setDraft(null);
+        conversationRef.current = conversationId;
         setState((current) => ({
           ...current,
           view: 'chat',
@@ -401,18 +509,30 @@ export function ChatProvider({
             conversationId === null && agentId !== undefined
               ? agentId
               : current.newAgentId,
-        })),
+          agentMode:
+            conversationId === null && agentId
+              ? null
+              : (current.agentMode ?? null),
+        }));
+      },
       pinned,
       clearPinned: () => setPinned([]),
       draft,
+      composerRevision,
       source,
       resetSource: () => setSource('panel'),
       registerComposer,
       focusComposer,
       openPage,
       conversationPath: pathOf,
+      setAgentMode: (agentMode) =>
+        setState((current) => ({ ...current, agentMode })),
+      lastAgentId: lastAgent.id,
+      rememberAgent,
     }),
     [
+      lastAgent.id,
+      rememberAgent,
       openPage,
       pathOf,
       state,
@@ -422,6 +542,8 @@ export function ChatProvider({
       toggleChat,
       pinned,
       draft,
+      composerRevision,
+      resetComposer,
       source,
       registerComposer,
       focusComposer,
@@ -433,13 +555,14 @@ export function ChatProvider({
       <ChatPageContext.Provider value={pageTracking}>
         <ChatSourcesProvider
           pathname={location.pathname}
+          contextChange={contextChange}
           onUnpin={(key) =>
             setPinned((current) =>
               current.filter((item) => itemKey(item) !== key),
             )
           }
         >
-          {children}
+          <ChatClientProvider>{children}</ChatClientProvider>
         </ChatSourcesProvider>
       </ChatPageContext.Provider>
     </ChatPanelContext.Provider>
@@ -451,10 +574,12 @@ let sourceSeed = 0;
 /** What the current page contributes; objects, the filter, the selection and removed chips reset with the path. */
 function ChatSourcesProvider({
   pathname,
+  contextChange,
   onUnpin,
   children,
 }: {
   readonly pathname: string;
+  readonly contextChange: ContextChange | null;
   readonly onUnpin: (key: string) => void;
   readonly children?: ReactNode;
 }): ReactElement {
@@ -464,18 +589,127 @@ function ChatSourcesProvider({
   const [filters, setFilters] = useState<
     ReadonlyMap<number, ChatContextFilter>
   >(() => new Map());
-  const [selection, setSelection] = useState<ChatSelection | null>(null);
+  const uiRegistryRef = useRef(new Map<string, ChatUIContextSource>());
+  const uiLifetimeRef = useRef(0);
+  useLayoutEffect(
+    () => () => {
+      uiLifetimeRef.current += 1;
+    },
+    [],
+  );
   const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  const [uiSources, setUISources] = useState<readonly ChatUIContextSource[]>(
+    [],
+  );
+  const [selectedUIKeys, setSelectedUIKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const selectedUIRef = useRef(selectedUIKeys);
+  useLayoutEffect(() => {
+    selectedUIRef.current = selectedUIKeys;
+  }, [selectedUIKeys]);
+  const registerUI = useCallback((source: ChatUIContextSource) => {
+    const key = uiItemKey(source);
+    if (uiRegistryRef.current.has(key))
+      throw new Error(`UI context source already registered: ${key}`);
+    clonePageUIContext({
+      version: 1,
+      items: [{ kind: source.kind, id: source.id }],
+    });
+    // A fresh lease prevents an old cleanup from deleting a later registration of the same descriptor object.
+    const registered: ChatUIContextSource = {
+      kind: source.kind,
+      id: source.id,
+      get label() {
+        return source.label;
+      },
+      getSnapshot: () => source.getSnapshot(),
+    };
+    uiRegistryRef.current.set(key, registered);
+    setUISources([...uiRegistryRef.current.values()]);
+    return () => {
+      if (uiRegistryRef.current.get(key) !== registered) return;
+      uiRegistryRef.current.delete(key);
+      setUISources([...uiRegistryRef.current.values()]);
+      const next = new Set(selectedUIRef.current);
+      next.delete(key);
+      selectedUIRef.current = next;
+      setSelectedUIKeys(next);
+    };
+  }, []);
+  const selectUI = useCallback((source: PageContextRef, selected = true) => {
+    const key = uiItemKey(source);
+    if (selected && !uiRegistryRef.current.has(key))
+      throw new Error('UI context source is no longer registered.');
+    const next = new Set(selectedUIRef.current);
+    if (selected) next.add(key);
+    else next.delete(key);
+    selectedUIRef.current = next;
+    setSelectedUIKeys(next);
+    setRemoved((current) => {
+      const nextRemoved = new Set(current);
+      nextRemoved.delete(key);
+      return nextRemoved;
+    });
+  }, []);
+  const snapshotUI = useCallback(async () => {
+    const lifetime = uiLifetimeRef.current;
+    const selected = selectedUIRef.current;
+    if ([...selected].some((key) => !uiRegistryRef.current.has(key)))
+      throw new Error('UI context source is no longer registered.');
+    const entries = [...uiRegistryRef.current.entries()].filter(([key]) =>
+      selected.has(key),
+    );
+    const snapshot = await snapshotUIContext(
+      entries.map(([, source]) => source),
+    );
+    if (
+      lifetime !== uiLifetimeRef.current ||
+      selected !== selectedUIRef.current ||
+      entries.some(([key, source]) => uiRegistryRef.current.get(key) !== source)
+    )
+      throw new Error(
+        'UI context selection or source changed while reading its snapshot.',
+      );
+    return snapshot;
+  }, []);
+  const [selection, setSelection] = useState<ChatSelection | null>(null);
   const onUnpinRef = useRef(onUnpin);
   useEffect(() => {
     onUnpinRef.current = onUnpin;
   });
+
+  // Keep registrations alive: reset only what this editor carries, not the page's ability to contribute.
+  const [seenContextChange, setSeenContextChange] = useState(contextChange);
+  if (contextChange !== seenContextChange) {
+    const clear =
+      contextChange?.revision !== (seenContextChange?.revision ?? 0);
+    setSeenContextChange(contextChange);
+    if (contextChange) {
+      const nextRemoved = clear
+        ? new Set(
+            [...items.values()].map(itemKey).concat(FILTER_KEY, SELECTION_KEY),
+          )
+        : new Set(removed);
+      const nextSelected = clear ? new Set<string>() : new Set(selectedUIKeys);
+      if (clear) setSelection(null);
+      if (contextChange.pin) nextRemoved.delete(itemKey(contextChange.pin));
+      for (const source of contextChange.uiSources ?? []) {
+        const key = uiItemKey(source);
+        nextSelected.add(key);
+        nextRemoved.delete(key);
+      }
+      setSelectedUIKeys(nextSelected);
+      setRemoved(nextRemoved);
+    }
+  }
 
   const [seenPath, setSeenPath] = useState(pathname);
   if (pathname !== seenPath) {
     setSeenPath(pathname);
     setSelection(null);
     setRemoved(new Set());
+    setSelectedUIKeys(new Set());
   }
 
   // The page's selection, never one inside the chat (panel, page, history). Clicking into the chat collapses the page's
@@ -549,12 +783,21 @@ function ChatSourcesProvider({
   }, []);
 
   const remove = useCallback((key: string) => {
+    const next = new Set(selectedUIRef.current);
+    next.delete(key);
+    selectedUIRef.current = next;
+    setSelectedUIKeys(next);
     onUnpinRef.current(key);
     setRemoved((current) => new Set(current).add(key));
   }, []);
 
   const value = useMemo<ChatSourcesValue>(
     () => ({
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
       items: [...items.values()],
       // The innermost page registers last and wins.
       filter: [...filters.values()].at(-1) ?? null,
@@ -564,7 +807,20 @@ function ChatSourcesProvider({
       registerFilter,
       remove,
     }),
-    [items, filters, selection, removed, registerItem, registerFilter, remove],
+    [
+      uiSources,
+      selectedUIKeys,
+      registerUI,
+      selectUI,
+      snapshotUI,
+      items,
+      filters,
+      selection,
+      removed,
+      registerItem,
+      registerFilter,
+      remove,
+    ],
   );
   return (
     <ChatSourcesContext.Provider value={value}>
@@ -586,6 +842,35 @@ export function useChatContextSource(item: ChatContextItem | null): void {
     if (!kind || !id) return undefined;
     return registerItem({ kind, id, label: label ?? id });
   }, [registerItem, kind, id, label]);
+}
+
+/** Make a UI source available while mounted. Select it separately with useChatSources().selectUI(source). */
+export function useChatUIContextSource(
+  source: ChatUIContextSource | null,
+): void {
+  const { registerUI } = useChatSources();
+  const latestRef = useRef(source);
+  useLayoutEffect(() => {
+    latestRef.current = source;
+  });
+  const kind = source?.kind;
+  const id = source?.id;
+  useEffect(() => {
+    if (kind === undefined || id === undefined) return undefined;
+    return registerUI({
+      kind,
+      id,
+      get label() {
+        return latestRef.current?.label ?? id;
+      },
+      getSnapshot: () => {
+        const current = latestRef.current;
+        if (!current || current.kind !== kind || current.id !== id)
+          throw new Error('UI context source changed before snapshotting.');
+        return current.getSnapshot();
+      },
+    });
+  }, [registerUI, kind, id]);
 }
 
 /** Registers a list page's filter while the page is mounted; null registers nothing. */

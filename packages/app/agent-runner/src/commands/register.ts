@@ -18,7 +18,6 @@ import {
   type AppRegistration,
 } from '../lib/config.ts';
 import { ApiClient } from '../lib/http.ts';
-import { formatToolSlots, parseSlotsFlag } from '../lib/slots.ts';
 import {
   CLI_NAME_PATTERN,
   EXIT_CODES,
@@ -29,7 +28,7 @@ import {
 } from '../protocol/index.ts';
 import { isolationProblem } from '../core/isolation.ts';
 import { policyReport } from '../core/local-policy.ts';
-import { detectTools, runnerFeatures, runnerVersion } from '../core/loop.ts';
+import { runnerFeatures, runnerVersion } from '../core/loop.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
 
 /** `acme=/path/to/acme` → ['acme', '/path/to/acme']. */
@@ -51,20 +50,15 @@ export default class Register extends RunnerCommand {
   static override summary: string =
     'Register this runner with an application, as one of its runtimes.';
   static override description: string =
-    'Exchanges a one-time registration token from the application for a runner key. A runner can be registered ' +
-    'with several applications; each registration is kept in ~/.nocobase-runner/apps/ and its key in ' +
-    "~/.nocobase-runner/credentials/ (0600), never under a work directory. The trust level, the coding tools it may run and its concurrent runs (unless --slots is given) come with the token, and are changed on the application's Runtimes page. " +
-    '--slots takes a total, limits per coding tool, or both: 3, claude=2,codex=1, or 3,claude=2,codex=1. The limits hold across every application this machine serves.';
+    'Connect this runner using a one-time registration token. Configure total and tool slots in each application’s Runtimes page.';
   static override examples: Command.Example[] = [
     '<%= config.bin %> register --server https://app.example.com --token <token>',
     '<%= config.bin %> register --server http://localhost:3000 --token <token> --cli acme=./acme/node_modules/.bin/acme',
-    '<%= config.bin %> register --server https://app.example.com --token <token> --slots 3,claude=2,codex=1',
   ];
   static override flags: {
     server: Interfaces.OptionFlag<string>;
     token: Interfaces.OptionFlag<string>;
     name: Interfaces.OptionFlag<string | undefined>;
-    slots: Interfaces.OptionFlag<string | undefined>;
     cli: Interfaces.OptionFlag<string[] | undefined>;
     'min-free-disk': Interfaces.OptionFlag<string | undefined>;
     force: Interfaces.BooleanFlag<boolean>;
@@ -80,10 +74,6 @@ export default class Register extends RunnerCommand {
     name: Flags.string({
       description:
         'The runner name, the same for every application. Defaults to the host name.',
-    }),
-    slots: Flags.string({
-      description:
-        "How many runs at once, across every application: a total (3), limits per coding tool (claude=2,codex=1), or both (3,claude=2,codex=1). Without a total, the application gives the runner its registration token's number (else 1), and this runner keeps at least that many; without limits per tool, it keeps the ones it has.",
     }),
     cli: Flags.string({
       description:
@@ -118,15 +108,14 @@ export default class Register extends RunnerCommand {
         flags['min-free-disk'],
         '--min-free-disk',
       );
-    const slotsFlag =
-      flags.slots === undefined ? {} : parseSlotsFlag(flags.slots);
-    if (slotsFlag.slots !== undefined) settings.slots = slotsFlag.slots;
-    if (slotsFlag.toolSlots !== undefined)
-      settings.toolSlots = slotsFlag.toolSlots;
     const existing = (await readConnections(this.paths)).find(
       (connection) => connection.registration.server === server,
     );
-    if (existing !== undefined && !flags.force) {
+    if (
+      existing !== undefined &&
+      existing.registration.revoked === undefined &&
+      !flags.force
+    ) {
       throw new UsageError(
         `This runner is already registered with ${server} as runner ${existing.registration.runnerId}. Pass --force to replace it.`,
         EXIT_CODES.conflict,
@@ -154,12 +143,7 @@ export default class Register extends RunnerCommand {
       product: runnerHost().product,
       protocolVersion: PROTOCOL_VERSION,
       features: policy.features,
-      tools: await detectTools(adapters),
-      // Only an explicit --slots overrides the token's, its total and its limits per tool each on their own.
-      ...(slotsFlag.slots === undefined ? {} : { slots: slotsFlag.slots }),
-      ...(slotsFlag.toolSlots === undefined
-        ? {}
-        : { toolSlots: slotsFlag.toolSlots }),
+      tools: [],
       ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
       variables: providedNames(
         process.env,
@@ -178,6 +162,7 @@ export default class Register extends RunnerCommand {
     if (
       previous !== undefined &&
       previous.registration.server !== server &&
+      previous.registration.revoked === undefined &&
       !flags.force
     )
       throw new UsageError(
@@ -200,11 +185,8 @@ export default class Register extends RunnerCommand {
         ...overrides,
       },
       registeredAt: new Date().toISOString(),
+      ...(response.enabledTools ? { enabledTools: response.enabledTools } : {}),
     };
-    // Slots are shared by every application: raise them to what this one gave, never lower another's.
-    if (slotsFlag.slots === undefined && response.slots !== undefined)
-      settings.slots = Math.max(settings.slots, response.slots);
-    // Limits per tool the token gave hold in that application only: the machine keeps its own (`--slots`).
     await writeSettings(settings, this.paths);
     await writeConnection(
       { registration, runnerKey: response.runnerKey },
@@ -213,10 +195,6 @@ export default class Register extends RunnerCommand {
     this.log(
       `Registered ${settings.name} (${response.runnerId}) with ${registration.app.name || server} at ${server}. Start it with \`${runnerCommandLine('start')}\`.`,
     );
-    if (settings.toolSlots !== undefined)
-      this.log(
-        `Runs at once: ${settings.slots}, of which ${formatToolSlots(settings.toolSlots)}.`,
-      );
     return {
       app: key,
       runnerId: response.runnerId,

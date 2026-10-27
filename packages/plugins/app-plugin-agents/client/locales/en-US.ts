@@ -9,6 +9,17 @@ import runtimesEnUS from './runtimes.en-US.js';
 import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
+  modelSuggestions: {
+    design:
+      'Designs, architecture, hard investigations and reviews of important changes.',
+    routine: 'Well-scoped implementation, small fixes, tests and wording.',
+    small: 'Small, mechanical changes; cheap and fast.',
+    explanation:
+      'Understanding requirements, writing proposals and explanations.',
+    large: 'Larger implementations, changes across packages and refactoring.',
+    review: 'Code review and reading CI failures.',
+  },
+
   actions: {
     back: 'Back',
     cancel: 'Cancel',
@@ -60,53 +71,56 @@ const pages = {
       'Variables cannot be saved or shown: the server has no secrets key. Ask an administrator to set secrets.keys in the application configuration.',
   },
   command: {
-    copy: 'Copy command',
+    copy: 'Copy',
     copied: 'Copied',
-    copyFailed: 'Could not copy. Select the command and copy it yourself.',
+    copyFailed: 'Could not copy. Select the text and copy it yourself.',
   },
   tools: {
     claude: 'Claude Code',
     codex: 'Codex',
     opencode: 'OpenCode',
     pi: 'Pi',
+    gemini: 'Gemini CLI',
+    copilot: 'GitHub Copilot',
+    cursor: 'Cursor',
+    qwen: 'Qwen Code',
+    kimi: 'Kimi CLI',
+    codebuddy: 'CodeBuddy Code',
+    qoder: 'Qoder CLI',
+    goose: 'Goose',
+    auggie: 'Auggie',
+    droid: 'Factory Droid',
+    kilo: 'Kilo Code',
+    cline: 'Cline',
+    amp: 'Amp',
+    vibe: 'Mistral Vibe',
   },
   agents: {
+    unavailableNow: 'Unavailable now',
     title: 'Agents',
     description:
-      'Each coding tool and model a runner reports is an agent. The project manager hands each step of an issue to the agent whose description fits it.',
+      'Add agents from the models runners report. The project manager hands each step of an issue to the agent whose description fits it.',
     fromRunners: 'Agents from runners',
-    discovery: {
-      selectAll: 'Select all results',
-      selectFirst: 'Select the first {{limit}} results',
-      selectionCount: 'Selected {{count}} / {{limit}} groups',
-      clearSelection: 'Clear selection',
-      new: 'New discoveries ({{count}})',
-      ignored: 'Ignored ({{count}})',
+    display: {
       search: 'Search models or providers',
       select: 'Select {{name}}',
-      ignore: 'Ignore',
-      restore: 'Restore',
-      ignoreSelected: 'Ignore selected',
-      restoreSelected: 'Restore selected',
-      enabled: 'Show enabled',
-      disabled: 'Show disabled',
-      provider: 'Provider and runner',
-      saved: 'Discovery preferences saved',
+      showDisabled: 'Show disabled',
+      hideDisabled: 'Hide disabled',
     },
     filterLabel: 'Show agents',
     filters: {
       all: 'All {{count}}',
       enabled: 'Enabled {{count}}',
-      pending: 'To enable {{count}}',
       unreported: 'No runner {{count}}',
     },
     loadFailed: 'Could not load the agents',
+    loadMore: 'Load more',
     emptyTitle: 'No agents yet',
     emptyDescription:
-      'Connect a runner with a coding tool signed in: each of its models shows up here as an agent to enable.',
+      'Connect a runner with a coding tool signed in, then add an agent from Available models.',
     noneInFilter: 'No agent here.',
     howToAdd:
-      'To add an agent, install a coding tool on a runner and sign in to a model you may use: once the runner reports it, it shows up here, and you enable it by writing what it is good at. An agent only personal runners have works only on issues their owners start.',
+      'To add an agent, install a coding tool on a runner and sign in to a model you may use: once the runner reports it, add it from Available models by writing what it is good at. An agent only personal runners have works only on issues their owners start.',
     goodAtMissing: 'Not written yet',
     columns: {
       agent: 'Agent',
@@ -117,11 +131,11 @@ const pages = {
     },
     where: {
       none: 'No runner',
-      team_one: '{{count}} team runner',
-      team_other: '{{count}} team runners',
+      team_one: '{{count}} shared runner',
+      team_other: '{{count}} shared runners',
       personal_one: '{{count}} personal runner online',
       personal_other: '{{count}} personal runners online',
-      both: '{{team}} team · {{personal}} personal',
+      both: '{{team}} shared · {{personal}} personal',
       names: '{{names}}',
       noneOnline: 'No runner online now',
       personalOnly: 'Personal runners only',
@@ -129,7 +143,6 @@ const pages = {
     },
     state: {
       enabled: 'Enabled',
-      pending: 'To enable',
       disabled: 'Disabled',
       unreported: 'No runner',
     },
@@ -145,9 +158,6 @@ const pages = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Fill in and enable',
-      buttonFor: 'Fill in and enable {{name}}',
-      title: 'Enable {{name}}',
       reportedBy_one: 'Reported by {{count}} runner online: {{names}}.',
       reportedBy_other: 'Reported by {{count}} runners online: {{names}}.',
       noRunnerNow: 'No runner that has it is online now.',
@@ -158,8 +168,6 @@ const pages = {
         'The project manager cannot change it when it hands work over.',
       personalOnly:
         'Only personal runners have it: the project manager hands it work only on issues their owners start.',
-      submit: 'Enable',
-      done: '{{name}} is enabled',
     },
     edit: {
       button: 'Edit',
@@ -167,6 +175,52 @@ const pages = {
       title: 'Edit {{name}}',
       enabled: 'Enabled',
       done: '{{name}} saved',
+    },
+    available: {
+      open: 'Add agent',
+      title: 'Available models',
+      description:
+        'Only the tools a runtime has checked are ever detected and listed here. The application’s recommended combinations create and enable themselves as soon as a runner reports them; add an agent from any other one.',
+      recommended: 'Enabled automatically when reported',
+      added: 'Added',
+      add: 'Add',
+      status: {
+        available: 'Available',
+        needsSetup: 'Needs setup',
+        versionTooOld: 'Version too low',
+        failed: 'Detection failed',
+      },
+      details: 'Tool details',
+      setupCommand: 'Needs setup: run {{command}} on the runtime.',
+      setupUnknown:
+        'This tool needs setting up, but we don’t know the command for it.',
+      upgradeAdvice:
+        'Upgrade the tool and its ACP adapter to the latest releases on the runtime, then refresh detection.',
+      minimumVersionUnknown:
+        'Minimum supported tool release: unknown. Consult the tool’s compatibility documentation.',
+      noDetail: 'The tool gave no further detail.',
+      showMore: 'Show more',
+      showLess: 'Show less',
+      groupSearchPlaceholder: 'Search this tool’s models',
+      group_one: '{{tool}} · {{count}} model · {{runners}}',
+      group_other: '{{tool}} · {{count}} models · {{runners}}',
+      runners_one: '{{count}} runtime',
+      runners_other: '{{count}} runtimes',
+      noModels: 'No model here.',
+      selectedCount_one: '{{count}} selected',
+      selectedCount_other: '{{count}} selected',
+      addSelected: 'Add {{count}}',
+      confirmTitle_one: 'Add {{count}} agent',
+      confirmTitle_other: 'Add {{count}} agents',
+      confirmAction_one: 'Add {{count}}',
+      confirmAction_other: 'Add {{count}}',
+      goodAtNeeded: 'What is it good at?',
+      addedCount_one: 'Added {{count}} agent.',
+      addedCount_other: 'Added {{count}} agents.',
+      addedPartial:
+        'Added {{succeeded}}, {{failed}} could not be added. See the reason under each.',
+      addFailed:
+        '{{failed}} could not be added. See the reason under each; try again.',
     },
   },
   agentTypes: {
@@ -234,7 +288,7 @@ const pages = {
   envVars: {
     title: 'Environment variables',
     description:
-      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving. Anyone who may use a shared agent can receive these values on their own computer; mark high-risk secrets "Team runtimes only".',
+      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving. Anyone who may use a shared agent can receive these values on their own computer; mark high-risk secrets "Shared runtimes only".',
     add: 'Add variable',
     addTitle: 'Add environment variable',
     editTitle: 'Replace {{name}}',
@@ -244,13 +298,13 @@ const pages = {
     value: 'Value',
     valueTooLong: 'The value is larger than 8 KB.',
     keepValueHint: 'Leave it empty to keep the current value.',
-    teamRunnersOnly: 'Team runtimes only',
+    teamRunnersOnly: 'Shared runtimes only',
     teamRunnersOnlyHint:
-      'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a team runtime takes runs that get this variable.',
-    teamRunnersOnlyBadge: 'Team runtimes only',
+      'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a shared runtime takes runs that get this variable.',
+    teamRunnersOnlyBadge: 'Shared runtimes only',
     fromRunner: 'Take from the runtime',
     fromRunnerHint:
-      'No value is kept here: the runtime that takes a run provides it from its own machine, set there with `{{command}}` or passed with `--pass-env`. A runtime that does not provide it fails the run before it starts.',
+      'No value is kept here: the runtime that takes a run provides it from its own machine, set there with {{command}} or passed with `--pass-env`. A runtime that does not provide it fails the run before it starts.',
     fromRunnerBadge: 'From the runtime',
     valueRequired: 'Enter a value, or keep taking it from the runtime.',
     empty: 'No environment variables.',
@@ -485,6 +539,8 @@ const pages = {
     runnerUpgrade:
       'Interrupted for an execution machine update; the run will continue.',
     runnerDiskFull: 'The execution machine ran out of disk space.',
+    runnerOfflineBeforeStart:
+      'The runtime went offline before starting the run.',
     runnerOffline: 'The runtime went offline.',
     leaseExpired: 'The runtime stopped reporting.',
     startTimeout: 'The runtime did not start the run in time.',

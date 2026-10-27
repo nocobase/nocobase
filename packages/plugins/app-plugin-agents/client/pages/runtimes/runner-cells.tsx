@@ -41,13 +41,13 @@ const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
 };
 
 /**
- * Its state at a glance: online or busy with the slots it uses ("Busy 1/1"), offline since when, revoked, or waiting
- * for an upgrade; below it, the runs by coding tool against each tool's limit ("Claude Code 2/2 · Codex 0/1") when it
- * limits a tool or runs any.
+ * Its state at a glance, with online concurrency limits and optional per-tool limits.
  */
 export function RunnerStatusCell({
   runner,
+  badgeOnly = false,
 }: {
+  readonly badgeOnly?: boolean;
   readonly runner: Pick<
     RunnerListItem,
     | 'status'
@@ -63,14 +63,15 @@ export function RunnerStatusCell({
 }): ReactElement {
   const { t } = useTranslation();
   const format = useFormatters();
-  const activity = runnerActivity(runner);
+  const state = runnerActivity(runner);
+  const activity = state === 'busy' ? 'online' : state;
   const values = {
     active: runner.activeRuns + runner.activeJobs,
     slots: runner.slots,
     time: format.relative(runner.lastSeenAt),
   };
   let label: string;
-  if (activity === 'online' || activity === 'busy' || activity === 'low_disk')
+  if (activity === 'online' || activity === 'low_disk')
     label = t(`runtimes.activity.${activity}`, values);
   else if (activity === 'offline')
     label = runner.lastSeenAt
@@ -87,35 +88,38 @@ export function RunnerStatusCell({
       {label}
     </AgTag>
   );
-  const usage = toolUsage(runner);
-  if (usage.length === 0) return tag;
+  const usage = toolUsage(runner).filter((item) => item.limited);
   return (
     <div className='flex flex-col items-start gap-1'>
       {tag}
-      <ul
-        className='flex flex-wrap gap-x-2 text-xs text-muted-foreground tabular-nums'
-        aria-label={t('runtimes.toolUsage.label')}
-      >
-        {usage.map((item) => (
-          <li
-            key={item.tool}
-            data-full={item.used >= item.limit ? true : undefined}
-            className='data-full:text-foreground'
-          >
-            {t('runtimes.toolUsage.item', {
-              tool: t(`tools.${item.tool}`),
-              used: item.used,
-              limit: item.limit,
-            })}
-          </li>
-        ))}
-      </ul>
+      {badgeOnly || usage.length === 0 ? null : (
+        <ul
+          className='flex flex-wrap gap-x-2 text-xs text-muted-foreground tabular-nums'
+          aria-label={t('runtimes.toolUsage.label')}
+        >
+          {usage.map((item) => (
+            <li
+              key={item.tool}
+              data-full={item.used >= item.limit ? true : undefined}
+              className='data-full:text-foreground'
+            >
+              {t('runtimes.toolUsage.item', {
+                tool: t(`tools.${item.tool}`),
+                used: item.used,
+                limit: item.limit,
+              })}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
 const TOOL_STATE_TONE: Readonly<Record<ToolState, Tone>> = {
   off: 'grey',
+  checking: 'grey',
+  failed: 'red',
   notInstalled: 'amber',
   signedOut: 'amber',
   signedIn: 'green',
@@ -131,6 +135,7 @@ export function ToolStateTag({
     <AgTag
       tone={TOOL_STATE_TONE[state]}
       dot
+      className='max-w-full whitespace-normal'
       title={state === 'off' ? t('runtimes.tool.offHint') : undefined}
     >
       {t(`runtimes.tool.${state}`)}
@@ -250,14 +255,10 @@ export function RunnerVersionCell({
 export function RunnerUpgradeRequired({
   runner,
 }: {
-  readonly runner: Pick<
-    RunnerListItem,
-    | 'version'
-    | 'product'
-    | 'protocolVersion'
-    | 'requiredProtocol'
-    | 'updateVersion'
-  >;
+  readonly runner: Pick<Runner, 'version' | 'product' | 'protocolVersion'> & {
+    readonly requiredProtocol: { readonly min: number; readonly max: number };
+    readonly updateVersion: string | null;
+  };
 }): ReactElement {
   const { t } = useTranslation();
   const { min, max } = runner.requiredProtocol;

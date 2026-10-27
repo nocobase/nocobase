@@ -1,3 +1,12 @@
+import { OnlineAgentUIStreams } from './online/agent/transport/streams.js';
+import type { OnlineAgentRecoveryConfig } from './online/agent/types.js';
+import { OnlineAgentConfigurator } from './online/agent/configuration.js';
+import { RunnerOnlineAgentAdapter } from './online/agent/runner/backend.js';
+import type { ServiceResolver } from '@nocobase/service-provider';
+import { OnlineAgentService } from './online/agent/service.js';
+import { createSessionManager } from './online/agent/persistence/manager.js';
+import { NativeFileInputs } from './online/files/service.js';
+import type { FileInputsConfig } from './online/files/types.js';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to
  * `agentsToken`; tests call it directly against a real database.
@@ -6,9 +15,9 @@
  * off-by-default runner build method (`jobs/`) from the runners' shared slots, and jobs open the stored variables they
  * name here. The runner and CLI tarballs the application serves are `distribution/`.
  *
- * Agents are discovered from what runners report (`agents.syncRunner`, on each registration and heartbeat): one for each
- * coding tool and model, which someone who manages agents enables. Subject kinds (what runs work on), scopes, business
- * actions, the instructions every discovered agent gets and who holds which action are added later by the application
+ * Runner reports refresh existing agents and auto-create enabled agents for recommended models (`agents.syncRunner`).
+ * Administrators add other reported models from the live available-model list. Subject kinds (what runs work on),
+ * scopes, business actions, runner-agent instructions and who holds which action are added later by the application
  * that assembles the plugin (through `subjects`, `scopes`, `actions`, `agents.setDefaults`, `gate`); this plugin
  * brings the
  * `conversation` subject.
@@ -142,8 +151,17 @@ import {
   type SubjectRegistry,
 } from './core/runs/index.js';
 
+import { createSandboxProvider } from './online/sandbox/provider.js';
+import type { OnlineAgentSandboxOptions } from './online/sandbox/types.js';
 export interface AgentsDeps {
+  readonly uiRecovery?: OnlineAgentRecoveryConfig;
+  readonly fileInputs?: FileInputsConfig;
+  readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
+  readonly resolver?: ServiceResolver;
+  readonly sandbox?: OnlineAgentSandboxOptions;
   readonly runRetentionDays?: () => number;
+  /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
+  readonly retryBaseDelayMs?: number;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /**
@@ -183,6 +201,7 @@ export interface AgentsDeps {
 }
 
 export interface Agents {
+  readonly onlineAgent: OnlineAgentService;
   readonly events: AgentsEventBus;
   readonly tx: TxRunner;
   readonly clock: Clock;
@@ -319,7 +338,13 @@ export function createAgents(deps: AgentsDeps): Agents {
   const clock = deps.clock ?? systemClock;
   const subjects = createSubjectRegistry();
   const signal = createWorkSignal();
-  const transitions = { clock, subjects };
+  const transitions = {
+    clock,
+    subjects,
+    ...(deps.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: deps.retryBaseDelayMs }),
+  };
   const app = deps.app ?? defaultRunApp(deps.cli);
   const cli = resolveAgentCli(deps.cli, app);
 
@@ -327,6 +352,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   const dist = createDistService(deps.dist);
   const slots = createSlots(runsHeldSnapshot);
   const runners = createRunnerService({
+    quotaAgents: (unit) => agents.listActive(unit.conn),
     tx,
     ids,
     clock,
@@ -334,7 +360,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     people,
     latestRunner: async (runner) =>
       (await upgradeFor(dist, runner))?.latestVersion ?? null,
-    // Every tool and model a runner reports becomes an agent, pending until someone enables it.
+    // Reports auto-create enabled agents only for recommended models; other models stay in the live available list.
     onReport: (unit, runner) => agents.syncRunner(unit, runner),
   });
   const jobs = createJobService({
@@ -415,10 +441,12 @@ export function createAgents(deps: AgentsDeps): Agents {
     },
   });
   const eligibility = createClaimEligibility({
+    clock,
     runners,
     variables,
   });
   const availability = createAvailability({
+    clock,
     runners,
     eligibility,
     openRuns: openCounts,
@@ -470,12 +498,15 @@ export function createAgents(deps: AgentsDeps): Agents {
       onError(`Agents could not assemble run ${runId}.`, error),
   });
   const reports = createRunnerReports({
+    onOutput: (runId, event) => runnerOnlineAgent.output(runId, event),
     ...transitions,
     tx,
     ids,
     secrets,
     cliName: cli.name,
     appName: app.name,
+    onQuota: (unit, runnerId, tool, model, quota, observation) =>
+      runners.reportQuota(unit, runnerId, tool, model, quota, observation),
     onModelUnavailable: (unit, runnerId, tool, model) =>
       runners.markModelUnavailable(unit, runnerId, tool, model),
   });
@@ -484,6 +515,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     reports,
     repoAccess,
+    subjects,
     secrets,
     onError,
   });
@@ -504,7 +536,14 @@ export function createAgents(deps: AgentsDeps): Agents {
   jobs.provideSecrets({
     open: (conn, refs, delivery) => variables.forJob(conn, refs, delivery),
   });
-  const chat = createChatSettingsService({ tx, clock, agents });
+  const nativeAvailable = async () =>
+    Boolean((await modelServices.defaults()).effectiveChat);
+  const chat = createChatSettingsService({
+    tx,
+    clock,
+    agents,
+    nativeAvailable,
+  });
   const basePath = deps.basePath ?? (() => '');
   const chatAttachments = createChatAttachments({
     tx,
@@ -519,6 +558,7 @@ export function createAgents(deps: AgentsDeps): Agents {
       }),
   });
   const conversations = createConversationService({
+    measure: deps.measureOnlineAgent,
     tx,
     ids,
     clock,
@@ -528,9 +568,65 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs,
     people,
     settings: chat,
+    nativeAvailable,
+    nativeNotice: (unit, row, id, parts) =>
+      sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
+    nativeActive: (id, persistedRunning) =>
+      onlineAgent.producerAvailable(id, persistedRunning),
     contextKinds: createPageContextKinds(),
     attachments: chatAttachments.links,
     basePath,
+  });
+  const uiStreams = new OnlineAgentUIStreams({
+    tx,
+    measure: deps.measureOnlineAgent,
+    recovery: deps.uiRecovery,
+    onError: (error) => onError('OnlineAgent UI recovery failed.', error),
+  });
+  const configurator = new OnlineAgentConfigurator();
+  const runnerOnlineAgent = new RunnerOnlineAgentAdapter({
+    configurator,
+    measure: deps.measureOnlineAgent,
+    tx,
+    conversations,
+    streams: uiStreams,
+    now: () => clock.now().toISOString(),
+    basePath,
+    onError: (error) =>
+      onError('Runner OnlineAgent synchronization failed.', error),
+  });
+  const sessions = createSessionManager({
+    contextKinds: conversations.contextKinds,
+    tx,
+    ids,
+    attachments: chatAttachments.links,
+    basePath,
+    now: () => clock.now().toISOString(),
+  });
+  const fileInputs = new NativeFileInputs({
+    connectionFor: (ref) => modelServices.connectionFor(ref),
+    files: chatAttachments.service,
+    config: deps.fileInputs,
+    onWarning: (message) => onError(message, new Error(message)),
+  });
+  const onlineAgent = new OnlineAgentService({
+    configurator,
+    sandboxProvider: createSandboxProvider({ skills, ...deps.sandbox }),
+    runner: runnerOnlineAgent,
+    uiStreams,
+    sessions,
+    ids,
+    resolver: deps.resolver,
+    webSearch: {
+      capabilities: (ref) => modelServices.capabilities(ref),
+      search: (request) => gateway.search(request),
+    },
+    fileInputs,
+    model: (ref, sessionId) => fileInputs.model(ref, sessionId),
+    defaultModel: async () =>
+      (await modelServices.catalog()).defaultModel ?? null,
+    onError: (error) =>
+      onError('OnlineAgent execution or finalization failed.', error),
   });
   subjects.register(conversations.binding);
   registerCoreContextKinds(conversations, agents, runs);
@@ -544,6 +640,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   // The agent's text in a conversation becomes messages as the runner reports it; the run's end and reading the
   // messages catch up on anything missed here.
   events.on('run.events', (event) => {
+    if (runnerOnlineAgent.notify(event.runId)) return;
     conversations
       .syncRun(event.runId)
       .catch((error: unknown) =>
@@ -555,6 +652,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   // The panel shows whether the agent is working: tell the owner when a conversation's run changes.
   events.on('run.changed', (event) => {
+    runnerOnlineAgent.notify(event.runId);
     runs
       .get(event.runId)
       .then(async (run) => {
@@ -589,13 +687,19 @@ export function createAgents(deps: AgentsDeps): Agents {
       agentViews(
         conn,
         (await listAgents(conn)).filter((agent) => agent.source === 'runner'),
-        { availability, userId, canEdit: options.canEdit, now: clock.now() },
+        {
+          availability,
+          userId,
+          canEdit: options.canEdit,
+          now: clock.now(),
+          suggestion: agents.suggestion,
+        },
       ),
     eligibility,
     app,
     cli,
     runners,
-    runnerView: createRunnerView({ agents, subjects, tx }),
+    runnerView: createRunnerView({ agents, subjects, tx, clock }),
     workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,
@@ -631,11 +735,18 @@ export function createAgents(deps: AgentsDeps): Agents {
     subjects,
     gate,
     actions,
-    reporting: createReportService({ tx, clock, people, subjects }),
+    reporting: createReportService({
+      tx,
+      clock,
+      people,
+      subjects,
+      nativeAvailable,
+    }),
     prices: createPriceService({ tx, ids, clock }),
     conversations,
     chatAttachments: chatAttachments.service,
     chat,
+    onlineAgent,
     models: {
       services: modelServices,
       gateway,

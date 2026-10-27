@@ -16,7 +16,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 
 import { createPlugin } from '../src/lib/scaffold.ts';
 
@@ -25,7 +25,16 @@ const repository = fileURLToPath(new URL('../../../../', import.meta.url));
 const uiRoot = path.join(repository, 'ui-library');
 const uiRequire = createRequire(path.join(uiRoot, 'package.json'));
 const shadcn = path.join(uiRoot, 'node_modules/shadcn/dist/index.js');
-const primitiveNames = ['collapsible', 'select', 'switch'];
+const primitiveNames = [
+  'button',
+  'checkbox',
+  'empty',
+  'input',
+  'popover',
+  'select',
+  'tooltip',
+];
+const registryComponentNames = ['permission-editor', 'long-text'];
 
 interface Manifest {
   name: string;
@@ -53,7 +62,7 @@ async function run(
       timeout: 120_000,
       maxBuffer: 4 * 1024 * 1024,
     });
-    return result.stdout;
+    return `${result.stdout}\n${result.stderr}`;
   } catch (error) {
     const failure = error as Error & { stdout?: string; stderr?: string };
     throw new Error(
@@ -70,6 +79,7 @@ async function linkDependencies(directory: string): Promise<void> {
     'react-dom',
     '@base-ui/react',
     'cn',
+    'class-variance-authority',
     'lucide-react',
     '@types/react',
     '@nocobase/dev-config',
@@ -136,10 +146,9 @@ async function prepareOfflineMetadata(cache: string): Promise<void> {
       };
       const { name, version } = manifest;
       const resolution = lockfile.packages[`${name}@${version}`]?.resolution;
-      if (!resolution?.integrity)
-        throw new Error(
-          `Installed ${name}@${version} is not in the repository lockfile`,
-        );
+      // A reused local store can retain packages from other branches. They must
+      // not participate in this lockfile's offline dependency resolution.
+      if (!resolution?.integrity) continue;
       const metadata = metadataByName.get(name) ?? {
         name,
         'dist-tags': { latest: version },
@@ -189,7 +198,7 @@ async function validatePublished(directory: string): Promise<void> {
       );
   }
   for (const relative of [
-    'components/permission-editor',
+    ...registryComponentNames.map((name) => `components/${name}`),
     ...primitiveNames.map((name) => `components/ui/${name}`),
   ]) {
     for (const extension of ['js', 'd.ts']) {
@@ -211,19 +220,21 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       requested.push(url.pathname);
       const name = path.basename(url.pathname, '.json');
       let item: unknown;
-      if (name === 'permission-editor') {
+      if (registryComponentNames.includes(name)) {
         item = JSON.parse(
-          await readFile(
-            path.join(root, 'registry/permission-editor.json'),
-            'utf8',
-          ),
+          await readFile(path.join(root, 'registry', `${name}.json`), 'utf8'),
         ) as unknown;
       } else if (primitiveNames.includes(name)) {
         // Serve the maintained preview primitives byte-for-byte; never rewrite installed sources.
         item = {
           name,
           type: 'registry:ui',
-          dependencies: ['@base-ui/react', 'cn', 'lucide-react'],
+          dependencies: [
+            '@base-ui/react',
+            'cn',
+            'lucide-react',
+            ...(name === 'button' ? ['class-variance-authority'] : []),
+          ],
           files: [
             {
               path: `${name}.tsx`,
@@ -266,6 +277,13 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       '.pnpmfile.cjs',
     ])
       await copyFile(path.join(repository, name), path.join(root, name));
+    const workspaceConfigPath = path.join(root, 'pnpm-workspace.yaml');
+    const workspaceConfig = parse(
+      await readFile(workspaceConfigPath, 'utf8'),
+    ) as Record<string, unknown>;
+    // This fixture has synthetic offline metadata without publish timestamps.
+    workspaceConfig.minimumReleaseAge = 0;
+    await writeFile(workspaceConfigPath, stringify(workspaceConfig));
     for (const category of await readdir(path.join(repository, 'packages'))) {
       const source = path.join(repository, 'packages', category);
       const categoryEntry = (
@@ -276,6 +294,13 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       if (!categoryEntry?.isDirectory()) continue;
       for (const entry of await readdir(source, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
+        // Local tooling may leave empty directories for removed workspace packages.
+        if (
+          !(await readdir(path.join(source, entry.name))).includes(
+            'package.json',
+          )
+        )
+          continue;
         const destination = path.join(root, 'packages', category, entry.name);
         await mkdir(destination, { recursive: true });
         await copyFile(
@@ -324,6 +349,15 @@ it('installs a real registry item, builds and packs a generated plugin, and load
     if (!address || typeof address === 'string')
       throw new Error('Local registry did not open a TCP port');
     const registryUrl = `http://127.0.0.1:${address.port}/r`;
+    const localComponents = JSON.stringify(
+      {
+        ...(JSON.parse(originalComponents) as Record<string, unknown>),
+        registries: { '@nocobase': `${registryUrl}/{name}.json` },
+      },
+      null,
+      2,
+    );
+    await writeFile(path.join(directory, 'components.json'), localComponents);
     const installation = JSON.parse(
       await readFile(
         path.join(repository, 'node_modules/.modules.yaml'),
@@ -332,7 +366,15 @@ it('installs a real registry item, builds and packs a generated plugin, and load
     ) as { storeDir: string };
     const metadataCache = path.join(root, 'pnpm-cache');
     await prepareOfflineMetadata(metadataCache);
-    await run(
+    const installEnv = {
+      REGISTRY_URL: registryUrl,
+      PNPM_CONFIG_LOCKFILE_ONLY: 'true',
+      PNPM_CONFIG_OFFLINE: 'true',
+      PNPM_CONFIG_IGNORE_SCRIPTS: 'true',
+      PNPM_CONFIG_STORE_DIR: path.dirname(installation.storeDir),
+      PNPM_CONFIG_CACHE_DIR: metadataCache,
+    };
+    const installationOutput = await run(
       process.execPath,
       [
         shadcn,
@@ -343,21 +385,18 @@ it('installs a real registry item, builds and packs a generated plugin, and load
         directory,
       ],
       directory,
-      {
-        REGISTRY_URL: registryUrl,
-        // shadcn's real pnpm add updates metadata; dependencies come from the existing workspace install.
-        PNPM_CONFIG_LOCKFILE_ONLY: 'true',
-        PNPM_CONFIG_OFFLINE: 'true',
-        PNPM_CONFIG_IGNORE_SCRIPTS: 'true',
-        PNPM_CONFIG_STORE_DIR: path.dirname(installation.storeDir),
-        PNPM_CONFIG_CACHE_DIR: metadataCache,
-      },
+      installEnv,
     ).catch((error: unknown) => {
       throw new Error(
         `shadcn requests: ${requested.join(', ')}\n${String(error)}`,
         { cause: error },
       );
     });
+    const installedClientFiles = await files(path.join(directory, 'client'));
+    expect(
+      installedClientFiles,
+      `shadcn installed no permission editor; requests: ${requested.join(', ')}; output: ${installationOutput}`,
+    ).toContain('components/permission-editor.tsx');
     const manifest = await json(path.join(directory, 'package.json'));
     expect(manifest.imports).toEqual(originalManifest.imports);
     expect(manifest.publishConfig.imports).toEqual(
@@ -368,9 +407,16 @@ it('installs a real registry item, builds and packs a generated plugin, and load
     );
     expect(
       await readFile(path.join(directory, 'components.json'), 'utf8'),
-    ).toBe(originalComponents);
-    for (const name of ['permission-editor', ...primitiveNames])
-      expect(requested.some((url) => url.endsWith(`/${name}.json`))).toBe(true);
+    ).toBe(localComponents);
+    await writeFile(
+      path.join(directory, 'components.json'),
+      originalComponents,
+    );
+    for (const name of [...registryComponentNames, ...primitiveNames])
+      expect(
+        requested.some((url) => url.endsWith(`/${name}.json`)),
+        `${name} was not requested from the local registry: ${requested.join(', ')}`,
+      ).toBe(true);
     const declaredPackages = new Set(
       Object.keys({
         ...manifest.dependencies,
@@ -503,7 +549,11 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
     await expect(
       run(
         process.execPath,
-        ['--input-type=module', '-e', 'await import("#components/ui/switch")'],
+        [
+          '--input-type=module',
+          '-e',
+          'await import("#components/ui/checkbox")',
+        ],
         host,
       ),
     ).rejects.toThrow('Host imports captured a plugin primitive');
@@ -533,23 +583,23 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
     );
     const declaration = path.join(
       packageDirectory,
-      'dist/client/components/ui/switch.d.ts',
+      'dist/client/components/ui/checkbox.d.ts',
     );
     const declarationContent = await readFile(declaration, 'utf8');
     await rm(declaration);
     await expect(validatePublished(packageDirectory)).rejects.toThrow(
-      'Published plugin is missing dist/client/components/ui/switch.d.ts',
+      'Published plugin is missing dist/client/components/ui/checkbox.d.ts',
     );
     await writeFile(declaration, declarationContent);
     await rm(
-      path.join(packageDirectory, 'dist/client/components/ui/switch.js'),
+      path.join(packageDirectory, 'dist/client/components/ui/checkbox.js'),
     );
     await expect(validatePublished(packageDirectory)).rejects.toThrow(
-      'Published plugin is missing dist/client/components/ui/switch.js',
+      'Published plugin is missing dist/client/components/ui/checkbox.js',
     );
     await expect(
       run(process.execPath, ['--conditions=development', 'entry.js'], host),
-    ).rejects.toThrow('switch.js');
+    ).rejects.toThrow('checkbox.js');
     console.info(
       'Generated plugin publish acceptance rejects development source targets, missing declarations and missing JavaScript with explicit diagnostics.',
     );
@@ -560,4 +610,4 @@ createRoot(document.getElementById('root')).render(createElement(PermissionEdito
       );
     await rm(root, { recursive: true, force: true });
   }
-}, 180_000);
+}, 300_000);

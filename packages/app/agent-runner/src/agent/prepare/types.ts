@@ -39,6 +39,7 @@ export interface PrepareContext {
   /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
   readonly gitRetry?: GitRetryOptions;
   workspace?: WorkspaceLock;
+  privateDir?: string;
   /** The run's working directories, the primary one first; empty when the run names none. */
   dirs: PreparedDir[];
   /** The directory holding the application's CLI, first on the agent's PATH. */
@@ -77,9 +78,9 @@ export class PrepareError extends Error {
 }
 
 /**
- * Why a run fails when `step` throws `error`: the error's own reason, else the step's. A lock another live process
- * holds (`WorkspaceBusyError`), found by any step, is the workspace being busy, which the application requeues without
- * counting an attempt, when it announces that it accepts it (`acceptedFailures`).
+ * Why a run fails when `step` throws `error`: the error's own reason, else the step's. A workspace cleanup or cache
+ * lock timeout (`WorkspaceBusyError`), found by any step, is the workspace being busy, which the application requeues
+ * without counting an attempt when it announces that it accepts it (`acceptedFailures`).
  */
 export function stepFailure(
   step: Pick<PrepareStep, 'failure'>,
@@ -93,7 +94,7 @@ export function stepFailure(
   return step.failure;
 }
 
-/** The stable subject namespace. Run-attempt paths, including read-only paths, are allocated separately. */
+/** The stable subject namespace. Code paths are shared by every run and read-only mode. */
 export function workspaceKey(payload: RunPayload): string {
   return payload.workspace.key ?? payload.subject.key;
 }

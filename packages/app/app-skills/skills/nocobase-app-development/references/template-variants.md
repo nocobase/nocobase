@@ -6,7 +6,7 @@ A template not listed here is still supported. Derive its capabilities from the 
 
 ## Default
 
-`@nocobase/app-template-default` is the clean application starting point. It begins with a localized homepage, required permission initialization, no application-owned business routes or services, no example plugins, and no demo data. Its Users integration exposes Authorization Permission Sets as direct application roles. Preserve this clean boundary when editing the template itself; runnable demonstrations belong in Examples.
+`@nocobase/app-template-default` is the clean application starting point. It begins with a localized homepage, prepared but unregistered Users and Roles and permissions page modules, required permission initialization, no application-owned business routes or services, no example plugins, and no demo data. Its Users integration exposes Authorization Permission Sets as direct application roles. Do not display system settings on bare create-app: reconcile the prepared core settings contribution as the application develops business capabilities, and supply administration for capabilities actually used on every iteration. Preserve this clean boundary when editing the template itself; runnable demonstrations belong in Examples.
 
 ## Examples
 

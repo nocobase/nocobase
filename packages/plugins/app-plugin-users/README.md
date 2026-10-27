@@ -129,6 +129,8 @@ When the authorization plugin is installed, Users automatically registers the `a
 
 ## User deletion
 
+Application role scopes can implement `assertCanAdminister(userId, actorId, action, connection)` to refuse an actor acting on a protected account, such as anyone but an owner changing an owner's profile or password. The routes call it with the authenticated principal for `update`, `disable`, `enable`, `reset-password`, `revoke-sessions` and `assign-role`, inside the action's transaction and before anything changes; a refusal answers `FAILED_PRECONDITION`. The service methods take the actor as an optional last argument; server-side calls that pass none are not checked.
+
 `DELETE /api/users/:userId?confirm=true` requires the `user/delete` action and the `confirm=true` query parameter, and answers `204`. The service also rejects deleting the acting user. Application role scopes can implement `assertCanDelete(userId, actorId, connection)` and `onDelete(userId, connection)` to protect owned resources and remove credentials in the same transaction. Users does not grant access by default. Failed cleanup rolls back the deletion. Repeating a deletion changes nothing and answers `404 USER_NOT_FOUND`.
 
 Deletion removes the user from management lists, revokes sessions and removes sign-in accounts. Authentication retains a disabled identity with `deletedAt` and `deletedBy` for historical attribution; it cannot be re-enabled through user management. Email and username remain reserved. The authenticated deletion route emits a structured `user.delete` security event without credentials.
@@ -142,3 +144,11 @@ New accounts register directly from the invitation link with a name and password
 Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.
 
 Batch invitations send at most five emails concurrently with a shared 30-second mail-delivery budget. Links are returned even when the budget is exhausted: `emailSent=false` also covers an unattempted or uncertain delivery. Timed-out providers may still complete delivery; no automatic retry is scheduled. Authorized inviters can copy the returned link or resend the invitation.
+
+Management clients can retrieve the latest account and role scopes with `UsersClient.get(userId)` (`GET /api/users/:userId`), protected by the same authenticated `user/read` boundary as the list. List requests accept `sort: 'name'` and `order: 'asc' | 'desc'`; sorting occurs before pagination and IDs break ties. Omitting sorting preserves the existing creation-time order.
+
+A user editor can submit profile fields and `roleScopes` together through `PATCH /api/users/:userId`. Profile fields require `update`, scopes require `assign-role`, and a combined update requires both. Every submitted change commits in one transaction; any failure rolls the whole update back. Omitted scopes remain unchanged, and profile-only payloads retain their existing behavior.
+
+## Explicit Member assignments
+
+New accounts default to a saved, editable Member role. Omitted creation scopes use the default; an explicit empty role list stays empty. See [Member roles and the upgrade checklist](MEMBER-ROLES.md) for existing-user preservation, account basics, and the required package and application-page updates.

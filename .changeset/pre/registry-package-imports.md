@@ -4,7 +4,6 @@
 '@nocobase/create-plugin': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-notification': patch
-'@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-skills': patch
 ---
 

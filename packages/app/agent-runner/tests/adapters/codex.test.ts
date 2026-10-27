@@ -806,3 +806,160 @@ describe('stopping and resuming', () => {
     ]);
   });
 });
+
+it.each([false, true])(
+  'gates native deltas and summary requests with outputBlocks=%s',
+  async (outputBlocks) => {
+    let settings: Record<string, unknown> = {};
+    let advance!: () => void;
+    const proceed = new Promise<void>((resolve) => {
+      advance = resolve;
+    });
+    let sent!: () => void;
+    const partial = new Promise<void>((resolve) => {
+      sent = resolve;
+    });
+    const { adapter } = adapterWith(async (fake) => {
+      settings = await handshake(fake);
+      for (const [method, params] of [
+        ['item/agentMessage/delta', { itemId: 'body', delta: 'Hello ' }],
+        [
+          'item/reasoning/summaryTextDelta',
+          { itemId: 'reason', summaryIndex: 0, delta: 'Thinking' },
+        ],
+      ] as const)
+        fake.notify(method, {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          ...params,
+        });
+      sent();
+      await proceed;
+      item(fake, 'completed', {
+        type: 'agentMessage',
+        id: 'body',
+        text: 'Hello world',
+      });
+      item(fake, 'completed', {
+        type: 'agentMessage',
+        id: 'body',
+        text: 'Hello world',
+      });
+      item(fake, 'completed', {
+        type: 'reasoning',
+        id: 'reason',
+        summary: ['Thinking'],
+        content: ['Original content'],
+      });
+      completeTurn(fake);
+    });
+    const handle = adapter.start(session({ outputBlocks }));
+    const events: AdapterEvent[] = [];
+    const reading = (async () => {
+      for await (const event of handle.events) events.push(event);
+    })();
+    await partial;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(events.some((e) => e.type === 'text')).toBe(outputBlocks);
+    expect(settings.summary).toBe(outputBlocks ? 'auto' : undefined);
+    advance();
+    await reading;
+    expect((await handle.result).summary).toBe('Hello world');
+    if (outputBlocks) {
+      expect(
+        events
+          .filter((e) => e.type === 'text' && e.meta?.output?.phase === 'delta')
+          .map((e) => e.content)
+          .join(''),
+      ).toBe('Hello world');
+      expect(
+        events
+          .filter((e) => e.type === 'text' && e.meta?.output?.phase === 'end')
+          .map((e) => e.content),
+      ).toEqual(['Hello world']);
+      expect(
+        events
+          .filter(
+            (e) => e.type === 'thinking' && e.meta?.output?.phase === 'end',
+          )
+          .map((e) => e.content),
+      ).toEqual(['Thinking', 'Original content']);
+    } else
+      expect(
+        events.filter((e) => e.type === 'thinking').map((e) => e.content),
+      ).toEqual(['Thinking\n\nOriginal content']);
+  },
+);
+
+it.each([false, true])(
+  'subscribes to content deltas only with outputBlocks=%s',
+  async (outputBlocks) => {
+    const { adapter } = adapterWith(async (fake) => {
+      const init = await fake.nextRequest('initialize');
+      const capabilities = init.params?.capabilities as {
+        optOutNotificationMethods: string[];
+      };
+      for (const method of [
+        'item/agentMessage/delta',
+        'item/reasoning/summaryTextDelta',
+      ])
+        expect(capabilities.optOutNotificationMethods.includes(method)).toBe(
+          !outputBlocks,
+        );
+      fake.respond(init, {});
+      await fake.next((m) => m.method === 'initialized');
+      fake.respond(await fake.nextRequest('thread/start'), {
+        thread: { id: 'thread-1' },
+        model: 'gpt-test',
+      });
+      fake.respond(await fake.nextRequest('turn/start'), {
+        turn: { id: 'turn-1', status: 'inProgress', error: null },
+      });
+      completeTurn(fake);
+    });
+    const handle = adapter.start(session({ outputBlocks }));
+    await drain(handle);
+    expect((await handle.result).exit).toBe('completed');
+  },
+);
+
+it.each([true, false])(
+  'retains a partial response only on native interruption confirmation=%s',
+  async (confirmed) => {
+    let ready!: () => void;
+    const started = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    const { adapter } = adapterWith(async (fake) => {
+      await handshake(fake);
+      fake.notify('item/agentMessage/delta', {
+        threadId: 'thread-1',
+        turnId: 'turn-1',
+        itemId: 'partial',
+        delta: 'Partial **reply**',
+      });
+      ready();
+      const interrupt = await fake.nextRequest('turn/interrupt');
+      fake.respond(interrupt, {});
+      if (confirmed)
+        fake.notify('turn/completed', {
+          threadId: 'thread-1',
+          turn: { id: 'turn-1', status: 'interrupted', error: null },
+        });
+      else fake.exit(1);
+    });
+    const handle = adapter.start(session({ outputBlocks: true }));
+    const reading = drain(handle);
+    await started;
+    await handle.stop();
+    const events = await reading;
+    const ends = events.filter(
+      (e) =>
+        e.type === 'text' &&
+        (e.meta?.output as { phase?: string })?.phase === 'end',
+    );
+    expect(ends).toHaveLength(1);
+    expect(ends[0]?.content).toBe(confirmed ? 'Partial **reply**' : undefined);
+    expect((await handle.result).exit).toBe('aborted');
+  },
+);

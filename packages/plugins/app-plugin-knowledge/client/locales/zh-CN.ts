@@ -1,6 +1,138 @@
 import type { KnowledgeClientResource } from './en-US.js';
 
 const zhCN: KnowledgeClientResource = {
+  indexing: {
+    failedDocumentCount: '失败文档：{{count}}',
+    enabled: '启用索引',
+    enabledHint: '关闭后仅使用文本搜索，更改需保存后生效。',
+    chooseInstance: '选择索引实例',
+    documentProgress: '文档进度',
+    pendingDocuments: '待处理文档',
+    failedDocuments: '失败文档',
+    preparedChunks: '已准备分块',
+    committedChunks: '已提交分块',
+    agentPrompt:
+      '请帮我为当前 NocoBase 3 应用配置知识库索引。\n\n先阅读应用的 AGENTS.md，检查本应用实际可用的索引类型（type）。知识库目前支持两种向量数据库方案：SQLite + sqlite-vec（type 为 sqlite-vec，将向量保存在本地 SQLite 文件中）和 PostgreSQL + pgvector（type 为 pgvector，需要数据库服务并启用 vector 扩展）。请结合本应用的部署情况，说明可用方案及各自需要准备的信息，让我选择后再继续，不要直接替我决定。\n\n我选定后，再收集必要信息：选择 SQLite 时，确认索引文件的保存位置；选择 PostgreSQL 时，确认数据库连接信息，以及 vector 扩展是否已准备好。不要在对话中展示密码或 API Key。\n\n请先给出准备修改的配置，征得我确认后，再写入应用 config.yaml 的 knowledge.indexing，保留其他配置。如果应用实际使用 config.yml，请修改现有文件，不要另建 config.yaml。\n\n修改后安全检查配置，并告诉我如何重启应用。重启或安装依赖需要先征得我同意。最后引导我重新打开索引设置，开启索引、选择实例和向量模型并保存。调用付费模型或重建索引前，也要先向我确认。',
+    databases: {
+      sqlite: {
+        name: 'SQLite 向量数据库',
+        description:
+          '通过 sqlite-vec 向量扩展，将索引保存在应用服务器的 SQLite 文件中，不需要单独准备数据库服务，适合单机部署。',
+      },
+      pgvector: {
+        name: 'PostgreSQL 向量数据库',
+        description:
+          '通过 pgvector 向量扩展，在 PostgreSQL 数据库中存储和检索向量，需要准备数据库连接，并启用 vector 扩展，适合已有 PostgreSQL 服务或需要多台应用服务器共享索引的部署。',
+      },
+    },
+    setupTitle: '配置步骤',
+    setup: {
+      instance:
+        '打开应用的 config.yaml，在 knowledge.indexing 下添加一个索引实例，填写名称、类型，以及本地文件路径或数据库连接信息。',
+      restart: '保存文件并重启应用，使配置生效。',
+      enable:
+        '重新打开索引设置，开启索引，选择刚添加的实例和向量模型，再保存设置。',
+    },
+    agentHandoff:
+      '如果不熟悉配置文件，可以复制下面的提示词，让开发 Agent 协助完成。',
+    global: '对所有知识空间生效',
+    back: '返回知识库',
+    configuration: '索引配置',
+    typeHint:
+      '实例按 type 分组；每种类型提供自己的表单，并非所有索引都需要向量模型。',
+    typeForm: '由该类型提供的动态表单',
+    openPage: '在独立页中打开',
+    emptyTitle: '先配置向量数据库',
+    emptyDescription:
+      '知识库索引需要向量数据库来存储和检索文档向量。请先选择下面一种方式，在应用的 config.yaml 中添加配置：',
+    agentTitle: '配置提示词',
+    copyPrompt: '复制配置提示词',
+    promptCopied: '配置提示词已复制，尚未执行任何操作。',
+    promptCopyFallback: '无法自动复制，已选中提示词，请手动复制。',
+    promptLabel: '交给开发 Agent 的配置提示词',
+    rebuildHint: '配置变更需要重建索引',
+    editHint: '修改配置后可保存',
+    confirmRetryEmbedding:
+      '仅重试所有知识空间中的失败文档，不重建已完成的工作。Embedding 调用可能产生模型费用。',
+    confirmRetry:
+      '仅重试所有知识空间中的失败文档，不重建已完成的工作，但会消耗索引服务资源。',
+    confirmResources:
+      '此操作会重建所有知识空间的索引。该类型无需调用 Embedding 模型，但会消耗索引存储和服务资源。新索引就绪前，已发布索引继续提供检索。',
+    deploymentPg: '连接、Schema 和表名前缀由部署配置管理，无需在此填写。',
+    deploymentFile: '索引文件路径由部署配置管理，无需在此填写。',
+    errors: {
+      configurationChanged:
+        '模型服务或索引实例配置已变更，旧索引代无法按新配置继续重试。请核对设置，必要时使用“重建所有空间”（可能产生向量模型费用）。',
+      modelAuth:
+        '向量模型服务认证失败。请检查该服务的 API Key、访问权限及接入地域。',
+      modelQuota: '向量模型服务的额度或余额已用尽，请检查模型账号后重试。',
+      modelRateLimit: '向量模型服务触发限流，请稍后重试。',
+      modelConfig:
+        '已保存的向量模型不可用、已变更或不受支持，请核对模型服务及模型选择。',
+      modelInput: '向量模型输入过长，请检查文档分块大小。',
+      modelPolicy: '向量模型服务因内容策略拒绝了输入，请检查相关内容。',
+      modelResponse:
+        '向量模型返回的向量不符合要求，请检查模型兼容性和向量维度。',
+      modelUnavailable:
+        '无法连接向量模型服务或该服务暂不可用，请检查接入地址和网络。',
+      storageAuth: '索引存储认证失败，请检查数据库用户名、密码和连接配置。',
+      storagePermission:
+        '索引存储拒绝操作或处于只读状态，请检查 schema 和表权限。',
+      storageSchema:
+        '索引数据库、schema 或所需表不可用，请检查部署及 schema 配置。',
+      storageUnavailable:
+        '无法连接索引存储或连接已中断，请检查地址、端口和网络。',
+      storageBusy: '索引存储繁忙或发生事务冲突，请等待宿主的重试策略处理。',
+      timeout: '索引操作超时，请检查存储和模型服务可用性后重试。',
+      vectorExtension:
+        'PostgreSQL 未安装 vector 扩展，请联系数据库管理员安装。',
+      ownership: '索引目标的归属或结构不匹配，请核对实例资源，不要删除无关表。',
+      dependencies:
+        '索引实例、扩展或宿主 jobs 配置不可用，请检查部署配置，必要时重启应用。',
+    },
+    invalidValue: '请检查此值。',
+    title: '知识库索引设置',
+    description: '配置知识库搜索索引，对所有知识空间生效。',
+    progress: '索引进度',
+    instance: '索引实例',
+    off: '关闭，仅使用文本搜索',
+    missingForm: '此实例的配置表单不可用，已保存的选项将保留。',
+    statusFailed: '无法刷新索引状态。',
+    loadFailed: '无法加载索引设置，请检查访问权限后重试。',
+    saveFailed: '请求未被接受，草稿已保留。',
+    conflict:
+      '索引设置已被其他人修改。重新加载最新版本会保留草稿，请核对后再次保存。',
+    saved: '请求已接受，索引将在后台处理。',
+    workFailed: '部分索引工作失败，请检查实例和模型服务后重试。',
+    rebuild: '重建所有空间',
+    retry: '重试失败工作',
+    confirmTitle: '确认修改全局索引',
+    confirmRebuild:
+      '此操作影响所有知识空间，可能重新嵌入全部文档、产生模型费用并占用额外存储。新索引就绪前仍使用现有索引。',
+    confirmDisable:
+      '此操作关闭所有知识空间的索引检索，文本搜索仍可用，清理将在后台执行。',
+    discardTitle: '放弃未保存的修改？',
+    discardDescription: '尚未保存的索引设置将丢失。',
+    discard: '放弃修改',
+    confirm: '确认',
+    documents:
+      '文档：{{done}} / {{total}} · 待处理：{{pending}} · 失败：{{failed}}',
+    chunks: '分块已准备：{{prepared}} · 已提交：{{committed}}',
+    availability: {
+      disabled: '已关闭，仅使用文本搜索',
+      unavailable: '索引不可用，文本搜索仍可用',
+      building: '正在构建索引',
+      ready: '索引已就绪',
+      degraded: '索引降级，文本搜索仍可用',
+    },
+    table: '表名',
+    modelService: '模型服务',
+    model: '向量模型',
+    chooseService: '选择模型服务',
+    chooseModel: '选择或输入模型名称',
+    loadingModels: '正在加载向量模型…',
+    modelsUnavailable: '向量模型不可用，请检查模型服务后重试。',
+  },
   access: {
     businessSection: '知识库',
     businesses: {
@@ -87,6 +219,8 @@ const zhCN: KnowledgeClientResource = {
       failedHint: '有段落多次生成向量都失败了。',
       reason: '原因：{{reason}}',
       retry: '重新索引',
+      refreshFailed: '无法刷新索引状态',
+      retryRefresh: '重试刷新',
       queued: '已重新提交索引',
     },
     chunks: {
@@ -279,6 +413,7 @@ const zhCN: KnowledgeClientResource = {
       reload: '重新加载',
     },
     history: {
+      by: '由 {{name}}',
       title: '历史',
       current: '当前',
       fromProposal: '来自提议',
@@ -339,12 +474,12 @@ const zhCN: KnowledgeClientResource = {
         none: '无权访问',
       },
       title: '空间权限',
-      description: '谁可以在{{space}}中阅读、提议和编辑。',
+      description: '谁可以访问{{space}}。',
       yours: '你的权限',
       actions: {
         read: '阅读并搜索文档',
         propose: '提议修改，由有编辑权限的人决定',
-        edit: '编辑、整理和核实文档，并决定提议',
+        edit: '编辑、整理和核实文档',
         manage: '修改每个文件夹和文档的访问权限',
       },
       allowed: '允许',

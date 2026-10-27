@@ -33,7 +33,7 @@ describeIntegrationDatabases('text field defaults', (context) => {
         .connection()
         .collections.get('textDefaults');
       expect(
-        resolved?.fields.find((field) => field.name === 'body')?.defaultValue,
+        resolved?.fields?.find((field) => field.name === 'body')?.defaultValue,
       ).toBe('draft');
     },
   );
@@ -69,7 +69,7 @@ describeIntegrationDatabases('text field defaults', (context) => {
         .connection()
         .collections.get('textDefaultsAdded');
       expect(
-        resolved?.fields.find((field) => field.name === 'note')?.defaultValue,
+        resolved?.fields?.find((field) => field.name === 'note')?.defaultValue,
       ).toBe("it's here");
     },
   );
@@ -103,7 +103,7 @@ describeIntegrationDatabases('text field defaults', (context) => {
         .connection()
         .collections.get('textDefaultsAltered');
       expect(
-        resolved?.fields.find((field) => field.name === 'body')?.defaultValue,
+        resolved?.fields?.find((field) => field.name === 'body')?.defaultValue,
       ).toBe('pending');
     },
   );

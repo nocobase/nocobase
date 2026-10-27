@@ -9,6 +9,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  readlink,
   realpath,
   rm,
   symlink,
@@ -17,7 +18,8 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { afterEach, describe, expect, it } from 'vitest';
+import { gunzipSync } from 'node:zlib';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { readCliApplication } from '../src/lib/cli-brand.ts';
 import {
@@ -33,6 +35,7 @@ const execFileAsync = promisify(execFile);
 const created: string[] = [];
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(
     created.splice(0).map((dir) => rm(dir, { force: true, recursive: true })),
   );
@@ -199,6 +202,7 @@ describe('nocobase cli build --universal', () => {
         version: '0.0.1',
         type: 'module',
         exports: './index.js',
+        bin: { probe: './probe.js' },
       }),
     );
     await writeFile(
@@ -210,6 +214,11 @@ describe('nocobase cli build --universal', () => {
         '',
       ].join('\n'),
     );
+    await writeFile(path.join(client, 'probe.js'), '#!/usr/bin/env node\n');
+    await chmod(path.join(client, 'probe.js'), 0o755);
+    const longName = `${'long-directory-'.repeat(10)}/data.txt`;
+    await mkdir(path.dirname(path.join(client, longName)), { recursive: true });
+    await writeFile(path.join(client, longName), 'long path contents');
     const app = path.join(root, 'app');
     await mkdir(path.join(app, 'node_modules', '@nocobase'), {
       recursive: true,
@@ -228,6 +237,17 @@ describe('nocobase cli build --universal', () => {
     );
 
     const out = path.join(root, 'out');
+    // Make GNU tar emit the same unknown PAX key as macOS tar, even on Linux CI. The packer must not inherit
+    // host-specific archive metadata. BSD tar exercises its native metadata behavior without GNU-only options.
+    if (
+      execFileSync('tar', ['--version'], { encoding: 'utf8' }).includes(
+        'GNU tar',
+      )
+    )
+      vi.stubEnv(
+        'TAR_OPTIONS',
+        '--pax-option=LIBARCHIVE.xattr.com.apple.provenance=fixture',
+      );
     const result = await packCli({
       application: await readCliApplication(app),
       runner: false,
@@ -240,7 +260,14 @@ describe('nocobase cli build --universal', () => {
       keepStaging: false,
       log: () => undefined,
     });
+    vi.unstubAllEnvs();
     const name = `demo-v1.2.3-${UNIVERSAL_TARGET}.tar.gz`;
+    const archive = path.join(out, 'stable', 'demo', '1.2.3', name);
+    expect(
+      gunzipSync(await readFile(archive)).includes(
+        Buffer.from('LIBARCHIVE.xattr.'),
+      ),
+    ).toBe(false);
     expect(result.node).toBe('system');
     expect(Object.keys(result.targets)).toEqual([UNIVERSAL_TARGET]);
     const manifest = JSON.parse(
@@ -266,13 +293,26 @@ describe('nocobase cli build --universal', () => {
     // Installed as the install script does it, and started with this machine's Node.js found on PATH.
     const version = path.join(root, 'share', 'demo', 'versions', '1.2.3');
     await mkdir(version, { recursive: true });
-    execFileSync('tar', [
+    const extraction = await execFileAsync('tar', [
       '-xzf',
-      path.join(out, 'stable', 'demo', '1.2.3', name),
+      archive,
       '-C',
       version,
       '--strip-components=1',
     ]);
+    expect(extraction.stderr).toBe('');
+    const installedClient = path.join(
+      version,
+      'node_modules',
+      '@nocobase',
+      'app-cli-client',
+    );
+    expect(await readFile(path.join(installedClient, longName), 'utf8')).toBe(
+      'long path contents',
+    );
+    expect(
+      await readlink(path.join(version, 'node_modules', '.bin', 'probe')),
+    ).toBe('../@nocobase/app-cli-client/probe.js');
     expect(existsSync(path.join(version, 'bin', 'node'))).toBe(false);
     expect(existsSync(path.join(version, 'vendor'))).toBe(false);
     const tools = await shellTools(root);

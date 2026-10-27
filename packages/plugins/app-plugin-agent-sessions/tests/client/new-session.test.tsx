@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import plugin from '../../client/plugin.js';
 import { AgentSessionsConfigContext } from '../../client/config.js';
@@ -50,7 +50,14 @@ const choices: DiscoveredChoices = {
   ],
 };
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  // A LAN HTTP browser exposes getRandomValues, but not randomUUID.
+  vi.stubGlobal('crypto', {
+    getRandomValues: crypto.getRandomValues.bind(crypto),
+  });
+});
+afterEach(() => vi.unstubAllGlobals());
 
 describe('new-session composer', () => {
   it('shows only the background connection command when all computers are offline', async () => {
@@ -251,7 +258,7 @@ describe('new-session composer', () => {
       'agentSessions/computers/other/discoverChoices',
     );
   });
-  it('requires discovery on a fresh computer and sends the discovered settings with a locked target', async () => {
+  it('sends the discovered settings with a locked target once discovery answers', async () => {
     const discovered: { input: unknown; resolve: (value: unknown) => void }[] =
       [];
     let creation: unknown;
@@ -295,7 +302,6 @@ describe('new-session composer', () => {
     );
     await screen.findByText('Loading settings…');
     expect(screen.getByRole('textbox')).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await waitFor(() => expect(discovered).toHaveLength(1));
     await act(async () => discovered[0]!.resolve({ data: choices }));
     await screen.findByText('Reasoning: High');
@@ -304,13 +310,14 @@ describe('new-session composer', () => {
       await screen.findByRole('menuitemradio', { name: 'Chosen model' }),
     );
     await waitFor(() => expect(discovered).toHaveLength(2));
+    // Discovery names the session the message creates, so the computer keeps the agent it starts for it.
     expect(discovered[1]!.input).toEqual({
       agentId: 'codex',
       cwd: '/work',
       settings: { model: 'chosen' },
+      sessionId: (discovered[0]!.input as { sessionId: string }).sessionId,
     });
     expect(screen.getByRole('textbox')).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await act(async () =>
       discovered[1]!.resolve({
         data: {
@@ -335,12 +342,73 @@ describe('new-session composer', () => {
         cwd: '/work',
         settings: { model: 'chosen', effort: 'high' },
         content: [{ type: 'text', text: 'First message' }],
+        submissionId: (discovered[1]!.input as { sessionId: string }).sessionId,
       }),
     );
     expect(
       screen.getByRole('button', { name: 'Fresh computer' }).closest('[inert]'),
     ).not.toBeNull();
     await act(async () => finishCreate?.({ data: { id: 'new-session' } }));
+  });
+  it('sends before discovery answers, with only the settings the person chose', async () => {
+    let creation: unknown;
+    const discoveries: unknown[] = [];
+    await renderWithApp(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <NewSession />
+      </QueryClientProvider>,
+      {
+        plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(({ path, method, json }) => {
+          if (path === 'agentSessions/computers')
+            return { data: [computer], meta: { total: 1 } };
+          // The agent is still starting: discovery has not answered when the message goes.
+          if (path.endsWith('/discoverChoices')) {
+            discoveries.push(json);
+            return new Promise(() => {});
+          }
+          if (path === 'agentSessions/projects') return { data: [] };
+          if (path === 'agentSessions/sessions' && method === 'POST') {
+            creation = json;
+            return { data: { id: 'new-session' } };
+          }
+          if (path === 'agentSessions/sessions') return { data: [], meta: {} };
+          return { data: [] };
+        }),
+      },
+    );
+    await screen.findByText('Loading settings…');
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'First message' },
+    });
+    expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled();
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() =>
+      expect(creation).toMatchObject({
+        computerId: 'fresh',
+        agentId: 'codex',
+        cwd: '/work',
+        settings: {},
+        content: [{ type: 'text', text: 'First message' }],
+        // The session is created with the id its discovery named, so it takes over that agent.
+        submissionId: (discoveries[0] as { sessionId: string }).sessionId,
+      }),
+    );
+    // While the page is still shown, the next draft does not discover and start another agent.
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(discoveries).toHaveLength(1);
   });
 });
 

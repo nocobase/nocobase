@@ -1,6 +1,81 @@
 /** The runtimes page's and the "Add runtime" dialog's words, merged into this plugin's locale (`en-US.ts`). */
 const runtimesEnUS = {
   runtimes: {
+    quota: {
+      workspaceStatus: {
+        active: 'Work continues',
+        ended: 'Ended · cleanup allowed',
+        checks: 'Ended · checks pending',
+        inUse: 'Retained: in use',
+        changed: 'Retained: reused',
+        trackedChanges: 'Retained: uncommitted files',
+        unpushed: 'Retained: unpushed work',
+        missingEvidence: 'Retained: verification needed',
+        gitFailed: 'Retained: Git check failed',
+        runNotFound: 'Retained: run not found',
+        ownershipUnknown: 'Retained: owner unverified',
+        ambiguousSubject: 'Retained: ambiguous task',
+        bindingUnavailable: 'Retained: binding unavailable',
+        subjectUnknown: 'Retained: task unknown',
+        unknown: 'Retained: unverified',
+      },
+      usageLimit: 'Usage limit',
+      shortReset: 'resets {{time}}',
+      shortUnknown: 'reset unknown',
+      automatic: 'Clears by itself at the reset.',
+      since: 'since {{time}}',
+      marks_one: '{{count}} quota mark',
+      marks_other: '{{count}} quota marks',
+      queueHint:
+        'An agent at quota can still be selected. Work will queue with its existing waiting deadline.',
+      partial: 'Runs on {{available}} · {{blocked}} at quota',
+
+      workspaceSize: 'Workspace size: {{value}}',
+      providers_one: '{{count}} provider at quota',
+      providers_other: '{{count}} providers at quota',
+      runColumns: {
+        issue: 'Issue / conversation',
+        agent: 'Agent',
+        status: 'Status',
+        started: 'Started',
+        duration: 'Duration',
+      },
+      filter: {
+        all: 'All',
+        active: 'Active',
+        retained: 'Retained',
+        ended: 'Ended',
+      },
+      columns: {
+        directory: 'Directory / task',
+        type: 'Type',
+        size: 'Size',
+        push: 'Push state',
+        status: 'Status',
+        lastUsed: 'Last used',
+      },
+      previous: 'Previous',
+      next: 'Next',
+      working: 'Working',
+      readOnly: 'Read-only copy',
+      clean: 'Clean',
+      unpushed: 'Unpushed',
+      overview: 'Overview',
+      workspaces: 'Workspaces',
+      runs: 'Runs',
+      title: 'Quota',
+      reached: 'Quota reached',
+      unknown: 'Reset time unknown',
+      resets: 'Resets {{time}}',
+      near: 'Near limit',
+      clear: 'Clear',
+      clearMark: 'Clear mark',
+      confirm: 'Clear this mark? {{target}} gets work again.',
+      observed: 'Last reported {{time}}',
+      usedPercent: '{{percent}}% used',
+      ok: 'OK',
+      hint: 'Known reset times restore eligibility automatically. For unknown resets, restore the quota and clear the mark. Only the runtime owner and administrators can clear marks.',
+    },
     workspaces: {
       paused:
         'New work is paused until disk space recovers. Existing runs continue.',
@@ -116,6 +191,8 @@ const runtimesEnUS = {
       unsupported:
         'This runtime’s runner does not take jobs. Update the runner to turn this on.',
     },
+    pathHint:
+      'The runner finds coding tools using its own PATH. In a terminal where which codex / which claude works, run nocobase-runner service install again and restart the service (or run nocobase-runner start again) so it gets the correct PATH.',
     noTools: 'No coding tool found',
     actionsFor: 'Actions for {{name}}',
     columns: {
@@ -131,7 +208,7 @@ const runtimesEnUS = {
       general: 'General',
       tools: 'Tools',
       toolsDescription:
-        'The coding tools it reported. Work for a tool that is off is not sent here. Switches and limits are saved with “Save”.',
+        'Only selected tools are detected and offered work. Switches and limits are saved with “Save”.',
       version: 'Runner {{version}}',
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',
@@ -161,8 +238,12 @@ const runtimesEnUS = {
         'Its runner does not say how it was installed. Install it again on its host with the command from Add runtime.',
     },
     tool: {
+      checking: 'Waiting for detection',
+      failed: 'Detection failed',
+      redetect: 'Detect again',
+      notProvided: 'Not provided',
       signedIn: 'Signed in',
-      signedOut: 'Not signed in',
+      signedOut: 'Login required',
       notInstalled: 'Not installed',
       off: 'Off',
       offHint: 'Off: work for this tool is not sent to this runtime.',
@@ -170,21 +251,23 @@ const runtimesEnUS = {
       version: 'Version {{version}}',
     },
     trust: {
-      label: 'Who it works for',
-      team: 'Team',
+      isolationHint:
+        'For both personal and shared runtimes, run the runner in a VM or isolated environment: agents have full access, and the runner is not a sandbox.',
+      label: 'Usage scope',
+      team: 'Shared',
       teamHint:
-        'Runs work anyone on the team starts, with their variables and secrets. For shared servers and VMs.',
+        'Runs tasks started by any user and receives their variables and secrets.',
       ownerOnly: 'Personal',
       ownerOnlyHint:
-        'Runs only the work you start. The default for a runtime you add.',
+        'Runs only tasks started by its owner. Runtimes you add are personal by default.',
       personalOnly:
-        'This runtime will be personal: it runs only the work you start. You can share it with the team later.',
+        'This runtime will be personal: it runs only tasks started by its owner. You can share it with all users later.',
     },
     share: {
-      title: 'Share {{name}} with the team?',
+      title: 'Share {{name}} with all users?',
       description:
         'Other people’s runs will run on this runtime, with their variables and secrets, and can read what is on it. Share it only if that is fine.',
-      confirm: 'Share with team',
+      confirm: 'Share with all users',
     },
     edit: {
       button: 'Edit',
@@ -221,15 +304,27 @@ const runtimesEnUS = {
   connect: {
     title: 'Add runtime',
     description:
-      'Run the command below on a host that has a coding tool installed: a server, a VM or your own device. Agents run there with full access, as the user who runs the runner, and can read and change anything that user can, SSH keys and other credentials included. The runner is not a security boundary: run it as a dedicated user, in a container or in a VM.',
+      'Choose the coding tools and usage scope, then set up the runner on the target machine.',
     createCredential: 'Generate install command',
     advanced: 'Advanced: limits per coding tool',
     run: "Run this on that host. It downloads the runner (nocobase-runner) and this application's CLI from this application, registers the runner and starts it at login:",
     nodeRequired:
       'The host needs Node.js 24 or newer (check with node --version). The command stops and says how to install it when it is missing.',
     installed: 'Already have nocobase-runner installed? Register it instead:',
-    unsupported:
-      'The runner does not run on Windows yet. Use macOS or Linux, or WSL.',
+    prompt: 'Prompt',
+    manual: 'Manual',
+    promptHint:
+      'Copy the full prompt below to an agent (Claude Code, Codex, etc.) on the target machine. On small screens, scroll the dialog to read every step. It includes a one-time credential; share it only with that agent.',
+    windowsPowerShell:
+      '1. Install WSL: run in PowerShell, then restart Windows:',
+    windowsUbuntu:
+      '2. Open Ubuntu and run the Linux command below. Install Node.js and coding tools inside WSL Ubuntu.',
+    windowsNetwork:
+      'If WSL cannot access the internet, enable mirrored networking in WSL.',
+    promptWindows:
+      'FIRST, determine whether you are running inside WSL Ubuntu. If you are NOT in WSL Ubuntu, STOP: do not run any installation or registration commands. Tell the user to run wsl --install in PowerShell, restart Windows, then open the agent inside WSL Ubuntu and run this prompt again. Continue with the steps below ONLY inside WSL Ubuntu. Install both Node.js and the coding tools inside WSL. If WSL cannot access the internet, enable mirrored networking.\n\n',
+    promptBody:
+      'Set up this machine as a NocoBase runner. Use a VM or isolated environment: agents have full access and the runner is not a sandbox.\n\nCheck Node.js 24 or newer and that these coding tools are installed and signed in: {{tools}}. Use their official installation methods, not snap packages.\n\nRun this one-time registration command to install the runner and application CLI, register it, and install its background service:\n{{command}}\n\nResolve common setup problems: ensure the service PATH contains the coding tools (check which codex / which claude in the installation terminal, then run nocobase-runner service install again and restart the service); configure any required proxy for downloads and for the service; resolve npm global install permissions using a user-owned prefix or a Node version manager, without sudo npm install.\n\nFinish with nocobase-runner status and confirm the connection and coding tools. Report any remaining login or network steps for me to complete. Treat the registration credential as a secret and do not include it in your report.',
     tokenOnce:
       'The command carries a one-time credential for a "{{trust}}" runtime. It works once, until {{time}}.',
     after:
@@ -237,7 +332,7 @@ const runtimesEnUS = {
     tokenTools: 'Coding tools: {{tools}}.',
     tools: 'Coding tools',
     toolsHint:
-      'This runtime is offered work only for the checked tools. You can change it on the Runtimes page at any time.',
+      'Only checked tools are detected and offered work. You can change it on the Runtimes page at any time.',
     toolsRequired: 'Choose at least one coding tool.',
     slots: 'Max concurrent runs',
     slotsHint:

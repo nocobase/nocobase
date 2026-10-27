@@ -2,7 +2,7 @@
 
 This is a NocoBase 3 application. Do not apply globally installed NocoBase 2 Skills. You are building the application itself — its pages, its API, its database tables. Everything under this directory is application-owned source code that you may edit directly.
 
-Do not create a plugin to add a feature. Plugins are separately published packages for capabilities shared across several applications; building one for this application's own feature adds a package boundary, a version, and a release process to work that belongs in `client/` and `server/`. Create one only when the user explicitly asks for a reusable published package.
+Do not create a plugin to add a feature. Plugins are separately published packages for capabilities shared across several applications; building one for this application's own feature adds a package boundary, a version, and a release process to work that belongs in `client/` and `server/`. Create one only when the user explicitly asks for a reusable published package. Ordinary internal workspace packages under `packages/` may share code without becoming plugins or being published; follow [internal packages](.agents/rules/workspace.md) when the application needs that boundary.
 
 ## Examples template scope
 
@@ -16,9 +16,11 @@ This file stays at most 32 KB and must not grow without bound, because every age
 
 - Application-specific guidance — including what a change to this application's structure, shell or conventions needs the next agent to know — goes in `.agents/rules/<topic>.md`. Update the relevant file, or add one, and add or update its entry in the [index](#index) below rather than writing the detail here.
 - Framework-wide guidance lives in the synchronized Skills under `.agents/skills/`. Link to it, never copy it here; when it is wrong for every application, correct it upstream in `@nocobase/app-skills`.
-- `tests/logic/agents-md.test.ts` enforces the size limit and checks that the links here and in `.agents/rules/` resolve.
+- `tests/project/agents-md.test.ts` enforces the size limit and checks that the links here and in `.agents/rules/` resolve.
 
 ## Load the development skills
+
+For creating or maintaining a plugin in this App, read [the project plugin development Skill](.agents/skills/nocobase-app-plugin-development/SKILL.md). It ships with `@nocobase/app-skills`; do not install a global copy. If an older global Skill has the same name, read this project's file by path and follow the upgrade Skill's migration guidance to retire the global copy after verifying the replacement.
 
 `pnpm install` runs `pnpm nocobase skills sync` through the application's `postinstall` hook. If `.agents/skills/nocobase-app-development/` is missing, install dependencies from the application root; if install scripts were disabled or synchronized Skills are stale, run `pnpm nocobase skills sync` explicitly.
 
@@ -52,11 +54,17 @@ tests/                    Tests; never beside the source
 
 A feature with a page and an API touches five places: a migration for the table, a route in `server/routes/`, a page in `client/pages/` declared in `client/routes.ts`, navigation on the page route, and strings in `client/locales/`. A page with children or page-local helpers uses a folder with `index.tsx`; child folders mirror route paths. [Application structure](.agents/skills/nocobase-app-development/references/app-structure.md) explains how the runtime composes these pieces, where configuration and its environment variables are declared, and the runtime paths.
 
+## System settings are part of feature delivery
+
+Preserve the built-in Users and Roles and permissions pages. Whenever an application adds lifecycles, workflows, approvals, notifications, files or other configurable capabilities, automatically include their real administration surfaces without requiring a second user request. Follow [system settings delivery](.agents/skills/nocobase-app-development/references/system-settings.md); in particular, every used process includes a definitions directory, standard diagram, supported parameters and authorized execution history. Do not add demo plugins or empty settings for unused capabilities. The template preinstalls `#components/lifecycle-diagram` (React Flow + ELK) and `client/extensions/nocobase-workflow-management/`: use them by default, preserve their visuals unless the user explicitly requests another style, and connect authorized parameter bindings through `LifecycleDiagram.configuration` to the real editor. These are UI Registry sources; an npm package lookup is not a component availability check.
+
 ## Rules that apply everywhere
 
 ### Pages and routes
 
 Declare every page in `client/routes.ts` with `defineAppRoutes()` and keep its component behind a lazy `componentLoader` whose module default-exports it. Never write the deployment base path such as `/main` into a route — the runtime restores it. `auth` controls browser navigation only and is not server security. Declare `navigation` on the route to put it in a menu, and always declare `authz` on the first page of every path; the page id identifies stored page grants, so changing it requires migrating the grants that reference it. Read [pages and routes](.agents/skills/nocobase-app-development/references/frontend/references/page.md), and [overlays](.agents/skills/nocobase-app-development/references/frontend/references/overlay.md) before implementing dialogs, drawers or close guards.
+
+Every route listed as a page permission needs a localized display name: use its existing navigation/breadcrumb title, or add its application route name to `client/pages/settings/page-permission-titles.ts` for an overlay or other page with no title metadata. Do not add breadcrumbs/menus just to label an overlay. Run `tests/client/page-permission-titles.test.ts`; it requires non-empty English/Chinese labels and rejects missing or stale mappings. Never rename route/permission ids or change `authz` to fix display text.
 
 ### Components and styling
 
@@ -96,7 +104,7 @@ When reporting or opening this application's address, use the `Local:` URL print
 
 Scope all verification — formatting, lint, type checking, tests, builds and runtime checks — to the affected files, projects, or packages and their affected consumers. Do not run full-application or workspace-wide checks, or an aggregate `pnpm check`, as a routine step after each edit. Documentation-only changes need formatting and link checks for the changed documents, not type checking, runtime tests, or builds. Report which checks ran, their scope, and any unverified behavior.
 
-Add tests for what you changed — a route's authenticated, unauthenticated, and unauthorized responses; a migration's `up` and `down` against a real database; a page's actual behavior — in `tests/`, never beside the source; browser tests go in `tests/playwright/`. See [testing and verification](.agents/skills/nocobase-app-development/references/testing.md).
+Add tests for what you changed — a route's authenticated, unauthenticated, and unauthorized responses; a migration's `up` and `down` against a real database; a page's actual behavior — in `tests/`, never beside the source; browser tests go in `tests/playwright/`. Start page tests from `tests/client/page-harness.test.tsx`, which keeps application hooks real and supplies external responses through the test fixture. See [testing and verification](.agents/skills/nocobase-app-development/references/testing.md).
 
 For any UI work, start with [the frontend workflow](.agents/skills/nocobase-app-development/references/frontend/ui-workflow.md), which decides the workflow and routes to the styling rules, the theme token contract and the rest.
 
@@ -104,7 +112,7 @@ For any UI work, start with [the frontend workflow](.agents/skills/nocobase-app-
 
 `client/routing/`, `client/layouts/`, `client/theme/`, the server entry points, the `package.json` scripts that call `nocobase`, and the tsconfigs are the scaffolding the template provides. It is still this application's own source — it shipped to the user and they may change it — but it is the part the template evolves, so an edit there is what a future upgrade has to reconcile.
 
-Prefer the mechanism the system already provides. Declare a page in `client/routes.ts` and add `navigation` when it needs a menu entry. Refine resources add no menu entries and, with no data provider registered, load nothing; pages load data through `useApiClient`. A page uses `authz` to restrict access; a plugin page is customized through an option or an override. Before editing the shell to add a menu, check the route and its `navigation` declaration.
+Prefer the mechanism the system already provides. Declare a page in `client/routes.ts` and add `navigation` when it needs a menu entry; pages load data through `useApiClient`. A page uses `authz` to restrict access; a plugin page is customized through an option or an override. Before editing the shell to add a menu, check the route and its `navigation` declaration.
 
 When the built-in mechanism genuinely cannot express what is being asked, changing this structure is a legitimate answer — not a last resort to apologize for. Do it deliberately, and leave the next agent enough to work with:
 
@@ -115,8 +123,15 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 
 | Read                                                                   | When                                                                                                         |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [.agents/rules/workspace.md](.agents/rules/workspace.md)               | Adding internal packages or changing workspace development and validation                                    |
 | [.agents/rules/components.md](.agents/rules/components.md)             | Adding or changing a component, a shadcn primitive, a UI Library item, or the visual design                  |
 | [.agents/rules/database.md](.agents/rules/database.md)                 | Working with the `externalCrm` connection or another `external` connection's metadata                        |
-| [.agents/rules/plugins.md](.agents/rules/plugins.md)                   | Working with the Mail and Mail Example demonstration                                                         |
+| [.agents/rules/plugins.md](.agents/rules/plugins.md)                   | Working with the Mail, Mail Example or OnlineAgent demonstrations                                            |
 | [.agents/rules/shell.md](.agents/rules/shell.md)                       | Changing layouts, the header, sidebar, breadcrumbs, the account menu or loading indicators                   |
 | [.agents/rules/build-and-deploy.md](.agents/rules/build-and-deploy.md) | Changing the build, packing a deployment, the Docker image, `CDN_BASE_URL`, or building for another platform |
+
+## Visible and manageable role assignments
+
+Assign application business roles to explicitly identified users through the prepared User management role-assignment UI. Never seed a business permission set onto `authenticated:*`, broaden the inherited platform `member` role, or write startup reconciliation that grants access to everyone merely to make a feature usable. Unchecked actions in one role do not revoke grants inherited from another. If the user explicitly requests a global default role, first deliver a permission-protected administration control that shows its recipients and allows changing or removing the assignment; show inherited roles and their source in user access details. Without that UI, use explicit user assignments and explain the limitation. Keep page access independent from business operations.
+
+Run `pnpm exec vitest run tests/server/authorization-assignment-safety.test.ts` after permission initialization changes and before delivery. It boots the real application on an isolated database and inspects initialized wildcard assignments and the inherited member role. Keep this test in generated applications. An intentional global default requires explicit user authorization, a working administration surface and corresponding acceptance tests before deliberately updating the expected baseline; do not delete, skip or loosen the guard to make tests pass. Test an ordinary user with only the configured role: inspect all effective grant sources and verify both hidden buttons and rejected direct API calls.

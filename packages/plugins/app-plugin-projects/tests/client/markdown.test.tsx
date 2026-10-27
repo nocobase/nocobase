@@ -68,3 +68,25 @@ describe('PmMarkdown', () => {
     );
   });
 });
+
+it('preserves Markdown nodes across refreshes and updates heading options', () => {
+  const content =
+    '# First\n\nParagraph with [link](https://example.com).\n\n## Second\n\n- Item\n\n```text\ncode\n```';
+  const view = (id: string, _icon: string) => (
+    <PmMarkdown
+      content={content}
+      headings={[
+        { id, level: 1, text: 'First' },
+        { id: 'second', level: 2, text: 'Second' },
+      ]}
+    />
+  );
+  const { container, rerender } = render(view('first', 'old'));
+  const nodes = [...container.querySelectorAll('h1,h2,p,a,ul,li,pre,code')];
+  rerender(view('changed', 'new'));
+  expect([...container.querySelectorAll('h1,h2,p,a,ul,li,pre,code')]).toEqual(
+    nodes,
+  );
+  for (const node of nodes) expect(node.isConnected).toBe(true);
+  expect(container.querySelector('h1')).toHaveAttribute('id', 'changed');
+});

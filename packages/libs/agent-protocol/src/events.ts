@@ -27,9 +27,27 @@ export const MAX_EVENTS_PER_BATCH = 200;
 /** `content` and `output` are cut to this many bytes, and `truncated` set. */
 export const MAX_EVENT_CONTENT_BYTES = 65_536;
 
+/** Identity of realtime deltas and the completed snapshot of one text/thinking block; ids are unique within a run. */
+export interface OutputBlock {
+  readonly blockId: string;
+  readonly phase: 'delta' | 'end';
+}
+export const OutputBlockSchema: z.ZodType<OutputBlock> = z.strictObject({
+  blockId: z.string().min(1).max(200),
+  phase: z.enum(['delta', 'end']),
+});
+/** Legacy events have no block semantics. Never infer them from adjacent text. */
+export function outputBlock(
+  meta: Readonly<Record<string, unknown>> | undefined,
+): OutputBlock | undefined {
+  const parsed = OutputBlockSchema.safeParse(meta?.output);
+  return parsed.success ? parsed.data : undefined;
+}
+
 /**
  * One thing that happened in a run. `seq` is the runner's counter for the run, from 1; the server stores each
- * `(runId, seq)` once, so a batch can be resent safely.
+ * `(runId, seq)` once, so a batch can be resent safely. Conversation preview deltas and content-less ends are
+ * realtime-only: their separate sequence deduplicates transport delivery and never advances the durable counter.
  */
 export interface RunEvent {
   readonly seq: number;
@@ -44,17 +62,30 @@ export interface RunEvent {
   readonly meta?: Readonly<Record<string, unknown>>;
 }
 
-export const RunEventSchema: z.ZodType<RunEvent> = z.object({
-  seq: z.number().int().positive(),
-  at: z.string().min(1),
-  type: z.enum(RUN_EVENT_TYPES),
-  tool: z.string().max(200).optional(),
-  content: z.string().optional(),
-  input: z.unknown().optional(),
-  output: z.string().optional(),
-  truncated: z.boolean().optional(),
-  meta: z.record(z.string(), z.unknown()).optional(),
-});
+export const RunEventSchema: z.ZodType<RunEvent> = z
+  .object({
+    seq: z.number().int().positive(),
+    at: z.string().min(1),
+    type: z.enum(RUN_EVENT_TYPES),
+    tool: z.string().max(200).optional(),
+    content: z.string().optional(),
+    input: z.unknown().optional(),
+    output: z.string().optional(),
+    truncated: z.boolean().optional(),
+    meta: z.record(z.string(), z.unknown()).optional(),
+  })
+  .superRefine((event, context) => {
+    if (event.meta?.output === undefined) return;
+    if (
+      !['text', 'thinking'].includes(event.type) ||
+      !OutputBlockSchema.safeParse(event.meta.output).success
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['meta', 'output'],
+        message: 'Expected output block metadata on a text or thinking event',
+      });
+  });
 
 /**
  * Tokens one model used; the columns match the platform's AI usage records. The counts do not overlap, so each is
@@ -86,6 +117,8 @@ export const UsageSchema: z.ZodType<Usage> = z.object({
 
 export const FAILURE_REASONS = [
   'runnerOffline',
+  /** The runtime went offline before starting; requeue without consuming the failure budget. */
+  'runnerOfflineBeforeStart',
   /** The execution machine ran out of disk space. Reassignment is decided by the project manager. */
   'runnerDiskFull',
   'leaseExpired',
@@ -127,7 +160,7 @@ export const FAILURE_REASONS = [
    * `checkoutFailed` otherwise.
    */
   'prepareNetwork',
-  /** A live process holds the workspace lock. Requeued with backoff when announced; older applications receive checkoutFailed. */
+  /** A workspace cleanup or repository cache lock remains held. Requeued with backoff when announced; older applications receive checkoutFailed. */
   'workspaceBusy',
   /** The runner interrupted the attempt to install an update; retry without consuming the failure budget. */
   'runnerUpgrade',
@@ -149,6 +182,7 @@ export const FailureReasonSchema: z.ZodType<FailureReason> =
 /** Failures worth another attempt: the run goes back to the queue while attempts remain. */
 export const RETRYABLE_FAILURES: readonly FailureReason[] = [
   'runnerOffline',
+  'runnerOfflineBeforeStart',
   'policyRefused',
   'leaseExpired',
   'startTimeout',

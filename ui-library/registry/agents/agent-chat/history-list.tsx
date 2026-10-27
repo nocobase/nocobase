@@ -1,12 +1,16 @@
 /**
- * The viewer's conversations, last message first, in the panel's history view and the full-page view's history
- * dialog: search over titles and messages, filters by agent and by where a conversation started, open or archived
- * ones. Each row opens its conversation; its menu opens it full screen (when the application has a page for it),
- * renames it in place, or archives it (undo in the toast) or brings it back. `ChatHistoryDialog` shows the list in a
- * dialog, for a page rather than the panel.
+ * The viewer's conversations, last message first, in the panel's history view, the conversation list on its left while
+ * it covers the content, and the full-page view's history dialog: an optional header, search over titles and messages,
+ * a filter by agent, then the list, and at the bottom the toggle between open and archived ones. With `mode` the list
+ * holds that mode's conversations only (online or runner agents) and its agent filter that mode's agents; without it,
+ * every conversation, with a filter by where a conversation started. Each row opens its conversation; its menu opens it
+ * full screen (when the application has a page for it), renames it in place, or archives it (undo in the toast) or
+ * brings it back. `ChatHistoryDialog` shows the list in a dialog, for a page rather than the panel.
  */
 import {
+  agentsOfMode,
   CHAT_PANEL_ATTRIBUTE,
+  chatIsRunning,
   useAgentText,
   useChatAgents,
   useConversationActions,
@@ -18,18 +22,18 @@ import {
   CONVERSATION_TITLE_MAX,
   PANEL_SOURCE,
   type ConversationListQuery,
+  type ConversationMode,
   type ConversationSummary,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
   Maximize2Icon,
-  MessagesSquareIcon,
   MoreHorizontalIcon,
   PencilIcon,
   SearchIcon,
 } from 'lucide-react';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 
 import { Button } from '#components/ui/button';
 import {
@@ -45,12 +49,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
-import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '#components/ui/empty';
 import { Input } from '#components/ui/input';
 import {
   Select,
@@ -60,7 +58,6 @@ import {
   SelectValue,
 } from '#components/ui/select';
 import { Skeleton } from '#components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';
@@ -69,16 +66,24 @@ import { ChatTag, LoadError, Pulse } from './chat-ui.js';
 const ALL = '__all__';
 
 export interface HistoryListProps {
+  /** Above the search, such as the list's title and a new conversation button. */
+  readonly header?: ReactNode;
   readonly activeId: string | null;
   readonly onOpen: (conversationId: string) => void;
   /** Offered in each row's menu: open the conversation on the application's full-page view. */
   readonly onOpenPage?: ((conversationId: string) => void) | null;
+  /** Only this mode's conversations (online or runner agents); left out, every conversation. */
+  readonly mode?: ConversationMode | null;
+  readonly className?: string;
 }
 
 export function HistoryList({
+  header,
   activeId,
   onOpen,
   onOpenPage,
+  mode,
+  className,
 }: HistoryListProps): ReactElement {
   const { t } = useChatTranslation();
   const agents = useChatAgents();
@@ -89,162 +94,188 @@ export function HistoryList({
   const [archived, setArchived] = useState(false);
   const [agentId, setAgentId] = useState(ALL);
   const [source, setSource] = useState(ALL);
+  // A filter of the other mode's agent would hide every row.
+  const [seenMode, setSeenMode] = useState(mode);
+  if (seenMode !== mode) {
+    setSeenMode(mode);
+    setAgentId(ALL);
+  }
   useEffect(() => {
     const timer = window.setTimeout(() => setQ(text.trim()), 300);
     return () => window.clearTimeout(timer);
   }, [text]);
+  const bySource = !mode;
   const query: ConversationListQuery = {
     archived,
     ...(q ? { q } : {}),
+    ...(mode ? { mode } : {}),
     ...(agentId === ALL ? {} : { agentId }),
-    ...(source === ALL ? {} : { source }),
+    ...(bySource && source !== ALL ? { source } : {}),
   };
   const pages = useConversationList(query);
   const items = pages.data?.pages.flatMap((page) => page.items) ?? [];
+  const listed = mode
+    ? agentsOfMode(agents.data ?? [], mode)
+    : (agents.data ?? []);
   const agentItems = [
     { value: ALL, label: t('chat.history.allAgents') },
-    ...(agents.data ?? []).map((agent) => ({
+    ...listed.map((agent) => ({
       value: agent.id,
       label: agentText.name(agent),
     })),
   ];
+  // The online agent is one: a filter by agent would choose nothing.
+  const byAgent = mode !== 'online';
   const sourceItems = [
     { value: ALL, label: t('chat.history.allSources') },
     { value: PANEL_SOURCE, label: t('chat.sources.panel') },
     ...sources.map((source) => ({ value: source.key, label: source.label })),
   ];
-  const filtered = Boolean(q) || agentId !== ALL || source !== ALL;
+  const filtered =
+    Boolean(q) || agentId !== ALL || (bySource && source !== ALL);
 
   return (
-    <div className='flex min-h-0 flex-col gap-3' data-testid='chat-history'>
-      <div className='relative'>
-        <SearchIcon
-          className='pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground'
-          aria-hidden='true'
-        />
-        <Input
-          type='search'
-          value={text}
-          className='pl-8'
-          placeholder={t('chat.history.search')}
-          aria-label={t('chat.history.search')}
-          onChange={(event) => setText(event.target.value)}
-        />
-      </div>
-      <div className='flex flex-wrap items-center gap-2'>
-        <Tabs
-          value={archived ? 'archived' : 'active'}
-          onValueChange={(value) => setArchived(value === 'archived')}
-        >
-          <TabsList variant='line' aria-label={t('chat.history.show')}>
-            <TabsTrigger value='active'>{t('chat.history.active')}</TabsTrigger>
-            <TabsTrigger value='archived'>
-              {t('chat.history.archived')}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {/* The filters keep their width and move to a row of their own when the tabs leave them too little. */}
-        <div className='flex min-w-0 flex-wrap items-center gap-2'>
-          <Select
-            items={agentItems}
-            value={agentId}
-            onValueChange={(next: string | null) => setAgentId(next ?? ALL)}
-          >
-            <SelectTrigger
-              size='sm'
-              className='max-w-48 min-w-0'
-              aria-label={t('chat.history.agent')}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-              {agentItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            items={sourceItems}
-            value={source}
-            onValueChange={(next: string | null) => setSource(next ?? ALL)}
-          >
-            <SelectTrigger
-              size='sm'
-              className='max-w-48 min-w-0'
-              aria-label={t('chat.history.source')}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-              {sourceItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div
+      className={cn('flex h-full min-h-0 flex-col', className)}
+      data-testid='chat-history'
+      data-mode={mode ?? undefined}
+    >
+      {header}
+      <div className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3'>
+        <div className='relative'>
+          <SearchIcon
+            className='pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground'
+            aria-hidden='true'
+          />
+          <Input
+            type='search'
+            value={text}
+            className='pl-8'
+            placeholder={t('chat.history.search')}
+            aria-label={t('chat.history.search')}
+            onChange={(event) => setText(event.target.value)}
+          />
         </div>
+        {byAgent || bySource ? (
+          <div className='flex min-w-0 flex-wrap items-center gap-2'>
+            {byAgent ? (
+              <Select
+                items={agentItems}
+                value={agentId}
+                onValueChange={(next: string | null) => setAgentId(next ?? ALL)}
+              >
+                <SelectTrigger
+                  size='sm'
+                  className='max-w-48 min-w-0'
+                  aria-label={t('chat.history.agent')}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                  {agentItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+            {bySource ? (
+              <Select
+                items={sourceItems}
+                value={source}
+                onValueChange={(next: string | null) => setSource(next ?? ALL)}
+              >
+                <SelectTrigger
+                  size='sm'
+                  className='max-w-48 min-w-0'
+                  aria-label={t('chat.history.source')}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                  {sourceItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+          </div>
+        ) : null}
+        {pages.isError && !pages.data ? (
+          <LoadError
+            title={t('chat.history.loadFailed')}
+            error={pages.error}
+            onRetry={() => void pages.refetch()}
+          />
+        ) : !pages.data ? (
+          <div
+            role='status'
+            aria-label={t('chat.loading')}
+            className='space-y-2 rounded-lg border bg-card p-3'
+          >
+            {[0, 1, 2, 3].map((row) => (
+              <Skeleton key={row} className='h-7 w-full' />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <p
+            className='px-1 py-1.5 text-sm text-muted-foreground'
+            data-testid='chat-history-empty'
+          >
+            {filtered
+              ? t('chat.history.noMatch')
+              : archived
+                ? t('chat.history.noArchived')
+                : t('chat.history.empty')}
+          </p>
+        ) : (
+          <ul
+            className='flex flex-col gap-1'
+            aria-label={t('chat.history.title')}
+          >
+            {items.map((item) => (
+              <HistoryRow
+                key={item.id}
+                item={item}
+                active={item.id === activeId}
+                onOpen={() => onOpen(item.id)}
+                onOpenPage={onOpenPage ? () => onOpenPage(item.id) : null}
+              />
+            ))}
+          </ul>
+        )}
+        {pages.hasNextPage ? (
+          <Button
+            variant='outline'
+            size='sm'
+            className='self-center'
+            disabled={pages.isFetchingNextPage}
+            onClick={() => void pages.fetchNextPage()}
+          >
+            {t('chat.history.more')}
+          </Button>
+        ) : null}
       </div>
-      {pages.isError && !pages.data ? (
-        <LoadError
-          title={t('chat.history.loadFailed')}
-          error={pages.error}
-          onRetry={() => void pages.refetch()}
-        />
-      ) : !pages.data ? (
-        <div
-          role='status'
-          aria-label={t('chat.loading')}
-          className='space-y-2 rounded-lg border bg-card p-3'
-        >
-          {[0, 1, 2, 3].map((row) => (
-            <Skeleton key={row} className='h-7 w-full' />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <Empty className='min-h-48 border border-dashed'>
-          <EmptyHeader>
-            <EmptyMedia variant='icon'>
-              <MessagesSquareIcon />
-            </EmptyMedia>
-            <EmptyTitle>
-              {filtered
-                ? t('chat.history.noMatch')
-                : archived
-                  ? t('chat.history.noArchived')
-                  : t('chat.history.empty')}
-            </EmptyTitle>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <ul
-          className='flex flex-col gap-1'
-          aria-label={t('chat.history.title')}
-        >
-          {items.map((item) => (
-            <HistoryRow
-              key={item.id}
-              item={item}
-              active={item.id === activeId}
-              onOpen={() => onOpen(item.id)}
-              onOpenPage={onOpenPage ? () => onOpenPage(item.id) : null}
-            />
-          ))}
-        </ul>
-      )}
-      {pages.hasNextPage ? (
+      <div className='flex shrink-0 items-center gap-1 border-t px-2 py-2'>
         <Button
-          variant='outline'
+          variant='ghost'
           size='sm'
-          className='self-center'
-          disabled={pages.isFetchingNextPage}
-          onClick={() => void pages.fetchNextPage()}
+          aria-pressed={archived}
+          title={t('chat.history.archived')}
+          className={cn(
+            'h-8 min-w-0 gap-1.5 px-2 text-xs font-normal text-muted-foreground hover:text-foreground',
+            archived && 'bg-muted text-foreground',
+          )}
+          onClick={() => setArchived(!archived)}
+          data-testid='chat-history-archived'
         >
-          {t('chat.history.more')}
+          <ArchiveIcon className='size-4 shrink-0' />
+          <span className='truncate'>{t('chat.history.archived')}</span>
         </Button>
-      ) : null}
+      </div>
     </div>
   );
 }
@@ -316,7 +347,7 @@ function HistoryRow({
           onClick={onOpen}
         >
           <span className='flex w-full min-w-0 items-center gap-1.5'>
-            {item.run ? <Pulse /> : null}
+            {chatIsRunning(item) ? <Pulse /> : null}
             <span
               className={cn(
                 'truncate text-sm',
@@ -335,7 +366,10 @@ function HistoryRow({
             ) : null}
           </span>
           <span className='flex w-full min-w-0 items-center gap-1.5 text-xs text-muted-foreground'>
-            <time dateTime={item.lastMessageAt}>
+            <time
+              className='shrink-0 whitespace-nowrap'
+              dateTime={item.lastMessageAt}
+            >
               {format.relative(item.lastMessageAt)}
             </time>
             <span aria-hidden='true'>·</span>
@@ -426,7 +460,7 @@ export function ChatHistoryDialog({
         <DialogHeader>
           <DialogTitle>{t('chat.history.title')}</DialogTitle>
         </DialogHeader>
-        <div className='-mx-1 min-h-0 flex-1 overflow-y-auto px-1'>
+        <div className='-mx-3 -mb-3 flex min-h-0 flex-1 flex-col'>
           {open ? (
             <HistoryList
               activeId={activeId}

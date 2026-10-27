@@ -80,8 +80,9 @@ describe('the identity an application resolves for a request', () => {
 
 describe('what an application configures about its own authorization', () => {
   const member = {
-    owner: PERMISSION_SETS_PROTECTION_OWNER,
-    allow: ['update'],
+    owner: '@nocobase/app-plugin-authorization',
+    allow: ['update', 'assign', 'revoke'],
+    assignableTo: ['user'],
   };
   const root = (key: string) => ({
     [key]: {
@@ -105,9 +106,12 @@ describe('what an application configures about its own authorization', () => {
       { permissionSets: { rootSet: 'owner', defaultSet: 'everyone' } },
       {
         ...root('owner'),
-        everyone: member,
+        everyone: {
+          owner: PERMISSION_SETS_PROTECTION_OWNER,
+          allow: ['update'],
+        },
         root: undefined,
-        member: undefined,
+        member,
       },
     ],
   ] as const)(
@@ -175,8 +179,8 @@ describe('the authorization provider', () => {
     await migratePlugins(database, 'app-plugin-authorization');
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, database);
-    const publishFor = vi.fn();
-    const publish = vi.fn();
+    const publishFor = vi.fn().mockResolvedValue({ eventId: 'event-1' });
+    const publish = vi.fn().mockResolvedValue({ eventId: 'event-1' });
     const closeUser = vi.fn();
     const closeGlobal = vi.fn();
     const defineTopic = vi

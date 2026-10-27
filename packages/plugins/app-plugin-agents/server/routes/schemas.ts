@@ -2,6 +2,11 @@
  * The path parameters, query strings and small bodies of the plugin's routes. Bodies the services own (an agent, a
  * skill, a model service) keep their schemas beside the service, strict there too.
  */
+import { RUNNER_LIST_FIELDS } from '../../shared/runners.js';
+
+import type { QuotaLocation } from '../../shared/quota.js';
+import type { RunnerWorkspacePage } from '../../shared/runners.js';
+
 import {
   ACTOR_KINDS,
   AGENT_TOOLS,
@@ -20,11 +25,20 @@ import {
   ToolSlotsSchema,
   WorkspaceDecisionSchema,
   WorkspaceCleanupResultSchema,
+  type AgentTool,
   type RunEvent,
   type RunEventType,
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
+import type { OnlineAgentResendOptions } from '../../shared/resend.js';
+
+export const OnlineAgentResendSchema: z.ZodType<OnlineAgentResendOptions> =
+  z.strictObject({
+    messageId: z.string().min(1).max(64).optional(),
+    input: z.strictObject({ text: z.string().max(100_000) }).optional(),
+  });
+import { QuotaReportSchema } from '@nocobase/agent-protocol';
 
 import {
   AGENT_CHANGE_ACTIONS,
@@ -32,12 +46,18 @@ import {
   AGENT_STATUSES,
   AGENT_UNUSABLE_REASONS,
   CONFIRM_CHANGES,
+  MODEL_AVAILABILITY_STATUSES,
   type Agent,
   type AgentActionOption,
   type AgentChange,
   type AgentName,
   type AgentView,
   type AvailableAgent,
+  type AvailableModel,
+  type AvailableModelGroup,
+  type AvailableModelRunners,
+  type ModelAvailabilityStatus,
+  type RunnerAgentCreateInput,
   type UserRef,
 } from '../../shared/agents.js';
 import type { BriefPreview, RunBrief } from '../../shared/briefs.js';
@@ -135,45 +155,81 @@ export interface Paging {
   readonly pageToken?: string | undefined;
 }
 
+export const QuotaLocationSchema: z.ZodType<QuotaLocation> = z
+  .object({
+    runnerId: z.string().describe('The visible runtime with the quota mark.'),
+    runnerName: z.string().describe('The runtime display name.'),
+    resetsAt: z
+      .string()
+      .nullable()
+      .describe('The known reset time, or null for an unknown reset.'),
+  })
+  .meta({
+    ref: 'AgentsQuotaLocation',
+    description: 'A runtime whose quota blocks this agent for the viewer.',
+  });
+
 export const AgentParams: z.ZodType<{ agentId: string }> = z.object({
-  agentId: id,
+  agentId: id.describe('The agent identifier.'),
 });
 export const RunParams: z.ZodType<{ runId: string }> = z.object({
-  runId: id,
+  runId: id.describe('The run identifier.'),
 });
 export const SkillParams: z.ZodType<{ skillId: string }> = z.object({
-  skillId: id,
+  skillId: id.describe('The skill identifier.'),
 });
 export const SkillVersionParams: z.ZodType<{
   skillId: string;
   version: number;
-}> = z.object({ skillId: id, version: z.coerce.number().int().min(1) });
+}> = z.object({
+  skillId: id.describe('The skill identifier.'),
+  version: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .describe('The version to read or restore.'),
+});
 export const ScopeParams: z.ZodType<{ scopeKind: string; scopeId: string }> =
-  z.object({ scopeKind: id, scopeId: id });
+  z.object({ scopeKind: id, scopeId: id.describe('The scope identifier.') });
 export const VariableParams: z.ZodType<{
   scopeKind: string;
   scopeId: string;
   variableName: string;
-}> = z.object({ scopeKind: id, scopeId: id, variableName: id });
+}> = z.object({
+  scopeKind: id,
+  scopeId: id.describe('The scope identifier.'),
+  variableName: id.describe('The variable name.'),
+});
 export const WorkspaceParams: z.ZodType<{
   subjectKind: string;
   subjectId: string;
-}> = z.object({ subjectKind: id, subjectId: id });
+}> = z.object({
+  subjectKind: id.describe('The kind of subject.'),
+  subjectId: id.describe('The subject identifier.'),
+});
 export const ConversationParams: z.ZodType<{ conversationId: string }> =
-  z.object({ conversationId: id });
+  z.object({ conversationId: id.describe('The conversation identifier.') });
 export const ServiceParams: z.ZodType<{ serviceName: string }> = z.object({
-  serviceName: id,
+  serviceName: id.describe('The configured model service name.'),
 });
 export const RunnerParams: z.ZodType<{ runnerId: string }> = z.object({
-  runnerId: id,
+  runnerId: id.describe('The runner identifier.'),
 });
-export const JobParams: z.ZodType<{ jobId: string }> = z.object({ jobId: id });
+export const JobParams: z.ZodType<{ jobId: string }> = z.object({
+  jobId: id.describe('The job identifier.'),
+});
 export const RunSkillParams: z.ZodType<{ runId: string; slug: string }> =
-  z.object({ runId: id, slug: id });
+  z.object({
+    runId: id.describe('The run identifier.'),
+    slug: id.describe('The document’s stable URL slug.'),
+  });
 export const RunMountParams: z.ZodType<{ runId: string; name: string }> =
-  z.object({ runId: id, name: id });
+  z.object({
+    runId: id.describe('The run identifier.'),
+    name: id.describe('The name to display.'),
+  });
 export const CommandParams: z.ZodType<{ commandId: string }> = z.object({
-  commandId: id,
+  commandId: id.describe('The command identifier.'),
 });
 export const DistTargetParams: z.ZodType<{ product: string; target: string }> =
   z.object({ product: id, target: id });
@@ -181,7 +237,11 @@ export const DistFileParams: z.ZodType<{
   product: string;
   version: string;
   file: string;
-}> = z.object({ product: id, version: id, file: id });
+}> = z.object({
+  product: id,
+  version: id.describe('The version to read or restore.'),
+  file: id.describe('The file to upload.'),
+});
 
 export const AgentListQuery: z.ZodType<{ includeArchived?: boolean }> =
   z.object({ includeArchived: queryBoolean.optional() });
@@ -189,9 +249,18 @@ export const AgentListQuery: z.ZodType<{ includeArchived?: boolean }> =
 export const AgentHistoryQuery: z.ZodType<
   Paging & { readonly afterRevision?: number | undefined }
 > = z.object({
-  afterRevision: z.coerce.number().int().min(0).optional(),
-  pageSize: pageSize(50, 100),
-  pageToken,
+  afterRevision: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Return history after this revision.'),
+  pageSize: pageSize(50, 100).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const PreviewBriefQuery: z.ZodType<{
@@ -204,8 +273,12 @@ export const PreviewBriefQuery: z.ZodType<{
 });
 
 export const AuditListQuery: z.ZodType<Paging> = z.object({
-  pageSize: pageSize(50, 100),
-  pageToken,
+  pageSize: pageSize(50, 100).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const RunListQuery: z.ZodType<
@@ -216,12 +289,19 @@ export const RunListQuery: z.ZodType<
     readonly status?: RunStatus | undefined;
   }
 > = z.object({
-  subjectKind: id.optional(),
-  subjectId: id.optional(),
-  agentId: id.optional(),
-  status: z.enum(RUN_STATUSES).optional(),
-  pageSize: pageSize(50, 100),
-  pageToken,
+  subjectKind: id.optional().describe('The kind of subject.'),
+  subjectId: id.optional().describe('The subject identifier.'),
+  agentId: id.optional().describe('The agent identifier.'),
+  status: z
+    .enum(RUN_STATUSES)
+    .optional()
+    .describe('The status to set or filter by.'),
+  pageSize: pageSize(50, 100).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 /**
@@ -234,7 +314,12 @@ export const RunEventsQuery: z.ZodType<
     readonly type?: RunEventType[] | undefined;
   }
 > = z.object({
-  after: z.coerce.number().int().min(0).optional(),
+  after: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Return messages after this cursor.'),
   // Hono represents one query value as a string and repeated values as an array.
   type: z
     .preprocess(
@@ -248,8 +333,12 @@ export const RunEventsQuery: z.ZodType<
       description:
         'Only these raw event types (repeat for more). Omit to read every type.',
     }),
-  pageSize: pageSize(500, 1000),
-  pageToken,
+  pageSize: pageSize(500, 1000).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const UsageQuerySchema: z.ZodType<{
@@ -261,12 +350,25 @@ export const UsageQuerySchema: z.ZodType<{
   userId?: string | undefined;
   series?: boolean | undefined;
 }> = z.object({
-  from: z.string().min(1).max(40).optional(),
-  to: z.string().min(1).max(40).optional(),
-  groupBy: z.enum(USAGE_GROUP_BYS).default('agent'),
-  groupId: id.optional(),
-  agentId: id.optional(),
-  userId: id.optional(),
+  from: z
+    .string()
+    .min(1)
+    .max(40)
+    .optional()
+    .describe('The beginning of the reporting period.'),
+  to: z
+    .string()
+    .min(1)
+    .max(40)
+    .optional()
+    .describe('The end of the reporting period.'),
+  groupBy: z
+    .enum(USAGE_GROUP_BYS)
+    .default('agent')
+    .describe('The dimension to group usage by.'),
+  groupId: id.optional().describe('The group identifier.'),
+  agentId: id.optional().describe('The agent identifier.'),
+  userId: id.optional().describe('The user identifier.'),
   series: queryBoolean.optional().meta({
     description:
       'Also break each day of `daily` down by the `groupBy` key (`daily[].series`).',
@@ -277,8 +379,18 @@ export const ModelUsageQuery: z.ZodType<{
   from?: string | undefined;
   to?: string | undefined;
 }> = z.object({
-  from: z.string().min(1).max(40).optional(),
-  to: z.string().min(1).max(40).optional(),
+  from: z
+    .string()
+    .min(1)
+    .max(40)
+    .optional()
+    .describe('The beginning of the reporting period.'),
+  to: z
+    .string()
+    .min(1)
+    .max(40)
+    .optional()
+    .describe('The end of the reporting period.'),
 });
 
 export const ConversationListQuerySchema: z.ZodType<
@@ -286,28 +398,69 @@ export const ConversationListQuerySchema: z.ZodType<
     readonly q?: string | undefined;
     readonly archived?: 'true' | 'false' | 'all' | undefined;
     readonly agentId?: string | undefined;
+    readonly mode?: 'online' | 'runner' | undefined;
     readonly source?: string | undefined;
   }
 > = z.object({
-  q: z.string().max(200).optional(),
-  archived: z.enum(['true', 'false', 'all']).optional(),
-  agentId: id.optional(),
-  source: z.string().regex(CONVERSATION_SOURCE_PATTERN).optional(),
-  pageSize: pageSize(30, 100),
-  pageToken,
+  q: z.string().max(200).optional().describe('Text to search for.'),
+  archived: z
+    .enum(['true', 'false', 'all'])
+    .optional()
+    .describe('Filter by archive state.'),
+  agentId: id.optional().describe('The agent identifier.'),
+  mode: z
+    .enum(['online', 'runner'])
+    .optional()
+    .describe(
+      'online: conversations with the online agent; runner: conversations with every other agent.',
+    ),
+  source: z
+    .string()
+    .regex(CONVERSATION_SOURCE_PATTERN)
+    .optional()
+    .describe('The source context associated with this record.'),
+  pageSize: pageSize(30, 100).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 /** Messages, newest page first; `after` reads what arrived since a `seq`. Up to 200 for a whole short chat. */
 export const MessageListQuerySchema: z.ZodType<
-  Paging & { readonly after?: number | undefined }
+  Paging & {
+    readonly after?: number | undefined;
+    readonly ids?: string | undefined;
+  }
 > = z.object({
-  after: z.coerce.number().int().min(0).optional(),
-  pageSize: pageSize(50, 200),
-  pageToken,
+  ids: z
+    .string()
+    .min(1)
+    .max(4000)
+    .optional()
+    .describe(
+      'Comma-separated native UI message IDs to refresh revisions; at most 100.',
+    ),
+  after: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Return messages after this cursor.'),
+  pageSize: pageSize(50, 200).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const ModelCatalogQuery: z.ZodType<{ kind: ModelKind }> = z.object({
-  kind: z.enum(MODEL_KINDS).default('chat'),
+  kind: z
+    .enum(MODEL_KINDS)
+    .default('chat')
+    .describe('The model capability: chat, embedding, or rerank.'),
 });
 
 export const ClaimQuery: z.ZodType<{ wait?: boolean | undefined }> = z.object({
@@ -336,7 +489,7 @@ export const VariableValueInput: z.ZodType<{
   }),
   teamRunnersOnly: z.boolean().optional().meta({
     description:
-      'Only team runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
+      'Only shared runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
   }),
   fromRunner: z.boolean().optional().meta({
     description:
@@ -345,38 +498,67 @@ export const VariableValueInput: z.ZodType<{
 });
 
 export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
-  z.strictObject({ expectedRevision: z.number().int().min(1) });
+  z.strictObject({
+    expectedRevision: z
+      .number()
+      .int()
+      .min(1)
+      .describe('The revision last read; reject if the record has changed.'),
+  });
 
 export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
   .strictObject({
-    name: z.string().trim().min(1).max(200),
-    trust: z.enum(RUNNER_TRUST),
-    slots: z.number().int().min(1).max(64),
+    name: z.string().trim().min(1).max(200).describe('The name to display.'),
+    trust: z
+      .enum(RUNNER_TRUST)
+      .describe(
+        'Usage scope: team is shared across all users; ownerOnly is personal to its owner.',
+      ),
+    slots: z
+      .number()
+      .int()
+      .min(1)
+      .max(64)
+      .describe('The maximum number of concurrent runs.'),
     toolSlots: ToolSlotsSchema.nullable().meta({
       description:
         'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
     }),
-    enabledTools: z.array(AgentToolSchema).max(AGENT_TOOLS.length).nullable(),
-    acceptJobs: z.boolean(),
+    redetectTools: z
+      .boolean()
+      .optional()
+      .describe('Request a fresh inspection of the selected tools.'),
+    enabledTools: z
+      .array(AgentToolSchema)
+      .max(AGENT_TOOLS.length)
+      .nullable()
+      .describe('The agent tools this runner accepts.'),
+    acceptJobs: z.boolean().describe('Whether the runner accepts new work.'),
   })
   .partial();
 
 export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
   z.strictObject({
-    trust: z.enum(RUNNER_TRUST).optional(),
+    trust: z
+      .enum(RUNNER_TRUST)
+      .optional()
+      .describe(
+        'Usage scope: team is shared across all users; ownerOnly is personal to its owner.',
+      ),
     enabledTools: z
       .array(AgentToolSchema)
       .min(1)
       .max(AGENT_TOOLS.length)
       .nullable()
-      .optional(),
+      .optional()
+      .describe('The agent tools this runner accepts.'),
     slots: z.number().int().min(1).max(64).nullable().optional().meta({
       description:
-        "How many runs at once the runner takes; omitted or null leaves it to the runner. A runner's own `--slots` overrides it.",
+        'How many runs at once the runner takes from this application; omitted or null registers it with 3. The application keeps this setting and sends it to the runner in heartbeat answers.',
     }),
     toolSlots: ToolSlotsSchema.nullable().optional().meta({
       description:
-        "How many runs of each coding tool the runner takes at once; omitted or null for no limits per tool. A runner's own limits per tool (`--slots claude=2`) override it.",
+        'How many runs of each coding tool the runner takes from this application at once; omitted or null for no limits per tool. The application keeps these limits and sends them to the runner in heartbeat answers.',
     }),
   });
 
@@ -458,8 +640,7 @@ const agentObject = z.object({
       '`runner`: one of the coding tools and models runners report; `system`: kept by the application.',
   }),
   status: z.enum(AGENT_STATUSES).meta({
-    description:
-      '`pending` until someone enables it; only `enabled` agents are offered work.',
+    description: 'Enabled or disabled; only `enabled` agents are offered work.',
   }),
   tool: AgentToolSchema.nullable(),
   model: z.string().nullable().meta({
@@ -492,18 +673,6 @@ export const AgentSchema: z.ZodType<Agent> = agentObject.meta({
 
 export const AgentViewSchema: z.ZodType<AgentView> = agentObject
   .extend({
-    discoveryKey: z.string().optional().meta({
-      description:
-        'Persistent display group; known catalog models share a tool/model key across providers.',
-    }),
-    discoveryRevision: z.number().int().optional().meta({
-      description:
-        'Expected preference revision for ignore or restore; zero when no preference exists yet.',
-    }),
-    ignored: z.boolean().optional().meta({
-      description:
-        'Shared administrator preference hiding pending discoveries in this group.',
-    }),
     effort: z.string().nullable().meta({
       description: 'Its default reasoning effort.',
     }),
@@ -524,6 +693,12 @@ export const AgentViewSchema: z.ZodType<AgentView> = agentObject
         description:
           'The online runners that have its tool and model: team ones, personal ones, the caller’s own, and a few names.',
       }),
+    quota: z
+      .array(QuotaLocationSchema)
+      .optional()
+      .describe(
+        'Viewer-visible runtime quota blocks; an empty list means no quota block.',
+      ),
     personalOnly: z.boolean().meta({
       description: 'Only personal runners have it.',
     }),
@@ -558,6 +733,12 @@ export const AvailableAgentSchema: z.ZodType<AvailableAgent> = z
     online: z.boolean().meta({
       description: 'Whether a runner would take the caller’s work now.',
     }),
+    quota: z
+      .array(QuotaLocationSchema)
+      .optional()
+      .describe(
+        'Viewer-visible runtime quota blocks; an empty list means no quota block.',
+      ),
     personalOnly: z.boolean().meta({
       description: 'Only personal runners have it.',
     }),
@@ -567,6 +748,138 @@ export const AvailableAgentSchema: z.ZodType<AvailableAgent> = z
       .meta({ description: 'Its runs that have not finished.' }),
   })
   .meta({ ref: 'AgentsAvailableAgent' });
+
+export const ModelAvailabilityStatusSchema: z.ZodType<ModelAvailabilityStatus> =
+  z.enum(MODEL_AVAILABILITY_STATUSES);
+
+export const AvailableModelRunnersSchema: z.ZodType<AvailableModelRunners> =
+  z.object({
+    ready: z.number().int().meta({
+      description: 'Runners currently offering exactly this model.',
+    }),
+    total: z.number().int().meta({
+      description: 'Runners that have the tool selected, ready or not.',
+    }),
+    names: z.array(z.string()).meta({
+      description: 'A few of the ready runners’ names.',
+    }),
+  });
+
+export const AvailableModelGroupSchema: z.ZodType<AvailableModelGroup> = z
+  .object({
+    tool: AgentToolSchema,
+    modelCount: z.number().int().meta({
+      description: 'Models matching the search and status filter, if any.',
+    }),
+    runnerCount: z.number().int().meta({
+      description: 'Runners that have this tool selected, ready or not.',
+    }),
+    status: ModelAvailabilityStatusSchema,
+    statusReason: z.string().optional().meta({
+      description:
+        'The reason behind `status`, when it is not `available` and a runner gave one.',
+    }),
+    statusDetail: z.string().optional().meta({
+      description:
+        'A runner’s own words about `statusReason`, redacted and bounded.',
+    }),
+    recommendedCount: z.number().int(),
+  })
+  .meta({ ref: 'AgentsAvailableModelGroup' });
+
+export const AvailableModelSchema: z.ZodType<AvailableModel> = z
+  .object({
+    tool: AgentToolSchema,
+    model: z.string().meta({
+      description:
+        'Normalized; empty for a tool that cannot list models (one entry stands for the whole tool).',
+    }),
+    displayModel: z.string().optional().meta({
+      description:
+        'As the tool names it, when known and different from `model`.',
+    }),
+    agentId: z.string().nullable().meta({
+      description: 'The agent already kept for this tool and model, if any.',
+    }),
+    status: z.enum(AGENT_STATUSES).nullable(),
+    recommended: z.boolean().meta({
+      description:
+        'In the application’s recommended list: a runner reporting it signed in creates and enables it on its own.',
+    }),
+    suggestion: z.object({ en: z.string(), zh: z.string() }).nullable(),
+    availability: ModelAvailabilityStatusSchema.meta({
+      description:
+        'Its group’s availability; unselectable to create unless `available`.',
+    }),
+    runners: AvailableModelRunnersSchema,
+  })
+  .meta({ ref: 'AgentsAvailableModel' });
+
+export const RunnerAgentCreateInputSchema: z.ZodType<RunnerAgentCreateInput> =
+  z.strictObject({
+    tool: AgentToolSchema.meta({ description: 'The coding tool.' }),
+    model: z.string().max(200).meta({
+      description: 'Its model, as the available models list names it.',
+    }),
+    displayModel: z.string().min(1).max(200).optional().meta({
+      description:
+        'As the tool names it (`AvailableModel.displayModel`), for the agent’s name; `model` itself when absent.',
+    }),
+    description: z.string().min(1).max(10_000).meta({
+      description:
+        'What it is good at: the project manager hands it work by this.',
+    }),
+    effort: z.string().trim().max(32).nullable().optional().meta({
+      description:
+        "Its default reasoning effort, one of its tool's; the tool's default when absent.",
+    }),
+  });
+
+export const PageMetaSchema: z.ZodType<{
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+}> = z
+  .object({
+    total: z.number().int().describe('Rows matching the search and filter.'),
+    page: z.number().int().min(1).describe('The requested one-based page.'),
+    pageSize: z.number().int().min(1).describe('Maximum rows per page.'),
+  })
+  .meta({ ref: 'AgentsPageMeta', description: 'Paging, within one tool.' });
+
+/**
+ * Without `tool`: the group summary, one row per tool. With `tool`: that tool's models, a page at a time (`page`,
+ * `pageSize`), both kept to the same shape so one route serves both views of `GET /availableModels`.
+ */
+export const AvailableModelsQuerySchema: z.ZodType<{
+  readonly tool?: AgentTool | undefined;
+  readonly q?: string | undefined;
+  readonly status?: ModelAvailabilityStatus | undefined;
+  readonly page: number;
+  readonly pageSize: number;
+}> = z.object({
+  tool: AgentToolSchema.optional().describe(
+    'Return this tool’s models, a page at a time; omit for the group summary.',
+  ),
+  q: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .describe('Filter by tool or model name, case-insensitive.'),
+  status: ModelAvailabilityStatusSchema.optional().describe(
+    'Only tools, or models of the given tool, at this availability.',
+  ),
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(1)
+    .describe('One-based page, within one tool’s models.'),
+  pageSize: pageSize(50, 200).describe(
+    'Models per page, from 1 to 200, within one tool.',
+  ),
+});
 
 export const AgentChangeSchema: z.ZodType<AgentChange> = z.object({
   id: z.string(),
@@ -673,7 +986,7 @@ export const VariableSchema: z.ZodType<Variable> = z
     name: z.string(),
     teamRunnersOnly: z.boolean().optional().meta({
       description:
-        'Only team runners receive it: a run that gets it waits for one rather than going to a personal runner.',
+        'Only shared runners receive it: a run that gets it waits for one rather than going to a personal runner.',
     }),
     fromRunner: z.boolean().optional().meta({
       description:
@@ -837,6 +1150,7 @@ const RunEffortReportSchema: z.ZodType<RunEffortReport> = z
 
 export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
   .object({
+    quota: QuotaReportSchema.optional(),
     selection: z
       .object({
         reason: z.enum(['preferredQueued', 'preferredUnavailable']),
@@ -867,6 +1181,10 @@ export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
     dispatchedAt: dateTime,
     finishedAt: dateTime.nullable(),
     failureReason: z.string().nullable(),
+    failureSource: z.literal('sweeper').optional().meta({
+      description:
+        'The server reclaimed this pre-start attempt; absent on runner-reported failures.',
+    }),
   })
   .meta({ ref: 'AgentsRunExecutionSnapshot' });
 const runObject = z.object({
@@ -917,7 +1235,7 @@ const runObject = z.object({
   threadScope: z.string(),
   actorUserId: z.string().meta({
     description:
-      'The person the run acts as: their permissions bound it, and only their runners (or team runners) take it.',
+      'The person the run acts as: their permissions bound it, and only their runners (or shared runners) take it.',
   }),
   commentRootRunId: z.string().nullable().optional().meta({
     description: 'Root of this comment run chain; null for independent events.',
@@ -943,6 +1261,7 @@ const runObject = z.object({
   finishedAt: dateTime.nullable(),
   lastActivityAt: dateTime.nullable(),
   cancelRequestedAt: dateTime.nullable(),
+  cancelledById: z.string().nullable(),
   failureReason: FailureReasonSchema.nullable(),
   failureDetail: z.string().nullable(),
   summary: z.string().nullable(),
@@ -1033,12 +1352,20 @@ export const RunEventItemSchema: z.ZodType<RunEvent> = RunEventSchema;
 /** The `meta` of a page read after a `seq`: the highest `seq` returned, and a token for the next page. */
 export const SeqPageMetaSchema: z.ZodType<{
   lastSeq: number;
+  nextAfter?: number;
   nextPageToken?: string | undefined;
 }> = z
   .object({
+    nextAfter: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        'Continue an incomplete forward page with after=nextAfter; lastSeq is the current conversation watermark.',
+      ),
     lastSeq: z.number().int().meta({
       description:
-        'The highest `seq` returned; ask for what follows with `after`.',
+        'The current conversation sequence watermark; when nextAfter is present, drain further pages first.',
     }),
     nextPageToken: z.string().optional(),
   })
@@ -1147,6 +1474,13 @@ const modelOption = z.object({
   label: z.string(),
   kind: modelKind,
   dimensions: z.number().int().nullable(),
+  capabilities: z.object({
+    webSearch: z.boolean(),
+    imageMediaTypes: z.array(z.string()).optional().meta({
+      description:
+        'Code-owned native image MIME types for the selected Provider, endpoint, and model.',
+    }),
+  }),
 });
 
 export const ModelCatalogServiceSchema: z.ZodType<ModelService> = z.object({
@@ -1233,10 +1567,22 @@ const availability = z.object({
 });
 
 const conversationSummaryObject = z.object({
+  execution: z
+    .object({
+      status: z.enum(['running', 'idle']),
+      outcome: z.enum(['completed', 'cancelled', 'failed']).optional(),
+      requiresEffectReview: z.boolean().optional(),
+      waitingApproval: z.boolean().optional(),
+      interrupted: z.boolean().optional(),
+      messageId: z.string().optional(),
+      revision: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
   id: z.string(),
   title: z.string().nullable(),
   titleSource: z.enum(TITLE_SOURCES),
   category: z.literal('chat'),
+  showInChatList: z.boolean(),
   source: z.string(),
   mode: z.enum(['online', 'runner']),
   agent: conversationAgent,
@@ -1359,7 +1705,7 @@ export const ChatAttachmentContentQuery: z.ZodType<{ download: boolean }> =
   });
 
 export const ChatAttachmentParams: z.ZodType<{ attachmentId: string }> =
-  z.object({ attachmentId: id });
+  z.object({ attachmentId: id.describe('The attachment identifier.') });
 
 const messageObject = z.object({
   id: z.string(),
@@ -1420,6 +1766,9 @@ export const SendMessageResultSchema: z.ZodType<SendMessageResult> = z
   .meta({ ref: 'AgentsSendMessageResult' });
 
 export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
+  runnerNames: z
+    .array(z.string())
+    .describe('Eligible runtime display names visible to this caller.'),
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
@@ -1428,6 +1777,7 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   avatar: z.string().nullable(),
   isSystemDefault: z.boolean(),
   isMyDefault: z.boolean(),
+  quota: z.array(QuotaLocationSchema).optional(),
   availability,
   personalOnly: z.boolean().meta({
     description: 'Only personal runners have it.',
@@ -1446,7 +1796,7 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
 });
 
 // A runner's working directories, as it last reported them.
-const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
+export const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
   subjectKey: z.string().optional(),
   sizeBytes: z.number().int().nonnegative().optional(),
   decision: WorkspaceDecisionSchema.optional(),
@@ -1486,6 +1836,25 @@ const RunnerWorkspaceUsageSchema = z
           "The disk holding the runner's working directories; null when it did not say.",
       }),
     intervalMs: z.number().int().positive().optional(),
+    totalBytes: z
+      .number()
+      .nonnegative()
+      .optional()
+      .describe('Sum of measured directory sizes in bytes.'),
+    sizeUnknownCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe('Directories without a measured size.'),
+    counts: z
+      .object({
+        all: z.number().int(),
+        active: z.number().int(),
+        retained: z.number().int(),
+        ended: z.number().int(),
+      })
+      .optional(),
     count: z.number().int(),
     unpushedCount: z.number().int(),
     measuredAt: dateTime.nullable(),
@@ -1522,17 +1891,20 @@ const runnerObject = z.object({
     description:
       'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
   }),
-  draining: z.enum(['updatePending', 'pruning']).optional().meta({
+  reportedSlots: z.number().int().nonnegative().optional(),
+  capacitySource: z.enum(['online', 'legacyLocal']).optional(),
+  capacityReportedAt: z.iso.datetime().optional(),
+  draining: z.enum(['updatePending', 'pruning', 'diskLow']).optional().meta({
     description:
       'Why the runner temporarily accepts no new work, regardless of available slots.',
   }),
   globalFree: z.number().nonnegative().optional().meta({
     description:
-      'Free slots reported in the latest heartbeat across all applications; absent before a heartbeat.',
+      'Free slots from the latest heartbeat; updated runners report this application only. Absent before a heartbeat.',
   }),
   toolLoad: z.partialRecord(AgentToolSchema, ToolLoadSchema).nullable().meta({
     description:
-      'What it last reported per coding tool it limits on its own side, across every application it serves: how many runs of each it holds at most and could take now.',
+      'Actual tool capacity and free slots from the latest heartbeat; updated runners report this application only.',
   }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),
@@ -1540,6 +1912,80 @@ const runnerObject = z.object({
     description:
       'The names of the variables it provides to runs that take them from the runner, as it last reported them; null when it reported none. Names only.',
   }),
+  quotaRevision: z
+    .number()
+    .int()
+    .describe('The server quota-state revision; clearing does not require it.'),
+  quotaUsage: z
+    .array(
+      z.object({
+        tool: AgentToolSchema.describe(
+          'The coding tool whose quota was observed.',
+        ),
+        window: z
+          .string()
+          .describe('The tool-reported usage window identifier.'),
+        scope: z
+          .enum(['tool', 'provider', 'model'])
+          .describe('The affected quota scope.'),
+        target: z
+          .string()
+          .describe('Provider or model identifier; empty for the whole tool.'),
+        usedPercent: z
+          .number()
+          .optional()
+          .describe('Observed usage percentage, when the tool reports it.'),
+        resetsAt: z
+          .string()
+          .nullable()
+          .describe('Known reset instant; null means manual recovery.'),
+        observedAt: z
+          .string()
+          .describe('When the usage snapshot was accepted.'),
+        exhausted: z
+          .boolean()
+          .optional()
+          .describe('Whether the observed window was exhausted.'),
+      }),
+    )
+    .nullable()
+    .optional()
+    .describe(
+      'Throttled usage snapshots, persisted at five-point changes or state transitions.',
+    ),
+  unavailableModels: z
+    .array(
+      z.object({
+        tool: AgentToolSchema.describe(
+          'The coding tool whose quota was observed.',
+        ),
+        model: z
+          .string()
+          .describe('Affected model or provider; empty for a tool-wide mark.'),
+        at: z.string().describe('When the unavailable mark was observed.'),
+        reported: z
+          .array(z.string())
+          .describe('Models reported by the tool when the mark was recorded.'),
+        reason: z
+          .enum(['modelUnavailable', 'toolQuota'])
+          .optional()
+          .describe('The reason this scope cannot accept work.'),
+        scope: z
+          .enum(['tool', 'provider', 'model'])
+          .optional()
+          .describe('The marked scope; legacy marks target one model.'),
+        window: z.string().optional().describe('The exhausted usage window.'),
+        resetsAt: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            'Automatic recovery instant; absent or null means unknown.',
+          ),
+      }),
+    )
+    .nullable()
+    .optional(),
   workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
     description:
       'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',
@@ -1549,11 +1995,13 @@ const runnerObject = z.object({
   updatedAt: dateTime,
 });
 
-export const RunnerSchema: z.ZodType<Runner> = runnerObject.meta({
-  ref: 'AgentsRunner',
-});
+export const RunnerSchema: z.ZodType<Omit<Runner, 'quotaRevision'>> =
+  runnerObject.omit({ quotaRevision: true }).meta({
+    ref: 'AgentsRunner',
+  });
 
 const runnerSummaryObject = runnerObject
+  .omit({ quotaRevision: true })
   .extend({
     hostname: z.string().nullable().meta({
       description:
@@ -1572,8 +2020,17 @@ const runnerSummaryObject = runnerObject
     takes: z.array(z.object({ id: z.string(), name: z.string() })),
     canSeeMachine: z.boolean().optional(),
     canManage: z.boolean(),
+    canManageTools: z.boolean().optional(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
+    canClearQuota: z
+      .boolean()
+      .describe('The viewer may clear an unknown-reset quota mark.'),
+    recentRunsCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe('Recent run rows shown by the Runs tab, bounded to ten.'),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
       min: z.number().int(),
@@ -1590,16 +2047,65 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> =
   runnerSummaryObject;
 export const RunnerListItemSchema: z.ZodType<RunnerListItem> =
   runnerSummaryObject
+    .pick(RUNNER_LIST_FIELDS)
     .extend({
+      tools: z
+        .array(
+          z
+            .object({
+              kind: AgentToolSchema,
+              version: z.string().optional(),
+              authenticated: z.boolean(),
+            })
+            .meta({
+              ref: 'AgentsRunnerToolSummary',
+              description:
+                'Tool identity, version and sign-in state; model catalogs and machine paths belong to runtime get.',
+            }),
+        )
+        .describe('Compact coding tool states for this list.'),
+      takesCount: z
+        .number()
+        .int()
+        .describe('Total eligible agents; takes contains at most three.'),
       workspaceUsage: RunnerWorkspaceUsageSchema.omit({ workspaces: true })
-        .meta({ ref: 'AgentsRunnerWorkspaceTotals' })
         .nullable()
-        .optional(),
+        .optional()
+        .describe('Directory and disk totals without directory rows.'),
     })
     .meta({ ref: 'AgentsRunnerListItem' });
 
+export const RunnerWorkspacePageMetaSchema: z.ZodType<
+  RunnerWorkspacePage['meta']
+> = z
+  .object({
+    total: z
+      .number()
+      .int()
+      .describe('Directories matching the selected status.'),
+    page: z.number().int().min(1).describe('The requested one-based page.'),
+    pageSize: z.number().int().min(1).describe('Maximum rows per page.'),
+    usage: RunnerWorkspaceUsageSchema.omit({ workspaces: true })
+      .nullable()
+      .describe('Disk and directory totals, without directory rows.'),
+  })
+  .meta({
+    ref: 'AgentsRunnerWorkspacePageMeta',
+    description: 'Paging and shared runtime workspace totals.',
+  });
+
 export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
   .object({
+    subjectLabel: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('The visible task or conversation label.'),
+    failureReason: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('Terminal failure classification, including toolQuota.'),
     id: z.string(),
     title: z.string(),
     status: RunStatusSchema,
@@ -1636,8 +2142,10 @@ export const RegistrationTokenListQuery: z.ZodType<{
   page: number;
   pageSize: number;
 }> = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: pageSize(50, 100),
+  page: z.coerce.number().int().min(1).default(1).describe('The page number.'),
+  pageSize: pageSize(50, 100).describe(
+    'The maximum number of registration tokens to return.',
+  ),
 });
 
 export const RegistrationTokenSummarySchema: z.ZodType<RegistrationTokenSummary> =
@@ -1673,7 +2181,7 @@ export const RunContextSchema: z.ZodType<Readonly<Record<string, unknown>>> = z
 
 // Run requests: work someone asked of an agent on a subject another person answers for.
 export const RunRequestParams: z.ZodType<{ requestId: string }> = z.object({
-  requestId: id,
+  requestId: id.describe('The request identifier.'),
 });
 
 export const RunRequestListQuery: z.ZodType<
@@ -1689,12 +2197,19 @@ export const RunRequestListQuery: z.ZodType<
     description:
       '`responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out.',
   }),
-  status: z.enum(RUN_REQUEST_STATUSES).optional(),
-  subjectKind: id.optional(),
-  subjectId: id.optional(),
-  agentId: id.optional(),
-  pageSize: pageSize(50, 200),
-  pageToken,
+  status: z
+    .enum(RUN_REQUEST_STATUSES)
+    .optional()
+    .describe('The status to set or filter by.'),
+  subjectKind: id.optional().describe('The kind of subject.'),
+  subjectId: id.optional().describe('The subject identifier.'),
+  agentId: id.optional().describe('The agent identifier.'),
+  pageSize: pageSize(50, 200).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const RunRequestRejectInput: z.ZodType<{ note?: string | undefined }> =

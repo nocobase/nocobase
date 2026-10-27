@@ -32,8 +32,16 @@ import { knowledgeAccessToken, knowledgeToken } from '../tokens.js';
 
 /** What the application configures under `knowledge`. */
 export interface KnowledgeConfig {
+  /** Disable proposal APIs and UI without changing document editing or historical data. */
+  readonly proposals?: boolean;
   /** The Drive disk files go to. */
   readonly disk?: string;
+  /** Named indexing instances; only the selected key is stored as runtime settings. */
+  readonly indexing?: Readonly<
+    Record<string, import('../../shared/indexing.js').JsonObject>
+  >;
+  /** Optional real host jobs configuration key. */
+  readonly jobs?: string;
   /** The largest file stored, in bytes. */
   readonly maxFileSize?: number;
   /** The sweep of unused uploads; `false` turns it off. */
@@ -73,6 +81,7 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(knowledgeToken, (resolver) =>
       createKnowledge({
         database: resolver.resolve(databaseManagerToken),
+        proposals: config().proposals !== false,
         // Resolved on each question, so an application binding it after this plugin registers is still asked.
         access: {
           space: (space) => this.access().space(space),
@@ -171,6 +180,7 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
       .resolve(realtimeServiceToken)
       .defineTopic<KnowledgeChanged, 'public'>(KNOWLEDGE_TOPIC, {
         audience: 'public',
+        authenticated: true,
       });
     this.release = container.resolve(knowledgeToken).events.on((event) => {
       const payload: KnowledgeChanged =
@@ -180,12 +190,14 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
               proposalId: event.proposal.id,
               ...(event.proposal.docId ? { docId: event.proposal.docId } : {}),
             }
-          : { kind: 'knowledge.changed', docId: event.docId };
-      try {
-        void this.topic?.publish(payload);
-      } catch (error) {
+          : event.type === 'indexer.changed'
+            ? { kind: 'knowledge.changed' }
+            : event.type === 'space.changed'
+              ? { kind: 'knowledge.changed', spaceId: event.spaceId }
+              : { kind: 'knowledge.changed', docId: event.docId };
+      void this.topic?.publish(payload).catch((error: unknown) => {
         this.onError('Could not announce a knowledge change.', error);
-      }
+      });
     });
     return Promise.resolve();
   }

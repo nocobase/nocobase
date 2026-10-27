@@ -24,6 +24,7 @@ import {
   generateApiDocument,
 } from '@nocobase/app-server/router';
 
+import { taskInvalidationToken } from '../server/task-realtime.js';
 import plugin from '../server/index.js';
 import { apiRoutes } from '../server/routes/index.js';
 
@@ -372,6 +373,10 @@ it('does not expose or accept disabled and deleted users as assignees', async ()
 /** A container whose services the routes only resolve while they are declared, for inspecting them. */
 function routeContainer(): ServiceContainer {
   const container = new ServiceContainer();
+  container.instance(taskInvalidationToken, {
+    publishFor: async () => ({ eventId: 'test' }),
+    close() {},
+  } as never);
   container.instance(databaseManagerToken, {} as DatabaseManager);
   container.instance(notificationServiceToken, {} as never);
   container.instance(authenticationToken, {
@@ -419,10 +424,17 @@ async function createFixture(): Promise<DatabaseManager> {
 async function createRouter(
   database: DatabaseManager,
   send: (input: unknown) => Promise<unknown>,
+  publishFor = vi.fn(async (_id: string, _payload: unknown) => ({
+    eventId: 'test',
+  })),
 ): Promise<Hono> {
   const container = new ServiceContainer();
   container.instance(databaseManagerToken, database);
   container.instance(notificationServiceToken, { send });
+  container.instance(taskInvalidationToken, {
+    publishFor,
+    close() {},
+  } as never);
   container.instance(authenticationToken, {
     required: () => async (context: Context<AuthEnv>, next: Next) => {
       if (context.req.header('x-anonymous'))
@@ -462,3 +474,38 @@ function request(
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 }
+
+it('invalidates every participant, including a removed assignee, without publishing task data', async () => {
+  const database = await createFixture();
+  const publish = vi.fn(async (_id: string, _payload: unknown) => ({
+    eventId: 'test',
+  }));
+  const router = await createRouter(database, async () => undefined, publish);
+  const response = await request(router, 'POST', 'u1', '/tasks', {
+    title: 'Release checklist',
+    description: 'Review the launch',
+    assigneeId: 'u2',
+  });
+  const { data: task } = (await response.json()) as { data: { id: string } };
+  expect(publish.mock.calls.map(([id]) => id).sort()).toEqual(['u1', 'u2']);
+  publish.mockClear();
+  await request(router, 'PATCH', 'u1', `/tasks/${task.id}`, {
+    assigneeId: 'u3',
+  });
+  expect(publish.mock.calls.map(([id]) => id).sort()).toEqual([
+    'u1',
+    'u2',
+    'u3',
+  ]);
+  expect(
+    publish.mock.calls.every(
+      ([, payload]) => JSON.stringify(payload) === '{"changed":true}',
+    ),
+  ).toBe(true);
+  expect((await request(router, 'GET', 'u2', `/tasks/${task.id}`)).status).toBe(
+    403,
+  );
+  expect((await request(router, 'GET', 'u3', `/tasks/${task.id}`)).status).toBe(
+    200,
+  );
+});

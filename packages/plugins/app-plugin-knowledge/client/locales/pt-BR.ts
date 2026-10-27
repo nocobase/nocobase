@@ -1,0 +1,724 @@
+import type { LocaleResource } from '@nocobase/i18n';
+
+import type enUS from './en-US.js';
+
+const ptBR: LocaleResource<typeof enUS> = {
+  indexing: {
+    failedDocumentCount: 'Documentos com falha: {{count}}',
+    enabled: 'Ativar indexação',
+    enabledHint:
+      'Desative para usar apenas busca textual. As alterações entram em vigor após salvar.',
+    chooseInstance: 'Selecione uma instância de índice',
+    documentProgress: 'Documentos indexados',
+    pendingDocuments: 'Documentos pendentes',
+    failedDocuments: 'Documentos com falha',
+    preparedChunks: 'Fragmentos preparados',
+    committedChunks: 'Fragmentos confirmados',
+    agentPrompt:
+      'Ajude-me a configurar o índice da base de conhecimento deste aplicativo NocoBase 3.\n\nLeia AGENTS.md e verifique os tipos de índice (type) realmente disponíveis. Há dois bancos vetoriais: SQLite com sqlite-vec (type sqlite-vec, arquivo local) e PostgreSQL com pgvector (type pgvector, extensão vector necessária). Explique as opções e seus requisitos neste ambiente e deixe-me escolher antes de continuar.\n\nApós a escolha, peça o caminho do arquivo para SQLite ou a conexão e o estado da extensão vector para PostgreSQL. Não mostre senhas nem chaves de API.\n\nMostre a configuração proposta e obtenha minha confirmação antes de escrevê-la em knowledge.indexing no config.yaml. Preserve as outras configurações. Se o aplicativo já usa config.yml, edite esse arquivo sem criar outro.\n\nValide a configuração com segurança e explique como reiniciar. Peça autorização antes de reiniciar ou instalar dependências. Depois, oriente-me a reabrir os ajustes, ativar o índice, escolher a instância e um modelo de embedding e salvar. Chamadas a modelos pagos e reconstruções também precisam da minha confirmação.',
+    databases: {
+      sqlite: {
+        name: 'Banco vetorial SQLite',
+        description:
+          'Usa a extensão vetorial sqlite-vec para guardar o índice em um arquivo SQLite local no servidor do aplicativo. Dispensa um serviço de banco separado; adequado para um único servidor.',
+      },
+      pgvector: {
+        name: 'Banco vetorial PostgreSQL',
+        description:
+          'Usa pgvector para armazenar e buscar vetores no PostgreSQL. Requer conexão com o banco e a extensão vector habilitada. Adequado para um PostgreSQL existente ou índice compartilhado entre servidores.',
+      },
+    },
+    setupTitle: 'Etapas de configuração',
+    setup: {
+      instance:
+        'Abra config.yaml e adicione uma instância em knowledge.indexing com nome, tipo e caminho do arquivo local ou dados de conexão.',
+      restart:
+        'Salve o arquivo e reinicie o aplicativo para carregar a configuração.',
+      enable:
+        'Reabra as configurações do índice, ative-o, escolha a nova instância e um modelo de embedding e salve.',
+    },
+    agentHandoff:
+      'Se você não conhece os arquivos de configuração, copie o prompt abaixo para um Agent de desenvolvimento.',
+    global: 'Todos os espaços de conhecimento',
+    back: 'Voltar ao conhecimento',
+    configuration: 'Configuração do índice',
+    typeHint:
+      'As instâncias são agrupadas por type. Cada tipo define seu formulário e se precisa de modelo Embedding.',
+    typeForm: 'Formulário dinâmico deste tipo',
+    openPage: 'Abrir página de configurações',
+    emptyTitle: 'Configure primeiro um banco de dados vetorial',
+    emptyDescription:
+      'O índice precisa de um banco de dados vetorial para armazenar e buscar vetores dos documentos. Escolha uma opção e adicione-a ao config.yaml do aplicativo:',
+    agentTitle: 'Prompt de configuração',
+    copyPrompt: 'Copiar instruções',
+    promptCopied: 'Instruções copiadas. Nenhuma operação foi executada.',
+    promptCopyFallback:
+      'Cópia automática indisponível. O texto foi selecionado para cópia manual.',
+    promptLabel: 'Instruções para seu Agent de desenvolvimento',
+    rebuildHint: 'As alterações exigem reconstrução',
+    editHint: 'Altere a configuração para salvar',
+    confirmRetryEmbedding:
+      'Reprocessar apenas documentos com falha de todos os espaços. O trabalho concluído é preservado; pode haver cobrança Embedding.',
+    confirmRetry:
+      'Reprocessar apenas documentos com falha de todos os espaços. O trabalho concluído é preservado, mas recursos do serviço são usados.',
+    confirmResources:
+      'Os índices de todos os espaços serão reconstruídos. Este tipo não chama Embedding, mas usa armazenamento e recursos. O índice publicado continua disponível até a substituição.',
+    deploymentPg:
+      'Conexão, Schema e prefixo de tabela são gerenciados na configuração da implantação.',
+    deploymentFile:
+      'O caminho do arquivo de índice é gerenciado na configuração da implantação.',
+    errors: {
+      configurationChanged:
+        'As configurações do índice ou do modelo mudaram. A geração antiga não pode ser repetida com as novas configurações. Confira-as e reconstrua todos os espaços se necessário (pode haver custos de Embedding).',
+      modelAuth:
+        'Falha na autenticação de Embedding. Confira a chave de API, as permissões e a região do endpoint.',
+      modelQuota:
+        'A cota ou o saldo de Embedding acabou. Confira a conta antes de tentar novamente.',
+      modelRateLimit:
+        'O serviço de Embedding está limitando solicitações. Aguarde antes de tentar novamente.',
+      modelConfig:
+        'O modelo de Embedding salvo está indisponível, mudou ou não é compatível. Confira o serviço e o modelo.',
+      modelInput:
+        'A entrada de Embedding é muito longa. Confira o tamanho dos fragmentos do documento.',
+      modelPolicy:
+        'O serviço de Embedding rejeitou a entrada pela política de conteúdo. Confira o conteúdo afetado.',
+      modelResponse:
+        'O serviço de Embedding retornou vetores inválidos. Confira a compatibilidade e as dimensões.',
+      modelUnavailable:
+        'Não foi possível acessar o serviço de Embedding ou ele está temporariamente indisponível. Confira o endpoint e a rede.',
+      storageAuth:
+        'Falha na autenticação do armazenamento do índice. Confira usuário, senha e conexão do banco.',
+      storagePermission:
+        'O armazenamento do índice negou a operação ou está somente para leitura. Confira as permissões do esquema e das tabelas.',
+      storageSchema:
+        'O banco, esquema ou uma tabela necessária do índice está indisponível. Confira a implantação e o esquema.',
+      storageUnavailable:
+        'Não foi possível acessar o armazenamento do índice ou a conexão caiu. Confira endereço, porta e rede.',
+      storageBusy:
+        'O armazenamento do índice está ocupado ou houve conflito de transação. Aguarde a política de novas tentativas do host.',
+      timeout:
+        'A operação de indexação excedeu o tempo limite. Confira o armazenamento e o serviço do modelo antes de tentar novamente.',
+      vectorExtension:
+        'A extensão vector do PostgreSQL não está instalada. Solicite a instalação ao administrador.',
+      ownership:
+        'A propriedade ou estrutura do destino do índice não corresponde. Confira o recurso; não exclua tabelas de terceiros.',
+      dependencies:
+        'Uma instância, extensão ou configuração de jobs do host está indisponível. Confira a implantação e reinicie se necessário.',
+    },
+    invalidValue: 'Verifique este valor.',
+    title: 'Configurações do índice de conhecimento',
+    description:
+      'Configure a indexação de busca para todos os espaços de conhecimento.',
+    progress: 'Progresso da indexação',
+    instance: 'Instância de indexação',
+    off: 'Desativado — somente busca de texto',
+    missingForm:
+      'O formulário desta instância não está disponível. As opções salvas são preservadas.',
+    statusFailed: 'Não foi possível atualizar o status do índice.',
+    loadFailed:
+      'Não foi possível carregar as configurações. Verifique suas permissões e tente novamente.',
+    saveFailed: 'A solicitação não foi aceita. Seu rascunho foi mantido.',
+    conflict:
+      'As configurações foram alteradas em outra sessão. Recarregue a revisão mais recente sem descartar o rascunho, revise e salve novamente.',
+    saved: 'Solicitação aceita. A indexação continua em segundo plano.',
+    workFailed:
+      'Algumas tarefas falharam. Verifique a instância e o serviço de modelo e tente novamente.',
+    rebuild: 'Reconstruir todos os espaços',
+    retry: 'Repetir tarefas com falha',
+    confirmTitle: 'Confirmar alteração global do índice',
+    confirmRebuild:
+      'Isso afeta todos os espaços e pode recalcular os vetores de todos os documentos, gerar custos de modelo e exigir armazenamento adicional. O índice atual fica disponível até que o novo esteja pronto.',
+    confirmDisable:
+      'Isso desativa a busca por índice em todos os espaços. A busca de texto continua disponível. A limpeza ocorre em segundo plano.',
+    discardTitle: 'Descartar alterações não salvas?',
+    discardDescription: 'As configurações de índice não salvas serão perdidas.',
+    discard: 'Descartar alterações',
+    confirm: 'Confirmar',
+    documents:
+      'Documentos: {{done}} / {{total}} · Pendentes: {{pending}} · Falhas: {{failed}}',
+    chunks: 'Fragmentos preparados: {{prepared}} · Confirmados: {{committed}}',
+    availability: {
+      disabled: 'Desativado — somente busca de texto',
+      unavailable: 'Índice indisponível — busca de texto disponível',
+      building: 'Construindo índice',
+      ready: 'Índice pronto',
+      degraded: 'Índice degradado — busca de texto disponível',
+    },
+    table: 'Nome da tabela',
+    modelService: 'Serviço de modelos',
+    model: 'Modelo de embeddings',
+    chooseService: 'Escolher um serviço de modelos',
+    chooseModel: 'Selecione ou digite o nome do modelo',
+    loadingModels: 'Carregando modelos de embeddings…',
+    modelsUnavailable:
+      'Os modelos de embeddings estão indisponíveis. Verifique o serviço e tente novamente.',
+  },
+  access: {
+    businessSection: 'Conhecimento',
+    businesses: {
+      knowledge: {
+        title: 'Conhecimento',
+        description: 'Os documentos de cada espaço de conhecimento.',
+        actions: {
+          read: {
+            title: 'Leia o conhecimento',
+            description:
+              'Leia o conhecimento do sistema e dos espaços relacionados a ele',
+            related: 'Ler conhecimentos (espaços relacionados a eles)',
+            relatedLabel: 'Espaços relacionados a mim',
+            relatedHint:
+              'A aplicação decide quais espaços dizem respeito a quem',
+            all: 'Leia o conhecimento (todos)',
+          },
+          propose: {
+            title: 'Propor conhecimento',
+            description:
+              'Propor uma mudança para que alguém que possa editar decida; quais agentes podem receber',
+            related: 'Propor conhecimentos (espaços a eles relacionados)',
+            relatedLabel: 'Espaços relacionados a mim',
+            relatedHint:
+              'A aplicação decide quais espaços dizem respeito a quem',
+            all: 'Propor conhecimento (todos)',
+          },
+          edit: {
+            title: 'Editar conhecimento',
+            description:
+              'Editar, arquivar e marcar propostas verificadas e decidir; o conhecimento do sistema precisa de tudo',
+            related: 'Editar conhecimentos (espaços relacionados a eles)',
+            relatedLabel: 'Espaços relacionados a mim',
+            relatedHint:
+              'A aplicação decide quais espaços dizem respeito a quem',
+            all: 'Editar conhecimento (todos)',
+          },
+          manage: {
+            title: 'Gerenciar o acesso ao conhecimento',
+            description:
+              'Alterar quem pode acessar cada pasta e artigo e manter o acesso a todos; o conhecimento do sistema precisa de tudo',
+            related:
+              'Gerenciar o acesso ao conhecimento (espaços a eles relacionados)',
+            relatedLabel: 'Espaços relacionados a mim',
+            relatedHint:
+              'A aplicação decide quais espaços dizem respeito a quem',
+            all: 'Gerenciar o acesso ao conhecimento (todos)',
+          },
+        },
+      },
+    },
+  },
+  knowledge: {
+    directory: {
+      title: 'Conhecimento',
+      system: 'Conhecimento do sistema',
+      count_one: 'Documento {{count}}',
+      count_other: 'Documentos {{count}}',
+      archivedCount_one: 'Documento arquivado {{count}}',
+      archivedCount_other: 'Documentos arquivados {{count}}',
+      selectTarget: 'Abrir {{title}}',
+      target: 'Criar em {{title}}',
+      chooseTarget:
+        'Escolha um projeto ou conhecimento do sistema para criar em',
+      expandAll: 'Expandir tudo',
+      collapseAll: 'Recolher tudo',
+      retry: 'Tentar novamente',
+      allProposals: 'Todas as propostas',
+      reviewPage: 'Página {{page}} de {{pages}} · Total {{total}}',
+      previous: 'Anterior',
+      next: 'Próximo',
+      empty: 'Não há espaços de conhecimento acessíveis',
+      emptyAccessHint:
+        'Solicite a um administrador acesso ao conhecimento do projeto ou do sistema.',
+      noAccess:
+        'Este conhecimento não está disponível ou você não tem mais acesso.',
+      emptyHint:
+        'Abra este espaço para criar um documento ou peça a um editor para adicionar um.',
+      createFailed:
+        'Não foi possível criar esta entrada. Verifique o alvo e tente novamente.',
+      showResults: 'Mostrar resultados principais para “{{q}}”',
+      topResults:
+        'Seções com melhor classificação em todos os projetos e conhecimento do sistema.',
+      welcome:
+        'Expanda um projeto ou conhecimento compartilhado do sistema para navegar em documentos. Selecione um espaço para criar ou pesquise todos os conhecimentos autorizados.',
+      count_many: 'Documentos {{count}}',
+      archivedCount_many: 'Documentos arquivados {{count}}',
+    },
+    title: 'Conhecimento',
+    someone: 'Alguém',
+    loading: 'Carregando',
+    index: {
+      states: {
+        pending: 'Esperando',
+        done: 'Indexado',
+        failed: 'Falha',
+      },
+      done: 'Indexado',
+      pending: 'Indexação {{indexed}}/{{total}}',
+      failed: 'Falha na indexação',
+      failedHint: 'Algumas seções não foram incorporadas após cada tentativa.',
+      reason: 'Motivo: {{reason}}',
+      retry: 'Indexar novamente',
+      refreshFailed: 'Não é possível atualizar o status da indexação',
+      retryRefresh: 'Tentar atualizar novamente',
+      queued: 'Na fila para indexação novamente',
+    },
+    chunks: {
+      open: 'Ver seções',
+      title: 'Seções',
+      description:
+        'As seções {{count}} nas quais a versão atual de "{{title}}" é cortada; pesquisas e citações funcionam seção por seção. Escolha um para encontrá-lo no documento.',
+      lead: '(Antes do primeiro título)',
+      lines: 'Linhas {{start}}–{{end}}',
+      chars_one: 'Caractere {{count}}',
+      chars_other: 'Caracteres {{count}}',
+      empty: 'Este documento ainda não possui seções.',
+      showing: 'Destacando linhas {{start}}–{{end}}.',
+      clear: 'Limpar destaque',
+      chars_many: 'Caracteres {{count}}',
+    },
+    chunking: {
+      title: 'Configurações de seção',
+      description:
+        'Artigos e arquivos (seu texto extraído) em {{space}} são cortados em seções em seus títulos para pesquisa e citações: o Word mantém seus próprios títulos, cada PDF ou página de slide e cada folha é um título de nível 2, e o texto sem títulos é cortado por comprimento. Este espaço pode ser cortado de forma diferente do padrão.',
+      own: 'Definido para este espaço',
+      defaults:
+        'Padrão: títulos até o nível {{depth}}, visando caracteres {{target}}, no máximo {{max}}.',
+      depth: 'Corte nos títulos',
+      depths: {
+        '1': 'Somente nível 1 (#)',
+        '2': 'Até o nível 2 (##)',
+        '3': 'Até o nível 3 (###)',
+      },
+      depthHint:
+        'Os títulos mais profundos permanecem dentro de sua seção. Somente no nível 1, os arquivos não são cortados por página ou folha.',
+      target: 'Comprimento alvo (caracteres)',
+      max: 'Limite (caracteres)',
+      sizesHint:
+        'Uma seção maior que o limite é cortada entre os parágrafos em pedaços próximos ao alvo; blocos de código e tabelas nunca são cortados.',
+      invalid:
+        'Os comprimentos vão de {{min}} a {{max}} e o alvo é no máximo o limite.',
+      effect:
+        'Salvar recorta os documentos em segundo plano e reindexa suas seções quando a pesquisa semântica está ativada.',
+      rechunking: 'Cortando os documentos novamente em segundo plano…',
+      save: 'Salvar',
+      saved: 'Configurações de seção salvas',
+    },
+    loadFailed: 'Não foi possível carregar o conhecimento',
+    kinds: {
+      folder: 'Pasta',
+      article: 'Artigo',
+      file: 'Arquivo',
+    },
+    folder: {
+      empty: 'Esta pasta está vazia.',
+    },
+    new: {
+      label: 'Novo',
+      article: 'Novo artigo',
+      folder: 'Nova pasta',
+      childArticle: 'Novo artigo dentro',
+      childFolder: 'Nova pasta dentro',
+    },
+    files: {
+      upload: 'Carregar arquivos',
+      uploadHere: 'Carregue arquivos aqui',
+      dropHint: 'Solte os arquivos aqui ou em uma pasta para carregá-los.',
+      uploaded_one:
+        'Arquivo {{count}} carregado; seu texto está sendo extraído.',
+      uploaded_other:
+        'Arquivos {{count}} carregados; seu texto está sendo extraído.',
+      download: 'Baixar',
+      version: 'Versão {{version}}',
+      statusHint: {
+        parsing:
+          'O texto está sendo extraído; search encontra o arquivo quando ele estiver pronto.',
+        ready: 'Seu texto é extraído, então a busca e os agentes o leem.',
+        failed: 'O texto não pôde ser extraído.',
+        unsupported:
+          'O texto não é extraído de arquivos deste tipo; ele é armazenado como está.',
+      },
+      replace: 'Substituir',
+      replaced: 'Substituído: versão {{version}}.',
+      reparse: 'Extraia novamente',
+      file: 'Arquivo',
+      propose: 'Propor',
+      proposeNew: 'Propor um arquivo',
+      proposeNewHint:
+        'Alguém que pode editar este conhecimento decide; aceitá-lo adiciona o arquivo.',
+      proposeReplace: 'Proponha uma substituição',
+      proposeReplaceHint:
+        'Alguém que pode editar este conhecimento decide; aceitá-lo torna seu arquivo a próxima versão do {{title}}.',
+      proposeReasonHint: 'Por que é aqui, cabe a quem decidir.',
+      proposed: 'Proposto; alguém que pode editar decide.',
+      preview: 'Visualização',
+      text: 'Texto extraído',
+      failed: 'Não foi possível extrair o texto: {{reason}}',
+      status: {
+        parsing: 'Extraindo texto',
+        ready: 'Texto extraído',
+        failed: 'Falha na extração',
+        unsupported: 'Armazenado apenas',
+      },
+      noText: {
+        parsing:
+          'O texto está sendo extraído; ele aparece aqui quando estiver pronto.',
+        ready: 'O arquivo não contém texto.',
+        failed: 'O texto não pôde ser extraído.',
+        unsupported:
+          'O texto não é extraído de arquivos deste tipo; o arquivo é armazenado como está.',
+      },
+      uploaded_many:
+        'Arquivos {{count}} carregados; seu texto está sendo extraído.',
+    },
+    spaces: {
+      actions: 'Ações espaciais',
+      access: 'Acesso ao espaço',
+      proposeOnly: 'Propor apenas',
+      inherited: 'Herdado',
+      inheritedHint: 'Herdado de outro espaço; somente leitura aqui.',
+      default: 'Conhecimento',
+      readOnly: 'Somente leitura',
+      empty: 'Ainda não há documentos.',
+    },
+    tree: {
+      actions: 'Ações',
+      expand: 'Expandir',
+      collapse: 'Colapso',
+      label: 'Documentos',
+      newDoc: 'Novo documento',
+      archived: 'Mostrar arquivado',
+      archivedBadge: 'Arquivado',
+      pending: '{{count}} aguardando',
+      back: 'Todos os documentos',
+      restricted: 'Restrito: somente as pessoas listadas podem acessá-lo',
+    },
+    doc: {
+      permissions: 'Permissões',
+      restricted: 'Restrito · {{count}}',
+      restrictedHint:
+        'Somente as pessoas listadas e quem administra o espaço poderão acessá-lo.',
+      verifiedLabel: 'Verificado',
+      versionBy: 'v{{version}} · {{name}}',
+      proposeChanges: 'Propor alterações',
+      more: 'Mais ações',
+      pending_one: '{{count}} pendente',
+      pending_other: '{{count}} pendente',
+      updatedAgo: '{{time}} atualizado',
+      updatedDetail: '{{name}} · v{{version}}',
+      renameTitle: 'Renomear “{{title}}”',
+      renamedToast: 'Renomeado.',
+      notFound: 'Este documento não existe mais ou talvez você não o veja.',
+      notVerified: 'Ainda não verificado',
+      contents: 'Conteúdo',
+      edit: 'Editar',
+      rename: 'Renomear',
+      history: 'História',
+      verify: 'Marca verificada',
+      verifiedToast: 'Marcado como verificado.',
+      archive: 'Arquivar',
+      archiveTitle: 'Arquivar “{{title}}”?',
+      archiveDescription:
+        'Desaparece da árvore e dos agentes. Você pode restaurá-lo mais tarde; suas versões são mantidas.',
+      archivedToast: 'Arquivado.',
+      restore: 'Restaurar',
+      restoredToast: 'Restaurado.',
+      move: 'Mover',
+      moveTitle: 'Mover “{{title}}”',
+      moveTo: 'Abaixo',
+      root: 'No nível superior',
+      movedToast: 'Mudou-se.',
+      archivedNotice: 'Este documento é arquivado e somente leitura.',
+      oldVersion: 'Você está lendo a versão {{version}}.',
+      backToCurrent: 'Voltar para a versão atual',
+      proposals: 'Propostas aguardando',
+      empty: 'Este documento está vazio.',
+      pending_many: '{{count}} pendente',
+    },
+    editor: {
+      editing: 'Edição',
+      proposing: 'Propor alterações',
+      properties: 'Propriedades',
+      propertiesHint: 'Quais agentes e links leem sobre este documento.',
+      nothingToPreview: 'Nada para visualizar ainda.',
+      reasonPlaceholder: 'Por que isso deveria mudar, para quem decide',
+      submitProposal: 'Enviar proposta',
+      proposed: 'Proposto; alguém que pode editar decide.',
+      title: 'Título',
+      slug: 'Lesma',
+      slugHint:
+        'Letras minúsculas, dígitos e hífens; como os agentes e links o nomeiam. Deixado em branco, é feito a partir do título.',
+      summary: 'Resumo',
+      summaryHint: 'Agentes de uma linha leem o índice.',
+      content: 'Conteúdo',
+      contentPlaceholder: 'Markdown',
+      write: 'Escreva',
+      preview: 'Visualização',
+      note: 'Alterar nota',
+      notePlaceholder: 'O que mudou, para o histórico (opcional)',
+      parent: 'Pai',
+      save: 'Salvar',
+      saved: 'Salvo como versão {{version}}.',
+      unchanged: 'Nada mudou.',
+      create: 'Criar',
+      created: 'Documento criado.',
+      cancel: 'Cancelar',
+      conflict:
+        'Alguém salvou a versão {{version}} enquanto você editava. Copie seu texto, recarregue e aplique sua alteração novamente.',
+      reload: 'Recarregar',
+    },
+    history: {
+      by: 'por {{name}}',
+      title: 'História',
+      current: 'Atual',
+      fromProposal: 'De uma proposta',
+      compare: 'Comparar',
+      with: 'com',
+      previous: 'a versão anterior',
+      noChanges: 'Sem diferenças.',
+      view: 'Visualizar',
+      unchangedLines: 'Linhas {{count}} inalteradas',
+      approvedBy: 'aprovado por {{name}}',
+    },
+    search: {
+      description:
+        'Pesquisar os documentos deste espaço e os espaços que ele herda.',
+      hint: 'Digite para pesquisar títulos e texto.',
+      emptyHint: 'Experimente outras palavras, ou menos.',
+      all: 'Mostrar todos os resultados para “{{q}}”',
+      resultsFor: 'Resultados para “{{q}}”',
+      placeholder: 'Pesquisar conhecimento',
+      label: 'Pesquisar conhecimento',
+      empty: 'Nada encontrado para “{{q}}”.',
+      results: 'Resultados',
+      inherited: 'Herdado',
+    },
+    home: {
+      emptyTitle: 'Ainda não há documentos em {{space}}',
+      emptyEdit:
+        'Escreva o primeiro artigo ou carregue os arquivos para começar.',
+      emptyPropose:
+        'Proponha um arquivo e alguém que possa editá-lo decide se ele será adicionado.',
+      emptyRead: 'Ainda nada está escrito aqui.',
+      count_one: 'Documento {{count}}',
+      count_other: 'Documentos {{count}}',
+      pending_one: 'Aguardando revisão ({{count}})',
+      pending_other: 'Aguardando revisão ({{count}})',
+      all: 'Ver tudo',
+      recent: 'Atualizado recentemente',
+      updated: '{{time}} · {{name}}',
+      unindexed: 'Não totalmente indexado',
+      unindexedFailed: '{{failed}} falhou · {{pending}} aguardando',
+      unindexedPending_one: 'Seção {{count}} aguardando',
+      unindexedPending_other: 'Seções {{count}} aguardando',
+      unverified: 'Não verificado recentemente',
+      verifiedAgo: '{{time}} verificado',
+      count_many: 'Documentos {{count}}',
+      pending_many: 'Aguardando revisão ({{count}})',
+      unindexedPending_many: 'Seções {{count}} aguardando',
+    },
+    diff: {
+      changes_one: 'Alteração {{count}}',
+      changes_other: 'Alterações em {{count}}',
+      previous: 'Alteração anterior',
+      next: 'Próxima mudança',
+      layout: 'Layout diferencial',
+      inline: 'Em linha',
+      split: 'Divisão',
+      changes_many: 'Alterações em {{count}}',
+    },
+    access: {
+      you: {
+        manage: 'Você pode gerenciar',
+        edit: 'Você pode editar',
+        propose: 'Você pode propor',
+        read: 'Você pode ler',
+        none: 'Sem acesso',
+      },
+      title: 'Acesso ao espaço',
+      description: 'Quem pode acessar {{space}}.',
+      yours: 'Seu acesso',
+      actions: {
+        read: 'Leia os documentos e pesquise-os',
+        propose: 'Propor alterações para alguém que possa editar decidir',
+        edit: 'Editar, organizar e verificar documentos',
+        manage: 'Alterar quem pode acessar cada pasta e artigo',
+      },
+      allowed: 'Permitido',
+      notAllowed: 'Não permitido',
+      matrix: 'Por função',
+      role: 'Função',
+      columns: {
+        read: 'Ler',
+        propose: 'Propor',
+        edit: 'Editar',
+        manage: 'Gerenciar',
+      },
+      from: 'Fonte: {{source}}',
+      source: {
+        space: 'seu acesso a {{space}}',
+        manager: 'você gerencia {{space}}',
+        entry: '{{subject}}, configurado em “{{title}}”',
+      },
+      restrictedAt:
+        'Restrito em “{{title}}”: somente as pessoas ali listadas poderão acessá-lo.',
+      viewOnly: 'Somente quem o gerencia pode alterar quem pode acessá-lo.',
+      mine: '(seu)',
+      howTitle: 'Como funciona o acesso aqui',
+      agents:
+        'Agentes agindo em nome de alguém leem e propõem, no máximo; eles nunca editam ou decidem.',
+      manage: 'Mudança de funções',
+    },
+    permissions: {
+      title: 'Permissões de “{{title}}”',
+      description: {
+        folder:
+          'Quem pode ler, propor, editar e administrar esta pasta e o que ela contém.',
+        article: 'Quem pode ler, propor, editar e administrar este artigo.',
+        file: 'Quem pode ler, propor, editar e administrar este arquivo.',
+      },
+      modeLabel: 'Acesso',
+      modes: {
+        inherit: 'Herdar de seu pai',
+        custom: 'Somente as pessoas listadas',
+      },
+      inheritHint:
+        'Quem pode acessar seu pai também pode acessá-lo, e as pessoas adicionadas abaixo obtêm pelo menos o seu nível.',
+      customHint:
+        'Somente as pessoas listadas abaixo podem acessá-lo, independentemente do que seu pai permitir; o que está sob ele segue, a menos que seja restringido.',
+      inherited: 'Herdado',
+      fromSpace: 'Todos com acesso a {{space}}, por suas funções',
+      fromDoc: 'De “{{title}}”',
+      fromRestricted:
+        'De “{{title}}”, que somente as pessoas listadas podem acessar',
+      added: 'Também tem acesso',
+      listed: 'Pessoas listadas',
+      add: 'Adicionar pessoas',
+      addPlaceholder: 'Adicione pessoas, funções…',
+      noMatches: 'Sem correspondências.',
+      noneAdded: 'Ninguém além do que é herdado.',
+      noneListed:
+        'Ninguém listado: somente quem administra o espaço pode acessá-lo.',
+      managers:
+        'Quem administra o espaço mantém sempre o acesso. Os agentes leem e propõem, no máximo, e apenas o que eles e sua pessoa podem fazer.',
+      levelOf: 'Nível de {{subject}}',
+      levels: {
+        read: 'Pode ler',
+        propose: 'Pode propor',
+        edit: 'Pode editar',
+        manage: 'Pode gerenciar',
+      },
+      remove: 'Remover',
+      removedSubject: 'Removido ({{id}})',
+      save: 'Salvar',
+      close: 'Fechar',
+      saved: 'Permissões salvas.',
+      loadFailed: 'Não foi possível carregar as permissões.',
+    },
+    searchTest: {
+      title: 'Teste de pesquisa',
+      description:
+        'Executa uma pesquisa como faria e mostra como cada hit foi classificado: sua relevância, sua classificação por palavras-chave e por significado, a pontuação de reclassificação e onde está em seu documento.',
+      keyword: 'Palavras-chave',
+      semantic: 'Significado',
+      relevance: 'Relevância {{score}}',
+      rank: '{{name}} #{{rank}} · {{score}}',
+      unranked: '{{name}}: não encontrado',
+      lines: 'Linhas {{start}}–{{end}}',
+      notExplained:
+        'Os detalhes da classificação são mostrados apenas para as pessoas que gerenciam o espaço ou as configurações de pesquisa.',
+      query: 'Palavras para procurar',
+      run: 'Pesquisar',
+      fused: '{{score}} fundido',
+      provider: '{{name}} #{{rank}} · {{score}}',
+      reranked: '{{score}} reclassificado',
+      notReranked: 'Não reclassificado',
+    },
+    proposals: {
+      listTitle: 'Propostas',
+      statuses: {
+        pending: 'Pendente',
+        accepted: 'Aceito',
+        rejected: 'Rejeitado',
+        withdrawn: 'Retirado',
+      },
+      none: {
+        pending: 'Nada está à espera de revisão.',
+        accepted: 'Nenhuma proposta aceita ainda.',
+        rejected: 'Nenhuma proposta rejeitada.',
+      },
+      about: 'Em “{{title}}”',
+      clearAbout: 'Mostrar todas as propostas',
+      onBehalf: '{{proposer}} em nome de {{person}}',
+      overview: 'Visão geral',
+      changes: 'Mudanças',
+      staleTitle: 'O documento mudou desde',
+      decision: 'Decisão',
+      commentLabel: 'Comentário',
+      pendingEntry: 'Revisão pendente · {{count}}',
+      kinds: {
+        update: 'Mudança',
+        create: 'Novo documento',
+        verify: 'Ainda mantém',
+      },
+      by: '{{proposer}} para {{person}}',
+      from: 'De {{source}}',
+      reason: 'Razão',
+      summary: 'Resumo',
+      stale:
+        'O documento mudou desde que foi escrito (v{{base}} → v{{current}}). A aceitação substitui a versão atual pela proposta inteira.',
+      diffProposed: 'Alteração proposta (v{{base}} → proposta)',
+      diffCurrent: 'Contra a versão atual (v{{current}} → proposta)',
+      newContent: 'Conteúdo proposto',
+      newFile: 'Arquivo proposto',
+      replacementFile: 'Substituição para versão {{base}}',
+      fileNote: 'Seu texto é extraído uma vez aceito.',
+      verifyNote: 'Nada muda no documento; está marcado como verificado hoje.',
+      accept: 'Aceitar',
+      acceptAnyway: 'Aceite mesmo assim',
+      reject: 'Rejeitar',
+      comment: 'Comentário (opcional)',
+      accepted: 'Aceito.',
+      rejected: 'Rejeitado.',
+      decided: '{{outcome}} por {{name}}',
+      open: 'Abrir',
+      readOnly: 'Alguém que possa editar este conhecimento decide.',
+    },
+  },
+  errors: {
+    KNOWLEDGE_PROPOSAL_PENDING:
+      'Sua proposta anterior para este documento ainda está aguardando; tem que ser decidido primeiro.',
+    KNOWLEDGE_PROPOSAL_REJECTED:
+      'A mesma mudança foi rejeitada antes; propor algo diferente.',
+    EMPTY_CONTENT: 'O conteúdo proposto está vazio.',
+    INVALID_REASON: 'Diga por que deveria mudar (no máximo 500 caracteres).',
+    KNOWLEDGE_VERSION_CONFLICT:
+      'Enquanto isso, alguém salvou uma versão mais recente; recarregue e aplique sua alteração novamente.',
+    KNOWLEDGE_SLUG_TAKEN: 'Outro documento neste espaço contém esse slug.',
+    KNOWLEDGE_HAS_CHILDREN: 'Arquive ou mova primeiro seus subdocumentos.',
+    KNOWLEDGE_ARCHIVED: 'O documento é arquivado; restaure-o primeiro.',
+    KNOWLEDGE_DEPTH_EXCEEDED:
+      'Os documentos são aninhados no máximo em quatro níveis de profundidade.',
+    KNOWLEDGE_INVALID_MOVE:
+      'Um documento não pode ser independente ou independente.',
+    KNOWLEDGE_PROPOSAL_STALE:
+      'O documento mudou desde que a proposta foi escrita.',
+    KNOWLEDGE_PROPOSAL_DECIDED: 'Esta proposta já foi decidida.',
+    INVALID_SLUG: 'O slug aceita letras minúsculas, dígitos e hífens.',
+    INVALID_TITLE: 'É necessário um título (no máximo 200 caracteres).',
+    FILE_TOO_LARGE: 'O arquivo é muito grande.',
+    FILES_UNAVAILABLE: 'Este aplicativo não armazena arquivos.',
+    INVALID_FILE: 'Envie um arquivo.',
+    INVALID_PARENT: 'Nada fica em um arquivo.',
+    KNOWLEDGE_NOT_FAILED:
+      'Somente um arquivo cujo texto não pôde ser extraído é extraído novamente.',
+  },
+  ui: {
+    nav: {
+      knowledge: 'Conhecimento',
+    },
+  },
+  common: {
+    forbidden: 'Você não tem permissão para fazer isso.',
+    requestFailed: 'A solicitação falhou. Por favor, tente novamente.',
+  },
+};
+
+export default ptBR;

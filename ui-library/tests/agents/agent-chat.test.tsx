@@ -1,3 +1,4 @@
+import { ConsultationCard } from '../../registry/agents/agent-chat/consultation-card';
 import {
   ChatProvider,
   useChatContextSource,
@@ -17,7 +18,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, type ReactElement, type ReactNode } from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatPanel } from '../../registry/agents/agent-chat/chat-panel';
@@ -150,11 +151,37 @@ describe('ChatPanel', () => {
   it('sends a message and shows the agent at work', async () => {
     renderPanel('release-plan');
     const box = await screen.findByLabelText('Message to the agent');
-    fireEvent.change(box, { target: { value: 'And the docs?' } });
-    fireEvent.keyDown(box, { key: 'Enter' });
-    expect(await screen.findByText('And the docs?')).toBeVisible();
-    expect(await screen.findByTestId('chat-live-steps')).toBeVisible();
-    expect(box).toHaveValue('');
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.change(box, { target: { value: 'And the docs?' } });
+        fireEvent.keyDown(box, { key: 'Enter' });
+      });
+      expect(screen.getByText('And the docs?')).toBeVisible();
+      expect(
+        screen.getByRole('button', { name: 'Stop', exact: true }),
+      ).toBeVisible();
+      expect(screen.queryByTestId('chat-live-steps')).toBeNull();
+      const thinking = screen.getByText('Thinking…');
+      const log = screen.getByRole('log', { name: 'Messages' });
+      expect(log).toContainElement(thinking);
+      const row = thinking.closest('li');
+      expect(row?.parentElement?.lastElementChild).toBe(row);
+      expect(row?.previousElementSibling).toHaveTextContent('And the docs?');
+      expect(
+        thinking
+          .closest('[data-chat-feedback]')
+          ?.querySelector('[data-slot="spinner"]'),
+      ).toBeVisible();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1100);
+      });
+      expect(screen.getByText(/Here is what I would do/u)).toBeVisible();
+      expect(screen.queryByText('Thinking…')).not.toBeInTheDocument();
+      expect(box).toHaveValue('');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('drops a reply still on its way when the demo is reset', async () => {
@@ -172,7 +199,9 @@ describe('ChatPanel', () => {
       act(() => resetChatDemo());
       fireEvent.change(box, { target: { value: 'Again' } });
       fireEvent.keyDown(box, { key: 'Enter' });
-      act(() => vi.advanceTimersByTime(5000));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
       expect(screen.getByText('Again')).toBeVisible();
       expect(screen.getAllByText(/Here is what I would do/u)).toHaveLength(1);
     } finally {
@@ -180,25 +209,39 @@ describe('ChatPanel', () => {
     }
   });
 
-  it('sums up a runner’s steps in one line that expands to them', async () => {
+  it('uses shared Stop controls for managed Runner execution without a legacy steps panel', async () => {
     renderPanel('flaky-test');
-    const line = await screen.findByTestId('chat-step-line');
-    expect(line).toHaveTextContent(
-      'Working on pnpm test:e2e sign-in --repeat-each 20',
-    );
-    expect(line).toHaveTextContent('4 steps');
-    fireEvent.click(line);
+    const stop = await screen.findByRole('button', {
+      name: 'Stop',
+      exact: true,
+    });
+    expect(screen.queryByTestId('chat-step-line')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Steps' })).toBeNull();
     expect(
-      await screen.findByRole('list', { name: 'Steps' }),
-    ).toHaveTextContent('Bash');
+      screen.getByText(
+        'The sign-in test fails about once in ten runs. Can you find out why?',
+      ),
+    ).toBeVisible();
+    fireEvent.click(stop);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Stop', exact: true }),
+      ).toBeNull(),
+    );
+    expect(screen.getByLabelText('Message to the agent')).toBeEnabled();
   });
 
-  it('shows the page’s context as chips in the composer, each removable', async () => {
-    function Page(): null {
-      useChatContextSource({ kind: 'issue', id: 'pm-12', label: 'PM-12 Tour' });
-      return null;
+  it('includes explicitly requested page context as removable chips after New', async () => {
+    function Page(): ReactElement {
+      const item = { kind: 'issue', id: 'pm-12', label: 'PM-12 Tour' };
+      useChatContextSource(item);
+      return <AskAgentButton item={item} />;
     }
     renderPanel(null, <Page />);
+    expect(screen.queryByTestId('chat-context-chips')).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Ask agent', exact: true }),
+    );
     const chips = await screen.findByTestId('chat-context-chips');
     expect(within(chips).getByText('PM-12 Tour')).toBeVisible();
     fireEvent.click(
@@ -249,14 +292,18 @@ describe('ChatPanel', () => {
   });
 
   it('opens the history, filters archived conversations, and opens one', async () => {
-    renderPanel('release-plan');
+    renderPanel('welcome-tour');
     fireEvent.click(await screen.findByTestId('chat-history-button'));
     const history = await screen.findByTestId('chat-history');
     expect(
       within(history).getByText('Fix the flaky sign-in test'),
     ).toBeVisible();
     expect(within(history).queryByText('Release notes draft')).toBeNull();
-    fireEvent.click(within(history).getByRole('tab', { name: 'Archived' }));
+    // Archived is a toggle at the bottom of the list, not a tab.
+    const archived = within(history).getByTestId('chat-history-archived');
+    expect(archived).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(archived);
+    expect(archived).toHaveAttribute('aria-pressed', 'true');
     expect(
       await within(history).findByText('Release notes draft'),
     ).toBeVisible();
@@ -322,6 +369,205 @@ describe('ChatPanel', () => {
     expect(
       await screen.findByRole('heading', { name: 'Hello there' }),
     ).toBeVisible();
+  });
+});
+
+describe('ChatPanel modes and layout', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('switches between runner and online agents, each with its own conversations', async () => {
+    renderPanel(null);
+    const panel = await screen.findByTestId('chat-panel');
+    // The person's default is a runner agent, so the panel starts there.
+    expect(await within(panel).findByTestId('chat-title')).toHaveTextContent(
+      'Runner agents',
+    );
+    const toggle = within(panel).getByTestId('chat-mode-switch');
+    expect(toggle).toHaveAccessibleName('Switch to the online agent');
+    fireEvent.click(within(panel).getByTestId('chat-history-button'));
+    const runner = await within(panel).findByTestId('chat-history');
+    expect(runner).toHaveAttribute('data-mode', 'runner');
+    expect(
+      within(runner).getByText('Fix the flaky sign-in test'),
+    ).toBeVisible();
+    expect(
+      within(runner).getByText('Summarize PM-12 Welcome tour'),
+    ).toBeVisible();
+    expect(
+      within(runner).queryByText('Plan the onboarding release'),
+    ).toBeNull();
+
+    fireEvent.click(toggle);
+    const online = await within(panel).findByTestId('chat-history');
+    await waitFor(() => expect(online).toHaveAttribute('data-mode', 'online'));
+    expect(within(panel).getByTestId('chat-title')).toHaveTextContent(
+      'Online agent',
+    );
+    expect(
+      within(online).getByText('Plan the onboarding release'),
+    ).toBeVisible();
+    expect(within(online).queryByText('Fix the flaky sign-in test')).toBeNull();
+    // One online agent: nothing to filter by.
+    expect(
+      within(online).queryByRole('combobox', { name: 'Agent' }),
+    ).toBeNull();
+    expect(within(panel).getByTestId('chat-mode-switch')).toHaveAccessibleName(
+      'Switch to runner agents',
+    );
+    // A new conversation in this mode chooses a model, not a runner agent.
+    fireEvent.click(within(panel).getByTestId('chat-new-conversation'));
+    const composer = await within(panel).findByTestId('chat-composer');
+    expect(
+      within(composer).queryByText('What can Assistant do for you?'),
+    ).toBeNull();
+    expect(within(composer).getByTestId('chat-agent-picker')).toHaveTextContent(
+      'Default model',
+    );
+  });
+
+  it('hides the switch while only one kind of agent is configured', async () => {
+    window.history.replaceState(null, '', '/?agents=runner');
+    renderPanel(null);
+    const panel = await screen.findByTestId('chat-panel');
+    expect(await within(panel).findByTestId('chat-title')).toHaveTextContent(
+      'New conversation',
+    );
+    expect(within(panel).queryByTestId('chat-mode-switch')).toBeNull();
+  });
+
+  it('starts the history with its search and filters, ends it with the archived toggle, and says so in one line when empty', async () => {
+    renderPanel('release-plan');
+    fireEvent.click(await screen.findByTestId('chat-history-button'));
+    const history = await screen.findByTestId('chat-history');
+    const archived = within(history).getByTestId('chat-history-archived');
+    expect(history.lastElementChild).toContainElement(archived);
+    expect(within(history).queryByRole('tab')).toBeNull();
+    fireEvent.change(within(history).getByLabelText('Search conversations'), {
+      target: { value: 'nothing like this' },
+    });
+    const empty = await within(history).findByTestId('chat-history-empty');
+    expect(empty.tagName).toBe('P');
+    expect(empty).toHaveTextContent('No conversation matches');
+  });
+
+  it('puts the conversation list on the left while covering the content, and docks again on another page', async () => {
+    function Elsewhere(): ReactElement {
+      const navigate = useNavigate();
+      return (
+        <button type='button' onClick={() => void navigate('/other')}>
+          Go elsewhere
+        </button>
+      );
+    }
+    renderPanel('welcome-tour', <Elsewhere />);
+    const panel = await screen.findByTestId('chat-panel');
+    // Docked: "+" first among the header's buttons, and the history behind its own button.
+    const newButton = await within(panel).findByTestId('chat-new-conversation');
+    expect(newButton.className).not.toMatch(/bg-primary/u);
+    const headerButtons = within(newButton.closest('header')!).getAllByRole(
+      'button',
+    );
+    // After the title (which renames the conversation).
+    expect(headerButtons.indexOf(newButton)).toBe(1);
+    // Title, "+", history, switch, full width, close: no menu.
+    expect(
+      headerButtons.map((button) => button.getAttribute('aria-label')),
+    ).toEqual([
+      null,
+      'New conversation',
+      'Conversations',
+      'Switch to the online agent',
+      'Full width',
+      'Close',
+    ]);
+    expect(
+      within(newButton.closest('header')!).queryByRole('button', {
+        name: 'More',
+      }),
+    ).toBeNull();
+    fireEvent.click(within(panel).getByTestId('chat-expand'));
+    await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'expanded'));
+    const split = within(panel).getByTestId('chat-split');
+    const header = within(split).getByTestId('chat-history-header');
+    expect(header).toHaveTextContent('Runner agents');
+    expect(within(header).getByTestId('chat-new-conversation')).toBeVisible();
+    expect(within(split).getByText('Fix the flaky sign-in test')).toBeVisible();
+    expect(
+      within(split).getByRole('heading', {
+        name: 'Summarize PM-12 Welcome tour',
+      }),
+    ).toBeVisible();
+    expect(within(panel).queryByTestId('chat-history-button')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Go elsewhere' }));
+    await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'docked'));
+  });
+
+  it('shows what a chip carries, in the composer and under a sent message', async () => {
+    function Page(): ReactElement {
+      const item = { kind: 'issue', id: 'pm-12', label: 'PM-12 Tour' };
+      useChatContextSource(item);
+      return <AskAgentButton item={item} />;
+    }
+    renderPanel('release-plan', <Page />);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ask agent', exact: true }),
+    );
+    const chip = await screen.findByRole('button', {
+      name: 'Show context: PM-12 Tour',
+    });
+    fireEvent.click(chip);
+    const preview = await screen.findByTestId('chat-context-preview');
+    expect(
+      within(preview).getByRole('heading', { name: 'Context: PM-12 Tour' }),
+    ).toBeVisible();
+    expect(preview).toHaveTextContent('"id": "pm-12"');
+    fireEvent.keyDown(preview, { key: 'Escape' });
+    await waitFor(() =>
+      expect(screen.queryByTestId('chat-context-preview')).toBeNull(),
+    );
+    // Ask agent started a new conversation; the sent message's context is in the one before it.
+    fireEvent.click(screen.getByTestId('chat-history-button'));
+    fireEvent.click(await screen.findByText('Plan the onboarding release'));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Show context: Onboarding' }),
+    );
+    const sent = await screen.findByTestId('chat-context-preview');
+    expect(sent).toHaveTextContent('"title": "Onboarding"');
+  });
+
+  it('starts the next new conversation with the agent last used, also after a reload', async () => {
+    const first = renderPanel(null);
+    await userEvent.click(await screen.findByTestId('chat-agent-picker'));
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: /Coding agent/u }),
+    );
+    const box = screen.getByLabelText('Message to the agent');
+    fireEvent.change(box, { target: { value: 'Fix the build' } });
+    fireEvent.click(screen.getByTestId('chat-send'));
+    expect(
+      await screen.findByRole('heading', { name: 'Fix the build' }),
+    ).toBeVisible();
+    fireEvent.click(screen.getByTestId('chat-new-conversation'));
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+        'Coding agent',
+      ),
+    );
+    first.unmount();
+    renderPanel(null);
+    expect(await screen.findByTestId('chat-agent-picker')).toHaveTextContent(
+      'Coding agent',
+    );
+  });
+
+  it('takes the focus as it opens, so Escape closes it', async () => {
+    renderPanel(null);
+    const panel = await screen.findByTestId('chat-panel');
+    await waitFor(() =>
+      expect(panel).toContainElement(document.activeElement as HTMLElement),
+    );
+    fireEvent.keyDown(document.activeElement ?? panel, { key: 'Escape' });
+    await waitFor(() => expect(panel).not.toBeVisible());
   });
 });
 
@@ -446,3 +692,46 @@ describe('ChatConversationPage', () => {
     expect(onOpen).toHaveBeenCalledWith('release-plan');
   });
 });
+
+it.each(['en-US', 'zh-CN'])(
+  'renders a historical consultation with plans in %s without a quantity prompt',
+  async (locale) => {
+    const cardRuntime = await createTestI18nRuntime({
+      application: {
+        namespace: 'consultation-test',
+        resources: {
+          'en-US': () => Promise.resolve({ default: enUS }),
+          'zh-CN': () => Promise.resolve({ default: zhCN }),
+        },
+      },
+    });
+    await cardRuntime.changeLanguage(locale);
+    render(
+      <TestI18nProvider runtime={cardRuntime}>
+        <ConsultationCard
+          notice={{
+            code: 'consultation',
+            callId: 'historic',
+            agentId: 'agent',
+            agentName: 'Review agent',
+            runId: null,
+            question: 'Review this change',
+            answer: 'The change is ready.',
+            state: 'completed',
+            error: null,
+            usage: { inputTokens: 1840, outputTokens: 212 },
+            plans: 3,
+          }}
+        />
+      </TestI18nProvider>,
+    );
+    fireEvent.click(
+      screen.getByTestId('chat-consultation').querySelector('button')!,
+    );
+    expect(await screen.findByText('The change is ready.')).toBeVisible();
+    expect(screen.getByText(/1,840/)).toBeVisible();
+    expect(
+      screen.queryByText(/Proposed .*plans|提出了.*计划/u),
+    ).not.toBeInTheDocument();
+  },
+);

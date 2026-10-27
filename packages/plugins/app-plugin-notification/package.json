@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification",
   "displayName": "Notification App Plugin",
   "description": "Provides the application notification runtime, storage, delivery, and logs.",
-  "version": "1.0.0-beta.27",
+  "version": "2.0.0-beta.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -30,19 +30,6 @@
     },
     "./package.json": "./package.json"
   },
-  "nocobase": {
-    "registry": {
-      "items": {
-        "logs-ui": "./registry/logs-ui"
-      }
-    },
-    "plugin": {
-      "database": {
-        "migrations": "./database/migrations",
-        "seeds": "./database/seeds"
-      }
-    }
-  },
   "publishConfig": {
     "access": "public",
     "exports": {
@@ -69,24 +56,19 @@
     "dist",
     "CHANGELOG.md",
     "README.md",
-    "skills",
-    "registry",
-    "registry.config.json",
-    "public/r"
+    "skills"
   ],
   "scripts": {
     "clean": "node ./scripts/clean-dist.mjs",
     "build": "node ./scripts/clean-dist.mjs && tsc -p tsconfig.json && nocobase-db-manifests",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "test": "vitest run",
-    "registry:build": "node ../../../scripts/registry.mjs build --package .",
-    "registry:materialize": "node ../../../scripts/registry.mjs materialize --package .",
-    "prepack": "pnpm registry:build && pnpm build",
+    "prepack": "pnpm build",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm registry:build && pnpm build",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {

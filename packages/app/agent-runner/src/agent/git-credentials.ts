@@ -24,7 +24,7 @@
 // helper answers `quit=1` with a line on stderr when there is no credential, so git stops rather than trying another
 // helper or prompting.
 //
-// The runner's own git (checkout, submodules, the end-of-run push) asks the broker directly (checkout.ts
+// The runner's own git (checkout, the end-of-run push) asks the broker directly (checkout.ts
 // `withRepoAuth`) and retries once with a fresh credential when the remote refuses the first.
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { chmod, lstat, mkdir, rename, rm, writeFile } from 'node:fs/promises';
@@ -357,7 +357,7 @@ export async function serveGitCredentials(
       const auth = await broker.get(url);
       return {
         ok: true,
-        username: auth.username ?? 'x-access-token',
+        username: auth.username,
         password: auth.token,
       };
     } catch (error) {
@@ -422,24 +422,18 @@ export async function serveGitCredentials(
 export const HELPER_FILE = 'git-credential-nocobase-runner.mjs';
 
 /**
- * The credential helper, run by git as `<node> <file> <index> <action>` with git's request on stdin. It holds no
- * secret: it asks the worker's socket, and prints what git needs.
+ * The credential helper, run by git as `<node> <file> <index> <action>` with git's request on stdin, and by a code
+ * host CLI wrapper (host-tools.ts) as `<node> <file> <index> env <spec>`. It holds no secret: it asks the worker's
+ * socket, and prints what git or the wrapper needs.
  */
 export const HELPER_SCRIPT: string = `// Installed by nocobase-runner: answers git's credential requests for a run's repository from the runner.
+// \`<index> env <spec>\` prints shell assignments of the variables \`spec\` (JSON) names instead, for a code host CLI.
 import net from 'node:net';
 
-const [index, action] = process.argv.slice(2);
+const [index, action, spec] = process.argv.slice(2);
 const socket = process.env.${CREDENTIAL_SOCKET_ENV};
 const nonce = process.env.${CREDENTIAL_NONCE_ENV};
 const say = (line) => process.stderr.write('nocobase-runner: ' + line + '\\n');
-
-let input = '';
-process.stdin.setEncoding('utf8');
-for await (const chunk of process.stdin) input += chunk;
-if (action !== 'get' && action !== 'erase') process.exit(0);
-const fields = Object.fromEntries(
-  input.split('\\n').filter((line) => line.includes('=')).map((line) => [line.slice(0, line.indexOf('=')), line.slice(line.indexOf('=') + 1)]),
-);
 
 const ask = (request) => new Promise((resolve) => {
   if (!socket || !nonce) {
@@ -464,6 +458,39 @@ const ask = (request) => new Promise((resolve) => {
     try { resolve(JSON.parse(answer)); } catch { resolve({ ok: false, message: 'The runner gave no answer.' }); }
   });
 });
+
+if (action === 'env') {
+  // Outside a run the wrapper runs the tool as it is.
+  if (!socket || !nonce) process.exit(0);
+  let wanted;
+  try { wanted = JSON.parse(spec ?? '{}'); } catch { say('the wrapper names no valid variables.'); process.exit(1); }
+  const response = await ask({ action: 'get', index: Number(index) });
+  if (!response.ok) {
+    say(response.message);
+    process.exit(1);
+  }
+  const quote = (value) => "'" + String(value).replace(/'/g, "'\\\\''") + "'";
+  let out = '';
+  for (const [name, value] of Object.entries(wanted)) {
+    if (!/^[A-Z_][A-Z0-9_]*$/.test(name)) continue;
+    const resolved = typeof value === 'string' ? value
+      : value?.credential === 'username' ? response.username
+      : value?.credential === 'password' ? response.password
+      : undefined;
+    if (resolved === undefined) continue;
+    out += name + '=' + quote(resolved) + '\\nexport ' + name + '\\n';
+  }
+  process.stdout.write(out);
+  process.exit(0);
+}
+
+let input = '';
+process.stdin.setEncoding('utf8');
+for await (const chunk of process.stdin) input += chunk;
+if (action !== 'get' && action !== 'erase') process.exit(0);
+const fields = Object.fromEntries(
+  input.split('\\n').filter((line) => line.includes('=')).map((line) => [line.slice(0, line.indexOf('=')), line.slice(line.indexOf('=') + 1)]),
+);
 
 const response = await ask({ action, index: Number(index), password: fields.password });
 if (action === 'get') {

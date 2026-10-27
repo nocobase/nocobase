@@ -22,6 +22,26 @@
 #     max: 600
 #     window: 1m
 
+# Realtime events are transient and local to this process. Clients refetch after subscription acknowledgement.
+# realtime:
+#   adapter: inMemory # Use redis for multiple application processes.
+#   redis:
+#     connection:
+#       host: 127.0.0.1
+#       port: 6379
+#   namespace: my-app # Defaults to the application name; keep applications isolated.
+#   authorizationTimeoutMs: 5000
+#   sessionCheckIntervalMs: 30000
+#   limits:
+#     maxConcurrentAuthorizations: 256
+#     maxPendingAuthorizations: 2048
+#     maxRecentEventIds: 10000
+#     maxConnections: 10000
+#     maxMessageBytes: 65536
+#     maxSubscriptionsPerConnection: 64
+#     maxBufferedBytesPerConnection: 1048576
+#     maxPendingMessagesPerConnection: 64
+
 # Values under client are public and embedded in the SPA HTML.
 client:
   app:
@@ -57,15 +77,16 @@ auth:
     storeSessionInDatabase: true
 
 notification:
+  # provider remains a compatibility alias for type; both must match when supplied.
   channels:
     inbox:
-      provider: in-app
+      type: in-app
 
     # Uncomment and configure independent email Channels.
     # Values are read as written: ${NAME} is not expanded. To take a secret from the environment instead, map a
     # variable onto its path in env of server/config/notification.ts, such as SMTP_PASSWORD.
     # system-email:
-    #   provider: smtp
+    #   type: smtp
     #   host: smtp.example.com
     #   port: 587
     #   auth:
@@ -73,15 +94,15 @@ notification:
     #     pass: replace-with-the-smtp-password
     #   from: notifications@example.com
     # marketing-email:
-    #   provider: resend
+    #   type: resend
     #   apiKey: replace-with-the-resend-api-key
     #   from: marketing@example.com
 
     # ops-feishu:
-    #   provider: feishu-webhook
+    #   type: feishu-webhook
     #   webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
     # ops-dingtalk:
-    #   provider: dingtalk-webhook
+    #   type: dingtalk-webhook
     #   webhookUrl: https://oapi.dingtalk.com/robot/send?access_token=replace-with-the-token
 
 # DB_DIALECT, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_SSL and DB_FILENAME override the main
@@ -147,6 +168,34 @@ snowflake:
 # The jobs configuration the Scheduler plugin's schedules run on, by name. Left out, they follow jobs.default.
 # scheduler:
 #   jobs: redis
+
+# Knowledge owns one global index shared by all spaces; these are server-only instance definitions.
+# Declaring instances does not enable indexing. Select an instance and Embedding model in Knowledge's
+# global index dialog, then explicitly confirm the all-space rebuild and possible model charges.
+# Agents supplies Embedding models only; its vector collections are not used.
+# knowledge:
+#   # Optional: select an existing host jobs configuration by name; omitted follows jobs.default.
+#   # jobs: redis
+#   indexing:
+#     local:
+#       name: Local semantic index
+#       type: sqlite-vec
+#       # Relative to application storage; use one shared file on one host, not separate pod-local files.
+#       file: knowledge/vectors.sqlite
+#     shared:
+#       name: Shared PostgreSQL index
+#       type: pgvector
+#       # Supply real credentials privately. An administrator must install vector and create this schema.
+#       url: postgresql://kb_user:replace-with-the-password@127.0.0.1:5432/knowledge
+#       schema: knowledge_index
+#       # Deployment-owned generation table prefix (default: knowledge); not a page setting.
+#       table: knowledge
+#       # Optional TLS settings; ca/cert/key are PEM contents, not file paths.
+#       # ssl:
+#       #   rejectUnauthorized: true
+#       #   ca: replace-with-the-ca-pem
+#       #   cert: replace-with-the-client-certificate-pem
+#       #   key: replace-with-the-client-private-key-pem
 
 # File logging is independent of terminal formatting.
 logging:

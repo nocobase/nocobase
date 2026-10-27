@@ -25,6 +25,7 @@ function addBots(
   options: {
     refuse?: boolean;
     observesOwnerClaims?: boolean;
+    observesIssueChanges?: boolean;
     changed?: IssueWorkHandler['onIssueChanged'];
   } = {},
 ): Seen[] {
@@ -45,6 +46,7 @@ function addBots(
   ];
   const work: IssueWorkHandler = {
     observesOwnerClaims: options.observesOwnerClaims,
+    observesIssueChanges: options.observesIssueChanges,
     onIssueChanged(_tx, change) {
       if (options.changed) return options.changed(_tx, change);
       if (options.refuse) return Promise.reject(new Error('No runner.'));
@@ -124,7 +126,6 @@ it('returns the final issue after ordinary updates and nested work-hook updates'
           h.services.issues.update(alice(), change.after.id, {
             revision: change.after.revision,
             title: 'Hook update',
-            start: false,
           }),
         );
       return [];
@@ -497,4 +498,68 @@ it('reuses context only for the same transaction and parameters, and reads fresh
   await root.transaction(async (conn) => {
     expect((await provider.contextFor(conn, issue.id))?.title).toBe('Retry');
   });
+});
+
+it('delivers unassigned and human changes to an opted-in observer once', async () => {
+  const seen = addBots({ observesIssueChanges: true });
+  for (const executor of [null, { type: 'user', id: 'bob' }]) {
+    const task = await h.services.issues.create(alice(), {
+      title: 'Observe',
+      executor,
+    });
+    expect(
+      seen.filter(
+        (event) => event.hook === 'changed' && event.issueId === task.id,
+      ),
+    ).toHaveLength(1);
+    await h.services.issues.update(alice(), task.id, {
+      revision: task.revision,
+      statusKey: 'in_progress',
+    });
+    expect(
+      seen.filter(
+        (event) => event.hook === 'changed' && event.issueId === task.id,
+      ),
+    ).toHaveLength(2);
+  }
+});
+
+it('returns the final creation and publishes final revisions after nested routing', async () => {
+  const events: { revision: number; changes: unknown }[] = [];
+  h.services.events.on('issue.updated', (event) => events.push(event));
+  addBots({
+    observesIssueChanges: true,
+    changed: async (tx, change) => {
+      if (change.after.title !== 'Route') return [];
+      await h.services.tx.savepoint(tx, () =>
+        h.services.issues.update(alice(), change.after.id, {
+          revision: change.after.revision,
+          title: 'Routed',
+          executor: { type: 'bot', id: 'b1' },
+        }),
+      );
+      return [];
+    },
+  });
+  const task = await h.services.issues.create(alice(), {
+    title: 'Route',
+    executor: null,
+  });
+  expect(task).toMatchObject({
+    title: 'Routed',
+    executor: { type: 'bot', id: 'b1' },
+    revision: 2,
+  });
+  events.length = 0;
+  const after = await h.services.issues.update(alice(), task.id, {
+    revision: task.revision,
+    title: 'Route',
+    executor: null,
+  });
+  expect(after).toMatchObject({
+    title: 'Routed',
+    executor: { type: 'bot', id: 'b1' },
+    revision: 4,
+  });
+  expect(events.every((event) => event.revision === after.revision)).toBe(true);
 });

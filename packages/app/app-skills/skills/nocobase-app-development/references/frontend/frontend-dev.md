@@ -34,6 +34,20 @@ Conventions every page follows, each explained in its home:
 - Toasts with `useToaster()` from `@nocobase/app-client`, never a second `Toaster` (["Toasts" in `references/api.md`](references/api.md#toasts)).
 - Every user-visible string through a translation key ([`references/i18n.md`](references/i18n.md)).
 
+## Browser API compatibility
+
+Check browser support and secure-context requirements before choosing a browser API, including APIs called by third-party libraries. HTTPS-only APIs are allowed when a feature needs them: detect availability and permission failures, and show a localized explanation of the requirement and how the user can proceed. Keep unrelated actions working. Do not silently do nothing or show a success message when an API is unavailable. A LAN IP served over HTTP is not a secure context, while localhost is treated as trustworthy, so test the unavailable state instead of relying on localhost alone.
+
+UUID generation and copying text must work on ordinary HTTP, including LAN IP access. Use the public `createUuid()` and `copyText()` utilities from `@nocobase/app-client` rather than duplicating browser-specific implementations in pages. `createUuid()` returns a cryptographically random UUID v4 using `crypto.getRandomValues`, with the standard version, variant and encoding; it does not require `crypto.randomUUID`. Server-side `node:crypto` is unaffected.
+
+### Copy and clipboard actions
+
+Call `copyText(text)` directly from the user's click handler and await its boolean result. It uses the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText) when available and falls back to selection-based copying on HTTP or after a rejected write. It returns `false` when programmatic copying is refused or unsupported. Only show a copied confirmation when it returns `true`; on `false`, present the exact text in a selectable field with localized manual-copy instructions. Do not use optional chaining on `navigator.clipboard` that silently skips copying.
+
+For a dialog or other focus trap, pass `copyText(text, { container: dialogElement })` when the trigger does not take focus. Otherwise the helper selects the nearest dialog containing the active element, or the document body. Its temporary field is removed and the previous focus and selection are restored. The HTTP fallback uses the [deprecated `document.execCommand('copy')` compatibility mechanism](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand); browser policy can still reject it, so keep the manual-copy path.
+
+Verify UUID generation and copy actions on a non-secure HTTP origin where `window.isSecureContext` is `false`, including missing clipboard APIs, permission denial and copying from a dialog. Verify copied content by pasting into a normal input, including multiline and non-ASCII text; do not rely only on another secure-context-only API such as `navigator.clipboard.readText()`. For other HTTPS-only features, test the unavailable/denied state and its user-facing explanation as well as the supported path. Report browser checks that could not be performed.
+
 ## Look up by task
 
 | Task                                                                                     | Read                                                                                                                                                                                                                                                                                           |
@@ -105,8 +119,8 @@ pnpm exec vitest run <related-test-files>
 - Primitives the change added are changed files too: formatted with Prettier, their built-in English translated as ["English built into primitives"](references/shadcn.md#english-built-into-primitives) lists, and otherwise exactly what the CLI wrote.
 - Lint does not check the shadcn skill's "Critical Rules". Read the changed components against them: items inside their groups, `gap-*` rather than `space-*`, `data-icon` and no sizing classes on icons inside components, full `Card` structure, semantic tokens ([`references/shadcn.md`](references/shadcn.md)).
 - Choose the related tests by searching `tests/` for the changed component, page or route name.
-- A changed route always includes `tests/logic/client-routes.test.ts`.
-- A changed `t()` key or route title always includes `tests/logic/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).
+- A changed route always includes `tests/client/client-routes.test.ts`.
+- A changed `t()` key or route title always includes `tests/client/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).
 - Confirm that every test file you named ran: see ["Running tests" in `testing.md`](references/testing.md#running-tests).
 - When you changed server or database code as well, also run `pnpm exec tsc -p tsconfig.server.json --noEmit`.
 - When you changed a browser test under `tests/playwright/`, also run `pnpm exec tsc -p tsconfig.node.json --noEmit`, which covers `tests/playwright/` once Playwright is set up (an application without it sets it up first, as [`references/testing.md`](references/testing.md) describes).

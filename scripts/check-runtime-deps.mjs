@@ -50,13 +50,20 @@ const SKIPPED_DIRECTORIES = new Set([
   'fixtures',
   '__tests__',
   '__fixtures__',
-  // `registry` is shadcn-style source copied into an application and compiled there against that application's own
-  // `react` and `@/` alias, which the plugin cannot resolve at all. `client` is checked — see below.
-  'registry',
   // `template` is the same shape one level up: `@nocobase/create-plugin` ships it as the source of a generated
   // plugin, which compiles it against the manifest `src/lib/template.ts` writes for that plugin. The generator
   // resolves none of those imports itself, so declaring them here would claim dependencies it does not have.
   'template',
+]);
+
+// This private workspace fixture ships as Skill source material, not code the app-skills package executes.
+// Its own manifest and verification command provide its dependencies. Keep the exemption scoped to this package
+// and directory: executable Skill scripts and other assets still need their runtime dependencies declared.
+const SOURCE_MATERIAL_DIRECTORIES = new Map([
+  [
+    '@nocobase/app-skills',
+    ['skills/nocobase-app-plugin-development/assets/testing-example'],
+  ],
 ]);
 
 /**
@@ -243,7 +250,8 @@ export function collectRuntimeSpecifiers(source, fileName = 'source.tsx') {
   return specifiers;
 }
 
-async function collectSourceFiles(directory) {
+async function collectSourceFiles(directory, sourceMaterialDirectories) {
+  if (sourceMaterialDirectories.has(directory)) return [];
   let entries;
   try {
     entries = await readdir(directory, { withFileTypes: true });
@@ -256,7 +264,10 @@ async function collectSourceFiles(directory) {
     if (entry.isDirectory()) {
       if (SKIPPED_DIRECTORIES.has(entry.name)) continue;
       files.push(
-        ...(await collectSourceFiles(path.join(directory, entry.name))),
+        ...(await collectSourceFiles(
+          path.join(directory, entry.name),
+          sourceMaterialDirectories,
+        )),
       );
       continue;
     }
@@ -290,10 +301,19 @@ export async function findViolations(
     await readdir(packageDirectory, { withFileTypes: true })
   ).flatMap((entry) => (entry.isDirectory() ? [entry.name] : []));
 
+  const sourceMaterialDirectories = new Set(
+    (SOURCE_MATERIAL_DIRECTORIES.get(manifest.name) ?? []).map((directory) =>
+      path.join(packageDirectory, directory),
+    ),
+  );
+
   const namedFiles = (
     await Promise.all(
       publishedDirectories(manifest, entries).map((directory) =>
-        collectSourceFiles(path.join(packageDirectory, directory)),
+        collectSourceFiles(
+          path.join(packageDirectory, directory),
+          sourceMaterialDirectories,
+        ),
       ),
     )
   ).flat();

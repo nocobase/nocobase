@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/realtime",
-  "version": "0.0.2-beta.1",
-  "description": "Shared realtime protocol and browser WebSocket client for NocoBase.",
+  "version": "0.1.0-beta.3",
+  "description": "Realtime protocol, browser client, and authorized server topic service for NocoBase.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -19,11 +19,17 @@
     "./protocol": {
       "types": "./src/protocol.ts",
       "import": "./src/protocol.ts"
+    },
+    "./server": {
+      "types": "./src/server/index.ts",
+      "import": "./src/server/index.ts"
     }
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "docs",
+    "skills"
   ],
   "publishConfig": {
     "access": "public",
@@ -39,6 +45,10 @@
       "./protocol": {
         "types": "./dist/protocol.d.ts",
         "import": "./dist/protocol.js"
+      },
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
       }
     }
   },
@@ -58,6 +68,10 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  },
+  "dependencies": {
+    "ioredis": "catalog:"
   }
 }

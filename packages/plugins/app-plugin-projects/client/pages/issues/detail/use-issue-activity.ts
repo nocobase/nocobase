@@ -8,7 +8,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import {
   REACTION_EMOJIS,
@@ -37,6 +37,9 @@ import { useOlderThreads } from './use-older-threads.js';
 /** The emoji a reaction may be. */
 export const ISSUE_REACTION_EMOJIS: readonly string[] = REACTION_EMOJIS;
 
+// Bound automatic permalink lookup. The person can still load older entries explicitly.
+const TARGET_HISTORY_PAGES = 10;
+
 export interface IssueTimeline {
   /** Threads, changes and runs, oldest first. */
   readonly entries: readonly TimelineEntry[];
@@ -57,8 +60,13 @@ export function useIssueTimeline(
   const olderActivities = useOlderActivities(
     detail.id,
     detail.activitiesNextCursor,
+    detail.activities[0]?.id ?? null,
   );
-  const olderThreads = useOlderThreads(detail.id, detail.threadsNextCursor);
+  const olderThreads = useOlderThreads(
+    detail.id,
+    detail.threadsNextCursor,
+    detail.threads[0]?.root.id ?? null,
+  );
   const threads = useMemo(
     () => mergeThreads(olderThreads.threads, detail.threads),
     [olderThreads.threads, detail.threads],
@@ -80,25 +88,81 @@ export function useIssueTimeline(
       detail.activities,
     ],
   );
-  const found =
+  const threadFound =
     targetId !== null &&
     threads.some(
       (thread) =>
         thread.root.id === targetId ||
         thread.replies.some((reply) => reply.id === targetId),
     );
+  const found =
+    targetId !== null &&
+    entries.some(
+      (entry) =>
+        entry.kind === 'thread' &&
+        (entry.thread.root.id === targetId ||
+          entry.thread.replies.some((reply) => reply.id === targetId)),
+    );
   const { hasMore: moreThreads, loading: loadingThreads } = olderThreads;
   const loadThreads = olderThreads.loadMore;
+  const { hasMore: moreActivities, loading: loadingActivities } =
+    olderActivities;
+  const loadActivities = olderActivities.loadMore;
+  const scrolledToRef = useRef<string | null>(null);
+  const searchRef = useRef({ target: '', threads: 0, activities: 0 });
   useEffect(() => {
-    if (!targetId) return;
-    if (!found) {
-      if (moreThreads && !loadingThreads) loadThreads();
+    const target = targetId ? `${detail.id}:${targetId}` : null;
+    if (searchRef.current.target !== target)
+      searchRef.current = { target: target ?? '', threads: 0, activities: 0 };
+    if (scrolledToRef.current === target) return;
+    if (!targetId) {
+      scrolledToRef.current = null;
       return;
     }
-    document
-      .querySelector<HTMLElement>(`[data-comment-id="${CSS.escape(targetId)}"]`)
-      ?.scrollIntoView({ block: 'center' });
-  }, [targetId, found, moreThreads, loadingThreads, loadThreads]);
+    if (!found) {
+      if (
+        !threadFound &&
+        moreThreads &&
+        !loadingThreads &&
+        searchRef.current.threads < TARGET_HISTORY_PAGES
+      ) {
+        searchRef.current.threads++;
+        loadThreads();
+      }
+      // The timeline's watermark can hide a loaded thread until the activity pages reach it too.
+      // Read activities only after the target is known to exist in the loaded threads.
+      if (
+        threadFound &&
+        moreActivities &&
+        !loadingActivities &&
+        searchRef.current.activities < TARGET_HISTORY_PAGES
+      ) {
+        searchRef.current.activities++;
+        loadActivities();
+      }
+      return;
+    }
+    const element = document.querySelector<HTMLElement>(
+      `[data-comment-id="${CSS.escape(targetId)}"]`,
+    );
+    if (element) {
+      element.scrollIntoView({ block: 'center' });
+      scrolledToRef.current = target;
+    }
+  }, [
+    detail.id,
+    targetId,
+    found,
+    threadFound,
+    moreThreads,
+    loadingThreads,
+    loadThreads,
+    moreActivities,
+    loadingActivities,
+    loadActivities,
+    olderThreads.threads,
+    olderActivities.activities,
+  ]);
 
   return {
     entries,

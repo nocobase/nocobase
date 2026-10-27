@@ -26,3 +26,6 @@ database/*/seeds/
 .agents/*
 !.agents/rules/
 .claude/skills/
+
+# Internal packages run their own formatting through check:packages.
+packages/

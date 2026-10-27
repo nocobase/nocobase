@@ -1,5 +1,161 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- 7fbcda4: Retain bounded partial conversation replies after native cancellation or token-limit termination, preserving output redaction and completed-block deduplication.
+
+  Drain native cancellation snapshots through the worker before acknowledging cancellation, sharing the existing five-second stop budget across tool stop, results and final events. Recognize the Claude SDK abort exception by its exported type even when its class name is minified.
+
+## 0.1.0-beta.19
+
+### Patch Changes
+
+- 18a2e21: Fix Gitee CLI argument parsing so command-like title and body values, including URL-valued `--body` arguments, pass through without bypassing existing credential and destination guards.
+- 6380861: Stream coding-tool conversation replies and supplied reasoning summaries through a bounded, redacted realtime preview channel. Automatically negotiate capable conversation runners, persist one completed snapshot per block, and preserve task execution, public log redaction and prompt history. Preserve token boundaries across chunks and verify that live text and reasoning match their completed snapshots. Preserve complete redaction context when choosing preview boundaries so token-like prose and punctuation remain consistent with completed snapshots.
+
+  Upgrade the application before its runners: protocol 14 announces the outputBlocks feature, while the upgraded application continues serving older runners. Retain ACP partial answers on length limits, refusals and cancellation, safely redact values adjacent to private keys, reconcile divergent previews through normal history refresh, skip empty assistant messages, and suppress unused Codex delta notifications for tasks.
+
+- Updated dependencies [6380861]
+  - @nocobase/agent-protocol@0.1.0-beta.15
+  - @nocobase/app-cli-client@0.1.0-beta.16
+
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 6740287: Wrap the official Gitee CLI with the run's current GITEE_TOKEN credential, pin public Gitee API destinations over inherited and saved settings, guard commands that reveal or persist credentials, and report how to install a missing gitee binary. No runner protocol changes are required.
+
+## 0.1.0-beta.17
+
+### Minor Changes
+
+- 4dc982a: Support server-selected runner tools with shared ACP catalog adapters, explicit tool migration, cached detection, model discovery, session recovery and runtime configuration. Native adapters retain precedence. Upgrade the server before protocol-13 runners; new runtimes default to Codex and Claude Code. Tools without model listing use their default model, while unavailable explicit models fail before sending a task.
+
+  A runner's report no longer creates an agent for every tool and model it lists signed in: only a combination the application recommends is still created automatically, already enabled. Every other reported combination joins an available models list instead, for an administrator to create an agent from (`POST /api/agents/runnerAgents`, or select several at once); leftover pending agents from the old behavior that were never enabled and never ran can be listed and removed outright (`GET`/`POST /api/agents/cleanupCandidates`, `/cleanup`). Both lists are grouped by tool and paged (`GET /api/agents/availableModels` and `/cleanupCandidates` return one row per tool, with a `tool` parameter paging that tool's rows), so a tool reporting hundreds of models never ships them all in one response; the enable and cleanup dialogs became large drawers with a combined tool/model search, a four-state availability filter, per-tool collapse, virtualized rows past a threshold, cross-page multi-select and, for cleanup, a second confirmation before removing. Detection reports why a tool's status is what it is (`ToolInfo.statusReason`/`statusDetail`, optional additions within protocol 13), aggregated per tool so one runner's sign-in problem never hides another runner's working one, and runs behind the run's own code-host credential guard, so a tool that depends on a login command the guard refuses fails detection the same way it would fail a run. A run failure keeps the tool's own words instead of a placeholder, consecutive small text chunks of one turn merge into about one event a second, and an agent's generated name no longer breaks an @ mention.
+
+  Confirm Amp authentication only through a reviewed adapter authentication check; unknown login state remains a detection failure. Keep Add agent requests owned by the full two-step flow so pending requests cannot be duplicated by returning or closing. Report ACP protocol incompatibility separately from tool release requirements, and explicitly identify unknown minimum releases.
+
+  Make model selection and cleanup confirmations readable, render setup commands separately from expandable tool diagnostics, reuse catalog model names, and require Good at before adding agents. Show enabled agents with no usable runtime as unavailable without changing scheduling. Give actionable advice for incompatible ACP versions while keeping unknown minimum tool releases explicit.
+
+  Filter available models by each model's status instead of its tool's aggregate state. Merge disjoint status results and counts with complete pagination, preserve per-tool searches when filters change, and show all states when no status is selected.
+
+### Patch Changes
+
+- Updated dependencies [4dc982a]
+  - @nocobase/acp-bridge@1.0.0-beta.4
+  - @nocobase/agent-protocol@0.1.0-beta.14
+  - @nocobase/app-cli-client@0.1.0-beta.15
+
+## 0.1.0-beta.16
+
+### Minor Changes
+
+- ffe5494: Apply each application's online runner slots and tool limits from heartbeat replies without restarting. Count tasks and build jobs independently per application, wake capacity waits after changes, and keep existing leases during shrinkage. New registrations default to four slots and online registration settings take precedence over legacy client hints.
+
+  Remove local slot configuration flags from register and start. Retain existing local values only for older servers until all connected applications support online capacity. The runner status JSON now reports effective capacity and its source under each apps entry instead of top-level slots and toolSlots. Runtime pages show reported capacity, pending synchronization, legacy compatibility and the last offline report.
+
+### Patch Changes
+
+- Updated dependencies [ffe5494]
+  - @nocobase/agent-protocol@0.1.0-beta.13
+  - @nocobase/app-cli-client@0.1.0-beta.14
+
+## 0.1.0-beta.15
+
+### Minor Changes
+
+- f2712b9: Make run git credentials independent of the code host. Protocol 12 adds `RunGit.tools` and the `gitTools` runner feature: the runner wraps the code host CLIs a run names (such as `gh` or `glab`) so every call runs with the current credential of one of the run's repositories, fetched through the run's credential broker, and fails with the reason instead of falling back to the machine's login. A credential's username is now the only one git uses (`oauth2` for GitLab, `x-access-token` for a GitHub App); the runner no longer defaults it for runs (a build job's token without a username keeps the old default).
+
+  Every run's agent now gets `git`, `gh` and `glab` wrappers that refuse `gh`/`glab` logins and token output, `credential.*` set with `git -c`/`--config-env` or written outside the repository's own config, `http.*.extraHeader` in any git configuration, and git URLs with a user in them.
+
+  Repository access providers are told whether the runner wraps CLIs (`tools`) and who answers for the run's subject now (`responsibleUserId`), at the claim, in `prepare` and on every `issue`, so an application can issue credentials for a task's owner. `RunGit.tools` is dropped for runners without the feature and for repositories without a credential in the payload.
+
+  The runner's workspace notes now tell the agent to open and update change requests with the code host's command line rather than an application `pr open` command.
+
+  Update the application before its runners: a server speaking protocol 11 refuses a runner speaking 12.
+
+### Patch Changes
+
+- b2055d9: Follow a task workspace's Git configuration instead of refusing settings outside a fixed list. Reused workspaces failed with `checkoutFailed` ("unsafe or unsupported Git configuration") once an agent's submodule setup wrote fetch settings such as `remote.origin.tagOpt`, `promisor` or `partialCloneFilter`. The runner's own Git calls keep overriding hooks, fsmonitor, credential helpers, the remote URL and allowed protocols, and redirected metadata — a Git directory, submodule pointer or `core.worktree` leading outside the checkout — is still refused.
+- Updated dependencies [ab68344]
+- Updated dependencies [f2712b9]
+  - @nocobase/app-cli-client@0.1.0-beta.13
+  - @nocobase/agent-protocol@0.1.0-beta.12
+
+## 0.1.0-beta.14
+
+### Minor Changes
+
+- 301d309: Reuse a fixed task worktree across runs and tools, preserve dependencies and sessions, isolate per-run files and cancellation, and protect cleanup with nonexclusive usage records covering worker startup. Reclaim sessions only with their owning directory. Leave commits and pushes to agents, give them an explicit HEAD-to-branch refspec for detached workspaces, refresh initialization after lockfile changes or artifact cleanup, and default idle artifact retention to 24 hours. Prefer an immediately available previous runner under the same ordered-model admission rules, aggregate affinity location and occupancy reads, and reserve actual upgrade interruptions for that runner for five minutes.
+
+  Separate ordered-model claim eligibility from full waiting diagnostics, evaluate affinity in queue order, and reuse batched resource metadata without repeating capacity reads for every candidate and machine.
+
+  Serialize cache fetch and worktree creation through a short cache mutex, retry transient Git lock conflicts, fall back to a detached remote branch when another directory owns it, and avoid optional index locks and per-remote-branch reporting commands. Both workspace-cleanup and repository-cache lock waits now time out after two minutes as retryable workspace-busy failures. Report disk pauses as unavailable capacity while continuing claims during periodic workspace collection.
+
+### Patch Changes
+
+- 4b36a3d: Avoid false recovery requirements for uninitialized submodules and safely finalize inactive clean worktrees retained by that check before the next run.
+- 4f0d96e: Prevent log follow from losing appended or rotated content between the initial read and watcher initialization.
+- Updated dependencies [301d309]
+- Updated dependencies [4f0d96e]
+  - @nocobase/agent-protocol@0.1.0-beta.11
+  - @nocobase/app-cli-client@0.1.0-beta.12
+
+## 0.1.0-beta.13
+
+### Patch Changes
+
+- Updated dependencies [c63a6e8]
+  - @nocobase/app-cli-client@0.1.0-beta.11
+
+## 0.1.0-beta.12
+
+### Minor Changes
+
+- 32ed5e2: Report coding account quota windows, filter scoped exhausted tools before claims, and restore eligibility at known reset times or after an authorized manual clear. Show quota status and usage in runtime tabs and agent availability, and batch page reads independently of the catalog size.
+
+  Runtime API and CLI: runtime get returns directory totals without directory rows; runtime list omits models, policy, variables, quota details and load, and caps takes at three with takesCount. Use the paginated runtime workspaces command for directory rows. Runtime quota clear takes structured tool/scope/target/window fields and no client revision; only unknown-reset marks may be cleared.
+
+  Classify quota revision races as retryable REVISION_CONFLICT while known-reset clears fail with QUOTA_RESET_KNOWN / FAILED_PRECONDITION.
+
+  Batch related-task visibility and missing blocker reads with the existing issue visibility filter, preserving per-request permissions and hidden blocker counts as task and project counts grow.
+
+### Patch Changes
+
+- 91390b0: Avoid publishing untouched repository checkouts or recreating deleted task branches. Preserve continuation delivery evidence across runs so pending commits can still be delivered after a failed push.
+- Updated dependencies [32ed5e2]
+  - @nocobase/agent-protocol@0.1.0-beta.10
+  - @nocobase/app-cli-client@0.1.0-beta.10
+
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- Updated dependencies [b322dcf]
+  - @nocobase/app-cli-client@0.1.0-beta.9
+
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- b02f078: Persist revoked runner registrations and stop serving them until successful registration. Add optional revocation details to status JSON, stop system services on authentication failure while preserving self-update restarts, bound rapid startup retries, and rotate daemon logs at 5 MiB with two backups. Manual updates explicitly restart installed services. Stopping also cancels a launcher waiting to retry, and duplicate starts are refused while that launcher is alive. Existing installations must run `nocobase-runner service install` with the new version to replace their old unconditional restart definitions; service definitions are not migrated automatically.
+- b7e1719: A read-only step's notes now say what read-only means: change no tracked file, commit and push nothing. The agent may still prepare its checkout to run things there, such as initializing submodules, installing dependencies, building and running checks, which agents had read the old "change nothing" as forbidding.
+- 83e3609: Once the application says a task's work is over, routine collection removes its working directories and Codex session directories whatever they hold — untracked files, uncommitted changes, unpushed commits, recovery worktrees and local continuation refs — without `--force` and without waiting for disk pressure. Only a run holding a directory's lock, or using it since it was reported, keeps it. Directories whose work goes on, or whose status is unknown, keep their unpushed-work protection.
+- b887c55: A workspace's Codex home now links the real `~/.codex` plugin bundles (`plugins/`) and plugin catalog (`cache/`), so a new workspace no longer downloads them again.
+- b887c55: The runner no longer initializes a repository's submodules while preparing a checkout, so a new checkout no longer downloads every submodule in full. A prepared checkout leaves its submodules uninitialized; a project whose repository has submodules should tell its agents how to initialize them, for example `git submodule update --init --reference <local copy>` or a shallow `--depth 1` update. Submodules an agent initialized are still checked for unpushed commits before a checkout is removed.
+- 9656875: Read piped environment values only once so delayed and split input is preserved.
+- Updated dependencies [846e75f]
+- Updated dependencies [d34b6eb]
+- Updated dependencies [5fe8773]
+- Updated dependencies [616561b]
+- Updated dependencies [83e3609]
+- Updated dependencies [55fcee1]
+- Updated dependencies [49f61b9]
+  - @nocobase/app-cli-client@0.1.0-beta.8
+  - @nocobase/agent-protocol@0.1.0-beta.9
+
 ## 0.1.0-beta.9
 
 ### Patch Changes

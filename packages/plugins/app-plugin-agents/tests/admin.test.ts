@@ -94,23 +94,25 @@ describe('admin API', () => {
     expect(list.body.data[0].workspaceUsage).not.toHaveProperty('workspaces');
     const detail = await h.request(
       'GET',
-      `/agents/runners/${runner.runnerId}`,
+      `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'alice' },
     );
-    expect(detail.body.data.workspaceUsage.workspaces).toEqual([
-      expect.objectContaining(directory),
-    ]);
+    expect(detail.body.data).toEqual([expect.objectContaining(directory)]);
     const redacted = await h.request(
       'GET',
-      `/agents/runners/${runner.runnerId}`,
+      `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'bob', can: ['agents.runners/read'] },
     );
-    expect(redacted.body.data.workspaceUsage.workspaces).toEqual([]);
+    expect(redacted.body.data).toEqual([]);
     expect(
       (
-        await h.request('GET', `/agents/runners/${runner.runnerId}`, {
-          user: 'charlie',
-        })
+        await h.request(
+          'GET',
+          `/agents/runners/${runner.runnerId}/workspaces`,
+          {
+            user: 'charlie',
+          },
+        )
       ).status,
     ).toBe(404);
   });
@@ -118,11 +120,11 @@ describe('admin API', () => {
   it('lets anyone signed in read agents, and only a manager of agents change them', async () => {
     h = await createHarness();
     expect((await h.request('GET', '/agents')).status).toBe(401);
-    const id = await h.createAgent({ source: 'runner', status: 'pending' });
+    const id = await h.createAgent({ source: 'runner', status: 'disabled' });
     const list = await h.request('GET', '/agents', { user: 'bob' });
     expect(list.status).toBe(200);
     expect(list.body.data).toEqual([
-      expect.objectContaining({ id, status: 'pending', canEdit: false }),
+      expect.objectContaining({ id, status: 'disabled', canEdit: false }),
     ]);
     const reader = await h.request('PATCH', `/agents/${id}`, {
       user: 'bob',
@@ -135,7 +137,7 @@ describe('admin API', () => {
       can: ADMIN,
     });
     expect(managed.body.data[0].canEdit).toBe(true);
-    // Anyone signed in may add a personal runner; a team runner needs the runners item.
+    // Anyone signed in may add a personal runner; a shared runner needs the runners item.
     const personal = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
@@ -157,7 +159,7 @@ describe('admin API', () => {
     h = await createHarness();
     const id = await h.createAgent({
       source: 'runner',
-      status: 'pending',
+      status: 'disabled',
       modelEntries: [{ tool: 'codex', model: 'gpt-6-astra', effort: 'medium' }],
     });
     const bare = await h.request('PATCH', `/agents/${id}`, {
@@ -368,7 +370,7 @@ describe('admin API', () => {
     expect(revoked.body.data.status).toBe('revoked');
     expect(await h.services.runs.get(runId)).toMatchObject({
       status: 'queued',
-      failureReason: 'runnerOffline',
+      failureReason: 'runnerOfflineBeforeStart',
     });
     // A manager revoking someone else's runner tells its owner.
     expect(notices).toEqual([
@@ -887,7 +889,7 @@ describe('admin API', () => {
     expect(shared.body.data.trust).toBe('team');
   });
 
-  it('lets only the owner choose its coding tools', async () => {
+  it('lets owners and shared runner managers choose tools without granting other settings', async () => {
     h = await createHarness();
     const token = await h.request(
       'POST',
@@ -907,7 +909,7 @@ describe('admin API', () => {
     const unknown = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
-      { user: 'bob', body: { enabledTools: ['cursor'] } },
+      { user: 'bob', body: { enabledTools: ['unknown-tool'] } },
     );
     expect(unknown.status).toBe(400);
 
@@ -946,14 +948,34 @@ describe('admin API', () => {
     });
     expect(owner.status).toBe(200);
     expect(owner.body.data.enabledTools).toEqual(['claude', 'codex']);
-    expect(await online()).toBe(1);
+    // A newly enabled tool must report again before it is offered work.
+    expect(await online()).toBe(0);
     const manager = await h.request('PATCH', path, {
       user: 'carol',
       can: ['agents.runners/manage'],
       body: { enabledTools: [] },
     });
-    expect(manager.status).toBe(403);
-    expect(await online()).toBe(1);
+    expect(manager.status).toBe(200);
+    expect(await online()).toBe(0);
+    const rename = await h.request('PATCH', path, {
+      user: 'carol',
+      can: ['agents.runners/manage'],
+      body: { enabledTools: ['gemini'], name: 'Changed by manager' },
+    });
+    expect(rename.status).toBe(403);
+    const personal = await h.registerRunner({
+      trust: 'ownerOnly',
+      ownerUserId: 'bob',
+    });
+    expect(
+      (
+        await h.request('PATCH', `/agents/runners/${personal.runnerId}`, {
+          user: 'carol',
+          can: ['agents.runners/manage'],
+          body: { enabledTools: ['gemini'] },
+        })
+      ).status,
+    ).toBe(403);
   });
 
   it('refuses variables with SECRETS_KEY_MISSING when no secrets key is configured', async () => {

@@ -1,0 +1,474 @@
+{
+  "icons": {
+    "UserRoundCheck": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-user-round-check\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"8\" r=\"5\"></circle><path d=\"M2 21a8 8 0 0 1 13.3-6\"></path><path d=\"m16 19 2 2 4-4\"></path></svg>",
+    "KeyRound": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg>",
+    "ShieldCheck": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg>",
+    "Workflow": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-workflow\" aria-hidden=\"true\"><rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"></path><rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\"></rect></svg>",
+    "ListChecks": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg>",
+    "CalendarClock": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-calendar-clock\" aria-hidden=\"true\"><path d=\"M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5\"></path><path d=\"M16 2v4\"></path><path d=\"M8 2v4\"></path><path d=\"M3 10h5\"></path><path d=\"M17.5 17.5 16 16.3V14\"></path><circle cx=\"16\" cy=\"16\" r=\"6\"></circle></svg>",
+    "Bell": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-bell\" aria-hidden=\"true\"><path d=\"M10.268 21a2 2 0 0 0 3.464 0\"></path><path d=\"M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326\"></path></svg>",
+    "Mail": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-mail\" aria-hidden=\"true\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"></rect><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"></path></svg>",
+    "Paperclip": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-paperclip\" aria-hidden=\"true\"><path d=\"M13.234 20.252 21 12.3\"></path><path d=\"m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486\"></path></svg>",
+    "Printer": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-printer\" aria-hidden=\"true\"><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"></path><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\"></path><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\"></rect></svg>",
+    "Languages": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-languages\" aria-hidden=\"true\"><path d=\"m5 8 6 6\"></path><path d=\"m4 14 6-6 2-3\"></path><path d=\"M2 5h12\"></path><path d=\"M7 2h1\"></path><path d=\"m22 22-5-10-5 10\"></path><path d=\"M14 18h6\"></path></svg>",
+    "Palette": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-palette\" aria-hidden=\"true\"><circle cx=\"13.5\" cy=\"6.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"17.5\" cy=\"10.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"8.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"6.5\" cy=\"12.5\" r=\".5\" fill=\"currentColor\"></circle><path d=\"M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z\"></path></svg>",
+    "BookOpen": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-book-open\" aria-hidden=\"true\"><path d=\"M12 7v14\"></path><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\"></path></svg>",
+    "Copy": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>",
+    "ArrowRight": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg>",
+    "ArrowUpRight": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-up-right\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"></path><path d=\"M7 17 17 7\"></path></svg>",
+    "Search": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-search\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"></circle><path d=\"m21 21-4.3-4.3\"></path></svg>",
+    "Sparkles": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-sparkles\" aria-hidden=\"true\"><path d=\"M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z\"></path><path d=\"M20 3v4\"></path><path d=\"M22 5h-4\"></path><path d=\"M4 17v2\"></path><path d=\"M5 18H3\"></path></svg>",
+    "Terminal": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-terminal\" aria-hidden=\"true\"><polyline points=\"4 17 10 11 4 5\"></polyline><line x1=\"12\" x2=\"20\" y1=\"19\" y2=\"19\"></line></svg>",
+    "MessageSquareText": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>",
+    "Check": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"></path></svg>",
+    "Database": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0\"/></svg>",
+    "Bot": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"8\" width=\"16\" height=\"12\" rx=\"3\"/><path d=\"M12 8V4H9M2 12v4m20-4v4M9 12v2m6-2v2m-6 3h6\"/></svg>"
+  },
+  "data": [
+    [
+      "auth",
+      "认证",
+      "⌘",
+      "登录、注册、找回密码，以及企业统一身份登录。",
+      "这个应用只供公司员工使用，账号由管理员统一创建。请关闭自助注册，登录页不再显示注册入口。已有员工仍能使用原账号和密码登录，保留忘记密码入口。"
+    ],
+    [
+      "data-sources",
+      "数据源",
+      "",
+      "选择应用数据库，接入外部数据库，在业务页面中使用已有数据。",
+      ""
+    ],
+    [
+      "authorization",
+      "权限",
+      "⛨",
+      "按角色、操作和数据范围，控制谁能看到什么。",
+      "为采购订单设置权限：申请人只能查看和编辑自己的草稿订单，主管可以查看团队订单。请同时保护页面和接口，并验证不同角色的访问范围。"
+    ],
+    [
+      "workflow",
+      "工作流",
+      "⇄",
+      "串联业务步骤，处理等待、分支和超时。",
+      "在订单应用中实现超时处理流程：订单提交后等待付款，24 小时内未付款则自动取消；已付款订单继续进入发货流程。请先检查项目已有能力，提出实现方案。"
+    ],
+    [
+      "approval",
+      "审批",
+      "✓",
+      "处理多级审批、会签、转交和抄送。",
+      "为采购申请增加审批：金额不超过一万元由部门主管审批，超过一万元还需要财务审批。申请人可以查看进度，审批结束后收到站内通知。请先检查项目的审批能力。"
+    ],
+    [
+      "task-center",
+      "待办中心",
+      "✓",
+      "集中处理审批、设备领取等个人待办，统一查看状态和数量。",
+      "主管每天要处理请假、报销等申请，希望打开应用就能在一个地方看到所有等自己处理的事情，不必逐个业务查找。\n请增加一个「我的待办」页面，每个人只看到自己的事项，能区分待处理、已完成、已取消，并看到各有多少条。"
+    ],
+    [
+      "scheduler",
+      "定时任务",
+      "◷",
+      "按时间执行任务，查看执行结果。",
+      "每天上午九点检查供应商资质，将未来三十天内到期的记录整理后通知对应负责人。避免同一天重复发送，并保留执行结果。"
+    ],
+    [
+      "notification",
+      "通知",
+      "♧",
+      "通过站内信、邮件等渠道发送业务消息。",
+      "采购订单审批结束后给申请人发送站内信，说明审批结果，并提供进入订单详情的链接。请使用应用已有的通知能力。"
+    ],
+    [
+      "mail",
+      "邮件",
+      "✉",
+      "关联用户邮箱，处理业务往来邮件。",
+      "在客户详情中增加往来邮件入口，允许当前用户通过自己的已关联邮箱阅读和回复邮件。请检查项目邮件能力和访问权限后实现。"
+    ],
+    [
+      "file",
+      "文件",
+      "↥",
+      "上传、预览和下载与业务记录关联的文件。",
+      "在供应商档案中增加资质附件，允许上传、预览和下载。附件访问权限跟随档案权限，不能通过文件地址绕过权限。"
+    ],
+    [
+      "template-print",
+      "模板打印",
+      "▤",
+      "根据模板生成合同、表单等业务文件。",
+      "根据采购订单数据生成可下载的采购单，包含供应商、明细、总金额和审批记录。请参考模板打印 Skill，先确认模板格式和生成方案。"
+    ],
+    [
+      "i18n",
+      "多语言",
+      "文",
+      "切换界面语言，配置应用默认语言。",
+      "为订单管理页面添加英文翻译，覆盖菜单、表单、状态和错误提示，保留现有中文，并接入应用已有的语言切换。"
+    ],
+    [
+      "theme",
+      "主题",
+      "◐",
+      "调整品牌配色、字体和界面密度。",
+      "将应用主题调整为简洁的蓝色企业风格，保留浅色和深色模式，使用现有主题变量，确保表单和表格文字清晰可读。"
+    ],
+    [
+      "ai-employee",
+      "AI 员工",
+      "",
+      "理解页面上下文、查询业务数据，按职责调用允许的操作。",
+      ""
+    ],
+    [
+      "ai-knowledge-base",
+      "AI 知识库",
+      "✧",
+      "导入业务资料，为问答提供可追溯的依据。",
+      "为采购团队建立制度知识库，导入采购制度并用于回答供应商准入问题。回答需要提供来源，找不到依据时明确说明。请先检查需要的知识库能力。"
+    ]
+  ],
+  "capabilityIcons": [
+    "KeyRound",
+    "Database",
+    "ShieldCheck",
+    "Workflow",
+    "UserRoundCheck",
+    "ListChecks",
+    "CalendarClock",
+    "Bell",
+    "Mail",
+    "Paperclip",
+    "Printer",
+    "Languages",
+    "Palette",
+    "Bot",
+    "BookOpen"
+  ],
+  "promptLibrary": {
+    "auth": {
+      "title": "认证",
+      "description": "登录、注册、找回密码，以及企业统一身份登录。",
+      "prompts": {
+        "staff": {
+          "label": "员工专用应用",
+          "text": "Northstar 的运输系统只供公司员工使用，账号由管理员统一创建。\n关闭自助注册，登录页不显示注册入口，服务端也禁止自助注册。\n为管理员搭建“员工账号”页面：支持按姓名、邮箱搜索，按启用或停用状态筛选。\n可以创建账号、停用和重新启用账号，也可以单独撤销登录会话。\n创建账号与分配业务权限分开，不能默认授予管理员权限。"
+        },
+        "password": {
+          "label": "密码规则",
+          "text": "员工设置新密码或重置密码时，密码至少需要 12 个字符。\n在创建账号和重置密码表单中显示要求，前端提示与服务端校验保持一致。\n已有员工仍可使用原密码登录，不要求本次改造时立即修改密码。"
+        },
+        "recovery": {
+          "label": "找回密码",
+          "text": "为 Northstar 员工接入忘记密码流程，使用邮件渠道发送重置链接。\n员工在登录页点击 Forgot password?，填写邮箱后申请重置。\n无论邮箱是否存在，都显示相同的提交提示。\n员工打开邮件链接，设置至少 12 个字符的新密码，再返回登录页登录。\n复用认证能力处理重置链接的有效期和一次性使用。"
+        },
+        "sso": {
+          "label": "企业账号登录",
+          "text": "Northstar 已有企业身份平台，请采用 OIDC 接入运输系统。\n保留账号密码登录，在品牌登录页增加「企业账号登录」按钮。\n员工点击后进入企业身份平台，使用公司账号登录。\n身份平台显示授权确认，说明运输应用需要员工的基本身份信息和邮箱。\n员工确认授权后返回运输工作台；取消授权则不进入应用。\n首次登录允许创建应用账号，使用身份平台的稳定用户标识识别用户。\n不要按同名或相同邮箱自动合并已有账号，新账号不能自动取得管理员权限。\n请列出平台管理员需要提供的信息、应登记的回调地址，以及应用需要的配置。"
+        },
+        "api": {
+          "label": "脚本调用",
+          "text": "请为 Northstar 写一个读取运输订单的脚本。\nAPI key 已保存在环境变量 NOCOBASE_API_KEY 中，不要把它写进源码或日志。\n根据应用的实际接口文档选择订单列表接口，在 x-api-key 请求头中传入 Key。\n本例应用地址是 http://localhost:13200/main，GET /api/northstar 返回工作台数据，其中 data.orders 是有权访问的订单。\n读取订单并根据 data.customers 补充客户名称，输出订单编号、客户、起终点和当前状态。\n处理接口错误，不把失败的请求当作空订单列表。\n请说明如何设置应用地址并运行脚本。"
+        },
+        "brand": {
+          "label": "登录页品牌",
+          "text": "为现有运输应用定制 Northstar Logistics 登录页。\n\n使用浅蓝色卡车与山路插画，配合白色页面面板和浅灰蓝网格外背景，保证文字清晰。\n顶部显示公司名称和图标。左侧显示「欢迎回来」，并说明系统可以管理运输调度、跟踪配送进度、协调团队工作。\n右侧放置白色登录表单，使用深色文字、白色输入框和蓝色登录按钮。\n保留用户名或邮箱加密码登录、密码显示切换、登录错误提示和找回密码入口。\n员工账号由公司管理，关闭自助注册，同时在服务端禁止密码注册；保留原注册页面和组件，便于以后恢复。\n登录页与密码恢复页面使用一致的品牌名称和视觉。中文与英文界面都提供对应文案。"
+        },
+        "protect": {
+          "label": "页面与接口",
+          "text": "为 Northstar 增加公开的运输服务介绍页，访客无需注册或登录。\n页面采用 Northstar 的蓝色品牌风格，介绍长三角服务网络、区域运输、企业配送和运输过程协同。\n展示联系邮箱，并提供“员工订单”入口；员工登录后也可以浏览公开介绍。\n用于读取公开介绍的接口允许访客读取，不能返回内部订单或客户资料。\n运输工作台、客户页面、订单页面及其数据接口继续要求登录并检查业务权限。\n未登录访问内部页面时进入登录页。"
+        }
+      }
+    },
+    "authorization": {
+      "title": "权限",
+      "description": "控制谁能进入哪些页面、执行哪些操作、查看哪些数据。",
+      "prompts": {
+        "permission-sets": {
+          "label": "岗位与分配",
+          "text": "为 Northstar 接入客户经理、调度员和司机三个权限集。\n客户经理可以进入客户和订单页面，创建订单，查看和编辑自己负责的记录。\n调度员可以进入调度工作台，查看运输订单并分配司机，不能维护岗位权限。\n司机可以查看分配给自己的任务，执行接单、出发和签收操作，不能修改订单价格或重新分配司机。\n只有获得管理授权的人员可以维护权限集和分配。\n在「团队访问」中提供岗位编辑与人员分配，初始将 Alice、Bob 分配为客户经理，Emma 为调度员，Daniel 为司机。"
+        },
+        "data-scopes": {
+          "label": "数据范围",
+          "text": "客户经理查看和编辑本人负责的订单，以订单负责人字段关联当前用户。\n司机查看和办理分配给自己的任务，以分配司机对应的员工账号判断范围。\n调度员可以查看需要统筹的全部订单，分配司机仍按订单当前状态执行。\n在「团队访问」中分别提供各操作的范围选项，并在列表、详情、修改接口中执行同一规则。"
+        },
+        "default-access": {
+          "label": "共同范围",
+          "text": "客户经理保留查看本人负责订单的范围。\n对所有已有「查看订单」权限的人员，增加已完成订单的共同查看范围。\n使用默认数据范围配置，管理员可以在「访问规则」中保存或移除已完成订单的共同查看规则。\n本次仅增加查看范围，不允许因此编辑他人订单或办理运输动作。"
+        },
+        "sharing-rules": {
+          "label": "临时共享",
+          "text": "Alice 需要 Bob 协助跟进运输订单 NS-2026-001。\nBob 已有订单查看权限，本次将这笔订单的查看范围共享给他。\n保留原负责人 Alice，不修改 Bob 的日常岗位和本人范围。\n这项共享不允许编辑订单、分配司机或处理审批。\n管理员可以在「访问规则」中选择共享人员与订单，保存查看规则，协作结束后移除规则。"
+        },
+        "restriction-rules": {
+          "label": "限制规则",
+          "text": "Bob 临时协助核对运输费用，只允许查看运输费用不超过 2,000 元的订单。\n为他的「查看运输订单」操作增加金额上限，保留已有岗位与订单负责人。\n限制同时作用于本人订单、已完成订单共同范围和临时共享的订单。\n管理员可以在「访问规则」中调整金额或移除规则；移除前说明可见范围可能扩大。"
+        },
+        "inspector": {
+          "label": "检查权限",
+          "text": "在 Northstar 的「访问规则」中提供权限检查入口，仅对获得授权的管理员开放。\n选择实际员工，查看页面、业务操作和数据条件，展开权限集、人员或组织分配、默认范围、共享及限制来源。\n以 Bob 的订单查看权限为例，说明他本人的范围与 NS-2026-001 临时共享分别来自哪里。\n检查结果用于解释规则，不把它显示成可访问订单数量；不允许普通员工查看其他人的权限详情。"
+        }
+      }
+    },
+    "scheduler": {
+      "title": "定时任务",
+      "description": "按时间自动执行业务处理，查看下次执行时间和执行结果。",
+      "prompts": {
+        "reminder": {
+          "label": "待调度提醒",
+          "text": "为现有订单应用添加“待调度订单提醒”。\n\n每个工作日北京时间上午9点，查找仍待调度的订单，汇总数量，并向调度负责人发送一条站内通知。\n通知显示待调度订单数量，点击后打开待调度订单列表；没有待调度订单时不发送。\n管理员可以在「自动提醒」中查看任务的运行时间和执行记录，并暂停或恢复提醒。"
+        },
+        "time": {
+          "label": "调整时间",
+          "text": "把“待调度订单提醒”改为每个工作日北京时间上午10点运行。\n保留原有的订单范围、收件人和通知内容。"
+        },
+        "report": {
+          "label": "每周报表",
+          "text": "每周一北京时间上午8点生成上周的销售汇总报表，并通知销售负责人查看。\n报表包含销售额、订单数量和各区域汇总。管理员可以查看任务及执行记录。"
+        },
+        "sync": {
+          "label": "定期同步",
+          "text": "每10分钟从现有客户系统同步客户状态，更新应用中的对应客户记录。\n保留其他客户信息，管理员可以查看任务的运行时间和执行记录。"
+        }
+      }
+    },
+    "notification": {
+      "title": "通知",
+      "description": "在业务事件发生时，通过站内信、邮件或群机器人发送消息。",
+      "prompts": {
+        "progress": {
+          "label": "进度提醒",
+          "text": "为 Northstar 运输订单增加「发送进度提醒」，通过站内信将当前订单的进度发到当前操作人的消息中心。\n消息标题包含订单编号，正文包含起点、终点和当前状态。\n点击消息打开对应运输订单详情，不依赖固定的部署前缀。\n同一订单的同一版本向同一收件人仅发送一次，重复点击不产生重复消息。\n保留现有业务状态，发送通知不改动运输进度。\n侧栏提供「消息中心」和仅业务管理员可进入的「通知日志」。\n消息中心只显示当前账号收到的消息；日志显示业务来源、渠道、状态和尝试次数。"
+        },
+        "approval": {
+          "label": "审批结果",
+          "text": "在特殊运输申请审批通过或驳回后，只给申请人发送结果通知。\n消息包含运输订单编号、申请原因和审批结果，点击打开对应申请详情。\n待审批时不发送，同一次结果只通知一次。\n保留申请人自己的消息中心，管理员在通知日志中查看投递记录。\n通知失败不撤销已经保存的审批结果。"
+        },
+        "email": {
+          "label": "增加邮件",
+          "text": "在运输申请审批结果站内信之外增加邮件，使用已配置的邮件渠道。\n从申请人的实际业务账号读取邮箱，主题包含订单编号，正文说明申请及审批结果。\n没有邮箱时只发送站内信。邮件失败不影响已保存结果和站内信。\n管理员可以查看每个渠道的投递记录，不在页面或日志中显示服务凭据。"
+        }
+      }
+    },
+    "mail": {
+      "title": "邮件",
+      "description": "关联个人邮箱，阅读、回复和发送业务邮件。",
+      "prompts": {
+        "quick-start-0": {
+          "label": "收取与回复",
+          "text": "为应用添加邮件中心和邮箱账号管理入口。用户可以关联自己的邮箱，按邮箱查看收件箱、同步来信、阅读正文和附件，并回复邮件。\n\n销售人员收到客户的报价咨询后，可以在邮件中心回复。回复时保留原邮件主题和上下文，收件人使用原发件人。每位用户只处理自己关联的邮箱。"
+        },
+        "usage-1": {
+          "label": "邮件签名",
+          "text": "为 Northstar 的业务邮箱准备「Northstar Operations」签名，\n包含 Northstar Logistics、Operations team 和运输协调说明。\n员工可以在邮箱账号页维护签名，写信时选择使用。"
+        },
+        "usage-2": {
+          "label": "进度邮件模板",
+          "text": "准备「Transport progress update」邮件模板，主题包含运输订单编号，\n正文包含客户名称、起点、终点、运输状态和预计交付日期。\n从订单详情打开编辑器时，传入当前订单和客户信息。\n员工选择模板后仍可编辑内容，并选择已有签名。"
+        },
+        "usage-3": {
+          "label": "客户往来邮件",
+          "text": "在客户详情增加「往来邮件」。\n按当前客户联系人邮箱匹配发件人、收件人或抄送人，\n仅展示当前员工自己的已关联邮箱中可访问的邮件。\n点击邮件可以阅读正文，点击「回复」打开邮件编辑器，\n保留回复关联，员工确认内容后再发送。\n提供刷新和加载更多操作。"
+        },
+        "usage-4": {
+          "label": "订单进度邮件",
+          "text": "在运输订单详情增加「编写进度邮件」。\n收件人读取当前客户联系人邮箱，主题包含订单编号，\n正文带入客户、起点、终点和运输状态。\n员工核对并编辑内容后，使用自己已关联的邮箱发送。\n允许选择已有邮件模板和签名，不自动发送。"
+        }
+      }
+    },
+    "file": {
+      "title": "文件",
+      "description": "上传文件并关联业务记录，支持预览和下载。",
+      "prompts": {
+        "attachments": {
+          "label": "订单附件",
+          "text": "给 Northstar Logistics 的现有运输订单增加附件功能。\n\n在订单详情中添加附件区域，每个订单可以上传多个文件，支持 PDF、图片和 DOCX。\n显示附件的文件名和大小，支持预览、下载和移除。\n上传后点击保存，将附件关联到当前订单；重新打开订单时仍能看到这些附件。\n有权查看订单的人员可以查看和下载附件，申请人和调度员可以添加或移除附件。\n移除附件只解除它与当前订单的关联，保留文件。"
+        },
+        "avatar": {
+          "label": "员工头像",
+          "text": "给员工增加头像，每名员工最多一张。\n支持上传和更换头像，在员工列表和详情中显示。\n更换后使用新头像，刷新页面后仍能正常显示。"
+        }
+      }
+    },
+    "templatePrint": {
+      "title": "模板打印",
+      "description": "由 Agent 将 Office 模板与授权业务数据接入应用，生成可下载文档。",
+      "prompts": {
+        "docx": {
+          "label": "生成运输单",
+          "text": "为 Northstar 运输订单增加“生成运输单”。\n使用我提供的 DOCX 模板，填入当前订单编号、客户、起点、终点、货物资料和运输状态。\n保留模板布局和重复明细，文件名包含订单编号，提供 DOCX 下载。\n服务端按当前用户权限读取订单数据，不接受前端提交的任意数据范围或模板路径。\n先检查模板字段和所需依赖，再实现生成与下载，并使用实际订单核对文件。"
+        },
+        "pdf": {
+          "label": "增加 PDF",
+          "text": "为已有运输单 DOCX 生成功能增加 PDF 下载。\n先检查当前渲染方案所需的 PDF 转换服务与字体；若使用仓库示例的 Carbone 方案，在应用运行环境配置 LibreOffice。\n保留原 DOCX 下载，转换失败或服务缺失时明确提示，不返回伪装为 PDF 的文件。\n验证中文、明细表格、分页和图片，与原模板效果对照。"
+        }
+      }
+    },
+    "i18n": {
+      "title": "多语言",
+      "description": "切换界面语言，添加新语言，设置默认语言。",
+      "prompts": {
+        "add": {
+          "label": "新增语言",
+          "text": "为应用增加西班牙语，界面和服务端提示都使用对应的翻译，并在语言菜单中提供西班牙语选项。"
+        },
+        "default": {
+          "label": "默认语言",
+          "text": "将应用默认语言设为简体中文（zh-CN），保留中文和英文选项。\n在 config.yml 中配置 i18n.defaultLocale，让没有保存语言偏好的浏览器首次打开时显示中文。\n已有语言偏好的用户保持原选择。\n使配置生效后，用未保存偏好的浏览器验证，并检查页面 lang 属性随实际语言更新。"
+        },
+        "fallback": {
+          "label": "补齐翻译",
+          "text": "请检查应用西班牙语界面中仍显示中文或英文的文案。\n补齐应用前后端缺失的翻译；需要调整插件文案时，在应用自己的翻译文件中覆盖。\n保持当前语言、应用默认语言、英文的回落顺序，不翻译客户名称等业务记录。\n运行 pnpm nocobase locales check，并分别验证界面和服务端提示。"
+        }
+      }
+    },
+    "theme": {
+      "title": "主题",
+      "description": "调整配色、字体和布局密度，切换浅色和深色模式。",
+      "prompts": {
+        "adjust": {
+          "label": "修改主题",
+          "text": "修改「紧凑」主题：将主色改为蓝色，略微增大圆角。保留当前字体、字号和紧凑间距。"
+        },
+        "brand": {
+          "label": "新增品牌主题",
+          "text": "为 Northstar Logistics 新增「Northstar 品牌」主题，以运输业务的深蓝色为主色。\n以紧凑主题为基础，保留字体、字号与信息密度，略微增大圆角。\n同时提供浅色和深色配色，保持文字和操作按钮清晰可读。\n保留原有宽松、紧凑主题，并补齐中英文主题名称。"
+        },
+        "remove": {
+          "label": "删除主题",
+          "text": "删除「Northstar 品牌」主题。"
+        }
+      }
+    },
+    "workflow": {
+      "prompts": {
+        "definition-0": {
+          "label": "控制业务流转",
+          "text": "为 Northstar 运输订单增加工作流：待调度→待接单→运输中→已送达→已完成。\n调度时选择司机；接单并出发进入运输中；拒单必须填写原因，返回待调度并清除分配。\n提交签收凭证后进入已送达，核对交付后完成。出发前允许填写原因取消。\n订单详情只提供当前阶段的操作；普通编辑不能直接改流程阶段。\n在服务端检查阶段和必填信息，同时处理时不要覆盖别人已提交的结果。"
+        },
+        "execution-0": {
+          "label": "后台导出报表",
+          "text": "在 Northstar 增加运输订单报表页面，导出现有订单为 CSV。\n提交后进入等待处理，由后台开始生成，成功后自动完成并提供下载入口。\n显示当前阶段、文件名、导出订单数，以及提交和系统处理的记录。\n生成失败时按规则重试，最终失败保留结果供负责人处理；重复执行不要生成重复的报表文件。\n刷新页面后仍可查看进度与结果，只有获得授权的人员可以导出订单。"
+        },
+        "progress-0": {
+          "label": "查看处理历史",
+          "text": "在 Northstar 订单详情展示当前流程阶段和处理历史。\n每条记录显示操作人、时间、操作名称、前后阶段，以及拒单原因或签收凭证。\n记录系统自动执行的动作时，标明由系统执行。\n刷新页面后仍保留进度和记录；完成后可以回看交付过程。"
+        }
+      }
+    },
+    "approval": {
+      "prompts": {
+        "stages-0": {
+          "label": "多级与条件审批",
+          "text": "为 Northstar 特殊运输申请接入审批，填写货物说明、申请理由、额外费用和附件。\n费用不超过2,000元时由运营主管审批；超过时，主管同意后进入财务审批。\n提交前预览路线和审批人，详情显示当前环节、可用操作和审批意见。\n批准后保留审批结论，不自动支付费用。"
+        },
+        "joint-review-0": {
+          "label": "会签与或签",
+          "text": "为 Northstar 特殊货物运输申请增加会签环节，运营负责人和财务负责人都同意后才通过。\n一人拒绝即驳回，必须填写原因；只有一人同意时继续等待另一人。\n普通调度申请使用或签，由运营或财务负责人中任一人同意即可通过。\n详情显示每个人的意见，以及当前还在等待谁。"
+        },
+        "handover-0": {
+          "label": "加签与转交",
+          "text": "在 Northstar 特殊运输的主管审批环节开放前加签和转交。\n加签只允许选择财务负责人，其完成后原主管继续审批。\n转交只允许选择当班调度负责人，要求填写原因。\n详情保留原任务、新增或接手人员、原因和处理意见。\n在申请详情用流程图展示前加签与转交的审批顺序和处理人。"
+        },
+        "requests-0": {
+          "label": "退回与撤回",
+          "text": "Northstar 特殊运输申请缺少必要资料时，允许主管填写原因并退回申请人补充。\n申请人修改后重新提交，保留之前的意见；重新进入审批时再次确定处理人。\n提交后、尚未结束时允许申请人撤回，审批人不能再处理已撤回的任务。\n页面明确区分退回、驳回和撤回，并显示下一步由谁处理。\n在申请详情用流程图展示退回补充、重新提交与驳回结束的处理路径。"
+        },
+        "requests-1": {
+          "label": "抄送阅知",
+          "text": "将 Northstar 特殊运输申请抄送给负责客户经理。\n提供「抄送给我」列表和已读确认，抄送人可查看进度及意见，但不参与审批决策。"
+        },
+        "requests-2": {
+          "label": "超时与认领",
+          "text": "Northstar 主管审批超过一个工作日时提醒，超过两个工作日时升级给主管负责人。\n团队待办允许符合岗位的人员认领，认领超时未处理时释放。\n显示当前处理人、截止时间和任务分配记录。"
+        }
+      },
+      "description": "接入 Pro 审批能力，处理多级路线、会签、加签与转交。"
+    },
+    "ai-knowledge-base": {
+      "prompts": {
+        "index-0": {
+          "label": "接入知识中心",
+          "text": "为 Northstar 运输应用接入知识中心，整理运输规范、客户服务说明和司机手册。\n提供文件夹、文章和文件的阅读与搜索入口，按岗位控制访问范围。\n让运输助理使用运输规范回答业务问题，返回相关文档和段落入口。\n模型服务、检索方式和索引由应用接入，员工页面保留清晰的资料来源。"
+        },
+        "answers-0": {
+          "label": "依据知识回答",
+          "text": "让 Northstar 的运输助理使用运输规范知识空间。\n员工询问处理规则时，先检索相关内容，再据此整理回答；显示引用文档和段落入口。\n没有找到依据时明确说明，不自行编造企业规定。\n在知识中心阅读资料时也能打开对话，原文和回答同时可见。\n沿用当前用户与助手允许的资料范围，不暴露财务等受限内容。"
+        }
+      }
+    },
+    "data-sources": {
+      "title": "数据源",
+      "description": "选择应用数据库，接入外部数据库，在业务页面中使用已有数据。",
+      "prompts": {
+        "settlement": {
+          "label": "外部结算资料",
+          "text": "将 Northstar 已有的结算数据库作为外部数据源接入，只读取数据，不修改外部表。\n通过客户编号匹配，在客户详情增加「结算资料」，展示结算周期、信用额度和结算状态，并标明数据来源。\n客户联系信息仍从主数据库读取，结算资料直接从外部数据库读取，不导入主库。\n连接凭据从服务端运行配置读取。"
+        }
+      }
+    },
+    "ai-employee": {
+      "title": "AI 员工",
+      "description": "理解页面上下文、查询业务数据，按职责调用允许的操作。",
+      "prompts": {
+        "index-0": {
+          "label": "接入运输助理",
+          "text": "为 Northstar 运输应用接入一个「运输助理」，使用我已配置的可用模型服务。\n它负责解释订单、查询待调度记录，并根据运输规范提供建议。\n接入读取订单的业务操作，沿用当前用户的数据访问范围；先开放查询，不自动修改订单或发送通知。\n在订单列表和详情提供对话入口，员工能继续追问并打开回答中的订单。"
+        },
+        "page-context-0": {
+          "label": "理解当前订单",
+          "text": "在 Northstar 的订单详情右侧加入运输助理对话面板。\n打开对话时关联当前订单，使用有权限的业务读取操作获取客户、线路、货物、状态、负责人和司机。\n员工询问当前订单时，先概括订单，再说明该阶段的下一步操作。\n回答中提供对应的业务入口；切换订单时更新上下文，不混用上一笔订单的信息。\n保持应用现有的蓝色主题，订单详情与对话面板同时可见。"
+        },
+        "business-data-0": {
+          "label": "查询业务数据",
+          "text": "为 Northstar 的运输助理接入订单查询。\n员工可以询问哪些订单待调度，并按客户、阶段或线路查询。\n查询沿用当前用户的数据权限，显示订单号、客户、线路和负责人。\n把每笔结果显示为可打开的订单卡片；没有结果时说明当前范围内没有符合条件的订单。\n用户追问某一笔订单时，继续使用这笔订单的上下文。"
+        }
+      }
+    },
+    "task-center": {
+      "title": "待办中心",
+      "description": "集中处理审批、设备领取等个人待办，统一查看状态和数量。",
+      "prompts": {
+        "start": {
+          "label": "1. 建立入口",
+          "text": "主管每天要处理请假、报销等申请，希望打开应用就能在一个地方看到所有等自己处理的事情，不必逐个业务查找。\n请增加一个「我的待办」页面，每个人只看到自己的事项，能区分待处理、已完成、已取消，并看到各有多少条。"
+        },
+        "approvals": {
+          "label": "2. 接入审批",
+          "text": "请把现有的请假和报销申请放进「我的待办」，让实际负责审批的人看到申请类型和编号，审批规则保持不变。\n申请转交后由接手人处理，原审批人不再待办；申请撤回后不再要求审批。同一件事不要重复出现。"
+        },
+        "handling": {
+          "label": "3. 完成办理",
+          "text": "我希望点开一条待办，就能查看申请内容并完成审批，设备领取则可以直接确认已领取。\n办完后，这条事项进入已完成，剩余数量跟着变化。只允许有权处理的人操作，已撤销的事项说明原因并停止办理。"
+        },
+        "verification": {
+          "label": "4. 验证结果",
+          "text": "请用林晓和陈晨两个测试账号试一遍：各自收到事项、打开详情、完成处理，再看剩余数量是否正确。\n确认两人看不到也不能处理对方的个人事项，重复点击不会出现重复工作，处理失败的事情不会显示已完成。告诉我哪些已验证，并给我一条可以自己试用的路径。"
+        },
+        "ordinary": {
+          "label": "设备领取",
+          "text": "设备确认发放后，请让指定领取员工在「我的待办」中看到领取单，点开可以查看设备并确认已领取。\n领取成功后该事项完成；管理员撤销发放后，该事项取消。同一张领取单不要重复出现，领取失败时仍保留待处理。"
+        },
+        "dashboard": {
+          "label": "首页角标",
+          "text": "我希望在首页一眼看到自己还有多少事没处理，点击这个数字就能打开对应的待办列表。\n每办完一件事，数字和列表一起更新；没有待办时显示「暂无待处理事项」。换账号后只显示新账号自己的工作。"
+        },
+        "reassignment": {
+          "label": "人员改派",
+          "text": "管理员需要把尚未领取的设备从林晓改派给陈晨。改派后，林晓不再需要领取，也不能继续确认；陈晨能看到并处理这张领取单。\n已经完成的领取记录保留不变，重复改派不要产生多条相同待办。"
+        },
+        "history": {
+          "label": "历史任务",
+          "text": "应用里已经有一些没处理完的审批和设备领取，请让负责的人也能在新的「我的待办」中找到它们，并保留原来的业务记录。\n整理期间新产生的工作不能遗漏，已经办完的不能再次要求处理，也不要出现重复事项。如果中途失败，下次可以继续，不必从头整理。"
+        },
+        "notifications": {
+          "label": "业务提醒",
+          "text": "设备可以领取时，请在应用里提醒指定员工，点击提醒能打开领取单。\n同一次发放只提醒一次，读过提醒不代表已经领取；只有本人确认领取成功才完成待办。提醒没送达也不影响正常领取。"
+        }
+      }
+    }
+  }
+}

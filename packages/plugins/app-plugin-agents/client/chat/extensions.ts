@@ -6,7 +6,7 @@
  */
 import { createContext, type Context, type ReactNode } from 'react';
 
-import type { ConversationMessage } from '../../shared/conversations.js';
+import type { AppUIMessage } from '../../shared/online-agent.js';
 import type { NewsNotice, Translate } from './message-model.js';
 
 /** Something that belongs in a conversation besides its messages, placed by time among them. */
@@ -18,7 +18,16 @@ export interface ChatTimelineItem {
   readonly node: ReactNode;
 }
 
+export type ChatDataPart = Extract<
+  AppUIMessage['parts'][number],
+  { type: 'data-notice' | 'data-business' }
+>;
 export interface ChatExtensions {
+  /** A public data part rendered in order; null uses the standard notice or business display. */
+  readonly renderDataPart?: (
+    part: ChatDataPart,
+    message: AppUIMessage,
+  ) => ReactNode;
   /**
    * A hook (called on every render of an open conversation, so it must be the same function for the panel's life):
    * the conversation's other items, such as plan cards. `revision` changes whenever the conversation's messages or
@@ -29,7 +38,7 @@ export interface ChatExtensions {
     revision: number,
   ) => readonly ChatTimelineItem[];
   /** Renders under a message, by its metadata; null for nothing. */
-  readonly renderMessageExtra?: (message: ConversationMessage) => ReactNode;
+  readonly renderMessageExtra?: (message: AppUIMessage) => ReactNode;
   /**
    * A news notice the application delivered, in the viewer's language (`t` takes `ns` for the application's own
    * namespace); null shows its English title.
@@ -41,7 +50,7 @@ export interface ChatExtensions {
    */
   readonly renderNews?: (
     notice: NewsNotice,
-    message: ConversationMessage,
+    message: AppUIMessage,
   ) => ReactNode;
 }
 

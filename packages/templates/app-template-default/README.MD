@@ -1,14 +1,16 @@
 # NocoBase 3 Application
 
-A full-stack NocoBase 3 application. The server runs on `@nocobase/app-server` and the browser client is React with Refine, shadcn/ui, and Tailwind CSS.
+A full-stack NocoBase 3 application. The server runs on `@nocobase/app-server` and the browser client is React with shadcn/ui and Tailwind CSS.
 
 You own everything in this directory. Add pages, API routes, database tables, and business logic directly here — this is your application's source code, not a framework you extend from the outside.
 
 ## Default and Examples
 
-Default provides the application shell and product capabilities without example plugins or business demo pages. Application-owned routes start empty, and new databases receive no article sample data. Its built-in Users integration lists direct Authorization Permission Sets as application roles, while access assigned to all authenticated users remains separate. Use `app-template-examples` for article management and runnable plugin demonstrations.
+Default provides the application shell and product capabilities without example plugins or business demo pages. Application-owned business API routes start empty, and new databases receive no article sample data. A bare create-app shows Home and, for unrestricted administrators only, System settings → App foundation. Foundation is installed and registered on both Client and Server; its read-only overview is available at `/foundation` under the application base path. As business capabilities are developed, the app development skill reconciles missing core administration on every iteration and registers the prepared Users and Roles and permissions contribution (`client/pages/settings/routes.ts`); each actually used configurable capability includes its administration as part of feature delivery. Its built-in Users integration lists direct Authorization Permission Sets as application roles, while access assigned to all authenticated users remains separate. Use `app-template-examples` for article management and runnable plugin demonstrations.
 
 Existing Default installations retain their data when example plugins are unregistered. If an installation already ran the article migration, retain its original migration sources as described in the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) before upgrading. Do not erase migration history or delete existing data to make an upgrade start.
+
+Business lists reuse the template's standard `DataTable` and companions from `#components/data-table`. The template declares the compatible TanStack Table v8 dependency and provides controlled server pagination/sorting; application agents should not generate an independent table engine. See the [table guide](.agents/skills/nocobase-app-development/references/frontend/references/table.md).
 
 ## Getting started
 
@@ -397,11 +399,15 @@ An environment variable a section declares takes precedence over the file, and t
 
 ## Testing
 
-Tests live in `tests/`, never beside the source they cover. Put logic and integration tests under `tests/logic/` and component tests under `tests/components/`. Browser tests belong in `tests/playwright/`, which Vitest skips. Playwright does not start the application: start it first (`pnpm dev`, or `pnpm build` and then the built application), then run `pnpm test:e2e`; each test reads the application URL, including its base path, from `APP_URL`. Tests that only need a real server, real authentication, or a real database run under Vitest with `createAppTest()` from `@nocobase/app-testing/server`.
+Tests live in `tests/`, never beside the source they cover. Group tests by the source they cover: `tests/client/` for pages, components and client logic; `tests/server/` for services and routes; `tests/database/` for migrations and seeds; `tests/cli/` for application commands; and `tests/project/` for package configuration and build artifacts. Create optional directories with their first test. Vitest projects select jsdom for client tests and Node for the other groups, so no per-file environment override is needed. Both projects run files sequentially because client integration tests also provision databases; client setup files apply only to the client project. Keep shared helpers and data in `tests/helpers/` and `tests/fixtures/`, without test files. Browser tests belong in `tests/playwright/`, which Vitest skips. Playwright does not start the application: start it first (`pnpm dev`, or `pnpm build` and then the built application), then run `pnpm test:e2e`; each test reads the application URL, including its base path, from `APP_URL`. Tests that only need a real server, real authentication, or a real database run under Vitest with `createAppTest()` from `@nocobase/app-testing/server`.
 
-### Notification testing
+Application tests use the `/server`, `/client` and `/cli` entries of `@nocobase/app-testing`. Start page tests from `tests/client/page-harness.test.tsx`: it uses `renderWithApp()` with real application hooks, strict translations, permission checks and a test toaster. Prefer an actual test server for application requests. Use `answerApi()` for cases that require controlled protocol responses, and replace an external service through `services` only when the real boundary cannot be exercised, without also registering its owning plugin. The template's Vitest configuration includes client plugins in custom package scopes so their contexts and service tokens remain shared. See `.agents/skills/nocobase-app-development/references/testing.md` for fixture ownership and complete server, migration and CLI examples.
 
-With the `notification:test` `send` permission, send a real message through the durable Notification Manager with `POST <APP_BASE_PATH>/api/notifications/testSends`. `GET <APP_BASE_PATH>/api/notifications/testTargets` lists each configured channel and the fields its test takes: Email tests require an address and IM tests use the configured logical target. The server enforces the permission when the message is submitted.
+For authentication, permissions and persisted page behavior, use `tests/helpers/authenticated-client.tsx`. It starts the real application on isolated databases, signs in through its API, and forwards requests with a cookie jar to the in-process server. `tests/setup/application-environment.ts` keeps the DOM in jsdom and loads server dependencies through Vite's server environment so Node workers are not rewritten as browser workers. Prefer real components, hooks and services; inject a transport failure or delay only when the scenario requires it. Verify the final UI and server state after retries and permission reloads, not just that a request was called.
+
+### Notification verification
+
+Exercise the application's business notification flow, or use a server-side command resolving `notificationServiceToken` and calling `send()` with complete messages and explicit recipients. Inspect the returned notification ID through the protected `/api/notifications/logs` API or the logs page installed by the application. Log access requires `page:notification.logs` `access`.
 
 ## API documentation
 
@@ -435,3 +441,7 @@ MIT
 ## Strict startup verification
 
 Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in automated verification. Startup failures, including job import failures, exit nonzero after resource cleanup. Strict dev runs the server without watch mode so a failed server cannot remain hidden behind a watcher; restart the command after server or configuration changes. Client HMR remains available. Omit the variable or set it to `false` for normal development with server hot reload. Request errors and individual job execution failures do not terminate the application.
+
+## Internal workspace packages
+
+The application can also be the root of a pnpm workspace, with internal packages under `packages/*` and the existing `client/`, `server/` and `database/` directories unchanged. New projects receive this workspace pattern automatically. Internal packages use `workspace:*` dependencies and may remain private. Run installation, development and deployment builds from the application root; `pnpm check` includes the internal packages' own checks. See [internal packages](.agents/rules/workspace.md) for configuration and development conventions.

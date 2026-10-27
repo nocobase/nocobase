@@ -1,5 +1,5 @@
 /**
- * Enabling a pending agent, or changing an enabled or disabled one: what it is good at (started from the model
+ * Changing an enabled or disabled agent: what it is good at (started from the model
  * catalog's suggestion in the viewer's language when the agent has none), its default reasoning effort, and, when
  * editing, whether it is enabled. Enabling needs a description; the server refuses one without it too.
  */
@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
+import { modelSuggestion } from '../../model-suggestion.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -43,21 +44,11 @@ const DEFAULT_EFFORT = '__default__';
 export interface AgentDialogProps {
   readonly agent: AgentView | null;
   readonly onClose: () => void;
-  readonly candidates?: readonly AgentView[];
-}
-
-/** The catalog's suggestion in the viewer's language: Chinese for a `zh` locale, English otherwise. */
-function suggestionFor(agent: AgentView, language: string): string {
-  if (!agent.suggestion) return '';
-  return language.toLowerCase().startsWith('zh')
-    ? agent.suggestion.zh
-    : agent.suggestion.en;
 }
 
 export function AgentDialog({
   agent,
   onClose,
-  candidates,
 }: AgentDialogProps): ReactElement {
   return (
     <Dialog
@@ -67,81 +58,14 @@ export function AgentDialog({
       }}
     >
       <DialogContent
-        className='flex max-h-[calc(100dvh-2rem)] flex-col'
+        className='flex max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] flex-col sm:max-w-xl'
         data-testid='agent-dialog'
-        finalFocus={() =>
-          document.querySelector<HTMLButtonElement>(
-            '[data-testid="agents-discovery-toggle"]',
-          )
-        }
       >
         {agent ? (
-          <AgentChoice
-            key={agent.id}
-            agent={agent}
-            candidates={candidates ?? [agent]}
-            onClose={onClose}
-          />
+          <AgentForm key={agent.id} agent={agent} onClose={onClose} />
         ) : null}
       </DialogContent>
     </Dialog>
-  );
-}
-
-function AgentChoice({
-  agent,
-  candidates,
-  onClose,
-}: {
-  agent: AgentView;
-  candidates: readonly AgentView[];
-  onClose: () => void;
-}): ReactElement {
-  const { t } = useTranslation();
-  const [target, setTarget] = useState(agent);
-  const [saving, setSaving] = useState(false);
-  return (
-    <>
-      {candidates.length > 1 ? (
-        <Field>
-          <FieldLabel htmlFor='agent-provider'>
-            {t('agents.discovery.provider')}
-          </FieldLabel>
-          <Select
-            disabled={saving}
-            items={candidates.map((candidate) => ({
-              value: candidate.id,
-              label: `${candidate.model} · ${candidate.runners.names.join(', ') || t('agents.where.none')}`,
-            }))}
-            value={target.id}
-            onValueChange={(value) => {
-              const next = candidates.find(
-                (candidate) => candidate.id === value,
-              );
-              if (next) setTarget(next);
-            }}
-          >
-            <SelectTrigger id='agent-provider'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {candidates.map((candidate) => (
-                <SelectItem key={candidate.id} value={candidate.id}>
-                  {candidate.model} ·{' '}
-                  {candidate.runners.names.join(', ') || t('agents.where.none')}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      ) : null}
-      <AgentForm
-        key={target.id}
-        agent={target}
-        onClose={onClose}
-        onSavingChange={setSaving}
-      />
-    </>
   );
 }
 
@@ -149,37 +73,32 @@ function AgentChoice({
 function AgentForm({
   agent,
   onClose,
-  onSavingChange,
 }: {
   readonly agent: AgentView;
   readonly onClose: () => void;
-  readonly onSavingChange: (saving: boolean) => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
   const api = useAgentsApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
-  const enabling = agent.status === 'pending';
   const [goodAt, setGoodAt] = useState(
-    () => agent.description ?? suggestionFor(agent, i18n.language),
+    () => agent.description ?? modelSuggestion(agent, i18n.language, t),
   );
   const [effort, setEffort] = useState<string>(agent.effort ?? DEFAULT_EFFORT);
   const [enabled, setEnabled] = useState(agent.status !== 'disabled');
   const [submitted, setSubmitted] = useState(false);
 
   const save = useMutation({
-    onMutate: () => onSavingChange(true),
-    onSettled: () => onSavingChange(false),
     mutationFn: (target: AgentView) =>
       api.updateAgent(target.id, {
         description: goodAt.trim() || null,
         effort: effort === DEFAULT_EFFORT ? null : effort,
-        enabled: enabling ? true : enabled,
+        enabled,
         expectedRevision: target.revision,
       }),
     onSuccess: (saved) => {
       notify.success(
-        t(enabling ? 'agents.enable.done' : 'agents.edit.done', {
+        t('agents.edit.done', {
           name: saved.name,
         }),
       );
@@ -189,7 +108,7 @@ function AgentForm({
     onError: (error) => notify.error(error),
   });
 
-  const missing = (enabling || enabled) && goodAt.trim() === '';
+  const missing = enabled && goodAt.trim() === '';
   const { runners } = agent;
   const reportedBy = t('agents.enable.reportedBy', {
     count: runners.team + runners.personal,
@@ -200,7 +119,7 @@ function AgentForm({
     <>
       <DialogHeader className='shrink-0'>
         <DialogTitle>
-          {t(enabling ? 'agents.enable.title' : 'agents.edit.title', {
+          {t('agents.edit.title', {
             name: agent.name,
           })}
         </DialogTitle>
@@ -280,18 +199,16 @@ function AgentForm({
               </FieldDescription>
             </Field>
           ) : null}
-          {!enabling ? (
-            <Field orientation='horizontal'>
-              <Switch
-                id='agent-enabled'
-                checked={enabled}
-                onCheckedChange={(checked: boolean) => setEnabled(checked)}
-              />
-              <FieldLabel htmlFor='agent-enabled'>
-                {t('agents.edit.enabled')}
-              </FieldLabel>
-            </Field>
-          ) : null}
+          <Field orientation='horizontal'>
+            <Switch
+              id='agent-enabled'
+              checked={enabled}
+              onCheckedChange={(checked: boolean) => setEnabled(checked)}
+            />
+            <FieldLabel htmlFor='agent-enabled'>
+              {t('agents.edit.enabled')}
+            </FieldLabel>
+          </Field>
           {agent.personalOnly ? (
             <p className='rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground'>
               {t('agents.enable.personalOnly')}
@@ -309,7 +226,7 @@ function AgentForm({
           disabled={save.isPending}
           data-testid='agent-dialog-save'
         >
-          {t(enabling ? 'agents.enable.submit' : 'actions.save')}
+          {t('actions.save')}
         </Button>
       </DialogFooter>
     </>

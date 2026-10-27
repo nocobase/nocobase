@@ -1,3 +1,9 @@
+import type { ReactElement } from 'react';
+import { renderWithApp, type RenderedApp } from '@nocobase/app-testing/client';
+import {
+  realtimeClientToken,
+  type RealtimeWatchOptions,
+} from '@nocobase/app-client';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
 import locales from '../../client/locales/index.js';
@@ -5,7 +11,6 @@ import { MAIL_PLUGIN_NS } from '../../client/namespace.js';
 import {
   act,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
@@ -46,17 +51,14 @@ const mail = vi.hoisted(() => ({
 }));
 
 const realtime = vi.hoisted(() => ({
-  subscribe: vi.fn(() => () => undefined),
+  watch: vi.fn((_topic: string, _options?: RealtimeWatchOptions<unknown>) => ({
+    state: 'subscribed' as const,
+    error: undefined,
+    retry: () => {},
+    close: () => {},
+  })),
   onOpen: vi.fn(() => () => undefined),
 }));
-vi.mock('@nocobase/app-client', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@nocobase/app-client')>();
-  return {
-    ...actual,
-    useService: (token: unknown) =>
-      token === actual.realtimeClientToken ? realtime : undefined,
-  };
-});
 
 vi.mock('../../client/runtime.js', () => ({
   useMailClient: () => mail,
@@ -79,8 +81,8 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       await user.selectOptions(element, value);
       return;
     }
-    await user.clear(element);
-    if (value) await user.type(element, value);
+    // Seed form state in one change so a timeout cannot leave pending keystrokes for the next test.
+    fireEvent.change(element, { target: { value } });
   };
 
   const seedRichTextHtml = (editor: HTMLElement, html: string) => {
@@ -197,7 +199,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listProviders
       .mockClear()
       .mockImplementation(async () => structuredClone(providers));
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     const compose = await screen.findByRole('button', { name: 'Compose' });
     // The button appears before accounts and provider capabilities finish loading.
     await waitFor(() => expect(compose).toBeEnabled());
@@ -231,7 +233,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     const incoming = { ...createUnreadMessage('new-mail'), read: true };
     mail.listMessages.mockResolvedValue({ items: [initial] });
     mail.getMessage.mockResolvedValue(initial);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(
       await screen.findByRole('button', { name: /current-mail/ }),
     );
@@ -239,25 +241,27 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     await user.click(screen.getByRole('button', { name: 'Compose' }));
     const composer = await screen.findByRole('dialog', { name: 'New message' });
     await setFormValue(
-      within(composer).getByLabelText('TO'),
+      within(composer).getByLabelText('To'),
       'unfinished@example.com',
     );
     mail.listMessages.mockResolvedValue({ items: [incoming, initial] });
-    const subscribe = realtime.subscribe as unknown as {
-      mock: { calls: [string, (event: { payload: unknown }) => void][] };
+    const watch = realtime.watch as unknown as {
+      mock: {
+        calls: [string, { onEvent: (event: { payload: unknown }) => void }][];
+      };
     };
-    const listener = subscribe.mock.calls.at(-1)![1];
+    const listener = watch.mock.calls.at(-1)![1].onEvent;
     act(() => listener({ payload: { kind: 'mail.changed' } }));
     await screen.findByRole('button', { name: /new-mail/ });
     expect(screen.getByText('Body current-mail')).toBeInTheDocument();
-    expect(within(composer).getByLabelText('TO')).toHaveValue(
+    expect(within(composer).getByLabelText('To')).toHaveValue(
       'unfinished@example.com',
     );
   });
 
   it('links first-time users to the accounts page the application names', async () => {
     mail.listAccounts.mockResolvedValue([]);
-    render(<MailWorkspacePage accountsHref='/mail/accounts' />);
+    await renderPage(<MailWorkspacePage accountsHref='/mail/accounts' />);
     const connect = await screen.findByRole('link', {
       name: 'Connect mail account',
     });
@@ -267,7 +271,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
 
   it('shows no setup link when the application names no accounts page', async () => {
     mail.listAccounts.mockResolvedValue([]);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await screen.findByText('Connect your first mailbox');
     expect(
       screen.queryByRole('link', { name: 'Connect mail account' }),
@@ -286,7 +290,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       });
       try {
         mail.listAccounts.mockResolvedValue([]);
-        render(
+        await renderPage(
           <MailWorkspacePage
             accountsHref='/mail/accounts?from=workspace'
             headerActions={<button type='button'>Application action</button>}
@@ -320,7 +324,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     'does not invent a personal account route without accountsHref %j',
     async (accountsHref) => {
       mail.listAccounts.mockResolvedValue([]);
-      const { rerender } = render(
+      const { rerender } = await renderPage(
         <MailWorkspacePage
           accountsHref={accountsHref}
           headerActions={<button type='button'>Application action</button>}
@@ -344,7 +348,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   );
 
   it('does not invent account links for a populated workspace either', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
     );
@@ -364,7 +368,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       status: 'completed',
     });
     mail.startSync.mockClear();
-    render(
+    await renderPage(
       <MailWorkspacePage
         accountsHref='/mail/accounts'
         headerActions={
@@ -411,7 +415,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           status,
         },
       ]);
-      render(<MailWorkspacePage accountsHref='/mail/accounts' />);
+      await renderPage(<MailWorkspacePage accountsHref='/mail/accounts' />);
       expect(
         await screen.findByRole('link', { name: 'Connect mail account' }),
       ).toHaveAttribute('href', '/mail/accounts');
@@ -421,14 +425,14 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
 
   it('keeps composer errors and entered text when the mailbox refreshes', async () => {
     mail.listTemplates.mockRejectedValue(new Error('templates unavailable'));
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(await screen.findByRole('button', { name: 'Compose' }));
     const editor = await screen.findByRole('dialog', { name: 'New message' });
     expect(await within(editor).findByRole('alert')).toHaveTextContent(
       'templates unavailable',
     );
     await setFormValue(
-      within(editor).getByLabelText('TO'),
+      within(editor).getByLabelText('To'),
       'draft@example.com',
     );
     await setFormValue(screen.getByLabelText('Search mail'), 'project');
@@ -440,7 +444,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(within(editor).getByRole('alert')).toHaveTextContent(
       'templates unavailable',
     );
-    expect(within(editor).getByLabelText('TO')).toHaveValue(
+    expect(within(editor).getByLabelText('To')).toHaveValue(
       'draft@example.com',
     );
     expect(screen.getByRole('button', { name: 'Compose' })).toBeDisabled();
@@ -465,7 +469,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     };
     mail.listMessages.mockResolvedValue({ items: [message] });
     mail.getMessage.mockResolvedValue(message);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(
       await screen.findByRole('button', { name: /Reading flow/ }),
     );
@@ -499,7 +503,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           resolveDetails = resolve;
         }),
     );
-    const { container } = render(<MailWorkspacePage />);
+    const { container } = await renderPage(<MailWorkspacePage />);
     await screen.findByText(first.subject);
     await user.click(screen.getByRole('button', { name: 'Next page' }));
     await screen.findByText(second.subject);
@@ -543,7 +547,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     };
     mail.listMessages.mockResolvedValue({ items: [message] });
     mail.getMessage.mockResolvedValue(message);
-    const { container } = render(<MailWorkspacePage />);
+    const { container } = await renderPage(<MailWorkspacePage />);
     await user.click(
       await screen.findByRole('button', { name: new RegExp(message.subject) }),
     );
@@ -575,7 +579,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   it.each(['Unread', 'Starred', 'Sent', 'Drafts'])(
     'closes the drawer and switches to %s',
     async (name) => {
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await waitFor(() =>
         expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
       );
@@ -612,7 +616,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listLabels.mockResolvedValue([
       { id: 'mobile-label', name: 'Customer', color: 'blue' },
     ]);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
     );
@@ -658,7 +662,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     const message = { ...createUnreadMessage('Keyboard reading'), read: true };
     mail.listMessages.mockResolvedValue({ items: [message] });
     mail.getMessage.mockResolvedValue(message);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     const row = await screen.findByRole('button', {
       name: new RegExp(message.subject),
     });
@@ -682,7 +686,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('closes an open drawer when CSS hides its trigger and focuses the live search control', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
     );
@@ -743,7 +747,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('closes navigation with its translated close control without changing the list', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
     );
@@ -774,13 +778,13 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       };
       mail.listMessages.mockResolvedValue({ items: [message] });
       mail.getMessage.mockResolvedValue(message);
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await user.click(
         await screen.findByRole('button', { name: /quote-removal/ }),
       );
       await user.click(await screen.findByRole('button', { name: action }));
       await setFormValue(
-        await screen.findByLabelText('TO'),
+        await screen.findByLabelText('To'),
         'recipient@example.com',
       );
       const title = action === 'Reply' ? 'Quoted message' : 'Forwarded message';
@@ -828,12 +832,12 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       };
       mail.listMessages.mockResolvedValue({ items: [message] });
       mail.getMessage.mockResolvedValue(message);
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await user.click(
         await screen.findByRole('button', { name: /reply-target/ }),
       );
       await user.click(await screen.findByRole('button', { name: 'Reply' }));
-      expect(await screen.findByLabelText('TO')).toHaveValue(
+      expect(await screen.findByLabelText('To')).toHaveValue(
         hasReplyTo
           ? 'reply@example.com, team@example.com'
           : 'sender@example.com',
@@ -891,7 +895,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       size: 3,
       expiresAt: '',
     });
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(
       await screen.findByRole('button', { name: /image-reply/ }),
     );
@@ -927,7 +931,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     const refresh = vi.fn();
     window.addEventListener(MAIL_UNREAD_COUNT_CHANGED_EVENT, refresh);
     try {
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await user.click(await screen.findByRole('button', { name: /opened/ }));
       await screen.findByText('Body opened');
       expect(mail.updateMessage).toHaveBeenCalledExactlyOnceWith({
@@ -962,7 +966,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listMessages.mockResolvedValue({ items: [message] });
     mail.getMessage.mockResolvedValue(message);
     mail.updateMessage.mockRejectedValue(new Error('Read update failed'));
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(
       await screen.findByRole('button', { name: /failed-read/ }),
     );
@@ -997,7 +1001,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       ...(messageId === 'older' ? older : unread),
       read: true,
     }));
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(await screen.findByRole('button', { name: /thread/ }));
     await screen.findByText('Body thread');
     await waitFor(() => expect(mail.updateMessage).toHaveBeenCalledTimes(1));
@@ -1026,7 +1030,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           }),
       )
       .mockResolvedValueOnce(second);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(await screen.findByRole('button', { name: /first/ }));
     await user.click(screen.getByRole('button', { name: /second/ }));
     await screen.findByText('Body second');
@@ -1056,7 +1060,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         total: 2333,
         nextCursor: 'page-2',
       });
-      render(
+      await renderPage(
         <I18nProvider runtime={runtime}>
           <MailWorkspacePage />
         </I18nProvider>,
@@ -1123,7 +1127,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       items: [message('First page message')],
       nextCursor: 'page-2',
     });
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await screen.findByText('First page message');
     const previous = screen.getByRole('button', { name: 'Previous page' });
     const next = screen.getByRole('button', { name: 'Next page' });
@@ -1194,7 +1198,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       items: [],
       nextCursor: 'page-2',
     });
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     const next = await screen.findByRole('button', { name: 'Next page' });
     await waitFor(() => expect(next).toBeEnabled());
     let resolvePage!: (page: { items: []; nextCursor: string }) => void;
@@ -1227,7 +1231,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listMessages.mockResolvedValue({ items: [message] });
     mail.getMessage.mockResolvedValue(message);
     await act(async () => {
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
     });
 
     await user.click(screen.getByText('forward-source'));
@@ -1250,7 +1254,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         'message body',
       );
     expect(screen.getByLabelText('Subject')).toHaveValue('Fwd: forward-source');
-    await setFormValue(screen.getByLabelText('TO'), 'recipient@example.com');
+    await setFormValue(screen.getByLabelText('To'), 'recipient@example.com');
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled(),
     );
@@ -1283,7 +1287,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     );
     mail.listMessages.mockResolvedValue({ items: [source] });
     mail.getMessage.mockResolvedValue(source);
-    const first = render(<MailWorkspacePage />);
+    const first = await renderPage(<MailWorkspacePage />);
     await user.click(await screen.findByText('styled-forward'));
     await user.click(await screen.findByRole('button', { name: 'Forward' }));
     const editor = screen.getByLabelText('Message body');
@@ -1312,7 +1316,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listMessages.mockResolvedValue({ items: [draft] });
     mail.getMessage.mockResolvedValue(draft);
     await act(async () => {
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
     });
     await user.click(screen.getByText('Saved styled forward'));
     await user.click(await screen.findByRole('button', { name: 'Edit draft' }));
@@ -1323,7 +1327,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       screen.getByTitle('Forwarded message').getAttribute('srcdoc'),
     ).toContain('.banner');
     seedRichTextHtml(restored, '<p>Updated note</p>');
-    await setFormValue(screen.getByLabelText('TO'), 'recipient@example.com');
+    await setFormValue(screen.getByLabelText('To'), 'recipient@example.com');
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled(),
     );
@@ -1344,12 +1348,12 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     async (subject) => {
       const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
       try {
-        render(<MailWorkspacePage />);
+        await renderPage(<MailWorkspacePage />);
         const compose = await screen.findByRole('button', { name: 'Compose' });
         await waitFor(() => expect(compose).toBeEnabled());
         await user.click(compose);
         await setFormValue(
-          await screen.findByLabelText('TO'),
+          await screen.findByLabelText('To'),
           'recipient@example.com',
         );
         await setFormValue(screen.getByLabelText('Subject'), subject);
@@ -1377,7 +1381,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   );
 
   it('sends mail from the production workspace composer', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const compose = await screen.findByRole('button', { name: 'Compose' });
     await waitFor(() => expect(compose).toBeEnabled());
@@ -1387,7 +1391,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       screen.queryByRole('combobox', { name: 'From' }),
     ).not.toBeInTheDocument();
     await setFormValue(
-      await screen.findByLabelText('TO'),
+      await screen.findByLabelText('To'),
       'recipient@example.com',
     );
     await setFormValue(screen.getByLabelText('Subject'), 'Production message');
@@ -1437,7 +1441,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
             }
           : {}),
       });
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       const compose = await screen.findByRole('button', { name: 'Compose' });
       await waitFor(() => expect(compose).toBeEnabled());
       await user.click(compose);
@@ -1446,7 +1450,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           JSON.stringify(['account-1', 'identity-1']),
         ),
       );
-      await setFormValue(screen.getByLabelText('TO'), 'recipient@example.com');
+      await setFormValue(screen.getByLabelText('To'), 'recipient@example.com');
       await setFormValue(screen.getByLabelText('Subject'), 'Delivery status');
       const body = screen.getByLabelText('Message body');
       seedRichTextHtml(body, '<p>Test content</p>');
@@ -1479,32 +1483,32 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   );
 
   it('keeps Cc and Bcc fields hidden until their text buttons are clicked', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const compose = await screen.findByRole('button', { name: 'Compose' });
     await waitFor(() => expect(compose).toBeEnabled());
     await user.click(compose);
     const ccButton = await screen.findByRole('button', { name: 'Cc' });
 
-    expect(screen.queryByLabelText('CC')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('BCC')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Cc')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Bcc')).not.toBeInTheDocument();
 
     await user.click(ccButton);
-    expect(await screen.findByLabelText('CC')).toBeInTheDocument();
-    expect(screen.queryByLabelText('BCC')).not.toBeInTheDocument();
+    expect(await screen.findByLabelText('Cc')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Bcc')).not.toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', { name: 'Bcc' }));
-    expect(await screen.findByLabelText('BCC')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Bcc')).toBeInTheDocument();
   });
 
   it('shows the scheduled time only after enabling scheduled send', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     await user.click(await screen.findByRole('button', { name: 'Compose' }));
     await waitFor(() =>
       expect(mail.listIdentities).toHaveBeenCalledWith('account-1'),
     );
-    await setFormValue(screen.getByLabelText('TO'), 'recipient@example.com');
+    await setFormValue(screen.getByLabelText('To'), 'recipient@example.com');
     await setFormValue(screen.getByLabelText('Subject'), 'Scheduled message');
     const editor = screen.getByLabelText('Message body');
     seedRichTextHtml(editor, '<p>Message content</p>');
@@ -1554,7 +1558,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       },
     ]);
 
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     expect(await screen.findByLabelText('Account')).toHaveValue('');
     await waitFor(() =>
@@ -1600,7 +1604,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       },
     ]);
 
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const accountTree = await screen.findByRole('navigation', {
       name: 'Accounts',
@@ -1654,7 +1658,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     ]);
     mail.listLabels.mockRejectedValueOnce(new Error('labels unavailable'));
 
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const accountSelect = await screen.findByLabelText('Account');
     expect(
@@ -1681,7 +1685,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       },
     ]);
 
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await setFormValue(await screen.findByLabelText('Account'), 'account-1');
 
     await waitFor(() => {
@@ -1729,7 +1733,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     };
     mail.listMessages.mockResolvedValue({ items: [message] });
     mail.getMessage.mockResolvedValue(message);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     const compose = await screen.findByRole('button', { name: 'Compose' });
     await waitFor(() => expect(compose).toBeEnabled());
     await user.click(await screen.findByText('IMAP message'));
@@ -1783,7 +1787,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     try {
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await setFormValue(await screen.findByLabelText('Account'), 'account-1');
       await waitFor(() => {
         expect(mail.listMessages).toHaveBeenLastCalledWith(
@@ -1860,7 +1864,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       ],
     });
 
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     expect(await screen.findByText('Project update')).toBeInTheDocument();
     expect(screen.getAllByText('Project update')).toHaveLength(1);
@@ -1879,7 +1883,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       },
     ]);
 
-    render(<MailWorkspacePage accountsHref='/mail/accounts' />);
+    await renderPage(<MailWorkspacePage accountsHref='/mail/accounts' />);
 
     expect(
       await screen.findByRole('button', { name: 'Compose' }),
@@ -1906,7 +1910,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         status: 'suspended',
       },
     ]);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     const selector = await screen.findByLabelText('Account');
     await waitFor(() =>
       expect(mail.listFolders).toHaveBeenCalledWith('account-1'),
@@ -1931,7 +1935,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         },
       ],
     });
-    render(<MailWorkspacePage accountsHref='/mail/accounts' />);
+    await renderPage(<MailWorkspacePage accountsHref='/mail/accounts' />);
     expect(await screen.findByText('Previously visible mail')).toBeVisible();
     mail.listAccounts.mockResolvedValue([{ ...active, status: 'suspended' }]);
     now.mockReturnValue(30_000);
@@ -1956,7 +1960,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         updatedAt: '2026-09-08T00:00:00.000Z',
       },
     ]);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     await user.click(await screen.findByRole('button', { name: 'Compose' }));
     await user.click(await screen.findByRole('button', { name: 'Signature' }));
@@ -1964,7 +1968,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       await screen.findByRole('menuitem', { name: 'Support signature' }),
     );
     await setFormValue(
-      screen.getByLabelText('TO'),
+      screen.getByLabelText('To'),
       'first@example.com, second@example.com',
     );
     await setFormValue(screen.getByLabelText('Subject'), 'Team update');
@@ -2017,7 +2021,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     try {
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await user.click(await screen.findByRole('button', { name: 'Compose' }));
       const editor = await screen.findByLabelText('Message body');
       await waitFor(() => expect(editor).toHaveTextContent('Regards, Sales'));
@@ -2039,13 +2043,13 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
 
   it('does not allow sending without a subject and message body', async () => {
     const user = userEvent.setup();
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const compose = await screen.findByRole('button', { name: 'Compose' });
     await waitFor(() => expect(compose).toBeEnabled());
     await user.click(compose);
     await setFormValue(
-      await screen.findByLabelText('TO'),
+      await screen.findByLabelText('To'),
       'recipient@example.com',
     );
     const send = screen.getByRole('button', { name: 'Send' });
@@ -2132,7 +2136,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listMessages.mockResolvedValue({ items: [message] });
     mail.getMessage.mockResolvedValue(message);
 
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
@@ -2176,7 +2180,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('auto-saves rich text after two seconds and updates the same local draft', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await vi.waitFor(() => expect(mail.listAccounts).toHaveBeenCalled());
     await vi.waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
@@ -2237,7 +2241,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         retainedAttachments: [],
       }),
     );
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const compose = await screen.findByRole('button', { name: 'Compose' });
     await waitFor(() => expect(compose).toBeEnabled());
@@ -2254,13 +2258,13 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
 
   it('closes immediately and flushes the draft in the background without a confirmation', async () => {
     const user = userEvent.setup();
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     const compose = await screen.findByRole('button', { name: 'Compose' });
     await waitFor(() => expect(compose).toBeEnabled());
     await user.click(compose);
-    await setFormValue(await screen.findByLabelText('TO'), 'draft@example.com');
+    await setFormValue(await screen.findByLabelText('To'), 'draft@example.com');
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByLabelText('TO')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('To')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('dialog', { name: 'Close this message?' }),
     ).not.toBeInTheDocument();
@@ -2282,7 +2286,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         scope: 'private',
       },
     ]);
-    render(
+    await renderPage(
       <MailWorkspacePage
         templateVariables={{
           record: { number: 'SO-1001', customer: { name: 'Ada' } },
@@ -2302,13 +2306,13 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('removes inline attachment references when the image is deleted from the body', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     const compose = await screen.findByRole('button', { name: 'Compose' });
     // Compose is rendered before account and provider metadata enables it.
     await waitFor(() => expect(compose).toBeEnabled());
     await user.click(compose);
     await setFormValue(
-      await screen.findByLabelText('TO'),
+      await screen.findByLabelText('To'),
       'recipient@example.com',
     );
     await setFormValue(screen.getByLabelText('Subject'), 'Inline image');
@@ -2347,12 +2351,12 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('previews an uploaded inline image and sends image-only HTML with its attachment', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     const compose = await screen.findByRole('button', { name: 'Compose' });
     await waitFor(() => expect(compose).toBeEnabled());
     await user.click(compose);
     await setFormValue(
-      await screen.findByLabelText('TO'),
+      await screen.findByLabelText('To'),
       'recipient@example.com',
     );
     await setFormValue(screen.getByLabelText('Subject'), 'Inline image');
@@ -2384,7 +2388,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('uploads and submits composer attachments', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const compose = await screen.findByRole('button', { name: 'Compose' });
     await waitFor(() => expect(compose).toBeEnabled());
@@ -2397,7 +2401,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     const file = new File(['report'], 'report.txt', { type: 'text/plain' });
     await user.upload(input, file);
     expect(await screen.findByText('report.txt')).toBeInTheDocument();
-    await setFormValue(screen.getByLabelText('TO'), 'recipient@example.com');
+    await setFormValue(screen.getByLabelText('To'), 'recipient@example.com');
     await setFormValue(screen.getByLabelText('Subject'), 'Attachment message');
     const editor = screen.getByLabelText('Message body');
     seedRichTextHtml(editor, '<p>Message with attachment</p>');
@@ -2427,7 +2431,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         },
       ],
     });
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await vi.waitFor(() => expect(mail.listAccounts).toHaveBeenCalled());
     await vi.waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
@@ -2466,8 +2470,43 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     }
   });
 
+  it('retries sync progress from the error action after automatic retries are exhausted', async () => {
+    mail.getSyncRun.mockRejectedValue(new Error('Temporary status outage'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const app = await renderPage(<MailWorkspacePage />);
+    const sync = await screen.findByRole('button', {
+      name: 'Sync all mailboxes',
+    });
+    await waitFor(() => expect(sync).toBeEnabled());
+    await user.click(sync);
+    await waitFor(() => expect(mail.startSync).toHaveBeenCalledTimes(1));
+    const subscription = realtime.watch.mock.calls.at(-1)![1]!;
+    vi.useFakeTimers();
+    try {
+      act(() => subscription.onReady?.());
+      await act(async () => vi.advanceTimersByTimeAsync(30_000));
+      expect(mail.getSyncRun).toHaveBeenCalledTimes(4);
+      expect(sync).toBeDisabled();
+      expect(screen.getByText('Temporary status outage')).toBeVisible();
+
+      mail.getSyncRun.mockResolvedValue({
+        ...(await mail.startSync.mock.results[0]!.value),
+        status: 'completed',
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(sync).toBeEnabled();
+      expect(screen.queryByText('Temporary status outage')).toBeNull();
+      expect(mail.startSync).toHaveBeenCalledTimes(1);
+    } finally {
+      await app.unmount();
+      vi.useRealTimers();
+      log.mockRestore();
+    }
+  });
+
   it('syncs the current all-account scope by default', async () => {
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const sync = await screen.findByRole('button', {
       name: 'Sync all mailboxes',
@@ -2517,7 +2556,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       updatedAt: '2026-09-06T00:00:00.000Z',
     }));
 
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     const sync = await screen.findByRole('button', {
       name: 'Sync all mailboxes',
@@ -2568,7 +2607,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         canSend: false,
       },
     ]);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(await screen.findByRole('button', { name: 'Compose' }));
     const first = await screen.findByRole('dialog', { name: 'New message' });
     await waitFor(() =>
@@ -2577,7 +2616,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       ).toHaveLength(3),
     );
     await setFormValue(
-      within(first).getByLabelText('TO'),
+      within(first).getByLabelText('To'),
       'first-recipient@example.com',
     );
     await setFormValue(within(first).getByLabelText('Subject'), 'First draft');
@@ -2621,7 +2660,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       ).not.toBeNull(),
     );
     const restored = screen.getByRole('dialog', { name: 'New message' });
-    expect(within(restored).getByLabelText('TO')).toHaveValue(
+    expect(within(restored).getByLabelText('To')).toHaveValue(
       'first-recipient@example.com',
     );
     expect(within(restored).getByLabelText('Message body')).toHaveTextContent(
@@ -2639,7 +2678,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     );
     const third = screen.getByRole('dialog', { name: 'New message' });
     await setFormValue(
-      within(third).getByLabelText('TO'),
+      within(third).getByLabelText('To'),
       'third-recipient@example.com',
     );
     await setFormValue(
@@ -2725,7 +2764,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         },
       ];
     });
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(await screen.findByRole('button', { name: 'Compose' }));
     await screen.findByText('Account identities unavailable');
     const from = screen.getByRole('combobox', { name: 'From address' });
@@ -2779,14 +2818,14 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       'account-2',
     );
 
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     await user.click(await screen.findByRole('button', { name: 'Compose' }));
     await waitFor(() =>
       expect(mail.listIdentities).toHaveBeenCalledWith('account-2'),
     );
     await setFormValue(
-      await screen.findByLabelText('TO'),
+      await screen.findByLabelText('To'),
       'recipient@example.com',
     );
     await setFormValue(
@@ -2828,7 +2867,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           finishCancel = resolve;
         }),
     );
-    const { container } = render(<MailWorkspacePage />);
+    const { container } = await renderPage(<MailWorkspacePage />);
     await user.click(
       await screen.findByRole('button', { name: /scheduled-draft/ }),
     );
@@ -2872,7 +2911,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listMessages.mockResolvedValue({ items: [draft] });
     mail.getMessage.mockResolvedValue(draft);
     mail.cancelSubmission.mockRejectedValue(new Error('Already submitting'));
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     // PM-351 tracks the error cleared after cancellation fails; retain low-level clicks here and do not claim this test verifies real user interaction.
     fireEvent.click(
       await screen.findByRole('button', { name: /scheduled-draft/ }),
@@ -2902,7 +2941,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           ? { ...latest, ...input }
           : latest,
     );
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
     await user.click(await screen.findByText('reopened-draft'));
     await user.click(await screen.findByRole('button', { name: 'Edit draft' }));
     const editor = await screen.findByLabelText('Message body');
@@ -2935,7 +2974,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
             rejectSave = reject;
           }),
       );
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await user.click(await screen.findByRole('button', { name: 'Compose' }));
       await setFormValue(
         await screen.findByLabelText('Subject'),
@@ -2998,7 +3037,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     };
     mail.listMessages.mockResolvedValue({ items: [draft] });
     mail.getMessage.mockResolvedValue(draft);
-    render(<MailWorkspacePage />);
+    await renderPage(<MailWorkspacePage />);
 
     await user.click(await screen.findByText('Existing draft'));
     await user.click(await screen.findByRole('button', { name: 'Edit draft' }));
@@ -3054,7 +3093,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       };
       mail.listMessages.mockResolvedValue({ items: [draft] });
       mail.getMessage.mockResolvedValue(draft);
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await user.click(await screen.findByText('inline-draft'));
       const frame = await screen.findByTitle('inline-draft');
       expect(frame.getAttribute('srcdoc')).toContain('/attachments/image-1');
@@ -3107,7 +3146,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       mail.uploadAttachment.mockImplementation(upload);
       mail.listMessages.mockResolvedValue({ items: [message] });
       mail.getMessage.mockResolvedValue(message);
-      render(<MailWorkspacePage />);
+      await renderPage(<MailWorkspacePage />);
       await user.click(
         await screen.findByRole('button', { name: /pending-reply/ }),
       );
@@ -3148,10 +3187,10 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           : 'Re: pending-reply',
       );
       if (openAnotherComposer) {
-        expect(screen.getByLabelText('TO')).toHaveValue('');
+        expect(screen.getByLabelText('To')).toHaveValue('');
         expect(screen.queryByTitle('Quoted message')).not.toBeInTheDocument();
       } else {
-        expect(screen.getByLabelText('TO')).toHaveValue('reply@example.com');
+        expect(screen.getByLabelText('To')).toHaveValue('reply@example.com');
         expect(
           screen.getByTitle('Quoted message').getAttribute('srcdoc'),
         ).toContain('Pending original');
@@ -3201,4 +3240,19 @@ function createUnreadMessage(id: string) {
     draft: false,
     hasAttachments: false,
   };
+}
+
+async function renderPage(ui: ReactElement): Promise<RenderedApp> {
+  return renderWithApp(ui, {
+    namespace: MAIL_PLUGIN_NS,
+    namespaces: { [MAIL_PLUGIN_NS]: locales },
+    services: (app) => {
+      vi.spyOn(
+        app.container.resolve(realtimeClientToken),
+        'watch',
+      ).mockImplementation((topic, options) =>
+        realtime.watch(topic, options as RealtimeWatchOptions<unknown>),
+      );
+    },
+  });
 }

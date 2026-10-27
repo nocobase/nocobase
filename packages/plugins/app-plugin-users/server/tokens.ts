@@ -12,6 +12,18 @@ import type {
 import type { UserPreferencesService } from './preferences/service.js';
 
 export type UserRoleSelection = 'single' | 'multiple';
+
+/**
+ * An action of the management API on one account that `UserRoleScope.assertCanAdminister` is asked about. Deleting has
+ * its own hook, `assertCanDelete`.
+ */
+export type UserAdministrationAction =
+  | 'update'
+  | 'disable'
+  | 'enable'
+  | 'reset-password'
+  | 'revoke-sessions'
+  | 'assign-role';
 export type UserRoleValue = string | readonly string[];
 
 export interface UserRoleOption {
@@ -34,7 +46,8 @@ export interface UserRoleScope {
   readonly selection: UserRoleSelection;
   readonly requiredOnCreate?: boolean;
   /** The scope shows direct roles while authenticated-subject permissions apply separately. */
-  readonly hasAuthenticatedDefaultAccess?: boolean;
+  readonly hasAuthenticatedDefaultAccess?: boolean | (() => Promise<boolean>);
+  readonly defaultValue?: UserRoleValue;
   options(): Promise<readonly UserRoleOption[]>;
   get(userId: string, connection: DatabaseConnection): Promise<UserRoleValue>;
   getMany?(
@@ -58,6 +71,18 @@ export interface UserRoleScope {
   onDelete?(userId: string, connection: DatabaseConnection): Promise<void>;
   assertCanDisable?(
     userId: string,
+    connection: DatabaseConnection,
+  ): Promise<void>;
+  /**
+   * Refuses `actorId` doing `action` to `userId`, such as changing an application owner's account by someone who is
+   * not one, by throwing a `UserRoleScopeError`. Called in the action's transaction, before it changes anything,
+   * whenever the caller names its actor, as every HTTP route does with the authenticated principal. Authorization of
+   * the action itself has already passed; this guards the target.
+   */
+  assertCanAdminister?(
+    userId: string,
+    actorId: string,
+    action: UserAdministrationAction,
     connection: DatabaseConnection,
   ): Promise<void>;
 }
@@ -88,6 +113,7 @@ export interface UserManagementOptions {
     selection: UserRoleSelection;
     requiredOnCreate: boolean;
     hasAuthenticatedDefaultAccess: boolean;
+    defaultValue?: UserRoleValue;
     options: readonly UserRoleOption[];
   }[];
 }
@@ -98,7 +124,13 @@ export interface ListManagedUsersInput {
   readonly search?: string;
   readonly status?: 'enabled' | 'disabled';
   readonly roleScope?: string;
+  readonly sort?: 'name';
+  readonly order?: 'asc' | 'desc';
   readonly role?: string;
+}
+
+export interface UpdateManagedUserInput extends UpdateAdministratedUserInput {
+  readonly roleScopes?: Readonly<Record<string, UserRoleValue>>;
 }
 
 export interface CreateManagedUserInput extends CreateAdministratedUserInput {
@@ -197,22 +229,34 @@ export type UserInvitationAcceptedHandler = (
 ) => Promise<void>;
 
 export interface UserManagementService {
+  get(userId: string): Promise<ManagedUser>;
   options(): Promise<UserManagementOptions>;
   list(input?: ListManagedUsersInput): Promise<ManagedUserPage>;
   create(input: CreateManagedUserInput): Promise<ManagedUser>;
+  /**
+   * The account actions below take the acting user as `actorId`, which role scopes check the target against
+   * (`UserRoleScope.assertCanAdminister`). Leave it out only for the application's own server-side work, which acts
+   * for nobody.
+   */
   update(
     userId: string,
-    input: UpdateAdministratedUserInput,
+    input: UpdateManagedUserInput,
+    actorId?: string,
   ): Promise<ManagedUser>;
-  disable(userId: string): Promise<ManagedUser>;
-  enable(userId: string): Promise<ManagedUser>;
+  disable(userId: string, actorId?: string): Promise<ManagedUser>;
+  enable(userId: string, actorId?: string): Promise<ManagedUser>;
   replaceRoleScope(
     userId: string,
     scope: string,
     value: UserRoleValue,
+    actorId?: string,
   ): Promise<ManagedUser>;
-  resetPassword(userId: string, password: string): Promise<void>;
-  revokeSessions(userId: string): Promise<void>;
+  resetPassword(
+    userId: string,
+    password: string,
+    actorId?: string,
+  ): Promise<void>;
+  revokeSessions(userId: string, actorId?: string): Promise<void>;
   remove(userId: string, actorId: string): Promise<void>;
   /** Invites each address; one without an account gets a link by email. */
   invite(input: InviteUsersInput): Promise<UserInvitationResult[]>;

@@ -85,9 +85,9 @@ export function HeaderActions(): ReactElement {
 
 - Translate the copy and use tokens for colors. Header icon buttons match the existing entries in size, spacing, focus style, and button styling.
 - Leave overlay positioning to the component, including at the right edge of the screen.
-- Whichever entry you change, reuse its existing interaction tests (for example `tests/components/header-hover.test.tsx`). Do not simulate layout or submenu pointer geometry in jsdom; it does not match how a real browser behaves.
+- Whichever entry you change, reuse its existing interaction tests (for example `tests/client/header-hover.test.tsx`). Do not simulate layout or submenu pointer geometry in jsdom; it does not match how a real browser behaves.
 
 ## 3. Verify
 
-- Run the shell tests that cover what you changed: `tests/components/header-hover.test.tsx` (hover, keyboard and Escape), `navigation-menu.test.tsx`, `sidebar-permissions.test.tsx`, `sidebar-preference.test.tsx` and `language-switcher.test.tsx` under `tests/components/`, and `tests/logic/client-shell.test.tsx` and `tests/logic/user-menu-sign-out.test.tsx`.
+- Run the shell tests that cover what you changed: `tests/client/header-hover.test.tsx` (hover, keyboard and Escape), `navigation-menu.test.tsx`, `sidebar-permissions.test.tsx`, `sidebar-preference.test.tsx` and `language-switcher.test.tsx` under `tests/client/`, and `tests/client/client-shell.test.tsx` and `tests/client/user-menu-sign-out.test.tsx`.
 - Look at the App layout in the browser, on the desktop and at 375px, with the sidebar expanded and collapsed.

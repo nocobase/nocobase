@@ -1,0 +1,36 @@
+/*
+ * The home page and the NocoBase 2 vs 3 page were published inside the Rspress theme, which set Nunito on the body and
+ * on every heading with `!important`. Their own styles override the weight and spacing but not the family, so their
+ * headings and the comparison's header render in Nunito. These rules keep those two pages looking exactly as they do
+ * today; drop them, and the font import, once the pages are redesigned on their own font stack.
+ */
+@import '@fontsource/nunito/400.css';
+@import '@fontsource/nunito/600.css';
+
+/* `html` raises the body rule above global.css, whichever order the bundler emits them in. */
+html body {
+  font-family:
+    Nunito,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+}
+
+html h1,
+html h2,
+html h3,
+html h4,
+html h5,
+html h6 {
+  font-family:
+    Nunito,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif !important;
+}

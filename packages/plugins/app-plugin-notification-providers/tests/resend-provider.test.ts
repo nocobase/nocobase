@@ -1,3 +1,4 @@
+import { ServiceContainer } from '@nocobase/service-provider';
 import {
   type NotificationProvider,
   type NotificationProviderContext,
@@ -6,6 +7,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  ResendChannel,
   createResendProviderDefinition,
   defineResendProviderConfig,
 } from '../server/email/providers/resend.js';
@@ -19,7 +21,7 @@ vi.mock('resend', () => ({
   },
 }));
 
-describe('Resend Provider', () => {
+describe.each(['legacy', 'class'] as const)('Resend %s', (mode) => {
   beforeEach(() => {
     resendMock.send.mockReset();
   });
@@ -30,7 +32,7 @@ describe('Resend Provider', () => {
       error: null,
       headers: null,
     });
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     expect(provider.capabilities).toEqual({
       idempotency: {
@@ -65,7 +67,7 @@ describe('Resend Provider', () => {
       },
       headers: null,
     });
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     await expect(provider.send(sendInput())).resolves.toEqual({
       status: 'failed',
@@ -82,7 +84,7 @@ describe('Resend Provider', () => {
     resendMock.send.mockRejectedValue(
       Object.assign(new Error('Request timed out'), { code: 'ETIMEDOUT' }),
     );
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     await expect(provider.send(sendInput())).resolves.toEqual({
       status: 'submission_unknown',
@@ -104,7 +106,7 @@ describe('Resend Provider', () => {
       },
       headers: null,
     });
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     await expect(provider.send(sendInput())).resolves.toEqual({
       status: 'submission_unknown',
@@ -117,9 +119,21 @@ describe('Resend Provider', () => {
   });
 });
 
-async function createProvider(): Promise<
-  NotificationProvider<PreparedEmailMessage>
+async function createProvider(
+  mode: 'legacy' | 'class',
+): Promise<
+  Pick<NotificationProvider<PreparedEmailMessage>, 'send' | 'capabilities'>
 > {
+  if (mode === 'class')
+    return new ResendChannel(
+      { channelName: 'email', container: new ServiceContainer() },
+      {
+        type: 'resend',
+        apiKey: 're_test',
+        from: 'NocoBase <notifications@example.com>',
+        replyTo: 'support@example.com',
+      },
+    );
   return createResendProviderDefinition().createProvider(
     providerContext(),
     defineResendProviderConfig({

@@ -530,7 +530,7 @@ describe('protected Permission Sets', () => {
   });
 });
 
-describe('the subject types the root Permission Set accepts', () => {
+describe('persisted Permission Sets and root subjects', () => {
   let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let router: Hono;
@@ -556,6 +556,52 @@ describe('the subject types the root Permission Set accepts', () => {
     await testDatabase.destroy();
   });
 
+  it('persists native user action grants across reloads and selectively revokes one action', async () => {
+    const actions = ['read', 'invite', 'delete', 'reset-password'];
+    const grants = (allowed: readonly string[]) => [
+      {
+        resource: { type: 'user', id: '*' },
+        actions: allowed.map((action) => ({ action })),
+      },
+    ];
+    const created = await router.request(
+      PATH,
+      json('POST', { key: 'user-operators', grants: grants(actions) }),
+    );
+    expect(created.status).toBe(201);
+    expect(
+      (
+        await router.request(
+          `${PATH}/user-operators/assignments`,
+          json('POST', { subject: { type: 'user', id: 'alice' } }),
+        )
+      ).status,
+    ).toBe(201);
+    const reloaded = createAppAuthorization({
+      connection: database.connection(),
+    });
+    expect(await reloaded.permissionSets.get('user-operators')).toMatchObject({
+      grants: grants(actions),
+    });
+    const retained = actions.filter((action) => action !== 'delete');
+    expect(
+      (
+        await router.request(
+          `${PATH}/user-operators`,
+          json('PATCH', { grants: grants(retained) }),
+        )
+      ).status,
+    ).toBe(200);
+    const saved = await router.request(`${PATH}/user-operators`);
+    expect(await saved.json()).toMatchObject({
+      data: { grants: grants(retained) },
+    });
+    const after = createAppAuthorization({ connection: database.connection() });
+    expect(await after.permissionSets.get('user-operators')).toMatchObject({
+      grants: grants(retained),
+    });
+  });
+
   it('refuses the audience that would make every signed-in user unrestricted, and reports the restriction on the root set alone', async () => {
     const assign = (subject: object) =>
       router.request(`${PATH}/root/assignments`, json('POST', { subject }));
@@ -576,7 +622,7 @@ describe('the subject types the root Permission Set accepts', () => {
     const protection = (key: string): unknown =>
       body.data.find((set) => set.key === key)?.protection;
     expect(protection('root')).toMatchObject({ assignableTo: ['user'] });
-    expect(protection('member')).not.toHaveProperty('assignableTo');
+    expect(protection('member')).toMatchObject({ assignableTo: ['user'] });
   });
 });
 
@@ -801,5 +847,99 @@ describe('database write field grants', () => {
     await expect(updated.json()).resolves.toMatchObject({
       data: { record: { amount: 2 } },
     });
+  });
+  it('persists parameterized composite filters and rejects incomplete filters atomically', async () => {
+    const grants = (selection: unknown) => [
+      {
+        resource: { type: 'composite', id: 'test.counters' },
+        actions: [
+          {
+            action: 'edit',
+            policy: { type: 'composite', scopes: { counters: selection } },
+          },
+        ],
+      },
+    ];
+    const configured = {
+      type: 'recordAccess',
+      key: 'customFilter',
+      params: {
+        filter: {
+          kind: 'group',
+          logic: 'and',
+          items: [
+            {
+              kind: 'condition',
+              path: ['amount'],
+              operator: '$gte',
+              value: 10,
+            },
+          ],
+        },
+      },
+    };
+    expect(
+      (
+        await router.request(
+          PATH,
+          json('POST', { key: 'filtered', grants: grants(configured) }),
+        )
+      ).status,
+    ).toBe(201);
+    const before = await (
+      await router.request(`${PATH}/filtered`, json('GET'))
+    ).json();
+    expect(before.data.grants).toEqual(grants(configured));
+    for (const selection of [
+      'customFilter',
+      { ...configured, params: {} },
+      {
+        ...configured,
+        params: { filter: { kind: 'group', logic: 'and', items: [] } },
+      },
+      {
+        ...configured,
+        params: {
+          filter: {
+            kind: 'condition',
+            path: ['unknown'],
+            operator: '$eq',
+            value: 1,
+          },
+        },
+      },
+    ]) {
+      expect(
+        (
+          await router.request(
+            `${PATH}/filtered`,
+            json('PATCH', {
+              grants: grants(selection),
+              expectedRevision: before.data.revision,
+            }),
+          )
+        ).status,
+      ).toBe(400);
+      const after = await (
+        await router.request(`${PATH}/filtered`, json('GET'))
+      ).json();
+      expect(after.data.revision).toBe(before.data.revision);
+      expect(after.data.grants).toEqual(before.data.grants);
+    }
+    expect(
+      (
+        await router.request(
+          `${PATH}/filtered`,
+          json('PATCH', {
+            grants: grants(''),
+            expectedRevision: before.data.revision,
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    const empty = await (
+      await router.request(`${PATH}/filtered`, json('GET'))
+    ).json();
+    expect(empty.data.grants).toEqual(grants(''));
   });
 });

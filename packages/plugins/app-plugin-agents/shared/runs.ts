@@ -1,6 +1,8 @@
 /**
  * Runs as the browser and the server's admin API exchange them.
  */
+import type { QuotaReport } from '@nocobase/agent-protocol';
+
 import type {
   ActorKind,
   AgentTool,
@@ -29,6 +31,7 @@ export interface RunEffortReport {
 }
 
 export interface RunExecutionSnapshot {
+  readonly quota?: QuotaReport;
   readonly selection?: {
     readonly reason: 'preferredQueued' | 'preferredUnavailable';
     readonly preferredTool: string;
@@ -62,6 +65,37 @@ export interface RunExecutionSnapshot {
   readonly dispatchedAt: string;
   readonly finishedAt: string | null;
   readonly failureReason: string | null;
+  /** Set only by the server sweep; runner reports never supply this history marker. */
+  readonly failureSource?: 'sweeper';
+}
+
+/** Maximum consecutive server-reclaimed pre-start attempts, independent of the real failure budget. */
+export const PRE_START_INTERRUPTION_LIMIT = 10;
+
+/** Only server-reclaimed pre-start attempts are exempt from the real failure budget. */
+export function isPreStartInterruption(
+  execution: RunExecutionSnapshot,
+): boolean {
+  return (
+    execution.finishedAt !== null &&
+    execution.failureSource === 'sweeper' &&
+    (execution.failureReason === 'startTimeout' ||
+      execution.failureReason === 'runnerOfflineBeforeStart')
+  );
+}
+
+/** Both pre-start causes share one streak; every other ended attempt breaks it. */
+export function consecutivePreStartInterruptions(
+  executions: readonly RunExecutionSnapshot[],
+): number {
+  let count = 0;
+  for (let index = executions.length - 1; index >= 0; index--) {
+    const execution = executions[index];
+    if (execution.finishedAt === null) continue;
+    if (!isPreStartInterruption(execution)) break;
+    count++;
+  }
+  return count;
 }
 
 export type ModelWaitReason =
@@ -147,7 +181,7 @@ export interface Run {
   readonly threadScope: string;
   /** The run was asked to start a new session; absent on older servers. */
   readonly freshSession?: boolean;
-  /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
+  /** The person the run acts as: their permissions bound it, and only their own runners (or shared runners) take it. */
   /** Server-managed authorization for runs caused by one comment, never independent events. */
   readonly commentRootRunId?: string | null;
   readonly commentExecution?: 'owner' | 'requester' | null;
@@ -172,6 +206,7 @@ export interface Run {
   readonly finishedAt: string | null;
   readonly lastActivityAt: string | null;
   readonly cancelRequestedAt: string | null;
+  readonly cancelledById: string | null;
   readonly failureReason: FailureReason | null;
   readonly failureDetail: string | null;
   readonly summary: string | null;
@@ -268,7 +303,7 @@ export interface RunEventPage {
  *   signed in.
  * - `noSharedRunner`: only personal runners could take it, and none belongs to the person who woke the agent.
  * - `missingFeatures`: the runners that could take it lack what it needs (`missing`).
- * - `secretsNotAllowed`: some of its variables are for team runners only (`variables` names them), and the runners
+ * - `secretsNotAllowed`: some of its variables are for shared runners only (`variables` names them), and the runners
  *   that could take it are personal ones.
  * - `sameWorkActive`: the agent is already working on the same subject and thread; this run follows.
  * - `concurrencyFull`: the agent has as many runs held as it may have at once.
@@ -310,7 +345,7 @@ export type RunWaitReason = (typeof RUN_WAIT_REASONS)[number];
  * - `delayed`: `until` (RFC 3339).
  * - `toolUnavailable`: `tool`, the agent's default coding tool.
  * - `missingFeatures`: `features`, what no fitting runner has.
- * - `secretsNotAllowed`: `variables`, the names of the variables for team runners only.
+ * - `secretsNotAllowed`: `variables`, the names of the variables for shared runners only.
  * - `concurrencyFull`: `active`, `limit`, the agent's runs held and its limit.
  * - `runnersBusy`: `runners`, how many fitting runners have their slots full.
  * - `toolSlotsFull`: `tool`, `used`, `limit`, that tool's runs and limit on the fitting runner closest to room.
@@ -338,7 +373,7 @@ export interface RunWait {
   readonly missing: readonly RunnerFeature[];
   /** For `setupRetrying`: why preparing it failed. */
   readonly detail: string | null;
-  /** For `secretsNotAllowed`: the variables that ask for a team runner, by scope; absent when not provided. */
+  /** For `secretsNotAllowed`: the variables that ask for a shared runner, by scope; absent when not provided. */
   readonly variables?: readonly VariableRef[];
   /** What its words need (`RunWaitParams`); absent when nothing, or from a server before they were sent. */
   readonly params?: RunWaitParams;
@@ -422,7 +457,7 @@ export const RUN_EXECUTIONS = ['auto', 'mine'] as const;
 
 /**
  * `auto`: as the subject's responsible, once they confirm it when someone else asked; `mine`: as the person who asked,
- * at once, on a runner they may use (their own, or a team runner).
+ * at once, on a runner they may use (their own, or a shared runner).
  */
 export type RunExecution = (typeof RUN_EXECUTIONS)[number];
 

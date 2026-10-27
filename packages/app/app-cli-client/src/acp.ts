@@ -33,6 +33,7 @@ import { readUserConfig } from './lib/credentials.ts';
 import {
   hasStudioSkill,
   prepareSessionSkill,
+  sessionSkillInstructions,
   skillsEnvironment,
 } from './skills.ts';
 import { AppCommand, UsageError } from './lib/command.ts';
@@ -153,6 +154,8 @@ export function acpCommands(app: AppCliConfig): Record<string, Command.Class> {
           this.log(flags.service ? `${timestamp()} ${message}` : message);
         try {
           await runBridge({
+            sessionInstructions: (agentId) =>
+              sessionSkillInstructions(skillsEnvironment(app), agentId),
             prepareSession: async (agentId, sessionId) => {
               if (!hasStudioSkill(app) || !app.envPrefix)
                 throw new Error(

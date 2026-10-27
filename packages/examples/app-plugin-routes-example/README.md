@@ -30,7 +30,7 @@ The Client plugin declaration statically contributes `routes` and
 for nested pages or navigation groups. Omit `navigation` for a page without a
 menu entry, as the App page in this example does. Pages with children must place
 `<Outlet />` at the intended content location; pure navigation groups have no
-`componentLoader`. Refine resources serve CRUD configuration, not menus.
+`componentLoader`.
 
 Each entry page declares `authz`; nothing is inferred from the route name. Nested pages inherit it, and an entry page that omits it registers with a development warning and a default of `'unrestricted'` (root only) on protected pages or `'skip'` on guest and optional pages. The App page checks a page grant:
 
