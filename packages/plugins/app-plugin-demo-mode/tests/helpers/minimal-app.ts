@@ -30,20 +30,22 @@ function createApp(runtime: AppRuntimeContext): Application {
 }
 import appRuntime from './minimal-runtime.js';
 
-async function createServer(scope: AppScope): Promise<Application> {
-  const runtime = await resolveAppRuntime(appRuntime, scope);
-  return startApplicationInScope(scope, createApp(runtime));
+export function createMinimalServerFactory(
+  configure?: (app: Application) => void,
+): (options?: StandaloneServerOptions) => Promise<StandaloneServer> {
+  return defineStandaloneServer({
+    rootDir: path.resolve(
+      import.meta.dirname,
+      '../../skills/nocobase-app-plugin-demo-mode/assets/minimal-demo',
+    ),
+    appRuntime,
+    async createServer(scope: AppScope): Promise<Application> {
+      const runtime = await resolveAppRuntime(appRuntime, scope);
+      const app = createApp(runtime);
+      configure?.(app);
+      return startApplicationInScope(scope, app);
+    },
+  }).create;
 }
 
-const standalone = defineStandaloneServer({
-  rootDir: path.resolve(
-    import.meta.dirname,
-    '../../skills/nocobase-app-plugin-demo-mode/assets/minimal-demo',
-  ),
-  appRuntime,
-  createServer,
-});
-
-export const createStandaloneServer: (
-  options?: StandaloneServerOptions,
-) => Promise<StandaloneServer> = standalone.create;
+export const createStandaloneServer = createMinimalServerFactory();

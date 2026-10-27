@@ -46,15 +46,15 @@ function renderAt(url: string, child: ReactElement) {
 }
 
 describe('BackButton', () => {
-  it('leads to the parent route and keeps the query string', async () => {
+  it('uses the default parent list when no source visit exists', async () => {
     const router = renderAt('/projects/12?q=alpha&page=2', <BackButton />);
 
     const link = screen.getByRole('link', { name: enUS.navigation.back });
-    expect(link).toHaveAttribute('href', '/projects?q=alpha&page=2');
+    expect(link).toHaveAttribute('href', '/projects');
 
     await userEvent.click(link);
     expect(router.state.location.pathname).toBe('/projects');
-    expect(router.state.location.search).toBe('?q=alpha&page=2');
+    expect(router.state.location.search).toBe('');
     // Leaving the child page replaces its entry, as closing an overlay does.
     expect(router.state.historyAction).toBe('REPLACE');
   });

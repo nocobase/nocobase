@@ -489,6 +489,29 @@
           "target": "client/components/setup-readiness-state.ts"
         }
       ]
+    },
+    {
+      "name": "feedback-form",
+      "type": "registry:component",
+      "title": "Feedback Form",
+      "description": "Preserves form input, maps safe field errors and focuses the first editable error in layout order. Preinstalled in the templates.",
+      "categories": ["form"],
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.3",
+        "@nocobase/i18n@^2.0.0-beta.1"
+      ],
+      "files": [
+        {
+          "path": "feedback-form.tsx",
+          "type": "registry:component",
+          "target": "client/components/feedback-form.tsx"
+        }
+      ],
+      "meta": {
+        "group": "Forms",
+        "iframeHeight": 560
+      },
+      "docs": "Show mapped reasons only beside fields/groups, with automatic reveal/focus and no top summary or navigation list. Unmapped failures or unavailable focus targets keep a safe accessible form message. Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Publication is gated by check-form-feedback-release.mjs: the declared app-client version floor must be obtainable and export the form APIs in JavaScript and declarations. Release the runtime and raise this item's floor before publishing the registry. Existing controlled fields expose trusted errors through aria-errormessage or explicitly associated data-slot=field-error / data-feedback-field-error nodes."
     }
   ]
 }

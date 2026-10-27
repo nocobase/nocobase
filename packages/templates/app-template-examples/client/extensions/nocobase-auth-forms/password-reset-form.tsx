@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import {
   useId,
   useState,
@@ -11,7 +12,7 @@ import { FieldGroup } from '#components/ui/field';
 import { Input } from '#components/ui/input';
 
 import { invalidProps } from './field-props.js';
-import { AuthField, AuthFormStatus, AuthFormSubmit } from './form-parts.js';
+import { AuthField, AuthFormSubmit } from './form-parts.js';
 
 export interface PasswordResetValues {
   readonly password: string;
@@ -66,7 +67,9 @@ export function PasswordResetForm({
   const [confirmation, setConfirmation] = useState('');
   const [mismatch, setMismatch] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
     event.preventDefault();
     if (disabled) return;
     if (password !== confirmation) {
@@ -74,13 +77,20 @@ export function PasswordResetForm({
       return;
     }
     setMismatch(false);
-    void onSubmit({ password });
+    await onSubmit({ password });
   };
 
-  const confirmationError = mismatch ? labels.passwordMismatch : undefined;
+  const confirmationError =
+    mismatch && password !== confirmation ? labels.passwordMismatch : undefined;
 
   return (
-    <form className={className} onSubmit={handleSubmit}>
+    <FeedbackForm
+      submitting={submitting}
+      error={error}
+      errorContent={error}
+      className={className}
+      onSubmit={handleSubmit}
+    >
       <FieldGroup>
         <AuthField
           error={fieldErrors?.password}
@@ -92,6 +102,7 @@ export function PasswordResetForm({
             autoFocus
             disabled={disabled}
             id={passwordId}
+            name='password'
             onChange={(event) => setPassword(event.target.value)}
             required
             type='password'
@@ -108,6 +119,7 @@ export function PasswordResetForm({
             autoComplete='new-password'
             disabled={disabled}
             id={confirmationId}
+            name='confirmation'
             onChange={(event) => setConfirmation(event.target.value)}
             required
             type='password'
@@ -115,7 +127,7 @@ export function PasswordResetForm({
             {...invalidProps(confirmationId, confirmationError)}
           />
         </AuthField>
-        {error ? <AuthFormStatus type='error'>{error}</AuthFormStatus> : null}
+
         <AuthFormSubmit footer={footer}>
           <Button
             className='w-full'
@@ -127,6 +139,6 @@ export function PasswordResetForm({
           </Button>
         </AuthFormSubmit>
       </FieldGroup>
-    </form>
+    </FeedbackForm>
   );
 }
