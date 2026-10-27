@@ -304,6 +304,19 @@ Application-owned upload, list, thumbnail, and preview components for business f
 - Example: `@nocobase/file-component-ui-demo` (`pnpm exec shadcn view @nocobase/file-component-ui-demo`)
 - After installing: Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them.
 
+## Forms
+
+### feedback-form
+
+Preserves form input, maps safe field errors and focuses the first editable error in layout order. Preinstalled in the templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/feedback-form`
+- Installs to: `client/components/feedback-form.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/feedback-form-demo` (`pnpm exec shadcn view @nocobase/feedback-form-demo`)
+- After installing: Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading.
+
 ## Inbox
 
 ### inbox
@@ -354,15 +367,6 @@ Standard TanStack Table v8 table with controlled server pagination and sorting, 
 - Plugin dependencies: none
 - Example: `@nocobase/data-table-demo` (`pnpm exec shadcn view @nocobase/data-table-demo`)
 - After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.
-
-### feedback-form
-
-Preserves form input, maps safe field errors and focuses the first editable error in layout order. Preinstalled in the templates.
-
-- Kind: component
-- Install: `yes n | pnpm exec shadcn add @nocobase/feedback-form`
-- Installs to: `client/components/feedback-form.tsx`
-- Plugin dependencies: none
 
 ## Page layout
 

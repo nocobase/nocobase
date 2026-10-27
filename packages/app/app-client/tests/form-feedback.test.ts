@@ -211,9 +211,8 @@ describe('form feedback', () => {
     expect(document.activeElement).not.toBe(row.input);
   });
 
-  it('clears changed field errors and obsolete errors on retry without changing values', () => {
+  it('clears changed field errors and obsolete errors on retry', () => {
     const row = field('name');
-    const attachment = { id: 'uploaded-file' };
     const feedback = new FormFeedback({ messages });
     feedback.register(row.descriptor);
     feedback.invalid(
@@ -227,7 +226,6 @@ describe('form feedback', () => {
     feedback.begin();
     expect(feedback.getSnapshot().message).toBeUndefined();
     expect(row.mutable.value).toBe('draft');
-    expect(attachment.id).toBe('uploaded-file');
   });
 
   it('maps only application-approved copy and treats access errors as form errors', () => {

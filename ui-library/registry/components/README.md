@@ -236,3 +236,17 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 ## Record Link
 
 `RecordLink` renders a React Router link for clickable record names and identifiers. It uses foreground text with medium weight at rest, an underline on hover and a visible keyboard focus. Pass the destination as `to`, including the current list query in `to.search` when navigating to a child route. Native Link props and refs are preserved. It adds no translation keys and does not replace action buttons or menu items.
+
+## Form failure feedback
+
+`FeedbackForm` preserves the caller’s form and upload state, renders field errors and a keyboard-accessible summary, and focuses editable errors in layout order. Native controls provide submitted `name` or `data-field-path`. Return submission promises or pass caught request errors through `error`; RHF consumers pass `submitting` and `validationErrors` and disable registration-order focus. Custom controls and unmounted regions register persistent `FormFeedback` descriptors from `@nocobase/app-client`, with stable row identities and explicit access, editability, region reveal and focus callbacks. The application development Skill documents the adapter and source upgrade contract.
+
+Add these keys to the application namespace. Device approval exports them with its block locales; installing the component itself does not merge application translations.
+
+| Key                    | English                                                                           | Chinese                                      |
+| ---------------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
+| `formFeedback.field`   | This value was rejected. Check it and try again.                                  | 此字段的值未通过校验，请检查并修改后重试。   |
+| `formFeedback.invalid` | Check the highlighted fields and try again.                                       | 请检查标记的字段后重试。                     |
+| `formFeedback.failed`  | Unable to save. Your input has been kept. Try again.                              | 保存失败，已保留您的输入，请重试。           |
+| `formFeedback.network` | Unable to connect. Check your connection and try again. Your input has been kept. | 无法连接，请检查网络后重试。已保留您的输入。 |
+| `formFeedback.denied`  | You cannot submit this form with your current access. Your input has been kept.   | 当前权限无法提交此表单。已保留您的输入。     |
