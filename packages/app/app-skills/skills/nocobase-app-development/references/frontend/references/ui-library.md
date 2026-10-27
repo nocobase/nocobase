@@ -378,7 +378,7 @@ Accessible list loading, empty, filtered, permission and request feedback for ta
 - Installs to: `client/components/list-feedback.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/list-feedback-demo` (`pnpm exec shadcn view @nocobase/list-feedback-demo`)
-- After installing: Pass resolveListState from @nocobase/app-client and the existing request retry/clear callbacks. Merge listFeedback translations listed in the components README. Gate emptyAction with the existing create permission.
+- After installing: Pass resolveListState from @nocobase/app-client and the existing request retry/clear callbacks. Merge listFeedback translations listed in the components README. Keep the standard create action in the page header as specified by L7; if an intentional business-specific empty-state action uses emptyAction, gate that action with its own existing permission.
 
 ## Page layout
 

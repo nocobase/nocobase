@@ -10,7 +10,7 @@ Part of the [projects worked example](../example.md).
 
 **Without detail and delete** (a list with only a create dialog), remove: the `actions` column and its row menu, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
 
-Use the application's existing authorization hook to resolve `canCreate` before rendering actions. Follow [shared list feedback](../list-feedback.md) for error and query ownership.
+Use the application's existing authorization hook to resolve the create permission before rendering the page-level action. Put the standard create action only in the page header, including when a successful query returns no records; do not wire it through the empty state's `emptyAction`. Follow [shared list feedback](../list-feedback.md) for error and query ownership.
 
 Rules: sections [3](../table.md#3-known-datatable-behavior), [5](../table.md#5-writing-search-and-filters-to-the-url), [6](../table.md#6-loading-the-list), [7](../table.md#7-the-four-list-states), [8](../table.md#8-column-definitions-and-row-actions) and [9](../table.md#9-child-routes-and-refreshing-the-list) of `table.md`.
 
@@ -94,10 +94,10 @@ export default function ProjectsPage(): ReactElement {
   const { locale } = useLocale();
   const api = useApiClient();
   // Use the same registered business resource and action as the create endpoint.
-  const canCreate = useCan({
+  const createPermission = useCan({
     resource: { type: 'project', id: '*' },
     action: 'create',
-  }).can;
+  });
   const location = useLocation();
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -147,6 +147,13 @@ export default function ProjectsPage(): ReactElement {
     rowsFiltered,
   );
   const rows = listStateShowsData(listState) ? request.data?.data : undefined;
+  const canShowCreate =
+    createPermission.can &&
+    !createPermission.isPending &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
   const tableState = useTableUrlState({
     sortColumns: ['name', 'updatedAt'],
     rowCount:
@@ -338,20 +345,6 @@ export default function ProjectsPage(): ReactElement {
             <p>{t('projects.empty.description')}</p>
           </>
         }
-        // Resolve canCreate through this application's existing authorization hook.
-        emptyAction={
-          canCreate === true ? (
-            <Button
-              nativeButton={false}
-              render={
-                <Link to={{ pathname: 'new', search: location.search }} />
-              }
-            >
-              <PlusIcon />
-              {t('projects.create.action')}
-            </Button>
-          ) : null
-        }
       />
     </>
   );
@@ -362,10 +355,7 @@ export default function ProjectsPage(): ReactElement {
         title={t('projects.title')}
         description={t('projects.description')}
         actions={
-          // Decided from loaded data: no action while loading, and none while the empty state carries it (guideline L7).
-          canCreate === true &&
-          rows !== undefined &&
-          (rows.length > 0 || rowsFiltered) ? (
+          canShowCreate ? (
             <Button
               render={
                 <Link to={{ pathname: 'new', search: location.search }} />
