@@ -4,6 +4,7 @@ import {
   type FormFeedbackAttempt,
   type FormFeedbackField,
   type FormFeedbackOptions,
+  type FormFeedbackState,
 } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -90,8 +91,9 @@ export function FeedbackForm({
     feedback.getSnapshot,
     feedback.getSnapshot,
   );
+  const [unfocusableState, setUnfocusableState] = useState<FormFeedbackState>();
   const formRef = useRef<HTMLFormElement>(null);
-  const summaryRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null);
   const attemptRef = useRef<FormFeedbackAttempt | undefined>(undefined);
   const prefixId = useId();
   const localValidationRef = useRef(false);
@@ -206,9 +208,16 @@ export function FeedbackForm({
   }, [error, feedback]);
 
   useEffect(() => {
-    if (state.message && focusPendingRef.current && !submitting) {
+    if (
+      (state.message || state.fields.length) &&
+      focusPendingRef.current &&
+      !submitting
+    ) {
       focusPendingRef.current = false;
-      void feedback.focus(summaryRef.current);
+      void feedback.focus(messageRef.current, undefined, () => {
+        if (!state.message && feedback.getSnapshot() === state)
+          setUnfocusableState(state);
+      });
     }
   }, [state, feedback, submitting]);
 
@@ -265,18 +274,15 @@ export function FeedbackForm({
   }, [validationErrors, validationKey, feedback, attemptSequence, submitting]);
 
   const errors = feedback.errors();
-  const summaryEntries = errors.flatMap((entry) => {
-    const field = feedback.field(entry.id);
-    const control = field?.control();
-    const label =
-      field?.label?.().trim() || (control ? fieldLabel(control) : '');
-    const message =
-      (control && existingFieldError(control)?.textContent?.trim()) ||
-      entry.message;
-    // An unnamed control must not turn the general instruction into a second link.
-    if (!label && message === state.message) return [];
-    return [{ ...entry, text: label ? `${label}: ${message}` : message }];
-  });
+  const inaccessible = state.fields.length > 0 && errors.length === 0;
+  const formMessage =
+    state.message ||
+    (inaccessible || unfocusableState === state
+      ? options.messages.failed
+      : undefined);
+  useLayoutEffect(() => {
+    if (inaccessible || unfocusableState === state) messageRef.current?.focus();
+  }, [state, inaccessible, unfocusableState]);
   useLayoutEffect(() => {
     const restore: (() => void)[] = [];
     for (const entry of errors) {
@@ -373,10 +379,10 @@ export function FeedbackForm({
         }
       }}
     >
-      {(state.message ||
+      {(formMessage ||
         (!attemptSequence && Boolean(error) && errorContent != null)) && (
         <div
-          ref={summaryRef}
+          ref={messageRef}
           role='alert'
           tabIndex={-1}
           className='space-y-2 text-sm text-destructive'
@@ -384,24 +390,7 @@ export function FeedbackForm({
           {error && errors.length === 0 && errorContent != null ? (
             errorContent
           ) : (
-            <p>{state.message}</p>
-          )}
-          {summaryEntries.length > 0 && (
-            <ul>
-              {summaryEntries.map((entry) => (
-                <li key={entry.id}>
-                  <button
-                    type='button'
-                    className='text-left underline underline-offset-4'
-                    onClick={() =>
-                      void feedback.focus(summaryRef.current, entry.id)
-                    }
-                  >
-                    {entry.text}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <p>{formMessage}</p>
           )}
         </div>
       )}

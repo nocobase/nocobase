@@ -31,6 +31,7 @@ export interface FormFeedbackError {
 
 export interface FormFeedbackState {
   readonly fields: readonly FormFeedbackError[];
+  /** Safe form-level feedback only; mapped field reasons stay in fields. */
   readonly message: string | undefined;
 }
 
@@ -117,7 +118,6 @@ export class FormFeedback {
   private state: FormFeedbackState = emptyState;
   private sequence = 0;
   private focusSequence = 0;
-  private hasFormError = false;
   public constructor(private options: FormFeedbackOptions) {}
 
   public configure(options: FormFeedbackOptions): void {
@@ -188,7 +188,6 @@ export class FormFeedback {
   public begin(): FormFeedbackAttempt {
     this.focusSequence++;
     this.sequence++;
-    this.hasFormError = false;
     this.publish({ ...emptyState });
     return {
       sequence: this.sequence,
@@ -207,15 +206,13 @@ export class FormFeedback {
     if (id === undefined) {
       this.sequence++;
       this.focusSequence++;
-      this.hasFormError = false;
       this.publish(emptyState);
     } else if (this.state.fields.some((error) => error.id === id)) {
       this.focusSequence++;
       const fields = this.state.fields.filter((error) => error.id !== id);
       this.publish({
         fields,
-        message:
-          fields.length || this.hasFormError ? this.state.message : undefined,
+        message: this.state.message,
       });
     }
   }
@@ -226,19 +223,23 @@ export class FormFeedback {
   ): void {
     if (attempt.sequence !== this.sequence) return;
     const fields: FormFeedbackError[] = [];
-    this.hasFormError = false;
+    let unmapped = false;
     for (const error of errors) {
       const submitted = attempt.fields.find(
         (entry) => entry.path === normalizeFormFieldPath(error.field),
       );
       if (!submitted || !this.current(submitted)) {
-        this.hasFormError = true;
+        unmapped = true;
         continue;
       }
       if (!fields.some((error) => error.id === submitted.field.id))
         fields.push({ id: submitted.field.id, message: error.message });
     }
-    this.publish({ fields, message: this.options.messages.invalid });
+    this.publish({
+      fields,
+      message:
+        unmapped || !fields.length ? this.options.messages.invalid : undefined,
+    });
   }
 
   private current(entry: SubmittedField): boolean {
@@ -252,7 +253,6 @@ export class FormFeedback {
   public failure(error: unknown, attempt: FormFeedbackAttempt): void {
     if (attempt.sequence !== this.sequence) return;
     const messages = this.options.messages;
-    this.hasFormError = true;
     if (!(error instanceof ApiClientError)) {
       this.publish({
         fields: [],
@@ -299,10 +299,9 @@ export class FormFeedback {
             messages.invalid,
         });
       }
-    this.hasFormError = unmapped || !fields.length;
     this.publish({
       fields,
-      message: unmapped || !fields.length ? messages.failed : messages.invalid,
+      message: unmapped || !fields.length ? messages.failed : undefined,
     });
   }
 
@@ -313,7 +312,12 @@ export class FormFeedback {
     );
   }
 
-  public async focus(summary: HTMLElement | null, id?: string): Promise<void> {
+  /** Report unavailable focus so a consumer can mount its safe fallback message. */
+  public async focus(
+    summary: HTMLElement | null,
+    id?: string,
+    onUnavailable?: () => void,
+  ): Promise<void> {
     const sequence = ++this.focusSequence;
     const candidates = this.errors()
       .filter((error) => id === undefined || error.id === id)
@@ -356,8 +360,10 @@ export class FormFeedback {
       )
         return;
     }
-    if (sequence === this.focusSequence)
+    if (sequence === this.focusSequence) {
+      onUnavailable?.();
       summary?.focus({ preventScroll: false });
+    }
   }
 }
 

@@ -37,7 +37,7 @@ beforeEach(() => {
 });
 
 describe('feedback forms', () => {
-  it('keeps trusted business copy in one summary and clears it after retry', async () => {
+  it('keeps trusted business copy in one form message and clears it after retry', async () => {
     function BusinessForm() {
       const [error, setError] = useState<unknown>();
       const [attempts, setAttempts] = useState(0);
@@ -383,28 +383,14 @@ describe('feedback forms', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('Add equipment')).toHaveFocus(),
     );
-    const summary = screen.getByRole('alert');
-    expect(
-      within(summary).getByRole('button', {
-        name: 'Add equipment: Add at least two items.',
-      }),
-    ).toBeVisible();
-    expect(
-      within(summary).getAllByText(
-        'Check the highlighted fields and try again.',
-      ),
-    ).toHaveLength(1);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
     expect(screen.getByText('Add at least two items.')).toBeVisible();
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() =>
-      expect(
-        within(screen.getByRole('alert')).getAllByRole('button'),
-      ).toHaveLength(1),
+      expect(screen.getAllByText('Add at least two items.')).toHaveLength(1),
     );
-    fireEvent.click(within(screen.getByRole('alert')).getByRole('button'));
-    await waitFor(() =>
-      expect(screen.getByLabelText('Add equipment')).toHaveFocus(),
-    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(saved).not.toHaveBeenCalled();
     fireEvent.click(screen.getByLabelText('Add equipment'));
     fireEvent.click(screen.getByText('Save'));
@@ -428,7 +414,7 @@ describe('feedback forms', () => {
     );
   });
 
-  it('names group links through aria-labelledby without copying the summary instruction', async () => {
+  it('places a group error beside its editable entry without a top message or navigation', async () => {
     await mount(
       <FeedbackForm
         noValidate
@@ -449,21 +435,15 @@ describe('feedback forms', () => {
       </FeedbackForm>,
     );
     fireEvent.click(screen.getByText('Save'));
-    await waitFor(() =>
-      expect(
-        within(screen.getByRole('alert')).getByRole('button', {
-          name: 'Equipment group: Add at least two equipment items.',
-        }),
-      ).toBeVisible(),
+    const entry = screen.getByRole('button', { name: 'Equipment group' });
+    await waitFor(() => expect(entry).toHaveFocus());
+    const id = entry.getAttribute('aria-describedby')!;
+    expect(document.getElementById(id)).toHaveTextContent(
+      'Add at least two equipment items.',
     );
-    const link = within(screen.getByRole('alert')).getByRole('button');
-    link.focus();
-    fireEvent.click(link);
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: 'Equipment group' }),
-      ).toHaveFocus(),
-    );
+    expect(entry.parentElement).toContainElement(document.getElementById(id));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
   it('keeps unknown and inaccessible request errors at form level without leaking paths, labels or descriptions', async () => {
@@ -536,11 +516,7 @@ describe('feedback forms', () => {
     const input = screen.getByLabelText('Name');
     await waitFor(() => expect(input).toHaveFocus());
     expect(screen.getAllByText('Choose a unique name.')).toHaveLength(1);
-    expect(
-      within(screen.getByRole('alert')).getByRole('button', {
-        name: 'Name: Choose a unique name.',
-      }),
-    ).toBeVisible();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     const ids = input.getAttribute('aria-describedby')!.split(' ');
     expect(
       ids.some(
@@ -558,5 +534,56 @@ describe('feedback forms', () => {
     await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'));
     fireEvent.change(input, { target: { value: 'another' } });
     expect(input).toHaveAttribute('aria-invalid', 'false');
+  });
+  it('uses a safe focusable form message when a registered error has no editable target', async () => {
+    await mount(
+      <FeedbackForm
+        noValidate
+        validationErrors={{ name: { message: 'Business rule.' } }}
+        onSubmit={() => {}}
+      >
+        <label htmlFor='disabled-name'>Name</label>
+        <input
+          id='disabled-name'
+          name='name'
+          disabled
+          defaultValue='Retained'
+        />
+        <button>Save</button>
+      </FeedbackForm>,
+    );
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to save.');
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.getByText('Business rule.')).toBeVisible();
+    expect(screen.getByLabelText('Name')).toHaveValue('Retained');
+  });
+
+  it('shows an independent unmapped failure alongside inline errors and keeps it after correction', async () => {
+    await mount(
+      <FeedbackForm
+        noValidate
+        validationErrors={{
+          name: { message: 'Choose another name.' },
+          unknown: { message: 'Private rule' },
+        }}
+        onSubmit={() => {}}
+      >
+        <label htmlFor='mixed'>Name</label>
+        <input id='mixed' name='name' defaultValue='Retained' />
+        <button>Save</button>
+      </FeedbackForm>,
+    );
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus());
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Private rule');
+    expect(screen.getByText('Choose another name.')).toBeVisible();
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Corrected' },
+    });
+    expect(screen.getByRole('alert')).toBeVisible();
+    expect(screen.queryByText('Choose another name.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 });

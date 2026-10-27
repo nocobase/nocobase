@@ -167,7 +167,7 @@ describe('form feedback', () => {
     expect(feedback.getSnapshot().message).toBe(messages.failed);
   });
 
-  it('uses a focusable summary when fields are disabled, hidden or cannot accept focus', async () => {
+  it('reports unavailable focus and uses a safe fallback when fields cannot accept focus', async () => {
     const disabled = field('disabled');
     disabled.input.disabled = true;
     const hidden = field('hidden');
@@ -185,7 +185,9 @@ describe('form feedback', () => {
       ],
       feedback.begin(),
     );
-    await feedback.focus(summary);
+    const unavailable = vi.fn();
+    await feedback.focus(summary, undefined, unavailable);
+    expect(unavailable).toHaveBeenCalledOnce();
     expect(document.activeElement).toBe(summary);
   });
 
@@ -204,11 +206,13 @@ describe('form feedback', () => {
       [{ field: 'name', message: 'Required' }],
       feedback.begin(),
     );
-    const focusing = feedback.focus(null);
+    const unavailable = vi.fn();
+    const focusing = feedback.focus(null, undefined, unavailable);
     feedback.clear('name');
     release();
     await focusing;
     expect(document.activeElement).not.toBe(row.input);
+    expect(unavailable).not.toHaveBeenCalled();
   });
 
   it('clears changed field errors and obsolete errors on retry', () => {
@@ -264,6 +268,7 @@ describe('form feedback', () => {
       feedback.begin(),
     );
     expect(feedback.errors()[0]?.message).toBe('Choose another name.');
+    expect(feedback.getSnapshot().message).toBeUndefined();
     feedback.failure(apiError([{ field: 'name' }], 403), feedback.begin());
     expect(feedback.errors()).toEqual([]);
     expect(feedback.getSnapshot().message).toBe(messages.denied);

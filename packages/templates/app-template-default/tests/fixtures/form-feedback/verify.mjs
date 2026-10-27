@@ -249,10 +249,8 @@ await page
 await save();
 await expect(page.getByRole('alert')).toBeFocused();
 await page.keyboard.press('Tab');
-expect(await page.evaluate(() => document.activeElement.tagName)).toBe(
-  'BUTTON',
-);
-checked.push('disabled fields fall back to the keyboard-accessible summary');
+await expect(page.getByLabel('Equipment name', { exact: true })).toBeFocused();
+checked.push('disabled fields fall back to a keyboard-accessible safe message');
 await open();
 await page.getByLabel('Response', { exact: true }).selectOption('business');
 await save();
