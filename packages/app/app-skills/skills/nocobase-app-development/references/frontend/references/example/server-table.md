@@ -80,10 +80,13 @@ export default function ProjectsPage(): ReactElement {
     pageSize: String(pageSize),
     orderBy,
   });
-  const request = useListData<ProjectList>(`projects?${remote}`, {
+  const requestPath = `projects?${remote}`;
+  const request = useListData<ProjectList>(requestPath, {
     active,
     keepPreviousData: true,
   });
+  const hasCurrentResponse = request.path === requestPath;
+  const response = hasCurrentResponse ? request.data : undefined;
   const tableState = useTableUrlState({
     active,
     revision: request.revision,
@@ -93,19 +96,21 @@ export default function ProjectsPage(): ReactElement {
     pageSizeOptions: PAGE_SIZES,
     sortColumns: SORTABLE,
     rowCount:
-      !request.loading && !request.error ? request.data?.meta.total : undefined,
+      hasCurrentResponse && !request.loading && !request.error
+        ? response?.meta.total
+        : undefined,
   });
   const reload = request.reload;
   const loading = request.loading;
   const error = tableState.error ?? request.error;
-  const rows = request.data?.data ?? [];
-  const result = request.data ? { total: request.data.meta.total } : undefined;
-  const displayedQuery = new URLSearchParams(request.path.split('?')[1]);
+  const rows = response?.data ?? [];
+  const result = response ? { total: response.meta.total } : undefined;
+  const displayedQuery = new URLSearchParams(requestPath.split('?')[1]);
   const rowsFiltered = Boolean(
     displayedQuery.get('q') || displayedQuery.get('status'),
   );
   const listState = resolveListState(
-    { data: request.data, error, isPending: loading && !request.data },
+    { data: response, error, isPending: loading && !hasCurrentResponse },
     result?.total ?? 0,
     rowsFiltered,
   );

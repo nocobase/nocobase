@@ -125,12 +125,15 @@ export default function ProjectsPage(): ReactElement {
     ...(status ? { status } : {}),
     pageSize: String(PAGE_SIZE),
   });
-  const request = useListData<ProjectList>(`projects?${remote}`, {
+  const requestPath = `projects?${remote}`;
+  const request = useListData<ProjectList>(requestPath, {
     active,
     keepPreviousData: true,
   });
-  const responseRows = request.data?.data;
-  const result = request.data ? { total: request.data.meta.total } : undefined;
+  const hasCurrentResponse = request.path === requestPath;
+  const response = hasCurrentResponse ? request.data : undefined;
+  const responseRows = response?.data;
+  const result = response ? { total: response.meta.total } : undefined;
   const loading = request.loading;
   const tableState = useTableUrlState({
     active,
@@ -138,18 +141,21 @@ export default function ProjectsPage(): ReactElement {
     sortColumns: ['name', 'updatedAt'],
     // Only a complete filtered dataset supports local last-page recovery.
     rowCount:
-      !loading && !request.error && responseRows?.length === result?.total
+      hasCurrentResponse &&
+      !loading &&
+      !request.error &&
+      responseRows?.length === result?.total
         ? result?.total
         : undefined,
   });
   const reload = request.reload;
   const error = tableState.error ?? request.error;
-  const displayedQuery = new URLSearchParams(request.path.split('?')[1]);
+  const displayedQuery = new URLSearchParams(requestPath.split('?')[1]);
   const rowsFiltered = Boolean(
     displayedQuery.get('q') || displayedQuery.get('status'),
   );
   const listState = resolveListState(
-    { data: request.data, error, isPending: loading && !request.data },
+    { data: response, error, isPending: loading && !hasCurrentResponse },
     responseRows?.length ?? 0,
     rowsFiltered,
   );
