@@ -38,7 +38,7 @@ The [shared helper](../assets/testing-example/tests/helpers/app.ts) creates `cre
 | [Client public configuration](../assets/testing-example/tests/client/public-config.test.tsx) | The typed Client accessor reads the Server-published payload and supplies its documented default when absent |
 | [CLI](../assets/testing-example/tests/cli/count.test.ts) | The contributed production command starts the fixture App on an owned test database and returns the expected JSON envelope |
 
-The CLI fixture uses `bindTestAppCommand()` to place runtime storage in `path.join(config.directory, 'storage')` without changing `APP_STORAGE_DIR` in the process environment. Its assertion checks that owned path, and `config.dispose()` removes the temporary directory.
+The CLI fixture imports its runtime definition through Vitest and supplies an explicit `loadRuntime` to `bindTestAppCommand()`, so its TypeScript source imports resolve with both workspace and published CLI dependencies. This custom loader passes `config.path`, sets runtime storage to `path.join(config.directory, 'storage')` without changing the process environment, and sends runtime logs to stderr so stdout contains only the command's JSON result. Its assertion checks that owned path, and `config.dispose()` removes the temporary directory.
 
 `createAppTest()` owns its lifecycle; the default file scope shares one application between route cases. Direct `createTestApp()` calls and CLI configuration fixtures use `finally` to close/dispose. Environment stubs are restored. Client requests match both method and API-relative path, reject unexpected endpoints, and release held responses in `finally` without sleeps. The database dialect comes from the standard test environment, not a hard-coded SQLite connection.
 

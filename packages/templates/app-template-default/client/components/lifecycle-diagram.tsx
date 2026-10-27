@@ -362,22 +362,23 @@ function NodeConfigurationActions({
   const choices = direct ? selections.slice(1) : selections;
   const label = t('flowDiagram.configure', { defaultValue: 'Configure' });
   const className =
-    'h-6 border border-primary/15 bg-primary/5 px-1.5 text-xs text-primary hover:bg-primary/10';
+    'shrink-0 border border-primary/15 bg-primary/5 text-primary hover:bg-primary/10';
   return (
     <>
       {direct && (
         <Button
           type='button'
           variant='ghost'
-          size='sm'
+          size='icon-xs'
           className={className}
+          aria-label={configuration.label(direct.target)}
+          title={configuration.label(direct.target)}
           onClick={(event) => {
             event.stopPropagation();
             configuration.onConfigure(direct);
           }}
         >
           <Settings2Icon aria-hidden />
-          {configuration.label(direct.target)}
         </Button>
       )}
       {choices.length > 0 && (
@@ -402,20 +403,19 @@ function NodeConfigurationActions({
               <Button
                 type='button'
                 variant='ghost'
-                size='sm'
+                size='icon-xs'
                 className={className}
                 aria-label={`${label}: ${title(state)}`}
+                title={`${label}: ${title(state)}`}
                 onClick={(event) => event.stopPropagation()}
               />
             }
           >
-            {!direct && (
-              <>
-                <Settings2Icon aria-hidden />
-                {label}
-              </>
+            {direct ? (
+              <ChevronDownIcon aria-hidden />
+            ) : (
+              <Settings2Icon aria-hidden />
             )}
-            <ChevronDownIcon aria-hidden />
           </PopoverTrigger>
           <PopoverContent
             align='end'
