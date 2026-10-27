@@ -159,4 +159,33 @@ describe('shared table and card feedback', () => {
       screen.getByRole('button', { name: 'Sign in again' }),
     ).toHaveAttribute('href', '/login');
   });
+
+  it('gives busy recovery a title and description while preserving business content', async () => {
+    await renderWithApp(
+      <ListFeedback state='refresh-failed' onRetry={vi.fn()} busy>
+        <RetainedEditor />
+      </ListFeedback>,
+      options,
+    );
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(enUS.listFeedback.refreshTitle);
+    expect(alert).toHaveTextContent(enUS.listFeedback.refreshFailed);
+    expect(
+      screen.getByRole('button', { name: enUS.listFeedback.retrying }),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Edited 0' })).toBeVisible();
+  });
+
+  it('pairs the localized status with guidance and hides decorative icons from assistive technology', async () => {
+    await renderWithApp(<ListFeedback state='no-results' onClear={vi.fn()} />, {
+      ...options,
+      locale: 'zh-CN',
+    });
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent(zhCN.listFeedback.noResultsDescription);
+    expect(status.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(
+      screen.getByRole('button', { name: zhCN.listFeedback.clear }),
+    ).toBeEnabled();
+  });
 });

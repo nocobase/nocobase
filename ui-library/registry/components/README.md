@@ -136,6 +136,25 @@ The shared DataTable and its column header and pagination controls use these key
 | `flowDiagram.arrivesFrom`    | Arrives from                                 | 来自                        |
 | `flowDiagram.otherRoutes`    | Other routes                                 | 其他流转                    |
 
+| `listFeedback.loading` | Loading… | 正在加载… |
+| `listFeedback.empty` | No data yet. | 暂无数据。 |
+| `listFeedback.noResults` | No matching results. | 无匹配结果。 |
+| `listFeedback.forbidden` | You do not have permission to view this list. | 您没有查看此列表的权限。 |
+| `listFeedback.unauthenticated` | Your session has expired. Sign in again. | 会话已过期，请重新登录。 |
+| `listFeedback.failed` | Unable to load this list. | 列表加载失败。 |
+| `listFeedback.refreshFailed` | Refresh failed. Showing previously loaded data. | 刷新失败，当前显示此前加载的数据。 |
+| `listFeedback.retry` | Retry | 重试 |
+| `listFeedback.retrying` | Retrying… | 正在重试… |
+| `listFeedback.clear` | Clear filters | 清空条件 |
+| `listFeedback.signIn` | Sign in again | 重新登录 |
+| `listFeedback.refreshTitle` | This list could not be refreshed | 未能刷新此列表 |
+| `listFeedback.loadingDescription` | Your records will appear here shortly. | 数据即将显示，请稍候。 |
+| `listFeedback.emptyDescription` | Records will appear here when they are available. | 有可用记录时，将在此处显示。 |
+| `listFeedback.noResultsDescription` | Try another search or clear your filters to see more records. | 请尝试其他关键词，或清空筛选条件查看更多记录。 |
+| `listFeedback.forbiddenDescription` | Ask your administrator if you need access. | 如需访问，请联系管理员。 |
+| `listFeedback.unauthenticatedDescription` | Sign in to continue with your current account. | 请登录以继续使用当前账号。 |
+| `listFeedback.failedDescription` | Try again. Your current search and filters will be kept. | 请重试，当前搜索和筛选条件将会保留。 |
+
 ## In a plugin
 
 `page-header` has no `#` imports and compiles in a plugin as installed. The others import `cn` from the `cn` package, which stays as it is, and most of them also import primitives as `#components/ui/<name>` — `route-dialog` and `route-drawer` the `button` and `dialog` ones, and `rich-text-editor` the `toggle` one. Keep these imports unchanged. Align the plugin's `package.json#imports` and `components.json` prefixes so the imports resolve to local source files during development and compiled `dist/client` files in the published package, using `publishConfig.imports` as [USAGE.md](../../USAGE.md#add-an-item-to-a-plugin) describes.
@@ -241,16 +260,4 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 
 `ListFeedback` renders the state returned by `resolveListState` from `@nocobase/app-client`. Pass the original query snapshot, including `isPlaceholderData`; retry refetches the same query, and clear synchronizes the controls, applied filters and first page. `DataTable` accepts `listState`, `onRetry`, `onClearFilters` and `emptyAction`; its legacy `emptyMessage` remains business content for successful unfiltered emptiness. Gate creation with existing permissions. Installed sources need a three-way source merge, including request owners and translations, to upgrade.
 
-| Key                            | English                                         | Chinese                            |
-| ------------------------------ | ----------------------------------------------- | ---------------------------------- |
-| `listFeedback.loading`         | Loading…                                        | 正在加载…                          |
-| `listFeedback.empty`           | No data yet.                                    | 暂无数据。                         |
-| `listFeedback.noResults`       | No matching results.                            | 无匹配结果。                       |
-| `listFeedback.forbidden`       | You do not have permission to view this list.   | 您没有查看此列表的权限。           |
-| `listFeedback.unauthenticated` | Your session has expired. Sign in again.        | 会话已过期，请重新登录。           |
-| `listFeedback.failed`          | Unable to load this list.                       | 列表加载失败。                     |
-| `listFeedback.refreshFailed`   | Refresh failed. Showing previously loaded data. | 刷新失败，当前显示此前加载的数据。 |
-| `listFeedback.retry`           | Retry                                           | 重试                               |
-| `listFeedback.retrying`        | Retrying…                                       | 正在重试…                          |
-| `listFeedback.clear`           | Clear filters                                   | 清空条件                           |
-| `listFeedback.signIn`          | Sign in again                                   | 重新登录                           |
+List feedback uses theme surfaces and foregrounds, a decorative status icon, a title and supporting guidance. Full states share a responsive panel; refresh failures use a compact inline warning without unmounting retained content. Motion respects reduced-motion preferences. The shared Translations table includes every title and description key required when upgrading an installed copy.

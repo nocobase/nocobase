@@ -6,6 +6,13 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
   listFeedback: {
+    refreshTitle: '未能刷新此列表',
+    loadingDescription: '数据即将显示，请稍候。',
+    emptyDescription: '有可用记录时，将在此处显示。',
+    noResultsDescription: '请尝试其他关键词，或清空筛选条件查看更多记录。',
+    forbiddenDescription: '如需访问，请联系管理员。',
+    unauthenticatedDescription: '请登录以继续使用当前账号。',
+    failedDescription: '请重试，当前搜索和筛选条件将会保留。',
     loading: '正在加载…',
     empty: '暂无数据。',
     noResults: '无匹配结果。',
