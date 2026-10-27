@@ -56,6 +56,16 @@ export default function RolesPage(): ReactElement {
         ? rows.length
         : undefined,
   });
+  const listState = resolveListState(
+    { data: request.data, error: request.error },
+    rows.length,
+    Boolean(search.trim()),
+  );
+  const canShowCreate =
+    listState === 'empty' ||
+    listState === 'no-results' ||
+    listState === 'ready' ||
+    listState === 'refresh-failed';
   const create = canCreate ? (
     <Button
       nativeButton={false}
@@ -69,7 +79,7 @@ export default function RolesPage(): ReactElement {
     <>
       <PermissionManagementPage
         tab='roles'
-        actions={rows.length || search ? create : undefined}
+        actions={canShowCreate ? create : undefined}
       >
         <div className='flex items-center gap-3'>
           <Input
@@ -110,11 +120,7 @@ export default function RolesPage(): ReactElement {
           )}
         </div>
         <ListFeedback
-          state={resolveListState(
-            { data: request.data, error: request.error },
-            rows.length,
-            Boolean(search.trim()),
-          )}
+          state={listState}
           onRetry={request.reload}
           busy={request.loading}
           onClear={() =>
@@ -143,7 +149,6 @@ export default function RolesPage(): ReactElement {
               </EmptyDescription>
             </Empty>
           }
-          emptyAction={create}
         >
           <RoleList
             tableState={tableState}

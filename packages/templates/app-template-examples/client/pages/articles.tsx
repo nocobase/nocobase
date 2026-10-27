@@ -203,6 +203,7 @@ export default function ArticlesPage(): ReactElement {
     <PageContainer>
       <PageHeader
         actions={
+          state === 'empty' ||
           state === 'ready' ||
           state === 'no-results' ||
           state === 'refresh-failed' ? (
@@ -265,12 +266,6 @@ export default function ArticlesPage(): ReactElement {
             <h2 className='font-semibold'>{t('articles.empty')}</h2>
             <p>{t('articles.emptyHint')}</p>
           </>
-        }
-        emptyAction={
-          <Button onClick={() => openEditor()}>
-            <Plus className='size-4' />
-            {t('articles.new')}
-          </Button>
         }
       >
         <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>

@@ -163,4 +163,7 @@ it('recovers from a load error to the real empty state', async () => {
   offline = false;
   fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
   expect(await screen.findByText('No articles yet.')).toBeVisible();
+  expect(
+    screen.getAllByRole('button', { name: 'New article', exact: true }),
+  ).toHaveLength(1);
 });
