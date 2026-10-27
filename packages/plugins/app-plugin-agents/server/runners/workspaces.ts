@@ -12,6 +12,7 @@
  * a directory of a subject whose work is over goes on that alone.
  */
 import {
+  MAX_WORKSPACES_PER_REPORT,
   TERMINAL_RUN_STATUSES,
   WORKSPACE_REPORT_INTERVAL_MS,
   type WorkspaceCommitEvidence,
@@ -29,7 +30,7 @@ import type {
   RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import type { SubjectRegistry } from '../core/runs/ports.js';
-import { runsRepo } from '../core/runs/run.store.js';
+import { runsRepo, sessionsRepo } from '../core/runs/run.store.js';
 import type { Clock } from '../kernel/clock.js';
 import type { TxRunner } from '../kernel/tx.js';
 import { runnersRepo, storedWorkspaceUsage } from './runner.store.js';
@@ -131,6 +132,59 @@ async function settledSubjects(
     settled.set(kind, new Set(over.filter((id) => !busy.has(id))));
   }
   return settled;
+}
+
+/**
+ * A session whose directory the runner no longer keeps cannot resume there: the next run starts fresh, with what its
+ * subject gives a fresh session. Only sessions written before the runner's previous report are judged, so a directory a
+ * run made while this report was collected is not taken for removed, and only when the report holds every directory and at least one.
+ */
+async function forgetRemovedSessions(
+  conn: DatabaseConnection,
+  runnerId: string,
+  reports: readonly WorkspaceDirectoryReport[],
+  previousReportAt: string | null,
+): Promise<void> {
+  // An empty report while sessions exist more likely means the runner could not read its directories (a moved or
+  // unmounted work root) than that every one was removed: nothing is forgotten on its word.
+  if (
+    previousReportAt === null ||
+    reports.length === 0 ||
+    reports.length >= MAX_WORKSPACES_PER_REPORT
+  )
+    return;
+  const kept = new Set(reports.map((report) => report.workDir));
+  const sessions = await sessionsRepo(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('runnerId').eq(runnerId),
+        f.string('workDir').notEmpty(),
+        f.boolean('poisoned').isFalse(),
+        f.date('updatedAt').notAfter(previousReportAt),
+      ]),
+    limit: MAX_WORKSPACES_PER_REPORT,
+  });
+  const gone = sessions.filter(
+    (session) => session.workDir !== null && !kept.has(session.workDir),
+  );
+  if (gone.length === 0) return;
+  // A run working in a directory keeps its session, whatever the report says.
+  const busy = await runsRepo(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('runnerId').eq(runnerId),
+        f.or(['dispatched', 'running'].map((s) => f.string('status').eq(s))),
+      ]),
+  });
+  const working = new Set(busy.map((run) => run.workDir));
+  const ids = gone
+    .filter((session) => !working.has(session.workDir))
+    .map((session) => session.id);
+  if (ids.length === 0) return;
+  await sessionsRepo(conn).updateMany({
+    filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))),
+    values: { poisoned: true },
+  });
 }
 
 export function createRunnerWorkspaces(
@@ -301,6 +355,12 @@ export function createRunnerWorkspaces(
           filter: { id: runner.id },
         });
         const latest = storedWorkspaceUsage(current?.workspaceUsage);
+        await forgetRemovedSessions(
+          write,
+          runner.id,
+          reports,
+          latest?.measuredAt ?? null,
+        );
         // Directory collection can take minutes; never replace the heartbeat's newer disk sample.
         const merged = latest?.diskMeasuredAt
           ? {

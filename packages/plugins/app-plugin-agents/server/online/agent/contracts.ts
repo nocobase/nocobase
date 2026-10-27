@@ -45,6 +45,14 @@ export interface RealtimeOnlineAgent extends OnlineAgent {
     input?: OnlineAgentSendOptions,
   ): Promise<number>;
   resend(options?: OnlineAgentResendOptions): Promise<number>;
+  /**
+   * One user message while the agent works on the conversation, joining that work rather than starting new: answers
+   * its seq. The current response keeps streaming; no new one opens.
+   */
+  queue(
+    messages: ModelMessage[],
+    input?: OnlineAgentSendOptions,
+  ): Promise<number>;
   receive(): Promise<ReadableStream<NativeUIChunk> | null>;
   approve(input: NativeApproval): Promise<number>;
 }

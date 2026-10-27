@@ -1892,6 +1892,28 @@ it('warns on failed shutdown finalization, drains other executions and preserves
   }
 });
 
+it('announces an accepted message with its seq, so other pages read it at once', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Saved')) }),
+    }),
+  );
+  const agent = await f.service.realtime(context());
+  const events: { lastSeq?: number; messageId?: string }[] = [];
+  h.services.events.on('conversation.changed', (event) => {
+    if (event.conversationId === agent.sessionId) events.push(event);
+  });
+  await agent.send([{ role: 'user', content: 'Hello' }]);
+  await agent.receive();
+  const page = await f.sessions.native.page('alice', agent.sessionId, {
+    limit: 100,
+  });
+  const user = page.items.find((message) => message.role === 'user');
+  expect(events).toContainEqual(
+    expect.objectContaining({ lastSeq: user?.metadata?.seq }),
+  );
+});
+
 it('announces committed message revisions and permits stable ID rereads', async () => {
   const f = await fixture(
     new MockLanguageModelV4({

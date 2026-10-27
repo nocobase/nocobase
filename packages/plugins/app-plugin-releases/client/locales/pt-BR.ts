@@ -805,6 +805,11 @@ const ptBR: LocaleResource<typeof enUS> = {
       name: 'Nome',
       driver: 'Motorista',
       runsOn: 'Continua',
+      appCount: 'Aplicativos',
+      purpose: 'Finalidade',
+      purposeHint:
+        'Cada ambiente tem uma finalidade: pré-visualizações de pull requests ou testes de versões.',
+      purposes: { preview: 'Pré-visualizações', test: 'Testes' },
       policy: 'Política',
       publicUrl: 'Padrão público URL',
       config: 'Configurações (JSON)',

@@ -971,6 +971,7 @@ const deDE: LocaleResource<typeof enUS> = {
         '{{own}} hat derzeit keinen Runner für Sie, also antwortet {{name}}, bis {{own}} zurück ist.',
       onlineFallbackUnavailable:
         'Der Online-Fallback-Agent kann nicht antworten ({{reason}}). Dieses Gespräch bleibt bei {{own}}, während es auf einen Runner wartet.',
+      switchedAgent: chatEnUS.chat.notice.switchedAgent,
       switchedBack: 'Zurück mit {{name}}.',
       runFailed: 'Der Agent hielt inne, bevor er antwortete.',
       runFailedReason: 'Der Agent hielt an, bevor er antwortete: {{reason}}',

@@ -944,6 +944,7 @@ const idID: LocaleResource<typeof enUS> = {
         '{{own}} tidak memiliki runner untuk Anda sekarang, jadi {{name}} menjawab hingga {{own}} kembali.',
       onlineFallbackUnavailable:
         'Agen fallback online tidak dapat menjawab ({{reason}}). Percakapan ini tetap ada di {{own}} sambil menunggu runner.',
+      switchedAgent: chatEnUS.chat.notice.switchedAgent,
       switchedBack: 'Kembali dengan {{name}}.',
       runFailed: 'Agen itu berhenti sebelum menjawab.',
       runFailedReason: 'Agen berhenti sebelum menjawab: {{reason}}',

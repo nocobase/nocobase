@@ -106,6 +106,13 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
   await vi.waitFor(() =>
     expect(events.filter((event) => event.type === 'text-end')).toHaveLength(1),
   );
+  // Before any output the response opened at once and said where it stood.
+  expect(events[0]).toMatchObject({ type: 'start' });
+  expect(
+    events.flatMap((event) =>
+      event.type === 'data-phase' ? [event.data.phase] : [],
+    ),
+  ).toEqual(expect.arrayContaining(['waiting']));
   await h.services.tx.run((unit) =>
     h.services.conversations.deliver(unit, f.agent.sessionId, {
       notice: { code: 'news', type: 'fixture', title: 'Notice' },
@@ -185,7 +192,13 @@ it('streams two canonical blocks before completion, deduplicates retransmission 
   await reading;
   expect(events.at(-1)).toMatchObject({ type: 'finish' });
   expect(await f.agent.status()).toBe('idle');
-  expect(await f.agent.history()).toEqual(before);
+  // Once the run has ended, its response also closes with the turn's footer.
+  expect(withoutTurns(await f.agent.history())).toEqual(withoutTurns(before));
+  expect(
+    (await f.agent.history()).flatMap((message) =>
+      message.parts.filter((part) => part.type === 'data-turn'),
+    ),
+  ).toMatchObject([{ type: 'data-turn', data: { outcome: 'completed' } }]);
   expect(await f.agent.receive()).toBeNull();
   const stored = await h.database
     .connection()
@@ -1781,6 +1794,7 @@ it('restores ordered reasoning in streamed and paged history with one batched re
         state: 'done',
       },
       { type: 'text', text: `Answer ${turn}`, state: 'done' },
+      expect.objectContaining({ type: 'data-turn' }),
     ]),
   );
   expect(answers.map(appUIMessageText)).toEqual(['Answer 0', 'Answer 1']);
@@ -1799,7 +1813,8 @@ it('restores ordered reasoning in streamed and paged history with one batched re
     )) {
       const segments = chatMessageSegments([answer]);
       expect(segments).toHaveLength(1);
-      expect(segments[0].partIndexes).toEqual([0, 1]);
+      // Reasoning, text, then the turn's footer.
+      expect(segments[0].partIndexes).toEqual([0, 1, 2]);
     }
     if (!slice.hasMore) break;
     before = Math.min(
@@ -1848,6 +1863,7 @@ it('restores a reasoning-only response from its accepted user record without inv
   expect(history.map((message) => message.role)).toEqual(['user', 'assistant']);
   expect(history[1].parts).toEqual([
     { type: 'reasoning', text: 'Retained summary', state: 'done' },
+    expect.objectContaining({ type: 'data-turn' }),
   ]);
   const page = await f.agent.messages!({ limit: 50 });
   expect(page.lastSeq).toBe(1);
@@ -1864,3 +1880,33 @@ it('restores a reasoning-only response from its accepted user record without inv
     ).items,
   ).toHaveLength(1);
 });
+
+/** History without the turn footers a run's end adds (and the revision each adds). */
+function withoutTurns<
+  T extends {
+    parts: readonly { type: string }[];
+    metadata?: {
+      revision: number;
+      sourceRecords?: readonly { partId: string }[];
+    };
+  },
+>(messages: readonly T[]) {
+  return messages.map((message) => {
+    const turned = message.parts.some((part) => part.type === 'data-turn');
+    return {
+      ...message,
+      parts: message.parts.filter((part) => part.type !== 'data-turn'),
+      ...(message.metadata
+        ? {
+            metadata: {
+              ...message.metadata,
+              revision: message.metadata.revision - (turned ? 1 : 0),
+              sourceRecords: message.metadata.sourceRecords?.filter(
+                (source) => !source.partId.startsWith('turn:'),
+              ),
+            },
+          }
+        : {}),
+    };
+  });
+}

@@ -42,6 +42,7 @@ import { resolveListState, listStateShowsData } from '@nocobase/app-client';
 import { DataTable } from '#components/data-table';
 import { DataTableColumnHeader } from '#components/data-table/column-header';
 import { useUrlSearch } from '#hooks/use-url-search';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
@@ -103,7 +104,7 @@ export default function ProjectsPage(): ReactElement {
   // The search term lives in the URL behind a search box that keeps its own text (url-search.md): typing, input
   // methods, back and forward all stay in step. The status filter is read from the same parameters.
   const { searchParams, search, text, inputProps, updateParams, clear } =
-    useUrlSearch();
+    useUrlSearch({ resetParams: ['page'] });
   const statusParam = searchParams.get('status');
   // Treat an unrecognized value as no filter.
   const status = isProjectStatus(statusParam) ? statusParam : undefined;
@@ -112,6 +113,7 @@ export default function ProjectsPage(): ReactElement {
     updateParams((params) => {
       if (value && value !== 'all') params.set('status', value);
       else params.delete('status');
+      params.delete('page');
     });
   }
 
@@ -145,6 +147,11 @@ export default function ProjectsPage(): ReactElement {
     rowsFiltered,
   );
   const rows = listStateShowsData(listState) ? request.data?.data : undefined;
+  const tableState = useTableUrlState({
+    sortColumns: ['name', 'updatedAt'],
+    rowCount:
+      !loading && listStateShowsData(listState) ? rows?.length : undefined,
+  });
 
   // After a record is deleted in the drawer, its row and the link that opened the drawer disappear once the list refreshes:
   // wait for the refresh to finish, then move focus to the search box (guideline A6).
@@ -316,6 +323,7 @@ export default function ProjectsPage(): ReactElement {
         <p role='status'>{t('projects.capNotice', { count: rows.length })}</p>
       )}
       <DataTable
+        {...tableState}
         columns={columns}
         data={rows ?? []}
         listState={listState}

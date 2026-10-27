@@ -140,6 +140,8 @@ export interface TokenUsageBreakdown {
 export interface ThreadTokenUsage {
   total: TokenUsageBreakdown;
   last: TokenUsageBreakdown;
+  /** The model's context window, when known. */
+  modelContextWindow?: number | null;
 }
 
 export interface CommandApprovalParams {

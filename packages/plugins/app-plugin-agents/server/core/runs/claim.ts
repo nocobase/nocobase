@@ -514,11 +514,10 @@ async function settleClaimInputs(
     pending.filter((input) => !ids.has(input.id)).map((input) => input.id),
     now,
   );
-  await markDelivered(
-    conn,
-    pending.filter((input) => ids.has(input.id)),
-    now,
-  );
+  const given = pending.filter((input) => ids.has(input.id));
+  const delivered = await markDelivered(conn, given, now);
+  // One was withdrawn while the claim assembled it: claim the run again, without it.
+  if (delivered.length !== given.length) throw new NotForThisRunner();
 }
 
 export function createClaimService(deps: ClaimDeps): ClaimService {
@@ -1067,7 +1066,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       cli: deps.cli.name,
       appName: deps.app.name,
     };
-    const assembly = await binding.context.assemble(
+    let assembly = await binding.context.assemble(
       conn,
       claim,
       prepared.get('subject'),
@@ -1174,19 +1173,21 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       filter: { runId: run.id },
       sort: (sort) => sort.field('seq').desc(),
     });
-    const brief = briefOf(
-      agent,
-      await withSections(
-        conn,
-        deps.sections,
-        effectiveClaim,
-        assembly,
-        prepared,
-      ),
-      skills,
-      deps.cli.name,
-      deps.app.name,
-    );
+    const render = async (): Promise<RenderedBrief> =>
+      briefOf(
+        agent,
+        await withSections(
+          conn,
+          deps.sections,
+          effectiveClaim,
+          assembly,
+          prepared,
+        ),
+        skills,
+        deps.cli.name,
+        deps.app.name,
+      );
+    let brief = await render();
     const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
     const resume =
       !run.freshSession &&
@@ -1194,6 +1195,28 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       session &&
       !session.poisoned &&
       session.fingerprint === briefFingerprint;
+    // A kept session that cannot be resumed: the new one is told what came before, as a first one is. The history
+    // is outside the fingerprint, so it does not change.
+    let recoveryContext: string | undefined;
+    if (session) {
+      const fresh = await binding.context.assemble(
+        conn,
+        { ...claim, freshSession: true },
+        prepared.get('subject'),
+      );
+      if (resume) {
+        // Should the kept session be gone on the runner, the new one hears what came before from this.
+        const kept = assembly;
+        assembly = fresh;
+        const context = (await render()).layers.context;
+        assembly = kept;
+        if (context.trim() && context !== brief.layers.context)
+          recoveryContext = context;
+      } else {
+        assembly = fresh;
+        brief = await render();
+      }
+    }
     // Mounts only for a runner that places them; their hashes stay out of the fingerprint, and a resumed session
     // hears what changed in them in its turn instead.
     const { mounts, resumeNotes } = runner.features.includes('mounts')
@@ -1263,6 +1286,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         turn,
         session: resume ? 'resume' : 'fresh',
         ...(resume ? { resumeSessionId: session.sessionId } : {}),
+        ...(resume && recoveryContext ? { recoveryContext } : {}),
       },
       inputs,
       workspace: {
@@ -1596,6 +1620,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     return false;
   }
 
+  /** Whether `runner` may take the run as its subject binds work to runners. */
+  async function pinnedTo(
+    conn: DatabaseConnection,
+    run: RunRecord,
+    runner: Runner,
+  ): Promise<boolean> {
+    const pin = deps.subjects.get(run.subjectKind)?.runnerPin;
+    if (!pin) return true;
+    const pinned = await pin.runnerOf(conn, toRun(run));
+    return pinned === null || pinned === runner.id;
+  }
+
   async function attempt(
     runner: Runner,
     agent: Agent,
@@ -1680,6 +1716,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         await lockAgentForClaim(conn, agent.id, nowText);
         const queuedRun = await findRunRecord(conn, candidate.id);
         if (!queuedRun || queuedRun.status !== 'queued') return null;
+        if (!(await pinnedTo(conn, queuedRun, runner))) return null;
         const identity = await refreshQueuedIdentity(unit, deps, queuedRun);
         // Providers were prepared for the candidate's identity outside this transaction.
         if (!identity || identity.actorUserId !== candidate.actorUserId)
@@ -1795,6 +1832,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             error,
           );
         }
+        const pin = deps.subjects.get(run.subjectKind)?.runnerPin;
+        if (pin && !(await pin.pin(unit, toRun(run), runner)))
+          throw new NotForThisRunner();
         await settleClaimInputs(
           conn,
           pending,
@@ -2248,9 +2288,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         clock.now().getTime(),
       );
       if (reserved && reserved !== runner.id) continue;
+      // Work bound to another runner waits for it; work bound here takes no other preference.
+      const pin = deps.subjects.get(candidate.subjectKind)?.runnerPin;
+      const pinned = pin ? await pin.runnerOf(conn, toRun(candidate)) : null;
+      if (pinned !== null && pinned !== runner.id) continue;
       const preferred = affinity.preferred.get(candidate.id);
       if (
         !reserved &&
+        pinned === null &&
         preferred &&
         preferred.id !== runner.id &&
         (await readyPreference(

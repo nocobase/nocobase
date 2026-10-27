@@ -217,6 +217,14 @@ export interface ChatAttachmentLinks {
     target: { readonly conversationId: string; readonly messageId: string },
     ids: readonly string[],
   ): Promise<StoredAttachment[]>;
+  /**
+   * Deletes the rows of the files sent in `conversationId`; answers what removes their bytes, to call once the
+   * transaction committed.
+   */
+  release(
+    conn: DatabaseConnection,
+    conversationId: string,
+  ): Promise<() => Promise<void>>;
 }
 
 export interface ChatAttachmentDeps {
@@ -427,6 +435,14 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
       if (bound.updatedCount !== ids.length)
         throw invalid('An upload was already attached to another message.');
       return ordered.map(stored);
+    },
+    async release(conn, conversationId) {
+      const rows = await files(conn).findMany({ filter: { conversationId } });
+      if (rows.length === 0) return async () => {};
+      await files(conn).deleteMany({ filter: { conversationId } });
+      return async () => {
+        for (const row of rows) await deps.storage.remove(row);
+      };
     },
   };
 

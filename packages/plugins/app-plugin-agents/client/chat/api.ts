@@ -27,6 +27,8 @@ import {
   type CreateConversationRequest,
   type MessageAttachment,
   type MessageListQuery,
+  type ConversationUsage,
+  type PageContext,
 } from '../../shared/conversations.js';
 
 import type { ModelService } from '../../shared/models.js';
@@ -241,6 +243,55 @@ export class ChatApi {
 
   public markRead(id: string): Promise<ConversationDetail> {
     return this.send(chatPath('markRead', id), 'POST');
+  }
+
+  /**
+   * One message while the agent works on the conversation: it joins that work (steered into the running turn, or
+   * taken as the next one). Answers the saved message, `metadata.queue` `queued` until the agent takes it; refused
+   * (`409`) when the agent is not working, when it is sent as usual instead.
+   */
+  public queue(
+    id: string,
+    input: {
+      readonly clientId: string;
+      readonly content: string;
+      readonly context?: PageContext;
+      readonly attachmentIds?: readonly string[];
+    },
+  ): Promise<AppUIMessage> {
+    return this.send(chatPath('queue', id), 'POST', {
+      message: {
+        id: input.clientId,
+        role: 'user',
+        parts: [{ type: 'text', text: input.content }],
+      },
+      ...(input.context ? { context: input.context } : {}),
+      ...(input.attachmentIds?.length
+        ? { attachmentIds: input.attachmentIds }
+        : {}),
+    });
+  }
+
+  /** Deletes the conversation for good, with its messages and files. */
+  public async deleteConversation(id: string): Promise<void> {
+    await this.api.request({
+      path: chatPath('conversation', id),
+      method: 'DELETE',
+    });
+  }
+
+  /** Takes back a queued message its runner has not taken (`409` once it has). */
+  public async withdraw(id: string, messageId: string): Promise<void> {
+    await this.api.request({
+      path: `${chatPath('messages', id)}/${encodeURIComponent(messageId)}/withdraw`,
+      method: 'POST',
+      json: {},
+    });
+  }
+
+  /** Tokens, context window and cost over the conversation's runs, as far as their tools report them. */
+  public usage(id: string, signal?: AbortSignal): Promise<ConversationUsage> {
+    return this.get(chatPath('usage', id), undefined, signal);
   }
 
   /** Requests cancellation. Only execution.status=idle confirms termination and synchronized history. */

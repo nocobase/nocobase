@@ -132,6 +132,9 @@ describe('reported execution settings', () => {
         ],
       });
       expect(JSON.stringify(turn.params)).toContain('previous conversation');
+      expect(JSON.stringify(turn.params)).toContain(
+        'Alice asked for a test task.',
+      );
       fake.respond(turn, {
         turn: { id: 'turn-1', status: 'inProgress', error: null },
       });
@@ -139,7 +142,11 @@ describe('reported execution settings', () => {
       completeTurn(fake);
     });
     const handle = adapter.start(
-      session({ resumeSessionId: 'old', model: 'model-test' }),
+      session({
+        resumeSessionId: 'old',
+        model: 'model-test',
+        recoveryContext: 'Alice asked for a test task.',
+      }),
     );
     expect(await handle.steer('early', 'input-1')).toBe(true);
     const events = await drain(handle);
@@ -770,12 +777,22 @@ describe('stopping and resuming', () => {
         turnId: 'turn-1',
         tokenUsage: { total: usage(1000, 500, 50), last: usage(200, 100, 10) },
       });
+      fake.notify('turn/plan/updated', {
+        threadId: 'thread-1',
+        turnId: 'turn-1',
+        plan: [
+          { step: 'Read the code', status: 'completed' },
+          { step: 'Fix it', status: 'inProgress' },
+          { step: 'Test it', status: 'pending' },
+        ],
+      });
       fake.notify('thread/tokenUsage/updated', {
         threadId: 'thread-1',
         turnId: 'turn-1',
         tokenUsage: {
           total: usage(1400, 700, 80, 50),
           last: usage(400, 200, 30, 50),
+          modelContextWindow: 272_000,
         },
       });
       completeTurn(fake);
@@ -783,8 +800,32 @@ describe('stopping and resuming', () => {
     const handle = adapter.start(
       session({ resumeSessionId: 'thread-1', model: 'gpt-test' }),
     );
-    await drain(handle);
+    const events = await drain(handle);
     const result = await handle.result;
+    // How full the context window is after the turn: the latest request against the model's window.
+    expect(
+      events.filter(
+        (event) => event.type === 'status' && event.content === 'context',
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        type: 'status',
+        content: 'context',
+        meta: { context: { used: 430, size: 272_000 } },
+      }),
+    ]);
+    // Its plan, reported the way ACP agents report theirs.
+    expect(
+      events.find(
+        (event) => event.type === 'status' && event.content === 'plan',
+      )?.meta,
+    ).toEqual({
+      plan: [
+        { content: 'Read the code', status: 'completed' },
+        { content: 'Fix it', status: 'in_progress' },
+        { content: 'Test it', status: 'pending' },
+      ],
+    });
     expect(resume).toMatchObject({
       threadId: 'thread-1',
       model: 'gpt-test',

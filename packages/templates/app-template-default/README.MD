@@ -144,7 +144,7 @@ The three files named `runtime.ts`, `plugins.ts`, and `routes.ts` are compositio
 | `pnpm dev`         | Start the API server and client with hot reload                                      |
 | `pnpm build`       | Build the client and server into `dist/`                                             |
 | `pnpm start`       | Run the built server; requires `pnpm build` first                                    |
-| `pnpm build --tar` | Build, then pack `dist/` and `config.example.yml` into `storage/exports/dist.tar.gz` |
+| `pnpm build --tar` | Build, then pack `dist/`, `config.example.yml` and the `Dockerfile` with its `.dockerignore` into `storage/exports/dist.tar.gz` |
 
 ### Database
 
@@ -293,10 +293,12 @@ Pass the file's path relative to `dist/client/`, with or without a leading slash
 
 `pnpm build --tar` writes `storage/exports/dist.tar.gz`, the artifact `@nocobase/app-installer` installs on a server.
 
-The archive has two levels: `config.example.yml` and `dist/` sit at the root, and the build is inside `dist/`. What `dist/` holds varies with the application; this is the shape:
+The archive has two levels: `config.example.yml`, `dist/` and, when the application has them, the `Dockerfile` and `Dockerfile.dockerignore` sit at the root, and the build is inside `dist/`. A server builds the image from the extracted archive alone with `docker build --build-arg DIST=prebuilt .`. What `dist/` holds varies with the application; this is the shape:
 
 ```text
 dist.tar.gz
+├── Dockerfile
+├── Dockerfile.dockerignore
 ├── config.example.yml
 └── dist/
     ├── cli/

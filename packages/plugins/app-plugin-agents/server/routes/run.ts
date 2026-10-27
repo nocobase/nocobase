@@ -149,5 +149,64 @@ export function createRunRoutes(services: Agents): Hono<RunEnv> {
       });
     },
   );
+  router.post(
+    '/runs/current/conversation/askOwner',
+    runToken,
+    describeRoute({
+      tags,
+      summary: "Ask the owner of the token's conversation something",
+      operationId: 'agentsAskCurrentRunConversationOwner',
+      description:
+        'A run on a conversation marks it as waiting for its owner, with the question (at most 500 characters), until they write; their reminders say so once the turn ends.',
+      security: runTokenSecurity,
+      responses: {
+        200: dataResponse(RunConversationSchema),
+        400: apiErrorResponse(
+          400,
+          'The run is not on a conversation (`INVALID_REQUEST`).',
+        ),
+        ...runTokenErrors,
+      },
+      ...cliRoute({
+        command: 'conversation ask-owner',
+        args: ['question'],
+        action: RUN_SELF_ACTION,
+        examples: ['conversation ask-owner "Merge the two duplicate issues?"'],
+      }),
+    }),
+    apiValidator(
+      'json',
+      z.strictObject({
+        question: z
+          .string()
+          .min(1)
+          .max(500)
+          .meta({ description: 'What the owner should answer.' }),
+      }),
+    ),
+    async (context) => {
+      const { run } = context.get('run');
+      const target = {
+        subject: { kind: run.subjectKind, id: run.subjectId },
+        actorUserId: run.actorUserId,
+      };
+      if (!(await services.conversations.ofRun(services.tx.read(), target)))
+        throw new ProtocolError(
+          'INVALID_REQUEST',
+          'Only a run on a conversation has an owner to ask.',
+        );
+      const conversation = await services.conversations.askOwnerFromRun(
+        target,
+        context.req.valid('json').question,
+      );
+      return context.json({
+        data: { id: conversation.id, title: conversation.title },
+        meta: {
+          message:
+            'The owner is asked; end your turn, and their answer reaches you as a new message.',
+        },
+      });
+    },
+  );
   return router;
 }

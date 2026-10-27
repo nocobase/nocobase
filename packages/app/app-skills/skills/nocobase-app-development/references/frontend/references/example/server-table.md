@@ -12,7 +12,7 @@ Rules: [section 1 of `table.md`](../table.md#1-choosing-a-table-component). This
 
 The endpoint contract this assumes is the one in [types](types.md): `GET /api/projects` takes `page` (from 1), `pageSize` (at most 100) and `orderBy` besides `q` and `status`, and returns `{ data: Project[], meta: { page, pageSize, total } }` (`ProjectList`), where `total` counts the matching records on all pages. `orderBy` names a column the endpoint sorts by, `name` (in the order of the request's language) or `updatedAt`, followed by ` desc` for descending; the page always sends it, `updatedAt desc` by default (guideline T1.8).
 
-The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
+The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page uses the template's `useTableUrlState` hook to parse pagination and ordering, sends them with the request and passes them to `ProjectsServerTable`, which shows ordering in the header with `manualSorting`. Choosing another order starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
 
 Pass `emptyAction` only when the existing create permission explicitly allows it. Preserve the business empty content and use [shared list feedback](../list-feedback.md) for all request states.
 
@@ -21,6 +21,7 @@ The changes, inside the list page's component; everything marked `// …` stays 
 ```tsx
 // client/pages/projects/index.tsx (server-paginated: the list page with these changes)
 import type { ColumnSort } from '@tanstack/react-table';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 import {
   type ReactElement,
   useEffect,
@@ -43,21 +44,6 @@ const DEFAULT_SORT: ColumnSort = { id: 'updatedAt', desc: true };
 
 // … isProjectStatus, as in the list page
 
-/** Reads `orderBy` from the URL: a sortable column, followed by ` desc` for descending. Anything else is the default. */
-function parseOrderBy(value: string | null): ColumnSort {
-  const [field, direction, ...rest] = (value ?? '').trim().split(/\s+/);
-  const id = SORTABLE.find((column) => column === field);
-  const desc = direction === 'desc';
-  const valid =
-    rest.length === 0 &&
-    (direction === undefined || desc || direction === 'asc');
-  return id && valid ? { id, desc } : DEFAULT_SORT;
-}
-
-function formatOrderBy(column: ColumnSort): string {
-  return column.desc ? `${column.id} desc` : column.id;
-}
-
 export default function ProjectsPage(): ReactElement {
   // … t, locale, api, location and searchRef, as in the list page
 
@@ -66,13 +52,18 @@ export default function ProjectsPage(): ReactElement {
     useUrlSearch({ resetParams: ['page'] });
   const statusParam = searchParams.get('status');
   const status = isProjectStatus(statusParam) ? statusParam : undefined;
-  // Bound what the URL may say: an unknown size or a page below 1 falls back to the defaults.
-  const pageSize =
-    PAGE_SIZES.find((size) => String(size) === searchParams.get('pageSize')) ??
-    PAGE_SIZES[0];
-  const page = Math.max(1, Math.trunc(Number(searchParams.get('page'))) || 1);
-  const columnSort = parseOrderBy(searchParams.get('orderBy'));
-  const orderBy = formatOrderBy(columnSort);
+  const tableState = useTableUrlState({
+    defaultPageSize: PAGE_SIZES[0],
+    pageSizeOptions: PAGE_SIZES,
+    sortColumns: SORTABLE,
+    sortFormat: 'orderBy',
+    defaultSorting: [DEFAULT_SORT],
+  });
+  const { pageIndex, pageSize } = tableState.paginationState;
+  const page = pageIndex + 1;
+  const orderBy = tableState.sortingState
+    .map((sort) => `${sort.id}${sort.desc ? ' desc' : ''}`)
+    .join(',');
 
   function changeStatus(value: string | null): void {
     updateParams((params) => {
@@ -149,22 +140,9 @@ export default function ProjectsPage(): ReactElement {
       onClearFilters={clearFilters}
       pagination={{ pageIndex: page - 1, pageSize }}
       pageSizeOptions={PAGE_SIZES}
-      onPaginationChange={(next) => {
-        updateParams((params) => {
-          params.set('page', String(next.pageIndex + 1));
-          params.set('pageSize', String(next.pageSize));
-        });
-      }}
-      sorting={[columnSort]}
-      onSortingChange={(next) => {
-        const column = next.at(0);
-        updateParams((params) => {
-          if (column) params.set('orderBy', formatOrderBy(column));
-          else params.delete('orderBy');
-          // A new order starts on the first page.
-          params.delete('page');
-        });
-      }}
+      onPaginationChange={tableState.onPaginationChange}
+      sorting={tableState.sortingState}
+      onSortingChange={tableState.onSortingChange}
       emptyAction={
         canCreate === true ? (
           <Button

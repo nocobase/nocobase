@@ -47,7 +47,13 @@ import {
   type AppConnection,
   type RunnerSettings,
 } from '../lib/config.ts';
-import { backoff, delay, ApiError, type ApiClient } from '../lib/http.ts';
+import {
+  backoff,
+  dataOf,
+  delay,
+  ApiError,
+  type ApiClient,
+} from '../lib/http.ts';
 import type { RunnerPaths } from '../lib/home.ts';
 import {
   createRedactor,
@@ -55,6 +61,7 @@ import {
   RUNNER_ROUTES,
   routePath,
   StatusResponseSchema,
+  EventsResponseSchema,
   WORKSPACE_INIT_PLACEHOLDER,
   WORKSPACE_NOTES_PLACEHOLDER,
   type RepoReport,
@@ -288,6 +295,16 @@ export function runSecrets(
   return secrets;
 }
 
+/** Events sent as soon as they happen instead of at the spool's next interval. */
+const IMMEDIATE_EVENTS: ReadonlySet<string> = new Set([
+  'toolUse',
+  'toolResult',
+  'input',
+  'status',
+  'usage',
+  'error',
+]);
+
 /** A redactor that takes in secrets the run is given later, such as a repository credential issued on demand. */
 export class GrowingRedactor implements Redactor {
   private current: Redactor;
@@ -418,9 +435,12 @@ export class RunWorker {
         if (LOST_CODES.has(error.reason))
           this.end({ kind: 'lost', code: error.reason });
       },
+      onResponse: (body) => this.answered(body),
     });
     if (payload.outputBlocks === true) {
-      this.preview = new PreviewTransport(this.client, this.runId);
+      this.preview = new PreviewTransport(this.client, this.runId, (body) =>
+        this.answered(body),
+      );
       this.output = new OutputWriter(
         (event) => {
           this.spool.push(event);
@@ -486,6 +506,13 @@ export class RunWorker {
       if (error instanceof ApiError && LOST_CODES.has(error.reason))
         this.end({ kind: 'lost', code: error.reason });
     }
+  }
+
+  /** An events answer: input sent while the agent works arrives with it, without waiting for the next poll. */
+  private answered(body: unknown): void {
+    const response = EventsResponseSchema.safeParse(dataOf(body));
+    if (response.success && response.data.inputs?.length)
+      this.absorb(response.data.cancelRequested, response.data.inputs);
   }
 
   private absorb(cancelRequested: boolean, inputs: readonly RunInput[]): void {
@@ -574,6 +601,10 @@ export class RunWorker {
   private writeEvent(event: Parameters<EventSpool['push']>[0]): void {
     if (this.output) this.output.write(event);
     else this.spool.push(event);
+    // A conversation shows each step, the input the agent took and the turn's end as they happen: send them now
+    // rather than at the next interval. Text keeps the interval (or its own previews).
+    if (IMMEDIATE_EVENTS.has(event.type))
+      void this.spool.flush().catch(() => undefined);
   }
 
   private undelivered(): RunInput[] {
@@ -930,6 +961,9 @@ export class RunWorker {
         ...(this.sessionId === undefined
           ? {}
           : { resumeSessionId: this.sessionId }),
+        ...(this.sessionId !== undefined && payload.prompt.recoveryContext
+          ? { recoveryContext: payload.prompt.recoveryContext }
+          : {}),
         env,
         ...(context.skills === undefined ? {} : { skills: context.skills }),
         permission,
