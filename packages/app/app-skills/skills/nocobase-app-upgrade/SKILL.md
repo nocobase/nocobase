@@ -86,7 +86,25 @@ for VERSION in "$BASE" "$TARGET"; do
 done
 ```
 
+Record the registry, selected channel or explicit version, exact BASE/TARGET versions, tarball integrity and source checkpoints. A missing target, missing required guidance package, invalid integrity or target not newer than BASE stops the upgrade before editing dependencies, source or the completion marker. Do not substitute a Git checkout, same-version snapshot or another channel.
+
 These are published tarballs, not Git checkouts — they carry only what `files` publishes, and npm never publishes `.gitignore`. That is fine: both sides are missing the same things.
+
+## 3a. Discover the target release’s requirements before editing
+
+Read TARGET’s `AGENTS.md` and `README.MD` from the extracted package, even when the installed upgrade Skill is older. Those files can introduce new mandatory upgrade requirements. Resolve the `@nocobase/app-skills` range in TARGET’s manifest against the selected registry, fetch that exact package, record its version/integrity, and read its `skills/nocobase-app-upgrade/SKILL.md` and applicable references before planning the source merge. Fetching and reading a package does not require installing or synchronizing it into the application first. Keep the application’s installed old Skill and dependencies until the plan is agreed.
+
+```bash
+SKILLS_RANGE=$(node -p "const p=require('$WORK/$TARGET/package.json'); p.devDependencies?.['@nocobase/app-skills'] ?? p.dependencies?.['@nocobase/app-skills'] ?? ''")
+# Stop if the target declares no guidance package; do not guess a replacement.
+npm pack "@nocobase/app-skills@$SKILLS_RANGE" --registry="$REGISTRY" --ignore-scripts --json --pack-destination "$WORK"
+# Extract the returned filename into a separate target-guidance directory; record version and integrity.
+# Read target-guidance/skills/nocobase-app-upgrade/SKILL.md and its applicable references.
+```
+
+When target guidance changes an older workflow, include the target requirements in this same upgrade. In particular, list feedback requires reconciling copied components, every template and application-owned table/card request owner, translations and installed Registry copies; dependency installation or Skill synchronization alone does not implement it. Do not finish the upgrade and leave this as a separate page-patching task. Preserve application identity, grants, custom behavior and retained data.
+
+Use [versioned upgrade verification](references/versioned-upgrade-verification.md) to distinguish candidate-package evidence from verification of a publicly released target.
 
 ## 4. Read what changed, and who else changed it
 
@@ -150,7 +168,7 @@ The generator rewrites template identity into some files, so those files legitim
 
 A template upgrade is not a theme reset. Preserve application-owned visual customizations by default; apply non-conflicting presentation changes and obtain a decision before replacing a customized visual result. For theme or shell deltas, inspect the [theme upgrade checks](references/theme-upgrade.md) during planning and merging, not only at final verification. An explicit request to adopt the new default theme authorizes replacement only within the agreed visual scope.
 
-When the right answer is unclear, stop and ask. The user is the only one who knows why their code is the way it is.
+When the right answer is unclear, stop and ask about the concrete conflict and options. Keep the unresolved files and recovery checkpoint, leave `defaultTemplateVersion` at BASE, and do not report a completed upgrade. The user is the only one who knows why their code is the way it is. Resume the same upgrade after the decision; never silently discard a business customization.
 
 ## 7. Reconcile what is not ordinary source
 
@@ -158,7 +176,7 @@ When the right answer is unclear, stop and ask. The user is the only one who kno
 
 ## 8. Finish
 
-Set `defaultTemplateVersion` to the target, now that the source is actually merged.
+Keep `defaultTemplateVersion` at BASE while validating the merged source. It is a completion record, not a feature switch. Unresolved conflicts, missing target requirements, failed installation or failed acceptance must not advance it or produce a completion report.
 
 ```bash
 pnpm install && pnpm dedupe && pnpm nocobase skills sync
@@ -175,7 +193,9 @@ For a Realtime contract change, complete the applicable [Realtime acceptance che
 
 For a notification contract change, complete the applicable [notification acceptance checks](references/notification-upgrade.md#verify-the-migrated-application) through business notifications, including delivery results, log permissions and inbox ownership. Preserve historical records and report which configured transports were exercised.
 
-Report the range merged, how each contested file was decided, any manual actions and their validation, and how to roll back.
+Before declaring completion, verify that the resolved runtime exports the target contracts, installed component copies and all request owners are connected, and applicable target acceptance checks pass with preserved customizations and data. Include both template-provided and application-owned lists and installed Registry copies. Compare retained business records, approval history, permissions and executed migration sources against the recovery checkpoint. If any required check fails, retain BASE and report the failure with recovery instructions.
+
+Only after those checks pass, set `defaultTemplateVersion` to the exact TARGET selected in step 3, verify the final manifest and lockfile, and commit the reconciled source, dependencies and marker together. Report the registry/channel, exact source and guidance package versions and integrity, range merged, how each contested file was decided, manual actions and their validation, and how to roll back. State whether the target is a local candidate or a publicly released package.
 
 ## Crossing several releases
 
