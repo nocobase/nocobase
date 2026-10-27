@@ -248,6 +248,8 @@
   "Rename": "Rename",
   "Rename conversation": "Rename conversation",
   "Response format description": "Important: when using JSON mode, you must also instruct the model to produce JSON yourself via a system or user message.",
+  "Stateless requests": "Stateless requests",
+  "Stateless requests description": "When calling a model through a gateway, try enabling this option if an error says a response item belongs to a different Azure OpenAI resource.",
   "Retrieve metadata for specified collections and their fields": "Retrieve metadata for specified collections and their fields",
   "Retrieve names and titles map of all collections": "Retrieve names and titles map of all collections",
   "Role": "Role",
