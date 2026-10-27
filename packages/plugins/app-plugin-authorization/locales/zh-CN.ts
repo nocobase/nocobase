@@ -1,6 +1,9 @@
 import type { AuthorizationServerResource } from './en-US.js';
 
 const zhCN: AuthorizationServerResource = {
+  permissionSets: {
+    builtIn: { root: '系统管理员', member: '成员' },
+  },
   // Workspace sections this plugin registers through `authz.ui`.
   sections: {
     pages: '页面访问',

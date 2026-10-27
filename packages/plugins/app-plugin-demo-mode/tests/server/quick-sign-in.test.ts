@@ -13,6 +13,8 @@ import {
   type TestDatabase,
 } from '@nocobase/app-testing/server';
 import { createMigrator, databaseManagerToken } from '@nocobase/db';
+import { createI18nMiddleware } from '@nocobase/i18n/server';
+import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -42,6 +44,13 @@ let quickSignIn: boolean;
 let accounts: DemoAccountSummary[];
 let ids: Record<string, string>;
 let administratorIds: string[];
+let authorizationEnabled: boolean;
+let roleSets: { key: string; title?: string }[];
+let roleAssignments: {
+  subject: { type: string; id: string };
+  permissionSet: string;
+}[];
+let i18n: Awaited<ReturnType<typeof createTestI18nRuntime>>;
 
 async function routes(): Promise<Hono> {
   const services = new Map<unknown, unknown>([
@@ -50,15 +59,21 @@ async function routes(): Promise<Hono> {
       authorizationToken,
       {
         permissionSets: {
-          list: async () => [{ key: 'administrators' }],
+          list: async () => [
+            { key: 'administrators', title: 'System administrator' },
+            ...roleSets,
+          ],
           protection: (key: string) => ({
             unrestricted: key === 'administrators',
+            hidden: key === 'internal',
           }),
-          listAssignments: async () =>
-            administratorIds.map((id) => ({
+          listAssignments: async () => [
+            ...administratorIds.map((id) => ({
               subject: { type: 'user', id },
               permissionSet: 'administrators',
             })),
+            ...roleAssignments,
+          ],
         },
       },
     ],
@@ -74,6 +89,7 @@ async function routes(): Promise<Hono> {
     ],
     [demoDataToken, { status: async () => ({ datasetId: 'demo', accounts }) }],
   ]);
+  if (!authorizationEnabled) services.delete(authorizationToken);
   const app = {
     container: {
       has: (token: unknown) => services.has(token),
@@ -84,6 +100,7 @@ async function routes(): Promise<Hono> {
     },
   };
   const api = new Hono();
+  api.use('*', createI18nMiddleware(i18n));
   api.on(['GET', 'POST'], '/auth/*', (context) =>
     auth.handler(context.req.raw),
   );
@@ -118,6 +135,7 @@ async function signedInUser(cookie: string): Promise<string | null> {
 }
 
 beforeAll(async () => {
+  i18n = await createTestI18nRuntime();
   testDatabase = await createTestDatabase();
   const database = testDatabase.database;
   for (const [packageName, directory] of [
@@ -187,6 +205,9 @@ beforeEach(() => {
   quickSignIn = true;
   accounts = listed;
   administratorIds = [ids.owner!];
+  authorizationEnabled = true;
+  roleSets = [];
+  roleAssignments = [];
 });
 
 describe('demo quick sign-in', () => {
@@ -198,10 +219,57 @@ describe('demo quick sign-in', () => {
         { username: 'ann', name: 'Ann', role: 'Admin', current: false },
         { username: 'bob', name: 'Bob', role: 'Reviewer', current: false },
         { username: 'eve', name: 'Eve', role: 'Owner', current: false },
-        { username: 'owner', name: 'Super Admin', role: '', current: false },
+        {
+          username: 'owner',
+          name: 'Super Admin',
+          role: 'System administrator',
+          current: false,
+        },
       ],
       meta: { total: 4 },
     });
+  });
+
+  it('uses visible direct permission set names when dataset labels are absent', async () => {
+    accounts = [listed[0]!, { ...listed[1]!, role: '' }];
+    roleSets = [
+      { key: 'sales', title: 'Sales manager' },
+      { key: 'audit', title: 'Auditor' },
+      { key: 'untitled' },
+      { key: 'member', title: 'Member' },
+      { key: 'internal', title: 'Internal permissions' },
+    ];
+    roleAssignments = [
+      { subject: { type: 'user', id: ids.ann! }, permissionSet: 'sales' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'sales' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'sales' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'audit' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'untitled' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'internal' },
+      { subject: { type: 'team', id: ids.eve! }, permissionSet: 'sales' },
+      { subject: { type: 'user', id: ids.owner! }, permissionSet: 'member' },
+    ];
+    const response = await call('GET', '/demoMode/accounts');
+    expect(response.status).toBe(200);
+    expect((await response.json()).data).toMatchObject([
+      { username: 'ann', role: 'Admin' },
+      { username: 'bob', role: 'Sales manager, Auditor, untitled' },
+      { username: 'eve', role: '' },
+      { username: 'owner', role: 'System administrator' },
+    ]);
+  });
+
+  it('keeps unlabeled accounts available without Authorization', async () => {
+    authorizationEnabled = false;
+    accounts = [];
+    const response = await call('GET', '/demoMode/accounts');
+    expect(response.status).toBe(200);
+    expect((await response.json()).data).toMatchObject([
+      { username: 'ann', role: '' },
+      { username: 'bob', role: '' },
+      { username: 'eve', role: '' },
+      { username: 'owner', role: '' },
+    ]);
   });
 
   it('signs in with an ordinary session and marks the current account', async () => {
@@ -256,6 +324,9 @@ describe('demo quick sign-in', () => {
     accounts = [];
     const response = await call('POST', '/demoMode/accounts/owner/signIn');
     expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      data: { username: 'owner', role: 'System administrator' },
+    });
     expect(await signedInUser(cookieOf(response))).toBe(ids.owner);
     expect(
       (await (await call('GET', '/demoMode/accounts')).json()).data,

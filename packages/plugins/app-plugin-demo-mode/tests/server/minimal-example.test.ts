@@ -69,9 +69,26 @@ it('runs the published non-AI example through authorized HTTP, visitor entry and
     const entries = await (await app.request('/demoMode/accounts')).json();
     expect(entries.data).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ username: rootSession.user.username }),
-        expect.objectContaining({ username: admin.username }),
+        expect.objectContaining({
+          username: rootSession.user.username,
+          role: 'System administrator',
+        }),
+        expect.objectContaining({
+          username: admin.username,
+          role: 'demo.manager',
+        }),
       ]),
+    );
+    const chineseEntries = await (
+      await app.request('/demoMode/accounts', {
+        headers: { 'accept-language': 'zh-CN' },
+      })
+    ).json();
+    expect(chineseEntries.data).toContainEqual(
+      expect.objectContaining({
+        username: rootSession.user.username,
+        role: '系统管理员',
+      }),
     );
     const documentation = await app.request('/swagger', {
       headers: {

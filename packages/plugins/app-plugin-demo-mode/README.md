@@ -53,9 +53,40 @@ For deployment defaults, set `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=userPreferences
 
 A root-router middleware runs every HTTP request, including the WebSocket upgrade, inside an async-local context. The plugin listens to the `query` event of every connection's knex client, which knex emits synchronously before sending a statement, from transactions too. A statement that writes — `INSERT`, `UPDATE`, `DELETE`, DDL, or anything it does not recognize as a read — made inside a request is refused unless it targets an allowed table. Work outside requests, such as migrations, seeds, jobs, schedules and startup tasks, is never refused. In-process job, schedule and queue adapters keep the async context of the request that enqueued their work; once that request has ended, its context refuses nothing, so only work that starts while the request is still running can be refused.
 
-A refused request is answered with the standard error body, `400 FAILED_PRECONDITION`, reason `DEMO_READ_ONLY`, domain `demoMode`, and a `localizedMessage` in the request's language, whatever the route made of the failure. The response carries `Server-Timing: demo-read-only`, which the Client plugin reads through `PerformanceObserver` to show a toast, whichever client sent the request. A route that catches the failure and still succeeds keeps its answer, unmarked: pages often make best-effort writes while reading, and the visitor changed nothing. The Client plugin reads the enabled flag from the public `GET /api/demoMode/status` and shows nothing until a change is refused.
+A refused request is answered with the standard error body, `400 FAILED_PRECONDITION`, reason `DEMO_READ_ONLY`, domain `demoMode`, and a `localizedMessage` in the request's language, whatever the route made of the failure. The response carries `Server-Timing: demo-read-only`, which the Client plugin reads through `PerformanceObserver` to show a toast, whichever client sent the request. A route that catches the failure and still succeeds keeps its answer, unmarked: pages often make best-effort writes while reading, and the visitor changed nothing. The Client plugin reads `demoMode.enabled` from the server-published startup configuration and uses it for the shared mode state; it does not request a status endpoint. `GET /api/demoMode/status` remains available for existing clients.
 
 At startup the plugin sends a probe write through every connection and refuses to start if one is not refused, so an upgrade that breaks the hook cannot silently leave a demo writable.
+
+## Shared mode checks
+
+Import `isDemoMode(container)` from `@nocobase/app-plugin-demo-mode/server`. It returns `false` when the service container has no Demo Mode service, so generators and tests can use it without registering the plugin. When the service exists, it reads its `enabled` flag; initialization failures still propagate.
+
+Import `useDemoMode()` from `@nocobase/app-plugin-demo-mode/client`. It returns a boolean shared by the plugin provider, menu and settings page. Without the provider or without enabled public configuration it returns `false`, including outside an application provider. Register `defineDemoModeConfig()` on the server and `demoMode()` on the client as shown above. The provider snapshots the published `demoMode.enabled` at startup: all consumers share it for that client application's lifetime, with zero status requests. Reload the application after changing deployment configuration. It is a presentation helper; enforce restrictions on the server.
+
+## Refuse requests before external effects
+
+The database guard cannot undo a model call, email or upload that occurs before a rejected write. Register `demoEffectsGuard({ paths, allow })` from the server export to refuse selected requests before their route handlers run. It is an application HTTP middleware contribution; register it after the i18n middleware and before any middleware that itself performs the effects you need to protect.
+
+```ts
+import { i18nHttpMiddleware } from '@nocobase/app-server/i18n';
+import { demoEffectsGuard } from '@nocobase/app-plugin-demo-mode/server';
+
+app.addHttpMiddleware(i18nHttpMiddleware); // Keep the application's existing registration.
+app.addHttpMiddleware(
+  demoEffectsGuard({
+    paths: ['/api/outbound/*', '/api/uploads'],
+    allow: [{ method: 'POST', path: '/api/outbound/preview' }],
+  }),
+);
+```
+
+Paths include `/api` where applicable and exclude the deployment base path: `/suite/demo/api/outbound/send` matches `/api/outbound/*`. A literal path matches that endpoint with an optional trailing slash; `:id` matches one segment; a final `/*` matches the subtree including its root. Other wildcard syntax, query strings, fragments and empty segments are rejected. Matching is case-sensitive and segment-based, so `/api/outbound/*` does not match `/api/outboundOther`. Query strings do not affect matching. `allow` requires both a method and a path; method names are case-insensitive.
+
+In Demo Mode, matching requests other than GET, HEAD and OPTIONS receive the same `400 FAILED_PRECONDITION`, `DEMO_READ_ONLY`, localized message, request ID and `Server-Timing: demo-read-only` as database refusals. Outside Demo Mode, or when the plugin is absent, requests pass through. Allowed requests continue through normal authentication, authorization and database protection.
+
+There are no built-in protected paths or blanket exceptions. Select the actual effects endpoints of installed plugins. If protecting `/api/*`, explicitly allow required authentication, visitor entry, read-only POST queries and management operations, for example `{ method: 'POST', path: '/api/demoMode/data/reset' }`. An exception only permits entry into the existing handler; it does not grant its permissions or a database exemption. Avoid broad exceptions for routes that may perform external work.
+
+This guard covers matched non-read HTTP requests. GET endpoints with effects, WebSocket messages, jobs, direct service calls and middleware that runs earlier still need checks at their external boundaries. It does not automatically register protection for Agents, Mail or file plugins; applications must register their chosen paths until those plugins declare their effects.
 
 ## Visitor preferences through the Users API
 
@@ -161,6 +192,8 @@ Demo reset always clears business data before calling the generator again. A fai
 When `NOCOBASE_DEMO_MODE=true`, visitors enter any enabled person account without a password and switch between them. Existing accounts and accounts created by the dataset share the same entry list. An anonymous visitor opening the application home page automatically signs in as an existing Super Admin, identified by its unrestricted Permission Set; existing sessions are retained. This works before data generation and does not change passwords or permissions. The Client plugin contributes a `/demo-sign-in` page and exports a header menu. Registering the plugin alone does not enable Demo Mode.
 
 Set `demoMode.quickSignIn: false` in application configuration to disable quick sign-in and automatic home-page sign-in. It defaults to `true` and has no environment variable.
+
+Account subtitles use the dataset's role label when present. Otherwise, they show the localized names of directly assigned visible Permission Sets, preferring unrestricted administrator sets when assigned. Accounts without either source have no subtitle.
 
 When Demo Mode is enabled and `app.publicOrigin` is an HTTPS URL, the Server plugin automatically defaults `auth.advanced.defaultCookieAttributes` to `sameSite: none`, `secure: true` and `partitioned: true` before Authentication is created. This lets a demo keep its session inside a cross-site iframe without application-specific authentication code. Set the application's public HTTPS origin even when a reverse proxy terminates TLS; HTTP development, an unspecified public origin and ordinary deployments keep their existing cookie policy. Explicit deployment configuration takes precedence; to retain same-site cookies, set `sameSite: lax` and `partitioned: false` together. Restart after changing the origin or cookie policy. Cookie names, domains, paths and other authentication options are preserved.
 

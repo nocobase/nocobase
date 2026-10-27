@@ -10,7 +10,7 @@ export const DemoSignInAccountSchema: z.ZodType<DemoSignInAccount> = z
     name: z.string().meta({ description: 'The account display name.' }),
     role: z.string().meta({
       description:
-        'An optional dataset label, such as the account’s job title.',
+        'The dataset role label, falling back to localized names of directly assigned Permission Sets. Empty when neither is available.',
     }),
     current: z.boolean().meta({
       description: 'Whether the request is signed in as this account.',

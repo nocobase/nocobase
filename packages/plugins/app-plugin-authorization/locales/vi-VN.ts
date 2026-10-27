@@ -3,6 +3,12 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  permissionSets: {
+    builtIn: {
+      root: 'Quản trị viên hệ thống',
+      member: 'Thành viên',
+    },
+  },
   sections: {
     pages: 'Quyền của trang',
     page: 'Trang',

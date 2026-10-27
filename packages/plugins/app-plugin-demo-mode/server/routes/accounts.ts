@@ -16,6 +16,7 @@ import {
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { databaseManagerToken } from '@nocobase/db';
+import { getRequestTranslator } from '@nocobase/i18n/server';
 import { Hono } from 'hono';
 
 import { DemoAccountSignIn } from '../accounts.js';
@@ -73,7 +74,10 @@ export const accountRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       async (context) => {
-        const data = await service.list(context.req.raw.headers);
+        const data = await service.list(
+          context.req.raw.headers,
+          getRequestTranslator(context),
+        );
         return context.json({ data, meta: { total: data.length } });
       },
     );
@@ -135,6 +139,7 @@ export const accountRoutes: AppApiRouteContribution<AppPluginApplication> =
           context.req.raw,
           context.req.valid('param').username,
           getClientAddress(context),
+          getRequestTranslator(context),
         );
         for (const cookie of cookies)
           context.header('Set-Cookie', cookie, { append: true });

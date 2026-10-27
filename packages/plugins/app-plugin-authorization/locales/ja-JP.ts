@@ -3,6 +3,12 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  permissionSets: {
+    builtIn: {
+      root: 'システム管理者',
+      member: 'メンバー',
+    },
+  },
   sections: {
     pages: 'ページ権限',
     page: 'ページ',

@@ -1,6 +1,7 @@
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
 import type { Auth } from '@nocobase/app-plugin-authentication';
 import type { DatabaseManager } from '@nocobase/db';
+import type { Translator } from '@nocobase/i18n';
 
 import { demoDataError } from './errors.js';
 import { migratePartitionedCookies } from './sign-in-cookies.js';
@@ -33,8 +34,11 @@ const ROUTE_SEGMENT = '/demoMode/';
 export class DemoAccountSignIn {
   public constructor(private readonly deps: DemoAccountSignInDependencies) {}
 
-  public async list(headers: Headers): Promise<DemoSignInAccount[]> {
-    const candidates = await this.candidates();
+  public async list(
+    headers: Headers,
+    translate?: Translator,
+  ): Promise<DemoSignInAccount[]> {
+    const candidates = await this.candidates(translate);
     if (!candidates.length) return [];
     const session = await this.deps.auth
       .getSession(headers, { disableRefresh: true })
@@ -55,8 +59,9 @@ export class DemoAccountSignIn {
     request: Request,
     username: string,
     clientAddress?: string,
+    translate?: Translator,
   ): Promise<{ account: DemoSignInAccount; cookies: string[] }> {
-    const account = (await this.candidates()).find(
+    const account = (await this.candidates(translate)).find(
       (candidate) => candidate.username === username,
     );
     if (!account)
@@ -136,7 +141,7 @@ export class DemoAccountSignIn {
       .cookies;
   }
 
-  private async candidates(): Promise<Candidate[]> {
+  private async candidates(translate?: Translator): Promise<Candidate[]> {
     if (!this.deps.enabled()) return [];
     const [accounts, users] = await Promise.all([
       this.deps.accounts(),
@@ -159,12 +164,66 @@ export class DemoAccountSignIn {
     const labels = new Map(
       accounts.map((account) => [account.username, account.role]),
     );
+    const assignedRoles = users.some(
+      (user) => !labels.get(user.username ?? '')?.trim(),
+    )
+      ? await this.assignedRoles(translate)
+      : new Map<string, string>();
     return users.map((user) => ({
       id: String(user.id),
       username: user.username || user.email,
       name: user.name,
-      role: labels.get(user.username ?? '') ?? '',
+      role:
+        labels.get(user.username ?? '')?.trim() ||
+        assignedRoles.get(String(user.id)) ||
+        '',
     }));
+  }
+
+  private async assignedRoles(
+    translate?: Translator,
+  ): Promise<Map<string, string>> {
+    const api = this.deps.authorization?.()?.permissionSets;
+    if (!api) return new Map();
+    const [sets, assignments] = await Promise.all([
+      api.list(),
+      api.listAssignments(),
+    ]);
+    const visible = new Map(
+      sets
+        .filter((set) => !api.protection(set.key)?.hidden)
+        .map((set) => [set.key, set]),
+    );
+    const roles = new Map<string, Set<string>>();
+    for (const assignment of assignments) {
+      if (
+        assignment.subject.type !== 'user' ||
+        !visible.has(assignment.permissionSet)
+      )
+        continue;
+      const id = String(assignment.subject.id);
+      const keys = roles.get(id) ?? new Set<string>();
+      keys.add(assignment.permissionSet);
+      roles.set(id, keys);
+    }
+    return new Map(
+      [...roles].map(([id, keys]) => {
+        const unrestricted = [...keys].filter(
+          (key) => api.protection(key)?.unrestricted,
+        );
+        const labels = (unrestricted.length ? unrestricted : [...keys]).map(
+          (key) => {
+            const title = visible.get(key)?.title;
+            if (typeof title === 'string') return title.trim() || key;
+            return title
+              ? (translate?.(title.key, { ns: title.ns, defaultValue: key }) ??
+                  key)
+              : key;
+          },
+        );
+        return [id, [...new Set(labels)].join(', ')];
+      }),
+    );
   }
 }
 
