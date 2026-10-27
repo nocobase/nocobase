@@ -22,7 +22,10 @@ import type { ColumnSort } from '@tanstack/react-table';
 import { type ReactElement } from 'react';
 import { useListData } from '#hooks/use-list-data';
 import { useListLocation } from '#hooks/use-list-location';
-import { useTableUrlState } from '#hooks/use-table-url-state';
+import {
+  readTableUrlState,
+  useTableUrlState,
+} from '#hooks/use-table-url-state';
 // … the other imports of the list page, without DataTable, and with ProjectList added to the import from ./types.js
 import { ProjectsServerTable } from './projects-server-table.js';
 
@@ -34,21 +37,6 @@ const DEFAULT_SORT: ColumnSort = { id: 'updatedAt', desc: true };
 
 // … isProjectStatus, as in the list page
 
-/** Reads `orderBy` from the URL: a sortable column, followed by ` desc` for descending. Anything else is the default. */
-function parseOrderBy(value: string | null): ColumnSort {
-  const [field, direction, ...rest] = (value ?? '').trim().split(/\s+/);
-  const id = SORTABLE.find((column) => column === field);
-  const desc = direction === 'desc';
-  const valid =
-    rest.length === 0 &&
-    (direction === undefined || desc || direction === 'asc');
-  return id && valid ? { id, desc } : DEFAULT_SORT;
-}
-
-function formatOrderBy(column: ColumnSort): string {
-  return column.desc ? `${column.id} desc` : column.id;
-}
-
 export default function ProjectsPage(): ReactElement {
   // … t, locale, location and searchRef, as in the list page
 
@@ -57,13 +45,18 @@ export default function ProjectsPage(): ReactElement {
     useUrlSearch({ resetParams: ['page'] });
   const statusParam = searchParams.get('status');
   const status = isProjectStatus(statusParam) ? statusParam : undefined;
-  // Bound what the URL may say: an unknown size or a page below 1 falls back to the defaults.
-  const pageSize =
-    PAGE_SIZES.find((size) => String(size) === searchParams.get('pageSize')) ??
-    PAGE_SIZES[0];
-  const page = Math.max(1, Math.trunc(Number(searchParams.get('page'))) || 1);
-  const columnSort = parseOrderBy(searchParams.get('orderBy'));
-  const orderBy = formatOrderBy(columnSort);
+  const parsedTableState = readTableUrlState(searchParams, {
+    defaultPageSize: PAGE_SIZES[0],
+    pageSizeOptions: PAGE_SIZES,
+    sortColumns: SORTABLE,
+    sortFormat: 'orderBy',
+    defaultSorting: [DEFAULT_SORT],
+  });
+  const { pageSize, pageIndex } = parsedTableState.paginationState;
+  const page = pageIndex + 1;
+  const orderBy = parsedTableState.sortingState
+    .map((sort) => `${sort.id}${sort.desc ? ' desc' : ''}`)
+    .join(',');
 
   function changeStatus(value: string | null): void {
     updateParams((params) => {
@@ -91,6 +84,9 @@ export default function ProjectsPage(): ReactElement {
   const tableState = useTableUrlState({
     active,
     revision: request.revision,
+    defaultPageSize: PAGE_SIZES[0],
+    sortFormat: 'orderBy',
+    defaultSorting: [DEFAULT_SORT],
     pageSizeOptions: PAGE_SIZES,
     sortColumns: SORTABLE,
     rowCount:
@@ -147,24 +143,11 @@ export default function ProjectsPage(): ReactElement {
         columns={columns}
         rows={rows}
         total={result?.total ?? 0}
-        pagination={{ pageIndex: page - 1, pageSize }}
+        pagination={tableState.paginationState}
         pageSizeOptions={PAGE_SIZES}
-        onPaginationChange={(next) => {
-          updateParams((params) => {
-            params.set('page', String(next.pageIndex + 1));
-            params.set('pageSize', String(next.pageSize));
-          });
-        }}
-        sorting={[columnSort]}
-        onSortingChange={(next) => {
-          const column = next.at(0);
-          updateParams((params) => {
-            if (column) params.set('orderBy', formatOrderBy(column));
-            else params.delete('orderBy');
-            // A new order starts on the first page.
-            params.delete('page');
-          });
-        }}
+        onPaginationChange={tableState.onPaginationChange}
+        sorting={tableState.sortingState}
+        onSortingChange={tableState.onSortingChange}
         // No results for the filters. Without filters an empty page only shows while a page past the end moves to the
         // last one, so it stays blank.
         emptyMessage={

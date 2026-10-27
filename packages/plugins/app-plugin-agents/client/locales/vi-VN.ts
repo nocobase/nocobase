@@ -942,6 +942,7 @@ const viVN: LocaleResource<typeof enUS> = {
         '{{own}} hiện không có trình chạy nào dành cho bạn, vì vậy {{name}} sẽ trả lời cho đến khi {{own}} quay trở lại.',
       onlineFallbackUnavailable:
         'Tác nhân dự phòng trực tuyến không thể trả lời ({{reason}}). Cuộc trò chuyện này vẫn ở lại với {{own}} trong khi chờ trình chạy.',
+      switchedAgent: chatEnUS.chat.notice.switchedAgent,
       switchedBack: 'Quay lại với {{name}}.',
       runFailed: 'Người đại diện dừng lại trước khi trả lời.',
       runFailedReason: 'Nhân viên dừng lại trước khi trả lời: {{reason}}',

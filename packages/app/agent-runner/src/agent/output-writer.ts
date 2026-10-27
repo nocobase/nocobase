@@ -6,12 +6,20 @@ import {
 import type { SpoolEvent } from '../core/events.ts';
 
 type Event = SpoolEvent;
+/**
+ * How long preview text waits to be sent with what follows. A block's first words wait only briefly, since they show the
+ * reply has started; the wait still lets a credential registered meanwhile withhold them.
+ */
+export const FIRST_PREVIEW_MS = 50;
+export const PREVIEW_FLUSH_MS = 200;
 type Block = {
   event: Event;
   redactor: ReturnType<typeof createOutputRedactor>;
   ended: boolean;
   previewBytes: number;
   previewStopped: boolean;
+  /** A preview of this block was sent: the reader has seen the reply start. */
+  previewed: boolean;
 };
 /** Conversation previews never enter the durable spool. Completed snapshots retain one canonical event. */
 export class OutputWriter {
@@ -65,6 +73,7 @@ export class OutputWriter {
         ended: false,
         previewBytes: 0,
         previewStopped: false,
+        previewed: false,
       };
       this.blocks.set(output.blockId, block);
     }
@@ -139,11 +148,16 @@ export class OutputWriter {
       at = end;
     }
     this.pending.content = bytes.subarray(at).toString('utf8');
-    if (this.pending.content)
-      this.timer ??= setTimeout(() => this.flush(), 1000);
+    if (!this.pending.content) return;
+    this.timer ??= setTimeout(
+      () => this.flush(),
+      block.previewed ? PREVIEW_FLUSH_MS : FIRST_PREVIEW_MS,
+    );
   }
   private send(id: string, content: string): void {
-    const event = this.blocks.get(id)!.event;
+    const block = this.blocks.get(id)!;
+    block.previewed = true;
+    const event = block.event;
     this.preview({
       ...event,
       content,

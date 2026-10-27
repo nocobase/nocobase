@@ -64,6 +64,8 @@ for (const tool of ['claude', 'codex'] as const) {
         updateRecord: vi.fn(async () => undefined),
         spool: {
           push: (event: Record<string, unknown>) => saved.push(event),
+          // This in-memory spool saves synchronously; drain below performs the fixture's reporting.
+          flush: async () => undefined,
           drain: async () => {
             await client.post('/events', { events: saved }, z.object({}));
             return true;

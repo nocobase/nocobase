@@ -321,6 +321,8 @@ class PiRun {
   private readonly stderrLines: string[] = [];
   private readonly toolNames = new Map<string, string>();
   private readonly usageByModel = new Map<string, Usage>();
+  /** What the run's model calls cost so far, in US dollars, as Pi priced them; undefined until one reports it. */
+  private costUsd?: number;
   /** Steers accepted by Pi that the agent has not picked up yet. */
   private pendingSteers: PendingSteer[] = [];
   /** Steers re-sent as a prompt after the agent settled without them. */
@@ -586,7 +588,7 @@ class PiRun {
   private async sendPrompt(): Promise<void> {
     const response = await this.request('prompt', {
       message: this.recovered
-        ? recoveryPrompt(this.session.prompt)
+        ? recoveryPrompt(this.session.prompt, this.session.recoveryContext)
         : this.session.prompt,
     });
     if (!response) throw this.exitError('before it accepted the prompt');
@@ -859,6 +861,7 @@ class PiRun {
             ...(this.lastAssistant?.stopReason
               ? { stopReason: this.lastAssistant.stopReason }
               : {}),
+            ...(this.costUsd !== undefined ? { costUsd: this.costUsd } : {}),
           },
         });
         this.emit({ type: 'usage', meta: { usage: this.usage() } });
@@ -1024,6 +1027,9 @@ class PiRun {
       (total.cacheWriteTokens ?? 0) + (u.cacheWrite ?? 0);
     if (u.reasoning !== undefined)
       total.reasoningTokens = (total.reasoningTokens ?? 0) + u.reasoning;
+    const cost = u.cost?.total;
+    if (typeof cost === 'number' && Number.isFinite(cost) && cost >= 0)
+      this.costUsd = (this.costUsd ?? 0) + cost;
     this.usageByModel.set(model, total);
   }
 

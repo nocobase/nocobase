@@ -583,7 +583,14 @@ it('does not create a phantom SDK assistant when a Run ends without saved output
   ).toBe(200);
   await sending;
   expect(chat.error).toBeUndefined();
-  expect(chat.messages.map((message) => message.role)).toEqual(['user']);
+  // The live response only said where it stood (`data-phase`); it shows nothing once the run ended.
+  expect(
+    chat.messages
+      .filter((message) =>
+        message.parts.some((part) => part.type !== 'data-phase'),
+      )
+      .map((message) => message.role),
+  ).toEqual(['user']);
   const history = await agent.history();
   expect(history.map((message) => message.role)).toEqual(['user']);
   expect(history[0].metadata!.clientId).toBe(chat.messages[0].id);

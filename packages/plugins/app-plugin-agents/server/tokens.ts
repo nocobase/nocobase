@@ -28,6 +28,9 @@ export {
   RUN_SELF_ACTION,
 } from './core/callers/index.js';
 export type {
+  ConversationLinkKind,
+  ConversationLinks,
+  ConversationLinkTarget,
   ConversationNews,
   ConversationRef,
   ConversationRuleLines,
