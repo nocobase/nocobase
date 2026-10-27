@@ -33,6 +33,8 @@ declare module '../../kernel/events.js' {
       readonly mentions: readonly MentionRef[];
     };
     'issue.updated': {
+      /** Timestamp captured with the status write, never event delivery time. */
+      readonly statusChangedAt?: string;
       readonly issueId: string;
       readonly actor: EventActor;
       readonly changes: IssueChangeSet;

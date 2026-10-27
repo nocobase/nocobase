@@ -211,6 +211,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     ownerClaimed = false,
     viewer?: Viewer,
   ): Promise<Issue> {
+    const statusChangedAt = after.updatedAt;
     await deps
       .triggers()
       .onIssueChanged(tx, { before, after, actor, ownerClaimed, viewer });
@@ -237,6 +238,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
         actor: eventActor(actor),
         changes,
         revision: after.revision,
+        ...(changes.status ? { statusChangedAt } : {}),
       });
     return after;
   }
