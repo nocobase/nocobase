@@ -14,8 +14,14 @@ export default defineMigration({
       ])
         collection.string(key, { nullable: false });
     });
+    await builder.createCollection('equipmentFixtureHistory', (collection) => {
+      collection.string('id').primary().notNull();
+      for (const key of ['recordId', 'event', 'actor'])
+        collection.string(key, { nullable: false });
+    });
   },
   async down({ builder }) {
+    await builder.dropCollection('equipmentFixtureHistory');
     await builder.dropCollection('equipmentFixture');
   },
 });

@@ -61,8 +61,19 @@ async function open(container = 'page') {
   await expect(page.getByTestId('retained-record')).toContainText(
     'Legacy camera',
   );
-  if (container !== 'page')
+  if (container !== 'page') {
     await page.getByLabel('Container', { exact: true }).selectOption(container);
+    await expect(page).toHaveURL(
+      new RegExp(
+        container === 'detail-edit'
+          ? '/equipment/retained/edit$'
+          : `/equipment/${container}$`,
+      ),
+    );
+    await expect(
+      page.getByLabel('Equipment name', { exact: true }),
+    ).toBeVisible();
+  }
 }
 async function save() {
   await page.getByRole('button', { name: 'Save request', exact: true }).click();
@@ -127,6 +138,7 @@ const checked = [
 ];
 for (const container of ['page', 'dialog', 'drawer', 'detail-edit']) {
   await open(container);
+  const routeBeforeFailure = page.url();
   const title = page.getByLabel('Equipment name', { exact: true });
   await title.fill('');
   await save();
@@ -162,6 +174,7 @@ for (const container of ['page', 'dialog', 'drawer', 'detail-edit']) {
     fullPage: true,
     animations: 'disabled',
   });
+  expect(page.url()).toBe(routeBeforeFailure);
   checked.push(
     `${container}: native errors, region reveal, inline association, scroll/focus, input and file retention`,
   );
@@ -250,6 +263,34 @@ await page.getByLabel('Response', { exact: true }).selectOption('success');
 await save();
 await expect(page.getByRole('status')).toHaveText('Saved; workflow submitted.');
 await expect(page.getByRole('alert')).toHaveCount(0);
+await expect(page.getByTestId('workflow-status')).toContainText('submitted');
+const submittedId = (
+  await page.getByTestId('workflow-status').innerText()
+).split(':')[0];
+await page
+  .getByRole('button', { name: 'Approve request', exact: true })
+  .click();
+await expect(page.getByTestId('workflow-status')).toContainText('approved');
+const persisted = await (
+  await page.request.get(`${base}api/equipmentFixture`)
+).json();
+expect(persisted.requests.find((row) => row.id === submittedId)?.workflow).toBe(
+  'approved',
+);
+expect(
+  persisted.history
+    .filter((row) => row.recordId === submittedId)
+    .map((row) => row.event)
+    .sort(),
+).toEqual(['approved', 'submitted']);
+await page.screenshot({
+  path: join(output, `${name}-approved-workflow.png`),
+  fullPage: true,
+  animations: 'disabled',
+});
+checked.push(
+  'real equipment submission and approval persist with both history events',
+);
 checked.push(
   'trusted business copy and successful retry clear obsolete errors',
 );

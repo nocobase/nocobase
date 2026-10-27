@@ -12,12 +12,9 @@ import {
 import { FeedbackForm } from '#components/feedback-form';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from '#components/ui/dialog';
+import { RouteDialog } from '#components/route-dialog';
+import { RouteDrawer } from '#components/route-drawer';
+import { useLocation, useNavigate } from 'react-router';
 import { PageContainer } from '#components/page-container';
 
 interface Row {
@@ -39,7 +36,18 @@ export default function EquipmentFixture(): ReactElement {
   const [hidden, setHidden] = useState(false);
   const [disabled, setDisabled] = useState(false);
   const [mode, setMode] = useState('structured');
-  const [container, setContainer] = useState('page');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const container = location.pathname.endsWith('/drawer')
+    ? 'drawer'
+    : location.pathname.endsWith('/dialog')
+      ? 'dialog'
+      : location.pathname.endsWith('/edit')
+        ? 'detail-edit'
+        : 'page';
+  const [request, setRequest] = useState<
+    { id: string; workflow: string } | undefined
+  >();
   const [saved, setSaved] = useState(false);
   const [record, setRecord] = useState<unknown>();
   const [feedback] = useState(
@@ -90,7 +98,9 @@ export default function EquipmentFixture(): ReactElement {
     return () => remove.forEach((dispose) => dispose());
   }, [feedback]);
   useEffect(() => {
-    void api.request({ path: 'equipmentFixture' }).then(setRecord);
+    void api
+      .request<{ data: unknown }>({ path: 'equipmentFixture' })
+      .then((result) => setRecord(result.data));
   }, [api]);
   const content = (
     <FeedbackForm
@@ -106,7 +116,9 @@ export default function EquipmentFixture(): ReactElement {
         setSaved(false);
         if (mode === 'network')
           throw new TypeError('Test connection interruption');
-        await api.request({
+        const result = await api.request<{
+          data: { id: string; workflow: string };
+        }>({
           path: 'equipmentFixture',
           method: 'POST',
           json: {
@@ -117,6 +129,7 @@ export default function EquipmentFixture(): ReactElement {
             attachment: 'safety-check.pdf',
           },
         });
+        setRequest(result.data);
         setSaved(true);
       }}
     >
@@ -272,6 +285,37 @@ export default function EquipmentFixture(): ReactElement {
       </label>
       <Button type='submit'>{t('equipment.save')}</Button>
       {saved && <p role='status'>{t('equipment.saved')}</p>}
+      {request && (
+        <div>
+          <p data-testid='workflow-status'>
+            {request.id}: {request.workflow}
+          </p>
+          {request.workflow === 'submitted' && (
+            <Button
+              type='button'
+              onClick={async () => {
+                const result = await api.request<{
+                  data: { id: string; workflow: string };
+                }>({
+                  path: 'equipmentFixture',
+                  method: 'POST',
+                  json: {
+                    mode: 'approve',
+                    recordId: request.id,
+                    name,
+                    department,
+                    items: rows,
+                    attachment: 'safety-check.pdf',
+                  },
+                });
+                setRequest(result.data);
+              }}
+            >
+              Approve request
+            </Button>
+          )}
+        </div>
+      )}
     </FeedbackForm>
   );
   return (
@@ -286,27 +330,35 @@ export default function EquipmentFixture(): ReactElement {
         <select
           aria-label='Container'
           value={container}
-          onChange={(event) => setContainer(event.target.value)}
+          onChange={(event) =>
+            void navigate(
+              event.target.value === 'page'
+                ? '/equipment'
+                : `/equipment/${event.target.value === 'detail-edit' ? 'retained/edit' : event.target.value}`,
+            )
+          }
         >
           {['page', 'dialog', 'drawer', 'detail-edit'].map((value) => (
             <option key={value}>{value}</option>
           ))}
         </select>
       </label>
-      {container === 'dialog' || container === 'drawer' ? (
-        <Dialog open onOpenChange={() => setContainer('page')}>
-          <DialogContent
-            className={
-              container === 'drawer'
-                ? 'fixed right-0 left-auto h-dvh translate-x-0 overflow-y-auto'
-                : 'max-h-[80dvh] overflow-y-auto'
-            }
-          >
-            <DialogTitle>Equipment borrowing</DialogTitle>
-            <DialogDescription>Customized equipment request</DialogDescription>
-            {content}
-          </DialogContent>
-        </Dialog>
+      {container === 'dialog' ? (
+        <RouteDialog
+          title='Equipment borrowing'
+          description='Customized equipment request'
+          closeTo='/equipment'
+        >
+          {content}
+        </RouteDialog>
+      ) : container === 'drawer' ? (
+        <RouteDrawer
+          title='Equipment borrowing'
+          description='Customized equipment request'
+          closeTo='/equipment'
+        >
+          {content}
+        </RouteDrawer>
       ) : container === 'detail-edit' ? (
         <RouteChildPage>{content}</RouteChildPage>
       ) : (

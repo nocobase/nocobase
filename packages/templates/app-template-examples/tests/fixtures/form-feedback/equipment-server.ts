@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Application } from '@nocobase/app-server/application';
 // Test-only routes for an isolated application; authentication and authorization remain native.
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
@@ -34,6 +35,7 @@ export const equipmentRoutes = defineApiRoutes<Application>((app) => {
     department: z.string(),
     items: z.array(z.object({ key: z.string(), name: z.string() })),
     attachment: z.string(),
+    recordId: z.string().optional(),
   });
   const description = {
     tags: ['Equipment fixture'],
@@ -67,6 +69,8 @@ export const equipmentRoutes = defineApiRoutes<Application>((app) => {
         });
       return c.json({
         data: await repository.findOne({ filter: { id: 'retained' } }),
+        requests: await repository.findMany({}),
+        history: await db.repository('equipmentFixtureHistory').findMany({}),
       });
     },
   );
@@ -87,7 +91,7 @@ export const equipmentRoutes = defineApiRoutes<Application>((app) => {
           domain: 'equipment-fixture',
           message: 'Private equipment details',
         });
-      if (input.mode !== 'success')
+      if (input.mode !== 'success' && input.mode !== 'approve')
         throw new ApiError({
           status: 'INVALID_ARGUMENT',
           reason: 'EQUIPMENT_INVALID',
@@ -122,7 +126,71 @@ export const equipmentRoutes = defineApiRoutes<Application>((app) => {
                     },
                   ],
         });
-      return c.json({ data: { ...input, workflow: 'submitted' } });
+      return db.transaction(async (connection) => {
+        const repository = connection.repository('equipmentFixture');
+        const history = connection.repository('equipmentFixtureHistory');
+        if (input.mode === 'approve') {
+          const request = await repository.findOne({
+            filter: { id: input.recordId, workflow: 'submitted' },
+          });
+          if (!request)
+            throw new ApiError({
+              status: 'INVALID_ARGUMENT',
+              reason: 'NOT_SUBMITTED',
+              domain: 'equipment-fixture',
+              message: 'Only submitted requests can be approved.',
+            });
+          await repository.updateMany({
+            filter: { id: input.recordId, workflow: 'submitted' },
+            values: { workflow: 'approved' },
+          });
+          await history.createOne({
+            values: {
+              id: randomUUID(),
+              recordId: input.recordId,
+              event: 'approved',
+              actor: 'native-administrator',
+            },
+          });
+          return c.json({
+            data: await repository.findOne({ filter: { id: input.recordId } }),
+          });
+        }
+        if (input.department !== 'Operations')
+          throw new ApiError({
+            status: 'INVALID_ARGUMENT',
+            reason: 'DEPARTMENT',
+            domain: 'equipment-fixture',
+            message: 'Private business detail',
+            fieldViolations: [
+              {
+                field: 'department',
+                reason: 'DEPARTMENT',
+                description: 'Private business detail',
+              },
+            ],
+          });
+        const id = randomUUID();
+        await repository.createOne({
+          values: {
+            id,
+            name: input.name,
+            department: input.department,
+            attachment: input.attachment,
+            workflow: 'submitted',
+            customField: 'asset-714',
+          },
+        });
+        await history.createOne({
+          values: {
+            id: randomUUID(),
+            recordId: id,
+            event: 'submitted',
+            actor: 'native-administrator',
+          },
+        });
+        return c.json({ data: await repository.findOne({ filter: { id } }) });
+      });
     },
   );
   return new Hono().route('/', routes);
