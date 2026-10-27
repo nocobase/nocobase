@@ -943,7 +943,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         '{{own}} には現在あなたのランナーがいないため、{{own}} が戻ってくるまで {{name}} が応答します。',
       onlineFallbackUnavailable:
         'オンライン フォールバック エージェントが応答できません ({{reason}})。この会話は、ランナーを待つ間、{{own}} に残ります。',
-      switchedAgent: chatEnUS.chat.notice.switchedAgent,
+      switchedAgent: '会話の履歴を保持して {{name}} に切り替えました。',
       switchedBack: '{{name}} で戻ります。',
       runFailed: 'エージェントは応答する前に停止しました。',
       runFailedReason: 'エージェントは応答する前に停止しました: {{reason}}',

@@ -7,6 +7,7 @@ import type {
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '#components/ui/button';
+import { Empty, EmptyDescription } from '#components/ui/empty';
 import { DataTable } from '#components/data-table/data-table';
 
 export interface WorkflowExecutionRow {
@@ -84,13 +85,22 @@ export function WorkflowExecutionList({
               listState ??
               (!loaded ? 'loading' : rows.length ? 'ready' : 'empty')
             }
+            onRetry={onRefresh}
             onClearFilters={onClearFilters}
             getRowId={(row) => row.id}
             pagination={false}
             manualSorting
             sortingState={[{ id: 'createdAt', desc: order === 'newest' }]}
             loading={loading}
-            emptyMessage={loaded ? empty : undefined}
+            emptyMessage={
+              loaded ? (
+                <Empty>
+                  <EmptyDescription>{empty}</EmptyDescription>
+                </Empty>
+              ) : (
+                ''
+              )
+            }
             columns={[
               {
                 id: 'record',

@@ -127,13 +127,59 @@ it('keeps the environment notice available when quick sign-in offers no accounts
     route: '/projects',
     fetch: api({ accounts: [] }),
   });
-  fireEvent.click(await screen.findByRole('button', { name: 'Demo mode' }));
+  // The label is also present during mounting; wait for the menu trigger's interaction state.
+  const trigger = await screen.findByRole('button', {
+    name: 'Demo mode',
+    expanded: false,
+  });
+  fireEvent.click(trigger);
+  expect(trigger).toHaveAttribute('aria-expanded', 'true');
   expect(
     await screen.findByText('No accounts can be entered right now.'),
   ).toBeVisible();
   expect(screen.getByText('This is a demo environment')).toBeVisible();
   expect(screen.queryByRole('menuitemradio')).not.toBeInTheDocument();
 });
+
+it.each([
+  ['empty', []],
+  ['available', [ann, bob]],
+] as const)(
+  'keeps the loading menu open when accounts become %s',
+  async (_, accounts) => {
+    const pending = Promise.withResolvers<{ data: readonly object[] }>();
+    await renderWithApp(<Header />, {
+      plugins: [demoMode()],
+      route: '/projects',
+      fetch: answerApi((call) => {
+        if (call.path === 'demoMode/status') return { data: { enabled: true } };
+        if (call.path === 'demoMode/accounts') return pending.promise;
+        return new Response(null, { status: 404 });
+      }),
+    });
+    const trigger = await screen.findByRole('button', {
+      name: 'Demo mode',
+      expanded: false,
+    });
+    fireEvent.click(trigger);
+    expect(await screen.findByText('Loading accounts…')).toBeVisible();
+    expect(screen.getByText('This is a demo environment')).toBeVisible();
+    await act(async () => pending.resolve({ data: accounts }));
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByText('Loading accounts…')).not.toBeInTheDocument();
+    if (accounts.length) {
+      expect(
+        screen.getByRole('menuitemradio', { name: /Ann/u }),
+      ).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getAllByRole('menuitemradio')).toHaveLength(2);
+    } else {
+      expect(
+        screen.getByText('No accounts can be entered right now.'),
+      ).toBeVisible();
+      expect(screen.queryByRole('menuitemradio')).not.toBeInTheDocument();
+    }
+  },
+);
 
 it('offers the same header entry to signed-out visitors', async () => {
   await renderWithApp(<Header />, {

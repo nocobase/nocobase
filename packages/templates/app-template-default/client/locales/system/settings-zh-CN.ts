@@ -1,4 +1,5 @@
 const settings = {
+  listChanged: '列表已变化，请重试。',
   setup: {
     title: '功能前置配置',
     checking: '正在检查当前配置…',
@@ -43,9 +44,6 @@ const settings = {
     records: '指定记录（{{count}} 条）',
     retained: '保留现有配置',
     search: '搜索业务对象或标识',
-    empty: '暂无默认数据范围',
-    emptyHint: '新建规则，为业务对象配置基础数据访问范围。',
-    readOnlyEmpty: '请联系管理员配置基础数据访问范围。',
     noResources: '可用业务对象均已配置默认规则，或当前没有可配置的业务对象。',
     unsupported:
       '此规则包含当前插件目录中不存在的配置，已保留原值并以只读方式展示。',
@@ -187,6 +185,13 @@ const settings = {
   configurationPermissionsHint:
     '统一设置系统设置、用户管理和业务配置项的访问与操作权限，仅显示应用实际开放的功能。',
   permissionSearch: '搜索分类、分组或权限',
+  permissionAll: '全部',
+  permissionGranted: '已授权',
+  permissionUngranted: '未授权',
+  permissionStatus: '授权状态',
+  permissionClearSearch: '清空搜索',
+  permissionCollapseAll: '全部收起',
+  permissionExpandAll: '全部展开',
   enabledOnly: '仅显示已授权',
   noPermissions: '暂无可配置权限',
   permissionEmptyHint: '请联系应用开发者，开放此角色需要配置的权限。',

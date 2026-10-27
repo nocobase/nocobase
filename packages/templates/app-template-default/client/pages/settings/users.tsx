@@ -1,3 +1,4 @@
+import { useListLocation } from '#hooks/use-list-location';
 import { RecordLink } from '#components/record-link';
 import { BackButton } from '#components/back-button';
 import { safeReturnTo } from '../../lib/return-to.js';
@@ -27,19 +28,14 @@ import {
   useEffect,
   type ReactElement,
 } from 'react';
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useSearchParams,
-  useResolvedPath,
-} from 'react-router';
+import { Link, Outlet, useLocation, useResolvedPath } from 'react-router';
 import { PlusIcon } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { StatusBadge } from '#components/status-badge';
+import { Spinner } from '#components/ui/spinner';
 import {
   Select,
   SelectTrigger,
@@ -156,7 +152,7 @@ function UserActions({
 
 export default function UsersPage(): ReactElement {
   const { t } = useTranslation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const location = useLocation();
   const listPath = useResolvedPath('.').pathname;
   const searchRef = useRef<HTMLInputElement>(null);
@@ -257,7 +253,7 @@ export default function UsersPage(): ReactElement {
   const remote = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
-    ...(params.get('q')?.trim() ? { q: params.get('q')!.trim() } : {}),
+    ...(params.get('q') ? { q: params.get('q')! } : {}),
     ...(status !== 'all' ? { status } : {}),
     ...(roleScope ? { roleScope } : {}),
     ...(role ? { role } : {}),
@@ -268,16 +264,22 @@ export default function UsersPage(): ReactElement {
         }
       : {}),
   });
+  const requestPath = `users?${remote}`;
   const request = useSettingsData<{
     data: readonly ManagedUser[];
     meta: { total: number };
-  }>(`users?${remote}`, true);
+  }>(requestPath, { keepPreviousData: true, active });
+  const hasCurrentResponse = request.path === requestPath;
   const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
     defaultPageSize: 20,
     pageSizeOptions: [20, 50, 100],
     sortColumns: ['name'],
     rowCount:
-      !request.loading && !request.error ? request.data?.meta.total : undefined,
+      hasCurrentResponse && !request.loading && !request.error
+        ? request.data?.meta.total
+        : undefined,
   });
   const clearFilters = () => {
     setQuery('');
@@ -310,6 +312,24 @@ export default function UsersPage(): ReactElement {
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role');
   const rows = request.data?.data ?? [];
+  const filtered =
+    Boolean(params.get('q') || roleScope || role) || status !== 'all';
+  const listState = resolveListState(
+    {
+      data: hasCurrentResponse ? request.data : undefined,
+      error: tableState.error ?? request.error,
+      isPending: request.loading && !hasCurrentResponse,
+    },
+    hasCurrentResponse ? (request.data?.meta.total ?? rows.length) : 0,
+    filtered,
+  );
+  const canShowCreate =
+    canCreate &&
+    canAssign &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
   const columns = useMemo<ColumnDef<ManagedUser>[]>(
     () => [
       {
@@ -382,18 +402,6 @@ export default function UsersPage(): ReactElement {
         {t('settings.newUser')}
       </Button>
     ) : null;
-  const filtered =
-    Boolean(params.get('q')?.trim() || roleScope || role) || status !== 'all';
-  const listState = resolveListState(
-    { data: request.data, error: request.error, isFetching: request.loading },
-    rows.length,
-    filtered,
-  );
-  const canShowCreate =
-    listState === 'empty' ||
-    listState === 'no-results' ||
-    listState === 'ready' ||
-    listState === 'refresh-failed';
   return (
     <>
       <PageContainer>
@@ -475,17 +483,15 @@ export default function UsersPage(): ReactElement {
               ))}
             </SelectContent>
           </Select>
-          {filtered && (
+          {filtered && listState !== 'no-results' && (
             <Button variant='ghost' onClick={clearFilters}>
               {t('settings.clear')}
             </Button>
           )}
+          {active && hasCurrentResponse && request.loading && request.data ? (
+            <Spinner className='text-muted-foreground' />
+          ) : null}
         </div>
-        {request.data && request.loading && (
-          <span role='status' className='text-sm text-muted-foreground'>
-            {t('settings.loading')}
-          </span>
-        )}
         {Boolean(roleScope) !== Boolean(role) && (
           <p role='alert' className='text-sm text-destructive'>
             {t('settings.roleFilterIncomplete')}

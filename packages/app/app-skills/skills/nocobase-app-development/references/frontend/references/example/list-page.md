@@ -10,13 +10,16 @@ Part of the [projects worked example](../example.md).
 
 **Without detail and delete** (a list with only a create dialog), remove: the `actions` column and its row menu, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
 
-Use the application's existing authorization hook to resolve the create permission before rendering the page-level action. Put the standard create action only in the page header, including when a successful query returns no records; do not wire it through the empty state's `emptyAction`. Render `ListFeedbackActions` for clear, retry and sign-in recovery in the existing toolbar, and keep each built-in state to its matching icon and one short line. Follow [shared list feedback](../list-feedback.md) for error and query ownership.
+Use the application's existing authorization hook to resolve create permission before rendering the page-level action. Put the standard create action only in the page header, including for a successful empty query; never wire it through the empty state's `emptyAction`. Let `DataTable` render each built-in state with its matching icon and one short line, and keep clear, retry and sign-in actions in the existing toolbar or authentication flow. Follow [shared list feedback](../list-feedback.md) for the state and request contract.
 
-Rules: sections [3](../table.md#3-known-datatable-behavior), [5](../table.md#5-writing-search-and-filters-to-the-url), [6](../table.md#6-loading-the-list), [7](../table.md#7-the-four-list-states), [8](../table.md#8-column-definitions-and-row-actions) and [9](../table.md#9-child-routes-and-refreshing-the-list) of `table.md`.
+Rules: sections [3](../table.md#3-known-datatable-behavior), [5](../table.md#5-writing-search-and-filters-to-the-url), [6](../table.md#6-loading-the-list), [7](../table.md#7-list-feedback-states), [8](../table.md#8-column-definitions-and-row-actions) and [9](../table.md#9-child-routes-and-refreshing-the-list) of `table.md`.
+
+For deletion recovery and URL-backed pagination use the shared hooks in [delete and recover a list](../table.md#delete-and-recover-a-list), with the integration in [the server table example](server-table.md). The capped client example below corrects local pages only while the response is complete; use server pagination when the cap is exceeded. For complete client data pass the filtered row count to the same URL hook and keep `manualPagination` off. Child delete callbacks must use the shared `reload` from their parent, including on return from detail; batch callbacks refresh only after all outcomes settle.
 
 ```tsx
 // client/pages/projects/index.tsx
-import { useApiClient } from '@nocobase/app-client';
+import { listStateShowsData, resolveListState } from '@nocobase/app-client';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
@@ -26,22 +29,14 @@ import {
   SearchIcon,
   Trash2Icon,
 } from 'lucide-react';
-import {
-  type ReactElement,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
-import { useQuery } from '@tanstack/react-query';
-import { useCan } from '@nocobase/app-plugin-authorization/client';
-import { resolveListState, listStateShowsData } from '@nocobase/app-client';
 import { DataTable } from '#components/data-table';
 import { DataTableColumnHeader } from '#components/data-table/column-header';
 import { useUrlSearch } from '#hooks/use-url-search';
+import { useListData } from '#hooks/use-list-data';
+import { useListLocation } from '#hooks/use-list-location';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -92,8 +87,6 @@ function isProjectStatus(value: string | null): value is ProjectStatus {
 export default function ProjectsPage(): ReactElement {
   const { t } = useTranslation();
   const { locale } = useLocale();
-  const api = useApiClient();
-  // Use the same registered business resource and action as the create endpoint.
   const createPermission = useCan({
     resource: { type: 'project', id: '*' },
     action: 'create',
@@ -126,27 +119,41 @@ export default function ProjectsPage(): ReactElement {
     searchRef.current?.focus();
   }
 
-  const request = useQuery({
-    queryKey: ['projects', search.trim(), status ?? null],
-    queryFn: ({ signal }) =>
-      api.request<ProjectList>({
-        path: 'projects',
-        query: { q: search.trim() || undefined, status, pageSize: PAGE_SIZE },
-        signal,
-      }),
-    retry: false,
+  const { active } = useListLocation();
+  const remote = new URLSearchParams({
+    q: search,
+    ...(status ? { status } : {}),
+    pageSize: String(PAGE_SIZE),
   });
-  const reload = useCallback(() => {
-    void request.refetch();
-  }, [request.refetch]);
-  const loading = request.isFetching;
-  const rowsFiltered = Boolean(search.trim() || status);
+  const request = useListData<ProjectList>(`projects?${remote}`, {
+    active,
+    keepPreviousData: true,
+  });
+  const responseRows = request.data?.data;
+  const result = request.data ? { total: request.data.meta.total } : undefined;
+  const loading = request.loading;
+  const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
+    sortColumns: ['name', 'updatedAt'],
+    // Only a complete filtered dataset supports local last-page recovery.
+    rowCount:
+      !loading && !request.error && responseRows?.length === result?.total
+        ? result?.total
+        : undefined,
+  });
+  const reload = request.reload;
+  const error = tableState.error ?? request.error;
+  const displayedQuery = new URLSearchParams(request.path.split('?')[1]);
+  const rowsFiltered = Boolean(
+    displayedQuery.get('q') || displayedQuery.get('status'),
+  );
   const listState = resolveListState(
-    request,
-    request.data?.data.length ?? 0,
+    { data: request.data, error, isPending: loading && !request.data },
+    responseRows?.length ?? 0,
     rowsFiltered,
   );
-  const rows = listStateShowsData(listState) ? request.data?.data : undefined;
+  const rows = listStateShowsData(listState) ? responseRows : undefined;
   const canShowCreate =
     createPermission.can &&
     !createPermission.isPending &&
@@ -154,11 +161,6 @@ export default function ProjectsPage(): ReactElement {
       listState === 'ready' ||
       listState === 'no-results' ||
       listState === 'refresh-failed');
-  const tableState = useTableUrlState({
-    sortColumns: ['name', 'updatedAt'],
-    rowCount:
-      !loading && listStateShowsData(listState) ? rows?.length : undefined,
-  });
 
   // After a record is deleted in the drawer, its row and the link that opened the drawer disappear once the list refreshes:
   // wait for the refresh to finish, then move focus to the search box (guideline A6).
@@ -324,20 +326,24 @@ export default function ProjectsPage(): ReactElement {
     [collator, dateFormat, location.search, t],
   );
 
+  const capped = (result?.total ?? 0) > (rows?.length ?? 0);
   const content = (
     <>
-      {rows && (request.data?.meta.total ?? 0) > rows.length && (
-        <p role='status'>{t('projects.capNotice', { count: rows.length })}</p>
-      )}
+      {rows && capped ? (
+        <p className='text-sm text-muted-foreground'>
+          {t('projects.capNotice', { count: rows.length })}
+        </p>
+      ) : null}
       <DataTable
         {...tableState}
         columns={columns}
         data={rows ?? []}
+        getRowId={(row) => row.id}
         listState={listState}
         loading={loading}
         onRetry={reload}
         onClearFilters={clearFilters}
-        getRowId={(row) => row.id}
+        // No row selection on this page, so no "0 of N row(s) selected" summary.
         showSelectedCount={false}
       />
     </>
@@ -395,7 +401,7 @@ export default function ProjectsPage(): ReactElement {
             </SelectGroup>
           </SelectContent>
         </Select>
-        {hasFilters ? (
+        {hasFilters && listState !== 'no-results' ? (
           <Button variant='ghost' onClick={clearFilters}>
             {t('projects.filters.clear')}
           </Button>
@@ -408,6 +414,7 @@ export default function ProjectsPage(): ReactElement {
       {content}
 
       <ProjectDeleteDialog
+        onUncertain={reload}
         open={deletion.open}
         onOpenChange={(open) =>
           setDeletion((current) => ({ ...current, open }))

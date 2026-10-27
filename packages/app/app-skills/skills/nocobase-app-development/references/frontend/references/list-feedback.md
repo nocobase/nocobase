@@ -9,20 +9,31 @@ const createPermission = useCan({
   resource: { type: 'project', id: '*' },
   action: 'create',
 });
-const request = useQuery({
-  queryKey: ['projects', search.trim(), status, page, pageSize, orderBy],
-  queryFn: ({ signal }) =>
-    api.request<ProjectList>({
-      path: 'projects',
-      query: { q: search.trim() || undefined, status, page, pageSize, orderBy },
-      signal,
-    }),
-  retry: false,
+const remote = new URLSearchParams({
+  q: search.trim(),
+  ...(status ? { status } : {}),
+  page: String(page),
+  pageSize: String(pageSize),
+  orderBy,
 });
+const requestPath = `projects?${remote}`;
+const request = useListData<ProjectList>(requestPath, {
+  active,
+  keepPreviousData: true,
+});
+const hasCurrentResponse = request.path === requestPath;
+const displayedQuery = new URLSearchParams(request.path.split('?')[1]);
+const rowsFiltered = Boolean(
+  displayedQuery.get('q') || displayedQuery.get('status'),
+);
 const state = resolveListState(
-  request,
-  request.data?.data.length ?? 0,
-  Boolean(search.trim() || status),
+  {
+    data: hasCurrentResponse ? request.data : undefined,
+    error: request.error,
+    isPending: request.loading && !hasCurrentResponse,
+  },
+  hasCurrentResponse ? (request.data?.data.length ?? 0) : 0,
+  rowsFiltered,
 );
 const rows = listStateShowsData(state) ? (request.data?.data ?? []) : [];
 const canShowCreate =
@@ -40,10 +51,8 @@ const canShowCreate =
   columns={columns}
   data={rows}
   listState={state}
-  loading={request.isFetching}
-  onRetry={() => {
-    void request.refetch();
-  }}
+  loading={request.loading}
+  onRetry={request.reload}
   onClearFilters={clearFilters}
   emptyMessage={<BusinessEmptyContent />}
 />;
@@ -78,7 +87,7 @@ Pass server pagination/sorting props as described in `table.md`; the snippet omi
 | Network, timeout or server failure without current-query data         | Unable to load list; retry the same query from the existing toolbar              |
 | Same-query refresh failure with successful data                       | Keep prior data and show one stale-data line; retry from the existing toolbar    |
 
-`resolveListState` neither fetches nor caches. It recognizes structured `ApiClientError.status`; it never parses error messages or infers permission from an empty array. Reuse existing Query Client cancellation, keys and cache. Do not put retry counters in keys, turn errors into empty arrays or expose previous-query placeholder rows as current results. Manual request adapters must provide only data from their current key and ignore obsolete responses. A failed refresh of a successful empty response is still a refresh failure; do not stack the previous empty message beneath the stale-data line. Keep custom empty content scoped to unfiltered successful emptiness.
+`resolveListState` neither fetches nor caches. It recognizes structured `ApiClientError.status`; it never parses error messages or infers permission from an empty array. Keep one request owner per list and use the app-owned `useListData` hook for list queries. Its response path distinguishes current results from the previous query, and `reload` cancels obsolete work before the next request. Do not put retry counters in keys or turn errors into empty arrays. A failed refresh of a successful empty response is still a refresh failure; do not stack the previous empty message beneath the stale-data line. Keep custom empty content scoped to unfiltered successful emptiness.
 
 | Create permission result                        | Header action                                                                                       |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |

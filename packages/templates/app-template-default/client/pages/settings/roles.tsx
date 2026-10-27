@@ -1,27 +1,30 @@
-import { resolveListState } from '@nocobase/app-client';
-import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
+import { useListLocation } from '#hooks/use-list-location';
 import { useSettingsData, useRolePermission } from './hooks.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type {
   PermissionSet,
   LocalizedText,
 } from '@nocobase/app-plugin-authorization/client';
+import { resolveListState } from '@nocobase/app-client';
 import { type ReactElement } from 'react';
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 import { PlusIcon } from 'lucide-react';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { RoleList } from '#components/role-list';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 
 export default function RolesPage(): ReactElement {
   const { t, i18n } = useTranslation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const location = useLocation();
   const search = params.get('q') ?? '';
   const request = useSettingsData<{ data: readonly PermissionSet[] }>(
     'authorization/permissionSets',
+    { active },
   );
   const canCreate = useRolePermission('create');
   const text = (value: LocalizedText): string =>
@@ -35,7 +38,7 @@ export default function RolesPage(): ReactElement {
     .filter((role) =>
       text(role.title ?? role.key)
         .toLocaleLowerCase()
-        .includes(search.trim().toLocaleLowerCase()),
+        .includes(search.toLocaleLowerCase()),
     )
     .sort((a, b) =>
       text(a.title ?? a.key).localeCompare(
@@ -44,6 +47,8 @@ export default function RolesPage(): ReactElement {
       ),
     );
   const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
     sortColumns: ['title', 'key'],
     rowCount:
       request.data && !request.loading && !request.error
@@ -51,15 +56,30 @@ export default function RolesPage(): ReactElement {
         : undefined,
   });
   const listState = resolveListState(
-    { data: request.data, error: request.error },
+    {
+      data: request.data,
+      error: tableState.error ?? request.error,
+      isPending: request.loading && !request.data,
+    },
     rows.length,
     Boolean(search.trim()),
   );
   const canShowCreate =
-    listState === 'empty' ||
-    listState === 'no-results' ||
-    listState === 'ready' ||
-    listState === 'refresh-failed';
+    canCreate &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
+  const clearSearch = () =>
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old);
+        next.delete('q');
+        next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
   const create = canCreate ? (
     <Button
       nativeButton={false}
@@ -94,29 +114,20 @@ export default function RolesPage(): ReactElement {
               );
             }}
           />
-          {search && (
-            <Button
-              variant='ghost'
-              onClick={() => {
-                setParams(
-                  (old) => {
-                    const next = new URLSearchParams(old);
-                    next.delete('q');
-                    next.delete('page');
-                    return next;
-                  },
-                  { replace: true },
-                );
-              }}
-            >
+          {search && listState !== 'no-results' && (
+            <Button variant='ghost' onClick={clearSearch}>
               {t('settings.clear')}
             </Button>
           )}
           <ListFeedbackActions
             state={listState}
+            onClear={clearSearch}
             onRetry={request.reload}
             busy={request.loading}
           />
+          {active && request.loading && request.data ? (
+            <Spinner className='text-muted-foreground' />
+          ) : null}
         </div>
         <ListFeedback state={listState}>
           <RoleList

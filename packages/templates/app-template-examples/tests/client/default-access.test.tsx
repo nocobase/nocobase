@@ -207,7 +207,7 @@ it('supports read-only inspection and does not show write or delete actions with
 });
 it('shows unknown rules read-only and refuses overwriting a rule changed after loading', async () => {
   const user = userEvent.setup();
-  let count = 0;
+  let changed = false;
   let writes = 0;
   await renderWithApp(tree(), {
     route: '/default-access/project-default/edit',
@@ -219,14 +219,14 @@ it('shows unknown rules read-only and refuses overwriting a rule changed after l
         return { data: { unrestricted: true, permissions: [] } };
       if (path.endsWith('/options')) return { data: catalog };
       if (method === 'PATCH') writes++;
-      count++;
-      return { data: [count > 2 ? { ...existing, actions: [] } : existing] };
+      return { data: [changed ? { ...existing, actions: [] } : existing] };
     }),
   });
   await user.click(
     await screen.findByRole('combobox', { name: 'Edit · Projects' }),
   );
   await user.click(await screen.findByRole('option', { name: 'All records' }));
+  changed = true;
   await user.click(screen.getByRole('button', { name: 'Save' }));
   expect(
     await screen.findByText(enUS.settings.defaultAccess.changed),
@@ -342,7 +342,7 @@ it('keeps failed deletion in its confirmation and deletes only after explicit co
   expect(screen.getByRole('alertdialog')).toBeVisible();
   expect(screen.queryByText('Private server detail')).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Delete', exact: true }));
-  await screen.findByText(enUS.settings.defaultAccess.empty);
+  await screen.findByText(enUS.listFeedback.empty);
   expect(deletes).toBe(2);
 });
 it('retains the create draft when the server rejects a duplicate and shows a contextual error', async () => {
@@ -519,9 +519,7 @@ it('hides the create entry for a read-only empty list', async () => {
     ),
   });
   const label = enUS.settings.defaultAccess.new;
-  expect(
-    await screen.findByText(enUS.settings.defaultAccess.readOnlyEmpty),
-  ).toBeVisible();
+  expect(await screen.findByText(enUS.listFeedback.empty)).toBeVisible();
   expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
 });
@@ -733,3 +731,56 @@ it('replaces the saved editor history entry and keeps the list query when going 
   ).not.toBeInTheDocument();
   expect(patches).toBe(1);
 });
+
+it.each(['transport', 'server'])(
+  'verifies an uncertain %s delete without replaying the mutation',
+  async (failure) => {
+    let deleted = false;
+    let writes = 0;
+    await renderWithApp(tree(), {
+      route: '/default-access',
+      namespace,
+      namespaces,
+      services,
+      fetch: answerApi(({ path, method }) => {
+        if (path === 'authorization/permissions')
+          return { data: { unrestricted: true, permissions: [] } };
+        if (path.endsWith('/options')) return { data: catalog };
+        if (method === 'DELETE') {
+          deleted = true;
+          writes++;
+          if (failure === 'transport') throw new TypeError('Response lost');
+          return Response.json(
+            {
+              error: {
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Response lost',
+              },
+            },
+            { status: 500 },
+          );
+        }
+        return { data: deleted ? [] : [existing] };
+      }),
+    });
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Actions for Projects' }),
+    );
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Delete' }),
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Delete', exact: true }),
+    );
+    expect(await screen.findByText(enUS.listFeedback.empty)).toBeVisible();
+    expect(screen.getByRole('alertdialog')).toBeVisible();
+    expect(screen.getByText(enUS.settings.failed)).toBeVisible();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Cancel', exact: true }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText(enUS.listFeedback.empty)).toBeVisible(),
+    );
+    expect(writes).toBe(1);
+  },
+);
