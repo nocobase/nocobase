@@ -23,5 +23,14 @@ export async function deploymentTree(root) {
   }
   await visit('dist');
   await visit('config.example.yml');
+  for (const name of ['Dockerfile', 'Dockerfile.dockerignore']) {
+    try {
+      await lstat(path.join(root, name));
+    } catch (error) {
+      if (error.code === 'ENOENT') continue;
+      throw error;
+    }
+    await visit(name);
+  }
   return files;
 }
