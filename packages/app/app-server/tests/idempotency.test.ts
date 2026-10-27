@@ -15,6 +15,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
 import {
   executeIdempotentMutation,
@@ -133,20 +134,21 @@ describe('transactional operation receipts', () => {
     expect(await connection.repository('orders').count()).toBe(3);
   });
   it('rejects expired keys even after bounded cleanup and future or malformed keys', async () => {
-    const request = operation();
-    await executeIdempotentMutation(request);
-    await connection.query
-      .updateTable('mutationReceipts')
-      .set({ expiresAt: new Date(0) })
-      .where('expiresAt', '>', new Date(0))
-      .execute();
+    const issuedAt = Date.now() - 86_400_001;
+    const request = operation(`${issuedAt}.${randomUUID()}`);
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(issuedAt);
+    try {
+      await executeIdempotentMutation(request);
+    } finally {
+      clock.mockRestore();
+    }
+    // Expire and clean the actual committed receipt, then retry its original key.
     expect(await pruneMutationReceipts(connection, 1)).toBe(1);
-    await expect(
-      executeIdempotentMutation({
-        ...request,
-        key: `${Date.now() - 86_400_001}.${randomUUID()}`,
-      }),
-    ).rejects.toMatchObject({ reason: 'OPERATION_EXPIRED' });
+    await expect(executeIdempotentMutation(request)).rejects.toMatchObject({
+      reason: 'OPERATION_EXPIRED',
+    });
+    expect(await connection.repository('orders').count()).toBe(1);
+    expect(await connection.repository('effects').count()).toBe(1);
     await expect(
       executeIdempotentMutation({
         ...request,
