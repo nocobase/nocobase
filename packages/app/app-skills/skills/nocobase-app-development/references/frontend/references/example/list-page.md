@@ -325,11 +325,6 @@ export default function ProjectsPage(): ReactElement {
   );
 
   // Check in the order "failed → first load → empty → data or no results".
-  const tableState = useTableUrlState({
-    sortColumns: ['name', 'updatedAt'],
-    rowCount: !loading && !error ? rows?.length : undefined,
-  });
-
   let content: ReactElement;
   if (error instanceof ApiClientError && error.status === 401) {
     // The session ended; signing in again is the only way forward (guideline S4).
