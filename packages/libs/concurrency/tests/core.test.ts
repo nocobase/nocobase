@@ -64,6 +64,49 @@ function rejection(
   );
 }
 describe('public core', () => {
+  it('rearms early lease timers and ignores cancelled callbacks', async () => {
+    const time = new ManualTime();
+    const callbacks: (() => void)[] = [];
+    const scheduler: port.Scheduler = {
+      setTimer(callback, delay) {
+        callbacks.push(callback);
+        return time.setTimer(callback, delay);
+      },
+    };
+    const backend = new ControlledBackend({
+      acquire: async () => ({ notAfter: 10, release: async () => {} }),
+    });
+    const runtime = await createConcurrentRuntime({
+      backend,
+      namespace: 'early',
+      clock: time,
+      scheduler,
+    });
+    const executor = await runtime.manager.createSynchronous('r');
+    await executor
+      .tryRun(({ signal }) => {
+        callbacks[0]();
+        expect(signal.aborted).toBe(false);
+        expect(callbacks).toHaveLength(2);
+        time.advance(10);
+        callbacks[1]();
+        expect(signal.aborted).toBe(true);
+        throw signal.reason;
+      })
+      .then(
+        () => {
+          throw new Error('Expected lease loss');
+        },
+        (error) => {
+          expect(error).toBeInstanceOf(ConcurrentLeaseLostError);
+        },
+      );
+    const count = callbacks.length;
+    callbacks[0]();
+    expect(callbacks).toHaveLength(count);
+    time.flush();
+    await runtime.close();
+  });
   it('counts wait time from entry and never retries the backend in core', async () => {
     const time = new ManualTime();
     const entered = deferred<BackendAcquireRequest>();

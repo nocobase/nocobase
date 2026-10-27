@@ -90,17 +90,24 @@ class ManagedLease implements Lease {
   private inFlight?: Promise<void>;
   private released = false;
   private loss?: ConcurrentLeaseLostError;
-  private cancelTimer: () => void;
+  private cancelTimer: () => void = () => {};
+  private timerVersion = 0;
   readonly controller = new AbortController();
   constructor(
     private readonly runtime: Runtime,
     private readonly grant: BackendGrant,
   ) {
-    this.cancelTimer = runtime.context.scheduler.setTimer(
+    this.armLossTimer();
+  }
+  private armLossTimer(): void {
+    const version = ++this.timerVersion;
+    const remaining = this.grant.notAfter - this.runtime.context.clock.now();
+    this.cancelTimer = this.runtime.context.scheduler.setTimer(
       () => {
-        this.checkLoss();
+        if (version !== this.timerVersion) return;
+        if (!this.checkLoss()) this.armLossTimer();
       },
-      Math.max(0, grant.notAfter - runtime.context.clock.now()),
+      Number.isFinite(remaining) ? Math.max(0, Math.ceil(remaining)) : 0,
     );
   }
   checkLoss(): ConcurrentLeaseLostError | undefined {
@@ -115,6 +122,7 @@ class ManagedLease implements Lease {
   release(): Promise<void> {
     if (this.inFlight) return this.inFlight;
     if (this.released) return Promise.resolve();
+    this.timerVersion++;
     this.cancelTimer();
     const work = this.runtime.track(async () => {
       try {
