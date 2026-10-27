@@ -332,3 +332,38 @@ it('shows a shared plugin action explanation once without duplicating row hints'
   );
   expect(result[0]?.groups[0]?.rows.every((row) => !row.hint)).toBe(true);
 });
+
+it('keeps scope metadata while ungranted without creating a grant or selecting its default', () => {
+  const catalog = {
+    sections: [
+      {
+        name: 'business',
+        title: 'Business',
+        subsections: [{ name: 'orders', resources: [resource] }],
+      },
+    ],
+    recordAccess: [
+      { key: 'mine', title: 'Own' },
+      { key: 'all', title: 'All' },
+    ],
+  } as unknown as Parameters<typeof permissionSections>[0];
+  const grants: Parameters<typeof permissionSections>[1] = [];
+  const row = permissionSections(catalog, grants, (value) =>
+    typeof value === 'string' ? value : value.key,
+  )[0]!.groups[0]!.rows[0]!;
+  expect(row.enabled).toBe(false);
+  expect(row.scopes?.[0]).toMatchObject({
+    id: JSON.stringify(['composite', 'orders', 'edit', 'records']),
+    level: '',
+  });
+  expect(grants).toEqual([]);
+  const enabled = permissionSections(
+    catalog,
+    setPermission(grants, resource, 'edit', true),
+    (value) => (typeof value === 'string' ? value : value.key),
+  )[0]!.groups[0]!.rows[0]!;
+  expect(enabled.scopes?.map((scope) => scope.id)).toEqual(
+    row.scopes?.map((scope) => scope.id),
+  );
+  expect(enabled.scopes?.[0]?.level).toBe('mine');
+});

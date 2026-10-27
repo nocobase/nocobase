@@ -1,4 +1,4 @@
-import { useSubmission } from '@nocobase/app-client';
+import { useListLocation } from '#hooks/use-list-location';
 import { RecordLink } from '#components/record-link';
 import { BackButton } from '#components/back-button';
 import { safeReturnTo } from '../../lib/return-to.js';
@@ -9,7 +9,7 @@ import {
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import { useApiClient, useSubmission, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   UsersClient,
@@ -24,13 +24,7 @@ import {
   useEffect,
   type ReactElement,
 } from 'react';
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useSearchParams,
-  useResolvedPath,
-} from 'react-router';
+import { Link, Outlet, useLocation, useResolvedPath } from 'react-router';
 import { PlusIcon, UsersIcon } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -167,7 +161,7 @@ function UserActions({
 
 export default function UsersPage(): ReactElement {
   const { t } = useTranslation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const location = useLocation();
   const listPath = useResolvedPath('.').pathname;
   const searchRef = useRef<HTMLInputElement>(null);
@@ -282,8 +276,10 @@ export default function UsersPage(): ReactElement {
   const request = useSettingsData<{
     data: readonly ManagedUser[];
     meta: { total: number };
-  }>(`users?${remote}`, true);
+  }>(`users?${remote}`, { keepPreviousData: true, active });
   const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
     defaultPageSize: 20,
     pageSizeOptions: [20, 50, 100],
     sortColumns: ['name'],
@@ -493,10 +489,14 @@ export default function UsersPage(): ReactElement {
           </p>
         )}
         <SettingsError error={options.error} retry={options.reload} />
-        <SettingsError error={request.error} retry={request.reload} />
+        <SettingsError
+          error={tableState.error ?? request.error}
+          retry={request.reload}
+        />
         {request.loading && !request.data ? (
           <SettingsLoading />
         ) : (
+          !tableState.error &&
           !request.error &&
           (rows.length ? (
             <DataTable<ManagedUser>

@@ -1,7 +1,12 @@
-import { useSubmission } from '@nocobase/app-client';
+import { useListLocation } from '#hooks/use-list-location';
 import { RecordLink } from '#components/record-link';
 import { useTableUrlState } from '#hooks/use-table-url-state';
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  useApiClient,
+  useSubmission,
+  useToaster,
+} from '@nocobase/app-client';
 import {
   useCan,
   type AuthorizationOptionsResponse,
@@ -9,7 +14,7 @@ import {
 } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useRef, useState, type ReactElement } from 'react';
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 import { ListFilterIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Alert, AlertDescription } from '#components/ui/alert';
@@ -46,11 +51,12 @@ export default function DefaultAccessPage(): ReactElement {
   const api = useApiClient();
   const toaster = useToaster();
   const location = useLocation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const search = params.get('q') ?? '';
   const searchRef = useRef<HTMLInputElement>(null);
   const rules = useSettingsData<{ data: readonly DefaultAccessRule[] }>(
     'authorization/defaultAccess',
+    { active },
   );
   const catalog = useSettingsData<{ data: AuthorizationOptionsResponse }>(
     'authorization/defaultAccess/options',
@@ -213,6 +219,8 @@ export default function DefaultAccessPage(): ReactElement {
     )
     .sort((a, b) => name(a).localeCompare(name(b), i18n.language));
   const tableState = useTableUrlState({
+    active,
+    revision: rules.revision,
     defaultPageSize: 20,
     sortColumns: ['resource'],
     rowCount:
@@ -268,6 +276,7 @@ export default function DefaultAccessPage(): ReactElement {
     if (!removing || busy || !canDelete) return;
     setBusy(true);
     setError(undefined);
+    let submitted = false;
     try {
       const outcome = await submission.run(
         { key: removing.key },
@@ -284,9 +293,11 @@ export default function DefaultAccessPage(): ReactElement {
               rules.reload();
               setRemoving(undefined);
               setConflict(true);
+              requestAnimationFrame(() => searchRef.current?.focus());
               return undefined;
             }
           }
+          submitted = true;
           await api.request({
             path: `authorization/defaultAccess/${encodeURIComponent(removing.key)}`,
             method: 'DELETE',
@@ -300,16 +311,18 @@ export default function DefaultAccessPage(): ReactElement {
         type: 'success',
         title: t('settings.defaultAccess.deleted', { name: name(removing) }),
       });
-      rules.replaceData({
-        data: (rules.data?.data ?? []).filter(
-          (rule) => rule.key !== removing.key,
-        ),
-      });
       setRemoving(undefined);
       rules.reload();
       requestAnimationFrame(() => searchRef.current?.focus());
     } catch (next) {
       setError(next);
+      if (
+        submitted &&
+        (!(next instanceof ApiClientError) || next.status >= 500)
+      ) {
+        // The write may have committed before the response was lost. Verify without replaying it.
+        rules.reload();
+      }
     } finally {
       setBusy(false);
     }
@@ -356,7 +369,11 @@ export default function DefaultAccessPage(): ReactElement {
           </Alert>
         )}
         <SettingsError
-          error={rules.error || catalog.error || (!removing && error)}
+          error={
+            (tableState.error ?? rules.error) ||
+            catalog.error ||
+            (!removing && error)
+          }
           retry={() => {
             rules.reload();
             catalog.reload();
@@ -367,6 +384,7 @@ export default function DefaultAccessPage(): ReactElement {
         (catalog.loading && !catalog.data) ? (
           <SettingsLoading />
         ) : (
+          !tableState.error &&
           !rules.error &&
           !catalog.error &&
           (rows.length ? (

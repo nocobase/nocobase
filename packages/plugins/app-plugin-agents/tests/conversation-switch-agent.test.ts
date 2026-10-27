@@ -1,5 +1,7 @@
 import { asJson, jsonObject } from '../server/kernel/values.js';
 import { afterEach, expect, it, vi } from 'vitest';
+import type { Knex } from 'knex';
+import { appendFile } from 'node:fs/promises';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import {
@@ -34,6 +36,181 @@ async function fixture() {
   const path = `/agents/conversations/${id}/switchAgent`;
   return { runner, from, to, agent, id, path };
 }
+
+it('commits the selected agent, one notice and its target run together on send', async () => {
+  const { runner, from, to, agent, id } = await fixture();
+  await agent.send([{ role: 'user', content: 'Use the final selection' }], {
+    agentId: to,
+  });
+  const saved = (await findConversation(h.database.connection(), id))!;
+  expect(saved.agentId).toBe(to);
+  expect(Number(saved.thread)).toBe(1);
+  const history = await agent.history();
+  const notices = history
+    .flatMap((message) => message.parts)
+    .filter((part) => part.type === 'data-business');
+  expect(notices).toHaveLength(1);
+  expect(notices[0]).toMatchObject({
+    data: {
+      kind: 'switchedAgent',
+      payload: { agentId: to, fromAgentId: from },
+    },
+  });
+  const [claimed] = await claim(h, runner);
+  expect(await h.services.runs.get(claimed.run.id)).toMatchObject({
+    agentId: to,
+    threadScope: 't1',
+  });
+});
+
+it('does not change the thread or add a notice when the final selection is the original agent', async () => {
+  const { from, agent, id } = await fixture();
+  await agent.send([{ role: 'user', content: 'Stay here' }], { agentId: from });
+  expect(
+    Number((await findConversation(h.database.connection(), id))!.thread),
+  ).toBe(0);
+  expect(
+    (await agent.history())
+      .flatMap((message) => message.parts)
+      .filter((part) => part.type === 'data-business'),
+  ).toHaveLength(0);
+});
+
+it('rolls back the binding and notice when an attachment rejects message admission', async () => {
+  const { from, to, agent, id } = await fixture();
+  await expect(
+    agent.send([{ role: 'user', content: 'Rejected' }], {
+      agentId: to,
+      attachmentIds: [['missing-file']],
+    }),
+  ).rejects.toThrow();
+  const saved = (await findConversation(h.database.connection(), id))!;
+  expect(saved.agentId).toBe(from);
+  expect(Number(saved.thread)).toBe(0);
+  expect(await agent.history()).toEqual([]);
+  await agent.send([{ role: 'user', content: 'Try without the file' }], {
+    agentId: to,
+  });
+  expect((await findConversation(h.database.connection(), id))!.agentId).toBe(
+    to,
+  );
+});
+
+it('rejects unavailable targets without saving a switch or message', async () => {
+  const { from, to, agent, id } = await fixture();
+  await h.disableAgent(to);
+  await expect(
+    agent.send([{ role: 'user', content: 'Not allowed' }], { agentId: to }),
+  ).rejects.toThrow();
+  expect((await findConversation(h.database.connection(), id))!.agentId).toBe(
+    from,
+  );
+  expect(await agent.history()).toEqual([]);
+});
+
+it('enforces authentication and ownership on the send selection boundary', async () => {
+  const { to, id } = await fixture();
+  const path = `/agents/conversations/${id}/messages`;
+  const body = {
+    message: {
+      id: 'selection',
+      role: 'user',
+      parts: [{ type: 'text', text: 'Hello' }],
+    },
+    agentId: to,
+  };
+  expect((await h.request('POST', path, { body })).status).toBe(401);
+  expect((await h.request('POST', path, { user: 'bob', body })).status).toBe(
+    404,
+  );
+  await h.disableAgent(to);
+  expect((await h.request('POST', path, { user: 'alice', body })).status).toBe(
+    403,
+  );
+});
+
+it('keeps the accepted switch after response disconnection and execution failure', async () => {
+  const { runner, to, agent, id } = await fixture();
+  await agent.send([{ role: 'user', content: 'Accepted before disconnect' }], {
+    agentId: to,
+  });
+  await (await agent.receive())!.cancel();
+  const [claimed] = await claim(h, runner);
+  expect(
+    (
+      await h.request('POST', `/agents/runners/runs/${claimed.run.id}/start`, {
+        runnerKey: runner.key,
+        body: {
+          workDir: '/work/failure',
+          adapter: { kind: 'claude' },
+          acceptsInput: true,
+        },
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await h.request('POST', `/agents/runners/runs/${claimed.run.id}/fail`, {
+        runnerKey: runner.key,
+        body: {
+          reason: 'toolProcess',
+          detail: 'Fixture failure',
+          handledInputIds: claimed.inputs.map((input) => input.id),
+        },
+      })
+    ).status,
+  ).toBe(200);
+  const restored = await h.services.onlineAgent.realtime(context, {
+    sessionId: id,
+  });
+  expect((await findConversation(h.database.connection(), id))!.agentId).toBe(
+    to,
+  );
+  const parts = (await restored.history()).flatMap((message) => message.parts);
+  expect(
+    parts.filter(
+      (part) =>
+        part.type === 'data-business' && part.data.kind === 'switchedAgent',
+    ),
+  ).toHaveLength(1);
+  expect(
+    parts.some(
+      (part) =>
+        part.type === 'text' && part.text === 'Accepted before disconnect',
+    ),
+  ).toBe(true);
+});
+
+it.each([false, true])(
+  'measures admission cost with a changed selection: %s',
+  async (switching) => {
+    const { from, to, agent } = await fixture();
+    const client = await h.database.connection().client<Knex>();
+    const queries: string[] = [];
+    const capture = (query: { sql: string }) => queries.push(query.sql);
+    client.on('query', capture);
+    try {
+      await agent.send([{ role: 'user', content: 'Measure admission' }], {
+        agentId: switching ? to : from,
+      });
+    } finally {
+      client.off('query', capture);
+    }
+    const counts = Object.fromEntries(
+      ['select', 'insert', 'update', 'begin', 'commit'].map((kind) => [
+        kind,
+        queries.filter((query) => query.toLowerCase().startsWith(kind)).length,
+      ]),
+    );
+    expect(counts.begin).toBe(1);
+    expect(counts.commit).toBe(1);
+    if (process.env.AGENT_SELECTION_COST_FILE)
+      await appendFile(
+        process.env.AGENT_SELECTION_COST_FILE,
+        JSON.stringify({ switching, ...counts }) + '\n',
+      );
+  },
+);
 
 it('changes the persisted Runner binding without losing history or task links, and starts only on the next message', async () => {
   const { runner, from, to, agent, id, path } = await fixture();
