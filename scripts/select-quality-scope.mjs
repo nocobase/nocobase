@@ -38,6 +38,11 @@ export const fullDirectories = [
 // that exemption no longer exists.
 export const pathDependencies = [
   {
+    // The private example ships inside app-skills and is read by its standalone Skill verifier.
+    path: 'packages/app/app-skills/skills/nocobase-app-plugin-development/assets/testing-example/',
+    consumers: ['@nocobase/app-skills'],
+  },
+  {
     // File's integration test builds a receiving application; the template depends on File.
     path: 'packages/templates/app-template-default/',
     consumers: ['@nocobase/app-plugin-file'],

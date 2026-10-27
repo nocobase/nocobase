@@ -1,18 +1,29 @@
 # @nocobase/create-plugin
 
-Create a publish-ready NocoBase 3 application plugin inside the `packages/plugins/` directory of a NocoBase 3 source workspace. The command generates only the
-capabilities explicitly selected by the caller.
+Create a NocoBase 3 plugin inside an existing application. First create and install your application with `pnpm create @nocobase/app my-app`, then run the generator from that application's root:
 
 ```bash
-pnpm create @nocobase/plugin audit-log \
-  --with server.service-providers \
-  --with server.routes \
-  --with database \
-  --with skills
+cd my-app
+pnpm dlx @nocobase/create-plugin demo-tools --with cli --dry-run --json
+pnpm dlx @nocobase/create-plugin demo-tools --with cli
+pnpm --filter @nocobase/app-plugin-demo-tools check
+pnpm nocobase plugin register @nocobase/app-plugin-demo-tools --no-install
+pnpm nocobase demo-tools info --json
 ```
 
-The command accepts either a short kebab-case name such as `audit-log` or the
-full package name `@nocobase/app-plugin-audit-log`.
+The generator creates `packages/app-plugin-demo-tools/`, ensures the pnpm workspace includes it, adds `workspace:*` to the application's dependencies, and installs the workspace. Runtime registration is a separate explicit step. No NocoBase source checkout is required. Read the dry-run plan before applying it; the target must not already exist.
+
+App-local plugins start with `private: true`. Published plugins can later opt into publishing after reviewing their name, exports, compatibility and package contents. A full scoped name such as `@my-company/app-plugin-demo-tools` keeps that scope; pass the full name when registering it. Custom scopes require an App CLI version supporting them.
+
+The current directory may be below the application root; `--dir` selects another application explicitly. The root is identified by the create-app manifest's `nocobase.templateKind: app`. In the NocoBase source repository, the same generator preserves the `packages/plugins/` layout and source-workspace dependencies, and remains available as `pnpm plugin:create`.
+
+## Application dependencies and workspace settings
+
+Install the application before creating plugins. The generator resolves dependency versions from the application's installed packages, including its runtime packages, and uses exact versions for external dependencies. Real local packages retain workspace references. Missing, ambiguous or incompatible dependencies fail before writing files: install a compatible dependency in the application, then retry. It does not choose unrelated latest versions from the registry.
+
+Existing workspace settings and comments are preserved. The generator adds `packages/*` only when necessary, honors explicit exclusions, and rejects duplicate package names and existing application dependency declarations. `--no-install` writes the plugin and project changes without installing; run `pnpm install` before registration. An installation failure keeps generated files and project edits so installation can be retried without regenerating the plugin.
+
+## Capabilities and options
 
 ```text
 USAGE
@@ -33,6 +44,7 @@ CAPABILITIES
   skills
 
 OPTIONS
+  --dir <directory>           Select an application or source workspace
   --with <capability>          Add a capability; may be repeated
                                all selects every capability listed above
   --empty                      Create only the package foundation
@@ -55,18 +67,17 @@ React context composition owned by the rendered tree.
 
 `server.jobs` adds a one-off background job in `server/jobs/`, a `Job` class from `@nocobase/jobs`, and the Server provider that owns the plugin's `JobExecutor` under its package name: it registers the job and sets the executor up in `start()`, and shuts it down in `shutdown()`. The application's `jobs` configuration decides the backend.
 
+The `registry` capability is no longer supported. Editable UI is maintained in the UI Library.
+
 `cli` adds a CLI plugin in `cli/index.ts`, exported as `./cli`, with one example command under the topic derived from the package name; an application lists it in its `cli/plugins.ts` to get the commands. `--with all` selects every capability at once.
 
-The generator derives Client and Server plugin declarations, package exports,
-dependencies, tests, publication files, Registry scripts, and Plugin Skill
-publication from the same capability model. It does not invent business routes
-or rely on a complete example that must be deleted after generation.
+The generator derives Client and Server plugin declarations, package exports, dependencies, tests, publication files, and Plugin Skill publication from the same capability model. It does not invent business routes or rely on a complete example that must be deleted after generation.
 
 Use `--dry-run --json` to inspect the exact read-only generation plan before
 creating a plugin. Registering or enabling the generated plugin remains an
 explicit step.
 
-JSON mode emits one document on stdout for both success and failure, in the same envelope as `pnpm nocobase … --json`: `{ schemaVersion: 1, ok, command: "create-plugin", status, result | error, warnings }`. A success has `ok: true` and the plan under `result` — `mode`, `plugin`, `requestedCapabilities`, `capabilities`, `derivedStructure`, `files`, `writes`, `commands` and `nextSteps` — with `status: "success"`, or `"success-noop"` for a `--dry-run`, which writes nothing. A failure keeps a non-zero exit code and returns `ok: false` and `status: "failure"` with a stable `error.code`, the human-readable `error.message`, and `error.suggestions`, each a `{ message }`. `--help --json` and `--version --json` return `result.help` and `result.version`.
+JSON mode emits one document on stdout for both success and failure, in the same envelope as `pnpm nocobase … --json`: `{ schemaVersion: 1, ok, command: "create-plugin", status, result | error, warnings }`. A success has `ok: true` and the plan under `result` — `mode`, `plugin`, `project`, `projectEdits`, `dependencies`, `requestedCapabilities`, `capabilities`, `derivedStructure`, `files`, `writes`, `commands` and `nextSteps` — with `status: "success"`, or `"success-noop"` for a `--dry-run`, which writes nothing. A failure keeps a non-zero exit code and returns `ok: false` and `status: "failure"` with a stable `error.code`, the human-readable `error.message`, and `error.suggestions`, each a `{ message }`. `projectEdits` lists planned root-file contents even during a dry run; `writes` continues to list generated plugin files, while `dependencies` reports resolved dependency fields. Package-manager output goes to stderr so stdout remains one JSON document. `--help --json` and `--version --json` return `result.help` and `result.version`.
 
 ## Server resources and compiled database tasks
 
@@ -79,8 +90,8 @@ Plugins with the `database` capability run `nocobase-db-manifests` after TypeScr
 Every plugin with client code includes `components.json`, `client/styles.css`, shadcn tooling, and the `@nocobase` registry. Editable source is published by the UI Library. A component-only plugin can install UI directly:
 
 ```bash
-pnpm plugin:create feature-card --with client.components
-cd packages/plugins/app-plugin-feature-card
+pnpm dlx @nocobase/create-plugin feature-card --with client.components
+cd packages/app-plugin-feature-card
 pnpm exec shadcn add @nocobase/permission-editor --dry-run
 pnpm exec shadcn add @nocobase/permission-editor
 pnpm typecheck
