@@ -12,7 +12,6 @@ import {
 } from '@nocobase/app-testing/server';
 import { APIError } from 'better-auth/api';
 import { Hono } from 'hono';
-import { getCookie } from 'hono/cookie';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { apiKey } from '../server/api-keys.js';
@@ -107,108 +106,6 @@ describe('API keys', () => {
     const session = await auth.getSession(new Headers({ 'x-api-key': key }));
 
     expect(session?.user.email).toBe(OWNER.email);
-  });
-
-  it.each(['required', 'optional'] as const)(
-    'accepts API-key writes with preference cookies through %s authentication',
-    async (middleware) => {
-      const key = await issueKey(`preferences-${middleware}`);
-      const browser = await call('/sign-up/email', {
-        body: { ...OWNER, email: `${middleware}-browser@example.com` },
-      });
-      expect(browser.status).toBe(200);
-      const browserCookie = browser.headers
-        .getSetCookie()
-        .map((header) => header.split(';')[0])
-        .join('; ');
-      const router = new Hono<AuthEnv>();
-      router.on(
-        ['PUT', 'PATCH', 'DELETE'],
-        '/preferences',
-        auth[middleware](),
-        (context) =>
-          context.json({
-            email: context.get('auth')?.user.email,
-            preference: getCookie(context, 'preference'),
-          }),
-      );
-      router.post(
-        '/export',
-        async (context, next) => {
-          context.header('Content-Type', 'text/csv');
-          await next();
-        },
-        auth[middleware](),
-        (context) => context.body('name\nAda'),
-      );
-      for (const method of ['PUT', 'PATCH', 'DELETE']) {
-        for (const requestCookie of [
-          'preference=zh-CN',
-          `preference=zh-CN; ${browserCookie}`,
-        ]) {
-          const response = await router.request('/preferences', {
-            method,
-            headers: { 'x-api-key': key, cookie: requestCookie },
-          });
-          expect(response.status).toBe(200);
-          expect(await response.json()).toEqual({
-            email: OWNER.email,
-            preference: 'zh-CN',
-          });
-        }
-      }
-      const exported = await router.request('/export', {
-        method: 'POST',
-        headers: { 'x-api-key': key, cookie: 'preference=zh-CN' },
-      });
-      expect(exported.status).toBe(200);
-      expect(exported.headers.get('content-type')).toBe('text/csv');
-      expect(await exported.text()).toBe('name\nAda');
-    },
-  );
-
-  it('keeps CSRF protection for skipped routes and missing, invalid or revoked API keys', async () => {
-    const revoked = await issueKey('csrf-revoked');
-    await database
-      .connection()
-      .query.updateTable('apikey')
-      .set({ enabled: false })
-      .where('name', '=', 'csrf-revoked')
-      .execute();
-    const valid = await issueKey('csrf-skipped');
-    const router = new Hono<AuthEnv>();
-    router.post('/required', auth.required(), (context) =>
-      context.json({ ok: true }),
-    );
-    router.post('/optional', auth.optional(), (context) =>
-      context.json({ ok: true }),
-    );
-    router.post('/skipped', auth.required({ skip: () => true }), (context) =>
-      context.json({ ok: true }),
-    );
-    for (const route of ['/required', '/optional', '/skipped']) {
-      for (const key of [
-        undefined,
-        'invalid-key',
-        revoked,
-        ...(route === '/skipped' ? [valid] : []),
-      ]) {
-        for (const origin of [undefined, 'https://untrusted.example']) {
-          const response = await router.request(route, {
-            method: 'POST',
-            headers: {
-              cookie: `${cookie}; preference=zh-CN`,
-              ...(key ? { 'x-api-key': key } : {}),
-              ...(origin ? { origin } : {}),
-            },
-          });
-          expect(response.status).toBe(403);
-          expect(await response.json()).toMatchObject({
-            error: { reason: 'INVALID_CSRF_ORIGIN' },
-          });
-        }
-      }
-    }
   });
 
   it('never lets a key manage keys, scoped or not', async () => {

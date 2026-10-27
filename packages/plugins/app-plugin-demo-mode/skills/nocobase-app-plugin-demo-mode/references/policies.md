@@ -26,7 +26,7 @@ The management page does not display collection exceptions; existing policies re
 
 Deployment defaults come from `demoMode.allowCollections`, overridden by `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=orderItems,userPreferences`. Restart after changing deployment configuration. These `fixedCollections` combine with runtime selections and cannot be removed through the runtime configuration API.
 
-The Users preference API stores `locale`, `theme.mode` and `theme.preset` in application-scoped visitor session cookies while Demo Mode is enabled. These three keys need no `userPreferences` write exception; other keys still use account storage and the write guard. API clients must retain and resend the cookies. Controls using only localStorage or `/i18n/locale` do not use this storage policy; see the package README for defaults and session behavior.
+The Users preference API stores `locale`, `theme.mode` and `theme.preset` in application-scoped visitor session cookies while Demo Mode is enabled. These three keys need no `userPreferences` write exception; other keys still use account storage and the write guard. API clients must retain and resend the cookies, and cookie-bearing writes must send a trusted `Origin` or `Referer`, including when using an API key. Authentication rules are unchanged. Controls using only localStorage or `/i18n/locale` do not use this storage policy; see the package README for defaults and session behavior.
 
 ## Custom configuration clients
 

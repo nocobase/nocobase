@@ -171,6 +171,10 @@ describe('preferences through the original Users API', () => {
     expect(item?.delete?.responses?.['204']).toMatchObject({
       headers: { 'Set-Cookie': { schema: { type: 'string' } } },
     });
+    for (const operation of [collection?.patch, item?.put, item?.delete])
+      expect(operation?.responses?.['403']).toEqual({
+        $ref: '#/components/responses/PermissionDenied',
+      });
   });
 });
 

@@ -200,36 +200,76 @@ describe('demo visitor presentation preferences', () => {
   });
 });
 
-it('leaves ordinary deployments account-persistent', async () => {
-  const app = await createTestApp({
-    createServer: createStandaloneServer,
-    config: { demoMode: { enabled: false } },
-  });
-  try {
-    const visitor = new Visitor(app);
-    const response = await visitor.request('/auth/sign-in/email', 'POST', {
-      email: 'admin@nocobase.com',
-      password: 'admin123',
+it.each([false, undefined])(
+  'keeps account preferences and cookie-write authentication when demoMode.enabled is %s',
+  async (enabled) => {
+    const app = await createTestApp({
+      createServer: createStandaloneServer,
+      config: enabled === undefined ? {} : { demoMode: { enabled } },
     });
-    expect(response.status).toBe(200);
-    const id = (await (await visitor.request('/auth/get-session')).json()).user
-      .id;
-    const result = await visitor.request(
-      '/users/me/preferences/locale',
-      'PUT',
-      { value: 'zh-CN' },
-    );
-    expect(result.status).toBe(200);
-    expect(result.headers.getSetCookie()).toEqual([]);
-    expect(
-      await app.application.container
-        .resolve(userPreferencesServiceToken)
-        .get(id, 'locale'),
-    ).toBe('zh-CN');
-  } finally {
-    await app.close();
-  }
-});
+    try {
+      const visitor = new Visitor(app);
+      const credentials = {
+        email: 'admin@nocobase.com',
+        password: 'admin123',
+      };
+      const response = await visitor.request(
+        '/auth/sign-in/email',
+        'POST',
+        credentials,
+      );
+      expect(response.status).toBe(200);
+      const id = (await (await visitor.request('/auth/get-session')).json())
+        .user.id;
+      expect(await visitor.preferences()).toEqual({});
+      const choices = {
+        locale: 'zh-CN',
+        'theme.mode': 'dark',
+        'theme.preset': { custom: true },
+      };
+      const result = await visitor.request(
+        '/users/me/preferences',
+        'PATCH',
+        choices,
+      );
+      expect(result.status).toBe(200);
+      expect(result.headers.getSetCookie()).toEqual([]);
+      expect((await result.json()).data).toEqual(choices);
+      const service = app.application.container.resolve(
+        userPreferencesServiceToken,
+      );
+      expect(await service.list(id)).toEqual(choices);
+
+      const other = new Visitor(app);
+      expect(
+        (await other.request('/auth/sign-in/email', 'POST', credentials))
+          .status,
+      ).toBe(200);
+      expect(await other.preferences()).toEqual(choices);
+
+      const url = `http://localhost${app.publicBasePath}/api/users/me/preferences/locale`;
+      for (const origin of [undefined, 'https://untrusted.example']) {
+        const denied = await app.request(url, {
+          method: 'PUT',
+          headers: {
+            cookie: visitor.cookies.getCookieStringSync(url),
+            'content-type': 'application/json',
+            ...(origin ? { origin } : {}),
+          },
+          body: JSON.stringify({ value: 'de-DE' }),
+        });
+        expect(denied.status).toBe(403);
+        expect(await denied.json()).toMatchObject({
+          error: { reason: 'INVALID_CSRF_ORIGIN' },
+        });
+        expect(denied.headers.getSetCookie()).toEqual([]);
+      }
+      expect(await service.list(id)).toEqual(choices);
+    } finally {
+      await app.close();
+    }
+  },
+);
 
 it.each(['en-US', 'zh-CN'])(
   'uses site defaults and session cookies without allowing database preference writes (%s)',

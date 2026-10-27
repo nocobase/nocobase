@@ -41,7 +41,7 @@ that. This reference covers what the plugin adds.
 ## The two middlewares
 
 - `auth.required()` rejects an anonymous request with `401 UNAUTHENTICATED` in the standard error body, reason `AUTHENTICATION_REQUIRED`, domain `authentication`. On success `context.get('auth')` is `{ user, session }`.
-- Both middlewares reject a cookie-bearing write whose `Origin` (or `Referer`) is not trusted with `403 PERMISSION_DENIED`, reason `INVALID_CSRF_ORIGIN`, domain `authentication`, unless the request authenticates successfully with its cookies removed. This lets API-key clients retain preference cookies without sending `Origin`; the middleware uses that credential's identity and still enforces its scope. A missing, invalid or revoked credential cannot fall back to a browser session to bypass CSRF. Routes that skip authentication still require a trusted origin for cookie-bearing writes.
+- Both middlewares reject a cookie-bearing write whose `Origin` (or `Referer`) is not trusted with `403 PERMISSION_DENIED`, reason `INVALID_CSRF_ORIGIN`, domain `authentication`.
 - `auth.optional()` sets `context.get('auth')` to the session or `null` and
   never rejects. Use it for a route whose response differs for a signed-in
   caller but is still public.

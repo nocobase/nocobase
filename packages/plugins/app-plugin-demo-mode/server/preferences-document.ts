@@ -1,4 +1,5 @@
 import {
+  apiErrorResponseNames,
   resolver,
   type ApiDocumentTransform,
   type OpenAPIV3_1,
@@ -14,7 +15,7 @@ export function describeDemoPreferences(
     const prefix = '/api/users/me/preferences';
     const collection = document.paths?.[prefix];
     const item = document.paths?.[`${prefix}/{key}`];
-    const policy = `In Demo Mode, ${keys.map((key) => `\`${key}\``).join(', ')} use application-scoped browser-session cookies instead of account storage. Send the returned cookies on subsequent requests, including after switching accounts. Missing or deleted choices return the site's defaults; historical account values are ignored. Other keys retain account storage and the demo write guard. This applies to clients of this API; controls using only localStorage are unaffected.`;
+    const policy = `In Demo Mode, ${keys.map((key) => `\`${key}\``).join(', ')} use application-scoped browser-session cookies instead of account storage. Send the returned cookies on subsequent requests, including after switching accounts. Cookie-bearing writes require a trusted Origin or Referer under the existing authentication rules, including API-key requests; otherwise they return 403 INVALID_CSRF_ORIGIN. Missing or deleted choices return the site's defaults; historical account values are ignored. Other keys retain account storage and the demo write guard. This applies to clients of this API; controls using only localStorage are unaffected.`;
     const validation =
       'For those three keys, the value must be a non-empty string of at most 100 ASCII letters, digits, dots, underscores or dashes; invalid values return 400 INVALID_PREFERENCE_VALUE. Other keys accept JSON under the existing Users limits.';
     for (const [operation, description] of [
@@ -55,6 +56,10 @@ export function describeDemoPreferences(
       [item?.put, '200'],
       [item?.delete, '204'],
     ] as const) {
+      if (operation?.responses)
+        operation.responses['403'] ??= {
+          $ref: `#/components/responses/${apiErrorResponseNames[403]}`,
+        };
       const response = operation?.responses?.[status];
       if (!response || '$ref' in response) continue;
       response.headers = {

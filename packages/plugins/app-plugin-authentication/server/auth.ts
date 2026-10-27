@@ -529,10 +529,10 @@ export class Auth {
   /** Protect writes authenticated by a browser cookie, including routes that skip normal session lookup. */
   private async checkCookieWriteOrigin(
     context: Context,
-  ): Promise<ApiError | undefined> {
+  ): Promise<Response | undefined> {
     if (['GET', 'HEAD', 'OPTIONS'].includes(context.req.method)) return;
-    // A credential header alone is not proof that it was used. authenticateRequest can exempt a request only after
-    // authenticating it without cookies; skipped routes still require a trusted origin.
+    // A credential header is not proof that it was used: an invalid API key may fall back to a valid cookie.
+    // Cookie-free API key requests have no ambient browser credential to forge.
     if (!context.req.header('cookie')) return;
 
     const authContext = await this.auth.$context;
@@ -553,7 +553,7 @@ export class Auth {
       origin ??
       context.req.header('referer');
     if (!source || source === 'null') {
-      return invalidCsrfOrigin();
+      return invalidCsrfOrigin(context);
     }
 
     // Match Better Auth's request context when no base URL is configured; never derive trust from the Origin header.
@@ -589,7 +589,7 @@ export class Auth {
       allowRelativePaths: false,
     });
     if (!trustedByAuth) {
-      return invalidCsrfOrigin();
+      return invalidCsrfOrigin(context);
     }
   }
 
@@ -724,43 +724,21 @@ export class Auth {
     return false;
   }
 
-  /** Resolve the identity once, without cookie fallback when the request cannot pass the browser origin check. */
-  private async authenticateRequest(
-    context: Context,
-    options: AuthMiddlewareOptions,
-  ): Promise<AuthSession | Response | undefined> {
-    const originFailure = await this.checkCookieWriteOrigin(context);
-    if (options.skip?.(context))
-      return originFailure
-        ? apiErrorHandler(originFailure, context)
-        : undefined;
-
-    const headers = originFailure
-      ? new Headers(context.req.raw.headers)
-      : context.req.raw.headers;
-    // Preserve the original request's preference cookies for the route, but never use them to authenticate here.
-    if (originFailure) headers.delete('cookie');
-    try {
-      const session = await this.getSession(headers);
-      return originFailure && !session
-        ? apiErrorHandler(originFailure, context)
-        : session;
-    } catch (error) {
-      if (error instanceof APIError)
-        return originFailure
-          ? apiErrorHandler(originFailure, context)
-          : rejectedCredential(context, error);
-      throw error;
-    }
-  }
-
   optional(options: AuthMiddlewareOptions = {}): MiddlewareHandler<AuthEnv> {
     return async (context, next) => {
-      const auth = await this.authenticateRequest(context, options);
-      if (auth instanceof Response) return auth;
-      if (auth === undefined) {
+      const originFailure = await this.checkCookieWriteOrigin(context);
+      if (originFailure) return originFailure;
+      if (options.skip?.(context)) {
         await next();
         return;
+      }
+      let auth: AuthSession;
+      try {
+        auth = await this.getSession(context.req.raw.headers);
+      } catch (error) {
+        if (error instanceof APIError)
+          return rejectedCredential(context, error);
+        throw error;
       }
       if (
         auth?.credential &&
@@ -776,11 +754,20 @@ export class Auth {
     options: RequiredAuthMiddlewareOptions = {},
   ): MiddlewareHandler<AuthEnv> {
     return async (context, next) => {
-      const auth = await this.authenticateRequest(context, options);
-      if (auth instanceof Response) return auth;
-      if (auth === undefined) {
+      const originFailure = await this.checkCookieWriteOrigin(context);
+      if (originFailure) return originFailure;
+      if (options.skip?.(context)) {
         await next();
         return;
+      }
+      let auth: AuthSession;
+      try {
+        auth = await this.getSession(context.req.raw.headers);
+        // A refused credential is Better Auth's APIError; answer with its status, and its code as the reason.
+      } catch (error) {
+        if (error instanceof APIError)
+          return rejectedCredential(context, error);
+        throw error;
       }
       if (!auth) {
         return apiErrorHandler(
@@ -849,14 +836,17 @@ function toOpenAPIPath(path: string): string {
 }
 
 /** A cookie-bearing write whose origin is neither the application's own nor a trusted one. */
-function invalidCsrfOrigin(): ApiError {
-  return new ApiError({
-    status: 'PERMISSION_DENIED',
-    reason: 'INVALID_CSRF_ORIGIN',
-    domain: 'authentication',
-    message:
-      'The request origin is not trusted for a cookie-authenticated write.',
-  });
+function invalidCsrfOrigin(context: Context): Response {
+  return apiErrorHandler(
+    new ApiError({
+      status: 'PERMISSION_DENIED',
+      reason: 'INVALID_CSRF_ORIGIN',
+      domain: 'authentication',
+      message:
+        'The request origin is not trusted for a cookie-authenticated write.',
+    }),
+    context,
+  );
 }
 
 /** An issued credential, such as a run token, on a route that does not list its security scheme. */
