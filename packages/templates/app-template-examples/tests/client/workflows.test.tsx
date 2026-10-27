@@ -1,3 +1,4 @@
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { BackButton } from '../../client/components/back-button.js';
 import {
   OfficeParameterEditor,
@@ -85,10 +86,12 @@ async function view(
     <I18nProvider runtime={runtime}>
       <NamespaceScope ns={namespace}>
         <MemoryRouter initialEntries={[path]}>
-          <PageBreadcrumbProvider>
-            <Breadcrumbs />
-            {children}
-          </PageBreadcrumbProvider>
+          <RouteTreeProvider routes={[]}>
+            <PageBreadcrumbProvider>
+              <Breadcrumbs />
+              {children}
+            </PageBreadcrumbProvider>
+          </RouteTreeProvider>
         </MemoryRouter>
       </NamespaceScope>
     </I18nProvider>,

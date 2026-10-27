@@ -1,5 +1,5 @@
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { useSubmission } from '@nocobase/app-client';
+import { FeedbackForm } from '#components/feedback-form';
 import {
   useSettingsLeave,
   useSettingsData,
@@ -9,6 +9,7 @@ import {
   ApiClientError,
   useClientApplication,
   useToaster,
+  useSubmission,
 } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -232,7 +233,6 @@ function RoleEditor(): ReactElement {
         />
         <SettingsError error={request.error} retry={request.reload} />
         <SettingsError error={options.error} retry={options.reload} />
-        <SettingsError error={error} />
         {error instanceof Error &&
           'status' in error &&
           error.status === 409 && (
@@ -245,7 +245,10 @@ function RoleEditor(): ReactElement {
         ) : (
           !request.error &&
           !options.error && (
-            <form
+            <FeedbackForm
+              submitting={busy}
+              error={error}
+              errorContent={<SettingsError error={error} inline />}
               onSubmit={(event) => void save(event)}
               noValidate
               className='flex flex-col gap-6'
@@ -255,10 +258,16 @@ function RoleEditor(): ReactElement {
                   <Label htmlFor='role-key'>{t('settings.key')} *</Label>
                   <Input
                     id='role-key'
+                    name='key'
                     required
                     value={roleKey}
                     disabled={!creating || !allowed || busy}
                     aria-invalid={keyConflict || (submitted && !roleKey.trim())}
+                    aria-errormessage={
+                      keyConflict || (submitted && !roleKey.trim())
+                        ? 'role-key-error'
+                        : undefined
+                    }
                     onChange={(event) => {
                       setKeyConflict(false);
                       setKeyDraft(event.target.value);
@@ -266,7 +275,7 @@ function RoleEditor(): ReactElement {
                     }}
                   />
                   {(keyConflict || (submitted && !roleKey.trim())) && (
-                    <p className='text-xs text-destructive'>
+                    <p id='role-key-error' className='text-xs text-destructive'>
                       {t(
                         keyConflict
                           ? 'settings.keyConflict'
@@ -279,17 +288,24 @@ function RoleEditor(): ReactElement {
                   <Label htmlFor='role-name'>{t('settings.roleName')} *</Label>
                   <Input
                     id='role-name'
+                    name='title'
                     required
                     value={name}
                     disabled={!allowed || busy}
                     aria-invalid={submitted && !name.trim()}
+                    aria-errormessage={
+                      submitted && !name.trim() ? 'role-name-error' : undefined
+                    }
                     onChange={(event) => {
                       setNameDraft(event.target.value);
                       setDirty(true);
                     }}
                   />
                   {submitted && !name.trim() && (
-                    <p className='text-xs text-destructive'>
+                    <p
+                      id='role-name-error'
+                      className='text-xs text-destructive'
+                    >
                       {t('settings.required')}
                     </p>
                   )}
@@ -359,7 +375,7 @@ function RoleEditor(): ReactElement {
                   </Button>
                 )}
               </div>
-            </form>
+            </FeedbackForm>
           )
         )}
         {leave.dialog}

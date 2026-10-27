@@ -865,6 +865,21 @@
       ]
     },
     {
+      "name": "feedback-form-demo",
+      "type": "registry:example",
+      "title": "Form Feedback Demo",
+      "description": "Locate required fields and keep input after a simulated connection failure, then retry successfully.",
+      "categories": ["form"],
+      "registryDependencies": ["@nocobase/feedback-form", "button", "input"],
+      "files": [
+        {
+          "path": "components/feedback-form.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-feedback-form-demo/feedback-form.tsx"
+        }
+      ]
+    },
+    {
       "name": "list-feedback-demo",
       "type": "registry:example",
       "title": "List Feedback Demo",

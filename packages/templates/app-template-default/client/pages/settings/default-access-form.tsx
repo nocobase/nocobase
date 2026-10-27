@@ -1,6 +1,11 @@
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { useSubmission } from '@nocobase/app-client';
-import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
+import { FeedbackForm } from '#components/feedback-form';
+import {
+  ApiClientError,
+  useApiClient,
+  useToaster,
+  useSubmission,
+} from '@nocobase/app-client';
 import {
   useCan,
   type AuthorizationOptionsResponse,
@@ -375,7 +380,10 @@ function DefaultAccessFormBody(): ReactElement {
             {!creating && !initial ? (
               <p role='status'>{t('settings.missing')}</p>
             ) : (
-              <form
+              <FeedbackForm
+                submitting={busy}
+                error={error}
+                errorContent={<SettingsError error={error} inline />}
                 ref={formRef}
                 noValidate
                 className='flex flex-col gap-6'
@@ -384,7 +392,6 @@ function DefaultAccessFormBody(): ReactElement {
                   void save();
                 }}
               >
-                <SettingsError error={error} />
                 {message && (
                   <Alert variant='destructive'>
                     <AlertDescription>
@@ -502,7 +509,7 @@ function DefaultAccessFormBody(): ReactElement {
                     </Button>
                   )}
                 </div>
-              </form>
+              </FeedbackForm>
             )}
             {!creating && !initial && (
               <Button variant='outline' onClick={close}>

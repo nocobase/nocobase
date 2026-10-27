@@ -2,7 +2,10 @@ import { useSubmission } from '@nocobase/app-client';
 import { RecordLink } from '#components/record-link';
 import { BackButton } from '#components/back-button';
 import { safeReturnTo } from '../../lib/return-to.js';
-import { useTableUrlState } from '#hooks/use-table-url-state';
+import {
+  readTableUrlState,
+  useTableUrlState,
+} from '#hooks/use-table-url-state';
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
@@ -229,16 +232,14 @@ export default function UsersPage(): ReactElement {
     !roleChoices.some((option) => option.value === selectedRole)
   )
     roleChoices.push({ value: selectedRole, label: `${roleScope} · ${role}` });
-  const page = Math.max(
-    1,
-    Number.isSafeInteger(Number(params.get('page')))
-      ? Number(params.get('page'))
-      : 1,
-  );
+  const { paginationState, sortingState } = readTableUrlState(params, {
+    defaultPageSize: 20,
+    pageSizeOptions: [20, 50, 100],
+    sortColumns: ['name'],
+  });
+  const page = paginationState.pageIndex + 1;
   const status = params.get('status') ?? 'all';
-  const pageSize = [20, 50, 100].includes(Number(params.get('pageSize')))
-    ? Number(params.get('pageSize'))
-    : 20;
+  const pageSize = paginationState.pageSize;
   const update = (key: string, value: string) => {
     setParams(
       (old) => {
@@ -274,8 +275,11 @@ export default function UsersPage(): ReactElement {
     ...(status !== 'all' ? { status } : {}),
     ...(roleScope ? { roleScope } : {}),
     ...(role ? { role } : {}),
-    ...(params.get('order')
-      ? { sort: 'name', order: params.get('order')! }
+    ...(sortingState[0]
+      ? {
+          sort: sortingState[0].id,
+          order: sortingState[0].desc ? 'desc' : 'asc',
+        }
       : {}),
   });
   const request = useSettingsData<{

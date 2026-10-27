@@ -1,7 +1,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { ArrowLeftIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
-import { Link, type To, useLocation, useResolvedPath } from 'react-router';
+import { Link, type To, useResolvedPath } from 'react-router';
 
 import { useRouteSearches } from '../routing/route-context.js';
 
@@ -10,7 +10,7 @@ import { cn } from 'cn';
 export interface BackButtonProps {
   /**
    * Where it leads. Defaults to the parent route with its last visited query; a directly opened detail falls back
-   * to the current query, as closing a route overlay does. An explicit destination is kept unchanged.
+   * to the default parent list. An explicit destination is kept unchanged.
    */
   readonly to?: To;
   /** The label, "Back" by default. */
@@ -33,7 +33,6 @@ export function BackButton({
   to,
 }: BackButtonProps = {}): ReactElement {
   const { t } = useTranslation();
-  const location = useLocation();
   const parent = useResolvedPath('..');
   const searches = useRouteSearches();
 
@@ -48,8 +47,7 @@ export function BackButton({
         to ?? {
           pathname: '..',
           search:
-            searches.get(parent.pathname.replace(/\/+$/u, '') || '/') ??
-            location.search,
+            searches.get(parent.pathname.replace(/\/+$/u, '') || '/') ?? '',
         }
       }
     >

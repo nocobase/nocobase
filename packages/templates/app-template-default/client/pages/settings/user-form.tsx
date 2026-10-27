@@ -1,11 +1,16 @@
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { useSubmission } from '@nocobase/app-client';
+import { FeedbackForm } from '#components/feedback-form';
 import {
   useSettingsLeave,
   useSettingsData,
   useUserPermission,
 } from './hooks.js';
-import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  useApiClient,
+  useToaster,
+  useSubmission,
+} from '@nocobase/app-client';
 import {
   UsersClient,
   type ManagedUser,
@@ -469,12 +474,14 @@ function UserEditor(): ReactElement {
     <>
       <SettingsError error={data.error} retry={data.reload} />
       <SettingsError error={options.error} retry={options.reload} />
-      <SettingsError error={error} />
       {!creating && data.loading ? (
         <SettingsLoading />
       ) : (
         !data.error && (
-          <form
+          <FeedbackForm
+            submitting={busy}
+            error={error}
+            errorContent={<SettingsError error={error} inline />}
             id={formId}
             ref={formRef}
             onSubmit={(event) => {
@@ -526,6 +533,7 @@ function UserEditor(): ReactElement {
                 />
                 {fieldError(name) && (
                   <p
+                    data-feedback-field-error
                     id={`${formId}-${name}-error`}
                     className='text-xs text-destructive'
                   >
@@ -552,6 +560,7 @@ function UserEditor(): ReactElement {
                 />
                 {serverErrors[scope.key] && (
                   <p
+                    data-feedback-field-error
                     id={`${formId}-roles-${encodeURIComponent(scope.key)}-error`}
                     className='text-xs text-destructive'
                   >
@@ -560,7 +569,7 @@ function UserEditor(): ReactElement {
                 )}
               </div>
             ))}
-          </form>
+          </FeedbackForm>
         )
       )}
       {leave.dialog}

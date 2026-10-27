@@ -6,24 +6,17 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
   listFeedback: {
-    refreshTitle: '未能刷新此列表',
-    loadingDescription: '数据即将显示，请稍候。',
-    emptyDescription: '有可用记录时，将在此处显示。',
-    noResultsDescription: '请尝试其他关键词，或清空筛选条件查看更多记录。',
-    forbiddenDescription: '如需访问，请联系管理员。',
-    unauthenticatedDescription: '请登录以继续使用当前账号。',
-    failedDescription: '请重试，当前搜索和筛选条件将会保留。',
     loading: '正在加载…',
     empty: '暂无数据。',
     noResults: '无匹配结果。',
-    forbidden: '您没有查看此列表的权限。',
-    unauthenticated: '会话已过期，请重新登录。',
-    failed: '列表加载失败。',
-    refreshFailed: '刷新失败，当前显示此前加载的数据。',
+    forbidden: '无权访问此列表',
+    unauthenticated: '会话已过期',
+    failed: '列表加载失败',
+    refreshFailed: '刷新失败，仍显示旧数据。',
     retry: '重试',
     retrying: '正在重试…',
-    clear: '清空条件',
-    signIn: '重新登录',
+    clear: '清空筛选',
+    signIn: '登录',
   },
   flowDiagram: {
     controls: '流程图控制',
@@ -70,6 +63,14 @@ const systemZhCN: SystemResource = {
   ...deviceApprovalZhCN,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
   ...inboxZhCN,
+  // Shared form wording overrides the defaults included by composed blocks.
+  formFeedback: {
+    field: '此字段的值未通过校验，请检查并修改后重试。',
+    invalid: '请检查标记的字段后重试。',
+    failed: '保存失败，已保留您的输入，请重试。',
+    network: '无法连接，请检查网络后重试。已保留您的输入。',
+    denied: '当前权限无法提交此表单。已保留您的输入。',
+  },
   // The UI Library component of the header's inbox button.
   'inboxButton.title': '收件箱',
   'inboxButton.pending': '收件箱，{{count}} 项待处理',

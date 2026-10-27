@@ -170,3 +170,16 @@ export {
   type SubmissionOptions,
   type SubmissionStorage,
 } from './submission.js';
+
+export {
+  FormFeedback,
+  formFeedbackErrors,
+  normalizeFormFieldPath,
+  type FormFeedbackMessages,
+  type FormFeedbackField,
+  type FormFeedbackError,
+  type FormFeedbackState,
+  type FormFeedbackAttempt,
+  type FormFeedbackViolation,
+  type FormFeedbackOptions,
+} from './form-feedback.js';
