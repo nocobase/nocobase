@@ -252,7 +252,7 @@ Behavior:
 - Opening `/project-reports?range=30d` redirects with `replace` to `/project-reports/summary?range=30d`.
 - Opening `/project-reports/owners` directly stays on "By owner".
 - Clicking a tab adds a history entry, and the content renders where the Outlet is; the sidebar keeps "Project reports" highlighted (tab routes have no menu entry, so the nearest ancestor is highlighted).
-- `useListTabs` derives the selected tab from the route. Give different datasets different `dataset` values and list every parameter owned by these lists in `parameterKeys`; changing datasets clears those keys and starts the destination at its defaults, retaining enclosing-page parameters. Display tabs for the same dataset share a `dataset` value and retain compatible state. Pass only accessible tabs and `pending: true` while permission checks load; an absent/deleted tab then replaces the URL with the first accessible tab. Keep the parent route mounted for unknown descendants (for example a final `:unavailableTab` child with a null component; static tab routes take precedence) so it can apply that fallback; the global unmatched-route redirect cannot infer a tab owner.
+- `useListTabs` derives the selected tab from the route. Give different datasets different `dataset` values and list every parameter owned by these lists in `parameterKeys`; changing datasets clears those keys and starts the destination at its defaults, retaining enclosing-page parameters. Display tabs for the same dataset share a `dataset` value and retain compatible state. Pass only accessible tabs and `pending: true` while permission checks load; an absent/deleted tab then replaces the URL with the first accessible tab. Keep the parent route mounted for unknown descendants (for example a final `:unavailableTab` child with a null component and children matching the declared detail paths, such as `:id`; static tab routes take precedence) so it can apply that fallback; the global unmatched-route redirect cannot infer a tab owner.
 
 Tabs are implemented as links because they are page navigation, announced as links with `aria-current` on the selected one. To borrow the button look, apply `buttonVariants` to `NavLink`. `<Button render={<NavLink />}>` would announce each tab as a button, which is right for an action that opens a route ("New project", [section 2 of `styling.md`](styling.md#2-components-are-built-on-base-ui-not-radix)) but not for navigation. The `tabs` primitive is for tabs inside one view that are not routes: it brings the ARIA tab keyboard behavior, and its `TabsTrigger` elements sit inside `TabsList` (the skill's composition rules). Using it for route tabs would mean keeping its selected value in sync with the URL yourself.
 
@@ -661,6 +661,23 @@ Write these behaviors as tests in `tests/` (see [`testing.md`](testing.md)).
 
 Register each detail under its actual list tab, including when several tabs open the same detail component. The list places `Outlet` after its table and the detail returns `RouteChildPage`; this is a full child page, not a dialog. Keep sensitive conditions in the mounted list's `useState` only. Do not put them in URLs, history state, browser storage, logs or a global cache. Refresh resets them; the template's identity-keyed session boundary unmounts the list on account changes. Keep page and sorting state in that same local owner when they depend on private conditions, and reset the page when a condition changes.
 
+A private condition must filter the complete authorized dataset before computing its total and slicing a page; filtering only the fetched server page loses matching records and leaves the total wrong. For a small bounded dataset, fetch the complete authorized collection through its existing API and keep the condition, dependent pagination and sorting in list memory. For larger data, use an existing approved private query channel rather than adding URL or persistent state. Changing or clearing the condition starts at page one. Test with a condition that matches a record outside the previously visible page, then verify the total, all three return paths, refresh and account changes.
+
 For a tab layout that supplies its own breadcrumb, pass `tabState.source` through outlet context and use it as the list level of `usePageBreadcrumb` in the detail, followed by the detail's label. This links directly to the source tab and its recorded list query instead of the tab group's default redirect. Keep existing enclosing breadcrumb levels. A direct detail has no recorded list query and uses the source tab's default list. The standard `BackButton` follows the actual parent tab; browser Back follows its original history entry. Never hard-code the other module's list for a shared detail.
 
-Declare a final child `{ name: "reports-unavailable-tab", path: ":unavailableTab", componentLoader: () => import("./missing-tab.js") }` under a tab group, with `missing-tab.js` default-exporting a component that returns `null`. The parent `useListTabs` fallback handles it. The runtime does not accept wildcard page paths. Give this route the same inherited access boundary as its parent and no menu or breadcrumb.
+Declare a final child under the tab group with `path: ":unavailableTab"`, a null component, and fallback children matching every supported detail shape. For example:
+
+```ts
+{
+  name: "reports-unavailable-tab",
+  path: ":unavailableTab",
+  componentLoader: () => import("./missing-tab.js"),
+  children: [{
+    name: "reports-unavailable-detail",
+    path: ":id",
+    componentLoader: () => import("./missing-tab.js"),
+  }],
+}
+```
+
+`missing-tab.js` default-exports a component returning `null`. Include any deeper supported routes (such as `:id/edit`) as well: a single `:unavailableTab` only matches the list URL and cannot recover `/reports/deleted/42`. The parent `useListTabs` fallback handles it. The runtime does not accept wildcard page paths. Give this route the same inherited access boundary as its parent and no menu or breadcrumb.

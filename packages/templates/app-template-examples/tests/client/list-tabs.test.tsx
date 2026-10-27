@@ -64,7 +64,11 @@ function setup(url: string) {
                   { path: ':id', element: <p>Detail</p> },
                 ],
               })),
-              { path: ':unavailableTab', element: null },
+              {
+                path: ':unavailableTab',
+                element: null,
+                children: [{ path: ':id', element: null }],
+              },
             ],
           },
         ],
@@ -105,4 +109,13 @@ it('replaces a removed tab with the first accessible tab without stale dataset p
   expect(router.state.location.pathname).toBe('/assets/active');
   expect(router.state.location.search).toBe('?parentFilter=kept');
   expect(router.state.historyAction).toBe('REPLACE');
+});
+
+// Match the declared detail shape even after its source tab is removed.
+it('returns a removed tab detail to the group default without retaining its page', async () => {
+  const router = setup('/assets/deleted/42?page=3&sort=name&order=desc');
+  await screen.findByText('Content');
+  expect(router.state.location.pathname).toBe('/assets/active');
+  expect(router.state.location.search).toBe('');
+  expect(screen.getByTestId('tab')).toHaveTextContent('Active');
 });
