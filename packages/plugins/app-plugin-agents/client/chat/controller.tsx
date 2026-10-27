@@ -1038,9 +1038,11 @@ export class ChatController {
     const active = this.lifetime(),
       ordered = this.detailRequest(id);
     const detail = await this.api.conversation(id);
-    if (!active() || !ordered()) return;
-    await this.reconcile(id, detail);
-    if (!active() || !ordered()) return;
+    if (!active()) return;
+    if (ordered()) await this.reconcile(id, detail);
+    if (!active()) return;
+    // A newer detail query must not discard this refresh's message catch-up.
+    // loadHistory coalesces overlapping reads independently of detail ordering.
     await this.loadHistory(id, false, true);
     if (!active() || !ordered()) return;
     const history = this.history(id);

@@ -190,6 +190,46 @@ it('does not let a stale idle detail overwrite a newer command or clear an inter
     f.state.detail,
   );
 });
+it.each(['detail', 'reconcile'])(
+  'reads new messages when a newer detail query supersedes refresh during %s',
+  async (phase) => {
+    const f = fixture();
+    f.state.detail = { ...f.state.detail, execution: { status: 'idle' } };
+    f.state.messages = [uiMessage(1)];
+    await f.controller.loadHistory('c1');
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const held =
+      phase === 'detail'
+        ? vi.spyOn(f.api, 'conversation').mockImplementationOnce(async () => {
+            await gate;
+            return f.state.detail;
+          })
+        : vi.spyOn(f.api, 'messages').mockImplementationOnce(async () => {
+            await gate;
+            return f.api.messages('c1', { ids: 'm1' });
+          });
+    const refreshing = f.controller.refresh('c1');
+    await vi.waitFor(() => expect(held).toHaveBeenCalledOnce());
+    // Ordinary detail queries advance the version without requesting messages.
+    const current = f.controller.detailRequest('c1');
+    const newer = { ...f.state.detail, title: 'Newer detail' };
+    expect(current()).toBe(true);
+    agentsQueryClient().setQueryData(chatKeys.conversation('c1'), newer);
+    f.state.messages.push(uiMessage(2, 'system', 'Task completed'));
+    release();
+    await refreshing;
+    expect(f.controller.chat('c1').messages.map((m) => m.id)).toEqual([
+      'm1',
+      'm2',
+    ]);
+    expect(
+      agentsQueryClient().getQueryData(chatKeys.conversation('c1')),
+    ).toEqual(newer);
+  },
+);
 it.each([false, true])(
   'keeps Stop pending until terminal confirmation and clears identity lifetimes (historical=%s)',
   async (historical) => {
