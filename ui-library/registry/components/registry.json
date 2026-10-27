@@ -531,7 +531,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": ["button", "alert", "empty"],
-      "docs": "Pass resolveListState from @nocobase/app-client and the existing request retry/clear callbacks. Merge listFeedback translations listed in the components README. Gate emptyAction with the existing create permission.",
+      "docs": "Pass resolveListState from @nocobase/app-client and the existing request retry/clear callbacks. Merge listFeedback translations listed in the components README. Keep the standard list create action in the page header, including for empty collections; gate it with the existing create permission and reserve emptyAction for intentional business-specific actions.",
       "files": [
         {
           "path": "list-feedback.tsx",
