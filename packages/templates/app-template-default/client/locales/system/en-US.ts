@@ -8,15 +8,6 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * upgrade replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
-  formFeedback: {
-    field: 'This value was rejected. Check it and try again.',
-    invalid: 'Check the highlighted fields and try again.',
-    failed: 'Unable to save. Your input has been kept. Try again.',
-    network:
-      'Unable to connect. Check your connection and try again. Your input has been kept.',
-    denied:
-      'You cannot submit this form with your current access. Your input has been kept.',
-  },
   flowDiagram: {
     controls: 'Diagram controls',
     fitView: 'Fit to view',
@@ -63,6 +54,16 @@ const systemEnUS = {
   ...deviceApprovalEnUS,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
   ...inboxEnUS,
+  // Shared form wording overrides the defaults included by composed blocks.
+  formFeedback: {
+    field: 'This value was rejected. Check it and try again.',
+    invalid: 'Check the highlighted fields and try again.',
+    failed: 'Unable to save. Your input has been kept. Try again.',
+    network:
+      'Unable to connect. Check your connection and try again. Your input has been kept.',
+    denied:
+      'You cannot submit this form with your current access. Your input has been kept.',
+  },
   // The UI Library component of the header's inbox button.
   'inboxButton.title': 'Inbox',
   'inboxButton.pending': 'Inbox, {{count}} waiting',
