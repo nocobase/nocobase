@@ -163,6 +163,7 @@ it('creates physical schema and relation metadata only in analytics and rolls ba
   const migrator = database.createMigrator(source('migrations'));
   expect((await migrator.latest()).executed).toEqual([]);
   expect((await migrator.rollback()).rolledBack).toEqual([
+    '202611020002_create_mutation_receipts',
     '202609090001_create_analytics',
   ]);
   for (const name of ['channels', 'campaigns', 'dailyMetrics']) {

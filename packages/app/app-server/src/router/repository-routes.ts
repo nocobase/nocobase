@@ -1,10 +1,12 @@
 import {
   databaseManagerToken,
+  getRepositoryMutationIdentity,
   normalizeRepositoryPolicy,
   type NormalizedReadNode,
   type NormalizedRepositoryPolicy,
   type PolicyRef,
   type RepositoryPolicy,
+  type PolicyScope,
   type AggregateOptions,
   type GroupByOptions,
   type CreateOneOptions,
@@ -451,6 +453,7 @@ export function defineRepositoryApiRoutes<P = unknown>(
                 .connection(entry.connection);
               const result = await executeIdempotentMutation<{
                 policy: string;
+                locator?: Readonly<Record<string, unknown>>;
                 data: unknown;
               }>({
                 connection,
@@ -474,41 +477,33 @@ export function defineRepositoryApiRoutes<P = unknown>(
                       'The result is no longer visible.',
                     );
                   if (action !== 'deleteOne' && policy.read !== true) {
-                    const definition = await connection.collections.get(
-                      entry.collection,
-                    );
-                    const primary = definition?.constraints?.find(
-                      (constraint) => constraint.type === 'primary',
-                    );
-                    const fields =
-                      primary?.fields ??
-                      definition?.fields
-                        ?.filter((field) => field.primaryKey)
-                        .map((field) => field.name) ??
-                      [];
                     const record = (saved.data as { record?: RepositoryRecord })
                       .record;
                     if (
                       !record ||
-                      !fields.length ||
-                      fields.some((field) => record[field] === undefined)
+                      !saved.locator ||
+                      !Object.keys(saved.locator).length
                     )
                       fail(
                         403,
                         'REPLAY_FORBIDDEN',
                         'The result cannot be checked for current visibility.',
                       );
-                    const visible = await scoped.findOne({
-                      ...(input.select
-                        ? {
-                            select:
-                              input.select as unknown as FindManyOptions<RepositoryRecord>['select'],
-                          }
-                        : {}),
-                      filter: Object.fromEntries(
-                        fields.map((field) => [field, record[field]]),
-                      ) as RepositoryFilter<RepositoryRecord>,
-                    });
+                    const [visible] = await scoped
+                      .narrow({
+                        read: {
+                          scope: saved.locator as PolicyScope<RepositoryRecord>,
+                        },
+                      })
+                      .findMany({
+                        limit: 1,
+                        ...(input.select
+                          ? {
+                              select:
+                                input.select as unknown as FindManyOptions<RepositoryRecord>['select'],
+                            }
+                          : {}),
+                      });
                     if (
                       !visible ||
                       mutationDigest(visible) !== mutationDigest(record)
@@ -528,8 +523,13 @@ export function defineRepositoryApiRoutes<P = unknown>(
                     action,
                     input,
                   );
+                  const locator =
+                    data && typeof data === 'object'
+                      ? getRepositoryMutationIdentity(data)
+                      : undefined;
                   return {
                     policy: mutationDigest(policy),
+                    locator,
                     // A scoped deleted row cannot be checked again. Return the same confirmation on first execution and replay.
                     data:
                       action === 'deleteOne' && policy.read !== true
@@ -832,7 +832,11 @@ async function execute(
         ifVersion,
       });
     case 'deleteOne':
-      return repository.deleteOne({ select: read.select, filter, ifVersion });
+      return repository.deleteOne({
+        select: read.select,
+        filter,
+        ifVersion,
+      });
   }
 }
 

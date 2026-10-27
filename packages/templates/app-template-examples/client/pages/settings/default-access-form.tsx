@@ -1,3 +1,4 @@
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useSubmission } from '@nocobase/app-client';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import {
@@ -61,7 +62,10 @@ function DefaultAccessFormBody(): ReactElement {
     action: creating ? 'create' : 'update',
   }).can;
   const [draft, setDraft] = useState<DefaultAccessRule>();
-  const submission = useSubmission();
+  const { session } = useAuthentication();
+  const submission = useSubmission({
+    scope: `${session?.user.id}:settings:default-access:${key}`,
+  });
   const [requestBusy, setRequestBusy] = useState(false);
   const busy = requestBusy || submission.submitting;
   const [error, setError] = useState<unknown>();
@@ -234,117 +238,117 @@ function DefaultAccessFormBody(): ReactElement {
           },
         ],
       });
-  const save = () =>
-    submission.run(null, async () => {
-      setSubmitted(true);
-      setFieldErrors({});
-      setScopeErrors({});
-      setMessage(undefined);
-      setError(undefined);
-      if (invalidKey || !resource || !supported || !canWrite || busy) {
-        requestAnimationFrame(() =>
-          formRef.current
-            ?.querySelector<HTMLElement>('[aria-invalid="true"]')
-            ?.focus(),
-        );
-        return;
-      }
-      setRequestBusy(true);
-      try {
-        const latest = await api.request<{
-          data: readonly DefaultAccessRule[];
-        }>({
-          path: 'authorization/defaultAccess',
-        });
-        if (
-          !creating &&
-          JSON.stringify(latest.data.find((rule) => rule.key === key)) !==
-            JSON.stringify(initial)
-        ) {
-          setMessage(t('settings.defaultAccess.changed'));
-          return;
-        }
-        const saved = await api.request<{ data: DefaultAccessRule }>({
-          path: creating
-            ? 'authorization/defaultAccess'
-            : `authorization/defaultAccess/${encodeURIComponent(key ?? '')}`,
-          method: creating ? 'POST' : 'PATCH',
-          json: creating
-            ? { ...value, key: value.key.trim() }
-            : { actions: value.actions },
-        });
-        toaster.show({
-          type: 'success',
-          title: t('settings.defaultAccess.saved', { name: value.key }),
-        });
-        leave.allow();
-        parent.saved(saved.data);
-        close();
-      } catch (next) {
-        if (
-          next instanceof ApiClientError &&
-          next.payload &&
-          typeof next.payload === 'object'
-        ) {
-          const detail: unknown = Reflect.get(next.payload, 'error');
-          const violations: unknown =
-            detail && typeof detail === 'object'
-              ? Reflect.get(detail, 'fieldViolations')
-              : undefined;
-          if (Array.isArray(violations)) {
-            const errors: { key?: string; resource?: string } = {};
-            const scopeErrors: Record<string, string> = {};
-            for (const violation of violations) {
-              const field: unknown =
-                violation && typeof violation === 'object'
-                  ? Reflect.get(violation, 'field')
-                  : undefined;
-              if (field === 'key')
-                errors.key = t('settings.defaultAccess.keyRequired');
-              else if (
-                typeof field === 'string' &&
-                field.startsWith('resource')
-              )
-                errors.resource = t('settings.defaultAccess.resourceRequired');
-              else if (typeof field === 'string') {
-                const index = /^actions\.(\d+)(?:\.|$)/.exec(field);
-                const entry = index
-                  ? value.actions[Number(index[1])]
-                  : undefined;
-                if (entry)
-                  scopeErrors[actionKey(entry)] = t(
-                    'settings.defaultAccess.scopeInvalid',
-                  );
-              }
+  const save = async () => {
+    setSubmitted(true);
+    setFieldErrors({});
+    setScopeErrors({});
+    setMessage(undefined);
+    setError(undefined);
+    if (invalidKey || !resource || !supported || !canWrite || busy) {
+      requestAnimationFrame(() =>
+        formRef.current
+          ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+          ?.focus(),
+      );
+      return;
+    }
+    setRequestBusy(true);
+    try {
+      const saved = await submission.run(
+        { creating, key, value },
+        async (idempotencyKey, _signal, _snapshot, recovering) => {
+          if (!creating && !recovering) {
+            const latest = await api.request<{
+              data: readonly DefaultAccessRule[];
+            }>({ path: 'authorization/defaultAccess' });
+            if (
+              JSON.stringify(latest.data.find((rule) => rule.key === key)) !==
+              JSON.stringify(initial)
+            ) {
+              setMessage(t('settings.defaultAccess.changed'));
+              return undefined;
             }
-            setFieldErrors(errors);
-            setScopeErrors(scopeErrors);
-            requestAnimationFrame(() =>
-              formRef.current
-                ?.querySelector<HTMLElement>('[aria-invalid="true"]')
-                ?.focus(),
-            );
           }
-        }
-        const reason: unknown =
-          next && typeof next === 'object'
-            ? Reflect.get(next, 'reason')
+          return api.request<{ data: DefaultAccessRule }>({
+            path: creating
+              ? 'authorization/defaultAccess'
+              : `authorization/defaultAccess/${encodeURIComponent(key ?? '')}`,
+            headers: { 'Idempotency-Key': idempotencyKey },
+            method: creating ? 'POST' : 'PATCH',
+            json: creating
+              ? { ...value, key: value.key.trim() }
+              : { actions: value.actions },
+          });
+        },
+      );
+      if (!saved) return;
+      toaster.show({
+        type: 'success',
+        title: t('settings.defaultAccess.saved', { name: value.key }),
+      });
+      leave.allow();
+      parent.saved(saved.data);
+      close();
+    } catch (next) {
+      if (
+        next instanceof ApiClientError &&
+        next.payload &&
+        typeof next.payload === 'object'
+      ) {
+        const detail: unknown = Reflect.get(next.payload, 'error');
+        const violations: unknown =
+          detail && typeof detail === 'object'
+            ? Reflect.get(detail, 'fieldViolations')
             : undefined;
-        if (
-          reason === 'DEFAULT_ACCESS_CONFLICT' ||
-          reason === 'RULE_ALREADY_EXISTS'
-        )
-          setMessage(t('settings.defaultAccess.duplicate'));
-        else if (
-          reason === 'INVALID_AUTHORIZATION_INPUT' ||
-          reason === 'INVALID_INPUT'
-        )
-          setMessage(t('settings.defaultAccess.invalid'));
-        else setError(next);
-      } finally {
-        setRequestBusy(false);
+        if (Array.isArray(violations)) {
+          const errors: { key?: string; resource?: string } = {};
+          const scopeErrors: Record<string, string> = {};
+          for (const violation of violations) {
+            const field: unknown =
+              violation && typeof violation === 'object'
+                ? Reflect.get(violation, 'field')
+                : undefined;
+            if (field === 'key')
+              errors.key = t('settings.defaultAccess.keyRequired');
+            else if (typeof field === 'string' && field.startsWith('resource'))
+              errors.resource = t('settings.defaultAccess.resourceRequired');
+            else if (typeof field === 'string') {
+              const index = /^actions\.(\d+)(?:\.|$)/.exec(field);
+              const entry = index ? value.actions[Number(index[1])] : undefined;
+              if (entry)
+                scopeErrors[actionKey(entry)] = t(
+                  'settings.defaultAccess.scopeInvalid',
+                );
+            }
+          }
+          setFieldErrors(errors);
+          setScopeErrors(scopeErrors);
+          requestAnimationFrame(() =>
+            formRef.current
+              ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+              ?.focus(),
+          );
+        }
       }
-    });
+      const reason: unknown =
+        next && typeof next === 'object'
+          ? Reflect.get(next, 'reason')
+          : undefined;
+      if (
+        reason === 'DEFAULT_ACCESS_CONFLICT' ||
+        reason === 'RULE_ALREADY_EXISTS'
+      )
+        setMessage(t('settings.defaultAccess.duplicate'));
+      else if (
+        reason === 'INVALID_AUTHORIZATION_INPUT' ||
+        reason === 'INVALID_INPUT'
+      )
+        setMessage(t('settings.defaultAccess.invalid'));
+      else setError(next);
+    } finally {
+      setRequestBusy(false);
+    }
+  };
   return (
     <PageContainer className='max-w-4xl'>
       <PageHeader

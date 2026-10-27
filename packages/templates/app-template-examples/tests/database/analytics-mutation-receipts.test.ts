@@ -2,7 +2,7 @@ import path from 'node:path';
 import { describeMigration } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
 
-describeMigration('202610270001_create_mutation_receipts', {
+describeMigration('202611020002_create_mutation_receipts', {
   sources: [
     {
       packageName: 'operation-receipts-test',

@@ -3,6 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  retrySubmission: 'Tentar novamente a operação original',
+
   officePreviewTitle: 'Visualização do escritório local',
   officePreviewDescription:
     'Carregue um arquivo DOCX, XLSX ou PPTX abaixo e selecione Visualizar. Os documentos são renderizados em seu navegador sem o Office Online ou um serviço de visualização externo. Os anexos do pedido usam a mesma visualização.',

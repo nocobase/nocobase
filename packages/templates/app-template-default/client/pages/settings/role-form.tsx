@@ -1,3 +1,4 @@
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useSubmission } from '@nocobase/app-client';
 import {
   useSettingsLeave,
@@ -88,7 +89,10 @@ function RoleEditor(): ReactElement {
   const [grantsDraft, setGrantsDraft] = useState<readonly PermissionGrant[]>();
   const [dirty, setDirty] = useState(false);
   const [editingScope, setEditingScope] = useState<string>();
-  const submission = useSubmission();
+  const { session } = useAuthentication();
+  const submission = useSubmission({
+    scope: `${session?.user.id}:settings:role:${key}`,
+  });
   const [requestBusy, setRequestBusy] = useState(false);
   const busy = requestBusy || submission.submitting;
   const leave = useSettingsLeave(dirty, busy);
@@ -130,10 +134,11 @@ function RoleEditor(): ReactElement {
     pathname: useResolvedPath('..').pathname,
     search: location.search,
   };
+  const originalRevisionRef = useRef<string | undefined>(undefined);
   const save = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
-    return submission.run(null, async () => {
+    return (async () => {
       event.preventDefault();
       if (options.error || !catalog || (!creating && request.error)) return;
       setSubmitted(true);
@@ -151,6 +156,7 @@ function RoleEditor(): ReactElement {
       setError(undefined);
       setKeyConflict(false);
       try {
+        originalRevisionRef.current ??= request.data?.data.revision;
         const input = {
           key: roleKey,
           title:
@@ -159,11 +165,17 @@ function RoleEditor(): ReactElement {
               : name.trim(),
           grants,
           ...(!creating && request.data?.data.revision
-            ? { expectedRevision: request.data.data.revision }
+            ? { expectedRevision: originalRevisionRef.current }
             : {}),
         };
-        if (creating) await authz.createPermissionSet(input);
-        else await authz.updatePermissionSet(key, input);
+        const saved = await submission.run(
+          { key, creating, input },
+          (idempotencyKey) =>
+            creating
+              ? authz.createPermissionSet(input, idempotencyKey)
+              : authz.updatePermissionSet(key, input, idempotencyKey),
+        );
+        if (!saved) return;
         setDirty(false);
         parent.reload();
         toaster.show({ type: 'success', title: t('settings.saved', { name }) });
@@ -182,7 +194,7 @@ function RoleEditor(): ReactElement {
       } finally {
         setRequestBusy(false);
       }
-    });
+    })();
   };
   const sections = catalog
     ? configurePermissionScopes(

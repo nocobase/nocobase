@@ -1,3 +1,4 @@
+import { useSubmission } from '@nocobase/app-client';
 import { RecordLink } from '#components/record-link';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { useApiClient, useToaster } from '@nocobase/app-client';
@@ -262,29 +263,39 @@ export default function DefaultAccessPage(): ReactElement {
         </div>
       )
     ) : null;
+  const submission = useSubmission();
   const remove = async () => {
     if (!removing || busy || !canDelete) return;
     setBusy(true);
     setError(undefined);
     try {
-      const latest = await api.request<{ data: readonly DefaultAccessRule[] }>({
-        path: 'authorization/defaultAccess',
-      });
-      if (
-        JSON.stringify(
-          latest.data.find((rule) => rule.key === removing.key),
-        ) !== JSON.stringify(removing)
-      ) {
-        rules.reload();
-        setRemoving(undefined);
-        setConflict(true);
-        requestAnimationFrame(() => searchRef.current?.focus());
-        return;
-      }
-      await api.request({
-        path: `authorization/defaultAccess/${encodeURIComponent(removing.key)}`,
-        method: 'DELETE',
-      });
+      const outcome = await submission.run(
+        { key: removing.key },
+        async (idempotencyKey, _signal, _snapshot, recovering) => {
+          if (!recovering) {
+            const latest = await api.request<{
+              data: readonly DefaultAccessRule[];
+            }>({ path: 'authorization/defaultAccess' });
+            if (
+              JSON.stringify(
+                latest.data.find((rule) => rule.key === removing.key),
+              ) !== JSON.stringify(removing)
+            ) {
+              rules.reload();
+              setRemoving(undefined);
+              setConflict(true);
+              return undefined;
+            }
+          }
+          await api.request({
+            path: `authorization/defaultAccess/${encodeURIComponent(removing.key)}`,
+            method: 'DELETE',
+            headers: { 'Idempotency-Key': idempotencyKey },
+          });
+          return true;
+        },
+      );
+      if (!outcome) return;
       toaster.show({
         type: 'success',
         title: t('settings.defaultAccess.deleted', { name: name(removing) }),

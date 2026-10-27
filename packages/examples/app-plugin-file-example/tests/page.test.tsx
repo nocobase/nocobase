@@ -167,6 +167,7 @@ describe('File Repository example pages', () => {
     await waitFor(() =>
       expect(repository.deleteOne).toHaveBeenCalledWith({
         filter: { id: 'id-1' },
+        idempotencyKey: expect.any(String),
       }),
     );
     await waitFor(() => expect(screen.queryByText('one.png')).toBeNull());

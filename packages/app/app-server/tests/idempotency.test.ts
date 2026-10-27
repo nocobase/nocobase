@@ -271,7 +271,7 @@ describe('transactional operation receipts', () => {
           {
             name: 'orders',
             policy: {
-              read: { scope: { status: 'draft' }, fields: ['id', 'status'] },
+              read: { scope: { status: 'draft' }, fields: ['status'] },
               create: true,
               update: true,
               delete: true,
@@ -289,10 +289,19 @@ describe('transactional operation receipts', () => {
           'Content-Type': 'application/json',
           'Idempotency-Key': operationKey,
         },
-        body: JSON.stringify({ values: { id: 'one', status: 'draft' } }),
+        body: JSON.stringify({
+          values: { id: 'one', status: 'draft' },
+          select: {
+            kind: 'select',
+            version: 1,
+            root: { kind: 'selection', fields: ['status'] },
+          },
+        }),
       });
     expect((await request()).status).toBe(200);
-    expect((await request()).headers.get('Idempotency-Replayed')).toBe('true');
+    const replay = await request();
+    expect(replay.status).toBe(200);
+    expect(replay.headers.get('Idempotency-Replayed')).toBe('true');
     await connection
       .repository('orders')
       .updateOne({ filter: { id: 'one' }, values: { status: 'private' } });

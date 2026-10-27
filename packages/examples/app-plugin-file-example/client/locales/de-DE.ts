@@ -3,6 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  retrySubmission: 'Ursprünglichen Vorgang erneut versuchen',
+
   officePreviewTitle: 'Vorschau des lokalen Büros',
   officePreviewDescription:
     'Laden Sie unten eine DOCX-, XLSX- oder PPTX-Datei hoch und wählen Sie dann Vorschau aus. Dokumente werden in Ihrem Browser ohne Office Online oder einen externen Vorschaudienst gerendert. Bestellanhänge verwenden dieselbe Vorschau.',

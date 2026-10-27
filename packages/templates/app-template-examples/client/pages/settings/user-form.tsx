@@ -1,3 +1,4 @@
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useSubmission } from '@nocobase/app-client';
 import {
   useSettingsLeave,
@@ -268,7 +269,10 @@ function UserEditor(): ReactElement {
   const [confirmRoles, setConfirmRoles] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [dirty, setDirty] = useState(false);
-  const submission = useSubmission();
+  const { session } = useAuthentication();
+  const submission = useSubmission({
+    scope: `${session?.user.id}:settings:user:${userId}`,
+  });
   const [requestBusy, setRequestBusy] = useState(false);
   const busy = requestBusy || submission.submitting;
   const leave = useSettingsLeave(dirty, busy);
@@ -293,56 +297,54 @@ function UserEditor(): ReactElement {
       return t('settings.invalidEmail');
     return;
   };
-  const save = (form: HTMLFormElement, confirmed = false) =>
-    submission.run(null, async () => {
-      if (busy || !(creating ? canCreate && canAssign : canUpdate || canAssign))
-        return;
-      setSubmitted(true);
-      if (
-        !fields.name.trim() ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email) ||
-        (creating && !fields.password.trim())
-      ) {
-        form.querySelector<HTMLInputElement>('input:invalid')?.focus();
-        return;
-      }
-      if (
-        data.error ||
-        data.loading ||
-        (canAssign && (options.loading || options.error || !options.data))
-      )
-        return;
-      if (creating) {
-        const missing = (options.data?.data.roleScopes ?? []).filter(
-          (scope) => scope.requiredOnCreate && !roles[scope.key]?.length,
+  const save = async (form: HTMLFormElement, confirmed = false) => {
+    if (busy || !(creating ? canCreate && canAssign : canUpdate || canAssign))
+      return;
+    setSubmitted(true);
+    if (
+      !fields.name.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email) ||
+      (creating && !fields.password.trim())
+    ) {
+      form.querySelector<HTMLInputElement>('input:invalid')?.focus();
+      return;
+    }
+    if (
+      data.error ||
+      data.loading ||
+      (canAssign && (options.loading || options.error || !options.data))
+    )
+      return;
+    if (creating) {
+      const missing = (options.data?.data.roleScopes ?? []).filter(
+        (scope) => scope.requiredOnCreate && !roles[scope.key]?.length,
+      );
+      if (missing.length) {
+        setServerErrors(
+          Object.fromEntries(
+            missing.map((scope) => [scope.key, t('settings.required')]),
+          ),
         );
-        if (missing.length) {
-          setServerErrors(
-            Object.fromEntries(
-              missing.map((scope) => [scope.key, t('settings.required')]),
-            ),
-          );
-          document
-            .getElementById(
-              `${formId}-roles-${encodeURIComponent(missing[0].key)}`,
-            )
-            ?.focus();
-          return;
-        }
-      }
-      if (!creating && !canUpdate && Object.keys(changedRoles).length === 0)
-        return;
-      if (!creating && removedRoles.length > 0 && !confirmed) {
-        setConfirmRoles(true);
+        document
+          .getElementById(
+            `${formId}-roles-${encodeURIComponent(missing[0].key)}`,
+          )
+          ?.focus();
         return;
       }
-      setRequestBusy(true);
-      setError(undefined);
-      setServerErrors({});
-      try {
-        let updated: ManagedUser;
-        if (creating)
-          updated = await client.create({
+    }
+    if (!creating && !canUpdate && Object.keys(changedRoles).length === 0)
+      return;
+    if (!creating && removedRoles.length > 0 && !confirmed) {
+      setConfirmRoles(true);
+      return;
+    }
+    setRequestBusy(true);
+    setError(undefined);
+    setServerErrors({});
+    try {
+      const input = creating
+        ? {
             ...fields,
             name: fields.name.trim(),
             email: fields.email.trim(),
@@ -350,9 +352,8 @@ function UserEditor(): ReactElement {
               ? { username: fields.username.trim() }
               : { username: undefined }),
             roleScopes: roles,
-          });
-        else
-          updated = await client.update(userId, {
+          }
+        : {
             ...(canUpdate
               ? {
                   name: fields.name.trim(),
@@ -363,45 +364,56 @@ function UserEditor(): ReactElement {
             ...(canAssign && Object.keys(changedRoles).length
               ? { roleScopes: changedRoles }
               : {}),
-          });
-        setDirty(false);
-        parent.reload(updated);
-        toaster.show({
-          type: 'success',
-          title: t(creating ? 'settings.created' : 'settings.saved', {
-            name: fields.name,
-          }),
+          };
+      const updated = await submission.run(
+        { userId, creating, input },
+        (idempotencyKey) =>
+          creating
+            ? client.create(
+                input as Parameters<typeof client.create>[0],
+                idempotencyKey,
+              )
+            : client.update(userId, input, idempotencyKey),
+      );
+      if (!updated) return;
+      setDirty(false);
+      parent.reload(updated);
+      toaster.show({
+        type: 'success',
+        title: t(creating ? 'settings.created' : 'settings.saved', {
+          name: fields.name,
+        }),
+      });
+      setConfirmRoles(false);
+      leave.allow();
+      void navigate(closeTo, { replace: true });
+    } catch (next) {
+      setConfirmRoles(false);
+      if (
+        next instanceof ApiClientError &&
+        [
+          'PASSWORD_TOO_SHORT',
+          'PASSWORD_TOO_LONG',
+          'USER_IDENTITY_CONFLICT',
+        ].includes(next.reason ?? '')
+      ) {
+        const field =
+          next.reason === 'USER_IDENTITY_CONFLICT' ? 'email' : 'password';
+        setServerErrors({
+          [field]: t(
+            field === 'password'
+              ? 'settings.passwordPolicy'
+              : 'settings.identityConflict',
+          ),
         });
-        setConfirmRoles(false);
-        leave.allow();
-        void navigate(closeTo, { replace: true });
-      } catch (next) {
-        setConfirmRoles(false);
-        if (
-          next instanceof ApiClientError &&
-          [
-            'PASSWORD_TOO_SHORT',
-            'PASSWORD_TOO_LONG',
-            'USER_IDENTITY_CONFLICT',
-          ].includes(next.reason ?? '')
-        ) {
-          const field =
-            next.reason === 'USER_IDENTITY_CONFLICT' ? 'email' : 'password';
-          setServerErrors({
-            [field]: t(
-              field === 'password'
-                ? 'settings.passwordPolicy'
-                : 'settings.identityConflict',
-            ),
-          });
-          form.querySelector<HTMLInputElement>(`[name="${field}"]`)?.focus();
-        } else {
-          setError(next);
-        }
-      } finally {
-        setRequestBusy(false);
+        form.querySelector<HTMLInputElement>(`[name="${field}"]`)?.focus();
+      } else {
+        setError(next);
       }
-    });
+    } finally {
+      setRequestBusy(false);
+    }
+  };
   const allowed = creating ? canCreate && canAssign : canUpdate || canAssign;
   const formId = creating ? 'new-user' : 'edit-user';
   const focusedRef = useRef(false);

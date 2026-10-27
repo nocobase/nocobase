@@ -3,6 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  retrySubmission: 'Reintentar la operación original',
+
   officePreviewTitle: 'Vista previa de la oficina local',
   officePreviewDescription:
     'Cargue un archivo DOCX, XLSX o PPTX a continuación, luego seleccione Vista previa. Los documentos se procesan en su navegador sin Office Online ni un servicio de vista previa externo. Los archivos adjuntos de pedidos utilizan la misma vista previa.',

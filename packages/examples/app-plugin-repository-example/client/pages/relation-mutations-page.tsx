@@ -1,3 +1,4 @@
+import { useSubmission } from '@nocobase/app-client';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { useApiClient } from '@nocobase/app-client';
@@ -63,7 +64,7 @@ function OperationCard({
   const [relation, setRelation] = useState<LabRelation>('tasks');
   const [lab, setLab] = useState<RelationLab>();
   const [state, setState] = useState<RelationLabState>();
-  const [busy, setBusy] = useState(false);
+  const [requestBusy, setRequestBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [call, setCall] = useState<RelationMutationCall>();
@@ -131,15 +132,29 @@ function OperationCard({
       label: `${scalarText(item.record?.title ?? item.record?.summary ?? item.record?.label ?? item.id)} · ${item.id.slice(-8)}`,
     })),
   ];
+  const submission = useSubmission();
+  const busy = requestBusy || submission.submitting;
   async function prepare(): Promise<void> {
-    setBusy(true);
+    setRequestBusy(true);
     setError('');
     setSaved(false);
     setCall(undefined);
-    setLab(undefined);
-    setState(undefined);
     try {
-      const next = await prepareRelationLab(api, operation, relation);
+      const next = await submission.run(
+        { phase: 'prepare', operation, relation },
+        async (key) => {
+          try {
+            return await prepareRelationLab(api, operation, relation, key);
+          } catch (cause) {
+            // Earlier steps may already have committed, even when this step returns a definite rejection.
+            throw new Error(
+              cause instanceof Error ? cause.message : String(cause),
+              { cause },
+            );
+          }
+        },
+      );
+      if (!next) return;
       setLab(next);
       const snapshot = await loadRelationLab(api, next);
       setState(snapshot);
@@ -169,12 +184,12 @@ function OperationCard({
     } catch (value) {
       setError(value instanceof Error ? value.message : t('error'));
     } finally {
-      setBusy(false);
+      setRequestBusy(false);
     }
   }
   async function refresh(): Promise<void> {
     if (!lab) return;
-    setBusy(true);
+    setRequestBusy(true);
     setError('');
     try {
       setState(await loadRelationLab(api, lab));
@@ -182,17 +197,22 @@ function OperationCard({
       setState(undefined);
       setError(value instanceof Error ? value.message : t('loadError'));
     } finally {
-      setBusy(false);
+      setRequestBusy(false);
     }
   }
   async function submit(): Promise<void> {
     if (!lab || !valid) return;
-    setBusy(true);
+    setRequestBusy(true);
     setError('');
     setSaved(false);
     let written = false;
     try {
-      const result = await executeRelationLab(api, lab, input);
+      const result = await submission.run(
+        { phase: 'mutation', lab, input },
+        (key, _signal, snapshot) =>
+          executeRelationLab(api, snapshot.lab, snapshot.input, key),
+      );
+      if (!result) return;
       written = true;
       setSaved(true);
       setLab(result.lab);
@@ -205,7 +225,7 @@ function OperationCard({
         `${written ? `${t('labRefreshFailed')} ` : ''}${value instanceof Error ? value.message : t('error')}`,
       );
     } finally {
-      setBusy(false);
+      setRequestBusy(false);
     }
   }
   return (
@@ -248,7 +268,7 @@ function OperationCard({
                 setError('');
                 setSaved(false);
               }}
-              disabled={busy}
+              disabled={busy || submission.pending}
             >
               <SelectTrigger id={`${formId}-relation`} className='w-full'>
                 <SelectValue />
@@ -280,7 +300,7 @@ function OperationCard({
           {lab && (
             <Button
               variant='outline'
-              disabled={busy}
+              disabled={busy || submission.pending}
               onClick={() => void refresh()}
             >
               {t('labRefresh')}
@@ -329,7 +349,10 @@ function OperationCard({
               void submit();
             }}
           >
-            <fieldset disabled={busy} className='grid gap-4 md:grid-cols-2'>
+            <fieldset
+              disabled={busy || submission.pending}
+              className='grid gap-4 md:grid-cols-2'
+            >
               {needsTarget && (
                 <div className='space-y-2'>
                   <label htmlFor={`${formId}-target`}>{t('labTarget')}</label>

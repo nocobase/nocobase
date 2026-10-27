@@ -156,6 +156,7 @@ export {
 
 export {
   SubmissionController,
+  deriveSubmissionKey,
   PendingSubmissionError,
   SubmissionTimeoutError,
   useSubmission,

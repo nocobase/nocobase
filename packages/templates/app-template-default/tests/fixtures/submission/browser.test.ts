@@ -4,7 +4,12 @@ import { readFile } from 'node:fs/promises';
 // Run against disposable generated applications prepared with tests/fixtures/submission.
 const applications = JSON.parse(
   process.env.SUBMISSION_APPLICATIONS ?? '[]',
-) as { name: string; url: string; beforeData?: string }[];
+) as {
+  name: string;
+  url: string;
+  beforeData?: string;
+  beforePermissions?: string;
+}[];
 if (!applications.length)
   throw new Error(
     'Set SUBMISSION_APPLICATIONS to the generated and upgraded fixture application entry URLs.',
@@ -261,5 +266,213 @@ for (const app of applications) {
       ),
       contentType: 'application/json',
     });
+  });
+}
+
+for (const app of applications) {
+  test(`${app.name}: persisted ordinary-user permissions survive source upgrade`, async ({
+    page,
+    browser,
+  }, testInfo) => {
+    await page.goto(`${app.url}/login`);
+    await page
+      .getByRole('textbox', { name: 'Username or email' })
+      .fill('nocobase');
+    await page.getByLabel('Password', { exact: true }).fill('admin123');
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await page.waitForURL((url) => !url.pathname.endsWith('/login'));
+    const key = () => `${Date.now()}.${crypto.randomUUID()}`;
+    const api = async (path: string, data?: unknown, method = 'GET') =>
+      page.request.fetch(`${app.url}/api/${path}`, {
+        method,
+        headers: { Origin: new URL(app.url).origin, 'Idempotency-Key': key() },
+        ...(data === undefined ? {} : { data }),
+      });
+    type Baseline = {
+      role: unknown;
+      userId: string;
+      roleScopes: unknown;
+      assignments: unknown;
+      allowed: unknown;
+      denied: unknown;
+    };
+    let baseline: Baseline;
+    if (app.beforePermissions)
+      baseline = JSON.parse(
+        await readFile(app.beforePermissions, 'utf8'),
+      ) as Baseline;
+    else {
+      const role = {
+        key: 'borrowing-clerk',
+        title: 'Borrowing clerk',
+        grants: [
+          {
+            resource: { type: 'submissionBorrowing', id: '*' },
+            actions: [
+              { action: 'read' },
+              { action: 'create' },
+              { action: 'update' },
+            ],
+          },
+        ],
+      };
+      const roleResponse = await api(
+        'authorization/permissionSets',
+        role,
+        'POST',
+      );
+      expect(roleResponse.status()).toBe(201);
+      const userResponse = await api(
+        'users',
+        {
+          name: 'Synthetic clerk',
+          username: 'borrowclerk',
+          email: 'clerk@example.test',
+          password: 'Borrow-test-123!',
+          roleScopes: { app: ['borrowing-clerk'] },
+        },
+        'POST',
+      );
+      expect(userResponse.status()).toBe(201);
+      const user = (await userResponse.json()).data;
+      baseline = {
+        role: (await roleResponse.json()).data,
+        userId: user.id,
+        roleScopes: user.roleScopes,
+        assignments: (
+          await (
+            await api(
+              'authorization/permissionSets/borrowing-clerk/assignments',
+            )
+          ).json()
+        ).data,
+        allowed: { read: 200, update: 200 },
+        denied: { delete: 403, approve: 403 },
+      };
+    }
+    const storedRole = (
+      await (await api('authorization/permissionSets/borrowing-clerk')).json()
+    ).data;
+    const assignments = (
+      await (
+        await api('authorization/permissionSets/borrowing-clerk/assignments')
+      ).json()
+    ).data;
+    const user = (await (await api(`users/${baseline.userId}`)).json()).data;
+    expect(storedRole).toEqual(baseline.role);
+    expect(assignments).toEqual(baseline.assignments);
+    expect(user.roleScopes).toEqual(baseline.roleScopes);
+    const ordinary = await browser.newPage();
+    try {
+      await ordinary.goto(`${app.url}/login`);
+      await ordinary
+        .getByRole('textbox', { name: 'Username or email' })
+        .fill('borrowclerk');
+      await ordinary
+        .getByLabel('Password', { exact: true })
+        .fill('Borrow-test-123!');
+      await ordinary
+        .getByRole('button', { name: 'Sign in', exact: true })
+        .click();
+      await ordinary.waitForURL((url) => !url.pathname.endsWith('/login'));
+      await ordinary.goto(`${app.url}/submission-check`);
+      const form = ordinary
+        .getByRole('heading', { name: 'Equipment borrowing' })
+        .locator('..');
+      await form.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(form.getByRole('status')).toHaveText('Saved successfully');
+      const id = await ordinary.getByTestId('record-id').innerText();
+      const send = (path: string, data: unknown, operation = key()) =>
+        ordinary.request.post(`${app.url}/api/${path}`, {
+          headers: {
+            Origin: new URL(app.url).origin,
+            'Idempotency-Key': operation,
+          },
+          data,
+        });
+      const read = await send('borrowings/findMany', {});
+      const edit = await send('borrowings/updateOne', {
+        filter: { id },
+        values: { name: 'Preserved clerk customization' },
+      });
+      const deletion = await send('borrowings/deleteOne', { filter: { id } });
+      const approval = await send(`submissionFixture/${id}/approve`, {
+        note: 'Denied synthetic approval',
+      });
+      expect({ read: read.status(), update: edit.status() }).toEqual(
+        baseline.allowed,
+      );
+      expect({ delete: deletion.status(), approve: approval.status() }).toEqual(
+        baseline.denied,
+      );
+      await ordinary.getByLabel('Operation').selectOption('approve');
+      await form.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(form.getByRole('status')).toHaveText(
+        'Request failed; input retained. Retry to confirm the outcome.',
+      );
+      await form.screenshot({
+        path: testInfo.outputPath('ordinary-user-denied.png'),
+      });
+      const operation = key();
+      const input = {
+        values: {
+          id: operation.slice(14),
+          name: 'Native role replay',
+          assetTag: 'CUSTOM-ROLE',
+          statusChangedAt: new Date().toISOString(),
+        },
+      };
+      expect(
+        (await send('borrowings/createOne', input, operation)).status(),
+      ).toBe(200);
+      expect(
+        (
+          await api(
+            `users/${baseline.userId}`,
+            { roleScopes: { app: [] } },
+            'PATCH',
+          )
+        ).status(),
+      ).toBe(200);
+      expect(
+        (await send('borrowings/createOne', input, operation)).status(),
+      ).toBe(403);
+      expect(
+        (
+          await api(
+            `users/${baseline.userId}`,
+            { roleScopes: baseline.roleScopes },
+            'PATCH',
+          )
+        ).status(),
+      ).toBe(200);
+      const replay = await send('borrowings/createOne', input, operation);
+      expect(replay.status()).toBe(200);
+      expect(replay.headers()['idempotency-replayed']).toBe('true');
+      expect(
+        (
+          await (
+            await api(
+              'authorization/permissionSets/borrowing-clerk/assignments',
+            )
+          ).json()
+        ).data,
+      ).toEqual(baseline.assignments);
+      await testInfo.attach('Persistent business permissions', {
+        body: Buffer.from(
+          JSON.stringify({
+            rolePreserved: true,
+            assignmentsPreserved: true,
+            allowed: { read: read.status(), update: edit.status() },
+            denied: { delete: deletion.status(), approve: approval.status() },
+            revokedReplay: 403,
+            restoredReplay: 200,
+          }),
+        ),
+        contentType: 'application/json',
+      });
+    } finally {
+      await ordinary.close();
+    }
   });
 }

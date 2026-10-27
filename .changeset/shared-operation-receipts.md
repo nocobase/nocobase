@@ -6,6 +6,12 @@
 '@nocobase/app-template-examples': minor
 '@nocobase/app-skills': patch
 '@nocobase/app-plugin-repository-example': patch
+"@nocobase/app-plugin-users": minor
+"@nocobase/app-plugin-authorization": minor
+"@nocobase/app-plugin-authz-default-access": patch
+"@nocobase/app-plugin-file-example": patch
+"@nocobase/db": minor
+"@nocobase/db-testkit": patch
 ---
 
 Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.

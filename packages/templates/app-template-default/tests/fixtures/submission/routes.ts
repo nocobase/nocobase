@@ -1,3 +1,8 @@
+import {
+  authorizationToken,
+  grantBacked,
+  type AuthorizationEnv,
+} from '@nocobase/app-plugin-authorization';
 import type { Application } from '@nocobase/app-server/application';
 import {
   authenticationToken,
@@ -40,6 +45,12 @@ export default defineApiRoutes(async (app: Application) => {
   const database = app.container.resolve(databaseManagerToken);
   const connection = database.connection();
   const auth = app.container.resolve(authenticationToken);
+  const authorization = app.container.resolve(authorizationToken);
+  authorization.resourceTypes.add({
+    type: 'submissionBorrowing',
+    actions: ['read', 'create', 'update', 'delete', 'approve'],
+    authorize: grantBacked(),
+  });
   const runtime = new LifecycleRuntime({
     store: createRepositoryLifecycleStore(database),
   });
@@ -62,8 +73,32 @@ export default defineApiRoutes(async (app: Application) => {
       },
     }),
   );
-  const router = new Hono<AuthEnv>();
-  router.use('*', auth.required());
+  const router = new Hono<AuthEnv & AuthorizationEnv>();
+  router.use('*', auth.required(), authorization.middleware());
+  router.use('*', async (c, next) => {
+    const path = c.req.path;
+    const action = path.endsWith('/createOne')
+      ? 'create'
+      : path.endsWith('/updateOne')
+        ? 'update'
+        : path.endsWith('/deleteOne')
+          ? 'delete'
+          : path.endsWith('/approve')
+            ? 'approve'
+            : 'read';
+    await c.get('authz').require(
+      path.endsWith('/fixtureAccess')
+        ? {
+            resource: {
+              type: 'settings',
+              id: 'authorization.permission-sets',
+            },
+            action: 'update',
+          }
+        : { resource: { type: 'submissionBorrowing', id: '*' }, action },
+    );
+    await next();
+  });
   let revoked = false;
   router.use('*', async (c, next) => {
     if (revoked && !c.req.path.endsWith('/fixtureAccess'))

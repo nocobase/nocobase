@@ -15,10 +15,10 @@ import { apiRoutes } from '../server/routes/index.js';
  * `NOCOBASE_TEST_DB_DIALECT` selects. Call `destroy()` when the test is done:
  * on a database server it drops the database the fixture created.
  */
-export async function createFixture() {
+export async function createFixture(required = false) {
   const testDatabase = await createTestDatabase();
   try {
-    const fixture = await routeFixture(testDatabase.database);
+    const fixture = await routeFixture(testDatabase.database, required);
     return { ...fixture, destroy: () => testDatabase.destroy() };
   } catch (error) {
     await testDatabase.destroy();
@@ -26,7 +26,7 @@ export async function createFixture() {
   }
 }
 
-async function routeFixture(database: DatabaseManager) {
+async function routeFixture(database: DatabaseManager, required: boolean) {
   const migrator = database.createMigrator({
     directory: path.resolve(import.meta.dirname, '../database/migrations'),
     packageName: '@nocobase/app-plugin-repository-example',
@@ -42,7 +42,7 @@ async function routeFixture(database: DatabaseManager) {
   const container = new ServiceContainer();
   // Old test callers may omit keys while migrated browser demonstrations use the receipt protocol.
   container.instance(repositoryIdempotencyToken, {
-    required: false,
+    required,
     principal: () => 'tester',
   });
   container.instance(databaseManagerToken, database);

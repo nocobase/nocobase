@@ -1,4 +1,5 @@
 import { createOperationKey } from '@nocobase/api-client';
+import { deriveSubmissionKey } from '@nocobase/app-client';
 import { createUuid } from '@nocobase/app-client';
 import type { ApiClient, RemoteRepository } from '@nocobase/app-client';
 import type { RemoteSelectAst } from '@nocobase/api-client';
@@ -163,6 +164,7 @@ export async function loadRelationProjectState(
 export async function runRelationMutationScenario(
   api: ApiClient,
   requestedRunId: string = createUuid(),
+  operationKey: string = createOperationKey(),
 ): Promise<RelationMutationScenario> {
   const runId = requestedRunId.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36);
   if (!runId) throw new Error('A relation mutation run ID is required.');
@@ -194,7 +196,7 @@ export async function runRelationMutationScenario(
   };
   const connectTaskResult = await tasks.createOne({
     ...connectTaskInput,
-    idempotencyKey: createOperationKey(),
+    idempotencyKey: deriveSubmissionKey(operationKey, 'prepare'),
   });
   calls.push({
     repository: relationRepositories.tasks,
@@ -247,7 +249,7 @@ export async function runRelationMutationScenario(
   };
   const createResult = await projects.createOne({
     ...createInput,
-    idempotencyKey: createOperationKey(),
+    idempotencyKey: deriveSubmissionKey(operationKey, 'mutate'),
   });
   calls.push({
     repository: relationRepositories.projects,
@@ -304,7 +306,7 @@ export async function runRelationMutationScenario(
   };
   const updateResult = await projects.updateOne({
     ...updateInput,
-    idempotencyKey: createOperationKey(),
+    idempotencyKey: deriveSubmissionKey(operationKey, 'attach'),
   });
   calls.push({
     repository: relationRepositories.projects,
@@ -327,7 +329,7 @@ export async function runRelationMutationScenario(
   };
   const setResult = await projects.updateOne({
     ...setInput,
-    idempotencyKey: createOperationKey(),
+    idempotencyKey: deriveSubmissionKey(operationKey, 'delete'),
   });
   calls.push({
     repository: relationRepositories.projects,

@@ -17,6 +17,7 @@ export interface SubmissionOptions {
 interface PendingOperation {
   key: string;
   digest: string;
+  snapshot?: unknown;
 }
 export class SubmissionTimeoutError extends Error {
   constructor() {
@@ -92,6 +93,7 @@ export class SubmissionController {
     }
   }
   readonly getSnapshot = (): boolean => this.busy;
+  readonly getPendingSnapshot = (): boolean => this.pending !== undefined;
   readonly subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -103,7 +105,13 @@ export class SubmissionController {
     if (!this.storageKey || !this.storage) return;
     try {
       if (this.pending)
-        this.storage.setItem(this.storageKey, JSON.stringify(this.pending));
+        this.storage.setItem(
+          this.storageKey,
+          JSON.stringify({
+            key: this.pending.key,
+            digest: this.pending.digest,
+          }),
+        );
       else this.storage.removeItem(this.storageKey);
     } catch {
       /* A blocked session store does not prevent submitting. */
@@ -120,9 +128,14 @@ export class SubmissionController {
     this.pending = undefined;
     this.save();
   }
-  async run<T>(
-    input: unknown,
-    execute: (key: string, signal: AbortSignal) => Promise<T>,
+  async run<T, I = unknown>(
+    input: I,
+    execute: (
+      key: string,
+      signal: AbortSignal,
+      snapshot: I,
+      recovering: boolean,
+    ) => Promise<T>,
   ): Promise<T | undefined> {
     if (this.busy) return undefined;
     const recovering = this.pending !== undefined;
@@ -135,9 +148,15 @@ export class SubmissionController {
       if (this.pending && this.pending.digest !== digest)
         throw new PendingSubmissionError();
       this.pending ??= { key: createOperationKey(), digest };
+      this.pending.snapshot ??= structuredClone(input);
       this.save();
       const result = await Promise.race([
-        execute(this.pending.key, abort.signal),
+        execute(
+          this.pending.key,
+          abort.signal,
+          structuredClone(this.pending.snapshot) as I,
+          recovering,
+        ),
         new Promise<never>((_resolve, reject) => {
           timer = setTimeout(() => {
             abort.abort();
@@ -175,6 +194,7 @@ export class SubmissionController {
 
 export interface Submission {
   readonly submitting: boolean;
+  readonly pending: boolean;
   readonly run: SubmissionController['run'];
   readonly acknowledgeOutcome: SubmissionController['acknowledgeOutcome'];
 }
@@ -199,9 +219,21 @@ export function useSubmission(options: SubmissionOptions = {}): Submission {
     controller.getSnapshot,
     controller.getSnapshot,
   );
+  const pending = useSyncExternalStore(
+    controller.subscribe,
+    controller.getPendingSnapshot,
+    controller.getPendingSnapshot,
+  );
   return {
     submitting,
+    pending,
     run: controller.run.bind(controller),
     acknowledgeOutcome: controller.acknowledgeOutcome.bind(controller),
   };
+}
+
+/** Stable sub-operation keys for a retryable group; derive labels from fixed step positions, never mutable state. */
+export function deriveSubmissionKey(key: string, label: string): string {
+  const hex = fingerprint([key, label]);
+  return `${key.slice(0, 13)}.${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }

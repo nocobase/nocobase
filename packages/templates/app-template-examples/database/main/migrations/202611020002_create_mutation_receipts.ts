@@ -1,7 +1,7 @@
 import { defineMigration, type MigrationDefinition } from '@nocobase/db';
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202610270001_create_mutation_receipts',
+  name: '202611020002_create_mutation_receipts',
   async up({ builder }) {
     await builder.createCollection('mutationReceipts', (collection) => {
       collection.string('id', { length: 64 }).notNull();

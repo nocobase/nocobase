@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '@nocobase/api-client';
 import {
   SubmissionController,
+  deriveSubmissionKey,
   PendingSubmissionError,
   SubmissionTimeoutError,
 } from '../src/submission.js';
@@ -135,5 +136,32 @@ describe('shared form submission', () => {
     await expect(
       controller.run({ value: 'changed' }, async () => 'bad'),
     ).rejects.toBeInstanceOf(PendingSubmissionError);
+  });
+});
+
+it('retains an isolated memory snapshot and deterministic group keys without storing sensitive inputs', async () => {
+  const controller = new SubmissionController();
+  const input = { nested: { value: 'original' } };
+  let originalKey = '';
+  await expect(
+    controller.run(input, async (key, _signal, snapshot) => {
+      originalKey = key;
+      snapshot.nested.value = 'changed by execution';
+      expect(input.nested.value).toBe('original');
+      throw new TypeError('Response lost');
+    }),
+  ).rejects.toThrow('Response lost');
+  await controller.run(input, async (key, _signal, snapshot) => {
+    expect(key).toBe(originalKey);
+    expect(snapshot).toEqual(input);
+    expect(deriveSubmissionKey(key, 'step-1')).toBe(
+      deriveSubmissionKey(originalKey, 'step-1'),
+    );
+    expect(deriveSubmissionKey(key, 'step-1')).not.toBe(
+      deriveSubmissionKey(key, 'step-2'),
+    );
+    expect(deriveSubmissionKey(key, 'step-1')).toMatch(
+      /^\d{13}\.[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-8[a-f0-9]{3}-[a-f0-9]{12}$/,
+    );
   });
 });

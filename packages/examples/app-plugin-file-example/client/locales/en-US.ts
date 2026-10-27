@@ -1,4 +1,5 @@
 const messages: Record<string, string> = {
+  retrySubmission: 'Retry original operation',
   officePreviewTitle: 'Local Office preview',
   officePreviewDescription:
     'Upload a DOCX, XLSX or PPTX file below, then select Preview. Documents render in your browser without Office Online or an external preview service. Order attachments use the same preview.',

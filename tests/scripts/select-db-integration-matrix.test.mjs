@@ -209,8 +209,8 @@ test('receipt writes select PostgreSQL and MySQL concurrency checks without char
     'packages/app/app-server/src/router/idempotency.ts',
     'packages/app/app-server/src/router/repository-routes.ts',
     'packages/app/app-server/tests/idempotency.test.ts',
-    'packages/templates/app-template-default/database/main/migrations/202610270001_create_mutation_receipts.ts',
-    'packages/templates/app-template-examples/database/analytics/migrations/202610270001_create_mutation_receipts.ts',
+    'packages/templates/app-template-default/database/main/migrations/202611020002_create_mutation_receipts.ts',
+    'packages/templates/app-template-examples/database/analytics/migrations/202611020002_create_mutation_receipts.ts',
   ])
     assert.deepEqual(selectPackageSuites([file]), receiptConcurrency, file);
   assert.deepEqual(
