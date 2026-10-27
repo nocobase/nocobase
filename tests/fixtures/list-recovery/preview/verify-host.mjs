@@ -100,6 +100,14 @@ try {
     const count = [121, 120][index];
     const base = `${origin}${prefix}/acceptance/${id}/`;
     expect((await context.request.get(`${base}api/loans`)).status()).toBe(401);
+    expect(
+      (
+        await context.request.post(`${base}api/loans/reset`, {
+          data: { count: 1 },
+          headers: { origin },
+        })
+      ).status(),
+    ).toBe(401);
     await page.goto(`${base}login`);
     await page.getByLabel('Username or email').fill('acceptance');
     await page.getByLabel('Password', { exact: true }).fill(password);
@@ -150,6 +158,14 @@ try {
       resetUI: 'passed',
       websocket: 'ping/pong passed',
     });
+  }
+  // Resetting the second sample must preserve the first sample's distinct data.
+  for (const { id, count } of results) {
+    const response = await context.request.get(
+      `${origin}${prefix}/acceptance/${id}/api/loans?status=open`,
+    );
+    expect(response.status()).toBe(200);
+    expect((await response.json()).meta.total).toBe(count);
   }
   // Deliberately replay each native cookie at the other application's API.
   for (const id of sampleIds) {
@@ -243,6 +259,8 @@ try {
         rssBytes: process.memoryUsage().rss,
         logoutIsolation: 'passed',
         crossSampleSessionRejection: 'passed',
+        resetIsolation: 'passed',
+        unauthenticatedResetRejection: 'passed',
         results,
       },
       null,
