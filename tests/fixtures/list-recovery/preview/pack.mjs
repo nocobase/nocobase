@@ -74,7 +74,7 @@ export async function packSamples(carrierDir, manifestFile) {
       recursive: true,
       verbatimSymlinks: true,
       filter: (file) =>
-        !['.env', '.env.local', 'config.yml'].includes(
+        !['.env', '.env.local', 'config.yml', '.npmrc'].includes(
           path.relative(dist, file),
         ),
     });

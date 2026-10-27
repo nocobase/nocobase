@@ -105,7 +105,7 @@ test('embedded samples receive isolated paths and lifecycle disposal', async () 
     await mkdir(childServer, { recursive: true });
     await writeFile(
       path.join(childServer, 'embedded.js'),
-      `export async function createServer(scope) { scope.registerDisposer('child', () => { globalThis.__previewDisposed.push(scope.id); }); return {fetch: request => Response.json({id:scope.id,basePath:scope.basePath,dataDir:scope.dataDir,rootDir:scope.rootDir,db:scope.env.DB_FILENAME || null,url:request.url})}; }`,
+      `export async function createServer(scope) { scope.registerDisposer('child', () => { globalThis.__previewDisposed.push(scope.id); }); return {websocket: (request, transport) => ({id:scope.id,url:request.url,transport}),fetch: request => Response.json({id:scope.id,basePath:scope.basePath,dataDir:scope.dataDir,rootDir:scope.rootDir,db:scope.env.DB_FILENAME || null,url:request.url})}; }`,
     );
   }
   await writeFile(
@@ -142,6 +142,14 @@ test('embedded samples receive isolated paths and lifecycle disposal', async () 
       assert.equal(data.basePath, `/preview/acceptance/${id}`);
       assert.equal(data.db, null);
       assert.equal(data.url, 'https://preview.test/api/loans');
+      const transport = { upgrade: 'fixture-transport' };
+      const socket = await instance.websocket(
+        new Request(`https://preview.test/acceptance/${id}/ws?token=fixture`),
+        transport,
+      );
+      assert.equal(socket.id, `preview-${id}`);
+      assert.equal(socket.url, 'https://preview.test/ws?token=fixture');
+      assert.equal(socket.transport, transport);
       locations.add(data.dataDir);
     }
     assert.equal(locations.size, 4);

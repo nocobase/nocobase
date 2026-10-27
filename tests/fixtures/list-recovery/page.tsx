@@ -42,6 +42,28 @@ export default function Loans() {
       if (name !== 'page') next.set('page', '1');
       return next;
     });
+  const [resetCount, setResetCount] = useState('121');
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const resetSample = async () => {
+    setResetting(true);
+    setResetError('');
+    try {
+      await api.request({
+        path: 'loans/reset',
+        method: 'POST',
+        json: { count: Number(resetCount) },
+      });
+      setSelected([]);
+      request.reload();
+    } catch {
+      setResetError(
+        'Reset failed. Your permissions may not allow resetting this sample.',
+      );
+    } finally {
+      setResetting(false);
+    }
+  };
   const [failed, setFailed] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   // UPGRADE_TABLE
@@ -177,6 +199,29 @@ export default function Loans() {
             </Button>
           ))}
         </div>
+        <div className='flex items-end gap-4'>
+          <label>
+            Sample records
+            <select
+              aria-label='Sample records'
+              value={resetCount}
+              onChange={(event) => setResetCount(event.target.value)}
+              className='block rounded border px-3 py-2'
+            >
+              <option value='121'>121 records — valid source page</option>
+              <option value='120'>120 records — last matching page</option>
+              <option value='1'>1 record — empty after deletion</option>
+            </select>
+          </label>
+          <Button disabled={resetting} onClick={() => void resetSample()}>
+            Reset this sample
+          </Button>
+          <p role='status'>{resetError}</p>
+        </div>
+        <p>
+          Reset replaces only this sample's synthetic loans. Other samples,
+          users and permissions are preserved.
+        </p>
         <p data-testid='query'>{location.search}</p>
         <p data-testid='total'>
           Matching total: {request.data?.meta.total ?? 'Loading'}
