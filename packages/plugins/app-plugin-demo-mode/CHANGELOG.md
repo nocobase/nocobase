@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.3
+
+### Patch Changes
+
+- df09e63: Ship plugin development guidance with the App's installed Skills, reserve its existing name for @nocobase/app-skills, and guide upgrades through verifying the project replacement before retiring old global installations. Update application and plugin entry points to use the version-matched project Skill.
+
+  Synchronize project Skills as real copies, exclude dependencies installed inside executable examples, and preserve the targets of older project links during migration.
+
+- Updated dependencies [82aa791]
+- Updated dependencies [df09e63]
+  - @nocobase/app-cli@1.0.0-beta.29
+
 ## 0.2.0-beta.2
 
 ### Patch Changes
