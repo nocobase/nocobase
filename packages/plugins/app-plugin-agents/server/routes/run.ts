@@ -171,7 +171,9 @@ export function createRunRoutes(services: Agents): Hono<RunEnv> {
         command: 'conversation ask-owner',
         args: ['question'],
         action: RUN_SELF_ACTION,
-        examples: ['conversation ask-owner "Merge the two duplicate issues?"'],
+        examples: [
+          'conversation ask-owner "Proceed with the plan?" --issue PM-721',
+        ],
       }),
     }),
     apiValidator(
@@ -182,6 +184,10 @@ export function createRunRoutes(services: Agents): Hono<RunEnv> {
           .min(1)
           .max(500)
           .meta({ description: 'What the owner should answer.' }),
+        issue: z.string().trim().min(1).max(255).optional().meta({
+          description:
+            'The identifier of the task this question concerns, for example PM-721.',
+        }),
       }),
     ),
     async (context) => {
@@ -198,6 +204,7 @@ export function createRunRoutes(services: Agents): Hono<RunEnv> {
       const conversation = await services.conversations.askOwnerFromRun(
         target,
         context.req.valid('json').question,
+        context.req.valid('json').issue,
       );
       return context.json({
         data: { id: conversation.id, title: conversation.title },
