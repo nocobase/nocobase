@@ -1910,3 +1910,288 @@ function withoutTurns<
     };
   });
 }
+
+async function sourceStream() {
+  const f = await fixture({ outputFeature: true });
+  await f.agent.send([{ role: 'user', content: 'Keep source positions' }]);
+  const reader = (await f.agent.receive())!.getReader();
+  const chunks: NativeUIChunk[] = [];
+  let streamError: unknown;
+  const reading = (async () => {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) return;
+      chunks.push(next.value);
+    }
+  })().catch((error) => {
+    streamError = error;
+  });
+  const [payload] = await claim(h, f.runner);
+  h.clock.advance(100);
+  await f.report(payload.run.id, 'start', {
+    workDir: '/work/sources',
+    adapter: { kind: 'claude' },
+    acceptsInput: true,
+  });
+  const metadata = () =>
+    chunks.flatMap((chunk) =>
+      chunk.type === 'message-metadata' && chunk.messageMetadata?.sourceRecords
+        ? [chunk.messageMetadata]
+        : [],
+    );
+  const source = (partId: string) =>
+    metadata()
+      .at(-1)
+      ?.sourceRecords?.find((part) => part.partId === partId);
+  const event = async (
+    seq: number,
+    blockId: string,
+    content: string,
+    phase: 'delta' | 'end',
+    type = 'text',
+  ) => {
+    expect(
+      (
+        await f.report(payload.run.id, 'events', {
+          events: [
+            {
+              seq,
+              at: h.clock.now().toISOString(),
+              type,
+              content,
+              meta: { output: { blockId, phase } },
+            },
+          ],
+        })
+      ).status,
+    ).toBe(200);
+  };
+  const notice = async (title: string) => {
+    h.clock.advance(100);
+    await h.services.tx.run((unit) =>
+      h.services.conversations.deliver(unit, f.agent.sessionId, {
+        notice: { code: 'news', type: 'fixture', title },
+        input: {
+          type: 'signal',
+          actor: { kind: 'user', id: 'alice', name: 'Alice' },
+          text: 'No new run',
+        },
+      }),
+    );
+  };
+  const finish = async () => {
+    await f.report(payload.run.id, 'complete', {
+      summary: 'Done',
+      handledInputIds: payload.inputs.map((input) => input.id),
+    });
+    await reading;
+    expect(streamError).toBeUndefined();
+  };
+  return {
+    ...f,
+    payload,
+    chunks,
+    reading,
+    metadata,
+    source,
+    event,
+    notice,
+    finish,
+  };
+}
+
+it('preserves saved provenance and unsaved anchors across parts, tools, phases and cursor refreshes', async () => {
+  const f = await sourceStream();
+  await f.event(f.payload.run.firstSeq, 'a', 'Answer A.', 'end');
+  await vi.waitFor(() => {
+    expect(f.source('output:a')).toBeDefined();
+    expect(f.source('output:a')!.recordId).not.toBe('output:a');
+  });
+  const savedA = { ...f.source('output:a')! };
+  expect(savedA.partIndex).toBe(1); // The SDK's hidden phase already occupies index zero.
+  const phase = { ...f.source('phase')! };
+  await f.notice('First card');
+  const body = 'Answer B. '.repeat(20);
+  h.clock.advance(100);
+  await f.event(1, 'b', body, 'delta');
+  await vi.waitFor(() => expect(f.source('output:b')).toBeDefined());
+  const anchorB = { ...f.source('output:b')! };
+  const suffix = 'More B. '.repeat(20);
+  h.clock.advance(100);
+  await f.event(2, 'b', suffix, 'delta');
+  await f.event(
+    3,
+    'thought',
+    'A useful thought. '.repeat(20),
+    'delta',
+    'thinking',
+  );
+  await vi.waitFor(() => expect(f.source('output:thought')).toBeDefined());
+  const anchorThought = { ...f.source('output:thought')! };
+  h.clock.advance(100);
+  expect(
+    (
+      await f.report(f.payload.run.id, 'events', {
+        events: [
+          {
+            seq: f.payload.run.firstSeq + 1,
+            at: h.clock.now().toISOString(),
+            type: 'toolUse',
+            tool: 'Read',
+            input: { file_path: 'example.ts' },
+            meta: { toolUseId: 'call' },
+          },
+          {
+            seq: f.payload.run.firstSeq + 2,
+            at: h.clock.now().toISOString(),
+            type: 'toolResult',
+            tool: 'Read',
+            output: 'Read complete',
+            meta: { toolUseId: 'call', isError: false },
+          },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  await vi.waitFor(() =>
+    expect(
+      f.chunks.some((chunk) => chunk.type === 'tool-output-available'),
+    ).toBe(true),
+  );
+  await f.notice('Later card');
+  await vi.waitFor(() =>
+    expect(
+      f
+        .metadata()
+        .at(-1)
+        ?.sourceRecords?.some((source) => source.partId === 'tool:call'),
+    ).toBe(true),
+  );
+  expect(f.source('output:b')).toEqual(anchorB);
+  expect(f.source('output:thought')).toEqual(anchorThought);
+  expect(f.source('phase')).toEqual(phase);
+  expect(f.source('output:a')).toEqual(savedA);
+  const count = f.metadata().length;
+  h.clock.advance(100);
+  await f.event(4, 'b', 'Final B.', 'delta');
+  await vi.waitFor(() => expect(f.metadata().length).toBeGreaterThan(count));
+  expect(f.source('output:b')).toEqual(anchorB);
+  expect(f.source('output:thought')).toEqual(anchorThought);
+  await f.event(
+    f.payload.run.firstSeq + 3,
+    'b',
+    body + suffix + 'Final B.',
+    'end',
+  );
+  await f.event(
+    f.payload.run.firstSeq + 4,
+    'thought',
+    'A useful thought. '.repeat(20),
+    'end',
+    'thinking',
+  );
+  await f.finish();
+  for (const metadata of f.metadata()) {
+    const source = metadata.sourceRecords?.find(
+      (source) => source.partId === 'output:a',
+    );
+    if (source) expect(source).toEqual(savedA);
+    const phaseSource = metadata.sourceRecords?.find(
+      (source) => source.partId === 'phase',
+    );
+    if (phaseSource) expect(phaseSource).toEqual(phase);
+  }
+  expect(
+    f.chunks
+      .filter((chunk) => chunk.type === 'text-delta' && chunk.id === 'output:b')
+      .map((chunk) => chunk.delta)
+      .join(''),
+  ).toBe(body + suffix + 'Final B.');
+  expect(
+    f.chunks.filter(
+      (chunk) => chunk.type === 'text-end' && chunk.id === 'output:b',
+    ),
+  ).toHaveLength(1);
+  const history = (await f.agent.history()).find(
+    (message) => message.role === 'assistant',
+  )!;
+  for (const id of ['output:a', 'output:b', 'output:thought']) {
+    const canonical = history.metadata!.sourceRecords!.find(
+      (source) => source.partId === id,
+    )!;
+    expect(f.source(id)).toEqual({
+      ...canonical,
+      partIndex: f.source(id)!.partIndex,
+    });
+  }
+});
+
+it('retains an unsaved anchor at an equal-sequence later card and uses real order once saved', async () => {
+  const f = await sourceStream();
+  await f.event(f.payload.run.firstSeq, 'a', 'Answer A.', 'end');
+  await vi.waitFor(() => {
+    expect(f.source('output:a')).toBeDefined();
+    expect(f.source('output:a')!.recordId).not.toBe('output:a');
+  });
+  h.clock.advance(100);
+  const body = 'Answer B. '.repeat(20);
+  await f.event(1, 'b', body, 'delta');
+  await vi.waitFor(() => expect(f.source('output:b')).toBeDefined());
+  const anchorB = { ...f.source('output:b')! };
+  await f.notice('Later card');
+  const card = (await f.agent.history()).find(
+    (message) =>
+      message.role === 'system' &&
+      message.parts.some(
+        (part) =>
+          part.type === 'data-notice' && part.data.title === 'Later card',
+      ),
+  )!;
+  expect(card.metadata!.seq).toBe(anchorB.seq);
+  expect(card.metadata!.createdAt > anchorB.createdAt!).toBe(true);
+  const before = f.metadata().length;
+  h.clock.advance(100);
+  await f.event(2, 'b', 'Suffix B.', 'delta');
+  await vi.waitFor(() => expect(f.metadata().length).toBeGreaterThan(before));
+  expect(f.source('output:b')).toEqual(anchorB);
+  const savedA = f.source('output:a')!;
+  const live = {
+    id: 'reply',
+    role: 'assistant' as const,
+    parts: [
+      { type: 'text' as const, text: 'A' },
+      { type: 'text' as const, text: body },
+    ],
+    metadata: {
+      ...card.metadata!,
+      sourceRecords: [
+        { ...savedA, partIndex: 0 },
+        { ...anchorB, partIndex: 1 },
+      ],
+    },
+  };
+  for (const messages of [
+    [card, live],
+    [live, card],
+  ])
+    expect(
+      chatMessageSegments(messages).map((segment) => segment.message.id),
+    ).toEqual(['reply', card.id]);
+  await f.event(f.payload.run.firstSeq + 1, 'b', body + 'Suffix B.', 'end');
+  await f.finish();
+  expect(f.source('output:b')!.seq).toBeGreaterThan(card.metadata!.seq!);
+  expect(f.source('output:b')!.recordId).not.toBe(anchorB.recordId);
+  const saved = {
+    ...live,
+    metadata: {
+      ...live.metadata,
+      sourceRecords: [
+        { ...savedA, partIndex: 0 },
+        { ...f.source('output:b')!, partIndex: 1 },
+      ],
+    },
+  };
+  expect(
+    chatMessageSegments([saved, card]).map((segment) => segment.message.id),
+  ).toEqual(['reply', card.id, 'reply']);
+});

@@ -293,9 +293,49 @@ it.each(['codex', 'claude'] as const)(
     const answers = chatMessageSegments(history).filter(
       (segment) => segment.message.role === 'assistant',
     );
-    expect(answers).toHaveLength(1);
-    // Its two blocks, then the turn's footer.
-    expect(answers[0].partIndexes).toEqual([0, 1, 2]);
+    const segments = chatMessageSegments(history);
+    const logical = history.filter((message) => message.role === 'assistant');
+    expect(logical).toHaveLength(1);
+    expect(answers).toHaveLength(2);
+    expect(answers.every((segment) => segment.message === logical[0])).toBe(
+      true,
+    );
+    // Stop is saved before the worker's truncated body, so it divides this response.
+    expect(
+      segments
+        .filter((segment) => segment.message.role !== 'user')
+        .map((segment) => segment.message.role),
+    ).toEqual(['assistant', 'system', 'assistant']);
+    const stopped = segments.find(
+      (segment) => segment.message.role === 'system',
+    )!;
+    expect(stopped.message.parts).toMatchObject([
+      {
+        type: 'data-business',
+        data: { kind: 'runCancelled', payload: { runId: f.payload.run.id } },
+      },
+    ]);
+    expect(answers[0].seq).toBeLessThan(stopped.seq!);
+    expect(stopped.seq).toBeLessThan(answers[1].seq!);
+    expect(answers.map((segment) => segment.partIndexes)).toEqual([
+      [0],
+      [1, 2],
+    ]);
+    expect(answers.flatMap((segment) => segment.partIndexes)).toEqual([
+      0, 1, 2,
+    ]);
+    expect(
+      answers
+        .flatMap((segment) =>
+          segment.partIndexes.map((index) => segment.message.parts[index]),
+        )
+        .filter((part) => part.type === 'data-turn'),
+    ).toEqual([
+      expect.objectContaining({
+        type: 'data-turn',
+        data: expect.objectContaining({ outcome: 'cancelled' }),
+      }),
+    ]);
     const savedPage = await reloaded.messages!({ limit: 1 });
     expect(
       chatMessageSegments(savedPage.items).filter(

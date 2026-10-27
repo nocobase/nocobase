@@ -248,19 +248,23 @@ export function chatMessageSegments(
         // messages are ordered, so an intervening card or user message remains between its replies.
         const visible = new Set(partIndexes);
         const ordered = [...sources]
-          .sort((a, b) => a.seq - b.seq)
+          .sort((a, b) => a.seq - b.seq || a.partIndex - b.partIndex)
           .filter((source) => visible.has(source.partIndex));
         const groups = new Map<
           string,
-          { indexes: number[]; seq: number; at: string }
+          { indexes: number[]; seq: number; at: string; partId: string }
         >();
         const placed = new Set<number>();
+        let at = message.metadata?.createdAt ?? '';
         for (const source of ordered) {
+          // Undated footers follow the preceding source instead of the response's opening time.
+          at = source.createdAt ?? at;
           if (placed.has(source.partIndex)) continue;
           const group = groups.get(source.recordId) ?? {
             indexes: [],
+            partId: source.partId,
             seq: source.seq,
-            at: source.createdAt ?? message.metadata?.createdAt ?? '',
+            at,
           };
           group.indexes.push(source.partIndex);
           groups.set(source.recordId, group);
@@ -283,8 +287,8 @@ export function chatMessageSegments(
         entries
           .at(-1)![1]
           .indexes.push(...partIndexes.filter((index) => !placed.has(index)));
-        return entries.map(([recordId, group], index) => ({
-          key: index === 0 ? message.id : `${message.id}:${recordId}`,
+        return entries.map(([, group], index) => ({
+          key: index === 0 ? message.id : `${message.id}:${group.partId}`,
           message,
           partIndexes: group.indexes,
           seq: group.seq,
@@ -320,10 +324,13 @@ export function chatMessageSegments(
         last: index === entries.length - 1,
       }));
     })
-    .sort((a, b) =>
-      a.seq !== undefined && b.seq !== undefined
-        ? a.seq - b.seq
-        : a.at.localeCompare(b.at),
+    .sort(
+      (a, b) =>
+        (a.seq !== undefined && b.seq !== undefined ? a.seq - b.seq : 0) ||
+        a.at.localeCompare(b.at) ||
+        a.message.id.localeCompare(b.message.id) ||
+        (a.partIndexes[0] ?? 0) - (b.partIndexes[0] ?? 0) ||
+        a.key.localeCompare(b.key),
     );
   const merged: (Omit<ChatMessageSegment, 'partIndexes'> & {
     partIndexes: number[];

@@ -1262,7 +1262,7 @@ it.each(['en-US', 'zh-CN'])(
   },
 );
 
-it('uses formal extensions with one assistant bubble, independent notices, revisions and complete history pages', async () => {
+it('uses formal extensions with one SDK response, interleaved display segments, revisions and complete history pages', async () => {
   const at = (second: number) => `2026-01-01T00:00:0${second}Z`;
   const reply: AppUIMessage = {
     id: 'logical-run',
@@ -1411,18 +1411,15 @@ it('uses formal extensions with one assistant bubble, independent notices, revis
             node.getAttribute('data-message-id') ??
             node.getAttribute('data-chat-item'),
         ),
-    ).toEqual(['logical-run', 'plan-1', 'independent']);
-    expect(
-      log.querySelectorAll('[data-message-id="logical-run"]'),
-    ).toHaveLength(1);
-    const bubble = log.querySelector(
+    ).toEqual(['logical-run', 'plan-1', 'independent', 'logical-run']);
+    const bubbles = log.querySelectorAll<HTMLElement>(
       '[data-message-id="logical-run"]',
-    )! as HTMLElement;
-    expect(within(bubble).getByText(/First block:/)).toBeVisible();
-    expect(within(bubble).getByText('Second block: PM-3')).toBeVisible();
-    expect(bubble.textContent).toMatch(
-      /First block:[\s\S]*Second block: PM-3/u,
     );
+    expect(bubbles).toHaveLength(2);
+    expect(within(bubbles[0]).getByText(/First block:/)).toBeVisible();
+    expect(within(bubbles[0]).queryByText('Second block: PM-3')).toBeNull();
+    expect(within(bubbles[1]).getByText('Second block: PM-3')).toBeVisible();
+    expect(within(bubbles[1]).queryByText(/First block:/)).toBeNull();
     expect(within(log).getAllByText('Second block: PM-3')).toHaveLength(1);
     expect(within(log).getAllByText(/First block:/)).toHaveLength(1);
     expect(within(log).getAllByText('Delegation card')).toHaveLength(1);

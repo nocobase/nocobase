@@ -616,3 +616,198 @@ it('keeps segment anchors and the original message as parts grow and interleaved
     chatMessageSegments([canonical, card]).map((segment) => segment.key),
   ).toEqual(segments.map((segment) => segment.key));
 });
+
+it('anchors a continuation to its part ID when a preview becomes a saved source', () => {
+  const reply: AppUIMessage = {
+    id: 'runner:response',
+    role: 'assistant',
+    parts: [
+      { type: 'text', text: 'A', state: 'done' },
+      { type: 'reasoning', text: 'Thought B', state: 'streaming' },
+      { type: 'text', text: 'B', state: 'streaming' },
+    ],
+    metadata: {
+      ...metadata,
+      sourceRecords: [
+        { recordId: 'saved-a', partId: 'output:a', partIndex: 0, seq: 2 },
+        {
+          recordId: 'output:thought',
+          partId: 'output:thought',
+          partIndex: 1,
+          seq: 4,
+        },
+        { recordId: 'output:b', partId: 'output:b', partIndex: 2, seq: 4 },
+      ],
+    },
+  };
+  const card: AppUIMessage = {
+    id: 'card',
+    role: 'system',
+    metadata: { ...metadata, seq: 3 },
+    parts: [
+      { type: 'data-notice', data: { type: 'news', title: 'Task update' } },
+    ],
+  };
+  const keys = chatMessageSegments([reply, card]).map((segment) => segment.key);
+  const saved: AppUIMessage = {
+    ...reply,
+    metadata: {
+      ...reply.metadata!,
+      sourceRecords: reply.metadata!.sourceRecords!.map((source) => ({
+        ...source,
+        recordId: `saved-${source.partId}`,
+      })),
+    },
+  };
+  expect(
+    chatMessageSegments([saved, card]).map((segment) => segment.key),
+  ).toEqual(keys);
+  expect(keys).toEqual([
+    'runner:response',
+    'card',
+    'runner:response:output:thought',
+  ]);
+});
+
+it.each([true, false])(
+  'orders equal-sequence sources by their actual timestamps (preview first=%s)',
+  (previewFirst) => {
+    const reply: AppUIMessage = {
+      id: 'response',
+      role: 'assistant',
+      parts: [
+        { type: 'text', text: 'A' },
+        { type: 'text', text: 'B' },
+      ],
+      metadata: {
+        ...metadata,
+        sourceRecords: [
+          {
+            recordId: 'a',
+            partId: 'a',
+            partIndex: 0,
+            seq: 2,
+            createdAt: '2026-01-01T00:00:00Z',
+          },
+          {
+            recordId: 'output:b',
+            partId: 'output:b',
+            partIndex: 1,
+            seq: 3,
+            createdAt: `2026-01-01T00:00:0${previewFirst ? 1 : 3}Z`,
+          },
+        ],
+      },
+    };
+    const card: AppUIMessage = {
+      id: 'card',
+      role: 'system',
+      metadata: { ...metadata, seq: 3, createdAt: '2026-01-01T00:00:02Z' },
+      parts: [
+        { type: 'data-notice', data: { type: 'news', title: 'Task update' } },
+      ],
+    };
+    const expected = previewFirst
+      ? [
+          ['response', [0, 1]],
+          ['card', [0]],
+        ]
+      : [
+          ['response', [0]],
+          ['card', [0]],
+          ['response', [1]],
+        ];
+    for (const messages of [
+      [reply, card],
+      [card, reply],
+    ])
+      expect(
+        chatMessageSegments(messages).map((segment) => [
+          segment.message.id,
+          segment.partIndexes,
+        ]),
+      ).toEqual(expected);
+  },
+);
+
+it('uses stable segment identities for otherwise indistinguishable source positions', () => {
+  const reply: AppUIMessage = {
+    id: 'response',
+    role: 'assistant',
+    parts: [
+      { type: 'text', text: 'A' },
+      { type: 'text', text: 'B' },
+    ],
+    metadata: {
+      ...metadata,
+      sourceRecords: [
+        { recordId: 'a', partId: 'a', partIndex: 0, seq: 2 },
+        {
+          recordId: 'output:b',
+          partId: 'output:b',
+          partIndex: 1,
+          seq: 3,
+          createdAt: metadata.createdAt,
+        },
+      ],
+    },
+  };
+  const card: AppUIMessage = {
+    id: 'card',
+    role: 'system',
+    metadata: { ...metadata, seq: 3 },
+    parts: [
+      { type: 'data-notice', data: { type: 'news', title: 'Task update' } },
+    ],
+  };
+  const keys = chatMessageSegments([reply, card]).map((segment) => segment.key);
+  expect(keys).toEqual(['response', 'card', 'response:output:b']);
+  expect(
+    chatMessageSegments([card, reply]).map((segment) => segment.key),
+  ).toEqual(keys);
+});
+
+it('keeps an undated turn footer after its body in the same continuation', () => {
+  const reply: AppUIMessage = {
+    id: 'response',
+    role: 'assistant',
+    parts: [
+      { type: 'text', text: 'Opening' },
+      { type: 'text', text: 'Partial body' },
+      { type: 'data-turn', data: { outcome: 'cancelled' } },
+    ],
+    metadata: {
+      ...metadata,
+      sourceRecords: [
+        {
+          recordId: 'a',
+          partId: 'a',
+          partIndex: 0,
+          seq: 2,
+          createdAt: '2026-01-01T00:00:01Z',
+        },
+        {
+          recordId: 'b',
+          partId: 'b',
+          partIndex: 1,
+          seq: 4,
+          createdAt: '2026-01-01T00:00:03Z',
+        },
+        { recordId: 'turn', partId: 'turn', partIndex: 2, seq: 4 },
+      ],
+    },
+  };
+  const card: AppUIMessage = {
+    id: 'card',
+    role: 'system',
+    metadata: { ...metadata, seq: 3, createdAt: '2026-01-01T00:00:02Z' },
+    parts: [{ type: 'data-notice', data: { type: 'news', title: 'Stopped' } }],
+  };
+  expect(
+    chatMessageSegments([reply, card]).map((s) => [s.key, s.partIndexes]),
+  ).toEqual([
+    ['response', [0]],
+    ['card', [0]],
+    ['response:b', [1, 2]],
+  ]);
+});

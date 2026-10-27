@@ -895,26 +895,36 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         revision: execution.snapshot?.metadata?.revision ?? 0,
         conversationId: execution.id,
         createdAt: execution.snapshot?.metadata?.createdAt ?? this.deps.now(),
-        sourceRecords: [...execution.previewParts].map(([partId, part]) => ({
-          recordId: partId,
-          partId,
-          partIndex: part.index,
-          seq: execution.cursor + 1,
-          createdAt: this.deps.now(),
-          ...(partId.startsWith('output:')
-            ? {
-                output: {
-                  blockId: partId.slice(7),
-                  phase: execution.published.has(partId)
-                    ? ('end' as const)
-                    : ('delta' as const),
-                },
-              }
-            : {}),
-        })),
+        sourceRecords: this.sources(execution),
         executionId: runId,
         turnId: runId,
       },
+    });
+  }
+  /** Saved provenance wins; unsaved positions are assigned once and shared by both projection paths. */
+  private sources(execution: Execution) {
+    return [...execution.previewParts].map(([partId, part]) => {
+      if (part.source) return { ...part.source, partIndex: part.index };
+      const anchor = (part.anchor ??= {
+        seq: execution.cursor + 1,
+        createdAt: this.deps.now(),
+      });
+      return {
+        recordId: partId,
+        partId,
+        partIndex: part.index,
+        ...anchor,
+        ...(partId.startsWith('output:')
+          ? {
+              output: {
+                blockId: partId.slice(7),
+                phase: execution.published.has(partId)
+                  ? ('end' as const)
+                  : ('delta' as const),
+              },
+            }
+          : {}),
+      };
     });
   }
   private refresh(execution: Execution): Promise<void> {
@@ -1021,30 +1031,9 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
             };
             execution.previewParts.set(source.partId, part);
           }
-          source.partIndex = part.index;
+          part.source = source;
         }
-        const canonical = new Set(
-          message.metadata!.sourceRecords!.map((source) => source.partId),
-        );
-        for (const [partId, part] of execution.previewParts)
-          if (!canonical.has(partId))
-            message.metadata!.sourceRecords!.push({
-              recordId: partId,
-              partId,
-              partIndex: part.index,
-              seq: execution.cursor + 1,
-              createdAt: this.deps.now(),
-              ...(partId.startsWith('output:')
-                ? {
-                    output: {
-                      blockId: partId.slice(7),
-                      phase: execution.published.has(partId)
-                        ? ('end' as const)
-                        : ('delta' as const),
-                    },
-                  }
-                : {}),
-            });
+        message.metadata!.sourceRecords = this.sources(execution);
         if (!execution.started) {
           execution.writer.write({
             type: 'start',

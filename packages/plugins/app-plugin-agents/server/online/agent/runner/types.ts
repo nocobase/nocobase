@@ -4,10 +4,15 @@ import type {
   UIStreamChannel,
 } from '../transport/streams.js';
 import type { AppUIMessage } from '../../../../shared/online-agent.js';
-import type { AppUIPhase } from '../../../../shared/ui-message.js';
+import type {
+  AppUIPhase,
+  AppUIMessageMetadata,
+} from '../../../../shared/ui-message.js';
 import type { ConversationService } from '../../../core/conversations/ports.js';
 import type { TxRunner } from '../../../kernel/tx.js';
 import type { OnlineAgentConfigurator } from '../configuration.js';
+
+type SourceRecord = NonNullable<AppUIMessageMetadata['sourceRecords']>[number];
 
 export type Execution = {
   id: string;
@@ -20,7 +25,14 @@ export type Execution = {
   previewDigests: Map<string, Hash>;
   previewParts: Map<
     string,
-    { index: number; type: 'text' | 'reasoning' | 'tool' }
+    {
+      index: number;
+      type: 'text' | 'reasoning' | 'tool';
+      /** A source read from canonical history, never from a mixed preview snapshot. */
+      source?: SourceRecord;
+      /** The first projection position of an unsaved part, scoped to this Execution. */
+      anchor?: Pick<SourceRecord, 'seq' | 'createdAt'>;
+    }
   >;
   /** Each tool part written to the stream, and whether its result was too. */
   toolStates: Map<string, 'input' | 'done'>;

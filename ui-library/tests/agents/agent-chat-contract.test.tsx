@@ -655,3 +655,67 @@ it('keeps a block in one Markdown part across live updates and a history reload'
   );
   await waitFor(() => expect(reloaded.container.innerHTML).toBe(html));
 });
+
+it('retains a continuation reasoning choice when preview record IDs become canonical', () => {
+  const reply: AppUIMessage = {
+    id: 'response',
+    role: 'assistant',
+    metadata: {
+      ...metadata,
+      sourceRecords: [
+        { recordId: 'saved-a', partId: 'output:a', partIndex: 0, seq: 2 },
+        {
+          recordId: 'output:thought',
+          partId: 'output:thought',
+          partIndex: 1,
+          seq: 4,
+        },
+        { recordId: 'output:b', partId: 'output:b', partIndex: 2, seq: 4 },
+      ],
+    },
+    parts: [
+      { type: 'text', text: 'A', state: 'done' },
+      { type: 'reasoning', text: 'Thought B', state: 'done' },
+      { type: 'text', text: 'B', state: 'streaming' },
+    ],
+  };
+  const card: AppUIMessage = { ...notice, metadata: { ...metadata, seq: 3 } };
+  const view = (message: AppUIMessage) => (
+    <ol>
+      {chatMessageSegments([message, card]).map((segment) => (
+        <MessageItem
+          key={segment.key}
+          message={segment.message}
+          segment={segment}
+          agentName={() => 'Agent'}
+          streaming
+        />
+      ))}
+    </ol>
+  );
+  const tree = render(view(reply), { wrapper });
+  const thought = screen.getByRole('button', {
+    name: 'Reasoning',
+    exact: true,
+  });
+  expect(thought).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(thought);
+  expect(screen.getByText('Thought B', { exact: true })).toBeVisible();
+  const saved: AppUIMessage = {
+    ...reply,
+    metadata: {
+      ...reply.metadata!,
+      revision: 2,
+      sourceRecords: reply.metadata!.sourceRecords!.map((source) => ({
+        ...source,
+        recordId: `saved-${source.partId}`,
+      })),
+    },
+  };
+  tree.rerender(view(saved));
+  expect(screen.getByRole('button', { name: 'Reasoning', exact: true })).toBe(
+    thought,
+  );
+  expect(thought).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByText('Thought B', { exact: true })).toBeVisible();
+});
