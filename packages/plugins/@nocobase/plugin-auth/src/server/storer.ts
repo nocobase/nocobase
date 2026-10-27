@@ -13,6 +13,8 @@ import { Database, Model } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { AuthModel } from './model/authenticator';
 
+const RENDERED = Symbol('authenticatorOptionsRendered');
+
 export class Storer implements IStorer {
   db: Database;
   cache: Cache;
@@ -41,25 +43,43 @@ export class Storer implements IStorer {
         await this.cache.delValueInObject(this.key, model.name);
         return;
       }
-      await this.cache.setValueInObject(this.key, model.name, this.renderJsonTemplate(model));
+      await this.cache.setValueInObject(this.key, model.name, this.prepare(model));
     });
     this.db.on('authenticators.afterDestroy', async (model: AuthModel) => {
       await this.cache.delValueInObject(this.key, model.name);
     });
   }
 
+  private getAuthConfig(authType: string) {
+    return this.authManager?.getAuthConfig?.(authType);
+  }
+
+  private prepare(authenticator: AuthModel) {
+    return this.renderJsonTemplate(authenticator);
+  }
+
   renderJsonTemplate(authenticator: any) {
     if (!authenticator) {
       return authenticator;
     }
-    const $env = this.app?.environment;
-    if (!$env) {
+    const options = authenticator.dataValues?.options;
+    // The mark is the rendered options object itself, so replacing the options (for example by saving
+    // the same model again) invalidates it, while unchanged options keep the render-once behavior.
+    if (options && authenticator[RENDERED] === options) {
       return authenticator;
     }
-    const config = this.authManager.getAuthConfig(authenticator.authType);
-    authenticator.dataValues.options = $env.renderJsonTemplate(authenticator.dataValues.options, {
-      omit: config?.auth?.['optionsKeysNotAllowedInEnv'],
+    const $env = this.app?.environment;
+    const config = this.getAuthConfig(authenticator.authType);
+    // The auth type is registered by its own plugin, which may not be loaded yet while the
+    // application is starting or reloading. Rendering in that window would treat business
+    // placeholders such as `{{account}}` as environment variables and replace them with an empty string.
+    if (!$env || !config) {
+      return authenticator;
+    }
+    authenticator.dataValues.options = $env.renderJsonTemplate(options, {
+      omit: config.auth?.['optionsKeysNotAllowedInEnv'],
     });
+    authenticator[RENDERED] = authenticator.dataValues.options;
     return authenticator;
   }
 
@@ -73,7 +93,7 @@ export class Storer implements IStorer {
 
   async setCache(authenticators: AuthModel[]) {
     const obj = authenticators.reduce((obj, authenticator) => {
-      obj[authenticator.name] = this.renderJsonTemplate(authenticator);
+      obj[authenticator.name] = this.prepare(authenticator);
       return obj;
     }, {});
     await this.cache.set(this.key, obj);
@@ -87,7 +107,10 @@ export class Storer implements IStorer {
       await this.setCache(authenticators);
       authenticators = await this.getCache();
     }
-    const authenticator = authenticators.find((authenticator: Model) => authenticator.name === name);
-    return authenticator || authenticators[0];
+    const authenticator =
+      authenticators.find((authenticator: Model) => authenticator.name === name) || authenticators[0];
+    // Render the cached entry in place. Re-writing it by name could resurrect an entry that was
+    // disabled or deleted while its options were being rendered.
+    return this.renderJsonTemplate(authenticator);
   }
 }
