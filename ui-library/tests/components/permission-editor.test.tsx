@@ -737,6 +737,118 @@ describe('application-owned page navigation', () => {
 });
 
 describe('compact permission controls', () => {
+  const leaves: PermissionEditorSection = {
+    id: 'pages',
+    title: 'Pages',
+    groups: [
+      {
+        id: 'borrowing',
+        title: 'Borrowing',
+        accessOnly: true,
+        rows: [{ id: 'borrow', label: 'Access', enabled: true }],
+      },
+      {
+        id: 'catalog',
+        title: 'Catalog',
+        accessOnly: true,
+        rows: [{ id: 'browse', label: 'Access', enabled: false }],
+      },
+    ],
+  };
+
+  it('keeps an all-leaf section visible and excludes its rows from bulk disclosure', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[leaves]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    const collapse = screen.getByRole('button', { name: 'Collapse all' });
+    expect(collapse).toBeDisabled();
+    await user.click(collapse);
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Catalog' })).not.toBeChecked();
+    expect(
+      screen.queryByRole('button', { name: 'Expand all' }),
+    ).not.toBeInTheDocument();
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it('collapses only titled groups in a mixed section while leaves stay reachable and unchanged', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[
+          { ...leaves, groups: [...leaves.groups, ...sections[0]!.groups] },
+        ]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    for (const action of ['Collapse all', 'Expand all']) {
+      await user.click(screen.getByRole('button', { name: action }));
+      for (const name of ['Borrowing', 'Catalog']) {
+        const checkbox = screen.getByRole('checkbox', { name });
+        expect(checkbox).toBeVisible();
+        checkbox.focus();
+        expect(checkbox).toHaveFocus();
+      }
+      expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+      expect(
+        screen.getByRole('checkbox', { name: 'Catalog' }),
+      ).not.toBeChecked();
+      if (action === 'Collapse all') {
+        expect(
+          screen.getByRole('button', { name: 'Expand Orders' }),
+        ).toBeVisible();
+        expect(
+          screen.queryByRole('checkbox', { name: 'Approve order' }),
+        ).not.toBeInTheDocument();
+      } else {
+        expect(
+          screen.getByRole('checkbox', { name: 'Approve order' }),
+        ).toBeChecked();
+        expect(
+          screen.getByRole('checkbox', { name: 'Withdraw order' }),
+        ).not.toBeChecked();
+      }
+    }
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it('ignores an existing collapsed key when a group becomes an access-only leaf', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    const props = { onEnabledChange: change, onLevelChange: vi.fn() };
+    const { rerender } = render(
+      <PermissionEditor
+        {...props}
+        sections={[
+          {
+            ...leaves,
+            groups: leaves.groups.map((group) => ({
+              ...group,
+              accessOnly: false,
+            })),
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Collapse all' }));
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    rerender(<PermissionEditor {...props} sections={[leaves]} />);
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Catalog' })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Collapse all' })).toBeDisabled();
+    expect(change).not.toHaveBeenCalled();
+  });
+
   it('filters ungranted rows globally, resets without editing, and searches actual routes', async () => {
     const user = userEvent.setup();
     const change = vi.fn();

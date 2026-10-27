@@ -748,9 +748,9 @@ export function PermissionEditor({
   const collapseKeys = activeSection
     ? activeSection.navigation
       ? branchKeys(activeSection.navigation, `${id}-${activeSection.id}`)
-      : activeSection.groups.map((group) =>
-          groupKey(activeSection.id, group.id),
-        )
+      : activeSection.groups
+          .filter((group) => !group.accessOnly || group.rows.length !== 1)
+          .map((group) => groupKey(activeSection.id, group.id))
     : [];
   const allCollapsed =
     collapseKeys.length > 0 && collapseKeys.every((key) => collapsed.has(key));
@@ -929,7 +929,6 @@ export function PermissionEditor({
                     <div className='divide-y rounded-lg border'>
                       {section.groups.map((group) => {
                         const key = groupKey(section.id, group.id);
-                        const closed = !filtering && collapsed.has(key);
                         const complete = original.groups.find(
                           (item) => item.id === group.id,
                         )!;
@@ -943,6 +942,8 @@ export function PermissionEditor({
                           group.accessOnly && group.rows.length === 1
                             ? group.rows[0]
                             : undefined;
+                        const closed =
+                          !accessRow && !filtering && collapsed.has(key);
                         const rows = accessRow
                           ? [
                               {
