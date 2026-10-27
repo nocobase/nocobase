@@ -256,4 +256,18 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 
 `ListFeedback` renders the state returned by `resolveListState` from `@nocobase/app-client`. Pass the original query snapshot, including `isPlaceholderData`; retry refetches the same query, and clear synchronizes the controls, applied filters and first page. `DataTable` accepts `listState`, `onRetry`, `onClearFilters` and `emptyAction`; its legacy `emptyMessage` remains business content for successful unfiltered emptiness. Gate creation with existing permissions. Installed sources need a three-way source merge, including request owners and translations, to upgrade.
 
-List feedback uses theme surfaces and foregrounds, a decorative status icon, a title and supporting guidance. Full states share a responsive panel; refresh failures use a compact inline warning without unmounting retained content. Motion respects reduced-motion preferences. The shared Translations table includes every title and description key required when upgrading an installed copy.
+Default list states use a compact themed treatment with a neutral icon, a short title and standard actions. Refresh failures use a concise inline warning beside retained rows and keep the standard retry action available. Motion respects reduced-motion preferences. The shared Translations table includes every status and action key required for an installed copy.
+
+## Form failure feedback
+
+`FeedbackForm` preserves the caller’s form and upload state, renders mapped reasons only beside their fields/groups, and reveals/focuses editable errors in layout order. Unmapped failures and unavailable focus targets receive one safe, keyboard-accessible form message. Pure field errors have no top summary or navigation list. Native controls provide submitted `name` or `data-field-path`. Return submission promises or pass caught request errors through `error`; RHF consumers pass `submitting` and `validationErrors` and disable registration-order focus. Custom controls and unmounted regions register persistent `FormFeedback` descriptors from `@nocobase/app-client`, with stable row identities and explicit access, editability, region reveal and focus callbacks. The application development Skill documents the adapter and source upgrade contract.
+
+Add these keys to the application namespace. Device approval exports them with its block locales; installing the component itself does not merge application translations.
+
+| Key                    | English                                                                           | Chinese                                      |
+| ---------------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
+| `formFeedback.field`   | This value was rejected. Check it and try again.                                  | 此字段的值未通过校验，请检查并修改后重试。   |
+| `formFeedback.invalid` | Check the highlighted fields and try again.                                       | 请检查标记的字段后重试。                     |
+| `formFeedback.failed`  | Unable to save. Your input has been kept. Try again.                              | 保存失败，已保留您的输入，请重试。           |
+| `formFeedback.network` | Unable to connect. Check your connection and try again. Your input has been kept. | 无法连接，请检查网络后重试。已保留您的输入。 |
+| `formFeedback.denied`  | You cannot submit this form with your current access. Your input has been kept.   | 当前权限无法提交此表单。已保留您的输入。     |

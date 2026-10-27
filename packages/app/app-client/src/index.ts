@@ -159,3 +159,16 @@ export {
   type ListState,
   type ListSnapshot,
 } from './list-state.js';
+
+export {
+  FormFeedback,
+  formFeedbackErrors,
+  normalizeFormFieldPath,
+  type FormFeedbackMessages,
+  type FormFeedbackField,
+  type FormFeedbackError,
+  type FormFeedbackState,
+  type FormFeedbackAttempt,
+  type FormFeedbackViolation,
+  type FormFeedbackOptions,
+} from './form-feedback.js';

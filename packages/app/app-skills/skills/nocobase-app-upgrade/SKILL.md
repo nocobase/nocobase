@@ -120,6 +120,8 @@ When BASE → TARGET changes Realtime contracts, read [Realtime upgrades](refere
 
 When BASE → TARGET changes notification contracts, read [Notification upgrades](references/notification-upgrade.md) during planning. Include application-owned test-send forms, API clients, permissions, log pages, E2E fixtures and custom channel extensions in step 5; distinguish removed TestAdapter APIs from deprecated registration and configuration APIs that remain compatible.
 
+When the target adds standard form feedback, follow [form feedback source upgrades](references/form-feedback-upgrade.md). Reconcile copied components and application-owned form consumers as well as dependencies, and verify new and retained applications with the same scenarios.
+
 When the template changes list-return behavior, read [list navigation upgrades](references/list-navigation-upgrade.md). Merge the routing context, breadcrumb and back-link sources together, and examine application-owned detail links and forms; updating dependencies alone does not update these copied sources.
 
 When the template changes loading, empty, filtered or failed list feedback, follow [list feedback source upgrades](references/list-feedback-upgrade.md). Reconcile copied components, request owners, translations and business empty content together, and verify both new and upgraded applications with retained permissions and records.

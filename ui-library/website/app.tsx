@@ -99,6 +99,7 @@ import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
 import { SetupReadinessDemo } from './demo/components/setup-readiness.js';
+import { FeedbackFormDemo } from './demo/components/feedback-form.js';
 import { RecordLinkDemo } from './demo/components/record-link.js';
 import { PageHeaderDemo } from './demo/components/page-header';
 import { DefaultAccessEditorDemo } from './demo/authorization/default-access-editor.js';
@@ -167,6 +168,10 @@ const itemPreviews: Record<string, ItemPreview> = {
   'page-container': {
     path: '/demo/components/page-container',
     icon: LayoutTemplate,
+  },
+  'feedback-form': {
+    path: '/demo/components/feedback-form',
+    icon: ClipboardList,
   },
   'record-link': { path: '/demo/components/record-link', icon: Table2 },
   'page-header': { path: '/demo/components/page-header', icon: Heading },
@@ -320,6 +325,8 @@ function AppContent(): ReactElement {
     return <ListFeedbackDemo />;
   if (pathname.startsWith('/demo/components/setup-readiness'))
     return <SetupReadinessDemo />;
+  if (pathname.startsWith('/demo/components/feedback-form'))
+    return <FeedbackFormDemo />;
   if (pathname.startsWith('/demo/components/record-link'))
     return <RecordLinkDemo />;
   if (pathname.startsWith('/demo/components/page-header')) {
