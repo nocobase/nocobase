@@ -22,11 +22,11 @@ export class OpenAIResponsesProvider extends LLMProvider {
   }
 
   createModel() {
-    const { apiKey } = this.serviceOptions || {};
+    const { apiKey, zdrEnabled = false } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { name, schema, strict } = structuredOutput || {};
     const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
-    let responseFormatOptions: Record<string, any> = {
+    let responseFormatOptions: Record<string, unknown> = {
       type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
@@ -54,6 +54,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
       },
       verbose: false,
       useResponsesApi: true,
+      zdrEnabled,
     });
   }
 
