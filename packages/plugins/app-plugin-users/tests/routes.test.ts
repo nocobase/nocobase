@@ -1115,6 +1115,10 @@ function userService(): UserManagementService {
     roleScopes: { hub: 'hub-viewer' },
   } as const;
   return {
+    withConnection() {
+      return this;
+    },
+    assertCanAdminister: vi.fn(async () => {}),
     get: vi.fn(() => Promise.resolve(user)),
     options: vi.fn(() => Promise.resolve({ roleScopes: [] })),
     list: vi.fn(() =>

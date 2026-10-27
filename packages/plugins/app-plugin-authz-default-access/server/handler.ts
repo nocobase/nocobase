@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   ApiError,
   apiErrorResponse,
@@ -26,6 +27,8 @@ import {
   parse,
   rethrowRuleConflict,
   settingsAccess,
+  requireSettings,
+  submitSettingsMutation,
   TotalMetaSchema,
   RuleParams,
   validateDataScopeRule,
@@ -39,7 +42,7 @@ export const DEFAULT_ACCESS_SETTINGS: string = `authorization.${DEFAULT_ACCESS_R
 /** The route prefix under `/api/authorization`. */
 export const DEFAULT_ACCESS_PATH = '/defaultAccess';
 
-type DefaultAccessAdministrationApi = Omit<DefaultAccessApi, 'withTransaction'>;
+type DefaultAccessAdministrationApi = DefaultAccessApi;
 
 /** Every `/defaultAccess` route, gated by `settings:authorization.default-access`. */
 export function createDefaultAccessHandler(
@@ -125,16 +128,35 @@ export function createDefaultAccessHandler(
         ),
       },
     }),
+    apiValidator(
+      'header',
+      z.object({
+        'idempotency-key': z
+          .string()
+          .optional()
+          .describe(
+            'Required in strict operation receipt mode; retries retain the original key and input.',
+          ),
+      }),
+    ),
     apiValidator('json', DataScopeRuleBody),
     async (context) => {
       const rule = checked(context.req.valid('json'));
-      await assertRuleKeyAvailable((key) => api.get(key), rule.key);
-      return context.json(
-        {
-          data: await api.create(rule).catch(rethrowRuleConflict(rule.key)),
+      const data = await submitSettingsMutation(
+        rule,
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          await assertRuleKeyAvailable((key) => bound.get(key), rule.key);
+          return bound.create(rule).catch(rethrowRuleConflict(rule.key));
         },
-        201,
+        () =>
+          requireSettings(
+            context.env.authorization,
+            DEFAULT_ACCESS_SETTINGS,
+            'read',
+          ),
       );
+      return context.json({ data }, 201);
     },
   );
   routes.patch(
@@ -164,18 +186,43 @@ export function createDefaultAccessHandler(
       },
     }),
     apiValidator('param', RuleParams),
+    apiValidator(
+      'header',
+      z.object({
+        'idempotency-key': z
+          .string()
+          .optional()
+          .describe(
+            'Required in strict operation receipt mode; retries retain the original key and input.',
+          ),
+      }),
+    ),
     apiValidator('json', DataScopeRulePatchBody),
     async (context) => {
       const { key } = context.req.valid('param');
-      const rule = checked({
-        ...(await existing(key)),
-        ...context.req.valid('json'),
-      });
-      // A changed `key` renames the rule, and the new key must be free.
-      await assertRuleKeyAvailable((next) => api.get(next), rule.key, key);
-      return context.json({
-        data: await api.update(key, rule).catch(rethrowRuleConflict(rule.key)),
-      });
+      const changes = context.req.valid('json');
+      const data = await submitSettingsMutation(
+        changes,
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          const previous = await bound.get(key);
+          if (!previous) await existing(key);
+          const rule = checked({ ...previous, ...changes });
+          await assertRuleKeyAvailable(
+            (next) => bound.get(next),
+            rule.key,
+            key,
+          );
+          return bound.update(key, rule).catch(rethrowRuleConflict(rule.key));
+        },
+        () =>
+          requireSettings(
+            context.env.authorization,
+            DEFAULT_ACCESS_SETTINGS,
+            'read',
+          ),
+      );
+      return context.json({ data });
     },
   );
   routes.delete(
@@ -196,10 +243,27 @@ export function createDefaultAccessHandler(
       },
     }),
     apiValidator('param', RuleParams),
+    apiValidator(
+      'header',
+      z.object({ 'idempotency-key': z.string().optional() }),
+    ),
     async (context) => {
       const { key } = context.req.valid('param');
-      await existing(key);
-      await api.delete(key);
+      await submitSettingsMutation(
+        { key },
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          if (!(await bound.get(key))) await existing(key);
+          await bound.delete(key);
+          return null;
+        },
+        () =>
+          requireSettings(
+            context.env.authorization,
+            DEFAULT_ACCESS_SETTINGS,
+            'read',
+          ),
+      );
       return context.body(null, 204);
     },
   );

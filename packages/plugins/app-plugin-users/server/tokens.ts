@@ -229,6 +229,13 @@ export type UserInvitationAcceptedHandler = (
 ) => Promise<void>;
 
 export interface UserManagementService {
+  withConnection(connection: DatabaseConnection): UserManagementService;
+  assertCanAdminister(
+    userId: string,
+    actorId: string | undefined,
+    action: UserAdministrationAction,
+    connection?: DatabaseConnection,
+  ): Promise<void>;
   get(userId: string): Promise<ManagedUser>;
   options(): Promise<UserManagementOptions>;
   list(input?: ListManagedUsersInput): Promise<ManagedUserPage>;

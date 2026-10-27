@@ -1,9 +1,56 @@
+import { getRepositoryMutationIdentity } from '@nocobase/db';
 import { expect, it } from 'vitest';
 import { describeIntegrationDatabases } from '../../helpers.js';
 
 describeIntegrationDatabases(
   'Repository identity feature combinations',
   (context) => {
+    it('keeps root identity private under a restricted projection and nested self-relation creation', async () => {
+      await context.builder.createCollection('privateIdentities', (c) => {
+        c.increments('sequence');
+        c.string('label');
+        c.integer('parentSequence').nullable();
+        c.belongsTo('parent', 'privateIdentities')
+          .foreignKey('parentSequence')
+          .targetKey('sequence');
+      });
+      const repository = context.database
+        .repository('privateIdentities')
+        .withPolicy({
+          read: { scope: true, fields: ['label'] },
+          create: true,
+          update: true,
+          delete: false,
+        });
+      const created = await repository.createOne({
+        values: { label: 'Root', parent: { create: { label: 'Nested' } } },
+        select: (s) => s.fields('label'),
+      });
+      expect(created.record).toEqual({ label: 'Root' });
+      const identity = getRepositoryMutationIdentity(created);
+      expect(identity?.sequence).toBeDefined();
+      expect(JSON.stringify(created)).not.toContain('sequence');
+      expect(
+        await context.database
+          .repository('privateIdentities')
+          .findOne({ filter: identity! }),
+      ).toMatchObject({ label: 'Root' });
+      const updated = await context.database
+        .repository('privateIdentities')
+        .withPolicy({
+          read: { scope: true, fields: ['label'] },
+          create: false,
+          update: true,
+          delete: false,
+        })
+        .updateOne({
+          filter: { label: 'Root' },
+          values: { label: 'Changed' },
+          select: (s) => s.fields('label'),
+        });
+      expect(getRepositoryMutationIdentity(updated)).toEqual(identity);
+      expect(updated.record).toEqual({ label: 'Changed' });
+    });
     it('preserves bigint identities above Number.MAX_SAFE_INTEGER', async () => {
       const key = '9007199254740993';
       await context.builder.createCollection('exactKeys', (c) => {

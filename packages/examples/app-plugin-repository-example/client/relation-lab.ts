@@ -1,3 +1,5 @@
+import { createOperationKey } from '@nocobase/api-client';
+import { deriveSubmissionKey } from '@nocobase/app-client';
 import { createUuid } from '@nocobase/app-client';
 import type { ApiClient } from '@nocobase/app-client';
 import type { JsonValue, RemoteSelectAst } from '@nocobase/api-client';
@@ -67,14 +69,16 @@ export async function prepareRelationLab(
   api: ApiClient,
   operation: RelationOperation,
   relation: LabRelation,
+  operationKey: string = createOperationKey(),
 ): Promise<RelationLab> {
   if (operation === 'set' && relation === 'profile')
     throw new Error('set requires a to-many relation.');
-  const projectId = freshId();
+  const projectId = `lab-${deriveSubmissionKey(operationKey, 'project').slice(14)}`;
   const targetIds: string[] = [];
   for (const name of ['A', 'B', 'C', 'D']) {
-    const id = freshId();
+    const id = `lab-${deriveSubmissionKey(operationKey, name).slice(14)}`;
     await api.repository(targetRepository(relation)).createOne({
+      idempotencyKey: deriveSubmissionKey(operationKey, `target-${name}`),
       values: {
         id,
         ...targetValues(relation, {
@@ -90,6 +94,7 @@ export async function prepareRelationLab(
     targetIds.push(id);
   }
   await api.repository(relationRepositories.projects).createOne({
+    idempotencyKey: deriveSubmissionKey(operationKey, 'project'),
     values: {
       id: projectId,
       name: `${operation} · ${relation} · ${projectId.slice(-8)}`,
@@ -105,6 +110,7 @@ export async function prepareRelationLab(
       : targetIds.slice(0, 2);
   if (linkedIds.length)
     await api.repository(relationRepositories.projects).updateOne({
+      idempotencyKey: deriveSubmissionKey(operationKey, 'link'),
       filter: { id: projectId },
       values: {
         [relation]: {
@@ -119,7 +125,13 @@ export async function prepareRelationLab(
         },
       },
     });
-  return { projectId, relation, operation, targetIds, nextId: freshId() };
+  return {
+    projectId,
+    relation,
+    operation,
+    targetIds,
+    nextId: `lab-${deriveSubmissionKey(operationKey, 'next').slice(14)}`,
+  };
 }
 
 export async function loadRelationLab(
@@ -222,11 +234,13 @@ export async function executeRelationLab(
   api: ApiClient,
   lab: RelationLab,
   input: LabInput,
+  idempotencyKey: string = createOperationKey(),
 ): Promise<LabMutationResult> {
   const options = relationLabRequest(lab, input);
-  const result = await api
-    .repository(relationRepositories.projects)
-    .updateOne(options);
+  const result = await api.repository(relationRepositories.projects).updateOne({
+    ...options,
+    idempotencyKey,
+  });
   const related = result.record[lab.relation];
   const relatedRows: unknown[] = Array.isArray(related)
     ? related

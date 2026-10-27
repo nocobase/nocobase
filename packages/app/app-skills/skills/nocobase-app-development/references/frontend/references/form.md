@@ -6,6 +6,10 @@ Forms use react-hook-form, zod 4 and `@hookform/resolvers/zod`, the `Field` fami
 - Put the form component in the feature folder (`client/pages/<feature>/<feature>-form.tsx`); move it to `client/components/` only when several features use it.
 - `client/components/ui/` does not have shadcn's old `form` component (`FormField`, `FormItem`, `FormMessage`). Do not add it; use the `Field` family throughout.
 
+## Shared submission lock and retry identity
+
+All submission entries use one `useSubmission` controller before async validation. Pass its key to the standard Repository mutation or a custom action that explicitly implements the transaction receipt adapter. Keep uncertain operations across retries and distinguish a deliberate new operation after success. Follow [submission protection](../../submission.md) for the complete protocol and upgrade boundary; button disabling and `isSubmitting` alone do not provide this contract.
+
 ## Complete example: one form for creating and editing
 
 `client/pages/projects/project-form.tsx` is the form create and edit share: name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). It renders no buttons: the container puts the submit button outside the `<form>` and links it through `formId`. Its complete code and props table are [`example/project-form.md`](example/project-form.md); the key points below explain what it does and why.
@@ -59,7 +63,7 @@ Use `z.string().trim()` in the schema and an empty string as the default (`proje
 
 - `form.handleSubmit(async (values) => { ... })` validates every field first and calls the callback only if they pass; if they do not, it shows the errors and moves focus to the first field with an error.
 - `<form noValidate onSubmit={(event) => void onSubmit(event)}>`: `noValidate` turns off the browser's built-in validation bubbles; `void` means the returned Promise is not awaited (ESLint requires it).
-- While submitting: when the button is outside the form, hand the state to the container with `onSubmittingChange` (see "Inside a RouteDialog"); when the button is inside the `<form>`, use `form.formState.isSubmitting` directly (see the members card in "Array fields").
+- While submitting: when the button is outside the form, hand the state to the container with `onSubmittingChange` (see "Inside a RouteDialog"); when the button is inside the `<form>`, use the shared controller's `submitting` state (see the members card in "Array fields").
 - Label the submit button with the specific action: "Create", "Save", not "OK" or "Submit" (guideline T3.4).
 
 ### Server errors
