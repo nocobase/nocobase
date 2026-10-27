@@ -14,7 +14,7 @@ The endpoint contract this assumes is the one in [types](types.md): `GET /api/pr
 
 The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page uses the template's `useTableUrlState` hook to parse pagination and ordering, sends them with the request and passes them to `ProjectsServerTable`, which shows ordering in the header with `manualSorting`. Choosing another order starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
 
-Pass `emptyAction` only when the existing create permission explicitly allows it. Preserve the business empty content and use [shared list feedback](../list-feedback.md) for all request states.
+Keep the standard create action in the page header as in [`example/list-page.md`](list-page.md), including for a successful empty result; never pass that action as `emptyAction`. The server-table wrapper keeps its optional `emptyAction` pass-through only for an intentional business-specific empty-state action. Preserve the business empty content and use [shared list feedback](../list-feedback.md) for all request states.
 
 The changes, inside the list page's component; everything marked `// …` stays as it is there:
 
@@ -143,17 +143,6 @@ export default function ProjectsPage(): ReactElement {
       onPaginationChange={tableState.onPaginationChange}
       sorting={tableState.sortingState}
       onSortingChange={tableState.onSortingChange}
-      emptyAction={
-        canCreate === true ? (
-          <Button
-            nativeButton={false}
-            render={<Link to={{ pathname: 'new', search: location.search }} />}
-          >
-            <PlusIcon />
-            {t('projects.create.action')}
-          </Button>
-        ) : null
-      }
       emptyMessage={
         <>
           <h2>{t('projects.empty.title')}</h2>
