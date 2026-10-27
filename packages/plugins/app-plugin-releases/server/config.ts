@@ -122,7 +122,7 @@ export interface ReleasesHostConfig {
   /**
    * Restart the Host once this many Apps were removed, replaced, stopped for idleness or made dormant since it started,
    * replaying the desired set: in-process Apps cannot unload their modules, so every runtime that goes away leaves
-   * memory behind. The restart waits while an on-demand App is running. Off when omitted.
+   * memory behind. The restart waits while any App is running or starting. Off when omitted.
    */
   readonly restartAfterChurn?: number;
   /** How often the Host's idle stops and dormancies are read for `restartAfterChurn`, in milliseconds (60000). */

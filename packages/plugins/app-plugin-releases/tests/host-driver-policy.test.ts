@@ -4,7 +4,7 @@
  * spec (a deployment always starts the App; a restore leaves an on-demand App stopped), how environments stay apart as
  * scopes on one Host, how the Host's lifecycle reaches the observed status, how a recorded outcome is read back, which
  * settings an environment may hold and which Host each run mode reaches (credentials only to the Docker Host), and how
- * idle stops and dormancies count towards `restartAfterChurn` without cutting off an on-demand App someone is using.
+ * idle stops and dormancies count towards `restartAfterChurn` without cutting off running Apps, regardless of their activation policy.
  */
 import { Readable } from 'node:stream';
 
@@ -536,5 +536,47 @@ describe('Host driver', () => {
     expect(host.restored.at(-1)!.deployments.map((spec) => spec.appId)).toEqual(
       ['fg-1--app'],
     );
+  });
+  it.each(['running', 'starting'] as const)(
+    'defers recycling while an eager App in another scope is %s',
+    async (state) => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+      const host = fakeHost(3);
+      const driver = driverFor(host);
+      const preview = await open(driver, [appSpec('preview')]);
+      const production = await open(driver, [appSpec('crm')], 'production');
+      await preview.restore([]);
+      await production.restore([]);
+      host.lifecycle.set('preview', 'stopped');
+      host.lifecycle.set('crm', state);
+      host.counters.idleStops = 3;
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(driver.churn()).toBe(3);
+      expect(host.restarts).toHaveLength(0);
+
+      host.lifecycle.set('crm', 'stopped');
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(host.restarts).toHaveLength(1);
+    },
+  );
+
+  it('does not recycle when it cannot check application status', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    const host = fakeHost(1);
+    const driver = driverFor(host);
+    const session = await open(driver, [
+      appSpec('crm', { activation: 'onDemand' }),
+    ]);
+    await session.restore([]);
+    host.counters.idleStops = 1;
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(driver.churn()).toBe(1);
+    const management = await host.endpoint.controller.getManagementClient();
+    vi.spyOn(management, 'getStatus').mockRejectedValue(
+      new Error('IPC timeout'),
+    );
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(host.restarts).toHaveLength(0);
   });
 });

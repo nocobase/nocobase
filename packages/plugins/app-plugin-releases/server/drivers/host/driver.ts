@@ -170,8 +170,6 @@ interface OpenScope {
   scope: HostScope;
   readonly publicUrl: string | null;
   readonly desired: () => Promise<readonly AppDeploymentSpec[]>;
-  /** The on-demand Apps: a Host restart waits while one of them runs. */
-  readonly onDemand: Set<string>;
   restoring: Promise<void> | null;
 }
 
@@ -307,16 +305,10 @@ export function createHostDriver(
     };
   };
 
-  const track = (scope: OpenScope, spec: AppDeploymentSpec): void => {
-    if (spec.activation === 'onDemand') scope.onDemand.add(spec.appId);
-    else scope.onDemand.delete(spec.appId);
-  };
-
   /** Sends one environment's complete desired set as a new revision of its scope. */
   const sendSet = async (scope: OpenScope): Promise<void> => {
     const management = await managementOf(scope.host);
     const specs = await scope.desired();
-    for (const spec of specs) track(scope, spec);
     const deployments = specs.map((spec) => toHostSpec(scope, spec));
     const send = async (revision: number) => {
       revisions.set(scope.environmentId, revision);
@@ -397,22 +389,19 @@ export function createHostDriver(
     await restartScheduled;
   };
 
-  /** Whether an on-demand App runs or starts, which a restart would cut off. */
-  const onDemandBusy = (
+  /** Whether any App runs or starts, which a restart would cut off. */
+  const appsBusy = (
     statuses: readonly (readonly [OpenScope, HostStatus])[],
   ): boolean =>
-    statuses.some(([scope, status]) =>
+    statuses.some(([, status]) =>
       status.deployments.some((deployment) => {
         const state = observed(deployment).state;
-        return (
-          scope.onDemand.has(deployment.appId) &&
-          (state === 'running' || state === 'starting')
-        );
+        return state === 'running' || state === 'starting';
       }),
     );
 
   /**
-   * Restarts the in-process Host when the churn reached `restartAfterChurn`, nothing is in flight and no on-demand App
+   * Restarts the in-process Host when the churn reached `restartAfterChurn`, nothing is in flight and no App
    * is in use; otherwise a later check tries again.
    */
   const maybeRestart = async (): Promise<void> => {
@@ -427,7 +416,8 @@ export function createHostDriver(
       runtimeChurn = (counters.idleStops ?? 0) + (counters.dormancies ?? 0);
     const total = churn + runtimeChurn;
     if (total < limit || inFlight > 0) return;
-    if (statuses && onDemandBusy(statuses)) return;
+    // Unknown status is not evidence that the Host is safe to recycle.
+    if (!statuses || appsBusy(statuses)) return;
     await restartHost(
       `${total} applications replaced, removed, stopped or made dormant`,
     );
@@ -539,7 +529,6 @@ export function createHostDriver(
         scope: scopeOf(environment, settings),
         publicUrl: environment.publicUrl,
         desired: () => context.desired(),
-        onDemand: new Set(),
         restoring: null,
       };
       scopes.set(environment.id, scope);
@@ -581,7 +570,6 @@ export function createHostDriver(
           }
         },
         async apply(spec, onEvent) {
-          track(scope, spec);
           let replacing = false;
           try {
             const status = await tracked(scope, async () => {
@@ -618,7 +606,6 @@ export function createHostDriver(
           }
         },
         async start(spec) {
-          track(scope, spec);
           await (
             await management()
           ).startDeployment({
@@ -639,7 +626,6 @@ export function createHostDriver(
           await tracked(scope, async () =>
             (await management()).removeDeployment(appId, { purgeData }),
           );
-          scope.onDemand.delete(appId);
           countChurn(scope);
         },
         async status(appIds) {

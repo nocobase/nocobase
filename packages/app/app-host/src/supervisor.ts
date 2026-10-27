@@ -325,6 +325,9 @@ export class AppHostSupervisor {
 
     this.clearAutomaticRestartTimer();
 
+    // Requests arriving during a restart must wait for the old child to exit.
+    if (this.stopPromise) await this.stopPromise;
+
     if (this.managedChild && this.status === 'ready') {
       return this.managedChild.targetUrl;
     }
@@ -509,6 +512,7 @@ export class AppHostSupervisor {
       if (this.managedChild?.child === child) this.managedChild = null;
     });
     child.once('exit', (code, signal) => {
+      if (this.managedChild?.child !== child) return;
       const wasStopping = this.status === 'stopping' || this.shuttingDown;
       const wasReady = this.status === 'ready';
       this.managedChild = null;
@@ -553,11 +557,14 @@ export class AppHostSupervisor {
     const exitPromise = waitForChildExit(managed.child, this.shutdownTimeoutMs);
     managed.child.kill('SIGTERM');
 
-    await exitPromise.catch((error: unknown) => {
+    await exitPromise.catch(async (error: unknown) => {
       this.diagnostic.warn(
         error instanceof Error ? error.message : String(error),
       );
+      // Sending SIGKILL does not mean the process has exited. Reap it before starting another child.
+      const killed = waitForChildExit(managed.child, this.shutdownTimeoutMs);
       managed.child.kill('SIGKILL');
+      await killed;
     });
 
     this.managedChild = null;
@@ -922,6 +929,8 @@ function waitForChildExit(
   child: ChildProcess,
   timeoutMs: number,
 ): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null)
+    return Promise.resolve();
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       cleanup();
