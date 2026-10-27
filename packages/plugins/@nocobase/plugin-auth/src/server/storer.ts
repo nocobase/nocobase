@@ -13,17 +13,14 @@ import { Database, Model } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { AuthModel } from './model/authenticator';
 
+const RENDERED = Symbol('authenticatorOptionsRendered');
+
 export class Storer implements IStorer {
   db: Database;
   cache: Cache;
   app: Application;
   authManager: AuthManager;
   key = 'authenticators';
-  /**
-   * Authenticators that were cached before their auth type was registered. Their options are kept
-   * as-is and rendered on the first read after the auth type becomes available.
-   */
-  private pendingRender = new Set<string>();
 
   constructor({
     app,
@@ -43,14 +40,12 @@ export class Storer implements IStorer {
 
     this.db.on('authenticators.afterSave', async (model: AuthModel) => {
       if (!model.enabled) {
-        this.pendingRender.delete(model.name);
         await this.cache.delValueInObject(this.key, model.name);
         return;
       }
       await this.cache.setValueInObject(this.key, model.name, this.prepare(model));
     });
     this.db.on('authenticators.afterDestroy', async (model: AuthModel) => {
-      this.pendingRender.delete(model.name);
       await this.cache.delValueInObject(this.key, model.name);
     });
   }
@@ -63,16 +58,15 @@ export class Storer implements IStorer {
     if (!authenticator) {
       return authenticator;
     }
+    // Keep the raw options while the auth type is not registered yet, they are rendered on the first read later.
     if (!this.getAuthConfig(authenticator.authType)) {
-      this.pendingRender.add(authenticator.name);
       return authenticator;
     }
-    this.pendingRender.delete(authenticator.name);
     return this.renderJsonTemplate(authenticator);
   }
 
   renderJsonTemplate(authenticator: any) {
-    if (!authenticator) {
+    if (!authenticator || authenticator[RENDERED]) {
       return authenticator;
     }
     const $env = this.app?.environment;
@@ -86,6 +80,9 @@ export class Storer implements IStorer {
     authenticator.dataValues.options = $env.renderJsonTemplate(authenticator.dataValues.options, {
       omit: config.auth?.['optionsKeysNotAllowedInEnv'],
     });
+    // The mark lives on the cached authenticator itself, so a stale raw write cannot leave the entry
+    // permanently unrendered and concurrent reads never render the same options twice.
+    authenticator[RENDERED] = true;
     return authenticator;
   }
 
@@ -115,10 +112,9 @@ export class Storer implements IStorer {
     }
     const authenticator =
       authenticators.find((authenticator: Model) => authenticator.name === name) || authenticators[0];
-    if (authenticator && this.pendingRender.has(authenticator.name) && this.getAuthConfig(authenticator.authType)) {
+    if (authenticator && !(authenticator as any)[RENDERED] && this.getAuthConfig(authenticator.authType)) {
       const rendered = this.renderJsonTemplate(authenticator);
       await this.cache.setValueInObject(this.key, authenticator.name, rendered);
-      this.pendingRender.delete(authenticator.name);
       return rendered;
     }
     return authenticator;
