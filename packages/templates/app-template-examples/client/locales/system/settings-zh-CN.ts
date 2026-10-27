@@ -191,6 +191,13 @@ const settings = {
   configurationPermissionsHint:
     '统一设置系统设置、用户管理和业务配置项的访问与操作权限，仅显示应用实际开放的功能。',
   permissionSearch: '搜索分类、分组或权限',
+  permissionAll: '全部',
+  permissionGranted: '已授权',
+  permissionUngranted: '未授权',
+  permissionStatus: '授权状态',
+  permissionClearSearch: '清空搜索',
+  permissionCollapseAll: '全部收起',
+  permissionExpandAll: '全部展开',
   enabledOnly: '仅显示已授权',
   noPermissions: '暂无可配置权限',
   permissionEmptyHint: '请联系应用开发者，开放此角色需要配置的权限。',
