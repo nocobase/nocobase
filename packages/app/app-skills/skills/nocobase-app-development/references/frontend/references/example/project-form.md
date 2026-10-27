@@ -14,13 +14,11 @@ import { FeedbackForm } from '#components/feedback-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { AlertCircleIcon } from 'lucide-react';
 import { type ReactElement, useEffect, useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { SessionExpiredAlert } from '#components/session-expired-alert';
-import { Alert, AlertDescription } from '#components/ui/alert';
 import {
   Field,
   FieldError,
@@ -172,20 +170,21 @@ export function ProjectForm({
 
   return (
     <FeedbackForm
+      submitting={form.formState.isSubmitting}
       validationErrors={form.formState.errors}
+      error={rootError}
+      errorContent={
+        rootError?.type === 'sessionExpired' ? (
+          <SessionExpiredAlert inline />
+        ) : (
+          rootError?.message
+        )
+      }
       id={formId}
       noValidate
       onSubmit={(event) => onSubmit(event)}
     >
       <FieldGroup>
-        {rootError?.type === 'sessionExpired' ? (
-          <SessionExpiredAlert />
-        ) : rootError ? (
-          <Alert variant='destructive'>
-            <AlertCircleIcon />
-            <AlertDescription>{rootError.message}</AlertDescription>
-          </Alert>
-        ) : null}
         <Controller
           control={form.control}
           name='name'

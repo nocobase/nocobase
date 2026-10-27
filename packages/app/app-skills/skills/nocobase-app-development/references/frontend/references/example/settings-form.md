@@ -99,10 +99,11 @@ export function ProjectSettingsForm({
 
   return (
     <FeedbackForm
+      submitting={form.formState.isSubmitting}
       validationErrors={form.formState.errors}
       id={formId}
       noValidate
-      onSubmit={(event) => void handleSubmit(event)}
+      onSubmit={(event) => handleSubmit(event)}
     >
       <FieldGroup>
         <FieldSet>
