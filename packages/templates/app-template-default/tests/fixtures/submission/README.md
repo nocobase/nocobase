@@ -10,7 +10,15 @@ Copy `migration.ts` to `database/main/migrations/202610260099_submission_fixture
 
 Run `pnpm nocobase config init --dialect sqlite --json`, then start with `APP_PUBLIC_ORIGIN=http://127.0.0.1:<chosen-port> APP_SERVER_PORT=<chosen-port> I18N_DEFAULT_LOCALE=en-US pnpm dev`. Use the actual printed application entry URL, including its base path. Configuration initialization generates local secrets; do not publish its file or native session cookies.
 
-## Customized source upgrade
+## Version upgrade acceptance
+
+For release acceptance, run this fixture through the shared versioned template-upgrade procedure owned by PM-715. Start Default and Examples separately from published BASE tarballs and their original application Skills. Resolve an explicitly newer TARGET from the isolated candidate registry or the official registry, discover its instructions through the normal template diff, and coordinate dependencies and copied source within that same upgrade. Do not install target Skills or patch individual pages before starting the upgrade. Generate a fresh comparison application from each identical TARGET package.
+
+Record exact BASE/TARGET versions, registry and tarball provenance, integrity, lockfile hashes, BASE-to-TARGET and BASE-to-PROJECT differences, resolved custom conflicts and the validated final baseline. Missing targets and unresolved conflicts must leave the baseline unchanged. Preserve the original business fields, validation, native roles and user assignments, lifecycle history, styling and rows. Candidate-package results and official-package results are separate acceptance records; repeat the matrix from real target packages after publication. Source-workspace checks below are useful specialist checks while that shared packaging chain is pending, but do not satisfy version upgrade acceptance.
+
+The shared upgrade Skill, template entry documentation and versioned packaging fixtures belong to PM-715. This fixture supplies only the submission-specific business module, browser matrix and before/after evidence inputs. Integrate those inputs with the shared fixture rather than creating another packaging or upgrade mechanism.
+
+## Customized source verification
 
 Prepare a separate application from the BASE template, before this feature. Add the same custom business schema, validation, permission gate, style and lifecycle hook. For the pre-upgrade page, replace only the shared controller with a direct submit function and omit operation headers on Repository mutations. For its custom action call `runtime.fire` without the new outer receipt adapter. Start it on its own database, sign in through its own native login and reproduce two records from a double click while holding the first response. Preserve these synthetic record ids and complete JSON rows as the data baseline.
 
@@ -20,7 +28,7 @@ For an unreleased source target, report its commit and keep the existing release
 
 ## Run the browser matrix
 
-Set `SUBMISSION_APPLICATIONS` to a JSON array of `{ "name": "new-template", "url": "http://127.0.0.1:<port>/main" }` and `{ "name": "upgraded-customized", "url": "http://127.0.0.1:<other-port>/main", "beforeData": "<path-to-pre-upgrade-evidence-JSON>" }`. `beforeData` contains the fixture's `{ rows, entries, history }`, captured from its authenticated evidence endpoint before upgrading. Write the environment setup to a local file when it spans multiple lines. Use the synthetic initial administrator from the disposable template; never reuse a management-instance identity or credential.
+Set `SUBMISSION_APPLICATIONS` to a JSON array of `{ "name": "new-template", "url": "http://127.0.0.1:<port>/main" }` and `{ "name": "upgraded-customized", "url": "http://127.0.0.1:<other-port>/main", "beforeData": "<path-to-pre-upgrade-evidence-JSON>", "beforePermissions": "<path-to-pre-upgrade-native-permissions-JSON>" }`. `beforeData` contains the fixture's `{ rows, entries, history }`, captured from its authenticated evidence endpoint before upgrading. `beforePermissions` contains the persisted `borrowing-clerk` permission set, explicit user assignment and native role scopes captured before the upgrade; the second browser case compares these and signs in as that ordinary user to exercise allowed reads/updates and forbidden deletion/approval. Fresh applications create equivalent synthetic native permissions in that case. Write the environment setup to a local file when it spans multiple lines. Use the synthetic initial administrator from the disposable template; never reuse a management-instance identity or credential.
 
 Run the application's local `pnpm exec playwright test -c tests/fixtures/submission/playwright.config.ts`. `PLAYWRIGHT_BROWSERS_PATH` must name an allowed scratch directory when installing a browser; use that same directory to run it. `SUBMISSION_EVIDENCE_DIR` selects a scratch output directory. The dedicated configuration keeps this opt-in fixture out of ordinary template browser tests. The test neither sleeps nor automatically retries failures.
 
