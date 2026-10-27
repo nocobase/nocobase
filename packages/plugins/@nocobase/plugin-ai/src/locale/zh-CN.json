@@ -249,6 +249,8 @@
   "Rename": "重命名",
   "Rename conversation": "重命名对话",
   "Response format description": "使用 JSON 模式时，你还必须通过系统或用户消息指示模型生成 JSON。",
+  "Stateless requests": "无状态请求",
+  "Stateless requests description": "通过网关调用模型时，若出现响应条目属于其他 Azure OpenAI 资源的错误，可尝试开启。",
   "Retrieve metadata for specified collections and their fields": "获取指定数据表和字段的元数据",
   "Retrieve names and titles map of all collections": "获取所有数据表的名称和标题映射",
   "Role": "角色",
