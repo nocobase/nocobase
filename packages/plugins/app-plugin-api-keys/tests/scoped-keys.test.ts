@@ -215,10 +215,11 @@ describe('scoped API keys', () => {
     const routes = new Hono<{
       Variables: AuthEnv['Variables'] & AuthorizationEnv['Variables'];
     }>();
-    routes.get('/plain', auth.required(), (context) =>
+    routes.on(['GET', 'POST'], '/plain', auth.required(), (context) =>
       context.json({ ok: true }),
     );
-    routes.get(
+    routes.on(
+      ['GET', 'POST'],
       '/orders/:action',
       auth.required({ scopedKeys: true }),
       authz.middleware(),
@@ -341,6 +342,23 @@ describe('scoped API keys', () => {
     const plain = await app.request('/plain', as(created.secret));
     expect(plain.status).toBe(403);
     expect(await plain.json()).toMatchObject({
+      error: { reason: 'SCOPED_KEY_FORBIDDEN', domain: 'authentication' },
+    });
+
+    const withCookie = {
+      method: 'POST',
+      headers: { 'x-api-key': created.secret, cookie: 'preference=zh-CN' },
+    };
+    const cookieRead = await app.request('/orders/read', withCookie);
+    expect(cookieRead.status).toBe(200);
+    expect(await cookieRead.json()).toEqual({
+      allowed: true,
+      objects: ['o-1'],
+    });
+    expect((await app.request('/orders/create', withCookie)).status).toBe(403);
+    const cookiePlain = await app.request('/plain', withCookie);
+    expect(cookiePlain.status).toBe(403);
+    expect(await cookiePlain.json()).toMatchObject({
       error: { reason: 'SCOPED_KEY_FORBIDDEN', domain: 'authentication' },
     });
 
