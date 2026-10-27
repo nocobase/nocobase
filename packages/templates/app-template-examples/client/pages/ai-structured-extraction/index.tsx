@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -103,16 +104,13 @@ function ExtractionDemo<T>({
   >(null);
   const inFlightRef = useRef<AbortController | null>(null);
   const modelTriggerRef = useRef<HTMLButtonElement>(null);
-  const form = useForm({ defaultValues: { text: sample, model: '' } });
+  const form = useForm({
+    defaultValues: { text: sample, model: '' },
+    shouldFocusError: false,
+  });
   const text = useWatch({ control: form.control, name: 'text' });
   const selected = useWatch({ control: form.control, name: 'model' });
   const busy = form.formState.isSubmitting;
-  const { errors } = form.formState;
-  useEffect(() => {
-    if (busy) return;
-    if (errors.text) form.setFocus('text');
-    else if (errors.model) form.setFocus('model');
-  }, [busy, errors.text, errors.model, form]);
   const models = catalog.services.flatMap((service) =>
     service.models
       .filter((model) => model.kind === 'chat')
@@ -140,7 +138,7 @@ function ExtractionDemo<T>({
       form.setError(
         'model',
         { message: t('structuredExtraction.invalidModel') },
-        { shouldFocus: true },
+        { shouldFocus: false },
       );
       return;
     }
@@ -201,7 +199,7 @@ function ExtractionDemo<T>({
         form.setError(
           'model',
           { message: t('structuredExtraction.invalidModel') },
-          { shouldFocus: true },
+          { shouldFocus: false },
         );
       else if (
         error instanceof ApiClientError &&
@@ -210,7 +208,7 @@ function ExtractionDemo<T>({
         form.setError(
           'text',
           { message: t('structuredExtraction.invalidText') },
-          { shouldFocus: true },
+          { shouldFocus: false },
         );
       else
         setFailure(
@@ -238,7 +236,9 @@ function ExtractionDemo<T>({
       </CardHeader>
       <CardContent className='p-0'>
         <div className='grid min-w-0 lg:grid-cols-2'>
-          <form
+          <FeedbackForm
+            submitting={busy}
+            validationErrors={form.formState.errors}
             noValidate
             aria-label={title}
             onSubmit={(event) => void form.handleSubmit(extract)(event)}
@@ -352,6 +352,7 @@ function ExtractionDemo<T>({
                             models.length === 0
                           }
                           id={`${id}-model`}
+                          data-field-path='model'
                           ref={(element) => {
                             field.ref(element);
                             modelTriggerRef.current = element;
@@ -378,7 +379,7 @@ function ExtractionDemo<T>({
                 </Button>
               </div>
             </FieldGroup>
-          </form>
+          </FeedbackForm>
           <section
             className='flex min-w-0 flex-col gap-6 p-6'
             aria-labelledby={`${id}-result-title`}

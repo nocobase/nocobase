@@ -10,6 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Routes, Route } from 'react-router';
 import UsersPage from '../../client/pages/settings/users.js';
 import RolesPage from '../../client/pages/settings/roles.js';
+import { ListRecoveryError } from '../../client/hooks/use-table-url-state.js';
 import { SettingsError } from '../../client/pages/settings/shared.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
@@ -150,6 +151,30 @@ describe.each([
     ).not.toBeInTheDocument();
     expect(retry).not.toHaveBeenCalled();
   });
+
+  it.each([false, true])(
+    'preserves bounded recovery feedback with inline=%s',
+    async (inline) => {
+      const retry = vi.fn();
+      const message = 'The list changed repeatedly. Refresh to try again.';
+      await renderWithApp(
+        <SettingsError
+          error={new ListRecoveryError(message)}
+          retry={retry}
+          inline={inline}
+        />,
+        { locale: language, namespace, namespaces },
+      );
+      expect(screen.getByText(message)).toBeVisible();
+      expect(screen.queryByText(copy.settings.failed)).not.toBeInTheDocument();
+      expect(screen.queryAllByRole('alert')).toHaveLength(inline ? 0 : 1);
+      expect(retry).not.toHaveBeenCalled();
+      await userEvent.click(
+        screen.getByRole('button', { name: copy.settings.retry }),
+      );
+      expect(retry).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('keeps a retry for temporary failures and performs it only on demand', async () => {
     const retry = vi.fn();

@@ -263,6 +263,7 @@
     "#extensions/nocobase-notification-logs-ui/locales/vi-VN": "./registry/notification/notification-logs-ui/locales/vi-VN.ts",
     "#extensions/nocobase-notification-logs-ui/locales/zh-CN": "./registry/notification/notification-logs-ui/locales/zh-CN.ts",
     "#extensions/nocobase-notification-logs-ui/locales/zh-TW": "./registry/notification/notification-logs-ui/locales/zh-TW.ts",
-    "#extensions/nocobase-notification-logs-ui/page": "./registry/notification/notification-logs-ui/page.tsx"
+    "#extensions/nocobase-notification-logs-ui/page": "./registry/notification/notification-logs-ui/page.tsx",
+    "#components/feedback-form": "./registry/components/feedback-form.tsx"
   }
 }

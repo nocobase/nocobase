@@ -1,4 +1,4 @@
-import { apiClientToken } from '@nocobase/app-client';
+import { apiClientToken, toasterToken } from '@nocobase/app-client';
 import { agentsQueryClient } from '@nocobase/app-plugin-agents/client/chat';
 import {
   AuthorizationClient,
@@ -150,8 +150,11 @@ async function mount(
       },
     },
   );
+  // Assert emitted notifications independently of the five-second visible toast lifetime.
+  const reported = vi.spyOn(view.app.services.resolve(toasterToken), 'show');
   return {
     ...view,
+    reportedToasts: () => reported.mock.calls,
     calls,
     signals,
     extractions: () =>
@@ -568,7 +571,7 @@ describe('structured extraction page', () => {
         within(section(copy.orderTitle)).queryByRole('alert'),
       ).not.toBeInTheDocument();
       expect(view.extractions()).toHaveLength(2);
-      expect(view.toasts()).toHaveLength(1);
+      expect(view.reportedToasts()).toHaveLength(1);
       section();
       if (message === copy.sessionExpired) {
         await user.click(
@@ -656,7 +659,7 @@ describe('structured extraction page', () => {
     expect(
       within(region).getAllByLabelText(copy.fields.quantity)[0],
     ).toHaveValue('0.');
-    expect(view.toasts()).toHaveLength(1);
+    expect(view.reportedToasts()).toHaveLength(1);
     await user.click(submit);
     await waitFor(() =>
       expect(within(region).getByLabelText(copy.fields.supplier)).toHaveValue(
@@ -676,7 +679,7 @@ describe('structured extraction page', () => {
     );
     expect(source).toHaveValue('Source is not overwritten by a response');
     expect(view.extractions()).toHaveLength(3);
-    expect(view.toasts()).toHaveLength(2);
+    expect(view.reportedToasts()).toHaveLength(2);
     await replace(
       user,
       within(region).getByLabelText(copy.fields.supplier),
@@ -695,7 +698,7 @@ describe('structured extraction page', () => {
     );
     expect(within(region).getByLabelText(copy.fields.quantity)).toHaveValue('');
     expect(view.extractions()).toHaveLength(4);
-    expect(view.toasts()).toHaveLength(3);
+    expect(view.reportedToasts()).toHaveLength(3);
   });
 
   it.each([
@@ -728,7 +731,7 @@ describe('structured extraction page', () => {
       expect(within(region).getByLabelText(copy.fields.name)).toHaveValue(
         'Local correction',
       );
-      expect(view.toasts()).toHaveLength(1);
+      expect(view.reportedToasts()).toHaveLength(1);
     },
   );
 
@@ -756,7 +759,7 @@ describe('structured extraction page', () => {
     await user.clear(source);
     await user.paste('x'.repeat(20_000));
     await user.click(button);
-    await waitFor(() => expect(view.toasts()).toHaveLength(1));
+    await waitFor(() => expect(view.reportedToasts()).toHaveLength(1));
     expect(view.extractions()).toHaveLength(1);
     expect((view.extractions()[0]?.json as { text: string }).text).toHaveLength(
       20_000,

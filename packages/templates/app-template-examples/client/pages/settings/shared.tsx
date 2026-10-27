@@ -19,9 +19,11 @@ import {
 export function SettingsError({
   error,
   retry,
+  inline = false,
 }: {
   readonly error: unknown;
   readonly retry?: () => void;
+  readonly inline?: boolean;
 }): ReactElement | null {
   const { t } = useTranslation();
   if (!error) return null;
@@ -29,42 +31,47 @@ export function SettingsError({
     typeof error === 'object' && error !== null
       ? Reflect.get(error, 'status')
       : undefined;
-  return (
+  const content = (
+    <>
+      {error instanceof ListRecoveryError
+        ? error.message
+        : t(
+            status === 400
+              ? 'settings.invalidRequest'
+              : status === 401
+                ? 'settings.sessionEnded'
+                : status === 403
+                  ? 'settings.denied'
+                  : status === 404
+                    ? 'settings.missing'
+                    : status === 409
+                      ? error instanceof ApiClientError &&
+                        error.reason === 'USER_IDENTITY_CONFLICT'
+                        ? 'settings.identityConflict'
+                        : 'settings.conflict'
+                      : 'settings.failed',
+          )}
+      {status === 401 && (
+        <Button
+          variant='outline'
+          nativeButton={false}
+          render={<Link to='/login' />}
+        >
+          {t('settings.signInAgain')}
+        </Button>
+      )}
+      {retry && ![400, 401, 403, 404, 409].includes(Number(status)) && (
+        <Button variant='outline' size='sm' onClick={retry}>
+          {t('settings.retry')}
+        </Button>
+      )}
+    </>
+  );
+  return inline ? (
+    content
+  ) : (
     <Alert variant='destructive'>
-      <AlertDescription>
-        {error instanceof ListRecoveryError
-          ? error.message
-          : t(
-              status === 400
-                ? 'settings.invalidRequest'
-                : status === 401
-                  ? 'settings.sessionEnded'
-                  : status === 403
-                    ? 'settings.denied'
-                    : status === 404
-                      ? 'settings.missing'
-                      : status === 409
-                        ? error instanceof ApiClientError &&
-                          error.reason === 'USER_IDENTITY_CONFLICT'
-                          ? 'settings.identityConflict'
-                          : 'settings.conflict'
-                        : 'settings.failed',
-            )}
-        {status === 401 && (
-          <Button
-            variant='outline'
-            nativeButton={false}
-            render={<Link to='/login' />}
-          >
-            {t('settings.signInAgain')}
-          </Button>
-        )}
-        {retry && ![400, 401, 403, 404, 409].includes(Number(status)) && (
-          <Button variant='outline' size='sm' onClick={retry}>
-            {t('settings.retry')}
-          </Button>
-        )}
-      </AlertDescription>
+      <AlertDescription>{content}</AlertDescription>
     </Alert>
   );
 }

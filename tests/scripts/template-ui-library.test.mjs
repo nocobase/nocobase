@@ -18,6 +18,7 @@ const preinstalled = [
   { group: 'lifecycle', item: 'workflow-management' },
   { group: 'lifecycle', item: 'lifecycle-diagram' },
   { group: 'components', item: 'flow-diagram' },
+  { group: 'components', item: 'feedback-form' },
   { group: 'components', item: 'data-table' },
   { group: 'components', item: 'record-link' },
   { group: 'auth', item: 'auth-forms' },
