@@ -977,6 +977,7 @@ const esES: LocaleResource<typeof enUS> = {
         '{{own}} no tiene ningún ejecutor para usted ahora, por lo que {{name}} responde hasta que {{own}} regrese.',
       onlineFallbackUnavailable:
         'El agente de reserva en línea no puede responder ({{reason}}). Esta conversación permanece con {{own}} mientras espera un ejecutor.',
+      switchedAgent: chatEnUS.chat.notice.switchedAgent,
       switchedBack: 'De vuelta con {{name}}.',
       runFailed: 'El agente se detuvo antes de responder.',
       runFailedReason: 'El agente se detuvo antes de responder: {{reason}}',

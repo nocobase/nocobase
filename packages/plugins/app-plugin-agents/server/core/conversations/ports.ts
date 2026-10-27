@@ -256,6 +256,12 @@ export interface ConversationService {
    * starting a fresh session with the conversation's history. The old directory is left to the runner's cleanup.
    */
   switchRunner(userId: string, id: string): Promise<ConversationDetail>;
+  /** Changes the agent of an idle Runner conversation, preserving history and links; its next message starts a fresh session. */
+  switchAgent(
+    userId: string,
+    id: string,
+    agentId: string,
+  ): Promise<ConversationDetail>;
   /** Cancels the conversation's open runs: a queued one at once, a working one is asked to stop. */
   stop(userId: string, id: string): Promise<ConversationDetail>;
   /**

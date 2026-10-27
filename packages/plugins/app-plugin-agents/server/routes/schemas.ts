@@ -1759,6 +1759,11 @@ const resolvedPageContextItem = pageContextRef.extend({
 
 const notice = z.discriminatedUnion('code', [
   z.object({
+    code: z.literal('switchedAgent'),
+    agentId: z.string(),
+    fromAgentId: z.string(),
+  }),
+  z.object({
     code: z.literal('switchedToDefault'),
     agentId: z.string(),
     fromAgentId: z.string(),

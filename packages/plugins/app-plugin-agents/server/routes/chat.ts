@@ -849,6 +849,39 @@ export function createChatRoutes(
       return context.json({ data: await conversations.get(me(context), id) });
     },
   );
+  router.post(
+    '/conversations/:conversationId/switchAgent',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Change a Runner conversation’s agent',
+      operationId: 'agentsSwitchConversationAgent',
+      ...cliRoute(false),
+      description:
+        'Owner only. Select an enabled, callable Runner Agent once all pending work has ended. History and task links stay; the next message starts a fresh tool session with the new agent. No run is cancelled or automatically started.',
+      responses: {
+        200: dataResponse(ConversationDetailSchema),
+        409: conversationConflict(
+          'The conversation has pending work or has been archived.',
+        ),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator(
+      'json',
+      z.strictObject({ agentId: z.string().trim().min(1).max(64) }),
+    ),
+    async (context) =>
+      context.json({
+        data: await conversations.switchAgent(
+          me(context),
+          conversationId(context),
+          context.req.valid('json').agentId,
+        ),
+      }),
+  );
   const acts: Record<
     'markRead' | 'stop' | 'switchRunner',
     {

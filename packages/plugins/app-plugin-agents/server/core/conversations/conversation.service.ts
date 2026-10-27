@@ -171,6 +171,8 @@ export interface ConversationServiceDeps {
   readonly contextKinds: PageContextKinds;
   /** Availability of the built-in model-backed chat capability. */
   readonly nativeAvailable?: () => Promise<boolean>;
+  /** Transient Runner admission/finalization occupancy, in addition to persisted open runs. */
+  readonly runnerBusy?: (sessionId: string) => boolean;
   /** Native process occupancy, combined with the authorized persisted row. */
   readonly nativeActive?: (
     sessionId: string,
@@ -270,6 +272,8 @@ function noticeText(
       return `${name(notice.fromAgentId)} has no runner for you now, so ${name(notice.agentId)} answers until you switch back.`;
     case 'onlineFallbackUnavailable':
       return `The online fallback agent cannot answer (${notice.reason}). This conversation stays with ${name(notice.fromAgentId)} while it waits for a runner.`;
+    case 'switchedAgent':
+      return `This conversation now uses ${name(notice.agentId)}. Its next message starts a fresh session with the conversation history.`;
     case 'switchedBack':
       return `This conversation is back with ${name(notice.agentId)}.`;
     case 'runFailed':
@@ -697,7 +701,8 @@ export function createConversationService(
     const agentIds =
       value.code === 'switchedToDefault' ||
       value.code === 'switchedToOnline' ||
-      value.code === 'switchedBack'
+      value.code === 'switchedBack' ||
+      value.code === 'switchedAgent'
         ? [value.agentId, value.fromAgentId]
         : value.code === 'onlineFallbackUnavailable'
           ? [value.fromAgentId]
@@ -804,13 +809,17 @@ export function createConversationService(
     agent: Agent,
     fallbackFromAgentId: string | null,
     value: ConversationNotice,
+    idleOnly = false,
   ): Promise<void> {
-    if (runnerBinding(record.metadata))
+    const binding = runnerBinding(record.metadata);
+    if (binding && !idleOnly)
       throw conflict('Start a new conversation to choose another agent.');
-    const withdrawn = await deps.runs.withdrawQueued(
-      { subject: subjectOf(record.id), byUserId: record.userId },
-      unit,
-    );
+    const withdrawn = idleOnly
+      ? []
+      : await deps.runs.withdrawQueued(
+          { subject: subjectOf(record.id), byUserId: record.userId },
+          unit,
+        );
     await conversationsRepo(unit.conn).updateMany({
       filter: { id: record.id },
       values: {
@@ -819,12 +828,27 @@ export function createConversationService(
         modelService: null,
         model: null,
         fallbackFromAgentId,
+        ...(binding
+          ? {
+              metadata: asJson({
+                ...jsonObject(record.metadata),
+                runnerOnlineAgent: {
+                  ...binding,
+                  config: { ...binding.config, agentId: agent.id },
+                },
+              }),
+            }
+          : {}),
         thread: Number(record.thread) + 1,
         runnerId: null,
         updatedAt: now(),
       },
     });
     const moved = (await findConversation(unit.conn, record.id))!;
+    if (idleOnly) {
+      await notice(unit, moved, value);
+      return;
+    }
     const runIds = withdrawn.map((run) => run.id);
     const unanswered = await messagesRepo(unit.conn).findMany({
       filter: (f) =>
@@ -2152,6 +2176,49 @@ export function createConversationService(
           values: { noticedSeq: seq },
         });
       });
+    },
+
+    async switchAgent(userId, id, agentId) {
+      if (typeof agentId !== 'string' || !agentId.trim())
+        throw invalid('Select a valid agentId.');
+      await tx.run(async (unit) => {
+        const record = await lockOwned(unit, userId, id, true);
+        if (record.mode !== 'runner' || jsonObject(record.metadata).onlineAgent)
+          throw invalid('Only Runner conversations can switch agents.');
+        if (record.archivedAt)
+          throw conflict('Restore the conversation before changing agents.', {
+            reason: 'archived',
+          });
+        const agent = await pickAgent(unit.conn, userId, agentId);
+        if (agent.source !== 'runner')
+          throw invalid('Select a callable Runner agent.');
+        if (record.agentId === agent.id) return;
+        const binding = runnerBinding(record.metadata);
+        // Sending, queueing and switching serialize on this same conversation row. An admitted or closing stream
+        // also keeps the boundary busy until its durable run and canonical history have settled.
+        if (
+          deps.runnerBusy?.(id) ||
+          binding?.closingRunId ||
+          (await openRunsOnEach(unit.conn, CONVERSATION_SUBJECT, [id])).length
+        )
+          throw conflict(
+            'Finish the conversation’s pending work before changing agents.',
+            { reason: 'busy' },
+          );
+        await rebind(
+          unit,
+          record,
+          agent,
+          null,
+          {
+            code: 'switchedAgent',
+            agentId: agent.id,
+            fromAgentId: record.agentId,
+          },
+          true,
+        );
+      });
+      return detail(userId, id);
     },
 
     async switchRunner(userId, id) {

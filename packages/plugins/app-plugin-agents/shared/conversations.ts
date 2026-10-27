@@ -400,6 +400,12 @@ export type ConversationNotice =
       readonly fromAgentId: string;
       readonly reason: OfflineReason;
     }
+  /** The owner selected another Runner Agent; the next message starts a fresh tool session. */
+  | {
+      readonly code: 'switchedAgent';
+      readonly agentId: string;
+      readonly fromAgentId: string;
+    }
   /** The conversation is back on its own agent. */
   | {
       readonly code: 'switchedBack';
@@ -575,6 +581,7 @@ export const CHAT_ROUTES = {
   markRead: 'agents/conversations/:conversationId/markRead',
   markSeen: 'agents/conversations/:conversationId/markSeen',
   switchRunner: 'agents/conversations/:conversationId/switchRunner',
+  switchAgent: 'agents/conversations/:conversationId/switchAgent',
   links: 'agents/conversations/:conversationId/links',
   attention: 'agents/conversationAttention',
   stop: 'agents/conversations/:conversationId/stop',

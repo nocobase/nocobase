@@ -303,6 +303,10 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
     const current = runnerBinding(before.metadata)?.config;
     if (!current)
       throw invalid('This is not a Runner OnlineAgent conversation.');
+    if (current.agentId !== this.agentId)
+      throw conflict(
+        'This conversation now uses another agent; restore it before queueing.',
+      );
     const accepted = await deps.conversations.sendRealtime(
       this.context.user.id,
       this.sessionId,
@@ -429,6 +433,12 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
   private shutdownTask?: Promise<void>;
   constructor(private deps: RunnerDependencies) {}
 
+  /** A configuration change must not race an admission or unfinished stream finalization. */
+  busy(sessionId: string): boolean {
+    return (
+      this.state.admitting.has(sessionId) || this.state.active.has(sessionId)
+    );
+  }
   private available(context: OnlineAgentContext): void {
     credentials(context);
     if (this.state.stopping) throw conflict('OnlineAgent is stopping.');
