@@ -25,11 +25,12 @@ it('does not resolve hidden feedback or actions while the list is ready', async 
 
 for (const locale of ['en-US', 'zh-CN'] as const) {
   it(`renders every feedback state with the documented ${locale} resources`, async () => {
+    const translations = readmeTranslations('components')[locale];
     const runtime = await createTestI18nRuntime({
       locale,
       application: {
         namespace: '@nocobase/feedback-docs',
-        resources: readmeTranslations('components')[locale],
+        resources: translations,
       },
     });
     const view = render(
@@ -59,6 +60,14 @@ for (const locale of ['en-US', 'zh-CN'] as const) {
           state === 'empty' || state === 'no-results' ? 'status' : 'alert',
         ),
       ).toBeVisible();
+      if (state === 'no-results') {
+        expect(
+          screen.getByText(translations['listFeedback.noResults']!),
+        ).toBeVisible();
+        expect(
+          screen.queryByText(/Try another search|请尝试其他关键词/),
+        ).not.toBeInTheDocument();
+      }
     }
   });
 }

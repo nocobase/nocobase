@@ -9,27 +9,17 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  */
 const systemEnUS = {
   listFeedback: {
-    refreshTitle: 'This list could not be refreshed',
-    loadingDescription: 'Your records will appear here shortly.',
-    emptyDescription: 'Records will appear here when they are available.',
-    noResultsDescription:
-      'Try another search or clear your filters to see more records.',
-    forbiddenDescription: 'Ask your administrator if you need access.',
-    unauthenticatedDescription:
-      'Sign in to continue with your current account.',
-    failedDescription:
-      'Try again. Your current search and filters will be kept.',
     loading: 'Loading…',
     empty: 'No data yet.',
     noResults: 'No matching results.',
-    forbidden: 'You do not have permission to view this list.',
-    unauthenticated: 'Your session has expired. Sign in again.',
-    failed: 'Unable to load this list.',
-    refreshFailed: 'Refresh failed. Showing previously loaded data.',
+    forbidden: 'Access denied.',
+    unauthenticated: 'Session expired.',
+    failed: 'Unable to load list.',
+    refreshFailed: 'Refresh failed. Previous data remains visible.',
     retry: 'Retry',
     retrying: 'Retrying…',
     clear: 'Clear filters',
-    signIn: 'Sign in again',
+    signIn: 'Sign in',
   },
   flowDiagram: {
     controls: 'Diagram controls',

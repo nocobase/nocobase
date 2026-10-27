@@ -5,4 +5,4 @@
 '@nocobase/app-skills': patch
 ---
 
-Present themed, responsive list feedback and distinguish list loading, empty data, unmatched filters, denied access and request failures, preserve prior results after failed refreshes, and include target-guidance discovery, source reconciliation and verified completion in the existing version-selected template upgrade workflow.
+Present concise, theme-aware list feedback for loading, empty data, unmatched filters, denied access and request failures, preserve prior results after failed refreshes, and include target-guidance discovery, source reconciliation and verified completion in the existing version-selected template upgrade workflow.

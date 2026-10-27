@@ -67,7 +67,7 @@ describe('shared table and card feedback', () => {
       options,
     );
     await user.type(screen.getByLabelText('Camera filter'), 'missing');
-    expect(screen.getByText('No matching results.')).toBeVisible();
+    expect(screen.getByText(enUS.listFeedback.noResults)).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(screen.getByLabelText('Camera filter')).toHaveValue('');
     expect(screen.getByRole('cell', { name: 'Camera' })).toBeVisible();
@@ -94,7 +94,9 @@ describe('shared table and card feedback', () => {
         emptyMessage='Business empty'
       />,
     );
-    expect(screen.getByRole('alert')).toHaveTextContent('permission');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      enUS.listFeedback.forbidden,
+    );
     expect(screen.queryByText('Private row')).not.toBeInTheDocument();
   });
 
@@ -140,7 +142,9 @@ describe('shared table and card feedback', () => {
       options,
     );
     expect(screen.getByText('Retained equipment record')).toBeVisible();
-    expect(screen.getByRole('alert')).toHaveTextContent('previously loaded');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      enUS.listFeedback.refreshFailed,
+    );
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'Retry' }));
@@ -156,11 +160,11 @@ describe('shared table and card feedback', () => {
     );
     expect(screen.queryByText('Private record')).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Sign in again' }),
+      screen.getByRole('button', { name: enUS.listFeedback.signIn }),
     ).toHaveAttribute('href', '/login');
   });
 
-  it('gives busy recovery a title and description while preserving business content', async () => {
+  it('keeps the refresh warning and busy action compact while preserving business content', async () => {
     await renderWithApp(
       <ListFeedback state='refresh-failed' onRetry={vi.fn()} busy>
         <RetainedEditor />
@@ -168,7 +172,6 @@ describe('shared table and card feedback', () => {
       options,
     );
     const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent(enUS.listFeedback.refreshTitle);
     expect(alert).toHaveTextContent(enUS.listFeedback.refreshFailed);
     expect(
       screen.getByRole('button', { name: enUS.listFeedback.retrying }),
@@ -176,13 +179,14 @@ describe('shared table and card feedback', () => {
     expect(screen.getByRole('button', { name: 'Edited 0' })).toBeVisible();
   });
 
-  it('pairs the localized status with guidance and hides decorative icons from assistive technology', async () => {
+  it('keeps localized status concise and its clear action accessible by keyboard', async () => {
     await renderWithApp(<ListFeedback state='no-results' onClear={vi.fn()} />, {
       ...options,
       locale: 'zh-CN',
     });
     const status = screen.getByRole('status');
-    expect(status).toHaveTextContent(zhCN.listFeedback.noResultsDescription);
+    expect(status).toHaveTextContent(zhCN.listFeedback.noResults);
+    expect(status).not.toHaveTextContent('请尝试其他关键词');
     expect(status.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(
       screen.getByRole('button', { name: zhCN.listFeedback.clear }),
