@@ -8,7 +8,6 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import type { ConversationListPages } from '../../client/chat/use-chat.js';
 import { ChatClientProvider } from '../../client/chat/controller.js';
 import { useConversationActions } from '../../client/chat/use-chat.js';
 import { agentsQueryClient } from '../../client/query.js';
@@ -39,13 +38,6 @@ function Row() {
         Archive
       </button>
       <button onClick={() => a.markRead('c')}>Read</button>
-      <button
-        onClick={() =>
-          void a.remove.mutateAsync('c').then(() => host.close('removed'))
-        }
-      >
-        Remove
-      </button>
     </>
   );
 }
@@ -60,13 +52,12 @@ beforeEach(() => {
   agentsQueryClient().clear();
   host.request.mockReset();
   host.show.mockReset().mockReturnValue('toast');
-  host.close.mockReset();
 });
 afterEach(() => {
   cleanup();
   agentsQueryClient().clear();
 });
-it.each(['Stop', 'Archive', 'Read', 'Remove'])(
+it.each(['Stop', 'Archive', 'Read'])(
   'ignores a late %s result after A → B → A',
   async (action) => {
     let resolve!: (value: unknown) => void;
@@ -133,54 +124,3 @@ it.each([false, true])(
     }
   },
 );
-
-it('removes the deleted conversation from every list page before navigation and cancels stale responses', async () => {
-  render(<Tree identity='A' />);
-  const client = agentsQueryClient();
-  const pages = {
-    pages: [
-      { items: [{ id: 'c' }, { id: 'keep' }], nextCursor: 'next' },
-      { items: [{ id: 'c' }], nextCursor: null },
-    ],
-    pageParams: [null, 'next'],
-  } as ConversationListPages;
-  const keys = [chatKeys.list({}), chatKeys.list({ q: 'match' })];
-  for (const key of keys) client.setQueryData(key, pages);
-  let release!: (value: ConversationListPages) => void;
-  const inflight = client
-    .fetchQuery({
-      queryKey: keys[1],
-      staleTime: 0,
-      queryFn: () =>
-        new Promise<ConversationListPages>((done) => {
-          release = done;
-        }),
-    })
-    .catch(() => undefined);
-  host.request.mockResolvedValue({});
-  let atNavigation: ConversationListPages[] = [];
-  host.close.mockImplementation(() => {
-    atNavigation = keys.map((key) =>
-      client.getQueryData<ConversationListPages>(key)!,
-    );
-  });
-  fireEvent.click(screen.getByText('Remove'));
-  await waitFor(() => expect(host.close).toHaveBeenCalledWith('removed'));
-  for (const cached of atNavigation) {
-    expect(
-      cached.pages.map((page) => page.items.map((item) => item.id)),
-    ).toEqual([['keep'], []]);
-    expect(cached.pageParams).toEqual(pages.pageParams);
-    expect(cached.pages[0].nextCursor).toBe('next');
-  }
-  await act(async () => {
-    release(pages);
-    await inflight;
-  });
-  expect(
-    client
-      .getQueryData<ConversationListPages>(keys[1])!
-      .pages[0].items.map((item) => item.id),
-  ).toEqual(['keep']);
-  expect(client.getQueryState(keys[0])?.isInvalidated).toBe(true);
-});

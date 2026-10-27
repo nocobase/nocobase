@@ -636,23 +636,7 @@ export function useConversationActions(): ConversationActions {
     {
       mutationFn: (id: string) => api.deleteConversation(id),
       onMutate: scope,
-      onSuccess: async (_result, id, lifetime) => {
-        if (!lifetime.active()) return;
-        // A root route can immediately select the first cached conversation.
-        // Cancel stale list responses before removing the deleted item from every page.
-        await queryClient.cancelQueries({ queryKey: chatKeys.lists });
-        if (!lifetime.active()) return;
-        queryClient.setQueriesData<ConversationListPages>(
-          { queryKey: chatKeys.lists },
-          (data) =>
-            data && {
-              ...data,
-              pages: data.pages.map((page) => ({
-                ...page,
-                items: page.items.filter((item) => item.id !== id),
-              })),
-            },
-        );
+      onSuccess: (_result, id) => {
         queryClient.removeQueries({ queryKey: chatKeys.conversation(id) });
         void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
       },
