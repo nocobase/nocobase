@@ -53,9 +53,9 @@ export function useWorkflowData<T>(path: string, query = '') {
   const reload = useCallback(() => setRefresh((value) => value + 1), []);
   return {
     data: result.key === key ? result.data : undefined,
-    status: result.requestKey === requestKey ? result.status : undefined,
+    status: result.key === key ? result.status : undefined,
     loading: result.requestKey !== requestKey,
-    error: result.requestKey === requestKey ? result.error : undefined,
+    error: result.key === key ? result.error : undefined,
     reload,
   };
 }

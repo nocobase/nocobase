@@ -52,10 +52,7 @@ export function useSettingsData<T>(path: string, _keepPreviousData = false) {
       ? result
       : { path, loading: true, data: undefined, error: undefined }),
     loading: result.path !== path || result.revision !== revision,
-    error:
-      result.path === path && result.revision === revision
-        ? result.error
-        : undefined,
+    error: result.path === path ? result.error : undefined,
     reload: useCallback(() => setRevision((value) => value + 1), []),
     replaceData: useCallback(
       (data: T) => setResult({ path, revision, data, loading: false }),

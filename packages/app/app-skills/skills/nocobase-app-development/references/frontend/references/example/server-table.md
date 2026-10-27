@@ -165,6 +165,17 @@ export default function ProjectsPage(): ReactElement {
           params.delete('page');
         });
       }}
+      emptyAction={
+        canCreate === true ? (
+          <Button
+            nativeButton={false}
+            render={<Link to={{ pathname: 'new', search: location.search }} />}
+          >
+            <PlusIcon />
+            {t('projects.create.action')}
+          </Button>
+        ) : null
+      }
       emptyMessage={
         <>
           <h2>{t('projects.empty.title')}</h2>

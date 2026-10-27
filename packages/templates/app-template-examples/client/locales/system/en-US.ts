@@ -17,6 +17,7 @@ const systemEnUS = {
     failed: 'Unable to load this list.',
     refreshFailed: 'Refresh failed. Showing previously loaded data.',
     retry: 'Retry',
+    retrying: 'Retrying…',
     clear: 'Clear filters',
     signIn: 'Sign in again',
   },

@@ -41,7 +41,9 @@ export function ListFeedback({
             </span>
             {onRetry && (
               <Button variant='outline' disabled={busy} onClick={onRetry}>
-                {t('listFeedback.retry', { defaultValue: 'Retry' })}
+                {busy
+                  ? t('listFeedback.retrying', { defaultValue: 'Retrying…' })
+                  : t('listFeedback.retry', { defaultValue: 'Retry' })}
               </Button>
             )}
           </div>
@@ -89,7 +91,9 @@ export function ListFeedback({
       )}
       {state === 'failed' && onRetry && (
         <Button variant='outline' disabled={busy} onClick={onRetry}>
-          {t('listFeedback.retry', { defaultValue: 'Retry' })}
+          {busy
+            ? t('listFeedback.retrying', { defaultValue: 'Retrying…' })
+            : t('listFeedback.retry', { defaultValue: 'Retry' })}
         </Button>
       )}
       {state === 'unauthenticated' && (

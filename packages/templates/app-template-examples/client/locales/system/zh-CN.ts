@@ -14,6 +14,7 @@ const systemZhCN: SystemResource = {
     failed: '列表加载失败。',
     refreshFailed: '刷新失败，当前显示此前加载的数据。',
     retry: '重试',
+    retrying: '正在重试…',
     clear: '清空条件',
     signIn: '重新登录',
   },

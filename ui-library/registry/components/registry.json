@@ -503,8 +503,8 @@
       "description": "Accessible list loading, empty, filtered, permission and request feedback for tables and cards.",
       "dependencies": [
         "@nocobase/app-client@^4.0.0-beta.4",
-        "@nocobase/i18n",
-        "react-router"
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "react-router@^7.0.2"
       ],
       "registryDependencies": ["button"],
       "docs": "Pass resolveListState from @nocobase/app-client and the existing request retry/clear callbacks. Merge listFeedback translations listed in the components README. Gate emptyAction with the existing create permission.",

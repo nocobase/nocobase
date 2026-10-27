@@ -251,5 +251,6 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 | `listFeedback.failed`          | Unable to load this list.                       | 列表加载失败。                     |
 | `listFeedback.refreshFailed`   | Refresh failed. Showing previously loaded data. | 刷新失败，当前显示此前加载的数据。 |
 | `listFeedback.retry`           | Retry                                           | 重试                               |
+| `listFeedback.retrying`        | Retrying…                                       | 正在重试…                          |
 | `listFeedback.clear`           | Clear filters                                   | 清空条件                           |
 | `listFeedback.signIn`          | Sign in again                                   | 重新登录                           |
