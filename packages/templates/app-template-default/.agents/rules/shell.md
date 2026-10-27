@@ -33,3 +33,7 @@ Use `Loading` for page or panel waits and `Spinner` (the shadcn-compatible adapt
 The shared list of shell behaviors to keep when customizing is in [customizing the shell](../skills/nocobase-app-development/references/frontend/references/shell.md).
 
 The signed-in region waits in `client/routing/session-preparation.tsx` before mounting `AppLayout`: the authentication provider first reconnects active realtime subscriptions as the current session and waits for the open notification, including permission invalidation. A ten-second timeout shows a localized retry/sign-out screen. Keep this boundary inside `RequiredAuthentication`; guest login must remain reachable without realtime. Readiness is only for initial session preparation. Subsequent permission notifications and reconnects still use normal fail-closed route unmounting, including portal and effect cleanup.
+
+## List context
+
+Keep the identity-keyed `SessionPreparation` boundary: mounted private list conditions and ancestor query memory must be discarded when the signed-in user changes. Public list state uses `useTableUrlState`; tabbed datasets use `useListTabs`, with complete owned parameter keys and permission-filtered tabs. Follow the synchronized [list navigation rules](../skills/nocobase-app-development/references/frontend/references/child-routes.md#list-tab-breadcrumbs-and-private-conditions). Default back links use an empty ancestor query when no source visit exists; explicit return destinations remain application-owned.
