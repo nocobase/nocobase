@@ -791,6 +791,26 @@ export class ChatController {
       }
     })();
   }
+  /**
+   * A message sent while the agent works: it joins that work and shows as queued until the agent takes it. Throws
+   * the server's refusal (`409` when the agent is not working any more), which the caller answers by sending it.
+   */
+  async queue(id: string, input: SubmissionSend): Promise<AppUIMessage> {
+    if (this.disposed) throw new CancelledError({ silent: true });
+    const message = await this.api.queue(id, input);
+    this.dispatch(id, { type: 'confirmed', message });
+    return message;
+  }
+
+  /** Takes back a queued message the agent has not taken; rereads it either way, so it shows where it stands. */
+  async withdraw(id: string, messageId: string): Promise<void> {
+    try {
+      await this.api.withdraw(id, messageId);
+    } finally {
+      await this.reread(id, [messageId]).catch(() => {});
+    }
+  }
+
   private async sendInput(
     id: string,
     input: SubmissionSend,

@@ -162,7 +162,10 @@ it('replays a recorded run with a steer, accepting every approval', async () => 
     content: 'started',
     meta: { model: 'gpt-6-astra' },
   });
-  expect(events.filter((e) => e.type === 'status').at(-1)).toMatchObject({
+  // The turn's end, then how full it left the context window.
+  expect(
+    events.filter((e) => e.type === 'status' && e.content !== 'context').at(-1),
+  ).toMatchObject({
     content: 'turnCompleted',
     meta: { status: 'completed' },
   });

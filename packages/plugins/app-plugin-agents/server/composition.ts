@@ -571,6 +571,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     nativeAvailable,
     nativeNotice: (unit, row, id, parts) =>
       sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
+    runnerBusy: (id) => runnerOnlineAgent.busy(id),
     nativeActive: (id, persistedRunning) =>
       onlineAgent.producerAvailable(id, persistedRunning),
     contextKinds: createPageContextKinds(),

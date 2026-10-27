@@ -21,7 +21,7 @@ import type {
 import type { ModelRef } from '../../../../shared/models.js';
 import type { OnlineAgentSession } from '../persistence/types.js';
 import type { OnlineAgentExecution } from './types.js';
-import { OnlineAgentResultError } from '../errors.js';
+import { OnlineAgentResultError, unsupportedCapability } from '../errors.js';
 import { nativeExecutionStatus } from '../persistence/state.js';
 import { createOutputSchema } from '../messages/validation.js';
 import { conflict, invalid } from '../../../kernel/errors.js';
@@ -121,6 +121,10 @@ export class NativeRealtimeOnlineAgent
     );
     this.consumed();
     return seq;
+  }
+
+  queue(): Promise<number> {
+    return Promise.reject(unsupportedCapability('native', 'queued messages'));
   }
 
   async resend(options: OnlineAgentResendOptions = {}): Promise<number> {

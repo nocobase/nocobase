@@ -140,6 +140,7 @@ function FullSessionList({
   const [search, setSearch] = useState('');
   const [computersOpen, setComputersOpen] = useState(false);
   const surface = useSessionSurface();
+  const ListHeading = useContext(AgentSessionsConfigContext)?.listHeading;
   // The standalone page shares the compact history layout with host-owned panels.
   const compact = !surface.panel || Boolean(surface.renderHeaderActions);
   // The standalone page names the archived view; a host panel keeps its mode title.
@@ -209,16 +210,22 @@ function FullSessionList({
               <ArrowLeftIcon />
             </Button>
           )}
-          <h1
-            className={
-              compact
-                ? 'min-w-0 flex-1 truncate text-sm font-semibold'
-                : 'min-w-0 flex-1 truncate text-base font-semibold'
-            }
-            title={title}
-          >
-            {title}
-          </h1>
+          {ListHeading && !surface.panel && !archived ? (
+            <div className='min-w-0 flex-1'>
+              <ListHeading />
+            </div>
+          ) : (
+            <h1
+              className={
+                compact
+                  ? 'min-w-0 flex-1 truncate text-sm font-semibold'
+                  : 'min-w-0 flex-1 truncate text-base font-semibold'
+              }
+              title={title}
+            >
+              {title}
+            </h1>
+          )}
           {surface.panel ? (
             surface.actions
           ) : (

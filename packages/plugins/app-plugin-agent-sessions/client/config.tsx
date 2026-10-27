@@ -39,6 +39,11 @@ export interface AgentSessionsRouteOptions {
    * named in the address as `?<kind>=<refId>`; any other opens where its application shows it (`href`).
    */
   readonly linkPanels?: Readonly<Record<string, ComponentType<LinkPanelProps>>>;
+  /**
+   * Drawn in place of the page list's title, such as a switch to the application's other sessions; the archived list
+   * and a host's panel keep their own titles.
+   */
+  readonly listHeading?: ComponentType;
 }
 
 export interface AgentSessionsSettings {
@@ -47,6 +52,7 @@ export interface AgentSessionsSettings {
   readonly sessionMarks?: ComponentType<{ sessionId: string }>;
   readonly connectPrompt: ComponentType | null;
   readonly linkPanels: Readonly<Record<string, ComponentType<LinkPanelProps>>>;
+  readonly listHeading?: ComponentType;
 }
 
 const NO_PANELS: AgentSessionsSettings['linkPanels'] = {};

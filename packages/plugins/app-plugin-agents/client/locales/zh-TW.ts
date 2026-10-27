@@ -899,6 +899,7 @@ const zhTW: LocaleResource<typeof enUS> = {
         '{{own}} 現在沒有適合您的執行器，所以 {{name}} 會回答，直到 {{own}} 回來。',
       onlineFallbackUnavailable:
         '線上備援代理無法回覆（{{reason}}）。等待執行器期間，此對話仍由 {{own}} 負責。',
+      switchedAgent: chatEnUS.chat.notice.switchedAgent,
       switchedBack: '返回 {{name}}。',
       runFailed: '客服人員在回答之前停了下來。',
       runFailedReason: '客服人員在回答前停了下來：{{reason}}',

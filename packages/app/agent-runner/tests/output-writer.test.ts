@@ -6,7 +6,11 @@ import {
   outputBlock,
   REDACTED,
 } from '../src/protocol/index.ts';
-import { OutputWriter } from '../src/agent/output-writer.ts';
+import {
+  FIRST_PREVIEW_MS,
+  OutputWriter,
+  PREVIEW_FLUSH_MS,
+} from '../src/agent/output-writer.ts';
 import { GrowingRedactor } from '../src/agent/worker.ts';
 import type { SpoolEvent } from '../src/core/events.ts';
 const event = (
@@ -48,6 +52,30 @@ for (const type of ['text', 'thinking'] as const)
       expect(outputBlock(saved[0]?.meta)?.phase).toBe('end');
       expect(vi.getTimerCount()).toBe(0);
     });
+it('sends the first words of a reply almost at once and batches what follows briefly', async () => {
+  vi.useFakeTimers();
+  const live: SpoolEvent[] = [];
+  const writer = new OutputWriter(
+    () => undefined,
+    createRedactor(),
+    true,
+    (e) => live.push(e),
+  );
+  writer.write(event('Hello. '));
+  expect(live).toHaveLength(0);
+  await vi.advanceTimersByTimeAsync(FIRST_PREVIEW_MS);
+  expect(live.map((e) => e.content)).toEqual(['Hello. ']);
+  writer.write(event('More '));
+  writer.write(event('text. '));
+  expect(live).toHaveLength(1);
+  await vi.advanceTimersByTimeAsync(PREVIEW_FLUSH_MS);
+  expect(live.map((e) => e.content)).toEqual(['Hello. ', 'More text. ']);
+  // Another block, such as the next message, starts at once as well.
+  writer.write(event('Next. ', 'delta', 'other'));
+  await vi.advanceTimersByTimeAsync(FIRST_PREVIEW_MS);
+  expect(live.at(-1)?.content).toBe('Next. ');
+  writer.end();
+});
 it('keeps the three ordinary-word examples unchanged on the legacy path', () => {
   const saved: SpoolEvent[] = [];
   const live: SpoolEvent[] = [];

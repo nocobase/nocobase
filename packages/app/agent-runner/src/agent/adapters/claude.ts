@@ -84,6 +84,23 @@ export interface ClaudeAdapterOptions {
   env?: Record<string, string>;
   /** Runs a command for detection; replaceable in tests. */
   exec?: ExecFn;
+  /**
+   * Let Claude Code make its nonessential network requests (telemetry, update checks, error reports). Off by default:
+   * one of them blocks its start by one to two seconds every turn. The runner's owner turns it on with
+   * `NOCOBASE_RUNNER_CLAUDE_NONESSENTIAL_TRAFFIC=1`, and a run that sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`
+   * itself keeps its own value.
+   */
+  nonessentialTraffic?: boolean;
+}
+
+/** `env` with Claude Code's nonessential traffic turned off, unless allowed or already decided in `env`. */
+export function quietEnv(
+  env: Record<string, string>,
+  allowed: boolean | undefined,
+): Record<string, string> {
+  return allowed || 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC' in env
+    ? env
+    : { ...env, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1' };
 }
 
 /** The `claude` a run uses. */
@@ -218,9 +235,10 @@ function toolResultText(content: unknown): string {
 export class ClaudeAdapter implements AgentAdapter {
   readonly kind = 'claude' as const;
   private readonly options: Required<
-    Omit<ClaudeAdapterOptions, 'searchPath' | 'env'>
+    Omit<ClaudeAdapterOptions, 'searchPath' | 'env' | 'nonessentialTraffic'>
   > & { searchPath: string };
   private readonly detectionEnv?: Record<string, string>;
+  private readonly nonessentialTraffic: boolean;
   private detection?: Promise<{
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
@@ -228,6 +246,7 @@ export class ClaudeAdapter implements AgentAdapter {
 
   constructor(options: ClaudeAdapterOptions = {}) {
     this.detectionEnv = options.env;
+    this.nonessentialTraffic = options.nonessentialTraffic ?? false;
     this.options = {
       minVersion: options.minVersion ?? DEFAULT_MIN_CLAUDE_VERSION,
       exec: options.exec ?? detectExec(options.env),
@@ -281,7 +300,7 @@ export class ClaudeAdapter implements AgentAdapter {
           prompt: input,
           options: {
             cwd,
-            env,
+            env: quietEnv(env, this.nonessentialTraffic),
             settingSources: [],
             abortController,
             pathToClaudeCodeExecutable: executable.path,
@@ -373,7 +392,10 @@ export class ClaudeAdapter implements AgentAdapter {
   }
 
   start(session: AdapterSession): AdapterHandle {
-    return new ClaudeRun(session, () => this.resolveExecutable()).handle();
+    return new ClaudeRun(
+      { ...session, env: quietEnv(session.env, this.nonessentialTraffic) },
+      () => this.resolveExecutable(),
+    ).handle();
   }
 }
 
@@ -397,6 +419,7 @@ class ClaudeRun {
   private model?: string;
   private lastResult?: SDKResultMessage;
   private lastAssistantError?: string;
+  private lastContext?: { model: string; used: number };
   private turnUsage: Usage = {
     tool: 'claude',
     inputTokens: 0,
@@ -592,6 +615,7 @@ class ClaudeRun {
         delete options.resume;
         this.initialMessage.message.content = recoveryPrompt(
           this.session.prompt,
+          this.session.recoveryContext,
         );
         this.emit(recoveryEvent('claude'));
       }
@@ -862,6 +886,17 @@ class ClaudeRun {
         return;
       case 'assistant': {
         if (message.error) this.lastAssistantError = message.error;
+        // The main thread's latest request is what the conversation's context holds now.
+        if (!message.parent_tool_use_id) {
+          const u = message.message.usage;
+          const used =
+            (u?.input_tokens ?? 0) +
+            (u?.cache_read_input_tokens ?? 0) +
+            (u?.cache_creation_input_tokens ?? 0) +
+            (u?.output_tokens ?? 0);
+          if (used > 0)
+            this.lastContext = { model: message.message.model, used };
+        }
         this.acknowledge(
           message.user_message_uuids ??
             (message.user_message_uuid ? [message.user_message_uuid] : []),
@@ -1029,6 +1064,22 @@ class ClaudeRun {
     }
   }
 
+  /** The context window of the model the main thread last used, from the result's per-model usage. */
+  private contextWindow(message: SDKResultMessage): number | undefined {
+    const usage = message.modelUsage ?? {};
+    const own = this.lastContext?.model
+      ? usage[this.lastContext.model]?.contextWindow
+      : undefined;
+    const windows = Object.values(usage)
+      .map((entry) => entry.contextWindow)
+      .filter((value) => typeof value === 'number' && value > 0);
+    return own && own > 0
+      ? own
+      : windows.length
+        ? Math.max(...windows)
+        : undefined;
+  }
+
   private onResult(message: SDKResultMessage): void {
     this.lastResult = message;
     this.sessionId = message.session_id;
@@ -1063,6 +1114,13 @@ class ClaudeRun {
       },
     });
     this.emit({ type: 'usage', meta: { usage: this.usage() } });
+    const size = this.contextWindow(message);
+    if (this.lastContext && size)
+      this.emit({
+        type: 'status',
+        content: 'context',
+        meta: { context: { used: this.lastContext.used, size } },
+      });
 
     // End the session once nothing more is queued: no steer awaiting the
     // agent and no further turn announced. Otherwise wait for the next result.

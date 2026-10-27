@@ -66,6 +66,8 @@ const chatEnUS = {
         '{{own}} has no runner for you now, so {{name}} answers until {{own}} is back.',
       onlineFallbackUnavailable:
         'The online fallback agent cannot answer ({{reason}}). This conversation stays with {{own}} while it waits for a runner.',
+      switchedAgent:
+        'Switched to {{name}}. The next message starts a new session with this conversation’s history.',
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
       runFailedReason: 'The agent stopped before answering: {{reason}}',

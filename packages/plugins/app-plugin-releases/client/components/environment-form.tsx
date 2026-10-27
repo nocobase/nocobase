@@ -13,12 +13,14 @@ import {
 } from 'react';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
-import type {
-  DriverSummary,
-  EnvironmentCheckResult,
-  EnvironmentInput,
-  EnvironmentRecord,
-  RegistryRecord,
+import {
+  ENVIRONMENT_PURPOSES,
+  type DriverSummary,
+  type EnvironmentCheckResult,
+  type EnvironmentInput,
+  type EnvironmentPurpose,
+  type EnvironmentRecord,
+  type RegistryRecord,
 } from '../../shared/releases.js';
 import {
   decodeDriverForm,
@@ -154,6 +156,9 @@ export function EnvironmentForm({
   );
   const [approvers, setApprovers] = useState<readonly string[]>(
     environment?.approvers ?? [],
+  );
+  const [purpose, setPurpose] = useState<EnvironmentPurpose>(
+    environment?.purpose ?? 'test',
   );
   const [sampleData, setSampleData] = useState(
     environment?.sampleDataOnFirstDeploy ?? false,
@@ -295,6 +300,7 @@ export function EnvironmentForm({
         defaultIdleStopMinutes: numberOrNull(appLimits.idle),
         defaultDormantAfterHours: numberOrNull(appLimits.dormant),
         sampleDataOnFirstDeploy: sampleData,
+        purpose,
         ...(runsImages ? { registryId } : {}),
       };
       if (environment)
@@ -425,6 +431,45 @@ export function EnvironmentForm({
                 />
                 <FieldDescription>
                   {t('ui.environments.idHint')}
+                </FieldDescription>
+              </Field>
+              <Field className='sm:col-span-2'>
+                <FieldLabel id='rel-env-purpose-label'>
+                  {t('ui.environments.purpose')}
+                </FieldLabel>
+                <RadioGroup
+                  value={purpose}
+                  onValueChange={(next) => {
+                    const found = ENVIRONMENT_PURPOSES.find(
+                      (item) => item === next,
+                    );
+                    if (found) setPurpose(found);
+                  }}
+                  aria-labelledby='rel-env-purpose-label'
+                  className='flex flex-wrap gap-4'
+                  data-slot='environment-purpose'
+                >
+                  {ENVIRONMENT_PURPOSES.map((item) => (
+                    <Field
+                      key={item}
+                      orientation='horizontal'
+                      className='w-auto'
+                    >
+                      <RadioGroupItem
+                        id={`rel-env-purpose-${item}`}
+                        value={item}
+                      />
+                      <FieldLabel
+                        htmlFor={`rel-env-purpose-${item}`}
+                        className='font-normal'
+                      >
+                        {t(`ui.environments.purposes.${item}`)}
+                      </FieldLabel>
+                    </Field>
+                  ))}
+                </RadioGroup>
+                <FieldDescription>
+                  {t('ui.environments.purposeHint')}
                 </FieldDescription>
               </Field>
               {drivers.length > 1 ? (
