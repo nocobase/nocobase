@@ -40,7 +40,7 @@ describe.each([
   ['zh-CN', zhCN],
 ] as const)('%s', (language, copy) => {
   it.each(['users', 'roles'] as const)(
-    'explains the next step for a read-only empty %s list',
+    'keeps the compact empty status and hides creation for a read-only %s list',
     async (kind) => {
       await renderWithApp(
         <Routes>
@@ -63,13 +63,9 @@ describe.each([
           }),
         },
       );
-      expect(
-        await screen.findByText(
-          kind === 'users'
-            ? copy.settings.usersReadOnlyEmpty
-            : copy.settings.rolesReadOnlyEmpty,
-        ),
-      ).toBeVisible();
+      expect((await screen.findByRole('status')).textContent).toBe(
+        copy.listFeedback.empty,
+      );
       expect(
         screen.queryByRole('button', {
           name:
@@ -118,13 +114,9 @@ describe.each([
             kind === 'users' ? copy.settings.newUser : copy.settings.newRole,
         }),
       ).toHaveLength(1);
-      expect(
-        screen.queryByText(
-          kind === 'users'
-            ? copy.settings.usersReadOnlyEmpty
-            : copy.settings.rolesReadOnlyEmpty,
-        ),
-      ).not.toBeInTheDocument();
+      expect(screen.getByRole('status').textContent).toBe(
+        copy.listFeedback.empty,
+      );
     },
   );
 

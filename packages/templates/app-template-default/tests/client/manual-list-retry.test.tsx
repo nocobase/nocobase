@@ -6,7 +6,10 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { useSettingsData } from '../../client/pages/settings/hooks.js';
 
-import { ListFeedback } from '../../client/components/list-feedback.js';
+import {
+  ListFeedback,
+  ListFeedbackActions,
+} from '../../client/components/list-feedback.js';
 import enUS from '../../client/locales/en-US.js';
 
 type Rows = { data: string[] };
@@ -39,15 +42,24 @@ function Harness({ kind }: { readonly kind: keyof typeof adapters }) {
   const [query, setQuery] = useState('first');
   const useData = adapters[kind];
   const request = useData(query);
+  const state = resolveListState(request, request.data?.data.length ?? 0);
+  const useRetryAction = state === 'failed' || state === 'refresh-failed';
   return (
     <>
-      <button onClick={request.reload}>Refresh</button>
-      <button onClick={() => setQuery('second')}>Change query</button>
-      <ListFeedback
-        state={resolveListState(request, request.data?.data.length ?? 0)}
-        busy={request.loading}
-        onRetry={request.reload}
-      >
+      <div>
+        {useRetryAction ? (
+          <ListFeedbackActions
+            state={state}
+            onRetry={request.reload}
+            busy={request.loading}
+          />
+        ) : (
+          <button onClick={request.reload}>Refresh</button>
+        )}
+        <button onClick={() => setQuery('second')}>Change query</button>
+        <ListFeedbackActions state={state} />
+      </div>
+      <ListFeedback state={state}>
         {request.data?.data.map((row) => (
           <p key={row}>{row}</p>
         ))}

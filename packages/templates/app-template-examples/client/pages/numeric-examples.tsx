@@ -1,4 +1,4 @@
-import { ListFeedback } from '#components/list-feedback';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import {
@@ -197,6 +197,7 @@ export default function NumericExamplesPage(): ReactElement {
             />
             {t('numbers.refresh')}
           </Button>
+          <ListFeedbackActions state={state} />
         </div>
 
         {/* Sort and secondary controls */}
@@ -252,14 +253,7 @@ export default function NumericExamplesPage(): ReactElement {
         <span>{t('numbers.legend')}</span>
       </div>
 
-      <ListFeedback
-        state={state}
-        onRetry={() => {
-          void refetch();
-        }}
-        onClear={() => setSample('all')}
-        busy={isFetching}
-      >
+      <ListFeedback state={state}>
         {data && (
           <>
             <section
@@ -275,36 +269,31 @@ export default function NumericExamplesPage(): ReactElement {
                 </h2>
               </div>
               <div className='overflow-hidden rounded-xl border bg-card shadow-2xs'>
-                <Table>
-                  <TableHeader>
-                    <TableRow className='bg-muted/40 hover:bg-muted/40'>
-                      <TableHead className='font-semibold text-foreground py-3 pl-4'>
-                        {t('numbers.scenario')}
-                      </TableHead>
-                      {fields.map(([field, type]) => (
-                        <TableHead key={field} className='py-3'>
-                          <code className='font-mono font-semibold text-foreground'>
-                            {type}
-                          </code>
-                          <div className='text-[11px] font-normal text-muted-foreground'>
-                            {field}
-                          </div>
+                {data.data.rows.length === 0 ? (
+                  <ListFeedback
+                    state={sample === 'all' ? 'empty' : 'no-results'}
+                  />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className='bg-muted/40 hover:bg-muted/40'>
+                        <TableHead className='font-semibold text-foreground py-3 pl-4'>
+                          {t('numbers.scenario')}
                         </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.data.rows.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className='py-8 text-center text-sm text-muted-foreground'
-                        >
-                          {t('numbers.empty')}
-                        </TableCell>
+                        {fields.map(([field, type]) => (
+                          <TableHead key={field} className='py-3'>
+                            <code className='font-mono font-semibold text-foreground'>
+                              {type}
+                            </code>
+                            <div className='text-[11px] font-normal text-muted-foreground'>
+                              {field}
+                            </div>
+                          </TableHead>
+                        ))}
                       </TableRow>
-                    ) : (
-                      data.data.rows.map((row) => (
+                    </TableHeader>
+                    <TableBody>
+                      {data.data.rows.map((row) => (
                         <TableRow
                           key={row.sample}
                           className='transition-colors hover:bg-muted/30'
@@ -320,10 +309,10 @@ export default function NumericExamplesPage(): ReactElement {
                             </TableCell>
                           ))}
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </div>
               <p className='text-xs text-muted-foreground'>
                 {t('numbers.idNote')}

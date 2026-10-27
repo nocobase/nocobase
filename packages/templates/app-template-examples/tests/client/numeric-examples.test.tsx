@@ -68,11 +68,9 @@ it('preserves large integers from the database and switches Query / Repository a
     ),
   ).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: 'Empty result' }));
-  expect(
-    await screen.findByText(
-      'No rows in this selection. Aggregate results are shown below.',
-    ),
-  ).toBeVisible();
+  await waitFor(() =>
+    expect(screen.getByRole('status').textContent).toBe('No results'),
+  );
   expect(
     screen.getByRole('heading', { name: 'Aggregate results' }),
   ).toBeVisible();
@@ -91,7 +89,7 @@ it('shows loading, then a transport failure and a successful retry', async () =>
     },
   });
   try {
-    expect(screen.getByRole('status')).toHaveTextContent('Loading…');
+    expect(screen.getByRole('status').textContent).toBe('Loading');
     await act(async () => {
       pending.resolve();
       await pending.promise;
@@ -100,7 +98,7 @@ it('shows loading, then a transport failure and a successful retry', async () =>
       'Unable to load list',
     );
     offline = false;
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(
       await screen.findByRole('region', { name: 'Stored values' }),
     ).toBeVisible();

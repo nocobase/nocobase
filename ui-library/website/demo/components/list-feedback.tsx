@@ -1,17 +1,41 @@
 import type { ReactElement } from 'react';
-import { ListFeedback } from '#components/list-feedback';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 
 export function ListFeedbackDemo(): ReactElement {
   return (
     <div className='space-y-4 p-6'>
       <ListFeedback state='loading' />
       <ListFeedback state='empty' />
-      <ListFeedback state='no-results' onClear={() => undefined} />
+      <div className='space-y-2'>
+        <div className='flex justify-end'>
+          <ListFeedbackActions state='no-results' onClear={() => undefined} />
+        </div>
+        <ListFeedback state='no-results' />
+      </div>
       <ListFeedback state='forbidden' />
-      <ListFeedback state='failed' onRetry={() => undefined} />
-      <ListFeedback state='refresh-failed' onRetry={() => undefined}>
-        <p>Previously loaded equipment record</p>
-      </ListFeedback>
+      <div className='space-y-2'>
+        <div className='flex justify-end'>
+          <ListFeedbackActions state='failed' onRetry={() => undefined} />
+        </div>
+        <ListFeedback state='failed' />
+      </div>
+      <div className='space-y-2'>
+        <div className='flex justify-end'>
+          <ListFeedbackActions
+            state='refresh-failed'
+            onRetry={() => undefined}
+          />
+        </div>
+        <ListFeedback state='refresh-failed'>
+          <p>Previously loaded equipment record</p>
+        </ListFeedback>
+      </div>
+      <div className='space-y-2'>
+        <div className='flex justify-end'>
+          <ListFeedbackActions state='unauthenticated' />
+        </div>
+        <ListFeedback state='unauthenticated' />
+      </div>
     </div>
   );
 }

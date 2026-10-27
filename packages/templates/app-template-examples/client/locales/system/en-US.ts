@@ -9,13 +9,13 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  */
 const systemEnUS = {
   listFeedback: {
-    loading: 'Loading…',
-    empty: 'No data yet.',
-    noResults: 'No matching results.',
-    forbidden: 'Access denied.',
-    unauthenticated: 'Session expired.',
-    failed: 'Unable to load list.',
-    refreshFailed: 'Refresh failed. Previous data remains visible.',
+    loading: 'Loading',
+    empty: 'No data yet',
+    noResults: 'No results',
+    forbidden: 'Access denied',
+    unauthenticated: 'Session expired',
+    failed: 'Unable to load list',
+    refreshFailed: 'Refresh failed; showing previous data',
     retry: 'Retry',
     retrying: 'Retrying…',
     clear: 'Clear filters',
@@ -202,7 +202,7 @@ const systemEnUS = {
     back: 'Back',
   },
   dataTable: {
-    noResults: 'No results.',
+    noResults: 'No results',
     sortAscending: 'Asc',
     sortDescending: 'Desc',
     hideColumn: 'Hide',

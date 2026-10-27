@@ -15,7 +15,7 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import { useRef, useState, type ReactElement } from 'react';
 import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
-import { ListFilterIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
+import { MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import { PermissionManagementPage } from './permission-management-page.js';
@@ -29,12 +29,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
-import {
-  Empty,
-  EmptyMedia,
-  EmptyTitle,
-  EmptyDescription,
-} from '#components/ui/empty';
 import { ConfirmAction, SettingsError } from './shared.js';
 import { useSettingsData } from './hooks.js';
 import {
@@ -392,21 +386,6 @@ export default function DefaultAccessPage(): ReactElement {
             catalog.reload();
           }}
           onClearFilters={clearSearch}
-          emptyMessage={
-            <Empty className='min-h-48 border border-dashed'>
-              <EmptyMedia variant='icon'>
-                <ListFilterIcon />
-              </EmptyMedia>
-              <EmptyTitle>{t('settings.defaultAccess.empty')}</EmptyTitle>
-              <EmptyDescription>
-                {t(
-                  canCreate
-                    ? 'settings.defaultAccess.emptyHint'
-                    : 'settings.defaultAccess.readOnlyEmpty',
-                )}
-              </EmptyDescription>
-            </Empty>
-          }
         />
         <ConfirmAction
           error={<SettingsError error={error} />}

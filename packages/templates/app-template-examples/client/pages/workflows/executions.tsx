@@ -142,11 +142,6 @@ export default function ExecutionsPage(): ReactElement {
       )}
       loaded={Boolean(request.data)}
       loading={request.loading}
-      empty={t(
-        workflowId || normalizedName
-          ? 'workflows.noResults'
-          : 'workflows.noExecutions',
-      )}
       labels={{
         refresh: t('workflows.refresh'),
         record: t('workflows.record'),

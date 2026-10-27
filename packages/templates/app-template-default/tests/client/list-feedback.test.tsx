@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { renderWithApp } from '@nocobase/app-testing/client';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { ListFeedback } from '../../client/components/list-feedback.js';
+import {
+  ListFeedback,
+  ListFeedbackActions,
+} from '../../client/components/list-feedback.js';
 import { DataTable } from '../../client/components/data-table/index.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
@@ -39,6 +42,9 @@ describe('shared table and card feedback', () => {
       </ListFeedback>,
     );
     expect(screen.getByRole('button', { name: 'Edited 1' })).toBeVisible();
+    expect(screen.getByRole('alert').textContent).toBe(
+      enUS.listFeedback.refreshFailed,
+    );
     view.rerender(
       <ListFeedback state='ready'>
         <RetainedEditor />
@@ -46,7 +52,8 @@ describe('shared table and card feedback', () => {
     );
     expect(screen.getByRole('button', { name: 'Edited 1' })).toBeVisible();
   });
-  it('clears local column filters on a successful remote snapshot, including its input', async () => {
+
+  it('clears local column filters through the table toolbar and resets its input', async () => {
     const user = userEvent.setup();
     await renderWithApp(
       <DataTable
@@ -67,12 +74,16 @@ describe('shared table and card feedback', () => {
       options,
     );
     await user.type(screen.getByLabelText('Camera filter'), 'missing');
-    expect(screen.getByText(enUS.listFeedback.noResults)).toBeVisible();
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe(enUS.listFeedback.noResults);
+    expect(within(status).queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(screen.getByLabelText('Camera filter')).toHaveValue('');
     expect(screen.getByRole('cell', { name: 'Camera' })).toBeVisible();
   });
-  it('never shows business emptiness before loading finishes or when access is refused', async () => {
+
+  it('keeps loading and denied states distinct and hides cached rows on denial', async () => {
     const view = await renderWithApp(
       <DataTable
         data={[]}
@@ -83,7 +94,9 @@ describe('shared table and card feedback', () => {
       />,
       options,
     );
-    expect(screen.getByRole('status')).toHaveTextContent('Loading');
+    expect(screen.getByRole('status').textContent).toBe(
+      enUS.listFeedback.loading,
+    );
     expect(screen.queryByText('Business empty')).not.toBeInTheDocument();
     expect(screen.queryByText('Create record')).not.toBeInTheDocument();
     view.rerender(
@@ -94,13 +107,37 @@ describe('shared table and card feedback', () => {
         emptyMessage='Business empty'
       />,
     );
-    expect(screen.getByRole('alert')).toHaveTextContent(
+    expect(screen.getByRole('alert').textContent).toBe(
       enUS.listFeedback.forbidden,
     );
     expect(screen.queryByText('Private row')).not.toBeInTheDocument();
   });
 
-  it('preserves custom empty content only for successful unfiltered emptiness', async () => {
+  it('renders each built-in state as one icon and one short line without inline actions', async () => {
+    const view = await renderWithApp(<ListFeedback state='loading' />, options);
+    const states = [
+      ['loading', 'status'],
+      ['empty', 'status'],
+      ['no-results', 'status'],
+      ['forbidden', 'alert'],
+      ['unauthenticated', 'alert'],
+      ['failed', 'alert'],
+    ] as const;
+    for (const [state, role] of states) {
+      view.rerender(<ListFeedback state={state} />);
+      const status = screen.getByRole(role);
+      expect(status.textContent).toBe(
+        enUS.listFeedback[state === 'no-results' ? 'noResults' : state],
+      );
+      expect(status.querySelector('svg')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+      expect(within(status).queryByRole('button')).not.toBeInTheDocument();
+    }
+  });
+
+  it('preserves custom empty content and its intentional business action', async () => {
     await renderWithApp(
       <ListFeedback
         state='empty'
@@ -109,22 +146,25 @@ describe('shared table and card feedback', () => {
       />,
       options,
     );
+    expect(screen.getByText(enUS.listFeedback.empty)).toBeVisible();
     expect(screen.getByText('Business empty')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Create record' })).toBeVisible();
   });
 
-  it('clears filtered results with a keyboard accessible localized action', async () => {
+  it('clears filtered results from the host toolbar with keyboard access', async () => {
     const clear = vi.fn();
     await renderWithApp(
-      <ListFeedback
-        state='no-results'
-        empty='Business empty'
-        onClear={clear}
-      />,
+      <>
+        <div>
+          <ListFeedbackActions state='no-results' onClear={clear} />
+        </div>
+        <ListFeedback state='no-results' />
+      </>,
       { ...options, locale: 'zh-CN' },
     );
-    expect(screen.getByText(zhCN.listFeedback.noResults)).toBeVisible();
-    expect(screen.queryByText('Business empty')).not.toBeInTheDocument();
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe(zhCN.listFeedback.noResults);
+    expect(within(status).queryByRole('button')).not.toBeInTheDocument();
     const button = screen.getByRole('button', {
       name: zhCN.listFeedback.clear,
     });
@@ -133,63 +173,65 @@ describe('shared table and card feedback', () => {
     expect(clear).toHaveBeenCalledOnce();
   });
 
-  it('keeps old content with a refresh warning and offers retry', async () => {
+  it('keeps one stale-data line while showing old content and places retry outside it', async () => {
     const retry = vi.fn();
     await renderWithApp(
-      <ListFeedback state='refresh-failed' onRetry={retry}>
-        <p>Retained equipment record</p>
-      </ListFeedback>,
+      <>
+        <div>
+          <ListFeedbackActions state='refresh-failed' onRetry={retry} />
+        </div>
+        <ListFeedback state='refresh-failed'>
+          <p>Retained equipment record</p>
+        </ListFeedback>
+      </>,
       options,
     );
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toBe(enUS.listFeedback.refreshFailed);
+    expect(within(alert).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByText('Retained equipment record')).toBeVisible();
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      enUS.listFeedback.refreshFailed,
-    );
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'Retry' }));
     expect(retry).toHaveBeenCalledOnce();
   });
 
-  it('offers the existing login route after session expiry and hides cached content', async () => {
+  it('keeps retry busy feedback in the toolbar', async () => {
     await renderWithApp(
-      <ListFeedback state='unauthenticated'>
-        <p>Private record</p>
-      </ListFeedback>,
+      <>
+        <div>
+          <ListFeedbackActions state='failed' onRetry={vi.fn()} busy />
+        </div>
+        <ListFeedback state='failed' />
+      </>,
       options,
+    );
+    expect(screen.getByRole('alert').textContent).toBe(
+      enUS.listFeedback.failed,
+    );
+    expect(
+      screen.getByRole('button', { name: enUS.listFeedback.retrying }),
+    ).toBeDisabled();
+  });
+
+  it('uses the existing login route outside the session status', async () => {
+    await renderWithApp(
+      <>
+        <div>
+          <ListFeedbackActions state='unauthenticated' />
+        </div>
+        <ListFeedback state='unauthenticated'>
+          <p>Private record</p>
+        </ListFeedback>
+      </>,
+      options,
+    );
+    expect(screen.getByRole('alert').textContent).toBe(
+      enUS.listFeedback.unauthenticated,
     );
     expect(screen.queryByText('Private record')).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: enUS.listFeedback.signIn }),
     ).toHaveAttribute('href', '/login');
-  });
-
-  it('keeps the refresh warning and busy action compact while preserving business content', async () => {
-    await renderWithApp(
-      <ListFeedback state='refresh-failed' onRetry={vi.fn()} busy>
-        <RetainedEditor />
-      </ListFeedback>,
-      options,
-    );
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent(enUS.listFeedback.refreshFailed);
-    expect(
-      screen.getByRole('button', { name: enUS.listFeedback.retrying }),
-    ).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Edited 0' })).toBeVisible();
-  });
-
-  it('keeps localized status concise and its clear action accessible by keyboard', async () => {
-    await renderWithApp(<ListFeedback state='no-results' onClear={vi.fn()} />, {
-      ...options,
-      locale: 'zh-CN',
-    });
-    const status = screen.getByRole('status');
-    expect(status).toHaveTextContent(zhCN.listFeedback.noResults);
-    expect(status).not.toHaveTextContent('请尝试其他关键词');
-    expect(status.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
-    expect(
-      screen.getByRole('button', { name: zhCN.listFeedback.clear }),
-    ).toBeEnabled();
   });
 });

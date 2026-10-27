@@ -35,7 +35,7 @@ import {
   useSearchParams,
   useResolvedPath,
 } from 'react-router';
-import { PlusIcon, UsersIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
@@ -48,12 +48,6 @@ import {
   SelectContent,
   SelectItem,
 } from '#components/ui/select';
-import {
-  Empty,
-  EmptyMedia,
-  EmptyTitle,
-  EmptyDescription,
-} from '#components/ui/empty';
 import { ConfirmAction, SettingsError } from './shared.js';
 
 function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
@@ -519,21 +513,6 @@ export default function UsersPage(): ReactElement {
           listState={listState}
           onRetry={request.reload}
           onClearFilters={clearFilters}
-          emptyMessage={
-            <Empty className='min-h-48 border border-dashed'>
-              <EmptyMedia variant='icon'>
-                <UsersIcon />
-              </EmptyMedia>
-              <EmptyTitle>{t('settings.noUsers')}</EmptyTitle>
-              <EmptyDescription>
-                {t(
-                  canCreate && canAssign
-                    ? 'settings.usersDescription'
-                    : 'settings.usersReadOnlyEmpty',
-                )}
-              </EmptyDescription>
-            </Empty>
-          }
         />
         {request.data && (
           <p className='text-sm text-muted-foreground'>

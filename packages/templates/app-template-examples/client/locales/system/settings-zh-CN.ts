@@ -133,9 +133,6 @@ const settings = {
   noResults: '没有匹配的结果',
   clearHint: '请更换搜索条件或清除筛选。',
   noUsers: '暂无用户',
-  usersReadOnlyEmpty:
-    '请联系管理员添加用户，或授予创建用户和分配角色所需的权限。',
-  rolesReadOnlyEmpty: '请联系管理员创建角色，或授予你创建角色的权限。',
   noRoleAccess: '此用户仍可登录并使用账号基础功能，角色未授予业务访问。',
   noAssignedRoles: '未分配角色',
   noRoles: '暂无角色',

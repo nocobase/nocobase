@@ -120,6 +120,10 @@ describe('standard DataTable', () => {
       { namespace, namespaces, locale: 'zh-CN' },
     );
     expect(screen.getByText(zhCN.listFeedback.empty)).toBeVisible();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(zhCN.dataTable.noResults),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: zhCN.dataTable.nextPage }),
     ).not.toBeInTheDocument();

@@ -10,7 +10,7 @@ Part of the [projects worked example](../example.md).
 
 **Without detail and delete** (a list with only a create dialog), remove: the `actions` column and its row menu, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
 
-Use the application's existing authorization hook to resolve the create permission before rendering the page-level action. Put the standard create action only in the page header, including when a successful query returns no records; do not wire it through the empty state's `emptyAction`. Follow [shared list feedback](../list-feedback.md) for error and query ownership.
+Use the application's existing authorization hook to resolve the create permission before rendering the page-level action. Put the standard create action only in the page header, including when a successful query returns no records; do not wire it through the empty state's `emptyAction`. Render `ListFeedbackActions` for clear, retry and sign-in recovery in the existing toolbar, and keep each built-in state to its matching icon and one short line. Follow [shared list feedback](../list-feedback.md) for error and query ownership.
 
 Rules: sections [3](../table.md#3-known-datatable-behavior), [5](../table.md#5-writing-search-and-filters-to-the-url), [6](../table.md#6-loading-the-list), [7](../table.md#7-the-four-list-states), [8](../table.md#8-column-definitions-and-row-actions) and [9](../table.md#9-child-routes-and-refreshing-the-list) of `table.md`.
 
@@ -339,12 +339,6 @@ export default function ProjectsPage(): ReactElement {
         onClearFilters={clearFilters}
         getRowId={(row) => row.id}
         showSelectedCount={false}
-        emptyMessage={
-          <>
-            <h2>{t('projects.empty.title')}</h2>
-            <p>{t('projects.empty.description')}</p>
-          </>
-        }
       />
     </>
   );
