@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useApiClient } from '@nocobase/app-client';
+import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation, useNamespace } from '@nocobase/i18n/client';
 import type { WorkflowSummary } from '../../../shared/workflows.js';
 
@@ -11,6 +11,7 @@ export function useWorkflowData<T>(path: string, query = '') {
     requestKey?: string;
     data?: T;
     status?: number;
+    error?: unknown;
   }>({ key: '' });
   const key = `${path}?${query}`;
   const requestKey = `${key}#${refresh}`;
@@ -34,7 +35,15 @@ export function useWorkflowData<T>(path: string, query = '') {
             key,
             requestKey,
             status: status || 500,
-            data: previous.key === key ? previous.data : undefined,
+            error,
+            data:
+              previous.key === key &&
+              !(
+                error instanceof ApiClientError &&
+                [401, 403].includes(error.status)
+              )
+                ? previous.data
+                : undefined,
           }));
       });
     return () => {
@@ -46,6 +55,7 @@ export function useWorkflowData<T>(path: string, query = '') {
     data: result.key === key ? result.data : undefined,
     status: result.requestKey === requestKey ? result.status : undefined,
     loading: result.requestKey !== requestKey,
+    error: result.requestKey === requestKey ? result.error : undefined,
     reload,
   };
 }

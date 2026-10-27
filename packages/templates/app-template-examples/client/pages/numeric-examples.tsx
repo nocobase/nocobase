@@ -1,6 +1,11 @@
+import { ListFeedback } from '#components/list-feedback';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { useApiClient } from '@nocobase/app-client';
+import {
+  resolveListState,
+  listStateShowsData,
+  useApiClient,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
@@ -84,7 +89,7 @@ export default function NumericExamplesPage(): ReactElement {
   const [sample, setSample] = useState<'all' | 'null' | 'empty'>('all');
   const [sortField, setSortField] = useState<Field>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const { data, isPending, isFetching, isError, refetch } = useQuery({
+  const request = useQuery({
     queryKey: ['numeric-examples', source, sample, sortField, sortDirection],
     queryFn: ({ signal }) =>
       api.request<NumericExamplesResponse>({
@@ -99,6 +104,14 @@ export default function NumericExamplesPage(): ReactElement {
       }),
     retry: false,
   });
+
+  const state = resolveListState(
+    request,
+    // This report also contains aggregate rows when its detail selection is empty.
+    request.data ? 1 : 0,
+  );
+  const data = listStateShowsData(state) ? request.data : undefined;
+  const { isFetching, refetch } = request;
 
   return (
     <PageContainer>
@@ -239,157 +252,148 @@ export default function NumericExamplesPage(): ReactElement {
         <span>{t('numbers.legend')}</span>
       </div>
 
-      {isPending && (
-        <div className='flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground'>
-          <RefreshCw className='size-4 animate-spin' />
-          <p role='status'>{t('numbers.loading')}</p>
-        </div>
-      )}
-
-      {isError && (
-        <div
-          role='alert'
-          className='flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center'
-        >
-          <p className='text-sm font-medium text-destructive'>
-            {t('numbers.error')}
-          </p>
-          <Button variant='outline' size='sm' onClick={() => void refetch()}>
-            {t('numbers.retry')}
-          </Button>
-        </div>
-      )}
-
-      {data && (
-        <>
-          <section className='space-y-3' aria-labelledby='numeric-rows-heading'>
-            <div className='flex items-center justify-between'>
-              <h2
-                id='numeric-rows-heading'
-                className='font-heading text-lg font-semibold tracking-tight'
-              >
-                {t('numbers.rows')}
-              </h2>
-            </div>
-            <div className='overflow-hidden rounded-xl border bg-card shadow-2xs'>
-              <Table>
-                <TableHeader>
-                  <TableRow className='bg-muted/40 hover:bg-muted/40'>
-                    <TableHead className='font-semibold text-foreground py-3 pl-4'>
-                      {t('numbers.scenario')}
-                    </TableHead>
-                    {fields.map(([field, type]) => (
-                      <TableHead key={field} className='py-3'>
-                        <code className='font-mono font-semibold text-foreground'>
-                          {type}
-                        </code>
-                        <div className='text-[11px] font-normal text-muted-foreground'>
-                          {field}
-                        </div>
+      <ListFeedback
+        state={state}
+        onRetry={() => {
+          void refetch();
+        }}
+        onClear={() => setSample('all')}
+        busy={isFetching}
+      >
+        {data && (
+          <>
+            <section
+              className='space-y-3'
+              aria-labelledby='numeric-rows-heading'
+            >
+              <div className='flex items-center justify-between'>
+                <h2
+                  id='numeric-rows-heading'
+                  className='font-heading text-lg font-semibold tracking-tight'
+                >
+                  {t('numbers.rows')}
+                </h2>
+              </div>
+              <div className='overflow-hidden rounded-xl border bg-card shadow-2xs'>
+                <Table>
+                  <TableHeader>
+                    <TableRow className='bg-muted/40 hover:bg-muted/40'>
+                      <TableHead className='font-semibold text-foreground py-3 pl-4'>
+                        {t('numbers.scenario')}
                       </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.data.rows.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className='py-8 text-center text-sm text-muted-foreground'
-                      >
-                        {t('numbers.empty')}
-                      </TableCell>
+                      {fields.map(([field, type]) => (
+                        <TableHead key={field} className='py-3'>
+                          <code className='font-mono font-semibold text-foreground'>
+                            {type}
+                          </code>
+                          <div className='text-[11px] font-normal text-muted-foreground'>
+                            {field}
+                          </div>
+                        </TableHead>
+                      ))}
                     </TableRow>
-                  ) : (
-                    data.data.rows.map((row) => (
+                  </TableHeader>
+                  <TableBody>
+                    {data.data.rows.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className='py-8 text-center text-sm text-muted-foreground'
+                        >
+                          {t('numbers.empty')}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      data.data.rows.map((row) => (
+                        <TableRow
+                          key={row.sample}
+                          className='transition-colors hover:bg-muted/30'
+                        >
+                          <TableCell className='font-medium text-foreground whitespace-nowrap pl-4 bg-muted/10'>
+                            {t(`numbers.samples.${row.sample}`, {
+                              defaultValue: row.sample,
+                            })}
+                          </TableCell>
+                          {fields.map(([field]) => (
+                            <TableCell key={field} className='py-2.5'>
+                              <Value value={row[field]} />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className='text-xs text-muted-foreground'>
+                {t('numbers.idNote')}
+              </p>
+            </section>
+
+            <section
+              className='space-y-3'
+              aria-labelledby='numeric-aggregates-heading'
+            >
+              <div className='space-y-1'>
+                <h2
+                  id='numeric-aggregates-heading'
+                  className='font-heading text-lg font-semibold tracking-tight'
+                >
+                  {t('numbers.aggregates')}
+                </h2>
+                <p className='text-xs text-muted-foreground'>
+                  {t('numbers.aggregateNote')}
+                </p>
+              </div>
+              <div className='overflow-hidden rounded-xl border bg-card shadow-2xs'>
+                <Table>
+                  <TableHeader>
+                    <TableRow className='bg-muted/40 hover:bg-muted/40'>
+                      <TableHead className='font-semibold text-foreground py-3 pl-4'>
+                        {t('numbers.field')}
+                      </TableHead>
+                      {operations.map((op) => (
+                        <TableHead key={op} className='py-3'>
+                          <code className='font-mono font-semibold text-foreground'>
+                            {op.toUpperCase()}
+                          </code>
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.data.aggregates.map((row) => (
                       <TableRow
-                        key={row.sample}
+                        key={row.field}
                         className='transition-colors hover:bg-muted/30'
                       >
-                        <TableCell className='font-medium text-foreground whitespace-nowrap pl-4 bg-muted/10'>
-                          {t(`numbers.samples.${row.sample}`, {
-                            defaultValue: row.sample,
-                          })}
+                        <TableCell className='pl-4 bg-muted/10 whitespace-nowrap'>
+                          <code className='font-mono font-medium text-foreground'>
+                            {fields.find(([field]) => field === row.field)?.[1]}
+                          </code>
+                          <div className='text-[11px] text-muted-foreground'>
+                            {row.field}
+                          </div>
                         </TableCell>
-                        {fields.map(([field]) => (
-                          <TableCell key={field} className='py-2.5'>
-                            <Value value={row[field]} />
+                        {operations.map((op) => (
+                          <TableCell key={op} className='py-2.5'>
+                            <Value value={row[op]} />
                           </TableCell>
                         ))}
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              {t('numbers.idNote')}
-            </p>
-          </section>
-
-          <section
-            className='space-y-3'
-            aria-labelledby='numeric-aggregates-heading'
-          >
-            <div className='space-y-1'>
-              <h2
-                id='numeric-aggregates-heading'
-                className='font-heading text-lg font-semibold tracking-tight'
-              >
-                {t('numbers.aggregates')}
-              </h2>
-              <p className='text-xs text-muted-foreground'>
-                {t('numbers.aggregateNote')}
-              </p>
-            </div>
-            <div className='overflow-hidden rounded-xl border bg-card shadow-2xs'>
-              <Table>
-                <TableHeader>
-                  <TableRow className='bg-muted/40 hover:bg-muted/40'>
-                    <TableHead className='font-semibold text-foreground py-3 pl-4'>
-                      {t('numbers.field')}
-                    </TableHead>
-                    {operations.map((op) => (
-                      <TableHead key={op} className='py-3'>
-                        <code className='font-mono font-semibold text-foreground'>
-                          {op.toUpperCase()}
-                        </code>
-                      </TableHead>
                     ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.data.aggregates.map((row) => (
-                    <TableRow
-                      key={row.field}
-                      className='transition-colors hover:bg-muted/30'
-                    >
-                      <TableCell className='pl-4 bg-muted/10 whitespace-nowrap'>
-                        <code className='font-mono font-medium text-foreground'>
-                          {fields.find(([field]) => field === row.field)?.[1]}
-                        </code>
-                        <div className='text-[11px] text-muted-foreground'>
-                          {row.field}
-                        </div>
-                      </TableCell>
-                      {operations.map((op) => (
-                        <TableCell key={op} className='py-2.5'>
-                          <Value value={row[op]} />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </section>
-        </>
-      )}
+                  </TableBody>
+                </Table>
+              </div>
+            </section>
+          </>
+        )}
 
-      <div className='flex items-start gap-2.5 rounded-xl border bg-muted/20 p-4 text-xs text-muted-foreground leading-relaxed'>
-        <Info className='size-4 text-muted-foreground shrink-0 mt-0.5' />
-        <p>{t('numbers.precisionNote')}</p>
-      </div>
+        <div className='flex items-start gap-2.5 rounded-xl border bg-muted/20 p-4 text-xs text-muted-foreground leading-relaxed'>
+          <Info className='size-4 text-muted-foreground shrink-0 mt-0.5' />
+          <p>{t('numbers.precisionNote')}</p>
+        </div>
+      </ListFeedback>
     </PageContainer>
   );
 }

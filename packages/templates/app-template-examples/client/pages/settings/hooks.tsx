@@ -9,7 +9,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import { ConfirmAction } from './shared.js';
 
-export function useSettingsData<T>(path: string, keepPreviousData = false) {
+/** The legacy second argument is accepted; previous-path rows are never a current-query success. */
+export function useSettingsData<T>(path: string, _keepPreviousData = false) {
   const api = useApiClient();
   const [revision, setRevision] = useState(0);
   const [result, setResult] = useState<{
@@ -47,7 +48,7 @@ export function useSettingsData<T>(path: string, keepPreviousData = false) {
     };
   }, [api, path, revision]);
   return {
-    ...(result.path === path || keepPreviousData
+    ...(result.path === path
       ? result
       : { path, loading: true, data: undefined, error: undefined }),
     loading: result.path !== path || result.revision !== revision,

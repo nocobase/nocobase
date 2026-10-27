@@ -10,16 +10,16 @@ Part of the [projects worked example](../example.md).
 
 **Without detail and delete** (a list with only a create dialog), remove: the `actions` column and its row menu, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
 
+Use the application's existing authorization hook to resolve `canCreate` before rendering actions. Follow [shared list feedback](../list-feedback.md) for error and query ownership.
+
 Rules: sections [3](../table.md#3-known-datatable-behavior), [5](../table.md#5-writing-search-and-filters-to-the-url), [6](../table.md#6-loading-the-list), [7](../table.md#7-the-four-list-states), [8](../table.md#8-column-definitions-and-row-actions) and [9](../table.md#9-child-routes-and-refreshing-the-list) of `table.md`.
 
 ```tsx
 // client/pages/projects/index.tsx
-import { ApiClientError, useApiClient } from '@nocobase/app-client';
+import { useApiClient } from '@nocobase/app-client';
 import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
-  AlertCircleIcon,
-  FolderKanbanIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
@@ -30,24 +30,20 @@ import {
   type ReactElement,
   useEffect,
   useMemo,
-  useReducer,
+  useCallback,
   useRef,
   useState,
 } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
+import { useQuery } from '@tanstack/react-query';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
+import { resolveListState, listStateShowsData } from '@nocobase/app-client';
 import { DataTable } from '#components/data-table';
 import { DataTableColumnHeader } from '#components/data-table/column-header';
 import { useUrlSearch } from '#hooks/use-url-search';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { SessionExpiredAlert } from '#components/session-expired-alert';
-import {
-  Alert,
-  AlertAction,
-  AlertDescription,
-  AlertTitle,
-} from '#components/ui/alert';
 import { Button } from '#components/ui/button';
 import {
   DropdownMenu,
@@ -57,14 +53,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '#components/ui/empty';
 import {
   InputGroup,
   InputGroupAddon,
@@ -78,7 +66,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#components/ui/select';
-import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 
 import { ProjectDeleteDialog } from './project-delete-dialog.js';
@@ -105,6 +92,11 @@ export default function ProjectsPage(): ReactElement {
   const { t } = useTranslation();
   const { locale } = useLocale();
   const api = useApiClient();
+  // Use the same registered business resource and action as the create endpoint.
+  const canCreate = useCan({
+    resource: { type: 'project', id: '*' },
+    action: 'create',
+  }).can;
   const location = useLocation();
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -132,59 +124,27 @@ export default function ProjectsPage(): ReactElement {
     searchRef.current?.focus();
   }
 
-  // Load the list. An effect must not call setState synchronously: store the result only in the request callbacks,
-  // and derive "loading" from whether the result belongs to the current request.
-  // Each reload() call increments the count, and the effect requests again.
-  const [reloadCount, reload] = useReducer((count: number) => count + 1, 0);
-  const requestKey = JSON.stringify([search, status ?? null, reloadCount]);
-  const [result, setResult] = useState<{
-    readonly key: string;
-    readonly rows?: Project[];
-    /** Whether this batch was fetched with filters; tells "empty" apart from "no results". */
-    readonly filtered?: boolean;
-    readonly error?: unknown;
-    /** The number of matching records on all pages; more than rows.length when the page cap cut the list. */
-    readonly total?: number;
-  }>();
-
-  useEffect(() => {
-    // Abort the request when the filters change or the component unmounts, so an old result never overwrites a new one.
-    const controller = new AbortController();
-    const key = JSON.stringify([search, status ?? null, reloadCount]);
-    api
-      .request<ProjectList>({
+  const request = useQuery({
+    queryKey: ['projects', search.trim(), status ?? null],
+    queryFn: ({ signal }) =>
+      api.request<ProjectList>({
         path: 'projects',
-        query: { q: search || undefined, status, pageSize: PAGE_SIZE },
-        signal: controller.signal,
-      })
-      .then(
-        ({ data, meta }) => {
-          if (!controller.signal.aborted) {
-            setResult({
-              key,
-              rows: data,
-              total: meta.total,
-              filtered: search !== '' || status !== undefined,
-            });
-          }
-        },
-        (error: unknown) => {
-          // Keep the previous batch on failure: after "Retry", show the old data and a small Spinner, not the skeleton.
-          if (!controller.signal.aborted) {
-            setResult((previous) => ({ ...previous, key, error }));
-          }
-        },
-      );
-    return () => controller.abort();
-  }, [api, search, status, reloadCount]);
-
-  const loading = result?.key !== requestKey;
-  const error = loading ? undefined : result?.error;
-  // While reloading, rows is still the previous batch.
-  const rows = result?.rows;
-  // Decide by the filters the displayed data was fetched with, not by the current filters:
-  // right after "Clear filters" is clicked, the screen still shows the old filtered result.
-  const rowsFiltered = result?.filtered ?? false;
+        query: { q: search.trim() || undefined, status, pageSize: PAGE_SIZE },
+        signal,
+      }),
+    retry: false,
+  });
+  const reload = useCallback(() => {
+    void request.refetch();
+  }, [request.refetch]);
+  const loading = request.isFetching;
+  const rowsFiltered = Boolean(search.trim() || status);
+  const listState = resolveListState(
+    request,
+    request.data?.data.length ?? 0,
+    rowsFiltered,
+  );
+  const rows = listStateShowsData(listState) ? request.data?.data : undefined;
 
   // After a record is deleted in the drawer, its row and the link that opened the drawer disappear once the list refreshes:
   // wait for the refresh to finish, then move focus to the search box (guideline A6).
@@ -350,92 +310,43 @@ export default function ProjectsPage(): ReactElement {
     [collator, dateFormat, location.search, t],
   );
 
-  // Check in the order "failed → first load → empty → data or no results".
-  let content: ReactElement;
-  if (error instanceof ApiClientError && error.status === 401) {
-    // The session ended; signing in again is the only way forward (guideline S4).
-    content = <SessionExpiredAlert />;
-  } else if (error) {
-    // Retrying cannot succeed without permission, so offer no "Retry" (guideline S4).
-    const forbidden = error instanceof ApiClientError && error.status === 403;
-    content = (
-      <Alert variant='destructive'>
-        <AlertCircleIcon />
-        <AlertTitle>{t('projects.error.title')}</AlertTitle>
-        <AlertDescription>
-          {forbidden
-            ? t('projects.error.forbidden')
-            : t('projects.error.requestFailed')}
-        </AlertDescription>
-        {forbidden ? null : (
-          <AlertAction>
+  const content = (
+    <>
+      {rows && (request.data?.meta.total ?? 0) > rows.length && (
+        <p role='status'>{t('projects.capNotice', { count: rows.length })}</p>
+      )}
+      <DataTable
+        columns={columns}
+        data={rows ?? []}
+        listState={listState}
+        loading={loading}
+        onRetry={reload}
+        onClearFilters={clearFilters}
+        getRowId={(row) => row.id}
+        showSelectedCount={false}
+        emptyMessage={
+          <>
+            <h2>{t('projects.empty.title')}</h2>
+            <p>{t('projects.empty.description')}</p>
+          </>
+        }
+        // Resolve canCreate through this application's existing authorization hook.
+        emptyAction={
+          canCreate === true ? (
             <Button
-              variant='outline'
-              size='sm'
-              onClick={() => {
-                reload();
-                // This button disappears after a retry; move focus to the search box (guideline A6).
-                searchRef.current?.focus();
-              }}
+              nativeButton={false}
+              render={
+                <Link to={{ pathname: 'new', search: location.search }} />
+              }
             >
-              {t('status.retry')}
+              <PlusIcon />
+              {t('projects.create.action')}
             </Button>
-          </AlertAction>
-        )}
-      </Alert>
-    );
-  } else if (rows === undefined) {
-    content = <TableSkeleton label={t('status.loading')} />;
-  } else if (rows.length === 0 && !rowsFiltered) {
-    content = (
-      <Empty className='min-h-48 border border-dashed'>
-        <EmptyHeader>
-          <EmptyMedia variant='icon'>
-            <FolderKanbanIcon />
-          </EmptyMedia>
-          <EmptyTitle>{t('projects.empty.title')}</EmptyTitle>
-          <EmptyDescription>{t('projects.empty.description')}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          {/* While the list is empty the primary action is only here; the page header leaves it out (guideline L7). */}
-          <Button
-            render={<Link to={{ pathname: 'new', search: location.search }} />}
-            nativeButton={false}
-          >
-            <PlusIcon data-icon='inline-start' />
-            {t('projects.create.action')}
-          </Button>
-        </EmptyContent>
-      </Empty>
-    );
-  } else {
-    const capped = (result?.total ?? 0) > rows.length;
-    content = (
-      <>
-        {/* Information, not an error (guideline A8): a plain paragraph, not an alert. */}
-        {capped ? (
-          <p className='text-sm text-muted-foreground'>
-            {t('projects.capNotice', { count: rows.length })}
-          </p>
-        ) : null}
-        <DataTable
-          columns={columns}
-          data={rows}
-          getRowId={(row) => row.id}
-          // No row selection on this page, so no "0 of N row(s) selected" summary.
-          showSelectedCount={false}
-          emptyMessage={
-            <div className='flex flex-col items-center gap-2'>
-              <span>{t('projects.empty.noResults')}</span>
-              <Button variant='link' size='sm' onClick={clearFilters}>
-                {t('projects.filters.clear')}
-              </Button>
-            </div>
-          }
-        />
-      </>
-    );
-  }
+          ) : null
+        }
+      />
+    </>
+  );
 
   return (
     <PageContainer>
@@ -444,7 +355,9 @@ export default function ProjectsPage(): ReactElement {
         description={t('projects.description')}
         actions={
           // Decided from loaded data: no action while loading, and none while the empty state carries it (guideline L7).
-          rows !== undefined && (rows.length > 0 || rowsFiltered) ? (
+          canCreate === true &&
+          rows !== undefined &&
+          (rows.length > 0 || rowsFiltered) ? (
             <Button
               render={
                 <Link to={{ pathname: 'new', search: location.search }} />
@@ -518,28 +431,6 @@ export default function ProjectsPage(): ReactElement {
       {/* The create dialog, the drawer and a row's edit dialog render here and get the list's refresh functions from context. */}
       <Outlet context={outletContext} />
     </PageContainer>
-  );
-}
-
-function TableSkeleton({ label }: { readonly label: string }): ReactElement {
-  return (
-    <div
-      role='status'
-      aria-label={label}
-      className='overflow-hidden rounded-lg border'
-    >
-      {Array.from({ length: 5 }, (_, index) => (
-        <div
-          key={index}
-          className='flex items-center gap-4 border-b px-4 py-3 last:border-b-0'
-        >
-          <Skeleton className='h-4 w-40' />
-          <Skeleton className='h-4 w-24' />
-          <Skeleton className='h-5 w-16 rounded-full' />
-          <Skeleton className='ml-auto h-4 w-28' />
-        </div>
-      ))}
-    </div>
   );
 }
 ```

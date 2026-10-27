@@ -863,6 +863,20 @@
           "target": "client/extensions/nocobase-notification-logs-ui-demo/notification-logs-ui.tsx"
         }
       ]
+    },
+    {
+      "name": "list-feedback-demo",
+      "type": "registry:example",
+      "title": "List Feedback Demo",
+      "description": "List feedback states with static demonstration data.",
+      "registryDependencies": ["@nocobase/list-feedback"],
+      "files": [
+        {
+          "path": "components/list-feedback.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-list-feedback-demo/list-feedback.tsx"
+        }
+      ]
     }
   ]
 }

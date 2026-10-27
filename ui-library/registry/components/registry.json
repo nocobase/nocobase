@@ -98,7 +98,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": ["button", "dialog"],
-      "docs": "Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, \u5173\u95ed), or it reads Close in every language.",
+      "docs": "Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.",
       "files": [
         {
           "path": "route-dialog.tsx",
@@ -135,7 +135,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": ["button", "dialog"],
-      "docs": "Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, \u5173\u95ed), or it reads Close in every language.",
+      "docs": "Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.",
       "files": [
         {
           "path": "route-drawer.tsx",
@@ -403,7 +403,7 @@
         "cn@^0.4.0",
         "lucide-react@^0.487.0"
       ],
-      "docs": "Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232\u00d7104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.",
+      "docs": "Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.",
       "files": [
         {
           "path": "flow-diagram.tsx",
@@ -435,7 +435,13 @@
         "cn@^0.4.0",
         "lucide-react@^0.487.0"
       ],
-      "registryDependencies": ["table", "button", "select", "dropdown-menu"],
+      "registryDependencies": [
+        "table",
+        "button",
+        "select",
+        "dropdown-menu",
+        "@nocobase/list-feedback"
+      ],
       "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.",
       "files": [
         {
@@ -476,7 +482,7 @@
         "iframeHeight": 420
       },
       "registryDependencies": ["button"],
-      "docs": "Memoize SetupCheck descriptors and the async inspect callback; wire useSetupReadiness to the feature\u2019s authorized aggregate read and pass its state to SetupReadiness. Supply translated labels, stable ids and authorized configuration links. No checks or disabled inspection causes no reads. Refresh on the host route key and after configuration saves; focus rechecks mounted checks. Unknown reason is unavailable, signIn, forbidden or invalid. Only missing checks render configuration links; denied/invalid reads are not missing. Initial all-ready hides; explicit refresh keeps a compact confirmation and the refresh control. This is informational; execution still validates prerequisites server-side. Templates also include RequiredRoleSetup for explicitly declared business roles.",
+      "docs": "Memoize SetupCheck descriptors and the async inspect callback; wire useSetupReadiness to the feature’s authorized aggregate read and pass its state to SetupReadiness. Supply translated labels, stable ids and authorized configuration links. No checks or disabled inspection causes no reads. Refresh on the host route key and after configuration saves; focus rechecks mounted checks. Unknown reason is unavailable, signIn, forbidden or invalid. Only missing checks render configuration links; denied/invalid reads are not missing. Initial all-ready hides; explicit refresh keeps a compact confirmation and the refresh control. This is informational; execution still validates prerequisites server-side. Templates also include RequiredRoleSetup for explicitly declared business roles.",
       "files": [
         {
           "path": "setup-readiness.tsx",
@@ -487,6 +493,26 @@
           "path": "setup-readiness-state.ts",
           "type": "registry:component",
           "target": "client/components/setup-readiness-state.ts"
+        }
+      ]
+    },
+    {
+      "name": "list-feedback",
+      "type": "registry:component",
+      "title": "List feedback",
+      "description": "Accessible list loading, empty, filtered, permission and request feedback for tables and cards.",
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.4",
+        "@nocobase/i18n",
+        "react-router"
+      ],
+      "registryDependencies": ["button"],
+      "docs": "Pass resolveListState from @nocobase/app-client and the existing request retry/clear callbacks. Merge listFeedback translations listed in the components README. Gate emptyAction with the existing create permission.",
+      "files": [
+        {
+          "path": "list-feedback.tsx",
+          "type": "registry:component",
+          "target": "client/components/list-feedback.tsx"
         }
       ]
     }

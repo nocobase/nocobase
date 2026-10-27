@@ -729,8 +729,8 @@ const enUS = {
     loading: 'Loading articles…',
     loadError: 'Unable to load articles. Check your connection and try again.',
     retry: 'Try again',
-    empty: 'No matching articles',
-    emptyHint: 'Try another search or create your first article.',
+    empty: 'No articles yet.',
+    emptyHint: 'Create your first article to get started.',
     noSummary: 'No summary yet.',
     read: 'Read article',
     total: '{{count}} articles',
@@ -765,7 +765,7 @@ const enUS = {
     loadError:
       'Unable to load orders. Check that you are signed in and that the external CRM database is reachable.',
     retry: 'Retry',
-    empty: 'No matching orders',
+    empty: 'No orders yet.',
     emptyHint:
       'The SQLite stand-in is filled with sample orders on startup; a real CRM shows whatever it holds.',
     columns: {

@@ -686,8 +686,8 @@ const zhCN: AppResource = {
     loading: '正在加载文章…',
     loadError: '文章加载失败，请检查网络连接后重试。',
     retry: '重试',
-    empty: '没有找到文章',
-    emptyHint: '换个关键词，或创建你的第一篇文章。',
+    empty: '暂无文章。',
+    emptyHint: '创建你的第一篇文章。',
     noSummary: '暂无摘要',
     read: '阅读文章',
     total: '共 {{count}} 篇文章',
@@ -721,7 +721,7 @@ const zhCN: AppResource = {
     loading: '正在加载订单…',
     loadError: '无法加载订单。请确认已登录，且外部 CRM 数据库可以访问。',
     retry: '重试',
-    empty: '没有符合条件的订单',
+    empty: '暂无订单。',
     emptyHint:
       'SQLite 替身库会在启动时写入样例订单；接到真实 CRM 后显示的是它的数据。',
     columns: {

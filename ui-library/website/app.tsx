@@ -1,3 +1,4 @@
+import { ListFeedbackDemo } from './demo/components/list-feedback.js';
 import { FileComponentUiDemo } from './demo/file/file-component-ui.js';
 import { NotificationLogsUiDemo } from './demo/notification/notification-logs-ui.js';
 import { copyText } from '@nocobase/app-client';
@@ -169,6 +170,7 @@ const itemPreviews: Record<string, ItemPreview> = {
   },
   'record-link': { path: '/demo/components/record-link', icon: Table2 },
   'page-header': { path: '/demo/components/page-header', icon: Heading },
+  'list-feedback': { path: '/demo/components/list-feedback', icon: ListChecks },
   'setup-readiness': {
     path: '/demo/components/setup-readiness',
     icon: ListChecks,
@@ -314,6 +316,8 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
   }
+  if (pathname.startsWith('/demo/components/list-feedback'))
+    return <ListFeedbackDemo />;
   if (pathname.startsWith('/demo/components/setup-readiness'))
     return <SetupReadinessDemo />;
   if (pathname.startsWith('/demo/components/record-link'))

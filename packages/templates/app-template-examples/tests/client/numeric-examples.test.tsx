@@ -91,18 +91,16 @@ it('shows loading, then a transport failure and a successful retry', async () =>
     },
   });
   try {
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Loading numeric examples',
-    );
+    expect(screen.getByRole('status')).toHaveTextContent('Loading…');
     await act(async () => {
       pending.resolve();
       await pending.promise;
     });
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Unable to load numeric examples',
+      'Unable to load this list.',
     );
     offline = false;
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(
       await screen.findByRole('region', { name: 'Stored values' }),
     ).toBeVisible();

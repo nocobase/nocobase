@@ -1,3 +1,5 @@
+import { resolveListState } from '@nocobase/app-client';
+import { ListFeedback } from '#components/list-feedback';
 import { useSettingsData, useRolePermission } from './hooks.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type {
@@ -16,10 +18,8 @@ import {
   Empty,
   EmptyTitle,
   EmptyDescription,
-  EmptyContent,
   EmptyMedia,
 } from '#components/ui/empty';
-import { SettingsError, SettingsLoading } from './shared.js';
 
 export default function RolesPage(): ReactElement {
   const { t, i18n } = useTranslation();
@@ -41,7 +41,7 @@ export default function RolesPage(): ReactElement {
     .filter((role) =>
       text(role.title ?? role.key)
         .toLocaleLowerCase()
-        .includes(search.toLocaleLowerCase()),
+        .includes(search.trim().toLocaleLowerCase()),
     )
     .sort((a, b) =>
       text(a.title ?? a.key).localeCompare(
@@ -109,74 +109,63 @@ export default function RolesPage(): ReactElement {
             </Button>
           )}
         </div>
-        <SettingsError error={request.error} retry={request.reload} />
-        {request.loading && !request.data ? (
-          <SettingsLoading />
-        ) : (
-          !request.error &&
-          (rows.length ? (
-            <RoleList
-              tableState={tableState}
-              ariaLabel={t('settings.roles')}
-              roles={rows.map((role) => ({
-                key: role.key,
-                title: text(role.title ?? role.key),
-                to: {
-                  pathname: `${encodeURIComponent(role.key)}/edit`,
-                  search: location.search,
-                },
-                protected: Boolean(role.protection),
-              }))}
-              labels={{
-                name: t('settings.roleName'),
-                key: t('settings.key'),
-                type: t('settings.roleType'),
-                protected: t('settings.protected'),
-                custom: t('settings.custom'),
-              }}
-            />
-          ) : (
+        <ListFeedback
+          state={resolveListState(
+            { data: request.data, error: request.error },
+            rows.length,
+            Boolean(search.trim()),
+          )}
+          onRetry={request.reload}
+          busy={request.loading}
+          onClear={() =>
+            setParams(
+              (old) => {
+                const next = new URLSearchParams(old);
+                next.delete('q');
+                next.delete('page');
+                return next;
+              },
+              { replace: true },
+            )
+          }
+          empty={
             <Empty className='min-h-48 border border-dashed'>
               <EmptyMedia variant='icon'>
                 <ShieldCheckIcon />
               </EmptyMedia>
-              <EmptyTitle>
-                {t(search ? 'settings.noResults' : 'settings.noRoles')}
-              </EmptyTitle>
+              <EmptyTitle>{t('settings.noRoles')}</EmptyTitle>
               <EmptyDescription>
                 {t(
-                  search
-                    ? 'settings.clearHint'
-                    : canCreate
-                      ? 'settings.rolesDescription'
-                      : 'settings.rolesReadOnlyEmpty',
+                  canCreate
+                    ? 'settings.rolesDescription'
+                    : 'settings.rolesReadOnlyEmpty',
                 )}
               </EmptyDescription>
-              <EmptyContent>
-                {search ? (
-                  <Button
-                    variant='outline'
-                    onClick={() => {
-                      setParams(
-                        (old) => {
-                          const next = new URLSearchParams(old);
-                          next.delete('q');
-                          next.delete('page');
-                          return next;
-                        },
-                        { replace: true },
-                      );
-                    }}
-                  >
-                    {t('settings.clear')}
-                  </Button>
-                ) : (
-                  create
-                )}
-              </EmptyContent>
             </Empty>
-          ))
-        )}
+          }
+          emptyAction={create}
+        >
+          <RoleList
+            tableState={tableState}
+            ariaLabel={t('settings.roles')}
+            roles={rows.map((role) => ({
+              key: role.key,
+              title: text(role.title ?? role.key),
+              to: {
+                pathname: `${encodeURIComponent(role.key)}/edit`,
+                search: location.search,
+              },
+              protected: Boolean(role.protection),
+            }))}
+            labels={{
+              name: t('settings.roleName'),
+              key: t('settings.key'),
+              type: t('settings.roleType'),
+              protected: t('settings.protected'),
+              custom: t('settings.custom'),
+            }}
+          />
+        </ListFeedback>
       </PermissionManagementPage>
       <Outlet context={{ reload: request.reload }} />
     </>

@@ -93,29 +93,15 @@ Each behavior below is in `useUrlSearch` (`client/hooks/use-url-search.ts`, [`ex
 
 ## 6. Loading the list
 
-The pattern of ["Loading data in a component" in `api.md`](api.md#loading-data-in-a-component), with four list-specific points (all in [`example/list-page.md`](example/list-page.md)):
+Use the existing Query Client and the shared [list request feedback](list-feedback.md) contract. The request key includes effective filters, pagination and ordering. Refetch the same key for retry or background refresh. Pass the original snapshot to `resolveListState`; previous-key placeholder data is loading, not a successful current-query result. Manual hooks must withhold previous-key data and ignore obsolete completions. Keep the toolbar mounted and show a small busy indicator during same-query refreshes.
 
-- The request key holds the filters and the reload count (`JSON.stringify([search, status ?? null, reloadCount])`); `loading` is derived from whether the stored result carries the current key. The search term goes to the endpoint as `q`.
-- A reload keeps the previous rows on screen with a small `Spinner` in the toolbar (guideline I4), also after a failure, so "Retry" shows old data plus the spinner rather than the skeleton.
-- The stored result records whether it was fetched with filters (`filtered`); "empty" and "no results" are decided by that flag, not by the current filters, so clearing filters never flashes "No projects yet".
-- `reload` comes from `useReducer((count: number) => count + 1, 0)`: its identity is stable, so it goes into the child routes' context as is.
-
-A list endpoint pages its result and caps `pageSize` at 100. A list sorted and paginated in the browser asks for one page of 100; when `meta.total` is larger than the rows returned, show "Only the first N records are shown. Use search or filters to narrow the results." above the table (guideline T1.10, `projects.capNotice` in [`example/list-page.md`](example/list-page.md)). It is information, not an error (guideline A8): `<Alert role='status'>` (props spread after the built-in `role='alert'`, so this overrides it) or a `text-sm text-muted-foreground` paragraph.
+A list endpoint caps its page size at 100. A browser-paginated list that requests 100 rows must show a cap notice when the successful current-query total exceeds the rows returned. Use server pagination for larger lists. Correct out-of-range pages using only a successful current-query total, without flashing empty feedback during correction.
 
 ## 7. The four list states
 
-Check them in the order "failed → first load → empty → data or no results" (guidelines S1–S4) and put the result in `content`:
+The historical four visual groups now use the shared feedback contract to distinguish loading, successful empty data, no matching results, forbidden access, session expiry, initial failure and refresh failure. See [list request feedback](list-feedback.md) for the state matrix and table/card wiring. `DataTable` takes `listState`, `loading`, `onRetry`, `onClearFilters`, `emptyMessage` and an explicitly authorized `emptyAction`. Card lists use `ListFeedback` with the same state. The shared component supplies accessible English/Chinese feedback; business empty content applies only to successful unfiltered emptiness.
 
-| State              | Condition                                            | Shows                                                                                                                                                                                                         |
-| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Failed             | The current request failed                           | A destructive `Alert` chosen by status as ["Handling each kind of error" in `api.md`](api.md#handling-each-kind-of-error) says (401, 403, other); after "Retry", focus moves to the search box (guideline A6) |
-| First load         | No data yet (`rows === undefined`)                   | The `TableSkeleton` skeleton: shaped like table rows, `role='status'`, accessible name "Loading"                                                                                                              |
-| Empty              | No data, and this batch was not fetched with filters | `Empty`: icon, title, description and the "New project" button, which the page header leaves out while the list is empty (guidelines L7 and S2)                                                               |
-| Data or no results | Anything else                                        | `DataTable`. When a filtered query finds nothing, `emptyMessage` shows "No projects match your filters" (`projects.empty.noResults`) and "Clear filters" (guideline S3)                                       |
-
-- The toolbar shows in all four states and sits outside `DataTable`, so focus can always move to the search box.
-- Error copy goes in the feature's own copy group: `projects.error.title`, `projects.error.forbidden`, `projects.error.requestFailed`.
-- The application shell handles having no access to the whole page (guideline S6); the 403 here is the case where the page opens but the list endpoint refuses the request.
+Do not infer denied access or hidden records from a successful empty response. HTTP 403 and 401 hide cached rows; the latter offers the existing sign-in route. Other failed refreshes retain current-query data and explicitly identify it as previously loaded. Retry preserves filters, sorting and pagination. Clear cancels pending debounce and resets controls, applied filters and page together, preserving sort and page size. Never swallow a request failure into an empty array or add an existence/count probe to diagnose emptiness.
 
 ## 8. Column definitions and row actions
 

@@ -8,6 +8,18 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * upgrade replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
+  listFeedback: {
+    loading: 'Loading…',
+    empty: 'No data yet.',
+    noResults: 'No matching results.',
+    forbidden: 'You do not have permission to view this list.',
+    unauthenticated: 'Your session has expired. Sign in again.',
+    failed: 'Unable to load this list.',
+    refreshFailed: 'Refresh failed. Showing previously loaded data.',
+    retry: 'Retry',
+    clear: 'Clear filters',
+    signIn: 'Sign in again',
+  },
   flowDiagram: {
     controls: 'Diagram controls',
     fitView: 'Fit to view',

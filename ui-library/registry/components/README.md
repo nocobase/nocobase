@@ -236,3 +236,20 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 ## Record Link
 
 `RecordLink` renders a React Router link for clickable record names and identifiers. It uses foreground text with medium weight at rest, an underline on hover and a visible keyboard focus. Pass the destination as `to`, including the current list query in `to.search` when navigating to a child route. Native Link props and refs are preserved. It adds no translation keys and does not replace action buttons or menu items.
+
+## List feedback
+
+`ListFeedback` renders the state returned by `resolveListState` from `@nocobase/app-client`. Pass the original query snapshot, including `isPlaceholderData`; retry refetches the same query, and clear synchronizes the controls, applied filters and first page. `DataTable` accepts `listState`, `onRetry`, `onClearFilters` and `emptyAction`; its legacy `emptyMessage` remains business content for successful unfiltered emptiness. Gate creation with existing permissions. Installed sources need a three-way source merge, including request owners and translations, to upgrade.
+
+| Key                            | English                                         | Chinese                            |
+| ------------------------------ | ----------------------------------------------- | ---------------------------------- |
+| `listFeedback.loading`         | Loading…                                        | 正在加载…                          |
+| `listFeedback.empty`           | No data yet.                                    | 暂无数据。                         |
+| `listFeedback.noResults`       | No matching results.                            | 无匹配结果。                       |
+| `listFeedback.forbidden`       | You do not have permission to view this list.   | 您没有查看此列表的权限。           |
+| `listFeedback.unauthenticated` | Your session has expired. Sign in again.        | 会话已过期，请重新登录。           |
+| `listFeedback.failed`          | Unable to load this list.                       | 列表加载失败。                     |
+| `listFeedback.refreshFailed`   | Refresh failed. Showing previously loaded data. | 刷新失败，当前显示此前加载的数据。 |
+| `listFeedback.retry`           | Retry                                           | 重试                               |
+| `listFeedback.clear`           | Clear filters                                   | 清空条件                           |
+| `listFeedback.signIn`          | Sign in again                                   | 重新登录                           |
