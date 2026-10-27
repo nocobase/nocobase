@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/create-plugin",
-  "version": "0.1.0-beta.24",
+  "version": "0.1.0-beta.26",
   "description": "Create a NocoBase 3 application plugin.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -32,7 +32,9 @@
   "dependencies": {
     "@nocobase/cli-envelope": "workspace:^",
     "@nocobase/dev-config": "workspace:^",
-    "prettier": "catalog:"
+    "prettier": "catalog:",
+    "yaml": "catalog:",
+    "semver": "^7.8.5"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -40,7 +42,7 @@
     "publint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "yaml": "catalog:"
+    "@types/semver": "^7.7.1"
   },
   "publishConfig": {
     "access": "public"

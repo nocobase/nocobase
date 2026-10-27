@@ -183,10 +183,10 @@ describe('localNameFor', () => {
 
   it('rejects a package outside the plugin namespace', () => {
     expect(() => localNameFor('@nocobase/other')).toThrow(
-      'must match @nocobase/app-plugin-<name>',
+      'must match @scope/app-plugin-<name>',
     );
     expect(() => localNameFor('scheduler')).toThrow(
-      'must match @nocobase/app-plugin-<name>',
+      'must match @scope/app-plugin-<name>',
     );
   });
 });

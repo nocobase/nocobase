@@ -120,6 +120,12 @@ async function writeAppSkill(
 }
 
 describe('pluginPackageName', () => {
+  it('accepts an application-owned plugin scope', () => {
+    expect(pluginPackageName('@my-app/app-plugin-audit-log')).toBe(
+      '@my-app/app-plugin-audit-log',
+    );
+    expect(pluginShortName('@my-app/app-plugin-audit-log')).toBe('audit-log');
+  });
   it('expands a short name into a plugin package', () => {
     expect(pluginPackageName('audit-log')).toBe(
       '@nocobase/app-plugin-audit-log',
@@ -260,6 +266,30 @@ describe('hasServerPluginEntry', () => {
 });
 
 describe('planPluginRegistration', () => {
+  it('registers and unregisters all entries of an application-scoped plugin', async () => {
+    const appRoot = await createApp();
+    const packageName = '@my-app/app-plugin-custom';
+    const pluginDirectory = await createPlugin(appRoot, packageName);
+    const manifestPath = path.join(pluginDirectory, 'package.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    manifest.exports['./cli'] = './cli/index.js';
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    const plan = await planPluginRegistration({
+      appRoot,
+      packageName,
+      pluginDirectory,
+      dependencyRange: 'workspace:*',
+    });
+    expect(plan.clientPluginsText).toContain(`${packageName}/client`);
+    expect(plan.serverPluginsText).toContain(`${packageName}/server`);
+    expect(plan.cliPluginsText).toContain(`${packageName}/cli`);
+    await applyPluginRegistration(appRoot, plan);
+    const removal = await planPluginUnregistration({ appRoot, packageName });
+    expect(removal.clientPluginsChanged).toBe(true);
+    expect(removal.serverPluginsChanged).toBe(true);
+    expect(removal.cliPluginsChanged).toBe(true);
+  });
+
   it('records the dependency, the registration, and the client entry', async () => {
     const appRoot = await createApp();
     const pluginDirectory = await createPlugin(

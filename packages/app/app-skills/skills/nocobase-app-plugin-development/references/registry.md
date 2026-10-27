@@ -2,7 +2,7 @@
 
 Plugins own runtime services, public APIs, and components whose behavior must remain consistent across upgrades. Editable source belongs in the UI Library, never in a plugin-owned `registry/` directory. Plugins do not publish `registry.config.json`, `nocobase.registry.items`, or `public/r` artifacts, and `plugin:create` has no Registry capability.
 
-Before adding UI, inspect the UI Library catalog and reuse existing components or blocks. Add missing capabilities under `ui-library/registry/<domain>/`, using only public plugin exports and APIs. Follow [Maintaining the UI Library](../../../ui-library/MAINTAINING.md) for source layout, dependencies, translations, demos, and verification, and [Using the UI Library](../../../ui-library/USAGE.md) for installation into applications and plugins.
+Before adding UI, inspect the UI Library catalog in the installed application Skill and reuse existing components or blocks through the [plugin component installation workflow](client-components.md#copy-page-and-route-components-into-the-plugin). Use public plugin exports and APIs. Source contributors adding catalog items follow their repository-local UI Library maintenance rules; an App does not need the library source checkout.
 
 Within this repository, copy the files declared by the item's `registry.json` to their declared targets and retain workspace dependency ranges. Outside this repository, install with `pnpm exec shadcn add @nocobase/<item>`. Registration of a plugin and installation of editable UI are separate steps. Installed source belongs to its consumer; merge upstream changes while preserving customizations.
 

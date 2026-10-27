@@ -20,7 +20,7 @@ Keep fixtures in `tests/fixtures/` and shared helpers in `tests/helpers/`. Retai
 
 Keep the scaffold's `vitest.config.ts` projects: `createNodeVitestConfig()` runs Server, database, CLI and project tests under Node; `createReactVitestConfig()` runs `tests/client/**/*.test.{ts,tsx}` under jsdom with DOM cleanup. The maintained configuration is `packages/tools/create-plugin/template/vitest.config.template.ts`. Exclude browser tests from Vitest if the package also owns them. Do not import `/server` into a jsdom suite merely to obtain a database fixture.
 
-Run a focused file from the repository root, replacing the package and path with the ones under test:
+Run a focused file from the App or source-workspace root, replacing the package and path with the ones under test:
 
 ```bash
 pnpm --filter <plugin-package> exec vitest run tests/database/migrations.test.ts --project node --no-file-parallelism
@@ -47,7 +47,7 @@ Browser checks belong to a running target App that registers the plugin. Use its
 
 Start with the self-contained [complete plugin example](testing-example.md) for one plugin spanning a migration, service, configuration factory, protected API, translated Client component and CLI command. Its source and fixture App travel with this Skill under `assets/testing-example/`; the accompanying verifier runs lint, typecheck and both test environments against an installed NocoBase 3 application's dependencies.
 
-The application Skill's complete examples live under `packages/app/app-skills/skills/nocobase-app-development/references/testing/`: `database/repository.md`, `database/migration.md`, `server/routes.md`, `client/page.md`, `cli/command.md`, `cli/files.md` and `playwright/login.md`. Read them from the source workspace when a complete fixture is needed. Adapt application-owned imports to the production plugin and explicitly register it in the fixture; do not copy an application composition unchanged and assume it includes the plugin. Those paths are repository lookup locations, not relative dependencies of this globally distributed Skill.
+The application Skill's complete examples live under `packages/app/app-skills/skills/nocobase-app-development/references/testing/`: `database/repository.md`, `database/migration.md`, `server/routes.md`, `client/page.md`, `cli/command.md`, `cli/files.md` and `playwright/login.md`. In an App, first look for these references under its synchronized `.agents/skills/nocobase-app-development/references/testing/`; in the source workspace, read the paths above. Use the available examples matching the installed version rather than requiring a repository checkout. Adapt application-owned imports to the production plugin and explicitly register it in the fixture; do not copy an application composition unchanged and assume it includes the plugin. Those paths are repository lookup locations, not relative dependencies of this package-distributed Skill.
 
 Maintained executable fixtures also live in `packages/tools/app-testing/tests/`, with its minimal App in `tests/fixtures/app/`, and scaffold tests in `packages/tools/create-plugin/template/tests/`. Inspect the current exports and fixture configuration before borrowing code; keep tests focused on the plugin's behavior rather than copying the harness's own tests.
 
@@ -89,7 +89,7 @@ Call actual component loaders and render public components through their support
 
 For UI work, verify shadcn interaction and keyboard behavior, the shared theme in light/dark modes, and loading, empty, error, and success states. An App alias resolving in one development environment does not prove compiled plugin imports resolve for an installed consumer.
 
-Use `en-US` as the locale key-shape source, confirm every locale manifest of the plugin and of libraries it depends on that ship translations lists all ten [supported languages](i18n.md#ship-all-ten-supported-languages) with complete resources, run the relevant `i18n:check`/strict check, and render at least two supported languages. Public components must also work outside their plugin's render subtree. Server request tests cover session/header/default locale resolution and stable `code/ns/key/params` plus translated messages. Jobs, mail, and notifications must load resources before obtaining a fixed translator for a non-default recipient locale. Ensure emitted locale chunks are present in the build and tarball. See [internationalization](i18n.md).
+Use `en-US` as the locale key-shape source, confirm every locale manifest of the plugin and of libraries it depends on that ship translations lists all ten [supported languages](i18n.md#ship-all-ten-supported-languages) with complete resources, run the repository’s `i18n:check`/strict check only when that script is available (otherwise use plugin typechecking and the App’s own checks), and render at least two supported languages. Public components must also work outside their plugin's render subtree. Server request tests cover session/header/default locale resolution and stable `code/ns/key/params` plus translated messages. Jobs, mail, and notifications must load resources before obtaining a fixed translator for a non-default recipient locale. Ensure emitted locale chunks are present in the build and tarball. See [internationalization](i18n.md).
 
 ## Registry and Skill verification
 

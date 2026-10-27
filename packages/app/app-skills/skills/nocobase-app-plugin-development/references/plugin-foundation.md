@@ -4,9 +4,11 @@ Read this reference when creating a plugin, choosing capability ownership, or ch
 
 ## Scope and ownership
 
-`plugin:create` creates a publishable package under `packages/plugins/app-plugin-<name>/` in the source workspace. It does not scaffold a standalone plugin project inside an installed App. For an existing plugin, inspect its manifest, declarations, public exports, tests, and target App composition before adding a capability.
+Create the App first, install its dependencies, then create a local plugin from the App root with `pnpm create @nocobase/plugin@beta`. The command invokes `@nocobase/create-plugin`; it creates `packages/app-plugin-<name>/`, includes it in the pnpm workspace, adds an App dependency with `workspace:*`, and installs. Runtime registration is separate. No NocoBase source checkout is needed. For an existing plugin, inspect its manifest, declarations, public exports, tests, and target App composition before adding a capability.
 
-Choose a lowercase kebab-case short name, check the destination and npm name for collisions, and identify the target App. The CLI defaults to `app-template-default`, but use the intended App explicitly when more than one is relevant. Follow repository publishing rules before reusing a name with historical releases.
+App-local plugins start with `private: true` and can remain local: the App builds and deploys them with the application. Publish only when sharing and independent versioning require it.
+
+Choose a lowercase kebab-case short name or a full scoped package name such as `@my-company/app-plugin-audit-log`; preserve the chosen scope and use the full name when registering it. Check the destination and package name for collisions. The current App is the target; `--dir <app-directory>` can select it explicitly. Follow the target project's publishing rules before reusing a released name.
 
 | Requirement                              | Owner and entry                                           |
 | ---------------------------------------- | --------------------------------------------------------- |
@@ -47,7 +49,7 @@ An App owns its page composition, business models, call sites, and permission co
 Use repeatable `--with`; repeated capabilities are deduplicated. Use `--empty` for only a package foundation. Omitting both is an error. `--with all` is available when all capabilities are actually required; it is not a reason to generate unused modules. Locale capabilities are explicit: selecting Routes or Providers does not create locale resources.
 
 ```bash
-pnpm plugin:create audit-log \
+pnpm create @nocobase/plugin@beta audit-log \
   --with client.routes \
   --with client.components \
   --with server.service-providers \
@@ -56,9 +58,11 @@ pnpm plugin:create audit-log \
   --dry-run --json
 ```
 
-JSON mode prints one document on stdout, success or failure, in the same envelope as `pnpm nocobase … --json`. Check `ok`, then read the plan under `result`: `requestedCapabilities`, `capabilities`, `files`, and the derived runtime entries. A dry run reports `status: "success-noop"` and has empty `writes` and `commands`. A failure still has a nonzero exit code; handle `error.code` and `error.suggestions`, rather than branching on human-readable messages. A checkout from before this envelope prints the plan at the top level, names itself `operation` rather than `command`, and writes a failure to stderr.
+Run the example from the App root. JSON mode prints one document on stdout, success or failure, in the same envelope as `pnpm nocobase … --json`. Check `ok`, then inspect `result.project`, `plugin`, `projectEdits`, `dependencies`, `requestedCapabilities`, `capabilities`, `files`, and the derived runtime entries. Confirm the App root, plugin destination, root dependency and workspace edits, and resolved versions before applying. `projectEdits` includes planned root-file contents even in a dry run. A dry run reports `status: "success-noop"` and has empty `writes` and `commands`. A failure still has a nonzero exit code; handle `error.code` and `error.suggestions`, rather than branching on human-readable messages. A checkout from before this envelope prints the plan at the top level, names itself `operation` rather than `command`, and writes a failure to stderr.
 
 Apply the same selection without `--dry-run` when creation is in scope. `--no-install` separates generation from installation so a coordinated create/register workflow can install once. Follow the user's installation constraints; do not leave changed dependency declarations or a lockfile unsynchronized and call the task complete.
+
+In an App, dependencies are resolved from installed compatible packages; external packages use concrete versions and real local packages retain workspace references. Do not copy source-repository `catalog:` or `workspace:` ranges for packages that are not local to this App. Missing, ambiguous or incompatible dependencies fail before writing: install compatible dependencies in the App and retry. Preserve existing workspace settings, exclusions and App dependencies. If installation fails after generation, repair installation with `pnpm install` rather than rerunning creation over the existing plugin. With `--no-install`, install from the App root before registering.
 
 The scaffold creates inspectable wiring, not invented business behavior. Routes start as contribution structure, not fake pages or endpoints. Database `.ts.example` files do not execute; activate only the implementations the task requires. Replace Skill drafts with real integration instructions before delivery.
 
@@ -177,7 +181,7 @@ Treat changed public names, paths, inputs, outputs, options, and permissions as 
 
 ## Development and publishing configuration
 
-Keep the configuration emitted by `plugin:create`: browser-only libraries use `client-library` without a Node runtime requirement; Server libraries use `server-library` and Node lint rules; full-stack libraries add DOM/JSX locally. Use `@nocobase/dev-config` rather than copied full configurations. Published declaration libraries follow the repository's explicit exported-type annotations and `isolatedDeclarations` requirements.
+Keep the configuration emitted by `@nocobase/create-plugin`: browser-only libraries use `client-library` without a Node runtime requirement; Server libraries use `server-library` and Node lint rules; full-stack libraries add DOM/JSX locally. Use `@nocobase/dev-config` rather than copied full configurations. Published declaration libraries follow the repository's explicit exported-type annotations and `isolatedDeclarations` requirements.
 
 | Import usage                                                      | Manifest location                                                  |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------ |
@@ -188,9 +192,9 @@ Keep the configuration emitted by `plugin:create`: browser-only libraries use `c
 | Types retained in published declarations                          | Consumer-resolvable dependency or peer contract                    |
 | UI Library source compiled in its consumer           | UI Library item dependency contract, not plugin runtime dependencies |
 
-Use `catalog:` for shared catalog packages and `workspace:` for internal packages as required by the repository. Mark peers optional only when a consumer legitimately does not need them. A client peer is not optional merely because a Server deployment omits client tooling. Dependency edits require the coordinated package-manager install and lockfile update.
+In an App, keep the generator’s resolved versions and use workspace ranges only for packages actually in that App’s workspace. Mark peers optional only when a consumer legitimately does not need them. A client peer is not optional merely because a Server deployment omits client tooling. Dependency edits require the coordinated package-manager install and lockfile update.
 
-Every package under `packages/` is publishable: use the required public metadata, `files`, changelog, and initial version policy. Runtime code ships from `dist`; do not also publish source `server/` or `database/` directories that can shadow compiled resources. Publish `skills/` when provided; editable UI is published by the UI Library. Build checksum manifests for emitted migrations/seeds as described in [database resources](database.md).
+In an App, keep a local plugin private unless publishing is requested; review the package name, exports, included files, version and target npm registry before enabling publication. Runtime code ships from `dist`; do not also publish source `server/` or `database/` directories that can shadow compiled resources. Publish `skills/` when provided; editable UI is published by the UI Library. Build checksum manifests for emitted migrations/seeds as described in [database resources](database.md).
 
 ## Delivery sequence
 

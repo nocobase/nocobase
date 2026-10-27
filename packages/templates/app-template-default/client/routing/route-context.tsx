@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useMemo,
+  useState,
   type PropsWithChildren,
   type ReactElement,
 } from 'react';
@@ -26,6 +27,15 @@ export interface RouteTrailEntry {
   readonly pathname: string;
 }
 
+const RouteSearchContext = createContext<ReadonlyMap<string, string>>(
+  new Map(),
+);
+
+/** Queries belong to the page that was visited, never to a child currently covering it. */
+export function useRouteSearches(): ReadonlyMap<string, string> {
+  return useContext(RouteSearchContext);
+}
+
 const RouteTreeContext = createContext<readonly AppClientRegisteredRoute[]>([]);
 export interface RouteTreeProviderProps extends PropsWithChildren {
   readonly routes: readonly AppClientRegisteredRoute[];
@@ -42,9 +52,31 @@ export function RouteTreeProvider({
   children,
   routes,
 }: RouteTreeProviderProps): ReactElement {
+  const location = useLocation();
+  const pathname = location.pathname.replace(/\/+$/u, '') || '/';
+  const search = location.search;
+  const [visited, setVisited] = useState(() => ({
+    pathname,
+    search,
+    queries: new Map([[pathname, search]]),
+  }));
+  let queries = visited.queries;
+  if (visited.pathname !== pathname || visited.search !== search) {
+    // Keep only the active ancestry. A fresh visit (including an empty query) replaces its old state.
+    // Derive before rendering children so a detail never records its parameters against the parent.
+    queries = new Map(
+      [...queries].filter(([path]) =>
+        pathname.startsWith(`${path.replace(/\/$/u, '')}/`),
+      ),
+    );
+    queries.set(pathname, search);
+    setVisited({ pathname, search, queries });
+  }
   return (
     <RouteTreeContext.Provider value={routes}>
-      {children}
+      <RouteSearchContext.Provider value={queries}>
+        {children}
+      </RouteSearchContext.Provider>
     </RouteTreeContext.Provider>
   );
 }

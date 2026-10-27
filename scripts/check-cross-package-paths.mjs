@@ -56,6 +56,12 @@ const SCRIPT_EXTENSIONS = new Set([
  * why; the check fails once an entry no longer covers a violation, so the list only shrinks.
  */
 export const EXEMPTIONS = [
+  {
+    packageName: '@nocobase/app-skills',
+    path: 'skills/nocobase-app-plugin-development/scripts/verify-testing-example.mjs',
+    reason:
+      'Verifies the private example shipped inside the same Skill, using an installed App’s dependencies. It is source material in the app-skills tarball, not a separately installed package; select-quality-scope.mjs maps fixture changes to app-skills.',
+  },
   // The File integration test needs a receiving application; a template dependency would create a cycle.
   {
     packageName: '@nocobase/app-plugin-file',
@@ -124,6 +130,28 @@ export function collectScriptReferences(source, fileName = 'source.ts') {
     if (specifier && isLiteral(specifier)) {
       moduleNodes.add(specifier);
       if (specifier.text.startsWith('.')) add('module', specifier.text);
+    }
+
+    // A URL based on import.meta.url resolves only from this file, never from the package root.
+    if (
+      ts.isNewExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'URL'
+    ) {
+      const [relative, base] = node.arguments ?? [];
+      if (
+        relative &&
+        isLiteral(relative) &&
+        base &&
+        ts.isPropertyAccessExpression(base) &&
+        base.name.text === 'url' &&
+        ts.isMetaProperty(base.expression) &&
+        base.expression.keywordToken === ts.SyntaxKind.ImportKeyword &&
+        base.expression.name.text === 'meta'
+      ) {
+        moduleNodes.add(relative);
+        if (isRelative(relative.text)) add('module', relative.text);
+      }
     }
 
     if (ts.isCallExpression(node) || ts.isNewExpression(node)) {

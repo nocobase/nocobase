@@ -42,7 +42,7 @@ Plugins are published to npm, and a merged migration reaches installed applicati
 - Add a new Migration whose name sorts after the one it corrects, taking an installation from what the earlier migrations left behind to the target, and holding as well on a fresh installation that runs every migration in order.
 - Cover that upgrade path with `describeMigration()`, which applies the earlier migrations before the new one.
 
-The only exception, described in the repository root `AGENTS.md`, is a released migration that has never succeeded on a supported database and that no later migration can get past.
+The only source-repository exception, described in `.agents/rules/database-migrations.md`, is a released migration that has never succeeded on a supported database and that no later migration can get past.
 
 A Migration is a fixed historical operation. Spell out every Collection, field, relation, index, constraint, and metadata operation it performs. Do not import or iterate over live Collection schemas, model definitions, field registries, or runtime registration lists, because later edits to those definitions would silently change historical behavior and checksums.
 

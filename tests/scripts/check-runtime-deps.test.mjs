@@ -142,6 +142,46 @@ test('does not ask for a declaration for a Vite virtual module', async () => {
   }
 });
 
+test('treats the plugin Skill example as source material while checking executable Skill scripts', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'runtime-deps-test-'));
+  try {
+    const skill = 'skills/nocobase-app-plugin-development';
+    const sources = {
+      [`${skill}/assets/testing-example/client/index.ts`]: 'example-only',
+      [`${skill}/assets/other-example/index.ts`]: 'other-asset',
+      [`${skill}/scripts/verify.mjs`]: 'script-runtime',
+      'skills/another-skill/scripts/run.mjs': 'other-skill-runtime',
+    };
+    for (const [file, dependency] of Object.entries(sources)) {
+      await mkdir(path.dirname(path.join(root, file)), { recursive: true });
+      await writeFile(path.join(root, file), `import '${dependency}';`);
+    }
+
+    const violations = await findViolations(
+      root,
+      { name: '@nocobase/app-skills', files: ['skills'] },
+      new Set(),
+    );
+    assert.deepEqual(
+      violations.map(({ dependency }) => dependency),
+      ['other-asset', 'other-skill-runtime', 'script-runtime'],
+    );
+
+    // The same path in another package is not an exemption for shipped code.
+    const otherPackage = await findViolations(
+      root,
+      { name: '@example/another-package', files: ['skills'] },
+      new Set(),
+    );
+    assert.deepEqual(
+      otherPackage.map(({ dependency }) => dependency),
+      ['example-only', 'other-asset', 'other-skill-runtime', 'script-runtime'],
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('checks every source emitted into dist, including root and plugin-specific directories', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'runtime-deps-test-'));
   try {
