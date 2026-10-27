@@ -18,7 +18,7 @@ An App CLI assembles three command sources:
 
 Use plugin CLI commands for work a person or CI invokes explicitly, such as validating static declarations, generating artifacts, or a one-shot maintenance step against the App's database. The plugin declaration is imported while the command tree is assembled, before any App exists; a command that needs the App creates it with `withApp()` when it runs, as described below. Work that users trigger while the App is serving belongs behind authenticated Server APIs, Services, or Jobs, not in a command.
 
-Topics share one flat namespace. A plugin's topic is its package name without the scope and `app-plugin-` prefix — `@nocobase/app-plugin-demo` mounts under `demo` — so it needs no declaration and cannot collide with another plugin. The built-in topics avoid every official plugin name; a plugin whose name is a built-in topic or top-level command (`RESERVED_TOPICS` in `packages/app/app-cli/src/runtime/builtin.ts`) fails assembly. Command keys are lower-case kebab-case and may use colon-separated nesting: `artifact:build` becomes `nocobase demo artifact build`.
+Topics share one flat namespace. A plugin's topic is its package name without the scope and `app-plugin-` prefix — `@nocobase/app-plugin-demo` mounts under `demo` — so it needs no declaration. The scope is not part of the topic: `@acme/app-plugin-reports` and `@other/app-plugin-reports` both claim `reports`, and CLI assembly rejects that collision. Check existing plugin topics before choosing a package name; the optional `topic` field cannot rename the derived topic. The built-in topics avoid every official plugin name; a plugin whose name is a built-in topic or top-level command (`RESERVED_TOPICS` in `packages/app/app-cli/src/runtime/builtin.ts`) fails assembly. Command keys are lower-case kebab-case and may use colon-separated nesting: `artifact:build` becomes `nocobase demo artifact build`.
 
 <!-- command-authoring:start -->
 
@@ -341,7 +341,7 @@ Prefer `--dry-run --json` when an Agent needs a plan. Every dry run answers `suc
 
 `plugin inspect` proves only that readable static registration surfaces agree. It does not execute commands or hooks, start Runtime contributions, evaluate permissions, test behavior, or replace package and App validation.
 
-From the repository root, pass `--workspace-root .`: the command selects `app-template-default` unless `--app` is supplied, resolves plugin packages from workspace directories, and records `workspace:^`. A generated App runs the same implementation from its own directory, resolves installed packages from `node_modules`, and keeps its installed version range.
+From the repository root, pass `--workspace-root .`: the command selects `app-template-default` unless `--app` is supplied, resolves plugin packages from workspace directories, and records `workspace:^`. An independent App runs from its own root and can register both local workspace plugins and published dependencies. Local plugins keep their workspace dependency; published plugins keep the requested registry range. Use the full package name for custom scopes and follow [registration](registration.md#register-a-local-plugin-in-an-app).
 
 ## Verification
 

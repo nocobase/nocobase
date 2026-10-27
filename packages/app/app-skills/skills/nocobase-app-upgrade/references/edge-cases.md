@@ -114,6 +114,8 @@ Unregistering a plugin leaves its records and migration history intact. Do not r
 
 ## Documentation and generated directories
 
+When the target `@nocobase/app-skills` supplies `nocobase-app-plugin-development`, follow [the global-to-project migration](plugin-development-skill.md). The template diff cannot reveal an older same-named global installation. Verify the project replacement first, preserve custom global content, and retire the exact old global entries as part of the upgrade plan; do not assume project precedence.
+
 `AGENTS.md`, `CLAUDE.md`, `README.MD`, and the files under `.agents/rules/` ship with the template and may contain user additions. Take the template's version where the user wrote nothing and merge where they did. `.agents/rules/` is committed and application-owned: merge each file the target changes, keep every rules file the user added, and never replace the directory wholesale.
 
 `AGENTS.md` is a small always-on index of at most 32 KB that links to `.agents/rules/` and the synchronized Skills. When TARGET ships that index form and the project still has an older, long `AGENTS.md` with user edits, take TARGET's index and keep the user's application-specific additions by moving each into the matching `.agents/rules/<topic>.md`, or a new one linked from the index, rather than appending them to `AGENTS.md`. Show the user where each addition went.

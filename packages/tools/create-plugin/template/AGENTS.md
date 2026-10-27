@@ -1,5 +1,7 @@
 # AGENTS.md
 
+Read the owning App's `AGENTS.md` and `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by path before implementation. The Skill comes from the App's installed `@nocobase/app-skills`; do not install a global copy or edit synchronized output. If missing, check the installed package and App upgrade guidance. In the NocoBase source repository, read the same Skill at `packages/app/app-skills/skills/nocobase-app-plugin-development/SKILL.md` and the repository's `.agents/rules/plugin-development.md`.
+
 This is a NocoBase application plugin. It may live in an application workspace or be published for other applications. Use the host application’s public contracts and keep plugin implementation separate from application composition.
 
 Editable UI is maintained in the UI Library. Install its components and blocks into this plugin's `client/` when needed; do not create a plugin-owned `registry/` or publish Registry recipes. Keep plugin runtime contracts in public exports and document the UI Library items consumers can install.
