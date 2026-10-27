@@ -1,6 +1,13 @@
 import type { DeviceApprovalLocale } from './en-US.js';
 
 const zhCN: DeviceApprovalLocale = {
+  formFeedback: {
+    field: '此字段的值未通过校验，请检查并修改后重试。',
+    invalid: '请检查标记的字段后重试。',
+    failed: '保存失败，已保留您的输入，请重试。',
+    network: '无法连接，请检查网络后重试。已保留您的输入。',
+    denied: '当前权限无法提交此表单。已保留您的输入。',
+  },
   'deviceApproval.title': '授权设备',
   'deviceApproval.description':
     '一个命令行或其他设备请求以你的身份登录。只有在登录是你自己发起的时候才批准。',

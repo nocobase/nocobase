@@ -83,6 +83,7 @@ export function DefaultAccessEditor({
           <Input
             id={`${id}-key`}
             name='ruleKey'
+            data-field-path='key'
             value={ruleKey}
             required
             disabled={existing || readOnly}
@@ -91,7 +92,11 @@ export function DefaultAccessEditor({
             onChange={(event) => onKeyChange(event.target.value)}
           />
           {keyError && (
-            <p id={`${id}-key-error`} className='text-sm text-destructive'>
+            <p
+              data-feedback-field-error
+              id={`${id}-key-error`}
+              className='text-sm text-destructive'
+            >
               {keyError}
             </p>
           )}
@@ -108,6 +113,7 @@ export function DefaultAccessEditor({
           >
             <SelectTrigger
               id={`${id}-resource`}
+              data-field-path='resource'
               className='w-full'
               aria-invalid={Boolean(resourceError)}
               aria-describedby={
@@ -127,7 +133,11 @@ export function DefaultAccessEditor({
             </SelectContent>
           </Select>
           {resourceError && (
-            <p id={`${id}-resource-error`} className='text-sm text-destructive'>
+            <p
+              data-feedback-field-error
+              id={`${id}-resource-error`}
+              className='text-sm text-destructive'
+            >
               {resourceError}
             </p>
           )}
@@ -187,6 +197,7 @@ export function DefaultAccessEditor({
                     </Select>
                     {scope.error && (
                       <p
+                        data-feedback-field-error
                         id={`${id}-${scope.id}-error`}
                         className='text-sm text-destructive'
                       >

@@ -25,3 +25,9 @@ export const useToaster: typeof AppClient.useToaster = () => toaster;
 
 // Reuse the real browser capability boundary; only application services are mocked.
 export { copyText } from '../../../../packages/app/app-client/src/copy-text.js';
+
+// Form feedback is a real browser controller; only application services are mocked above.
+export {
+  FormFeedback,
+  formFeedbackErrors,
+} from '../../../../packages/app/app-client/src/form-feedback.js';
