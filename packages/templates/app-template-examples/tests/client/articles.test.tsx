@@ -5,7 +5,11 @@ import ArticlesPage from '../../client/pages/articles.tsx';
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
 
 async function mount(
-  options: { empty?: boolean; beforeRequest?: (request: Request) => void } = {},
+  options: {
+    empty?: boolean;
+    route?: string;
+    beforeRequest?: (request: Request) => void;
+  } = {},
 ) {
   return renderAuthenticatedClient(
     <QueryClientProvider
@@ -17,6 +21,7 @@ async function mount(
     </QueryClientProvider>,
     {
       member: true,
+      route: options.route,
       beforeRequest: options.beforeRequest,
       async prepare(server, session) {
         await server.connection.query
@@ -42,6 +47,22 @@ async function mount(
     },
   );
 }
+it('corrects an out-of-range page using the successful total before showing the actual list', async () => {
+  const pages: string[] = [];
+  await mount({
+    route: '/articles?page=999',
+    beforeRequest(request) {
+      const url = new URL(request.url);
+      if (request.method === 'GET' && url.pathname.endsWith('/articles'))
+        pages.push(url.searchParams.get('page') ?? '');
+    },
+  });
+  expect(
+    await screen.findByRole('button', { name: 'Welcome', exact: true }),
+  ).toBeVisible();
+  expect(pages).toEqual(['999', '1']);
+  expect(screen.queryByText('No articles yet.')).not.toBeInTheDocument();
+});
 it('loads articles, previews content, searches and filters persisted results', async () => {
   await mount();
   fireEvent.click(await screen.findByRole('button', { name: 'Welcome' }));

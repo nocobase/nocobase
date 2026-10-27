@@ -248,7 +248,9 @@ export default function ArticlesPage(): ReactElement {
       </div>
       <ListFeedback
         state={
-          state === 'no-results' && page > 1 && (result?.meta.total ?? 0) > 0
+          (state === 'empty' || state === 'no-results') &&
+          page > 1 &&
+          (result?.meta.total ?? 0) > 0
             ? 'loading'
             : state
         }
