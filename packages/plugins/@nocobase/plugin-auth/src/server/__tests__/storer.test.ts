@@ -299,4 +299,37 @@ describe('storer with a not yet registered auth type', () => {
     const authenticators = (await cache.get('authenticators')) || {};
     expect(authenticators['ldap1']).toBeUndefined();
   });
+
+  it('should re-render when the cached model is saved again with new options', async () => {
+    await storer.get('ldap1');
+    registerLdapAuthType();
+    await storer.get('ldap1');
+
+    const cached = (await cache.get('authenticators')).ldap1;
+    cached.dataValues.options = {
+      ldap: {
+        url: 'ldap://127.0.0.1:389',
+        searchDN: 'dc=example,dc=com',
+        bindPassword: '{{$env.LDAP_BIND_PASSWORD}}',
+        filter,
+      },
+    };
+    await db.emitAsync('authenticators.afterSave', cached);
+
+    const saved = (await cache.get('authenticators')).ldap1;
+    expect(saved.dataValues.options.ldap.bindPassword).toBe('pass{{literal}}');
+  });
+
+  it('should not render twice when the cached model is saved without changing options', async () => {
+    await storer.get('ldap1');
+    registerLdapAuthType();
+    await storer.get('ldap1');
+
+    const cached = (await cache.get('authenticators')).ldap1;
+    await db.emitAsync('authenticators.afterSave', cached);
+
+    expect(environment.renderJsonTemplate).toHaveBeenCalledTimes(1);
+    const saved = (await cache.get('authenticators')).ldap1;
+    expect(saved.dataValues.options.ldap.bindPassword).toBe('pass{{literal}}');
+  });
 });

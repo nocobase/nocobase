@@ -55,18 +55,17 @@ export class Storer implements IStorer {
   }
 
   private prepare(authenticator: AuthModel) {
-    if (!authenticator) {
-      return authenticator;
-    }
-    // Keep the raw options while the auth type is not registered yet, they are rendered on the first read later.
-    if (!this.getAuthConfig(authenticator.authType)) {
-      return authenticator;
-    }
     return this.renderJsonTemplate(authenticator);
   }
 
   renderJsonTemplate(authenticator: any) {
-    if (!authenticator || authenticator[RENDERED]) {
+    if (!authenticator) {
+      return authenticator;
+    }
+    const options = authenticator.dataValues?.options;
+    // The mark is the rendered options object itself, so replacing the options (for example by saving
+    // the same model again) invalidates it, while unchanged options keep the render-once behavior.
+    if (options && authenticator[RENDERED] === options) {
       return authenticator;
     }
     const $env = this.app?.environment;
@@ -77,12 +76,10 @@ export class Storer implements IStorer {
     if (!$env || !config) {
       return authenticator;
     }
-    authenticator.dataValues.options = $env.renderJsonTemplate(authenticator.dataValues.options, {
+    authenticator.dataValues.options = $env.renderJsonTemplate(options, {
       omit: config.auth?.['optionsKeysNotAllowedInEnv'],
     });
-    // The mark lives on the cached authenticator itself, so a stale raw write cannot leave the entry
-    // permanently unrendered and concurrent reads never render the same options twice.
-    authenticator[RENDERED] = true;
+    authenticator[RENDERED] = authenticator.dataValues.options;
     return authenticator;
   }
 
@@ -112,11 +109,8 @@ export class Storer implements IStorer {
     }
     const authenticator =
       authenticators.find((authenticator: Model) => authenticator.name === name) || authenticators[0];
-    if (authenticator && !(authenticator as any)[RENDERED] && this.getAuthConfig(authenticator.authType)) {
-      // Render the cached entry in place. Re-writing it by name could resurrect an entry that was
-      // disabled or deleted while its options were being rendered.
-      return this.renderJsonTemplate(authenticator);
-    }
-    return authenticator;
+    // Render the cached entry in place. Re-writing it by name could resurrect an entry that was
+    // disabled or deleted while its options were being rendered.
+    return this.renderJsonTemplate(authenticator);
   }
 }
