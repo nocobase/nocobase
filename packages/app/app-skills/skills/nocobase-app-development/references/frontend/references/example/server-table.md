@@ -12,22 +12,17 @@ Rules: [section 1 of `table.md`](../table.md#1-choosing-a-table-component). This
 
 The endpoint contract this assumes is the one in [types](types.md): `GET /api/projects` takes `page` (from 1), `pageSize` (at most 100) and `orderBy` besides `q` and `status`, and returns `{ data: Project[], meta: { page, pageSize, total } }` (`ProjectList`), where `total` counts the matching records on all pages. `orderBy` names a column the endpoint sorts by, `name` (in the order of the request's language) or `updatedAt`, followed by ` desc` for descending; the page always sends it, `updatedAt desc` by default (guideline T1.8).
 
-The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
+The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Read [delete and recover a list](../table.md#delete-and-recover-a-list) first; its shared hooks own response isolation and bounded correction. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
 
 The changes, inside the list page's component; everything marked `// …` stays as it is there:
 
 ```tsx
 // client/pages/projects/index.tsx (server-paginated: the list page with these changes)
 import type { ColumnSort } from '@tanstack/react-table';
-import {
-  type ReactElement,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactElement } from 'react';
+import { useListData } from '#hooks/use-list-data';
+import { useListLocation } from '#hooks/use-list-location';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 // … the other imports of the list page, without DataTable, and with ProjectList added to the import from ./types.js
 import { ProjectsServerTable } from './projects-server-table.js';
 
@@ -55,7 +50,7 @@ function formatOrderBy(column: ColumnSort): string {
 }
 
 export default function ProjectsPage(): ReactElement {
-  // … t, locale, api, location and searchRef, as in the list page
+  // … t, locale, location and searchRef, as in the list page
 
   // A new search term starts on the first page, so the hook removes `page` whenever it writes the term.
   const { searchParams, search, text, inputProps, updateParams, clear } =
@@ -81,71 +76,40 @@ export default function ProjectsPage(): ReactElement {
 
   // … hasFilters and clearFilters, as in the list page
 
-  // A page past the end (its last record was deleted elsewhere): go to the last page that exists. An effect event,
-  // so the request effect can call it without depending on updateParams, which changes on every render.
-  const goToPage = useEffectEvent((target: number) => {
-    updateParams((params) => params.set('page', String(target)));
-  });
-
-  const [reloadCount, reload] = useReducer((count: number) => count + 1, 0);
-  const requestKey = JSON.stringify([
-    search,
-    status ?? null,
-    page,
-    pageSize,
+  const { active } = useListLocation();
+  const remote = new URLSearchParams({
+    q: search,
+    ...(status ? { status } : {}),
+    page: String(page),
+    pageSize: String(pageSize),
     orderBy,
-    reloadCount,
-  ]);
-  const [result, setResult] = useState<{
-    readonly key: string;
-    readonly rows?: Project[];
-    /** Whether this batch was fetched with filters; tells "empty" apart from "no results". */
-    readonly filtered?: boolean;
-    readonly error?: unknown;
-    readonly total?: number;
-  }>();
+  });
+  const request = useListData<ProjectList>(`projects?${remote}`, {
+    active,
+    keepPreviousData: true,
+  });
+  const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
+    pageSizeOptions: PAGE_SIZES,
+    sortColumns: SORTABLE,
+    rowCount:
+      !request.loading && !request.error ? request.data?.meta.total : undefined,
+  });
+  const reload = request.reload;
+  const loading = request.loading;
+  const error = tableState.error ?? request.error;
+  const rows = request.data?.data;
+  const result = request.data ? { total: request.data.meta.total } : undefined;
+  const displayedQuery = new URLSearchParams(request.path.split('?')[1]);
+  const rowsFiltered = Boolean(
+    displayedQuery.get('q') || displayedQuery.get('status'),
+  );
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const key = JSON.stringify([
-      search,
-      status ?? null,
-      page,
-      pageSize,
-      orderBy,
-      reloadCount,
-    ]);
-    api
-      .request<ProjectList>({
-        path: 'projects',
-        query: { q: search || undefined, status, page, pageSize, orderBy },
-        signal: controller.signal,
-      })
-      .then(
-        ({ data, meta }) => {
-          if (controller.signal.aborted) return;
-          setResult({
-            key,
-            rows: data,
-            total: meta.total,
-            filtered: search !== '' || status !== undefined,
-          });
-          const lastPage = Math.max(1, Math.ceil(meta.total / pageSize));
-          if (data.length === 0 && page > lastPage) goToPage(lastPage);
-        },
-        (error: unknown) => {
-          // Keep the previous batch on failure: after "Retry", show the old data and a small Spinner, not the skeleton.
-          if (!controller.signal.aborted) {
-            setResult((previous) => ({ ...previous, key, error }));
-          }
-        },
-      );
-    return () => controller.abort();
-  }, [api, search, status, page, pageSize, orderBy, reloadCount]);
-
-  // … loading, rows, rowsFiltered, the focus handling after a delete, outletContext, the deletion state, the formatters
+  // … the focus handling after a delete, outletContext, the deletion state, the formatters
   // and the columns, as in the list page
 
+  // Retry uses reload, and detail/batch deletions call reload once after the operation settles.
   let content: ReactElement;
   if (error instanceof ApiClientError && error.status === 401) {
     // The session ended; signing in again is the only way forward (guideline S4).

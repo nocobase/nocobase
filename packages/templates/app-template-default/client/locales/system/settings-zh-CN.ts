@@ -1,4 +1,5 @@
 const settings = {
+  listChanged: '列表已变化，请重试。',
   setup: {
     title: '功能前置配置',
     checking: '正在检查当前配置…',

@@ -282,9 +282,9 @@ it.each(['/settings/users', '/users'])(
         `${base}${search}`,
       ),
     );
-    expect(
-      await screen.findByText('Alice updated', { exact: true }),
-    ).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByText('Alice updated', { exact: true })).toBeVisible(),
+    );
   },
 );
 

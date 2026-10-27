@@ -1,3 +1,4 @@
+import { ListRecoveryError } from '#hooks/use-table-url-state';
 import { ApiClientError } from '@nocobase/app-client';
 import { Link } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -31,22 +32,24 @@ export function SettingsError({
   return (
     <Alert variant='destructive'>
       <AlertDescription>
-        {t(
-          status === 400
-            ? 'settings.invalidRequest'
-            : status === 401
-              ? 'settings.sessionEnded'
-              : status === 403
-                ? 'settings.denied'
-                : status === 404
-                  ? 'settings.missing'
-                  : status === 409
-                    ? error instanceof ApiClientError &&
-                      error.reason === 'USER_IDENTITY_CONFLICT'
-                      ? 'settings.identityConflict'
-                      : 'settings.conflict'
-                    : 'settings.failed',
-        )}
+        {error instanceof ListRecoveryError
+          ? error.message
+          : t(
+              status === 400
+                ? 'settings.invalidRequest'
+                : status === 401
+                  ? 'settings.sessionEnded'
+                  : status === 403
+                    ? 'settings.denied'
+                    : status === 404
+                      ? 'settings.missing'
+                      : status === 409
+                        ? error instanceof ApiClientError &&
+                          error.reason === 'USER_IDENTITY_CONFLICT'
+                          ? 'settings.identityConflict'
+                          : 'settings.conflict'
+                        : 'settings.failed',
+            )}
         {status === 401 && (
           <Button
             variant='outline'

@@ -1,4 +1,5 @@
 const settings = {
+  listChanged: 'The list has changed. Please retry.',
   setup: {
     title: 'Feature prerequisites',
     checking: 'Checking current configuration…',

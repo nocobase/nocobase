@@ -1,3 +1,4 @@
+import { useListLocation } from '#hooks/use-list-location';
 import { useSettingsData, useRolePermission } from './hooks.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type {
@@ -5,7 +6,7 @@ import type {
   LocalizedText,
 } from '@nocobase/app-plugin-authorization/client';
 import { type ReactElement } from 'react';
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 import { ShieldCheckIcon, PlusIcon } from 'lucide-react';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { Input } from '#components/ui/input';
@@ -23,11 +24,12 @@ import { SettingsError, SettingsLoading } from './shared.js';
 
 export default function RolesPage(): ReactElement {
   const { t, i18n } = useTranslation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const location = useLocation();
   const search = params.get('q') ?? '';
   const request = useSettingsData<{ data: readonly PermissionSet[] }>(
     'authorization/permissionSets',
+    { active },
   );
   const canCreate = useRolePermission('create');
   const text = (value: LocalizedText): string =>
@@ -50,6 +52,8 @@ export default function RolesPage(): ReactElement {
       ),
     );
   const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
     sortColumns: ['title', 'key'],
     rowCount:
       request.data && !request.loading && !request.error
@@ -109,10 +113,14 @@ export default function RolesPage(): ReactElement {
             </Button>
           )}
         </div>
-        <SettingsError error={request.error} retry={request.reload} />
+        <SettingsError
+          error={tableState.error ?? request.error}
+          retry={request.reload}
+        />
         {request.loading && !request.data ? (
           <SettingsLoading />
         ) : (
+          !tableState.error &&
           !request.error &&
           (rows.length ? (
             <RoleList
