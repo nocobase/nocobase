@@ -134,13 +134,13 @@ it('retains interrupted output and explicitly resumes through SDK without resend
   expect(
     f.stream.mock.calls.map((call) => (call[0] as { method: string }).method),
   ).toEqual(['GET', 'GET']);
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')?.error).toBeUndefined();
 });
 it('keeps business occupancy after SDK finish and after missing transport, including approval waiting', async () => {
   const f = fixture();
   await f.controller.resume('c1');
   expect(f.controller.state('c1')?.status).toBe('ready');
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')?.error).toBeUndefined();
   f.state.detail = {
     ...f.state.detail,
     execution: { status: 'running', waitingApproval: true },
@@ -518,7 +518,8 @@ it('retains an interrupted unsaved tool input when shared recovery has no stream
   expect(f.controller.chat('c1').messages[0].parts[0].type).toBe(
     'tool-business',
   );
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')).toMatchObject({ recovery: 'history' });
+  expect(f.controller.state('c1')?.error).toBeUndefined();
   expect(
     f.stream.mock.calls.map((call) => (call[0] as { method: string }).method),
   ).toEqual(['GET', 'GET']);

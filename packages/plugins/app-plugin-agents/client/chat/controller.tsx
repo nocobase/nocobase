@@ -49,6 +49,13 @@ import {
 export type StreamState = {
   readonly status: Chat<AppUIMessage>['status'];
   readonly error?: Error;
+  readonly recovery?: 'recovering' | 'history' | 'interrupted';
+};
+type Recovery = {
+  key: string;
+  phase: NonNullable<StreamState['recovery']> | 'live';
+  error?: Error;
+  task?: Promise<void>;
 };
 function deferred<T>(): {
   promise: Promise<T>;
@@ -85,9 +92,7 @@ export class ChatController {
   private histories = new Map<string, History>();
   private loads = new Map<string, Promise<void>>();
   private refreshAgain = new Set<string>();
-  private resumed = new Set<string>();
-  private resuming = new Map<string, Promise<void>>();
-  private recoveryErrors = new Map<string, Error>();
+  private recoveries = new Map<string, Recovery>();
   private admissions = new Map<
     string,
     { clientId: string; gate: ReturnType<typeof deferred<void>> }
@@ -144,6 +149,25 @@ export class ChatController {
               admission.gate.resolve();
           },
           (options) => this.resendAccepted(id, options),
+          () => {
+            const active = this.lifetime(),
+              recovery = this.recoveries.get(id);
+            return (available) => {
+              if (
+                !active() ||
+                this.chats.get(id) !== chat ||
+                !recovery ||
+                this.recoveries.get(id) !== recovery
+              )
+                return;
+              recovery.phase = available ? 'live' : 'history';
+              recovery.error = undefined;
+              // Reads started before reconnection must not replace its replay or revive old errors.
+              this.nextDetailVersion(id);
+              this.invalidateHistoryReads(id);
+              this.publish();
+            };
+          },
         ),
         onFinish: () => {
           if (!this.disposed && this.chats.get(id) === chat)
@@ -274,16 +298,20 @@ export class ChatController {
   }
   private historyLifetime(id: string): () => boolean {
     const active = this.lifetime(),
-      epoch = this.historyEpochs.get(id) ?? 0;
-    return () => active() && (this.historyEpochs.get(id) ?? 0) === epoch;
+      epoch = this.historyEpochs.get(id) ?? 0,
+      command = this.commandVersions.get(id);
+    return () =>
+      active() &&
+      (this.historyEpochs.get(id) ?? 0) === epoch &&
+      this.commandVersions.get(id) === command;
   }
 
-  private invalidateHistoryReads(id: string): void {
+  private invalidateHistoryReads(id: string, discardDeferred = false): void {
     this.historyEpochs.set(id, (this.historyEpochs.get(id) ?? 0) + 1);
     this.loads.delete(id);
     this.refreshAgain.delete(id);
     this.revisionQueue.delete(id);
-    this.deferredReads.delete(id);
+    if (discardDeferred) this.deferredReads.delete(id);
     for (const key of this.messageVersions.keys())
       if (key.startsWith(`${id}:`)) this.messageVersions.delete(key);
     this.historyMeta(id).loadingOlder = false;
@@ -320,8 +348,8 @@ export class ChatController {
       (previous && previous.lastSeq > event.lastSeq)
     )
       return false;
-    this.invalidateHistoryReads(id);
-    this.resuming.delete(id);
+    this.invalidateHistoryReads(id, true);
+    this.recoveries.delete(id);
     this.replacements.set(id, event);
     this.dispatch(id, { type: 'replaceHistory', ...event });
     this.historyMeta(id).loadedThrough = Math.max(
@@ -816,14 +844,16 @@ export class ChatController {
     input: SubmissionSend,
   ): Promise<{ message: AppUIMessage; conversation: ConversationDetail }> {
     if (this.disposed) throw new CancelledError({ silent: true });
-    const chat = this.chat(id);
+    let chat = this.chat(id);
     if (chat.status === 'submitted' || chat.status === 'streaming')
       throw new Error('This conversation is already receiving a response.');
     if (this.resendRequests.has(id))
       throw new Error('This conversation is busy.');
     const admitted = deferred<void>();
     this.admissions.set(id, { clientId: input.clientId, gate: admitted });
-    this.recoveryErrors.delete(id);
+    this.recoveries.delete(id);
+    // A new turn owns its callbacks, including when the previous transport finishes late.
+    chat = this.renewChat(id, chat.messages);
     const active = this.lifetime();
     const sending = chat.sendMessage(
       {
@@ -892,49 +922,91 @@ export class ChatController {
   }
   state(id: string): StreamState | undefined {
     const chat = this.chats.get(id);
+    const recovery = this.recoveries.get(id);
+    const recovering = recovery?.phase === 'recovering';
+    const error = recovering ? undefined : (chat?.error ?? recovery?.error);
     return chat
       ? {
           status: chat.status,
-          error: chat.error ?? this.recoveryErrors.get(id),
+          error,
+          recovery: recovering
+            ? 'recovering'
+            : error
+              ? 'interrupted'
+              : recovery?.phase === 'history'
+                ? 'history'
+                : undefined,
         }
       : undefined;
   }
+  private recoveryKey(id: string, detail: ConversationDetail): string {
+    return (
+      detail.run?.id ??
+      detail.execution?.messageId ??
+      (detail.execution?.status === 'running'
+        ? this.recoveries.get(id)?.key
+        : undefined) ??
+      [...this.chat(id).messages].reverse().find((m) => m.role === 'user')
+        ?.id ??
+      ''
+    );
+  }
   receive(id: string, known?: ConversationDetail): void {
-    if (this.disposed || this.resumed.has(id)) return;
+    if (this.disposed) return;
     const detail =
       known ??
       agentsQueryClient().getQueryData<ConversationDetail>(
         chatKeys.conversation(id),
       );
-    if (!detail?.execution) return;
-    this.resumed.add(id);
     if (
-      detail?.execution?.status === 'idle' ||
-      detail?.execution?.waitingApproval
+      !detail ||
+      this.recoveries.get(id)?.key === this.recoveryKey(id, detail)
     )
       return;
-    void this.resume(id);
+    void this.resume(id, detail);
   }
-  async resume(id: string): Promise<void> {
+  async resume(id: string, known?: ConversationDetail): Promise<void> {
     if (this.disposed) return;
-    const pending = this.resuming.get(id);
-    if (pending) return pending;
+    const detail =
+      known ??
+      agentsQueryClient().getQueryData<ConversationDetail>(
+        chatKeys.conversation(id),
+      );
+    if (!detail || !chatIsRunning(detail) || detail.execution?.waitingApproval)
+      return;
+    const key = this.recoveryKey(id, detail);
+    const pending = this.recoveries.get(id);
     let chat = this.chat(id);
-    if (chat.status === 'submitted' || chat.status === 'streaming') return;
+    if (chat.status === 'submitted' || chat.status === 'streaming') {
+      if (!pending || pending.key !== key)
+        this.recoveries.set(id, { key, phase: 'live' });
+      return;
+    }
+    if (pending?.key === key) {
+      if (pending.task) return pending.task;
+      if (pending.phase === 'history') return;
+    }
     const active = this.lifetime();
     const replacement = this.replacements.get(id);
-    const canResume = () =>
+    const command = this.commandVersions.get(id);
+    const recovery: Recovery = { key, phase: 'recovering' };
+    this.recoveries.set(id, recovery);
+    this.publish();
+    const current = () =>
       active() &&
+      this.commandVersions.get(id) === command &&
+      this.recoveries.get(id) === recovery &&
       this.replacements.get(id) === replacement &&
-      this.chats.get(id) === chat &&
-      chat.status !== 'submitted' &&
-      chat.status !== 'streaming';
+      this.chats.get(id) === chat;
+    const canResume = () =>
+      current() && chat.status !== 'submitted' && chat.status !== 'streaming';
     const task = (async () => {
       let interrupted: AppUIMessage | undefined;
       try {
         await this.loadHistory(id);
         // A new input can begin while the recovery snapshot is still being read.
         if (!canResume()) return;
+        if (this.history(id).error) throw this.history(id).error;
         if (chat.error) {
           const previous = chat;
           interrupted = [...previous.messages]
@@ -960,25 +1032,41 @@ export class ChatController {
           chat = this.renewChat(id, previous.messages);
           if (!active()) return;
         }
-        this.recoveryErrors.delete(id);
         chat.clearError();
         const response = [...chat.messages]
           .reverse()
           .find((message) => message.role === 'assistant');
-        if (response)
+        if (
+          response &&
+          (response === interrupted ||
+            !key ||
+            response.metadata?.executionId === key ||
+            response.id === detail.execution?.messageId)
+        ) {
+          interrupted ??= response;
           chat.messages = mergeUIMessages(chat.messages, [], response.id);
+        }
         await chat.resumeStream();
-        if (active()) await this.refresh(id);
+        if (current()) {
+          if (chat.error) {
+            recovery.phase = 'interrupted';
+            recovery.error = chat.error;
+          }
+          await this.refresh(id);
+        }
       } catch (error) {
-        if (canResume())
-          this.recoveryErrors.set(
-            id,
-            error instanceof Error
-              ? error
-              : new Error('Stream recovery failed.'),
-          );
+        if (current()) {
+          if (chat.error) {
+            recovery.phase = 'interrupted';
+            recovery.error = chat.error;
+          } else {
+            // A failed history read is not evidence that the transport failed.
+            this.historyMeta(id).error = error;
+            if (recovery.phase === 'recovering') recovery.phase = 'live';
+          }
+        }
       } finally {
-        if (active()) {
+        if (current()) {
           const display = interrupted;
           if (
             display &&
@@ -986,12 +1074,17 @@ export class ChatController {
             !chat.messages.some((message) => message.id === display.id)
           )
             chat.messages = mergeUIMessages(chat.messages, [display]);
-          this.resuming.delete(id);
+          recovery.task = undefined;
+          if (
+            recovery.phase === 'recovering' &&
+            (chat.status === 'submitted' || chat.status === 'streaming')
+          )
+            recovery.phase = 'live';
           this.publish();
         }
       }
     })();
-    this.resuming.set(id, task);
+    recovery.task = task;
     return task;
   }
   async approve(id: string, input: AppUIToolApprovalInput): Promise<void> {
@@ -1038,6 +1131,16 @@ export class ChatController {
     if (this.disposed) return;
     const active = this.lifetime(),
       ordered = this.detailRequest(id);
+    const submittedOwner = this.chat(id);
+    const submittedInput =
+      submittedOwner.status === 'submitted' && !this.admissions.has(id)
+        ? [...submittedOwner.messages]
+            .reverse()
+            .find(
+              (message) =>
+                message.role === 'user' && message.metadata?.seq !== undefined,
+            )
+        : undefined;
     const detail = await this.api.conversation(id);
     if (!active() || !ordered()) return;
     await this.reconcile(id, detail);
@@ -1067,18 +1170,38 @@ export class ChatController {
     if (!active() || !ordered()) return;
     const owner = this.chat(id),
       receiving = owner.messages.at(-1);
-    if (
-      owner.status === 'streaming' &&
-      receiving?.role === 'assistant' &&
-      (detail.execution?.status === 'idle' ||
-        detail.execution?.waitingApproval) &&
-      saved.some(
+    const lastUser = [...owner.messages]
+      .reverse()
+      .find((message) => message.role === 'user');
+    const executionId =
+      submittedInput?.metadata?.executionId ?? this.recoveries.get(id)?.key;
+    const submittedTerminal =
+      owner === submittedOwner &&
+      owner.status === 'submitted' &&
+      submittedInput &&
+      lastUser?.id === submittedInput.id &&
+      detail.execution?.status === 'idle' &&
+      [...saved, ...owner.messages].some(
         (message) =>
-          message.id === receiving.id &&
+          message.role !== 'user' &&
           message.metadata?.seq !== undefined &&
-          message.metadata?.executionId === receiving.metadata?.executionId &&
-          message.metadata.revision >= (detail.execution?.revision ?? 0),
-      )
+          message.metadata.seq > submittedInput.metadata!.seq! &&
+          ((executionId && message.metadata.executionId === executionId) ||
+            message.id === detail.execution?.messageId),
+      );
+    if (
+      submittedTerminal ||
+      (owner.status === 'streaming' &&
+        receiving?.role === 'assistant' &&
+        (detail.execution?.status === 'idle' ||
+          detail.execution?.waitingApproval) &&
+        saved.some(
+          (message) =>
+            message.id === receiving.id &&
+            message.metadata?.seq !== undefined &&
+            message.metadata?.executionId === receiving.metadata?.executionId &&
+            message.metadata.revision >= (detail.execution?.revision ?? 0),
+        ))
     ) {
       // Durable completion can release a lost subscriber; this never calls business Stop.
       await owner.stop();
@@ -1086,31 +1209,12 @@ export class ChatController {
       owner.messages = mergeUIMessages(owner.messages, saved);
     }
     if (!active() || !ordered()) return;
-    this.remember(detail);
+    this.remember(detail, false);
     const chat = this.chat(id);
     if (detail.execution?.status === 'idle') {
-      this.recoveryErrors.delete(id);
-      if (
-        chat.error &&
-        saved.some(
-          (message) =>
-            message.id === chat.messages.at(-1)?.id &&
-            message.metadata?.seq !== undefined,
-        )
-      )
-        this.renewChat(id, chat.messages);
-    } else if (
-      detail.execution?.status === 'running' &&
-      !detail.execution.waitingApproval &&
-      chat.status !== 'submitted' &&
-      chat.status !== 'streaming'
-    )
-      this.recoveryErrors.set(
-        id,
-        new Error(
-          'Execution remains active; reconcile saved history or resume its stream.',
-        ),
-      );
+      this.recoveries.delete(id);
+      if (chat.error) this.renewChat(id, chat.messages);
+    }
     this.publish();
   }
   private scheduleRefresh(id: string): void {
@@ -1121,13 +1225,17 @@ export class ChatController {
       if (!this.disposed) void this.refresh(id).catch(() => {});
     });
   }
-  observeDetail(detail: ConversationDetail): void {
+  observeDetail(detail: ConversationDetail, refresh = true): void {
     if (detail.execution?.status === 'running') this.receive(detail.id, detail);
     if (!chatIsRunning(detail)) {
-      if (this.chats.get(detail.id)?.status === 'streaming')
+      if (
+        refresh &&
+        (this.chats.get(detail.id)?.status === 'streaming' ||
+          this.chats.get(detail.id)?.status === 'submitted')
+      )
         this.scheduleRefresh(detail.id);
       this.stopRequests.delete(detail.id);
-      this.recoveryErrors.delete(detail.id);
+      this.recoveries.delete(detail.id);
       this.publish();
     }
   }
@@ -1166,9 +1274,9 @@ export class ChatController {
       version = this.nextDetailVersion(id);
     return () => active() && this.detailVersions.get(id) === version;
   }
-  private remember(detail: ConversationDetail): void {
+  private remember(detail: ConversationDetail, refresh = true): void {
     this.nextDetailVersion(detail.id);
-    this.observeDetail(detail);
+    this.observeDetail(detail, refresh);
     agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
     void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
   }
@@ -1181,6 +1289,11 @@ export class ChatController {
       version = (this.commandVersions.get(id) ?? 0) + 1;
     this.commandVersions.set(id, version);
     this.nextDetailVersion(id);
+    this.invalidateHistoryReads(id);
+    const recovery = this.recoveries.get(id);
+    if (recovery?.phase === 'history')
+      this.recoveries.set(id, { key: recovery.key, phase: 'history' });
+    else this.recoveries.delete(id);
     await agentsQueryClient().cancelQueries({
       queryKey: chatKeys.conversation(id),
       exact: true,
@@ -1228,8 +1341,7 @@ export class ChatController {
     this.commandVersions.clear();
     this.stopRequests.clear();
     this.approvalRequests.clear();
-    this.resuming.clear();
-    this.resumed.clear();
+    this.recoveries.clear();
     this.submissions.invalidate();
     agentsQueryClient().removeQueries({ queryKey: chatKeys.all });
   }
