@@ -15,9 +15,11 @@ function Probe({
   sortFormat?: 'sort-order' | 'orderBy';
 }) {
   const [count, setCount] = useState<number>();
+  const [active, setActive] = useState(true);
   const state = useTableUrlState({
     sortColumns: ['name', 'updatedAt'],
     rowCount: count,
+    active,
     sortFormat,
   });
   const location = useLocation();
@@ -31,6 +33,9 @@ function Probe({
       </output>
       <output data-testid='url'>{location.search}</output>
       <button onClick={() => setCount(25)}>Loaded</button>
+      <button onClick={() => setActive((value) => !value)}>
+        Toggle active
+      </button>
       <button onClick={() => setCount(10)}>Removed</button>
       <button
         onClick={() =>
@@ -179,4 +184,26 @@ it('writes and restores the complete existing orderBy sequence', async () => {
     'orderBy=name+desc%2CupdatedAt',
   );
   expect(screen.getByTestId('url')).toHaveTextContent('q=kept');
+});
+
+it('keeps ordered multi-sort while deferred deletion recovery corrects the reactivated list', async () => {
+  await renderWithApp(<Probe sortFormat='orderBy' />, {
+    route: '/?page=5&pageSize=10&orderBy=name%20desc,updatedAt&q=kept&tab=open',
+  });
+  await userEvent.click(screen.getByRole('button', { name: 'Toggle active' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Loaded' }));
+  expect(screen.getByTestId('state')).toHaveTextContent('"pageIndex":4');
+  await userEvent.click(screen.getByRole('button', { name: 'Toggle active' }));
+  await waitFor(() =>
+    expect(screen.getByTestId('state')).toHaveTextContent('"pageIndex":2'),
+  );
+  expect(screen.getByTestId('state')).toHaveTextContent(
+    '[{"id":"name","desc":true},{"id":"updatedAt","desc":false}]',
+  );
+  const params = new URLSearchParams(
+    screen.getByTestId('url').textContent ?? '',
+  );
+  expect(params.get('orderBy')).toBe('name desc,updatedAt');
+  expect(params.get('q')).toBe('kept');
+  expect(params.get('tab')).toBe('open');
 });

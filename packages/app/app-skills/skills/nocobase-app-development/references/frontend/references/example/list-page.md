@@ -12,9 +12,11 @@ Part of the [projects worked example](../example.md).
 
 Rules: sections [3](../table.md#3-known-datatable-behavior), [5](../table.md#5-writing-search-and-filters-to-the-url), [6](../table.md#6-loading-the-list), [7](../table.md#7-the-four-list-states), [8](../table.md#8-column-definitions-and-row-actions) and [9](../table.md#9-child-routes-and-refreshing-the-list) of `table.md`.
 
+For deletion recovery and URL-backed pagination use the shared hooks in [delete and recover a list](../table.md#delete-and-recover-a-list), with the integration in [the server table example](server-table.md). The capped client example below corrects local pages only while the response is complete; use server pagination when the cap is exceeded. For complete client data pass the filtered row count to the same URL hook and keep `manualPagination` off. Child delete callbacks must use the shared `reload` from their parent, including on return from detail; batch callbacks refresh only after all outcomes settle.
+
 ```tsx
 // client/pages/projects/index.tsx
-import { ApiClientError, useApiClient } from '@nocobase/app-client';
+import { ApiClientError } from '@nocobase/app-client';
 import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
@@ -26,19 +28,14 @@ import {
   SearchIcon,
   Trash2Icon,
 } from 'lucide-react';
-import {
-  type ReactElement,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
 import { DataTable } from '#components/data-table';
 import { DataTableColumnHeader } from '#components/data-table/column-header';
 import { useUrlSearch } from '#hooks/use-url-search';
+import { useListData } from '#hooks/use-list-data';
+import { useListLocation } from '#hooks/use-list-location';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -105,7 +102,6 @@ function isProjectStatus(value: string | null): value is ProjectStatus {
 export default function ProjectsPage(): ReactElement {
   const { t } = useTranslation();
   const { locale } = useLocale();
-  const api = useApiClient();
   const location = useLocation();
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -134,59 +130,35 @@ export default function ProjectsPage(): ReactElement {
     searchRef.current?.focus();
   }
 
-  // Load the list. An effect must not call setState synchronously: store the result only in the request callbacks,
-  // and derive "loading" from whether the result belongs to the current request.
-  // Each reload() call increments the count, and the effect requests again.
-  const [reloadCount, reload] = useReducer((count: number) => count + 1, 0);
-  const requestKey = JSON.stringify([search, status ?? null, reloadCount]);
-  const [result, setResult] = useState<{
-    readonly key: string;
-    readonly rows?: Project[];
-    /** Whether this batch was fetched with filters; tells "empty" apart from "no results". */
-    readonly filtered?: boolean;
-    readonly error?: unknown;
-    /** The number of matching records on all pages; more than rows.length when the page cap cut the list. */
-    readonly total?: number;
-  }>();
-
-  useEffect(() => {
-    // Abort the request when the filters change or the component unmounts, so an old result never overwrites a new one.
-    const controller = new AbortController();
-    const key = JSON.stringify([search, status ?? null, reloadCount]);
-    api
-      .request<ProjectList>({
-        path: 'projects',
-        query: { q: search || undefined, status, pageSize: PAGE_SIZE },
-        signal: controller.signal,
-      })
-      .then(
-        ({ data, meta }) => {
-          if (!controller.signal.aborted) {
-            setResult({
-              key,
-              rows: data,
-              total: meta.total,
-              filtered: search !== '' || status !== undefined,
-            });
-          }
-        },
-        (error: unknown) => {
-          // Keep the previous batch on failure: after "Retry", show the old data and a small Spinner, not the skeleton.
-          if (!controller.signal.aborted) {
-            setResult((previous) => ({ ...previous, key, error }));
-          }
-        },
-      );
-    return () => controller.abort();
-  }, [api, search, status, reloadCount]);
-
-  const loading = result?.key !== requestKey;
-  const error = loading ? undefined : result?.error;
-  // While reloading, rows is still the previous batch.
-  const rows = result?.rows;
-  // Decide by the filters the displayed data was fetched with, not by the current filters:
-  // right after "Clear filters" is clicked, the screen still shows the old filtered result.
-  const rowsFiltered = result?.filtered ?? false;
+  const { active } = useListLocation();
+  const remote = new URLSearchParams({
+    q: search,
+    ...(status ? { status } : {}),
+    pageSize: String(PAGE_SIZE),
+  });
+  const request = useListData<ProjectList>(`projects?${remote}`, {
+    active,
+    keepPreviousData: true,
+  });
+  const rows = request.data?.data;
+  const result = request.data ? { total: request.data.meta.total } : undefined;
+  const loading = request.loading;
+  const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
+    sortColumns: ['name', 'updatedAt'],
+    // Only a complete filtered dataset supports local last-page recovery.
+    rowCount:
+      !loading && !request.error && rows?.length === result?.total
+        ? result?.total
+        : undefined,
+  });
+  const reload = request.reload;
+  const error = tableState.error ?? request.error;
+  const displayedQuery = new URLSearchParams(request.path.split('?')[1]);
+  const rowsFiltered = Boolean(
+    displayedQuery.get('q') || displayedQuery.get('status'),
+  );
 
   // After a record is deleted in the drawer, its row and the link that opened the drawer disappear once the list refreshes:
   // wait for the refresh to finish, then move focus to the search box (guideline A6).
@@ -353,11 +325,6 @@ export default function ProjectsPage(): ReactElement {
   );
 
   // Check in the order "failed → first load → empty → data or no results".
-  const tableState = useTableUrlState({
-    sortColumns: ['name', 'updatedAt'],
-    rowCount: !loading && !error ? rows?.length : undefined,
-  });
-
   let content: ReactElement;
   if (error instanceof ApiClientError && error.status === 401) {
     // The session ended; signing in again is the only way forward (guideline S4).
@@ -511,6 +478,7 @@ export default function ProjectsPage(): ReactElement {
       {content}
 
       <ProjectDeleteDialog
+        onUncertain={reload}
         open={deletion.open}
         onOpenChange={(open) =>
           setDeletion((current) => ({ ...current, open }))

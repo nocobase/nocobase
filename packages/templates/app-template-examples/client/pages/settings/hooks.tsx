@@ -1,67 +1,12 @@
-import {
-  ApiClientError,
-  useApiClient,
-  useNavigationGuard,
-} from '@nocobase/app-client';
+import { useNavigationGuard } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import { ConfirmAction } from './shared.js';
 
-export function useSettingsData<T>(path: string, keepPreviousData = false) {
-  const api = useApiClient();
-  const [revision, setRevision] = useState(0);
-  const [result, setResult] = useState<{
-    path: string;
-    revision: number;
-    data?: T;
-    error?: unknown;
-    loading: boolean;
-  }>({ path, revision: -1, loading: true });
-  useEffect(() => {
-    let active = true;
-    void api.request<T>({ path }).then(
-      (data) => {
-        if (active) setResult({ path, revision, data, loading: false });
-      },
-      (error: unknown) => {
-        if (active)
-          setResult((old) => ({
-            ...(old.path === path &&
-            !(
-              error instanceof ApiClientError &&
-              [401, 403, 404].includes(error.status)
-            )
-              ? old
-              : {}),
-            path,
-            revision,
-            error,
-            loading: false,
-          }));
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [api, path, revision]);
-  return {
-    ...(result.path === path || keepPreviousData
-      ? result
-      : { path, loading: true, data: undefined, error: undefined }),
-    loading: result.path !== path || result.revision !== revision,
-    error:
-      result.path === path && result.revision === revision
-        ? result.error
-        : undefined,
-    reload: useCallback(() => setRevision((value) => value + 1), []),
-    replaceData: useCallback(
-      (data: T) => setResult({ path, revision, data, loading: false }),
-      [path, revision],
-    ),
-  };
-}
+/** Compatibility entry for prepared settings pages and application-owned consumers. */
+export { useListData as useSettingsData } from '#hooks/use-list-data';
 
 export function useUserPermission(action: string, id = '*') {
   return useCan({ resource: { type: 'user', id }, action }).can;
