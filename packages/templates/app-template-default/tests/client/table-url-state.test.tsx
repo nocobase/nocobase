@@ -4,11 +4,22 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { expect, it } from 'vitest';
-import { useTableUrlState } from '../../client/hooks/use-table-url-state.js';
+import {
+  readTableUrlState,
+  useTableUrlState,
+} from '../../client/hooks/use-table-url-state.js';
 
-function Probe() {
+function Probe({
+  sortFormat = 'sort-order',
+}: {
+  sortFormat?: 'sort-order' | 'orderBy';
+}) {
   const [count, setCount] = useState<number>();
-  const state = useTableUrlState({ sortColumns: ['name'], rowCount: count });
+  const state = useTableUrlState({
+    sortColumns: ['name', 'updatedAt'],
+    rowCount: count,
+    sortFormat,
+  });
   const location = useLocation();
   const navigate = useNavigate();
   return (
@@ -21,6 +32,23 @@ function Probe() {
       <output data-testid='url'>{location.search}</output>
       <button onClick={() => setCount(25)}>Loaded</button>
       <button onClick={() => setCount(10)}>Removed</button>
+      <button
+        onClick={() =>
+          state.onSortingChange([
+            { id: 'name', desc: true },
+            { id: 'updatedAt', desc: false },
+          ])
+        }
+      >
+        Multi sort
+      </button>
+      <button
+        onClick={() =>
+          state.onPaginationChange((old) => ({ ...old, pageSize: 20 }))
+        }
+      >
+        Resize
+      </button>
       <button
         onClick={() => state.onSortingChange([{ id: 'name', desc: true }])}
       >
@@ -91,5 +119,64 @@ it('allows browser Back to restore the preceding page', async () => {
     screen.getByRole('button', { name: 'Back in history' }),
   );
   expect(screen.getByTestId('state')).toHaveTextContent('"pageIndex":2');
+  expect(screen.getByTestId('url')).toHaveTextContent('q=kept');
+});
+
+it('starts at page one after resizing even when the table supplies an old page index', async () => {
+  await renderWithApp(<Probe />, {
+    route: '/?page=4&pageSize=10&sort=name&order=desc&q=kept',
+  });
+  await userEvent.click(screen.getByRole('button', { name: 'Resize' }));
+  expect(screen.getByTestId('state')).toHaveTextContent(
+    '"pageIndex":0,"pageSize":20',
+  );
+  expect(screen.getByTestId('url')).toHaveTextContent('order=desc');
+  expect(screen.getByTestId('url')).toHaveTextContent('q=kept');
+});
+
+it('preserves ordered multi-column orderBy and falls back on invalid columns and directions', () => {
+  const options = {
+    sortColumns: ['name', 'updatedAt'],
+    sortFormat: 'orderBy' as const,
+    defaultSorting: [{ id: 'updatedAt', desc: true }],
+  };
+  expect(
+    readTableUrlState(
+      new URLSearchParams('orderBy=name,updatedAt desc&page=2'),
+      options,
+    ),
+  ).toEqual({
+    paginationState: { pageIndex: 1, pageSize: 10 },
+    sortingState: [
+      { id: 'name', desc: false },
+      { id: 'updatedAt', desc: true },
+    ],
+  });
+  for (const value of [
+    'name sideways',
+    'deleted desc',
+    'name,deleted',
+    'name desc extra',
+  ]) {
+    expect(
+      readTableUrlState(new URLSearchParams({ orderBy: value }), options)
+        .sortingState,
+    ).toEqual(options.defaultSorting);
+  }
+});
+
+it('writes and restores the complete existing orderBy sequence', async () => {
+  await renderWithApp(<Probe sortFormat='orderBy' />, {
+    route: '/?page=3&pageSize=20&q=kept',
+  });
+  await userEvent.click(screen.getByRole('button', { name: 'Multi sort' }));
+  expect(screen.getByTestId('state')).toHaveTextContent(
+    '[{"id":"name","desc":true},{"id":"updatedAt","desc":false}]',
+  );
+  expect(screen.getByTestId('state')).toHaveTextContent('"pageIndex":0');
+  await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+  expect(screen.getByTestId('url')).toHaveTextContent(
+    'orderBy=name+desc%2CupdatedAt',
+  );
   expect(screen.getByTestId('url')).toHaveTextContent('q=kept');
 });

@@ -1,6 +1,11 @@
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useState, type PropsWithChildren, type ReactElement } from 'react';
+import {
+  Fragment,
+  useState,
+  type PropsWithChildren,
+  type ReactElement,
+} from 'react';
 
 import { Loading } from '#components/loading';
 import { Button } from '#components/ui/button';
@@ -9,13 +14,15 @@ import { Button } from '#components/ui/button';
 export function SessionPreparation({
   children,
 }: PropsWithChildren): ReactElement {
-  const { preparation, retryPreparation, client, refresh } =
+  const { preparation, retryPreparation, client, refresh, session } =
     useAuthentication();
   const { t } = useTranslation();
   const [signingOut, setSigningOut] = useState(false);
   const [signOutFailed, setSignOutFailed] = useState(false);
 
-  if (preparation === 'ready') return <>{children}</>;
+  // List memory and ancestor queries belong to one signed-in identity only.
+  if (preparation === 'ready')
+    return <Fragment key={session?.user.id}>{children}</Fragment>;
   if (preparation === 'preparing') {
     return <Loading className='min-h-svh' label={t('auth.preparingSession')} />;
   }

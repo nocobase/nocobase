@@ -50,6 +50,14 @@ const systemZhCN: SystemResource = {
   ...deviceApprovalZhCN,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
   ...inboxZhCN,
+  // Shared form wording overrides the defaults included by composed blocks.
+  formFeedback: {
+    field: '此字段的值未通过校验，请检查并修改后重试。',
+    invalid: '请检查标记的字段后重试。',
+    failed: '保存失败，已保留您的输入，请重试。',
+    network: '无法连接，请检查网络后重试。已保留您的输入。',
+    denied: '当前权限无法提交此表单。已保留您的输入。',
+  },
   // The UI Library component of the header's inbox button.
   'inboxButton.title': '收件箱',
   'inboxButton.pending': '收件箱，{{count}} 项待处理',

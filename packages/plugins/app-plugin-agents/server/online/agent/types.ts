@@ -106,6 +106,8 @@ export type OnlineAgentInitialConfiguration = {
 };
 
 export type OnlineAgentSendOptions = {
+  /** Pending Runner selection, committed atomically with message admission. */
+  agentId?: string;
   attachmentIds?: string[][];
   clientId?: string;
   messageId?: string;

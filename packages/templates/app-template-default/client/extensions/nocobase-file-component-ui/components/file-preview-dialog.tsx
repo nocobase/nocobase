@@ -86,10 +86,28 @@ function OpenFilePreviewDialog(
       >
         <div className='flex items-center justify-between gap-3 pr-10'>
           <div className='min-w-0'>
-            <DialogTitle className='truncate'>{file.filename}</DialogTitle>
+            <div className='flex min-w-0 items-center gap-2'>
+              <DialogTitle className='truncate'>{file.filename}</DialogTitle>
+              {allowDownload ? (
+                <Button
+                  type='button'
+                  size='icon'
+                  className='shrink-0'
+                  variant='ghost'
+                  aria-label={`${downloadLabel}: ${file.filename}`}
+                  onClick={() =>
+                    void downloadFile(file, onDownload).catch(
+                      (error: unknown) => reportDownloadError(onError, error),
+                    )
+                  }
+                >
+                  <Download aria-hidden='true' />
+                </Button>
+              ) : null}
+            </div>
             <p className='text-sm text-muted-foreground'>{file.mimeType}</p>
           </div>
-          <div className='flex gap-1'>
+          <div className='flex shrink-0 gap-1'>
             {files.length > 1 ? (
               <>
                 <Button
@@ -121,21 +139,6 @@ function OpenFilePreviewDialog(
                   <ChevronRight aria-hidden='true' />
                 </Button>
               </>
-            ) : null}
-            {allowDownload ? (
-              <Button
-                type='button'
-                size='icon'
-                variant='ghost'
-                aria-label={`${downloadLabel}: ${file.filename}`}
-                onClick={() =>
-                  void downloadFile(file, onDownload).catch((error: unknown) =>
-                    reportDownloadError(onError, error),
-                  )
-                }
-              >
-                <Download aria-hidden='true' />
-              </Button>
             ) : null}
           </div>
         </div>

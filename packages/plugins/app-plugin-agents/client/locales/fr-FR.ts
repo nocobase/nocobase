@@ -973,7 +973,8 @@ const frFR: LocaleResource<typeof enUS> = {
         "{{own}} n'a pas de exécuteur pour vous maintenant, donc {{name}} répond jusqu'à ce que {{own}} soit de retour.",
       onlineFallbackUnavailable:
         "L'agent de secours en ligne ne peut pas répondre ({{reason}}). Cette conversation reste avec {{own}} en attendant un exécuteur.",
-      switchedAgent: chatEnUS.chat.notice.switchedAgent,
+      switchedAgent:
+        'Passage à {{name}} en conservant l’historique de cette conversation.',
       switchedBack: 'De retour avec {{name}}.',
       runFailed: "L'agent s'arrête avant de répondre.",
       runFailedReason: "L'agent s'arrête avant de répondre : {{reason}}",
