@@ -381,22 +381,42 @@ export async function pendingInputs(
   });
 }
 
-/** Marks the given inputs as delivered to the runner, once. */
+/**
+ * Marks the given inputs delivered to the runner, once, and answers the ones the runner now has: each delivered
+ * before or by this call, never one handled meanwhile (an input its sender withdrew, which `handledAt` marks in a
+ * conditional update of its own: whichever update comes first wins the row).
+ */
 export async function markDelivered(
   conn: DatabaseConnection,
   inputs: readonly InputRecord[],
   now: string,
-): Promise<void> {
-  const undelivered = inputs.filter((input) => !input.deliveredAt);
-  if (undelivered.length === 0) return;
-  await inputsRepo(conn).updateMany({
-    filter: (f) =>
-      f.and([
-        f.or(undelivered.map((input) => f.string('id').eq(input.id))),
-        f.date('deliveredAt').empty(),
-      ]),
-    values: { deliveredAt: now },
+): Promise<InputRecord[]> {
+  if (inputs.length === 0) return [];
+  const ids = inputs.map((input) => input.id);
+  if (inputs.some((input) => !input.deliveredAt))
+    await inputsRepo(conn).updateMany({
+      filter: (f) =>
+        f.and([
+          f.or(ids.map((id) => f.string('id').eq(id))),
+          f.date('deliveredAt').empty(),
+          f.date('handledAt').empty(),
+        ]),
+      values: { deliveredAt: now },
+    });
+  const current = await inputsRepo(conn).findMany({
+    filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))),
   });
+  const delivered = new Set(
+    current
+      .filter((input) => input.deliveredAt && !input.handledAt)
+      .map((input) => input.id),
+  );
+  return inputs
+    .filter((input) => delivered.has(input.id))
+    .map((input) => ({
+      ...input,
+      deliveredAt: current.find((row) => row.id === input.id)!.deliveredAt,
+    }));
 }
 
 /**

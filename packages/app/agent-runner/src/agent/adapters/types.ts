@@ -115,6 +115,8 @@ export interface AdapterSession {
   effort?: string;
   /** Resume this tool session instead of starting a fresh one. */
   resumeSessionId?: string;
+  /** What a fresh session is told of what came before, when `resumeSessionId` cannot be resumed after all. */
+  recoveryContext?: string;
   /**
    * The complete environment of the tool process (already whitelisted by
    * the runner). The adapter adds nothing from its own process environment.

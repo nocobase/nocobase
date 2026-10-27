@@ -367,6 +367,8 @@ class OpencodeRun {
   private readonly toolCalls = new Map<string, ToolCall>();
   private readonly stepModels = new Map<string, string>();
   private readonly usageByModel = new Map<string, Usage>();
+  /** What the run's steps cost so far, in US dollars, as OpenCode priced them; undefined until one reports it. */
+  private costUsd?: number;
   private readonly answeredPermissions = new Set<string>();
   private readonly pendingSteers = new Map<string, PendingSteer>();
   private readonly deliveredInbox = new Set<string>();
@@ -541,7 +543,9 @@ class OpencodeRun {
     this.sessionId = sessionId;
     this.sessions.add(sessionId);
 
-    let prompt = recovered ? recoveryPrompt(session.prompt) : session.prompt;
+    let prompt = recovered
+      ? recoveryPrompt(session.prompt, session.recoveryContext)
+      : session.prompt;
     if (session.systemPrompt) {
       try {
         await client.putInstruction(
@@ -922,6 +926,8 @@ class OpencodeRun {
           messageId ? this.stepModels.get(messageId) : undefined,
           data.tokens,
         );
+        if (typeof data.cost === 'number' && Number.isFinite(data.cost))
+          this.costUsd = (this.costUsd ?? 0) + Math.max(0, data.cost);
         if (event.type === 'session.step.failed' && root)
           this.failure = structuredFailure(data.error);
         return;
@@ -1004,6 +1010,7 @@ class OpencodeRun {
         steps: this.steps,
         ...(isRecord(data.error) ? { error: data.error } : {}),
         ...(str(data.reason) ? { reason: str(data.reason) } : {}),
+        ...(this.costUsd !== undefined ? { costUsd: this.costUsd } : {}),
       },
     });
     this.emit({ type: 'usage', meta: { usage: this.usage() } });

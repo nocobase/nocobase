@@ -732,12 +732,18 @@ export interface EventsResponse {
   /** Events already stored by an earlier request. */
   readonly duplicates: number;
   readonly cancelRequested: boolean;
+  /**
+   * A run's input that arrived since its runner last asked, now delivered to it (as a status poll would): what a
+   * person sends while the agent works reaches it with the next events, not the next poll. Absent from older servers.
+   */
+  readonly inputs?: readonly RunInput[];
 }
 
 export const EventsResponseSchema: z.ZodType<EventsResponse> = z.object({
   accepted: z.number().int().nonnegative(),
   duplicates: z.number().int().nonnegative(),
   cancelRequested: z.boolean(),
+  inputs: z.array(RunInputSchema).optional(),
 });
 
 export interface StatusResponse {

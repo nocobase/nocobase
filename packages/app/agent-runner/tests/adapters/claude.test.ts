@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ClaudeAdapter,
+  quietEnv,
   DEFAULT_MIN_CLAUDE_VERSION,
   compareVersions,
 } from '../../src/agent/adapters/claude.ts';
@@ -84,6 +85,10 @@ describe('missing conversations', () => {
       expect(ctx.options.systemPrompt).toMatchObject({ append: 'BRIEF' });
       const prompt = await ctx.nextInput();
       expect(prompt?.message.content).toContain('previous conversation');
+      // The new session hears what came before, as the server gave it for this case.
+      expect(prompt?.message.content).toContain(
+        'What came before:\n\nAlice asked for a test task.',
+      );
       expect(prompt?.message.content).toContain('Create hello.txt');
       yield init();
       const steer = await ctx.nextInput();
@@ -95,7 +100,10 @@ describe('missing conversations', () => {
       expect(await ctx.nextInput()).toBeUndefined();
     });
     const handle = adapterWith('9.0.0', dir).start(
-      session({ resumeSessionId: 'missing' }),
+      session({
+        resumeSessionId: 'missing',
+        recoveryContext: 'Alice asked for a test task.',
+      }),
     );
     expect(await handle.steer('early', 'early-input')).toBe(true);
     const events = await collect(handle.events);
@@ -387,7 +395,11 @@ describe('model detection', () => {
     expect(closed).toBe(true);
     expect(options).toMatchObject({
       settingSources: [],
-      env: { PATH: dir, HOME: '/home/runner' },
+      env: {
+        PATH: dir,
+        HOME: '/home/runner',
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+      },
       pathToClaudeCodeExecutable: path.join(dir, 'claude'),
     });
     expect(options.cwd).toBe(cwd);
@@ -434,6 +446,16 @@ describe('model detection', () => {
 });
 
 describe('query options', () => {
+  it("leaves Claude Code's nonessential traffic alone when allowed, or when the run decides it", () => {
+    expect(quietEnv({ HOME: '/h' }, true)).toEqual({ HOME: '/h' });
+    expect(
+      quietEnv({ CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '0' }, false),
+    ).toEqual({ CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '0' });
+    expect(quietEnv({}, false)).toEqual({
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+    });
+  });
+
   it('passes the brief, settings, permission mode, env and executable', async () => {
     setScript(replay([init(), result()]));
     const handle = adapterWith('9.0.0', dir).start(
@@ -454,7 +476,12 @@ describe('query options', () => {
     expect(options.settingSources).toEqual(['project']);
     expect(options.permissionMode).toBe('bypassPermissions');
     expect(options.allowDangerouslySkipPermissions).toBe(true);
-    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: dir });
+    // Claude Code's nonessential traffic, which blocks its start, is off unless the runner's owner allows it.
+    expect(options.env).toEqual({
+      PATH: '/usr/bin',
+      HOME: dir,
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+    });
     expect(options.cwd).toBe('/work');
     expect(options.pathToClaudeCodeExecutable).toBe(path.join(dir, 'claude'));
     expect(options).toMatchObject({
@@ -508,6 +535,40 @@ describe('query options', () => {
 });
 
 describe('message mapping', () => {
+  it('reports how full the context window is after the turn', async () => {
+    setScript(
+      replay([
+        init(),
+        assistant([{ type: 'text', text: 'Working.' }], {
+          message: {
+            id: 'msg_2',
+            role: 'assistant',
+            model: 'claude-test-1',
+            content: [{ type: 'text', text: 'Working.' }],
+            stop_reason: null,
+            usage: {
+              input_tokens: 12,
+              cache_read_input_tokens: 30_000,
+              cache_creation_input_tokens: 500,
+              output_tokens: 88,
+            },
+          },
+        }),
+        result(),
+      ]),
+    );
+    const handle = adapterWith('9.0.0', dir).start(session());
+    const events = await collect(handle.events);
+    expect(
+      events.filter((e) => e.type === 'status' && e.content === 'context'),
+    ).toEqual([
+      expect.objectContaining({
+        meta: { context: { used: 30_600, size: 200_000 } },
+      }),
+    ]);
+    await handle.result;
+  });
+
   it('maps a replayed run to events and a result', async () => {
     setScript(
       replay([

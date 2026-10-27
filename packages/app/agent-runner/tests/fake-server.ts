@@ -156,6 +156,8 @@ export class FakeServer {
   ]);
   /** While set, `events` answers 503. */
   eventsDown = false;
+  /** Answer events with the run's unhandled input, as the application does once some arrived. */
+  inputsOnEvents = false;
   onCancelAck?: (run: FakeRun) => void;
   eventsFailures = 0;
   /** Skill bundles by slug, served at `RUNNER_ROUTES.skill`. */
@@ -860,6 +862,9 @@ export class FakeServer {
         accepted,
         duplicates: body.events.length - accepted,
         cancelRequested: run.cancelRequested,
+        ...(this.inputsOnEvents && unhandled(run).length
+          ? { inputs: unhandled(run) }
+          : {}),
       });
     });
 
