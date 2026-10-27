@@ -117,6 +117,7 @@ export class FormFeedback {
   private state: FormFeedbackState = emptyState;
   private sequence = 0;
   private focusSequence = 0;
+  private hasFormError = false;
   public constructor(private options: FormFeedbackOptions) {}
 
   public configure(options: FormFeedbackOptions): void {
@@ -187,6 +188,7 @@ export class FormFeedback {
   public begin(): FormFeedbackAttempt {
     this.focusSequence++;
     this.sequence++;
+    this.hasFormError = false;
     this.publish({ ...emptyState });
     return {
       sequence: this.sequence,
@@ -205,12 +207,15 @@ export class FormFeedback {
     if (id === undefined) {
       this.sequence++;
       this.focusSequence++;
+      this.hasFormError = false;
       this.publish(emptyState);
     } else if (this.state.fields.some((error) => error.id === id)) {
       this.focusSequence++;
+      const fields = this.state.fields.filter((error) => error.id !== id);
       this.publish({
-        ...this.state,
-        fields: this.state.fields.filter((error) => error.id !== id),
+        fields,
+        message:
+          fields.length || this.hasFormError ? this.state.message : undefined,
       });
     }
   }
@@ -221,15 +226,16 @@ export class FormFeedback {
   ): void {
     if (attempt.sequence !== this.sequence) return;
     const fields: FormFeedbackError[] = [];
+    this.hasFormError = false;
     for (const error of errors) {
       const submitted = attempt.fields.find(
         (entry) => entry.path === normalizeFormFieldPath(error.field),
       );
-      if (
-        submitted &&
-        this.current(submitted) &&
-        !fields.some((error) => error.id === submitted.field.id)
-      )
+      if (!submitted || !this.current(submitted)) {
+        this.hasFormError = true;
+        continue;
+      }
+      if (!fields.some((error) => error.id === submitted.field.id))
         fields.push({ id: submitted.field.id, message: error.message });
     }
     this.publish({ fields, message: this.options.messages.invalid });
@@ -246,6 +252,7 @@ export class FormFeedback {
   public failure(error: unknown, attempt: FormFeedbackAttempt): void {
     if (attempt.sequence !== this.sequence) return;
     const messages = this.options.messages;
+    this.hasFormError = true;
     if (!(error instanceof ApiClientError)) {
       this.publish({
         fields: [],
@@ -292,6 +299,7 @@ export class FormFeedback {
             messages.invalid,
         });
       }
+    this.hasFormError = unmapped || !fields.length;
     this.publish({
       fields,
       message: unmapped || !fields.length ? messages.failed : messages.invalid,

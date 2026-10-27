@@ -43,6 +43,8 @@ Keep descriptors stable while requests are pending; getters read live data. Use 
 
 Do not register permission-hidden fields as accessible. Use explicit descriptors for collapsed/unmounted editors; native discovery excludes permission/business-hidden DOM and does not guess which tab or permission to open. No new request, persistence or server protocol is needed. The error state exists only while the form is mounted. Existing applications must follow the [source upgrade checklist](../../../../nocobase-app-upgrade/references/form-feedback-upgrade.md); dependency updates do not rewrite their copied forms.
 
+Summary links display the accessible field/group name and its trusted correction reason. Give group entry controls `aria-labelledby` pointing to the group heading (or a descriptor `label`); do not use a general retry instruction as the label. Keep validator copy actionable, and map server reasons through `fieldMessage` or an explicitly associated application error node. Unknown and inaccessible paths stay at form level.
+
 ## Complete example: one form for creating and editing
 
 `client/pages/projects/project-form.tsx` is the form create and edit share: name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). It renders no buttons: the container puts the submit button outside the `<form>` and links it through `formId`. Its complete code and props table are [`example/project-form.md`](example/project-form.md); the key points below explain what it does and why.

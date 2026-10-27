@@ -127,14 +127,7 @@ export function FeedbackForm({
         const field: FormFeedbackField = {
           id,
           path,
-          label: () => {
-            const label = [
-              ...element.querySelectorAll<HTMLLabelElement>('label'),
-            ].find((label) => label.htmlFor === control.id);
-            return (
-              label?.textContent ?? control.getAttribute('aria-label') ?? ''
-            );
-          },
+          label: () => fieldLabel(control),
           anchor: () => control,
           control: () => control,
           value: () => {
@@ -243,7 +236,8 @@ export function FeedbackForm({
           field:
             control.dataset.fieldPath ?? control.getAttribute('name') ?? '',
           message:
-            existingFieldError(control)?.textContent ||
+            (existingFieldError(control)?.textContent ||
+              options.messages.field) ??
             options.messages.invalid,
         };
       }),
@@ -271,6 +265,18 @@ export function FeedbackForm({
   }, [validationErrors, validationKey, feedback, attemptSequence, submitting]);
 
   const errors = feedback.errors();
+  const summaryEntries = errors.flatMap((entry) => {
+    const field = feedback.field(entry.id);
+    const control = field?.control();
+    const label =
+      field?.label?.().trim() || (control ? fieldLabel(control) : '');
+    const message =
+      (control && existingFieldError(control)?.textContent?.trim()) ||
+      entry.message;
+    // An unnamed control must not turn the general instruction into a second link.
+    if (!label && message === state.message) return [];
+    return [{ ...entry, text: label ? `${label}: ${message}` : message }];
+  });
   useLayoutEffect(() => {
     const restore: (() => void)[] = [];
     for (const entry of errors) {
@@ -380,9 +386,9 @@ export function FeedbackForm({
           ) : (
             <p>{state.message}</p>
           )}
-          {errors.length > 0 && (
+          {summaryEntries.length > 0 && (
             <ul>
-              {errors.map((entry) => (
+              {summaryEntries.map((entry) => (
                 <li key={entry.id}>
                   <button
                     type='button'
@@ -391,8 +397,7 @@ export function FeedbackForm({
                       void feedback.focus(summaryRef.current, entry.id)
                     }
                   >
-                    {feedback.field(entry.id)?.label?.() ||
-                      options.messages.invalid}
+                    {entry.text}
                   </button>
                 </li>
               ))}
@@ -453,4 +458,28 @@ function existingFieldError(control: HTMLElement): HTMLElement | undefined {
   ].find((node): node is HTMLElement =>
     Boolean(node && !node.hasAttribute('data-form-feedback-error')),
   );
+}
+
+/** Resolve explicit accessible names; group entry buttons may use their visible text. */
+function fieldLabel(control: HTMLElement): string {
+  const labelledBy = (control.getAttribute('aria-labelledby') ?? '')
+    .split(/\s+/)
+    .map((id) => control.ownerDocument.getElementById(id)?.textContent?.trim())
+    .filter(Boolean)
+    .join(' ');
+  if (labelledBy) return labelledBy;
+  const ariaLabel = control.getAttribute('aria-label')?.trim();
+  if (ariaLabel) return ariaLabel;
+  if ('labels' in control) {
+    const labels = Array.from(
+      (control as HTMLInputElement).labels ?? [],
+      (label) => label.textContent?.trim(),
+    )
+      .filter(Boolean)
+      .join(' ');
+    if (labels) return labels;
+  }
+  return control.matches('button, [role="button"]')
+    ? (control.textContent?.trim() ?? '')
+    : '';
 }

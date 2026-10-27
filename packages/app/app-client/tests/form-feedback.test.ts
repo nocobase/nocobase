@@ -221,11 +221,34 @@ describe('form feedback', () => {
     );
     feedback.clear('name');
     expect(feedback.errors()).toEqual([]);
+    expect(feedback.getSnapshot().message).toBeUndefined();
     feedback.failure(new TypeError('fetch failed'), feedback.begin());
     expect(feedback.getSnapshot().message).toBe(messages.network);
     feedback.begin();
     expect(feedback.getSnapshot().message).toBeUndefined();
     expect(row.mutable.value).toBe('draft');
+  });
+
+  it('keeps unmapped form errors when the last known field is corrected', () => {
+    const row = field('name');
+    const feedback = new FormFeedback({ messages });
+    feedback.register(row.descriptor);
+    feedback.invalid(
+      [
+        { field: 'name', message: 'Required' },
+        { field: '', message: 'Unmapped rule' },
+      ],
+      feedback.begin(),
+    );
+    feedback.clear('name');
+    expect(feedback.errors()).toEqual([]);
+    expect(feedback.getSnapshot().message).toBe(messages.invalid);
+    feedback.failure(
+      apiError([{ field: 'name' }, { field: 'unknown' }]),
+      feedback.begin(),
+    );
+    feedback.clear('name');
+    expect(feedback.getSnapshot().message).toBe(messages.failed);
   });
 
   it('maps only application-approved copy and treats access errors as form errors', () => {

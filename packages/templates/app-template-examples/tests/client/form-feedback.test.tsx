@@ -9,6 +9,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FeedbackForm } from '../../client/components/feedback-form.js';
@@ -382,7 +383,28 @@ describe('feedback forms', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('Add equipment')).toHaveFocus(),
     );
+    const summary = screen.getByRole('alert');
+    expect(
+      within(summary).getByRole('button', {
+        name: 'Add equipment: Add at least two items.',
+      }),
+    ).toBeVisible();
+    expect(
+      within(summary).getAllByText(
+        'Check the highlighted fields and try again.',
+      ),
+    ).toHaveLength(1);
     expect(screen.getByText('Add at least two items.')).toBeVisible();
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('alert')).getAllByRole('button'),
+      ).toHaveLength(1),
+    );
+    fireEvent.click(within(screen.getByRole('alert')).getByRole('button'));
+    await waitFor(() =>
+      expect(screen.getByLabelText('Add equipment')).toHaveFocus(),
+    );
     expect(saved).not.toHaveBeenCalled();
     fireEvent.click(screen.getByLabelText('Add equipment'));
     fireEvent.click(screen.getByText('Save'));
@@ -403,6 +425,82 @@ describe('feedback forms', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Check the highlighted fields',
+    );
+  });
+
+  it('names group links through aria-labelledby without copying the summary instruction', async () => {
+    await mount(
+      <FeedbackForm
+        noValidate
+        validationErrors={{
+          items: { root: { message: 'Add at least two equipment items.' } },
+        }}
+        onSubmit={() => {}}
+      >
+        <h2 id='equipment-group'>Equipment group</h2>
+        <button
+          type='button'
+          data-field-path='items'
+          aria-labelledby='equipment-group'
+        >
+          Add equipment
+        </button>
+        <button>Save</button>
+      </FeedbackForm>,
+    );
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('alert')).getByRole('button', {
+          name: 'Equipment group: Add at least two equipment items.',
+        }),
+      ).toBeVisible(),
+    );
+    const link = within(screen.getByRole('alert')).getByRole('button');
+    link.focus();
+    fireEvent.click(link);
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Equipment group' }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('keeps unknown and inaccessible request errors at form level without leaking paths, labels or descriptions', async () => {
+    await mount(
+      <FeedbackForm
+        onSubmit={() => {
+          throw new ApiClientError('private stack', {
+            status: 400,
+            method: 'POST',
+            url: '/api/items',
+            payload: {
+              error: {
+                fieldViolations: [
+                  { field: 'secret', description: 'Private equipment value' },
+                  { field: 'unknown', description: 'Secret fix' },
+                ],
+              },
+            },
+          });
+        }}
+      >
+        <div hidden>
+          <label htmlFor='secret'>Restricted equipment</label>
+          <input id='secret' name='secret' />
+        </div>
+        <button>Save</button>
+      </FeedbackForm>,
+    );
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
+    const summary = screen.getByRole('alert');
+    expect(within(summary).queryByRole('button')).not.toBeInTheDocument();
+    expect(summary).toHaveTextContent(
+      'Unable to save. Your input has been kept. Try again.',
+    );
+    expect(summary.textContent).not.toMatch(
+      /Restricted|Private|Secret|unknown/,
     );
   });
 
@@ -438,6 +536,11 @@ describe('feedback forms', () => {
     const input = screen.getByLabelText('Name');
     await waitFor(() => expect(input).toHaveFocus());
     expect(screen.getAllByText('Choose a unique name.')).toHaveLength(1);
+    expect(
+      within(screen.getByRole('alert')).getByRole('button', {
+        name: 'Name: Choose a unique name.',
+      }),
+    ).toBeVisible();
     const ids = input.getAttribute('aria-describedby')!.split(' ');
     expect(
       ids.some(
@@ -449,6 +552,8 @@ describe('feedback forms', () => {
     fireEvent.change(input, { target: { value: 'unique' } });
     expect(input).toHaveAttribute('aria-invalid', 'false');
     expect(input).toHaveAttribute('aria-describedby', 'new-help');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(input).toHaveValue('unique');
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'));
     fireEvent.change(input, { target: { value: 'another' } });
