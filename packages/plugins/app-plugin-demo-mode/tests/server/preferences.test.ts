@@ -5,6 +5,8 @@ import {
 import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { Visitor } from '../helpers/preference-visitor.js';
+
 import { createStandaloneServer } from '../helpers/minimal-app.js';
 
 const defaults = {
@@ -12,51 +14,6 @@ const defaults = {
   'theme.mode': 'system',
   'theme.preset': 'compact',
 };
-class Visitor {
-  private readonly cookies = new Map<string, string>();
-  constructor(private readonly app: TestApp) {}
-  async request(
-    path: string,
-    method = 'GET',
-    body?: unknown,
-    origin = 'http://localhost',
-  ): Promise<Response> {
-    const response = await this.app.request(path, {
-      method,
-      headers: {
-        origin,
-        cookie: [...this.cookies]
-          .map(([name, value]) => `${name}=${value}`)
-          .join('; '),
-        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-    for (const header of response.headers.getSetCookie()) {
-      const pair = header.split(';')[0];
-      const index = pair.indexOf('=');
-      if (header.includes('Max-Age=0'))
-        this.cookies.delete(pair.slice(0, index));
-      else this.cookies.set(pair.slice(0, index), pair.slice(index + 1));
-    }
-    return response;
-  }
-  async signIn(): Promise<string> {
-    const response = await this.request(
-      '/demoMode/accounts/signInDefault',
-      'POST',
-    );
-    if (response.status !== 200)
-      throw new Error(`Sign-in failed: ${await response.text()}`);
-    return (await (await this.request('/auth/get-session')).json()).user.id;
-  }
-  async preferences(): Promise<Record<string, unknown>> {
-    const response = await this.request('/users/me/preferences');
-    if (response.status !== 200)
-      throw new Error(`Preferences failed: ${await response.text()}`);
-    return (await response.json()).data;
-  }
-}
 
 describe('demo visitor presentation preferences', () => {
   let app: TestApp;
@@ -180,6 +137,24 @@ describe('demo visitor presentation preferences', () => {
     expect(invalid.status).toBe(400);
     expect(invalid.headers.getSetCookie()).toEqual([]);
     expect((await visitor.preferences()).locale).toBe('zh-CN');
+    const invalidChoice = await visitor.request(
+      '/users/me/preferences',
+      'PATCH',
+      {
+        locale: false,
+        'inbox.sound': true,
+      },
+    );
+    expect(invalidChoice.status).toBe(400);
+    expect((await invalidChoice.json()).error.reason).toBe(
+      'INVALID_PREFERENCE_VALUE',
+    );
+    expect(invalidChoice.headers.getSetCookie()).toEqual([]);
+    expect(
+      await app.application.container
+        .resolve(userPreferencesServiceToken)
+        .get(id, 'inbox.sound'),
+    ).toBe(false);
     expect(
       (
         await visitor.request('/users/me/preferences/inbox.sound', 'PUT', {

@@ -57,6 +57,12 @@ A refused request is answered with the standard error body, `400 FAILED_PRECONDI
 
 At startup the plugin sends a probe write through every connection and refuses to start if one is not refused, so an upgrade that breaks the hook cannot silently leave a demo writable.
 
+## Visitor preferences through the Users API
+
+When Demo Mode and Users are enabled, `/api/users/me/preferences` stores `locale`, `theme.mode` and `theme.preset` in application-scoped browser-session cookies. Visitors sharing or switching accounts retain their own choices; absent or deleted choices return `i18n.defaultLocale`, `client.app.defaultColorScheme` and `client.app.defaultTheme`, falling back to `en-US`, `system` and `compact`. Historical account values for these keys are ignored by this API. Other keys retain account storage and the demo write guard; no `userPreferences` write exception is needed for the three presentation keys.
+
+Clients must retain and resend the response cookies. This adaptation applies to callers of the Users preference API; it does not connect controls that only use localStorage or `/api/i18n/locale`. Browser session restoration may retain session cookies. Disabling Demo Mode restores ordinary account preferences. The existing Users routes retain authentication, validation, global API limits and request middleware; their Swagger descriptions document the Demo-specific value constraints and cookie behavior.
+
 ## Finding what to allow
 
 Use `NOCOBASE_DEMO_MODE=true` only in the isolated demo deployment. Browse the intended visitor journeys and inspect refused requests in the `demo-mode` log, which records their method, path and writes. Some pages write while being read, for example to refresh a cache. Add only the collection exceptions those journeys need, then verify them again. Ordinary application development leaves the flag unset or sets it to `false`.

@@ -1,20 +1,18 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
   UserPreferenceError,
   userPreferencesServiceToken,
 } from '@nocobase/app-plugin-users/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
-import {
-  ApiError,
-  apiErrorHandler,
-  apiValidator,
-  installApiLimits,
-  requestIdMiddleware,
-  type ApiConfig,
-} from '@nocobase/app-server/router';
-import { Hono, type Context } from 'hono';
+import { apiDocsToken } from '@nocobase/app-server/router';
+import { createAppCookieScope } from '@nocobase/app-server/support';
+import type { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { z } from 'zod';
+
+import { describeDemoPreferences } from './preferences-document.js';
 
 const keys = ['locale', 'theme.mode', 'theme.preset'] as const;
 type PreferenceKey = (typeof keys)[number];
@@ -23,31 +21,59 @@ const valueSchema = z
   .min(1)
   .max(100)
   .regex(/^[a-zA-Z0-9._-]+$/u);
-const inputSchema = z.strictObject({ value: valueSchema });
-const batchSchema = z.record(z.string(), z.unknown());
 const prefix = '/api/users/me/preferences';
+
+interface VisitorPreferences {
+  readonly context: Context;
+  readonly values: Record<PreferenceKey, string>;
+  readonly changes: Map<PreferenceKey, string | null>;
+}
 
 function isPreferenceKey(key: string): key is PreferenceKey {
   return (keys as readonly string[]).includes(key);
 }
 
+function parseValue(value: unknown): string {
+  const parsed = valueSchema.safeParse(value);
+  if (!parsed.success)
+    throw new UserPreferenceError(
+      'INVALID_PREFERENCE_VALUE',
+      'A demo presentation preference must be a non-empty identifier of at most 100 characters.',
+    );
+  return parsed.data;
+}
+
 /**
- * Adapt the existing Users API only in demos. Its account storage must never receive these visitor choices, even
- * when userPreferences is writable. Register before contributed routes so plugin ordering cannot change isolation.
- * Cookies contain only validated presentation values, carry no authority, and expire with the browser session.
- * Separate cookies prevent concurrent locale/theme writes from overwriting one another.
+ * Keep Users' routes, auth, validation and the application's HTTP pipeline. Only preference service calls for the
+ * authenticated owner inside this API use visitor cookies. Calls from jobs, seeds and other endpoints keep account
+ * storage. Adapt the existing instance because the container does not support replacing a registered service.
  */
-export function registerDemoPreferences(app: AppPluginApplication): void {
+export function registerDemoPreferences(
+  app: AppPluginApplication,
+): (() => void) | undefined {
   const { container } = app;
   if (
     !container.has(authenticationToken) ||
     !container.has(userPreferencesServiceToken)
   )
     return;
-  const auth = container.resolve(authenticationToken);
   const preferences = container.resolve(userPreferencesServiceToken);
-  const secure =
-    app.config.get<string>('app.publicOrigin')?.startsWith('https://') ?? false;
+  /* eslint-disable @typescript-eslint/unbound-method -- Retain method identities for cleanup; calls below preserve the receiver with .call(). */
+  const original = {
+    list: preferences.list,
+    get: preferences.get,
+    set: preferences.set,
+    setMany: preferences.setMany,
+    remove: preferences.remove,
+  };
+  /* eslint-enable @typescript-eslint/unbound-method */
+  const requests = new AsyncLocalStorage<VisitorPreferences>();
+  const visitor = (userId: string): VisitorPreferences | undefined => {
+    const state = requests.getStore();
+    const auth = state?.context.get('auth') as
+      { user: { id: string } } | undefined;
+    return auth?.user.id === userId ? state : undefined;
+  };
   const defaults: Record<PreferenceKey, string> = {
     locale: app.config.get<string>('i18n.defaultLocale') ?? 'en-US',
     'theme.mode':
@@ -55,17 +81,11 @@ export function registerDemoPreferences(app: AppPluginApplication): void {
     'theme.preset':
       app.config.get<string>('client.app.defaultTheme') ?? 'compact',
   };
+  const scope = createAppCookieScope(app.publicBasePath);
   const cookieName = (key: PreferenceKey): string =>
-    `nocobase_demo_${key.replaceAll('.', '_')}`;
-  const read = (context: Context): Record<PreferenceKey, string> =>
-    Object.fromEntries(
-      keys.map((key) => {
-        const parsed = valueSchema.safeParse(
-          getCookie(context, cookieName(key)),
-        );
-        return [key, parsed.success ? parsed.data : defaults[key]];
-      }),
-    ) as Record<PreferenceKey, string>;
+    `nocobase_demo_${scope}_${key.replaceAll('.', '_')}`;
+  const secure =
+    app.config.get<string>('app.publicOrigin')?.startsWith('https://') ?? false;
   const cookieOptions = {
     path: app.publicBasePath || '/',
     httpOnly: true,
@@ -73,115 +93,86 @@ export function registerDemoPreferences(app: AppPluginApplication): void {
     sameSite: secure ? ('None' as const) : ('Lax' as const),
     partitioned: secure,
   };
-  const write = (context: Context, key: PreferenceKey, value: string): void => {
-    setCookie(context, cookieName(key), value, cookieOptions);
+  const change = (
+    state: VisitorPreferences,
+    key: PreferenceKey,
+    value: string | null,
+  ): void => {
+    state.values[key] = value ?? defaults[key];
+    state.changes.set(key, value);
   };
-
-  const router = new Hono<{ Variables: { auth: { user: { id: string } } } }>({
-    strict: false,
-  });
-  router.onError((error, context) =>
-    apiErrorHandler(
-      error instanceof UserPreferenceError
-        ? new ApiError({
-            status: 'INVALID_ARGUMENT',
-            reason: error.code,
-            domain: 'users',
-            message: error.message,
-          })
-        : error,
-      context,
-    ),
-  );
-  // This adapter precedes the application's API router, so retain its limits and request IDs as well as Users auth.
-  const limited = new Hono();
-  limited.onError(apiErrorHandler);
-  limited.use('*', requestIdMiddleware());
-  installApiLimits(limited, app.config.get<ApiConfig>('api'));
-  router.use('*', async (context, next) => {
-    context.header('Cache-Control', 'private, no-store');
-    await next();
-  });
-  router.use('*', auth.required());
-  const list = async (
-    context: Context,
-    userId: string,
-  ): Promise<Record<string, unknown>> => ({
-    ...(await preferences.list(userId)),
-    ...read(context),
-  });
-  router.get(prefix, async (context) =>
-    context.json({ data: await list(context, context.get('auth').user.id) }),
-  );
-  router.patch(prefix, apiValidator('json', batchSchema), async (context) => {
-    const input = context.req.valid('json');
-    const isolated: Partial<Record<PreferenceKey, string>> = {};
-    const ordinary = Object.fromEntries(
-      Object.entries(input).filter(([key]) => !isPreferenceKey(key)),
-    );
-    for (const [key, value] of Object.entries(input)) {
-      if (isPreferenceKey(key)) {
-        const result = valueSchema.safeParse(value);
-        if (!result.success)
-          throw new ApiError({
-            status: 'INVALID_ARGUMENT',
-            reason: 'INVALID_PREFERENCE_VALUE',
-            domain: 'users',
-            message:
-              'A demo presentation preference must be a non-empty identifier of at most 100 characters.',
-          });
-        isolated[key] = result.data;
-      }
-    }
-    // Validate and persist the ordinary part before issuing any cookies: a rejected batch changes neither part.
-    if (Object.keys(ordinary).length)
-      await preferences.setMany(context.get('auth').user.id, ordinary);
-    const data = {
-      ...(await list(context, context.get('auth').user.id)),
-      ...isolated,
-    };
-    for (const key of keys)
-      if (isolated[key] !== undefined) write(context, key, isolated[key]);
-    return context.json({ data });
-  });
-  router.put(
-    `${prefix}/:key`,
-    apiValidator('json', inputSchema),
-    async (context) => {
-      const key = context.req.param('key');
-      if (!isPreferenceKey(key))
-        throw new Error('Unexpected demo preference key.');
-      const { value } = context.req.valid('json');
-      write(context, key, value);
-      return context.json({ data: { value } });
+  const adapted: typeof original = {
+    async list(userId) {
+      const account = await original.list.call(preferences, userId);
+      const state = visitor(userId);
+      return state ? { ...account, ...state.values } : account;
     },
-  );
-  router.delete(`${prefix}/:key`, async (context) => {
-    const key = context.req.param('key');
-    if (!isPreferenceKey(key))
-      throw new Error('Unexpected demo preference key.');
-    deleteCookie(context, cookieName(key), cookieOptions);
-    return context.body(null, 204);
-  });
-
-  limited.route('/', router);
-
-  // Unknown methods/keys must still reach the original API, including its validation and 404 handling.
-  app.router.use(`${prefix}/*`, async (context, next) => {
-    const path = context.req.path;
-    const method = context.req.method;
-    const collection = path === prefix || path === `${prefix}/`;
-    let key: string;
-    try {
-      key = decodeURIComponent(path.slice(prefix.length + 1));
-    } catch {
-      return next();
+    async get(userId, key) {
+      const state = visitor(userId);
+      return state && isPreferenceKey(key)
+        ? state.values[key]
+        : original.get.call(preferences, userId, key);
+    },
+    async set(userId, key, value) {
+      const state = visitor(userId);
+      if (!state || !isPreferenceKey(key))
+        return original.set.call(preferences, userId, key, value);
+      change(state, key, parseValue(value));
+    },
+    async setMany(userId, values) {
+      const state = visitor(userId);
+      if (!state) return original.setMany.call(preferences, userId, values);
+      const isolated: [PreferenceKey, string][] = [];
+      const ordinary = Object.fromEntries(
+        Object.entries(values).filter(([key]) => !isPreferenceKey(key)),
+      );
+      for (const [key, value] of Object.entries(values)) {
+        if (isPreferenceKey(key)) isolated.push([key, parseValue(value)]);
+      }
+      // Validate and persist the ordinary part first. A refused batch must not change the visitor's cookies.
+      if (Object.keys(ordinary).length)
+        await original.setMany.call(preferences, userId, ordinary);
+      for (const [key, value] of isolated) change(state, key, value);
+    },
+    async remove(userId, key) {
+      const state = visitor(userId);
+      if (!state || !isPreferenceKey(key))
+        return original.remove.call(preferences, userId, key);
+      change(state, key, null);
+    },
+  };
+  Object.assign(preferences, adapted);
+  app.router.use(`${prefix}/*`, async (context: Context, next) => {
+    context.header('Cache-Control', 'private, no-store');
+    const values = { ...defaults };
+    for (const key of keys) {
+      const parsed = valueSchema.safeParse(getCookie(context, cookieName(key)));
+      if (parsed.success) values[key] = parsed.data;
     }
-    if (
-      !(collection && (method === 'GET' || method === 'PATCH')) &&
-      !(isPreferenceKey(key) && (method === 'PUT' || method === 'DELETE'))
-    )
-      return next();
-    return limited.fetch(context.req.raw, context.env);
+    const state: VisitorPreferences = {
+      context,
+      values,
+      changes: new Map(),
+    };
+    await requests.run(state, next);
+    // Do not issue cookies when the route's subsequent read fails or the global request deadline expires.
+    if (context.res.status >= 400 || context.error) return;
+    for (const [key, value] of state.changes) {
+      if (value === null) deleteCookie(context, cookieName(key), cookieOptions);
+      else setCookie(context, cookieName(key), value, cookieOptions);
+    }
   });
+  const releaseDocument = container.has(apiDocsToken)
+    ? container
+        .resolve(apiDocsToken)
+        .addTransform(describeDemoPreferences(keys, valueSchema))
+    : undefined;
+  return () => {
+    releaseDocument?.();
+    for (const key of Object.keys(adapted) as (keyof typeof adapted)[]) {
+      if (preferences[key] === adapted[key])
+        Object.assign(preferences, { [key]: original[key] });
+    }
+    requests.disable();
+  };
 }

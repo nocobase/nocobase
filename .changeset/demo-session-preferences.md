@@ -2,4 +2,4 @@
 "@nocobase/app-plugin-demo-mode": patch
 ---
 
-Keep demo visitors' language, theme mode and color preset independent in their browser session, including when they share or switch accounts. Start new visitors with the site's defaults without changing ordinary account preferences.
+Keep language, theme mode and color preset choices made through the Users preference API independent per demo visitor session and application, including when sharing or switching accounts. Return site defaults for new visitors while preserving the existing API protections and ordinary account preferences.

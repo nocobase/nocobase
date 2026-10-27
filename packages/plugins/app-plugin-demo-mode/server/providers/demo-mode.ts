@@ -31,6 +31,7 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-demo-mode';
   private guard: DemoWriteGuard | undefined;
   private connectionNames: readonly string[] | undefined;
+  private releasePreferences: (() => void) | undefined;
 
   public override register(): void {
     const settings = resolveDemoModeSettings(this.app.config);
@@ -86,7 +87,12 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
 
   public override async boot(): Promise<void> {
     if (resolveDemoModeSettings(this.app.config).enabled)
-      registerDemoPreferences(this.app);
+      this.releasePreferences ??= registerDemoPreferences(this.app);
+  }
+
+  public override async shutdown(): Promise<void> {
+    this.releasePreferences?.();
+    this.releasePreferences = undefined;
   }
 
   /** Guards every connection and proves it with a probe write, refusing to start when a connection is not guarded. */
