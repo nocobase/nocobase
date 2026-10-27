@@ -273,7 +273,7 @@ function noticeText(
     case 'onlineFallbackUnavailable':
       return `The online fallback agent cannot answer (${notice.reason}). This conversation stays with ${name(notice.fromAgentId)} while it waits for a runner.`;
     case 'switchedAgent':
-      return `This conversation now uses ${name(notice.agentId)}. Its next message starts a fresh session with the conversation history.`;
+      return `This conversation now uses ${name(notice.agentId)}. The conversation history is preserved.`;
     case 'switchedBack':
       return `This conversation is back with ${name(notice.agentId)}.`;
     case 'runFailed':
@@ -810,7 +810,7 @@ export function createConversationService(
     fallbackFromAgentId: string | null,
     value: ConversationNotice,
     idleOnly = false,
-  ): Promise<void> {
+  ): Promise<ConversationRecord> {
     const binding = runnerBinding(record.metadata);
     if (binding && !idleOnly)
       throw conflict('Start a new conversation to choose another agent.');
@@ -847,7 +847,7 @@ export function createConversationService(
     const moved = (await findConversation(unit.conn, record.id))!;
     if (idleOnly) {
       await notice(unit, moved, value);
-      return;
+      return moved;
     }
     const runIds = withdrawn.map((run) => run.id);
     const unanswered = await messagesRepo(unit.conn).findMany({
@@ -864,6 +864,7 @@ export function createConversationService(
     });
     await notice(unit, moved, value);
     await wake(unit, moved, unanswered);
+    return moved;
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -1508,6 +1509,8 @@ export function createConversationService(
   ): Promise<
     SendMessageResult | Awaited<ReturnType<ConversationService['sendRealtime']>>
   > {
+    if (request.agentId !== undefined && (!realtime || !request.agentId.trim()))
+      throw invalid('Agent selection requires a Runner realtime message.');
     const content = request.content;
     const attachmentIds = readAttachmentIds(request.attachmentIds);
     if (
@@ -1551,8 +1554,8 @@ export function createConversationService(
         )
       : undefined;
     const sent = await measuredAdmission(async (unit) => {
-      const record = await lockOwned(unit, userId, id, Boolean(realtime));
-      const binding = runnerBinding(record.metadata);
+      let record = await lockOwned(unit, userId, id, Boolean(realtime));
+      let binding = runnerBinding(record.metadata);
       if (realtime) {
         if (!binding)
           throw invalid('This is not a Runner OnlineAgent conversation.');
@@ -1560,8 +1563,17 @@ export function createConversationService(
           throw conflict(
             'The conversation configuration changed; read it again.',
           );
-        if ((realtime.config.agentId ?? 'online') !== record.agentId)
+        const targetId = request.agentId ?? record.agentId;
+        const switching = targetId !== record.agentId;
+        if ((realtime.config.agentId ?? 'online') !== targetId)
           throw conflict('Start a new conversation to choose another agent.');
+        if (
+          switching &&
+          (realtime.queue || record.archivedAt || record.mode !== 'runner')
+        )
+          throw conflict(
+            'Only an idle, unarchived Runner conversation can change agents.',
+          );
         const open = await openRunsOnEach(unit.conn, CONVERSATION_SUBJECT, [
           id,
         ]);
@@ -1576,13 +1588,29 @@ export function createConversationService(
               ? 'The agent is not working on this conversation.'
               : 'This conversation is busy.',
           );
-        const agent = await pickAgent(unit.conn, userId, record.agentId);
+        const agent = await pickAgent(unit.conn, userId, targetId);
         // A conversation bound to a runner waits for it, online or not.
         if (
           agent.source !== 'runner' ||
-          (!record.runnerId && !(await canAnswer(unit.conn, agent, userId)))
+          ((switching || !record.runnerId) &&
+            !(await canAnswer(unit.conn, agent, userId)))
         )
           throw conflict('This agent has no available execution environment.');
+        if (switching) {
+          record = await rebind(
+            unit,
+            record,
+            agent,
+            null,
+            {
+              code: 'switchedAgent',
+              agentId: agent.id,
+              fromAgentId: record.agentId,
+            },
+            true,
+          );
+          binding = runnerBinding(record.metadata)!;
+        }
         if (!isDeepStrictEqual(binding.config, realtime.config))
           await conversationsRepo(unit.conn).updateMany({
             filter: { id },
@@ -2234,7 +2262,7 @@ export function createConversationService(
       return detail(userId, id);
     },
 
-    async askOwnerFromRun(run, question) {
+    async askOwnerFromRun(run, question, issue) {
       const text = question.trim();
       if (text === '' || [...text].length > QUESTION_MAX)
         throw invalid(`question must be 1 to ${QUESTION_MAX} characters.`, {
@@ -2252,12 +2280,47 @@ export function createConversationService(
             needsYou: 'confirm',
             needsYouSeq: Number(record.lastSeq),
             needsYouText: text,
+            metadata: asJson({
+              ...jsonObject(record.metadata),
+              ownerQuestion: issue ? { issue, askedAt: now() } : null,
+            }),
           },
         });
         changed(unit, record);
         return record;
       });
       return detail(conversation.userId, conversation.id);
+    },
+
+    async settleOwnerQuestion(id, issue, resumedAt) {
+      const resumed = Date.parse(resumedAt);
+      const matches = (record: ConversationRecord | null) => {
+        if (!record || record.needsYou !== 'confirm') return false;
+        const question = jsonObject(jsonObject(record.metadata).ownerQuestion);
+        return (
+          question.issue === issue &&
+          typeof question.askedAt === 'string' &&
+          Date.parse(question.askedAt) < resumed
+        );
+      };
+      // Filter before taking the existing conversation write boundary, then recheck under it.
+      if (!matches(await findConversation(tx.read(), id))) return false;
+      return tx.run(async (unit) => {
+        const record = await lockConversation(unit.conn, id, now());
+        if (!record || !matches(record)) return false;
+        await conversationsRepo(unit.conn).updateMany({
+          filter: { id },
+          values: {
+            ...SETTLED,
+            metadata: asJson({
+              ...jsonObject(record.metadata),
+              ownerQuestion: null,
+            }),
+          },
+        });
+        changed(unit, record);
+        return true;
+      });
     },
 
     async ofRunId(runId) {

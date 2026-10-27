@@ -30,6 +30,9 @@ const primitiveNames = [
   'checkbox',
   'empty',
   'input',
+  'input-group',
+  'tabs',
+  'textarea',
   'popover',
   'select',
   'tooltip',
@@ -233,8 +236,12 @@ it('installs a real registry item, builds and packs a generated plugin, and load
             '@base-ui/react',
             'cn',
             'lucide-react',
-            ...(name === 'button' ? ['class-variance-authority'] : []),
+            ...(['button', 'tabs', 'input-group'].includes(name)
+              ? ['class-variance-authority']
+              : []),
           ],
+          registryDependencies:
+            name === 'input-group' ? ['button', 'input', 'textarea'] : [],
           files: [
             {
               path: `${name}.tsx`,
@@ -368,6 +375,8 @@ it('installs a real registry item, builds and packs a generated plugin, and load
     await prepareOfflineMetadata(metadataCache);
     const installEnv = {
       REGISTRY_URL: registryUrl,
+      PNPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/',
+      NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/',
       PNPM_CONFIG_LOCKFILE_ONLY: 'true',
       PNPM_CONFIG_OFFLINE: 'true',
       PNPM_CONFIG_IGNORE_SCRIPTS: 'true',

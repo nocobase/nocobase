@@ -1,10 +1,11 @@
-import { useSubmission } from '@nocobase/app-client';
+import { useListLocation } from '#hooks/use-list-location';
 import { RecordLink } from '#components/record-link';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import {
   ApiClientError,
   resolveListState,
   useApiClient,
+  useSubmission,
   useToaster,
 } from '@nocobase/app-client';
 import {
@@ -14,13 +15,14 @@ import {
 } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useRef, useState, type ReactElement } from 'react';
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 import { MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
 import { Input } from '#components/ui/input';
 import {
   DropdownMenu,
@@ -43,20 +45,23 @@ export default function DefaultAccessPage(): ReactElement {
   const { t, i18n } = useTranslation();
   const api = useApiClient();
   const toaster = useToaster();
+  const submission = useSubmission();
   const location = useLocation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const search = params.get('q') ?? '';
   const searchRef = useRef<HTMLInputElement>(null);
   const rules = useSettingsData<{ data: readonly DefaultAccessRule[] }>(
     'authorization/defaultAccess',
+    { active },
   );
   const catalog = useSettingsData<{ data: AuthorizationOptionsResponse }>(
     'authorization/defaultAccess/options',
   );
-  const canCreate = useCan({
+  const createPermission = useCan({
     resource: { type: 'settings', id: 'authorization.default-access' },
     action: 'create',
-  }).can;
+  });
+  const canCreate = createPermission.can && !createPermission.isPending;
   const canDelete = useCan({
     resource: { type: 'settings', id: 'authorization.default-access' },
     action: 'delete',
@@ -207,10 +212,12 @@ export default function DefaultAccessPage(): ReactElement {
     .filter((rule) =>
       `${name(rule)} ${rule.key}`
         .toLocaleLowerCase()
-        .includes(search.trim().toLocaleLowerCase()),
+        .includes(search.toLocaleLowerCase()),
     )
     .sort((a, b) => name(a).localeCompare(name(b), i18n.language));
   const tableState = useTableUrlState({
+    active,
+    revision: rules.revision,
     defaultPageSize: 20,
     sortColumns: ['resource'],
     rowCount:
@@ -223,6 +230,30 @@ export default function DefaultAccessPage(): ReactElement {
         ? rows.length
         : undefined,
   });
+  const listError =
+    [rules.error, catalog.error].find(
+      (error) =>
+        error instanceof ApiClientError && [401, 403].includes(error.status),
+    ) ??
+    tableState.error ??
+    rules.error ??
+    catalog.error;
+  const listData = rules.data && catalog.data ? rows : undefined;
+  const listState = resolveListState(
+    {
+      data: listData,
+      error: listError,
+      isPending: !listData && (rules.loading || catalog.loading),
+    },
+    rows.length,
+    Boolean(search.trim()),
+  );
+  const canShowCreate =
+    canCreate &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
   const clearSearch = () =>
     setParams(
       (old) => {
@@ -261,11 +292,11 @@ export default function DefaultAccessPage(): ReactElement {
         </div>
       )
     ) : null;
-  const submission = useSubmission();
   const remove = async () => {
     if (!removing || busy || !canDelete) return;
     setBusy(true);
     setError(undefined);
+    let submitted = false;
     try {
       const outcome = await submission.run(
         { key: removing.key },
@@ -282,9 +313,11 @@ export default function DefaultAccessPage(): ReactElement {
               rules.reload();
               setRemoving(undefined);
               setConflict(true);
+              requestAnimationFrame(() => searchRef.current?.focus());
               return undefined;
             }
           }
+          submitted = true;
           await api.request({
             path: `authorization/defaultAccess/${encodeURIComponent(removing.key)}`,
             method: 'DELETE',
@@ -298,40 +331,22 @@ export default function DefaultAccessPage(): ReactElement {
         type: 'success',
         title: t('settings.defaultAccess.deleted', { name: name(removing) }),
       });
-      rules.replaceData({
-        data: (rules.data?.data ?? []).filter(
-          (rule) => rule.key !== removing.key,
-        ),
-      });
       setRemoving(undefined);
       rules.reload();
       requestAnimationFrame(() => searchRef.current?.focus());
     } catch (next) {
       setError(next);
+      if (
+        submitted &&
+        (!(next instanceof ApiClientError) || next.status >= 500)
+      ) {
+        // The write may have committed before the response was lost. Verify without replaying it.
+        rules.reload();
+      }
     } finally {
       setBusy(false);
     }
   };
-  const listError =
-    [rules.error, catalog.error].find(
-      (error) =>
-        error instanceof ApiClientError && [401, 403].includes(error.status),
-    ) ??
-    rules.error ??
-    catalog.error;
-  const listState = resolveListState(
-    {
-      data: rules.data && catalog.data ? rows : undefined,
-      error: listError,
-    },
-    rows.length,
-    Boolean(search.trim()),
-  );
-  const canShowCreate =
-    listState === 'empty' ||
-    listState === 'no-results' ||
-    listState === 'ready' ||
-    listState === 'refresh-failed';
   return (
     <>
       <PermissionManagementPage
@@ -358,11 +373,16 @@ export default function DefaultAccessPage(): ReactElement {
               )
             }
           />
-          {search && (
+          {search && listState !== 'no-results' && (
             <Button variant='ghost' onClick={clearSearch}>
               {t('settings.clear')}
             </Button>
           )}
+          {active &&
+          (rules.loading || catalog.loading) &&
+          (rules.data || catalog.data) ? (
+            <Spinner className='text-muted-foreground' />
+          ) : null}
         </div>
         {conflict && (
           <Alert variant='destructive'>
