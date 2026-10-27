@@ -4,7 +4,7 @@ Read this before registering, updating, customizing or removing a plugin, and be
 
 ## Read a plugin's Skill before building what it already does
 
-**You are not starting from scratch.** This application ships with NocoBase packages that already solve whole categories of requirement, and packages may publish a Skill explaining how to use them. `pnpm nocobase skills sync` copies Skills from direct `@nocobase/*` dependencies and registered plugins into `.agents/skills/`. Before implementing a feature, check whether an installed and registered plugin already covers it:
+**You are not starting from scratch.** This application ships with NocoBase packages that already solve whole categories of requirement, and packages may publish a Skill explaining how to use them. `pnpm nocobase skills sync` copies Skills from direct `@nocobase/*` and `@scope/app-plugin-*` dependencies and registered plugins into `.agents/skills/`. Before implementing a feature, check whether an installed and registered plugin already covers it:
 
 | The requirement sounds like                                                                  | Read the Skill for                                                                                                                        |
 | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -26,9 +26,27 @@ Building a permission system, a notification sender, or a job scheduler by hand 
 
 Plugins are registered in `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts`. Presence in the array enables a plugin and array order is contribution order. A plugin appears in the roots matching what it ships, so a plugin with only commands is listed in `cli/plugins.ts` alone. Bulk Skills synchronization and plugin updates discover plugins from these composition roots.
 
-Skills synchronization reads direct `@nocobase/*` dependencies from the application manifest and retains compatibility with explicitly registered plugins. It does not make an unregistered runtime plugin active; the composition roots remain the authority for registration and contribution order.
+Skills synchronization reads direct `@nocobase/*` and `@scope/app-plugin-*` dependencies from the application manifest and retains compatibility with explicitly registered plugins. It does not make an unregistered runtime plugin active; the composition roots remain the authority for registration and contribution order.
 
 Let `pnpm nocobase plugin register` and `pnpm nocobase plugin unregister` add and remove entries. Edit these files by hand only to reorder entries or to pass a plugin its options.
+
+## Creating an application-local plugin
+
+Keep ordinary application code in the application. Use an internal shared package for code consumed through imports alone; use a plugin for a capability with explicit Client, Server or CLI contributions. Both may live in the application's `packages/` workspace without an npm release. See [internal packages](internal-package-example.md) for the ordinary shared-package workflow.
+
+Use `@nocobase/create-plugin` from this installed application, not a NocoBase source checkout. Select only the required capabilities and inspect the plan before applying it:
+
+```bash
+pnpm dlx @nocobase/create-plugin demo-tools --with cli --dry-run --json
+pnpm dlx @nocobase/create-plugin demo-tools --with cli
+pnpm --filter @nocobase/app-plugin-demo-tools check
+pnpm nocobase plugin register @nocobase/app-plugin-demo-tools --no-install
+pnpm nocobase demo-tools info --json
+```
+
+The App-aware generator identifies `nocobase.templateKind: app`, writes `packages/app-plugin-demo-tools/`, preserves workspace configuration and adds a `workspace:*` application dependency. It resolves external dependency versions from the installed application and makes the local plugin private. A dry run also reports project-file edits and resolved dependency versions; no files are written or dependencies installed. If the installed generator still points at `packages/plugins/` or `app-template-default`, use a release that supports application workspaces rather than moving files and rewriting dependency protocols manually.
+
+A full package name such as `@my-company/app-plugin-demo-tools` keeps the chosen scope; use that full name for registration with a compatible App CLI. Runtime registration remains separate from generation and installation. `--no-install` postpones installation; run `pnpm install` before registration. Missing or incompatible dependencies must be resolved in the application first. Read the generated plugin's `AGENTS.md`, implement and test its behavior, preserve the application's existing registrations, and verify its real use in the application as well as `pnpm build`.
 
 ## Installing and updating
 

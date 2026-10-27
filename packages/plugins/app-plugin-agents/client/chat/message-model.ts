@@ -473,6 +473,10 @@ export function noticeText(
         own: agentName(notice.fromAgentId),
         reason: t(`chat.availability.${notice.reason}`),
       });
+    case 'switchedAgent':
+      return t('chat.notice.switchedAgent', {
+        name: agentName(notice.agentId),
+      });
     case 'switchedBack':
       return t('chat.notice.switchedBack', { name: agentName(notice.agentId) });
     case 'runFailed':

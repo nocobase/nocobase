@@ -1,5 +1,51 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.67
+
+### Patch Changes
+
+- df09e63: Ship plugin development guidance with the App's installed Skills, reserve its existing name for @nocobase/app-skills, and guide upgrades through verifying the project replacement before retiring old global installations. Update application and plugin entry points to use the version-matched project Skill.
+
+  Synchronize project Skills as real copies, exclude dependencies installed inside executable examples, and preserve the targets of older project links during migration.
+
+- Updated dependencies [82aa791]
+- Updated dependencies [df09e63]
+  - @nocobase/app-cli@1.0.0-beta.29
+
+## 1.0.0-beta.66
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+- 7770b46: Support internal workspace packages while keeping the application at the project root. Generate workspace package patterns, build dependencies before client compilation, watch reachable internal sources, and document independent package checks and deployment exports.
+- 7770b46: Provide a runnable internal workspace package example with declaration watching, clarify the single-application layout, and fail package checks when an internal package lacks its check script. Keep the public development listener available during server restarts so shared-source HMR requests can wait for the replacement backend.
+- 54af55a: Preserve visited parent list searches and pagination when returning through breadcrumbs or the default back link, resolve role editor return links against their parent route, and document source upgrades for existing applications.
+- Updated dependencies [05f800a]
+- Updated dependencies [7770b46]
+- Updated dependencies [7770b46]
+  - @nocobase/app-plugin-agents@1.0.0-beta.27
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.19
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.20
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.16
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.15
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.16
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.17
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+  - @nocobase/app-plugin-file-example@1.0.0-beta.22
+  - @nocobase/app-plugin-foundation@0.1.0-beta.9
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.13
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.13
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.9
+  - @nocobase/app-plugin-notification@2.0.0-beta.1
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.8
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.3
+  - @nocobase/app-cli@1.0.0-beta.28
+
 ## 1.0.0-beta.65
 
 ### Patch Changes

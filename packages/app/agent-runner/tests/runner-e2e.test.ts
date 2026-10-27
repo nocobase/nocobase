@@ -20,6 +20,7 @@ import { FakeServer, waitFor } from './fake-server.ts';
 import {
   cli,
   cliEnv,
+  FAST_TIMINGS,
   git,
   groupAlive,
   makeRemote,
@@ -473,6 +474,44 @@ describe('runner end to end', () => {
           (event) => event.type === 'input' && event.meta?.inputId === input.id,
         ),
     ).toHaveLength(1);
+  });
+
+  it('takes an input that arrives mid-run from the next events answer, without waiting for a poll', async () => {
+    // Polls and lease renewals far apart: only the events answer can bring the input in time.
+    env.NOCOBASE_RUNNER_TIMINGS = JSON.stringify({
+      ...FAST_TIMINGS,
+      statusIntervalMs: 60_000,
+      leaseIntervalMs: 60_000,
+    });
+    server.inputsOnEvents = true;
+    const run = server.enqueue({
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: `say ready\n${'sleep 100\nsay tick\n'.repeat(30)}wait-input\nsay finished`,
+      },
+    });
+    daemon();
+    const id = run.payload.run.id;
+    await waitFor(
+      () => server.events(id).some((event) => event.content === 'ready'),
+      15_000,
+      'ready',
+    );
+    const input = server.addInput(id, 'one more thing');
+    await waitFor(
+      () =>
+        server
+          .events(id)
+          .some(
+            (event) =>
+              event.type === 'input' && event.meta?.inputId === input.id,
+          ),
+      2_500,
+      'the input to reach the agent',
+    );
+    await waitFor(() => run.status === 'completed', 15_000, 'completion');
+    expect(run.complete?.handledInputIds).toEqual([input.id]);
   });
 
   it('starts another turn when complete answers RUN_INPUT_PENDING', async () => {

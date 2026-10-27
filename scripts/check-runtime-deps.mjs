@@ -56,6 +56,16 @@ const SKIPPED_DIRECTORIES = new Set([
   'template',
 ]);
 
+// This private workspace fixture ships as Skill source material, not code the app-skills package executes.
+// Its own manifest and verification command provide its dependencies. Keep the exemption scoped to this package
+// and directory: executable Skill scripts and other assets still need their runtime dependencies declared.
+const SOURCE_MATERIAL_DIRECTORIES = new Map([
+  [
+    '@nocobase/app-skills',
+    ['skills/nocobase-app-plugin-development/assets/testing-example'],
+  ],
+]);
+
 /**
  * Top-level directories a package publishes, derived from `files`.
  *
@@ -240,7 +250,8 @@ export function collectRuntimeSpecifiers(source, fileName = 'source.tsx') {
   return specifiers;
 }
 
-async function collectSourceFiles(directory) {
+async function collectSourceFiles(directory, sourceMaterialDirectories) {
+  if (sourceMaterialDirectories.has(directory)) return [];
   let entries;
   try {
     entries = await readdir(directory, { withFileTypes: true });
@@ -253,7 +264,10 @@ async function collectSourceFiles(directory) {
     if (entry.isDirectory()) {
       if (SKIPPED_DIRECTORIES.has(entry.name)) continue;
       files.push(
-        ...(await collectSourceFiles(path.join(directory, entry.name))),
+        ...(await collectSourceFiles(
+          path.join(directory, entry.name),
+          sourceMaterialDirectories,
+        )),
       );
       continue;
     }
@@ -287,10 +301,19 @@ export async function findViolations(
     await readdir(packageDirectory, { withFileTypes: true })
   ).flatMap((entry) => (entry.isDirectory() ? [entry.name] : []));
 
+  const sourceMaterialDirectories = new Set(
+    (SOURCE_MATERIAL_DIRECTORIES.get(manifest.name) ?? []).map((directory) =>
+      path.join(packageDirectory, directory),
+    ),
+  );
+
   const namedFiles = (
     await Promise.all(
       publishedDirectories(manifest, entries).map((directory) =>
-        collectSourceFiles(path.join(packageDirectory, directory)),
+        collectSourceFiles(
+          path.join(packageDirectory, directory),
+          sourceMaterialDirectories,
+        ),
       ),
     )
   ).flat();

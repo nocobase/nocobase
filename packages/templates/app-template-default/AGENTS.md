@@ -2,7 +2,7 @@
 
 This is a NocoBase 3 application. Do not apply globally installed NocoBase 2 Skills. You are building the application itself — its pages, its API, its database tables. Everything under this directory is application-owned source code that you may edit directly.
 
-Do not create a plugin to add a feature. Plugins are separately published packages for capabilities shared across several applications; building one for this application's own feature adds a package boundary, a version, and a release process to work that belongs in `client/` and `server/`. Create one only when the user explicitly asks for a reusable published package. Ordinary internal workspace packages under `packages/` may share code without becoming plugins or being published; follow [internal packages](.agents/rules/workspace.md) when the application needs that boundary.
+Build application-specific features directly in the application by default. Use a plugin when the user requests one or when code reuse or modular organization calls for a separately registered, maintainable feature. Local plugins belong under `packages/`; the App builds and packages registered local plugins for deployment, so publishing is optional and only needed when distributing the plugin through a package registry. Follow [the project plugin development Skill](.agents/skills/nocobase-app-plugin-development/SKILL.md). Ordinary internal packages can share code without plugin registration; follow [internal packages](.agents/rules/workspace.md) when that is the boundary the application needs.
 
 ## Default template scope
 
@@ -19,6 +19,8 @@ This file stays at most 32 KB and must not grow without bound, because every age
 - `tests/project/agents-md.test.ts` enforces the size limit and checks that the links here and in `.agents/rules/` resolve.
 
 ## Load the development skills
+
+For creating or maintaining a plugin in this App, read [the project plugin development Skill](.agents/skills/nocobase-app-plugin-development/SKILL.md). It ships with `@nocobase/app-skills`; do not install a global copy. If an older global Skill has the same name, read this project's file by path and follow the upgrade Skill's migration guidance to retire the global copy after verifying the replacement.
 
 `pnpm install` runs `pnpm nocobase skills sync` through the application's `postinstall` hook. If `.agents/skills/nocobase-app-development/` is missing, install dependencies from the application root; if install scripts were disabled or synchronized Skills are stale, run `pnpm nocobase skills sync` explicitly.
 

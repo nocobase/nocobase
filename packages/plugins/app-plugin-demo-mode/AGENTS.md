@@ -1,6 +1,6 @@
 # Demo Mode maintenance
 
-Follow the repository `AGENTS.md` and `skills/nocobase-app-plugin-development/SKILL.md`; its references own shared plugin, dependency, API, i18n and testing rules. Application integration belongs in this package's `skills/nocobase-app-plugin-demo-mode/`, not in an application's generated Skill copies.
+Follow the repository `AGENTS.md` and `packages/app/app-skills/skills/nocobase-app-plugin-development/SKILL.md`; its references own shared plugin, dependency, API, i18n and testing rules. Application integration belongs in this package's `skills/nocobase-app-plugin-demo-mode/`, not in an application's generated Skill copies.
 
 ## Module boundaries
 

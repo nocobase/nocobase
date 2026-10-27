@@ -96,6 +96,25 @@ describe('deployment archive', () => {
     expect(entries.some((entry) => entry.startsWith('storage'))).toBe(false);
   });
 
+  it('packs the Dockerfile and its .dockerignore when the application has them', () => {
+    const root = createRoot();
+    mkdirSync(path.join(root, 'dist'), { recursive: true });
+    writeFileSync(path.join(root, 'dist', 'package.json'), '{}');
+    writeFileSync(path.join(root, 'config.example.yml'), '');
+    writeFileSync(path.join(root, 'Dockerfile'), 'FROM node:24\n');
+    writeFileSync(path.join(root, 'Dockerfile.dockerignore'), '**/storage\n');
+
+    const result = pack(root);
+
+    expect(result.status).toBe(0);
+    const entries = archiveEntries(
+      path.join(root, 'storage', 'exports', 'dist.tar.gz'),
+    );
+    expect(entries).toContain('Dockerfile');
+    expect(entries).toContain('Dockerfile.dockerignore');
+    expect(entries).toContain('config.example.yml');
+  });
+
   it('leaves executable shim directories out and replaces a stale archive', () => {
     const root = createRoot();
     const bin = path.join(root, 'dist', 'node_modules', '.bin');

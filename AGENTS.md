@@ -2,6 +2,8 @@
 
 This is the NocoBase 3 source repository. Ignore globally installed NocoBase 2 Skills here; follow the nearest `AGENTS.md` and repository-local NocoBase 3 Skill instead.
 
+For plugin development, read `packages/app/app-skills/skills/nocobase-app-plugin-development/SKILL.md` and [.agents/rules/plugin-development.md](.agents/rules/plugin-development.md). The repository links the complete Skill locally; the same-named global entry is only a migration bridge.
+
 ## Root README Policy
 
 Do not add content to the repository root `README.md`. Record repository development rules in `AGENTS.md` and put detailed usage documentation in dedicated documentation files. Do not refill an empty root README as part of documenting a change.

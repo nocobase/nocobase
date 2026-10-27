@@ -680,7 +680,7 @@ export class NativeSessionStore {
       userId,
       id,
       'native.accept',
-      async (conn, row, changed) => {
+      async (conn, row, changed, emit) => {
         this.accepting(row, expected);
         if (
           !inputs.length ||
@@ -787,6 +787,13 @@ export class NativeSessionStore {
             lastMessageAt: this.deps.now(),
             updatedAt: this.deps.now(),
           },
+        });
+        // New messages: every page showing the conversation reads them now, not only the one that sent them.
+        emit({
+          type: 'conversation.changed',
+          conversationId: id,
+          userId,
+          lastSeq: seq,
         });
         return seq;
       },

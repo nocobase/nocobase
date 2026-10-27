@@ -8,6 +8,7 @@ import {
 export interface CreatePluginFlags {
   readonly capabilities: readonly PluginCapability[];
   readonly description?: string;
+  readonly directory?: string;
   readonly displayName?: string;
   readonly dryRun: boolean;
   readonly empty: boolean;
@@ -26,6 +27,7 @@ export function parseCreatePluginArgs(
   args: readonly string[],
 ): ParsedCreatePluginInput {
   let description: string | undefined;
+  let directory: string | undefined;
   let displayName: string | undefined;
   let dryRun = false;
   let empty = false;
@@ -90,12 +92,18 @@ export function parseCreatePluginArgs(
       install = false;
       continue;
     }
-    if (argument === '--display-name' || argument === '--description') {
+    if (
+      argument === '--dir' ||
+      argument === '--display-name' ||
+      argument === '--description'
+    ) {
       const value = args[index + 1];
       if (value === undefined || value.startsWith('-')) {
         throw new Error(`${argument} requires a value.`);
       }
-      if (argument === '--display-name') {
+      if (argument === '--dir') {
+        directory = value;
+      } else if (argument === '--display-name') {
         displayName = value;
       } else {
         description = value;
@@ -129,6 +137,7 @@ export function parseCreatePluginArgs(
     flags: {
       capabilities,
       description,
+      directory,
       displayName,
       dryRun,
       empty,
@@ -143,16 +152,17 @@ export function parseCreatePluginArgs(
 
 export function formatHelp(binary: string): string {
   return [
-    'Create a NocoBase application plugin in packages/plugins/.',
+    "Create a plugin in an application's packages/ directory or a NocoBase source workspace.",
     '',
     'USAGE',
     `  ${binary} <name> (--with <capability>... | --empty) [options]`,
     '',
     'ARGUMENTS',
     '  <name>                       Short kebab-case name, for example audit-log',
-    '                               (full @nocobase/app-plugin-* names also work)',
+    '                               (full @scope/app-plugin-* names also work)',
     '',
     'OPTIONS',
+    '  --dir <directory>         Select the application or source workspace',
     '  --with <capability>          Add a capability; may be repeated',
     `                               ${ALL_PLUGIN_CAPABILITIES} selects every one of:`,
     `                               ${PLUGIN_CAPABILITIES.join(', ')}`,

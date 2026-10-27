@@ -968,6 +968,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         '{{own}} não tem nenhum executor para você agora, então {{name}} responde até que {{own}} retorne.',
       onlineFallbackUnavailable:
         'O agente substituto online não pode responder ({{reason}}). Esta conversa permanece com {{own}} enquanto espera por um runner.',
+      switchedAgent: chatEnUS.chat.notice.switchedAgent,
       switchedBack: 'De volta com {{name}}.',
       runFailed: 'O agente parou antes de responder.',
       runFailedReason: 'O agente parou antes de responder: {{reason}}',

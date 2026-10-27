@@ -67,24 +67,43 @@ export const KnowledgeIndexingConfigSchema: z.ZodType<IndexingConfig> = z
     options: indexingJson,
   })
   .meta({ ref: 'KnowledgeIndexingConfig' });
+const requestIdField = indexingUuid.meta({
+  description:
+    'A new UUID for this change; sending it again answers the first receipt instead of changing anything twice.',
+});
+const expectedRevisionField = indexingRevision.meta({
+  description:
+    'The settings revision the change is based on, as last read; a different current revision refuses the change.',
+});
 export const SaveIndexingBody: z.ZodType<SaveIndexingRequest> = z.strictObject({
-  requestId: indexingUuid,
-  expectedRevision: indexingRevision,
-  config: KnowledgeIndexingConfigSchema.nullable(),
-  acknowledgeFullRebuild: z.boolean(),
+  requestId: requestIdField,
+  expectedRevision: expectedRevisionField,
+  config: KnowledgeIndexingConfigSchema.nullable().meta({
+    description: 'The indexer and its options; null turns indexing off.',
+  }),
+  acknowledgeFullRebuild: z.boolean().meta({
+    description: 'Confirms that changing the indexer rebuilds the whole index.',
+  }),
 });
 export const RebuildIndexingBody: z.ZodType<RebuildIndexingRequest> =
   z.strictObject({
-    requestId: indexingUuid,
-    expectedRevision: indexingRevision,
-    acknowledgeFullRebuild: z.literal(true),
+    requestId: requestIdField,
+    expectedRevision: expectedRevisionField,
+    acknowledgeFullRebuild: z.literal(true).meta({
+      description: 'Confirms that the whole index is rebuilt.',
+    }),
   });
 export const RetryIndexingBody: z.ZodType<RetryIndexingRequest> =
   z.strictObject({
-    requestId: indexingUuid,
-    expectedRevision: indexingRevision,
-    generationId: z.string().min(1).max(64),
-    acknowledgeFullRebuild: z.literal(true),
+    requestId: requestIdField,
+    expectedRevision: expectedRevisionField,
+    generationId: z.string().min(1).max(64).meta({
+      description:
+        'The index generation to retry, as the indexing status names it.',
+    }),
+    acknowledgeFullRebuild: z.literal(true).meta({
+      description: 'Confirms that the generation is rebuilt in full.',
+    }),
   });
 export const KnowledgeIndexingReceiptSchema: z.ZodType<IndexingReceipt> = z
   .strictObject({

@@ -803,6 +803,11 @@ const esES: LocaleResource<typeof enUS> = {
       name: 'Nombre',
       driver: 'Conductor',
       runsOn: 'Se ejecuta en',
+      appCount: 'Aplicaciones',
+      purpose: 'Uso',
+      purposeHint:
+        'Cada entorno tiene un solo uso: vistas previas de pull requests o pruebas de versiones.',
+      purposes: { preview: 'Vistas previas', test: 'Pruebas' },
       policy: 'Política',
       publicUrl: 'Patrón público URL',
       config: 'Configuración (JSON)',

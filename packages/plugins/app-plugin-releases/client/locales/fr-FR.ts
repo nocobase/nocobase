@@ -811,6 +811,11 @@ const frFR: LocaleResource<typeof enUS> = {
       name: 'Nom',
       driver: 'Pilote',
       runsOn: 'Fonctionne sur',
+      appCount: 'Applications',
+      purpose: 'Usage',
+      purposeHint:
+        'Chaque environnement a un seul usage : les aperçus de pull requests, ou le test des versions.',
+      purposes: { preview: 'Aperçus', test: 'Test' },
       policy: 'Politique',
       publicUrl: 'Modèle public URL',
       config: 'Paramètres (JSON)',

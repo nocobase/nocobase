@@ -4,6 +4,7 @@ import type {
   UIStreamChannel,
 } from '../transport/streams.js';
 import type { AppUIMessage } from '../../../../shared/online-agent.js';
+import type { AppUIPhase } from '../../../../shared/ui-message.js';
 import type { ConversationService } from '../../../core/conversations/ports.js';
 import type { TxRunner } from '../../../kernel/tx.js';
 import type { OnlineAgentConfigurator } from '../configuration.js';
@@ -17,9 +18,18 @@ export type Execution = {
   published: Set<string>;
   textLengths: Map<string, number>;
   previewDigests: Map<string, Hash>;
-  previewParts: Map<string, { index: number; type: 'text' | 'reasoning' }>;
+  previewParts: Map<
+    string,
+    { index: number; type: 'text' | 'reasoning' | 'tool' }
+  >;
+  /** Each tool part written to the stream, and whether its result was too. */
+  toolStates: Map<string, 'input' | 'done'>;
+  /** The last run event seq whose tool step was read. */
+  stepSeq: number;
   ready: boolean;
   started: boolean;
+  /** Where the run stands before its first output, as last written (`data-phase`); `done` once output arrived. */
+  phase?: AppUIPhase['phase'] | 'done';
   snapshot?: AppUIMessage;
   pending?: Promise<void>;
   again: boolean;

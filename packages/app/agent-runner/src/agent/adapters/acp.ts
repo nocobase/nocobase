@@ -448,6 +448,23 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
         content: update.sessionUpdate,
         meta: { update: capInput(update).input },
       });
+      // How full the context window is, the same event every runner reports it as.
+      if (
+        update.sessionUpdate === 'usage_update' &&
+        typeof (update as { used?: unknown }).used === 'number' &&
+        typeof (update as { size?: unknown }).size === 'number' &&
+        (update as { size: number }).size > 0
+      )
+        emit({
+          type: 'status',
+          content: 'context',
+          meta: {
+            context: {
+              used: (update as { used: number }).used,
+              size: (update as { size: number }).size,
+            },
+          },
+        });
     }
   };
   let stopping: Promise<void> | undefined;
