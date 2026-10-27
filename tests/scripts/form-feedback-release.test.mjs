@@ -11,6 +11,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import {
   checkFormFeedbackPackage,
+  checkFormFeedbackPeer,
   runtimeFloor,
 } from '../../scripts/check-form-feedback-release.mjs';
 
@@ -87,4 +88,20 @@ test('automatic and manual registry publication checks compatibility before the 
   );
   assert.ok(gate > 0);
   assert.ok(gate < workflow.indexOf('- name: Publish to OSS'));
+});
+
+test('form installation cannot downgrade the runtime translation peer', () => {
+  const registry = (range) => ({
+    items: [
+      { name: 'feedback-form', dependencies: [`@nocobase/i18n@${range}`] },
+    ],
+  });
+  const runtime = { peerDependencies: { '@nocobase/i18n': '^2.0.0-test.1' } };
+  assert.throws(
+    () => checkFormFeedbackPeer(registry('^1.0.0'), runtime),
+    /must declare @nocobase\/i18n/,
+  );
+  assert.doesNotThrow(() =>
+    checkFormFeedbackPeer(registry('^2.0.0-test.1'), runtime),
+  );
 });

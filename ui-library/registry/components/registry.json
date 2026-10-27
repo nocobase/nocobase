@@ -498,7 +498,7 @@
       "categories": ["form"],
       "dependencies": [
         "@nocobase/app-client@^4.0.0-beta.3",
-        "@nocobase/i18n@^1.0.0-beta.4"
+        "@nocobase/i18n@^2.0.0-beta.1"
       ],
       "files": [
         {

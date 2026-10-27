@@ -71,6 +71,20 @@ export function runtimeFloor(registry) {
   return floor;
 }
 
+export function checkFormFeedbackPeer(registry, manifest) {
+  const item = registry.items.find((entry) => entry.name === 'feedback-form');
+  const spec = item?.dependencies?.find((value) =>
+    value.startsWith('@nocobase/i18n@'),
+  );
+  const range = spec?.slice('@nocobase/i18n@'.length);
+  const peer = manifest.peerDependencies?.['@nocobase/i18n'];
+  // Use the runtime's declared contract verbatim, so installing the item cannot downgrade its translation context.
+  if (!peer || range !== peer)
+    throw new Error(
+      `feedback-form must declare @nocobase/i18n@${peer ?? 'the runtime peer range'}, matching the published runtime.`,
+    );
+}
+
 function run(command, args) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
@@ -108,7 +122,17 @@ export function checkRelease(registryUrl = 'https://registry.npmjs.org') {
       ]),
     );
     run('tar', ['-xzf', path.join(work, packed.filename), '-C', work]);
-    const version = checkFormFeedbackPackage(path.join(work, 'package'));
+    const directory = path.join(work, 'package');
+    checkFormFeedbackPeer(
+      JSON.parse(
+        fs.readFileSync(
+          path.join(repo, 'ui-library/registry/components/registry.json'),
+          'utf8',
+        ),
+      ),
+      JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8')),
+    );
+    const version = checkFormFeedbackPackage(directory);
     if (version !== floor)
       throw new Error(
         'The downloaded runtime does not match the declared floor.',
