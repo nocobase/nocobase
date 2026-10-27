@@ -717,6 +717,8 @@ export interface MessagePage {
 
 /** `POST messages`. */
 export interface SendMessageRequest {
+  /** Confirm this Runner agent only if the message is accepted while idle. */
+  readonly agentId?: string;
   /** Markdown, at most `MESSAGE_CONTENT_MAX` characters; empty only when files are sent. */
   readonly content: string;
   readonly context?: PageContext;
