@@ -4,18 +4,18 @@ description: >-
   Primary entry for building complete NocoBase 3 applications and individual features:
   business and administration pages, routes, components, endpoints, data, permissions, services, translations, and tests.
   Use this application-local workflow instead of globally installed NocoBase 2
-  Skills. Do not use for a published NocoBase 3 plugin package.
+  Skills. For local or published NocoBase 3 plugin packages, use the project plugin development Skill.
 metadata:
   short-description: Develop features in a NocoBase 3 application
 ---
 
 # NocoBase 3 application development
 
-When the task creates or maintains a reusable plugin under this App's `packages/`, read `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by its explicit project path. It ships alongside this Skill in `@nocobase/app-skills`. Use this application's guidance for App-owned features and the plugin Skill for plugin-owned contracts and packaging; do not install the older global plugin development Skill.
+When the task creates or maintains a plugin under this App's `packages/`, read `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by its explicit project path. It ships alongside this Skill in `@nocobase/app-skills`. Use this application's guidance for App-owned features and the plugin Skill for plugin-owned contracts and packaging; do not install the older global plugin development Skill.
 
 Use this Skill when building a complete application or an individual feature: business and administration pages, endpoints, data, services and their tests.
 
-Do not use it to develop a published plugin package. Plugin development has its own protocol and lives in a separate repository.
+For plugin-owned code, use the project plugin development Skill, whether the plugin stays local to this App or is published for reuse. Plugin development does not require a separate repository or a NocoBase source checkout.
 
 Do not use it to upgrade the template this application was generated from, which is also how the application moves to a newer NocoBase version when the user asks to upgrade NocoBase or its core. That is `.agents/skills/nocobase-app-upgrade/`, which reconciles a newer template release against the application without reverting the user's work.
 
@@ -37,9 +37,11 @@ If instead you find `client/plugin.ts`, `server/plugin.ts`, or a `defineServerPl
 
 Do not infer the application's capabilities from a template name or from this Skill. Inspect `package.json`, `client/plugins.ts`, `server/plugins.ts`, `cli/plugins.ts`, `server/config/index.ts`, and `database/` before deciding what is installed, registered, configured, or application-owned. `nocobase.templatePackage` and `nocobase.templateKind` identify known template ancestry when present, but a new template remains valid without being listed here. Read [template variants](references/template-variants.md) only when those files identify one of the documented official templates.
 
-## The one rule that decides most tasks
+## Choose where the feature belongs
 
-Build the feature in the application. Do not run a plugin generator, create a `packages/plugins/` directory, or write a `defineServerPlugin()` declaration for this application's own feature. Create a plugin only when the user explicitly asks for an independently published, reusable package. Ordinary internal workspace packages for shared code are different: when the application needs them, follow [internal workspace packages](references/dependencies.md#internal-workspace-packages), keeping one application at the workspace root with internal packages under `packages/`. The [runnable package example](references/internal-package-example.md) supplies complete configuration and explains declaration watching.
+Build application-specific features directly in the application by default. Use a plugin when the user requests one or when code reuse or modular organization calls for a separately registered, maintainable feature. Create local plugins under `packages/` with the project plugin development Skill; do not use the source repository's `packages/plugins/` layout. The App builds and packages registered local plugins for deployment without an npm release. Publish only when distributing the plugin through a package registry.
+
+Ordinary internal workspace packages can share code without plugin registration. Follow [internal workspace packages](references/dependencies.md#internal-workspace-packages), keeping one application at the workspace root with internal packages under `packages/`. The [runnable package example](references/internal-package-example.md) supplies complete configuration and explains declaration watching.
 
 ## Check the installed plugins first
 
