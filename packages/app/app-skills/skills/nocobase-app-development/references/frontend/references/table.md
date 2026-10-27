@@ -16,14 +16,14 @@ If an installed dependency does not expose `useReactTable` and `getCoreRowModel`
 | Larger data sets that the endpoint paginates, returning the total                                       | `ProjectsServerTable` ([`example/server-table.md`](example/server-table.md)), described below                                    |
 
 - Leave search and filtering to the backend: pass the filters as endpoint parameters; `DataTable` only displays, sorts and paginates.
-- The complete list page, [`example/list-page.md`](example/list-page.md), shows column definitions, the toolbar outside `DataTable`, a row actions menu and the four states working together.
+- The complete list page, [`example/list-page.md`](example/list-page.md), shows column definitions, the toolbar outside `DataTable`, a row actions menu and the list feedback states working together.
 
 Server-side pagination uses the same standard `DataTable`: pass `manualPagination`, `rowCount`, controlled `paginationState` and `onPaginationChange`; add `manualSorting`, `sortingState` and `onSortingChange` when the endpoint sorts. The component does not paginate or sort the already paginated server response again. Keep page, page size, sort and filters in the URL. The thin `ProjectsServerTable` adapter in [`example/server-table.md`](example/server-table.md) translates page-specific props to the standard component; it does not rebuild table markup or a TanStack instance.
 
 - Keep `page` and `pageSize` in the URL beside `q` and `status`, written through the same `updateParams` ([section 5](#5-writing-search-and-filters-to-the-url)), and reset `page` when a filter changes. Include both in the request key and in `query`.
 - Pass the component the current page's rows, the returned total, `{ pageIndex: page - 1, pageSize }` read from the URL, and an `onPaginationChange` that writes the new values back to the URL; the request follows the URL.
 - Sort on the server, never one page in the browser: the sort lives in the URL as `orderBy` (`updatedAt desc`, the default, or `name`), goes to the endpoint with the page, and `ProjectsServerTable` hands it to the table with `manualSorting`, so the header shows its direction ([`example/server-table.md`](example/server-table.md)). A new sort starts on the first page.
-- The four states in [section 7](#7-the-four-list-states) and the loading rules in [section 6](#6-loading-the-list) stay the same; while a page loads, keep the previous page's rows on screen. Decide "empty" by the endpoint's `total`, not by an empty page: a page past the end is empty while records exist.
+- The list feedback states in [section 7](#7-list-feedback-states) and the loading rules in [section 6](#6-loading-the-list) stay the same; while a page loads, keep the previous page's rows on screen. Decide "empty" by the endpoint's `total`, not by an empty page: a page past the end is empty while records exist.
 
 ## 2. DataTable props
 
@@ -32,7 +32,7 @@ Server-side pagination uses the same standard `DataTable`: pass `manualPaginatio
 | `columns`                                                               | `ColumnDef<T>[]`, created with `useMemo`                                                                                                                                                            |
 | `data`                                                                  | Row data, `T[]`                                                                                                                                                                                     |
 | `getRowId`                                                              | Returns a stable row id, for example `(row) => row.id`                                                                                                                                              |
-| `emptyMessage`                                                          | What the table shows when there are no rows (default: "No results."); use it for the no-results message and "Clear filters"                                                                         |
+| `emptyMessage`                                                          | Optional business-specific empty content for a successful unfiltered empty response; built-in request feedback and its clear action come from `ListFeedback` and `ListFeedbackActions`              |
 | `pageSize`, `pageSizeOptions`                                           | Rows per page, default 10; the selectable rows-per-page values default to `[10, 20, 30, 40, 50]`                                                                                                    |
 | `pagination`                                                            | When set to `false`, all rows are shown and there is no pagination bar                                                                                                                              |
 | `toolbar`                                                               | `(table) => ReactNode`, rendered above the table inside `DataTable`, with access to the table instance. For browser-side filtering and `DataTableViewOptions`                                       |
@@ -97,9 +97,9 @@ Use the existing Query Client and the shared [list request feedback](list-feedba
 
 A list endpoint caps its page size at 100. A browser-paginated list that requests 100 rows must show a cap notice when the successful current-query total exceeds the rows returned. Use server pagination for larger lists. Correct out-of-range pages using only a successful current-query total, without flashing empty feedback during correction.
 
-## 7. The four list states
+## 7. List feedback states
 
-The historical four visual groups now use the shared feedback contract to distinguish loading, successful empty data, no matching results, forbidden access, session expiry, initial failure and refresh failure. See [list request feedback](list-feedback.md) for the state matrix and table/card wiring. `DataTable` takes `listState`, `loading`, `onRetry`, `onClearFilters`, `emptyMessage` and the optional business-specific `emptyAction`; the standard list create action stays in the page header, even when the collection is empty (L7). Card lists use `ListFeedback` with the same state. The shared component supplies accessible English/Chinese feedback; business empty content applies only to successful unfiltered emptiness.
+The shared feedback contract distinguishes loading, successful empty data, no matching results, forbidden access, session expiry, initial failure and refresh failure. Every built-in state is one matching icon and one short line; clear, retry and sign-in actions stay in the existing toolbar or authentication flow. See [list request feedback](list-feedback.md) for the state matrix and table/card wiring. `DataTable` takes `listState`, `loading`, `onRetry`, `onClearFilters`, `emptyMessage` and the optional business-specific `emptyAction`; the standard list create action stays in the permission-gated page header, even when the collection is empty (L7). Card lists use `ListFeedback` with the same state and place `ListFeedbackActions` in their existing controls. The shared component supplies accessible English/Chinese feedback; business empty content applies only to successful unfiltered emptiness.
 
 Do not infer denied access or hidden records from a successful empty response. HTTP 403 and 401 hide cached rows; the latter offers the existing sign-in route. Other failed refreshes retain current-query data and explicitly identify it as previously loaded. Retry preserves filters, sorting and pagination. Clear cancels pending debounce and resets controls, applied filters and page together, preserving sort and page size. Never swallow a request failure into an empty array or add an existence/count probe to diagnose emptiness.
 
@@ -225,8 +225,8 @@ Try it by hand in a browser; static checks cannot find input method and focus pr
 - Type with a Chinese input method, edit in the middle, and type quickly: the input drops no characters and the cursor does not jump; about 300ms after typing stops, `?q=` appears in the address bar and the list refreshes, keeping the old data and showing a Spinner while it refreshes.
 - Change the status filter within 300ms of typing: the address bar keeps both `q` and `status`.
 - Refresh the page, use the browser's back and forward, and click the sidebar menu: the input, the filters and the list stay consistent.
-- "Clear filters": appears as soon as the first character is typed; after a click, the button disappears, focus is on the search box, and "No projects yet" does not flash.
-- All four states have appeared: the first-load skeleton, empty, no results, and failed (403 has no "Retry"; for other errors, focus is on the search box after "Retry").
+- "Clear filters": appears as soon as the first character is typed; after a click, the button disappears, focus is on the search box, and "No data yet" does not flash.
+- All list states have appeared: the compact "Loading" icon and line, empty, no results, forbidden, session expired, failed and refresh failed (recovery stays in the existing toolbar or authentication flow).
 - The name link, "New project" and the "Edit" menu item open their child routes, "Edit" as the dialog alone; opening a child route's URL directly also works; after closing, the query parameters are still there.
 - The date and number columns sort, and a server-paginated list keeps the sort in the URL and starts it on the first page.
 - Delete a record in the detail drawer: after the list refreshes, focus is on the search box.

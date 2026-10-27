@@ -62,7 +62,7 @@ Structure, top to bottom: PageHeader (primary action "New X") → toolbar (searc
 - **T1.6 [Must]** Dates and times are formatted for the current language; numbers and amounts are right-aligned, with thousands separators.
 - **T1.7 [Should]** Search and filter conditions are written to the URL, so they survive a refresh and going back.
 - **T1.8 [Must]** Columns of dates and times (created, updated, due) and of numbers (amounts, quantities, counts) are sortable by default, and so is the name column when it sorts in the current language's order (pinyin for Chinese). Statuses, types, tags, people, long text and yes/no values are not, unless the business asks for it and the order means something (a priority by its rank, not alphabetically). The default order is by last update time, newest first, and a sorted column shows its direction in the header.
-- **T1.9 [Must]** A list page must have a design for all four states S1–S4.
+- **T1.9 [Must]** A list page must have a design for every built-in feedback state in S1–S4.
 - **T1.10 [Must]** When a list shows only part of the matching results, because it sorts and paginates one capped page in the browser or because the endpoint returns no total, show a notice when the results reach the cap ("Only the first N records are shown. Use search or filters to narrow the results."); records beyond the cap must not silently disappear.
 - **T1.11 [Must]** When a table cell is too narrow for its content, the content ends in an ellipsis where it is cut off, and hovering over it shows the full content. Content that fits shows nothing on hover.
 - **T1.12 [Must]** Pagination labels size to their localized text rather than a fixed English-sized width. Keep each short page summary, page-size control and navigation button group intact; at narrow widths, wrap whole groups onto another row instead of splitting labels or shrinking controls. Verify Chinese and English with large page counts at 375px and desktop widths.
@@ -138,7 +138,7 @@ Stacking rules: a drawer can open a dialog (for example, to edit from the detail
 
 Do not show raw backend error messages (untranslated exception messages, stack traces, SQL) to the user.
 
-**I4 [Must] Loading indicators**: the first load shows a skeleton (S1); an action triggered by a button shows its loading state on that button; a reload (search, refresh) keeps the old data and shows a lightweight loading indicator instead of replacing the whole block with a skeleton.
+**I4 [Must] Loading indicators**: list requests use S1's matching icon and short line on the first load; other page content may use a skeleton. An action triggered by a button shows its loading state on that button; a same-query list reload keeps old data and shows a lightweight loading indicator instead of replacing the rows.
 
 **I5 [Should]** The search box searches automatically as the user types (debounced by about 300ms), without the user pressing Enter.
 
@@ -172,10 +172,10 @@ Do not show raw backend error messages (untranslated exception messages, stack t
 
 ## S States
 
-- **S1 [Must] Loading**: a skeleton shaped like the real content (skeleton rows for a table, "label — value" skeletons for a detail view), with the accessible name "Loading".
-- **S2 [Must] Empty** (no data at all yet): replace the list, in exactly the place and width it would take, with the Empty component (`className='min-h-48 border border-dashed'`; inside a dialog or a settings panel, smaller padding such as `min-h-40 p-6 md:p-6`): an `EmptyMedia variant='icon'`, a title ("No customers yet") and one description sentence saying what the user can do once they have one. If the existing create permission is allowed, the single "New customer" action remains in the `PageHeader` (L7); never duplicate it inside `EmptyContent`. When the user cannot create, omit the header action and let the description say to ask an administrator. A plain-text line such as "No customers yet." is not an empty state.
-- **S3 [Must] No results** (a search or filter is applied but nothing matches): keep it distinct from S2, say that nothing matches, and offer "Clear filters".
-- **S4 [Must] Load failed**: show a destructive-style Alert in the page that explains the situation according to the error type. For temporary problems such as network errors and server errors, offer "Retry"; for problems a retry cannot fix, such as missing permission or a record that does not exist, explain the situation and the next step without offering "Retry" (for a missing record, see R3). An ended session (401) says so and offers "Sign in again" instead.
+- **S1 [Must] Loading**: show the shared list feedback icon and the single short line "Loading"; keep the initial state distinct from an empty result and show a small busy indicator during same-query refreshes (I4).
+- **S2 [Must] Empty** (no data at all yet): replace the list in the space it would take with the Empty component (`className='min-h-24 flex-row gap-2'`), a matching icon and the single short line "No data yet". The default status has no description or inline action. If the existing create permission is allowed, the single "New customer" action remains in the `PageHeader` (L7); never duplicate it inside `EmptyContent`. Preserve application-supplied custom empty content when deliberately needed.
+- **S3 [Must] No results** (a search or filter is applied but nothing matches): keep it distinct from S2 and show the single short line "No results". Put "Clear filters" in the existing page or table toolbar, not inside the status area.
+- **S4 [Must] Request and access feedback**: use the matching icon and one short line: "Access denied" for 403, "Session expired" for 401, and "Unable to load list" for an initial network, timeout or server failure. Put retry and sign-in recovery in the existing toolbar or authentication flow; the status area has no inline actions. A same-query refresh failure keeps its usable previous data and adds only one short stale-data line ("Refresh failed; showing previous data"); keep retry in the existing toolbar. Never infer hidden records from an empty result or probe for them.
 - **S5 [Must] Submitting, deleting**: see T3.5 and I2; the button shows a loading state and is disabled.
 - **S6 [Must] No access**: the application shell handles a whole page the user cannot access, so the page needs no design of its own for that case; when the user may not view one block of data on a page, show an explanation there instead of leaving it blank.
 
@@ -186,7 +186,7 @@ Do not show raw backend error messages (untranslated exception messages, stack t
 - **C3 [Must] Button copy**:
   - Page-level actions use "verb + object" ("New customer"; 新建客户 in Chinese).
   - Buttons in a record's context (row menu, bottom of the detail drawer) and buttons in dialogs use only the verb ("Edit", "Delete", "Create", "Save"); the context already identifies the object.
-- **C4 [Must]** An empty state says "where things stand + what to do next"; an error says "what happened + what to do about it", without blaming the user.
+- **C4 [Must]** Default list feedback is one concise translated status line with a matching icon. Put recovery actions in the existing operation area; preserve a deliberately supplied business-specific empty state.
 - **C5 [Should]** Keep copy short: a description is one sentence, and a toast is at most 20 Chinese characters (about 12 English words), not counting the record name.
 - **C6 [Must]** When copy refers to a specific record, include the record's name (`Deleted customer "Zhang San"`; in Chinese, `已删除客户“张三”`). Chinese wraps the name in “”; English wraps it in "…".
 - **C7 [Must] Overlay titles**: dialog and confirmation dialog titles use "verb + object", with the same verb as the button that opens them (the "Edit" button opens "Edit customer", and the "New customer" button opens "New customer"); a confirmation dialog title also includes the record name (I2).
@@ -210,8 +210,8 @@ The design review and the acceptance review both go through this checklist item 
 - [ ] Page structure: PageContainer, PageHeader, one primary button per view, actions in the right places, a back button on a page below another one, which returns to that other page with its search and filters unchanged, and the standard create action only in the header when permission is resolved and allowed, including for an empty list; it is hidden while permission is pending or denied (L1, L2, L5, L6, L7)
 - [ ] Navigation is consistent: entries in one group all carry an icon or none does, a group's own icon does not repeat its first child's, and a count beside an entry is only what waits on the viewer (`page.md` §6, L8)
 - [ ] All states are covered: loading, empty, no results, load failed, submitting, a block the user may not see; whether a failure offers a retry follows S4 (S1–S6)
-- [ ] Empty-state body keeps business custom content and never repeats the standard create action; the permission-gated header action remains unique, while filter clearing, retry and sign-in recovery stay state-appropriate (L7, S2–S4)
-- [ ] List: search placeholder, filters and clearing them, first column, enum Badges, row actions, formatting, date and number columns sortable, all four states, result cap notice, a cut-off cell ending in an ellipsis with its full content on hover (T1.1–T1.6, T1.8–T1.11)
+- [ ] Default list states show one concise line with the matching icon and no inline actions; custom empty content remains supported, while create, clear, retry and sign-in recovery stay in their existing permission-gated page or toolbar actions (L7, S1–S4)
+- [ ] List: search placeholder, filters and clearing them, first column, enum Badges, row actions, formatting, date and number columns sortable, every built-in feedback state in S1–S4, result cap notice, a cut-off cell ending in an ellipsis with its full content on hover (T1.1–T1.6, T1.8–T1.11)
 - [ ] Detail view: drawer or page, record name and grouped actions, opens by URL, label–value layout with "—" for empty values (T2.1–T2.4)
 - [ ] Form: container, labels and required marks, validation timing, button order and copy, submitting, failure, success, loading the latest data before editing (T3.1–T3.8)
 - [ ] Settings page: one Card per topic, each saved on its own, toggles that apply at once (T4.1–T4.3)

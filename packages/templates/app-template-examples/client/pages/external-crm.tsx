@@ -1,4 +1,4 @@
-import { ListFeedback } from '#components/list-feedback';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import {
@@ -237,22 +237,10 @@ export default function ExternalCrmPage(): ReactElement {
           />
           {t('externalCrm.refresh')}
         </Button>
+        <ListFeedbackActions state={state} />
       </div>
 
-      <ListFeedback
-        state={state}
-        onClear={() => setStatus('all')}
-        onRetry={() => {
-          void orders.refetch();
-        }}
-        busy={orders.isFetching}
-        empty={
-          <>
-            <h2>{t('externalCrm.empty')}</h2>
-            <p>{t('externalCrm.emptyHint')}</p>
-          </>
-        }
-      >
+      <ListFeedback state={state}>
         <div className='overflow-hidden rounded-xl border bg-card shadow-2xs'>
           <Table>
             <TableHeader>

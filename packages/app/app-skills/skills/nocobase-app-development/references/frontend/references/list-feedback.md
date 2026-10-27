@@ -2,6 +2,8 @@
 
 Use `resolveListState` from `@nocobase/app-client` with the existing request snapshot, and `ListFeedback` from `#components/list-feedback` for card lists. `DataTable` accepts the same state through `listState`. Both templates ship the sources and English/Chinese translations. An older application must first follow the upgrade Skill's list feedback source checklist; updating a dependency alone cannot change copied source.
 
+The built-in state area always shows one matching icon and one short translated line: `Loading`, `No data yet`, `No results`, `Access denied`, `Session expired`, `Unable to load list`, or `Refresh failed; showing previous data`. It has no title, long helper copy or inline recovery button. `ListFeedbackActions` belongs in the host's existing toolbar or action area and supplies the state-appropriate clear, retry and sign-in controls. `DataTable` places these controls in its toolbar when the relevant callback is supplied. A deliberately supplied business `empty` or `emptyAction` remains available only for successful unfiltered emptiness.
+
 ```tsx
 const createPermission = useCan({
   resource: { type: 'project', id: '*' },
@@ -43,25 +45,40 @@ const canShowCreate =
     void request.refetch();
   }}
   onClearFilters={clearFilters}
-  emptyMessage={<BusinessEmptyDescription />}
+  emptyMessage={<BusinessEmptyContent />}
 />;
 ```
 
 `createPermission` comes from the application's existing authorization hook for the same resource and create action as the endpoint. `useCan` keeps `can` false while `isPending` is true, so the header action stays hidden until permission resolves; an explicit denial or permission error also leaves it hidden. The shared `emptyAction` prop remains available for an intentional business-specific empty-state action, but do not pass the standard create button there.
 
-Pass server pagination/sorting props as described in `table.md`; the snippet omits them for clarity. Only use a successful current-query total for page correction. While correcting an out-of-range page with a positive total, use loading feedback rather than claiming the list is empty. For cards wrap the mapped rows in `<ListFeedback state={state} onRetry={retry} onClear={clearFilters} empty={businessEmpty} busy={request.isFetching}>…</ListFeedback>`.
+Pass server pagination/sorting props as described in `table.md`; the snippet omits them for clarity. Only use a successful current-query total for page correction. While correcting an out-of-range page with a positive total, use loading feedback rather than claiming the list is empty. For cards, render `ListFeedbackActions` in their existing controls and `ListFeedback` around the mapped rows:
 
-| Snapshot                                                              | Feedback                                                                                          |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Initial pending, disabled without data, or previous-query placeholder | Loading; never empty                                                                              |
-| Successful empty, no effective filters                                | No data, preserving business empty content; the authorized create action stays in the page header |
-| Successful empty with effective filters                               | No matching results and clear filters                                                             |
-| HTTP 403, including after successful cached data                      | No permission; hide rows, no existence probe, no header create action                             |
-| HTTP 401                                                              | Hide rows, use the existing sign-in route, and omit the header create action                      |
-| Network, timeout or server failure without current-query data         | Load failed, hide the header create action, and retry the same query                              |
-| Same-query refresh failure with successful data                       | Retain data and announce refresh failure; successful retry clears the message                     |
+```tsx
+<div className='flex flex-wrap items-center gap-2'>
+  <SearchAndFilters />
+  <ListFeedbackActions
+    state={state}
+    onClear={clearFilters}
+    onRetry={retry}
+    busy={request.isFetching}
+  />
+</div>
+<ListFeedback state={state} empty={businessEmpty}>
+  <ProjectCards rows={rows} />
+</ListFeedback>
+```
 
-`resolveListState` neither fetches nor caches. It recognizes structured `ApiClientError.status`; it never parses error messages or infers permission from an empty array. Reuse existing Query Client cancellation, keys and cache. Do not put retry counters in keys, turn errors into empty arrays or expose previous-query placeholder rows as current results. Manual request adapters must provide only data from their current key and ignore obsolete responses. A failed refresh of a successful empty response is still a refresh failure, including when no rows are visible. Keep custom empty content scoped to unfiltered successful emptiness.
+| Snapshot                                                              | Feedback                                                                         |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Initial pending, disabled without data, or previous-query placeholder | Loading icon and short label; never empty                                        |
+| Successful empty, no effective filters                                | No data yet; authorized create remains in the page header                        |
+| Successful empty with effective filters                               | No results; clear filters stays in the existing toolbar                          |
+| HTTP 403, including after successful cached data                      | Access denied; hide cached rows, make no existence probe, and hide header create |
+| HTTP 401                                                              | Session expired; hide cached rows and use the existing sign-in flow              |
+| Network, timeout or server failure without current-query data         | Unable to load list; retry the same query from the existing toolbar              |
+| Same-query refresh failure with successful data                       | Keep prior data and show one stale-data line; retry from the existing toolbar    |
+
+`resolveListState` neither fetches nor caches. It recognizes structured `ApiClientError.status`; it never parses error messages or infers permission from an empty array. Reuse existing Query Client cancellation, keys and cache. Do not put retry counters in keys, turn errors into empty arrays or expose previous-query placeholder rows as current results. Manual request adapters must provide only data from their current key and ignore obsolete responses. A failed refresh of a successful empty response is still a refresh failure; do not stack the previous empty message beneath the stale-data line. Keep custom empty content scoped to unfiltered successful emptiness.
 
 | Create permission result                        | Header action                                                                                       |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |

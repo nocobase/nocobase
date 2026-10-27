@@ -1,6 +1,5 @@
 import type { ListState } from '@nocobase/app-client';
-import { ListFeedback } from '#components/list-feedback';
-import { useTranslation } from '@nocobase/i18n/client';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import {
   type ColumnDef,
   type PaginationState,
@@ -102,7 +101,6 @@ export function DataTable<TData, TValue = unknown>({
   onClearFilters,
   emptyAction,
 }: DataTableProps<TData, TValue>): ReactElement {
-  const { t } = useTranslation();
   const tableData = useMemo(() => [...data], [data]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -145,8 +143,10 @@ export function DataTable<TData, TValue = unknown>({
 
   const rows = table.getRowModel().rows;
   const requestedState =
-    (listState === 'ready' && rows.length === 0 && columnFilters.length > 0
-      ? 'no-results'
+    (listState === 'ready' && rows.length === 0
+      ? columnFilters.length > 0
+        ? 'no-results'
+        : 'empty'
       : listState) ??
     (loading && data.length === 0
       ? 'loading'
@@ -166,57 +166,69 @@ export function DataTable<TData, TValue = unknown>({
     table.setPageIndex(0);
     onClearFilters?.();
   };
+  const hasStateActions =
+    (state === 'no-results' &&
+      (columnFilters.length > 0 || onClearFilters !== undefined)) ||
+    ((state === 'failed' || state === 'refresh-failed') &&
+      onRetry !== undefined) ||
+    state === 'unauthenticated';
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
-      {toolbar ? (
+      {toolbar || hasStateActions ? (
         <div className='flex flex-wrap items-center gap-2'>
-          {toolbar(table)}
+          {toolbar?.(table)}
+          <ListFeedbackActions
+            state={state}
+            onClear={
+              columnFilters.length > 0 || onClearFilters
+                ? clearFilters
+                : undefined
+            }
+            onRetry={onRetry}
+            busy={loading}
+          />
         </div>
       ) : null}
       <ListFeedback
         state={state}
         empty={emptyMessage}
         emptyAction={emptyAction}
-        onClear={
-          columnFilters.length > 0 || onClearFilters ? clearFilters : undefined
-        }
-        onRetry={onRetry}
-        busy={loading}
       >
-        <div className='overflow-hidden rounded-lg border'>
-          <Table aria-busy={loading}>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      aria-sort={
-                        header.column.getCanSort()
-                          ? header.column.getIsSorted() === 'asc'
-                            ? 'ascending'
-                            : header.column.getIsSorted() === 'desc'
-                              ? 'descending'
-                              : 'none'
-                          : undefined
-                      }
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {rows.length > 0 ? (
-                rows.map((row) => (
+        {rows.length > 0 &&
+        (state === 'ready' || state === 'refresh-failed') ? (
+          <div className='overflow-hidden rounded-lg border'>
+            <Table aria-busy={loading}>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        aria-sort={
+                          header.column.getCanSort()
+                            ? header.column.getIsSorted() === 'asc'
+                              ? 'ascending'
+                              : header.column.getIsSorted() === 'desc'
+                                ? 'descending'
+                                : 'none'
+                            : undefined
+                        }
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() ? 'selected' : undefined}
@@ -232,23 +244,14 @@ export function DataTable<TData, TValue = unknown>({
                       </TableCell>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className='h-24 text-center text-muted-foreground'
-                  >
-                    {emptyMessage ??
-                      t('dataTable.noResults', { defaultValue: 'No results.' })}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : null}
       </ListFeedback>
-      {pagination && (state === 'ready' || state === 'refresh-failed') ? (
+      {pagination &&
+      (state === 'ready' || (state === 'refresh-failed' && rows.length > 0)) ? (
         <DataTablePagination
           table={table}
           pageSizeOptions={pageSizeOptions}

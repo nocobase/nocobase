@@ -61,7 +61,7 @@ it('corrects an out-of-range page using the successful total before showing the 
     await screen.findByRole('button', { name: 'Welcome', exact: true }),
   ).toBeVisible();
   expect(pages).toEqual(['999', '1']);
-  expect(screen.queryByText('No articles yet.')).not.toBeInTheDocument();
+  expect(screen.queryByText('No data yet')).not.toBeInTheDocument();
 });
 it('loads articles, previews content, searches and filters persisted results', async () => {
   await mount();
@@ -73,11 +73,15 @@ it('loads articles, previews content, searches and filters persisted results', a
   );
   const search = screen.getByRole('textbox', { name: 'Search titles…' });
   fireEvent.change(search, { target: { value: 'no-such-title' } });
-  expect(await screen.findByText('No matching results.')).toBeVisible();
+  await waitFor(() =>
+    expect(screen.getByRole('status').textContent).toBe('No results'),
+  );
   fireEvent.change(search, { target: { value: 'Welcome' } });
   expect(await screen.findByRole('button', { name: 'Welcome' })).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Published' }));
-  expect(await screen.findByText('No matching results.')).toBeVisible();
+  await waitFor(() =>
+    expect(screen.getByRole('status').textContent).toBe('No results'),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Draft' }));
   expect(await screen.findByRole('button', { name: 'Welcome' })).toBeVisible();
 });
@@ -162,7 +166,9 @@ it('recovers from a load error to the real empty state', async () => {
   );
   offline = false;
   fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-  expect(await screen.findByText('No articles yet.')).toBeVisible();
+  await waitFor(() =>
+    expect(screen.getByRole('status').textContent).toBe('No data yet'),
+  );
   expect(
     screen.getAllByRole('button', { name: 'New article', exact: true }),
   ).toHaveLength(1);

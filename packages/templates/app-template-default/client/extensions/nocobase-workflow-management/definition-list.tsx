@@ -7,7 +7,6 @@ import type {
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '#components/ui/button';
-import { Empty, EmptyDescription } from '#components/ui/empty';
 import { DataTable } from '#components/data-table/data-table';
 
 export interface WorkflowDefinitionRow {
@@ -25,7 +24,7 @@ export interface WorkflowDefinitionListProps {
   status?: ReactNode;
   loaded: boolean;
   loading: boolean;
-  empty: ReactNode;
+  empty?: ReactNode;
   labels: {
     refresh: string;
     workflow: string;
@@ -85,13 +84,8 @@ export function WorkflowDefinitionList({
                 listState ??
                 (!loaded ? 'loading' : rows.length ? 'ready' : 'empty')
               }
-              onRetry={onRefresh}
               onClearFilters={onClearFilters}
-              emptyMessage={
-                <Empty>
-                  <EmptyDescription>{empty}</EmptyDescription>
-                </Empty>
-              }
+              emptyMessage={empty}
               getRowId={(row) => row.id}
               pagination={false}
               manualSorting

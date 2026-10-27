@@ -12,9 +12,9 @@ Rules: [section 1 of `table.md`](../table.md#1-choosing-a-table-component). This
 
 The endpoint contract this assumes is the one in [types](types.md): `GET /api/projects` takes `page` (from 1), `pageSize` (at most 100) and `orderBy` besides `q` and `status`, and returns `{ data: Project[], meta: { page, pageSize, total } }` (`ProjectList`), where `total` counts the matching records on all pages. `orderBy` names a column the endpoint sorts by, `name` (in the order of the request's language) or `updatedAt`, followed by ` desc` for descending; the page always sends it, `updatedAt desc` by default (guideline T1.8).
 
-The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page uses the template's `useTableUrlState` hook to parse pagination and ordering, sends them with the request and passes them to `ProjectsServerTable`, which shows ordering in the header with `manualSorting`. Choosing another order starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
+The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the list feedback states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page uses the template's `useTableUrlState` hook to parse pagination and ordering, sends them with the request and passes them to `ProjectsServerTable`, which shows ordering in the header with `manualSorting`. Choosing another order starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
 
-Keep the standard create action in the page header as in [`example/list-page.md`](list-page.md), including for a successful empty result; never pass that action as `emptyAction`. The server-table wrapper keeps its optional `emptyAction` pass-through only for an intentional business-specific empty-state action. Preserve the business empty content and use [shared list feedback](../list-feedback.md) for all request states.
+Keep the standard create action in the page header as in [`example/list-page.md`](list-page.md), including for a successful empty result; never pass that action as `emptyAction`. The server-table wrapper keeps its optional `emptyAction` pass-through only for an intentional business-specific empty-state action. Keep built-in state feedback to one matching icon and short line, and put clear, retry and sign-in controls in the existing toolbar or authentication flow. Preserve business empty content and use [shared list feedback](../list-feedback.md) for all request states.
 
 The changes, inside the list page's component; everything marked `// …` stays as it is there:
 
@@ -143,12 +143,6 @@ export default function ProjectsPage(): ReactElement {
       onPaginationChange={tableState.onPaginationChange}
       sorting={tableState.sortingState}
       onSortingChange={tableState.onSortingChange}
-      emptyMessage={
-        <>
-          <h2>{t('projects.empty.title')}</h2>
-          <p>{t('projects.empty.description')}</p>
-        </>
-      }
     />
   );
 
@@ -165,7 +159,7 @@ import type {
   PaginationState,
   SortingState,
 } from '@tanstack/react-table';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement } from 'react';
 import { DataTable, type DataTableProps } from '#components/data-table';
 import type { Project } from './types.js';
 
@@ -180,7 +174,6 @@ export interface ProjectsServerTableProps extends Pick<
   readonly onPaginationChange: (pagination: PaginationState) => void;
   readonly sorting: SortingState;
   readonly onSortingChange: (sorting: SortingState) => void;
-  readonly emptyMessage: ReactNode;
   readonly pageSizeOptions: readonly number[];
 }
 
@@ -192,7 +185,6 @@ export function ProjectsServerTable({
   onPaginationChange,
   sorting,
   onSortingChange,
-  emptyMessage,
   pageSizeOptions,
   ...feedback
 }: ProjectsServerTableProps): ReactElement {
@@ -213,7 +205,6 @@ export function ProjectsServerTable({
       onSortingChange={(next) =>
         onSortingChange(typeof next === 'function' ? next(sorting) : next)
       }
-      emptyMessage={emptyMessage}
       pageSizeOptions={pageSizeOptions}
       showSelectedCount={false}
     />

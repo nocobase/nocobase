@@ -1,4 +1,4 @@
-import { ListFeedback } from '#components/list-feedback';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import { FeedbackForm } from '#components/feedback-form';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { useSearchParams } from 'react-router';
@@ -136,6 +136,12 @@ export default function ArticlesPage(): ReactElement {
     setStatus('all');
     setPage(1);
   };
+  const feedbackState =
+    (state === 'empty' || state === 'no-results') &&
+    page > 1 &&
+    (result?.meta.total ?? 0) > 0
+      ? 'loading'
+      : state;
   // Only the current successful query can correct a now-out-of-range URL page.
   useTableUrlState({
     defaultPageSize: PAGE_SIZE,
@@ -247,27 +253,14 @@ export default function ArticlesPage(): ReactElement {
             aria-label={t('articles.search')}
           />
         </div>
+        <ListFeedbackActions
+          state={feedbackState}
+          onClear={clearFilters}
+          onRetry={() => void request.refetch()}
+          busy={loading}
+        />
       </div>
-      <ListFeedback
-        state={
-          (state === 'empty' || state === 'no-results') &&
-          page > 1 &&
-          (result?.meta.total ?? 0) > 0
-            ? 'loading'
-            : state
-        }
-        onClear={clearFilters}
-        onRetry={() => {
-          void request.refetch();
-        }}
-        busy={loading}
-        empty={
-          <>
-            <h2 className='font-semibold'>{t('articles.empty')}</h2>
-            <p>{t('articles.emptyHint')}</p>
-          </>
-        }
-      >
+      <ListFeedback state={feedbackState}>
         <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
           {result?.data.map((article) => (
             <article

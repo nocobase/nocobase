@@ -1,5 +1,5 @@
 import { resolveListState } from '@nocobase/app-client';
-import { ListFeedback } from '#components/list-feedback';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import { useSettingsData, useRolePermission } from './hooks.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type {
@@ -8,18 +8,12 @@ import type {
 } from '@nocobase/app-plugin-authorization/client';
 import { type ReactElement } from 'react';
 import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
-import { ShieldCheckIcon, PlusIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { RoleList } from '#components/role-list';
-import {
-  Empty,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyMedia,
-} from '#components/ui/empty';
 
 export default function RolesPage(): ReactElement {
   const { t, i18n } = useTranslation();
@@ -118,38 +112,13 @@ export default function RolesPage(): ReactElement {
               {t('settings.clear')}
             </Button>
           )}
+          <ListFeedbackActions
+            state={listState}
+            onRetry={request.reload}
+            busy={request.loading}
+          />
         </div>
-        <ListFeedback
-          state={listState}
-          onRetry={request.reload}
-          busy={request.loading}
-          onClear={() =>
-            setParams(
-              (old) => {
-                const next = new URLSearchParams(old);
-                next.delete('q');
-                next.delete('page');
-                return next;
-              },
-              { replace: true },
-            )
-          }
-          empty={
-            <Empty className='min-h-48 border border-dashed'>
-              <EmptyMedia variant='icon'>
-                <ShieldCheckIcon />
-              </EmptyMedia>
-              <EmptyTitle>{t('settings.noRoles')}</EmptyTitle>
-              <EmptyDescription>
-                {t(
-                  canCreate
-                    ? 'settings.rolesDescription'
-                    : 'settings.rolesReadOnlyEmpty',
-                )}
-              </EmptyDescription>
-            </Empty>
-          }
-        >
+        <ListFeedback state={listState}>
           <RoleList
             tableState={tableState}
             ariaLabel={t('settings.roles')}

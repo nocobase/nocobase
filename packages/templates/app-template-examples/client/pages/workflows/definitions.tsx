@@ -143,11 +143,6 @@ export default function DefinitionsPage(): ReactElement {
         executionCount: t('workflows.executionCount'),
         executionActivity: t('workflows.executionActivity'),
       }}
-      empty={t(
-        normalizedName || category !== 'all'
-          ? 'workflows.noResults'
-          : 'workflows.noDefinitions',
-      )}
       sort={sort}
       onSort={() =>
         nameFilter.updateParams((next) =>
