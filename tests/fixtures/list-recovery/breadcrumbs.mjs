@@ -278,9 +278,12 @@ try {
       await page
         .getByRole('button', { name: 'Delete loan and stay', exact: true })
         .click();
-      await expect(page.locator('p[role=status]')).toHaveText(
-        'Loan deletion committed',
-      );
+      await expect(
+        page
+          .getByRole('button', { name: 'Delete loan and stay', exact: true })
+          .locator('..')
+          .locator('p[role=status]'),
+      ).toHaveText('Loan deletion committed');
       const deleted = (await snapshot()).data.find((row) => row.id === '100');
       expect(deleted.deleted).toBeTruthy();
       expect(deleted.deleteEvents).toBe(1);
