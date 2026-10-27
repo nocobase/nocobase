@@ -4,6 +4,9 @@
  * with their name and checksum, refused to a caller who may not view the App, and not offered for an image release;
  * and `summarizeApps`, several Apps' summaries in one read.
  */
+import { rm } from 'node:fs/promises';
+import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { archiveFileName } from '../server/services/releases.js';
@@ -87,6 +90,28 @@ describe('release archive download', () => {
         { headers: { 'x-test-user': 'reader' } },
       );
       expect(missing.status).toBe(404);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('answers 404 before any bytes when the archive is gone from the disk', async () => {
+    const { release } = await upload('shop', '1.2.0');
+    await rm(path.join(harness.rootDir, 'artifacts'), {
+      recursive: true,
+      force: true,
+    });
+    harness.application.roles.set('reader', 'admin');
+    const server = await createApiServer(harness.services);
+    try {
+      const response = await fetch(
+        `${server.url}/apps/shop/releases/${release.id}/archive`,
+        { headers: { 'x-test-user': 'reader' } },
+      );
+      expect(response.status).toBe(404);
+      expect(response.headers.get('content-disposition')).toBeNull();
+      const body = (await response.json()) as { error: { reason: string } };
+      expect(body.error.reason).toBe('RELEASE_ARCHIVE_NOT_FOUND');
     } finally {
       await server.close();
     }

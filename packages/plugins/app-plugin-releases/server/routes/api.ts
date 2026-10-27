@@ -1596,7 +1596,10 @@ export function createReleasesApi(
           },
         },
         ...apiErrorResponses,
-        404: apiErrorResponse(404),
+        404: apiErrorResponse(
+          404,
+          'The App or release does not exist, or its archive is missing from the artifact storage (reason `RELEASE_ARCHIVE_NOT_FOUND`).',
+        ),
         400: apiErrorResponse(
           400,
           'An image release has no archive (`FAILED_PRECONDITION`, reason `RELEASE_HAS_NO_ARCHIVE`).',

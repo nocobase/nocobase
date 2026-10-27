@@ -166,3 +166,7 @@ The in-process Host runs App code under preview, so it never holds Docker access
 ## Deployments that outlive the process
 
 A Host records each deployment's outcome under its deployment ID in an operation log that outlives the Host process (`host.controlDir`). At startup the plugin asks each environment's session for the `operation` of every deployment still marked `deploying`, records what the Host reports (one that finished while this application restarted succeeds and becomes the App's current deployment), and only then sends the environment its desired set; one the Host never saw is marked interrupted. A Host child that is told to stop lets a deployment under way finish and record its outcome first. Docker containers keep running while their Host restarts, and the Host adopts them again. Readers of Apps and deployments wait up to five seconds at startup for all of this.
+
+## Atomic application-owned App initialization
+
+Applications calling `releases.releases.createApp(caller, input, { initialize })` may initialize their own App-linked records in the same database transaction as App creation. The optional callback receives a public `DatabaseConnection` and the created App ID. Write application-owned records through that connection; do not perform network calls, emit events, or write plugin-owned tables in the callback. A callback failure rolls back App creation and its writes, and `app.created` is emitted only after the transaction commits. The existing two-argument call remains supported.

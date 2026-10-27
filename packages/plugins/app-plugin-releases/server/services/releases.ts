@@ -423,6 +423,13 @@ export class ReleasesService {
   public async createApp(
     caller: Caller,
     input: CreateAppInput,
+    options: {
+      /** Initialize application-owned records in the creation transaction. Runs before app.created is emitted. */
+      readonly initialize?: (
+        connection: DatabaseConnection,
+        appId: string,
+      ) => Promise<void>;
+    } = {},
   ): Promise<AppSummary> {
     this.options.guard.requireCreate(caller);
     if (!input || typeof input.id !== 'string')
@@ -470,29 +477,33 @@ export class ReleasesService {
             'ALREADY_EXISTS',
           );
         await this.assertEnvironmentCapacity(environment);
-        await this.query()
-          .insertInto('relApps')
-          .values({
-            id,
-            environmentId: environment.id,
-            name,
-            description:
-              typeof input.description === 'string' && input.description.trim()
-                ? input.description.trim()
-                : null,
-            currentDeploymentId: null,
-            enabled: false,
-            activation: policy.activation,
-            idleStopMinutes: policy.idleStopMinutes,
-            dormantAfterHours: policy.dormantAfterHours,
-            labels: JSON.stringify(labels),
-            previewOf,
-            createdBy: caller.userId,
-            createdVia: caller.kind,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .execute();
+        await this.options.database.transaction(async (connection) => {
+          await connection.query
+            .insertInto('relApps')
+            .values({
+              id,
+              environmentId: environment.id,
+              name,
+              description:
+                typeof input.description === 'string' &&
+                input.description.trim()
+                  ? input.description.trim()
+                  : null,
+              currentDeploymentId: null,
+              enabled: false,
+              activation: policy.activation,
+              idleStopMinutes: policy.idleStopMinutes,
+              dormantAfterHours: policy.dormantAfterHours,
+              labels: JSON.stringify(labels),
+              previewOf,
+              createdBy: caller.userId,
+              createdVia: caller.kind,
+              createdAt: now,
+              updatedAt: now,
+            })
+            .execute();
+          await options.initialize?.(connection, id);
+        });
       });
     } catch (error) {
       if (!(error instanceof ReleasesError) && (await this.findApp(id)))
@@ -663,8 +674,9 @@ export class ReleasesService {
   }
 
   /**
-   * A release's archive, to download: `view` on the App. An image release has none (`RELEASE_HAS_NO_ARCHIVE`). The
-   * stream is opened last, so a refusal never touches the disk.
+   * A release's archive, to download: `view` on the App. An image release has none (`RELEASE_HAS_NO_ARCHIVE`), and an
+   * archive missing from the disk is `RELEASE_ARCHIVE_NOT_FOUND`. The stream is opened last, so a refusal never touches
+   * the disk.
    */
   public async openArchive(
     caller: Caller,
@@ -681,8 +693,11 @@ export class ReleasesService {
         'RELEASE_HAS_NO_ARCHIVE',
         'FAILED_PRECONDITION',
       );
+    // A local disk opens its file lazily, so a missing archive would fail only after the response headers went out.
+    if (!(await this.disk.exists(key)))
+      throw notFound('Archive', 'RELEASE_ARCHIVE_NOT_FOUND', releaseId);
     return {
-      stream: Readable.from(await this.disk.getStream(key)),
+      stream: await this.disk.getStream(key),
       size: release.size,
       checksum: release.checksum,
       fileName: archiveFileName(app.id, release.version),

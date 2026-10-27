@@ -13,7 +13,7 @@ import {
   ServerIcon,
   Trash2Icon,
 } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useNavigate, useOutlet } from 'react-router';
 
 import type {
@@ -42,8 +42,8 @@ import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
 
 /** The page's heading, when the application that mounts it names the page in its own words. */
 export interface EnvironmentsPageProps {
-  readonly title?: string;
-  readonly description?: string;
+  readonly title?: ReactNode;
+  readonly description?: ReactNode;
 }
 
 export default function EnvironmentsPage(
