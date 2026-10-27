@@ -1,0 +1,63 @@
+import { Buffer } from 'node:buffer';
+import { performance } from 'node:perf_hooks';
+import type { ConcurrentCapabilities } from '../types.ts';
+export * from '../errors.ts';
+export type { ConcurrentCapabilities } from '../types.ts';
+
+export interface Clock {
+  now(): number;
+}
+export interface Scheduler {
+  setTimer(callback: () => void, delayMs: number): () => void;
+}
+export type ResourceSpec = { namespace: string; name: string; ttl: number } & (
+  { kind: 'lock' } | { kind: 'semaphore'; permits: number }
+);
+export type WaitPolicy =
+  { kind: 'single' } | { kind: 'bounded'; deadline: number };
+export interface BackendAcquireRequest {
+  readonly requestId: string;
+  readonly token: string;
+  readonly resource: ResourceSpec;
+  readonly wait: WaitPolicy;
+  readonly signal: AbortSignal;
+}
+export interface BackendGrant {
+  readonly notAfter: number;
+  release(): Promise<void>;
+}
+export interface BackendContext {
+  readonly protocolVersion: 2;
+  readonly managerId: string;
+  readonly namespace: string;
+  readonly operationTimeoutMs: number;
+  readonly cleanupTimeoutMs: number;
+  readonly clock: Clock;
+  readonly scheduler: Scheduler;
+}
+export interface ConcurrentBackendSession {
+  readonly protocolVersion: 2;
+  readonly capabilities: ConcurrentCapabilities;
+  validateResource(resource: ResourceSpec): Promise<void>;
+  acquire(request: BackendAcquireRequest): Promise<BackendGrant | undefined>;
+  close(): Promise<void>;
+}
+export interface ConcurrentBackend {
+  openSession(context: BackendContext): Promise<ConcurrentBackendSession>;
+  close(): Promise<void>;
+}
+export const defaultClock: Clock = Object.freeze({
+  now: () => performance.now(),
+});
+export const defaultScheduler: Scheduler = Object.freeze({
+  setTimer(callback: () => void, delayMs: number): () => void {
+    const timer = setTimeout(callback, delayMs);
+    return () => clearTimeout(timer);
+  },
+});
+/** The native library adds mutex: or semaphore:. Kind is deliberately not encoded twice. */
+export function encodeResourceKey(
+  resource: Pick<ResourceSpec, 'namespace' | 'name'>,
+): string {
+  return `nb-concurrency:v2:${Buffer.from(JSON.stringify([resource.namespace, resource.name]), 'utf8').toString('base64url')}`;
+}
