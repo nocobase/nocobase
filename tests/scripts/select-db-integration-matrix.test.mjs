@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -197,14 +198,41 @@ test('a guarded package path selects its dialect suite, and nothing else does', 
     assert.deepEqual(selectPackageSuites([file]), [], file);
 });
 
+const receiptConcurrency = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-server',
+  tests: 'tests/idempotency.test.ts',
+}));
+
+test('receipt writes select PostgreSQL and MySQL concurrency checks without charging client-only changes', () => {
+  for (const file of [
+    'packages/app/app-server/src/router/idempotency.ts',
+    'packages/app/app-server/src/router/repository-routes.ts',
+    'packages/app/app-server/tests/idempotency.test.ts',
+    'packages/templates/app-template-default/database/main/migrations/202610270001_create_mutation_receipts.ts',
+    'packages/templates/app-template-examples/database/analytics/migrations/202610270001_create_mutation_receipts.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), receiptConcurrency, file);
+  assert.deepEqual(
+    selectPackageSuites(['packages/app/app-client/src/submission.ts']),
+    [],
+  );
+});
+
 test('every package suite names tests that exist', () => {
   for (const suite of packageSuites) {
-    const directory = path.join(
-      root,
-      'packages',
+    const packageName = suite.filter.replace('@nocobase/', '');
+    const directory = [
       'plugins',
-      suite.filter.replace('@nocobase/', ''),
-    );
+      'app',
+      'libs',
+      'examples',
+      'tools',
+      'templates',
+    ]
+      .map((section) => path.join(root, 'packages', section, packageName))
+      .find((candidate) => existsSync(path.join(candidate, 'package.json')));
+    assert.ok(directory, `Cannot find ${suite.filter}`);
     for (const file of suite.tests)
       assert.ok(
         readdirSync(path.dirname(path.join(directory, file))).includes(
@@ -281,6 +309,7 @@ test('missing or unavailable comparison commits conservatively select every data
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
     assert.deepEqual(plan.suites, [
+      ...receiptConcurrency,
       ...withdrawalConcurrency,
       claimConcurrency,
       artifactKeyMigration,
