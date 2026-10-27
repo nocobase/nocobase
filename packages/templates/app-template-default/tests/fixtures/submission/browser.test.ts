@@ -106,6 +106,7 @@ for (const app of applications) {
     await expect
       .poll(async () => (await evidence()).rows.length)
       .toBe(original.rows.length + 2);
+    await expect(page.getByTestId('record-id')).not.toHaveText(firstId);
     const secondId = await page.getByTestId('record-id').innerText();
     expect(secondId).not.toBe(firstId);
     await page.getByLabel('Operation').selectOption('update');
