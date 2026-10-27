@@ -92,7 +92,11 @@ export function DefaultAccessEditor({
             onChange={(event) => onKeyChange(event.target.value)}
           />
           {keyError && (
-            <p id={`${id}-key-error`} className='text-sm text-destructive'>
+            <p
+              data-feedback-field-error
+              id={`${id}-key-error`}
+              className='text-sm text-destructive'
+            >
               {keyError}
             </p>
           )}
@@ -129,7 +133,11 @@ export function DefaultAccessEditor({
             </SelectContent>
           </Select>
           {resourceError && (
-            <p id={`${id}-resource-error`} className='text-sm text-destructive'>
+            <p
+              data-feedback-field-error
+              id={`${id}-resource-error`}
+              className='text-sm text-destructive'
+            >
               {resourceError}
             </p>
           )}
@@ -189,6 +197,7 @@ export function DefaultAccessEditor({
                     </Select>
                     {scope.error && (
                       <p
+                        data-feedback-field-error
                         id={`${id}-${scope.id}-error`}
                         className='text-sm text-destructive'
                       >

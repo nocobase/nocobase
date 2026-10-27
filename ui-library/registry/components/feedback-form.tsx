@@ -242,7 +242,9 @@ export function FeedbackForm({
         return {
           field:
             control.dataset.fieldPath ?? control.getAttribute('name') ?? '',
-          message: options.messages.invalid,
+          message:
+            existingFieldError(control)?.textContent ||
+            options.messages.invalid,
         };
       }),
       attemptRef.current,
@@ -276,9 +278,11 @@ export function FeedbackForm({
       if (!control) continue;
       const describedBy = control.getAttribute('aria-describedby');
       const invalid = control.getAttribute('aria-invalid');
-      const existing = existingFieldError(control, entry.message);
+      const ownsInvalid = invalid !== 'true';
+      const existing = existingFieldError(control);
       const previousId = existing?.getAttribute('id');
       const id = existing?.id || `${entry.id}-error`;
+      const ownsDescription = !(describedBy?.split(/\s+/) ?? []).includes(id);
       if (existing && !existing.id) existing.id = id;
       control.setAttribute('aria-invalid', 'true');
       control.setAttribute(
@@ -288,11 +292,21 @@ export function FeedbackForm({
           .join(' '),
       );
       restore.push(() => {
-        if (existing && previousId === null) existing.removeAttribute('id');
-        if (describedBy === null) control.removeAttribute('aria-describedby');
-        else control.setAttribute('aria-describedby', describedBy);
-        if (invalid === null) control.removeAttribute('aria-invalid');
-        else control.setAttribute('aria-invalid', invalid);
+        if (existing && previousId === null && existing.id === id)
+          existing.removeAttribute('id');
+        // React may already have committed new caller-owned attributes. Remove only our additions.
+        if (ownsDescription) {
+          const remaining = (control.getAttribute('aria-describedby') ?? '')
+            .split(/\s+/)
+            .filter((value) => value && value !== id);
+          if (remaining.length)
+            control.setAttribute('aria-describedby', remaining.join(' '));
+          else control.removeAttribute('aria-describedby');
+        }
+        if (ownsInvalid && control.getAttribute('aria-invalid') === 'true') {
+          if (invalid === null) control.removeAttribute('aria-invalid');
+          else control.setAttribute('aria-invalid', invalid);
+        }
       });
     }
     return () => {
@@ -389,8 +403,7 @@ export function FeedbackForm({
       {children}
       {errors.map((entry) => {
         const control = feedback.field(entry.id)?.control();
-        return control?.parentElement &&
-          !existingFieldError(control, entry.message)
+        return control?.parentElement && !existingFieldError(control)
           ? createPortal(
               <p
                 id={`${entry.id}-error`}
@@ -419,21 +432,25 @@ function ancestors(control: HTMLElement): HTMLElement[] {
   return result;
 }
 
-function existingFieldError(
-  control: HTMLElement,
-  message: string,
-): HTMLElement | undefined {
+/** Only explicitly associated application error nodes are trusted, never arbitrary nearby text. */
+function existingFieldError(control: HTMLElement): HTMLElement | undefined {
+  const errorIds = (control.getAttribute('aria-errormessage') ?? '').split(
+    /\s+/,
+  );
   const described = (control.getAttribute('aria-describedby') ?? '')
     .split(/\s+/)
-    .map((id) => control.ownerDocument.getElementById(id));
+    .map((id) => control.ownerDocument.getElementById(id))
+    .filter((node) =>
+      node?.matches('[data-slot="field-error"], [data-feedback-field-error]'),
+    );
   const slot = control
     .closest('[data-slot="field"]')
     ?.querySelector<HTMLElement>('[data-slot="field-error"]');
-  return [...described, slot].find((node): node is HTMLElement =>
-    Boolean(
-      node &&
-      !node.hasAttribute('data-form-feedback-error') &&
-      node.textContent === message,
-    ),
+  return [
+    ...errorIds.map((id) => control.ownerDocument.getElementById(id)),
+    ...described,
+    slot,
+  ].find((node): node is HTMLElement =>
+    Boolean(node && !node.hasAttribute('data-form-feedback-error')),
   );
 }

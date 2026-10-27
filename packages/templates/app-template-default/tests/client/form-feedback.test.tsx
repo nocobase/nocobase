@@ -1,5 +1,5 @@
 import { ApiClientError } from '@nocobase/app-client';
-import { useForm } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
@@ -336,5 +336,122 @@ describe('feedback forms', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('保存失败'),
     );
+  });
+  it('shows real RHF field-array rules, focuses its editable entry and keeps form errors visible without a field', async () => {
+    const saved = vi.fn();
+    function ArrayForm() {
+      const form = useForm<{ items: { name: string }[] }>({
+        defaultValues: { items: [{ name: 'Laptop' }] },
+        shouldFocusError: false,
+      });
+      const rows = useFieldArray({
+        control: form.control,
+        name: 'items',
+        rules: { minLength: { value: 2, message: 'Add at least two items.' } },
+      });
+      return (
+        <FeedbackForm
+          noValidate
+          validationErrors={form.formState.errors}
+          submitting={form.formState.isSubmitting}
+          onSubmit={form.handleSubmit(saved)}
+        >
+          <div>
+            <button
+              type='button'
+              data-field-path='items'
+              aria-label='Add equipment'
+              onClick={() => rows.append({ name: 'Projector' })}
+            >
+              Add equipment
+            </button>
+          </div>
+          {rows.fields.map((row, i) => (
+            <input
+              key={row.id}
+              aria-label={`Equipment ${i}`}
+              {...form.register(`items.${i}.name`)}
+            />
+          ))}
+          <button>Save</button>
+        </FeedbackForm>
+      );
+    }
+    const view = await mount(<ArrayForm />);
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(screen.getByLabelText('Add equipment')).toHaveFocus(),
+    );
+    expect(screen.getByText('Add at least two items.')).toBeVisible();
+    expect(saved).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByLabelText('Add equipment'));
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    view.unmount();
+    await mount(
+      <FeedbackForm
+        validationErrors={{
+          items: { root: { message: 'A row is required.' } },
+        }}
+        onSubmit={() => {}}
+      >
+        <button>Save</button>
+      </FeedbackForm>,
+    );
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Check the highlighted fields',
+    );
+  });
+
+  it('keeps trusted controlled errors associated once and respects corrected attributes and new help', async () => {
+    function ControlledForm() {
+      const [invalid, setInvalid] = useState(false);
+      const [edited, setEdited] = useState(false);
+      return (
+        <FeedbackForm noValidate onSubmit={() => setInvalid(true)}>
+          <div data-slot='field'>
+            <label htmlFor='controlled'>Name</label>
+            <input
+              id='controlled'
+              name='name'
+              defaultValue='taken'
+              aria-invalid={invalid}
+              aria-describedby={edited ? 'new-help' : 'help'}
+              onChange={() => {
+                setInvalid(false);
+                setEdited(true);
+              }}
+            />
+            <p id='help'>Original help</p>
+            <p id='new-help'>Updated help</p>
+            {invalid && <p data-slot='field-error'>Choose a unique name.</p>}
+          </div>
+          <button>Save</button>
+        </FeedbackForm>
+      );
+    }
+    await mount(<ControlledForm />);
+    fireEvent.click(screen.getByText('Save'));
+    const input = screen.getByLabelText('Name');
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(screen.getAllByText('Choose a unique name.')).toHaveLength(1);
+    const ids = input.getAttribute('aria-describedby')!.split(' ');
+    expect(
+      ids.some(
+        (id) =>
+          document.getElementById(id)?.textContent === 'Choose a unique name.',
+      ),
+    ).toBe(true);
+    expect(document.querySelector('[data-form-feedback-error]')).toBeNull();
+    fireEvent.change(input, { target: { value: 'unique' } });
+    expect(input).toHaveAttribute('aria-invalid', 'false');
+    expect(input).toHaveAttribute('aria-describedby', 'new-help');
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'));
+    fireEvent.change(input, { target: { value: 'another' } });
+    expect(input).toHaveAttribute('aria-invalid', 'false');
   });
 });

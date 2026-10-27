@@ -315,7 +315,7 @@ Preserves form input, maps safe field errors and focuses the first editable erro
 - Installs to: `client/components/feedback-form.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/feedback-form-demo` (`pnpm exec shadcn view @nocobase/feedback-form-demo`)
-- After installing: Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Requires a released app-client containing FormFeedback; the current implementation is an unpublished source snapshot, so release the runtime before installing this registry revision.
+- After installing: Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Publication is gated by check-form-feedback-release.mjs: the declared app-client version floor must be obtainable and export the form APIs in JavaScript and declarations. Release the runtime and raise this item's floor before publishing the registry. Existing controlled fields expose trusted errors through aria-errormessage or explicitly associated data-slot=field-error / data-feedback-field-error nodes.
 
 ## Inbox
 

@@ -246,12 +246,24 @@ describe('form feedback', () => {
     expect(feedback.getSnapshot().message).toBe(messages.denied);
   });
 
-  it('adapts nested RHF errors without traversing DOM refs or root errors', () => {
+  it('adapts nested RHF errors without traversing DOM refs and preserves form-level errors', () => {
     expect(
       formFeedbackErrors({
         items: [{ name: { message: 'Required', ref: document.body } }],
         root: { message: 'Form error' },
       }),
-    ).toEqual([{ field: 'items.0.name', message: 'Required' }]);
+    ).toEqual([
+      { field: 'items.0.name', message: 'Required' },
+      { field: '', message: 'Form error' },
+    ]);
+  });
+  it('preserves array-level root rules alongside row errors', () => {
+    const items = Object.assign([{ name: { message: 'Name is required' } }], {
+      root: { type: 'minLength', message: 'Add at least two items.' },
+    });
+    expect(formFeedbackErrors({ items })).toEqual([
+      { field: 'items.0.name', message: 'Name is required' },
+      { field: 'items', message: 'Add at least two items.' },
+    ]);
   });
 });

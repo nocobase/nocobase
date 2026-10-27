@@ -513,6 +513,7 @@ function UserEditor(): ReactElement {
                 />
                 {fieldError(name) && (
                   <p
+                    data-feedback-field-error
                     id={`${formId}-${name}-error`}
                     className='text-xs text-destructive'
                   >
@@ -539,6 +540,7 @@ function UserEditor(): ReactElement {
                 />
                 {serverErrors[scope.key] && (
                   <p
+                    data-feedback-field-error
                     id={`${formId}-roles-${encodeURIComponent(scope.key)}-error`}
                     className='text-xs text-destructive'
                   >

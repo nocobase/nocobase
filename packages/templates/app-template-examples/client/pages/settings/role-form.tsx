@@ -246,6 +246,11 @@ function RoleEditor(): ReactElement {
                     value={roleKey}
                     disabled={!creating || !allowed || busy}
                     aria-invalid={keyConflict || (submitted && !roleKey.trim())}
+                    aria-errormessage={
+                      keyConflict || (submitted && !roleKey.trim())
+                        ? 'role-key-error'
+                        : undefined
+                    }
                     onChange={(event) => {
                       setKeyConflict(false);
                       setKeyDraft(event.target.value);
@@ -253,7 +258,7 @@ function RoleEditor(): ReactElement {
                     }}
                   />
                   {(keyConflict || (submitted && !roleKey.trim())) && (
-                    <p className='text-xs text-destructive'>
+                    <p id='role-key-error' className='text-xs text-destructive'>
                       {t(
                         keyConflict
                           ? 'settings.keyConflict'
@@ -271,13 +276,19 @@ function RoleEditor(): ReactElement {
                     value={name}
                     disabled={!allowed || busy}
                     aria-invalid={submitted && !name.trim()}
+                    aria-errormessage={
+                      submitted && !name.trim() ? 'role-name-error' : undefined
+                    }
                     onChange={(event) => {
                       setNameDraft(event.target.value);
                       setDirty(true);
                     }}
                   />
                   {submitted && !name.trim() && (
-                    <p className='text-xs text-destructive'>
+                    <p
+                      id='role-name-error'
+                      className='text-xs text-destructive'
+                    >
                       {t('settings.required')}
                     </p>
                   )}

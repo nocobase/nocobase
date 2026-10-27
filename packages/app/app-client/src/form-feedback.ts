@@ -363,8 +363,11 @@ export function formFeedbackErrors(
   if (typeof source.message === 'string')
     return [{ field: prefix, message: source.message }];
   return Object.entries(source)
-    .filter(([key]) => !['ref', 'types', 'root'].includes(key))
+    .filter(([key]) => !['ref', 'types'].includes(key))
     .flatMap(([key, value]) =>
-      formFeedbackErrors(value, prefix ? `${prefix}.${key}` : key),
+      formFeedbackErrors(
+        value,
+        key === 'root' ? prefix : prefix ? `${prefix}.${key}` : key,
+      ),
     );
 }
