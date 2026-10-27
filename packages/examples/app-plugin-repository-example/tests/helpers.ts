@@ -7,6 +7,7 @@ import { ServiceContainer } from '@nocobase/service-provider';
 import { createApiClient } from '@nocobase/app-client';
 import { Hono } from 'hono';
 import { vi } from 'vitest';
+import { repositoryIdempotencyToken } from '@nocobase/app-server/router';
 import { apiRoutes } from '../server/routes/index.js';
 
 /**
@@ -31,7 +32,19 @@ async function routeFixture(database: DatabaseManager) {
     packageName: '@nocobase/app-plugin-repository-example',
   });
   await migrator.latest();
+  await database.builder().createCollection('mutationReceipts', (c) => {
+    c.string('id', { length: 64 }).primary().notNull();
+    c.string('digest', { length: 64 }).notNull();
+    c.json('result').nullable();
+    c.datetime('expiresAt').notNull();
+    c.index('expiresAt');
+  });
   const container = new ServiceContainer();
+  // Old test callers may omit keys while migrated browser demonstrations use the receipt protocol.
+  container.instance(repositoryIdempotencyToken, {
+    required: false,
+    principal: () => 'tester',
+  });
   container.instance(databaseManagerToken, database);
   const authentication = new Auth({
     connection: database.connection(),

@@ -94,7 +94,8 @@
     "tar": "catalog:",
     "@xyflow/react": "^12.11.5",
     "elkjs": "^0.10.2",
-    "@types/jsdom": "catalog:"
+    "@types/jsdom": "catalog:",
+    "@noble/hashes": "2.3.0"
   },
   "files": [
     ".prettierignore",

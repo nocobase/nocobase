@@ -82,7 +82,8 @@
     "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-router": "^7.0.2"
+    "react-router": "^7.0.2",
+    "@nocobase/api-client": "workspace:^"
   },
   "devDependencies": {
     "@nocobase/api-client": "workspace:*",

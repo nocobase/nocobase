@@ -694,6 +694,9 @@ importers:
 
   packages/app/app-client:
     dependencies:
+      '@noble/hashes':
+        specifier: 2.3.0
+        version: 2.3.0
       '@nocobase/api-client':
         specifier: workspace:^
         version: link:../../libs/api-client
@@ -5507,6 +5510,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@noble/hashes':
+        specifier: 2.3.0
+        version: 2.3.0
       '@ai-sdk/react':
         specifier: 'catalog:'
         version: 4.0.131(react@19.2.8)(zod@4.6.5)
@@ -5880,6 +5886,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@noble/hashes':
+        specifier: 2.3.0
+        version: 2.3.0
       '@ai-sdk/react':
         specifier: 'catalog:'
         version: 4.0.131(react@19.2.8)(zod@4.6.5)

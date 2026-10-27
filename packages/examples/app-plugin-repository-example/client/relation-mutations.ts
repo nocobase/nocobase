@@ -1,3 +1,4 @@
+import { createOperationKey } from '@nocobase/api-client';
 import { createUuid } from '@nocobase/app-client';
 import type { ApiClient, RemoteRepository } from '@nocobase/app-client';
 import type { RemoteSelectAst } from '@nocobase/api-client';
@@ -191,7 +192,10 @@ export async function runRelationMutationScenario(
       assignee: { connect: { id: 'user-1' } },
     },
   };
-  const connectTaskResult = await tasks.createOne(connectTaskInput);
+  const connectTaskResult = await tasks.createOne({
+    ...connectTaskInput,
+    idempotencyKey: createOperationKey(),
+  });
   calls.push({
     repository: relationRepositories.tasks,
     action: 'createOne',
@@ -241,7 +245,10 @@ export async function runRelationMutationScenario(
     },
     select: relationProjectSelect,
   };
-  const createResult = await projects.createOne(createInput);
+  const createResult = await projects.createOne({
+    ...createInput,
+    idempotencyKey: createOperationKey(),
+  });
   calls.push({
     repository: relationRepositories.projects,
     action: 'createOne',
@@ -295,7 +302,10 @@ export async function runRelationMutationScenario(
     },
     select: relationProjectSelect,
   };
-  const updateResult = await projects.updateOne(updateInput);
+  const updateResult = await projects.updateOne({
+    ...updateInput,
+    idempotencyKey: createOperationKey(),
+  });
   calls.push({
     repository: relationRepositories.projects,
     action: 'updateOne',
@@ -315,7 +325,10 @@ export async function runRelationMutationScenario(
     },
     select: relationProjectSelect,
   };
-  const setResult = await projects.updateOne(setInput);
+  const setResult = await projects.updateOne({
+    ...setInput,
+    idempotencyKey: createOperationKey(),
+  });
   calls.push({
     repository: relationRepositories.projects,
     action: 'updateOne',

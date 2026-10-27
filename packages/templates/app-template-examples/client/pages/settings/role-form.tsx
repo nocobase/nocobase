@@ -1,3 +1,4 @@
+import { useSubmission } from '@nocobase/app-client';
 import {
   useSettingsLeave,
   useSettingsData,
@@ -87,7 +88,9 @@ function RoleEditor(): ReactElement {
   const [grantsDraft, setGrantsDraft] = useState<readonly PermissionGrant[]>();
   const [dirty, setDirty] = useState(false);
   const [editingScope, setEditingScope] = useState<string>();
-  const [busy, setBusy] = useState(false);
+  const submission = useSubmission();
+  const [requestBusy, setRequestBusy] = useState(false);
+  const busy = requestBusy || submission.submitting;
   const leave = useSettingsLeave(dirty, busy);
   const [error, setError] = useState<unknown>();
 
@@ -127,57 +130,59 @@ function RoleEditor(): ReactElement {
     pathname: useResolvedPath('..').pathname,
     search: location.search,
   };
-  const save = async (event: React.FormEvent<HTMLFormElement>) => {
+  const save = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (options.error || !catalog || (!creating && request.error)) return;
-    setSubmitted(true);
-    if (!name.trim() || !roleKey.trim()) {
-      event.currentTarget
-        .querySelector<HTMLInputElement>('input:invalid')
-        ?.focus();
-      return;
-    }
-    const incomplete = unconfiguredFilter(grants);
-    if (incomplete) {
-      setEditingScope(incomplete);
-      return;
-    }
-    setEditingScope(undefined);
-    setBusy(true);
-    setError(undefined);
-    setKeyConflict(false);
-    try {
-      const input = {
-        key: roleKey,
-        title:
-          !creating && initial && nameDraft === undefined
-            ? initial.title
-            : name.trim(),
-        grants,
-        ...(!creating && request.data?.data.revision
-          ? { expectedRevision: request.data.data.revision }
-          : {}),
-      };
-      if (creating) await authz.createPermissionSet(input);
-      else await authz.updatePermissionSet(key, input);
-      setDirty(false);
-      parent.reload();
-      toaster.show({ type: 'success', title: t('settings.saved', { name }) });
-      leave.allow();
-      void navigate(closeTo, { replace: true });
-    } catch (next) {
-      if (
-        creating &&
-        next instanceof Error &&
-        'status' in next &&
-        next.status === 409
-      ) {
-        setKeyConflict(true);
-        document.getElementById('role-key')?.focus();
-      } else setError(next);
-    } finally {
-      setBusy(false);
-    }
+    const form = event.currentTarget;
+    return submission.run(null, async () => {
+      event.preventDefault();
+      if (options.error || !catalog || (!creating && request.error)) return;
+      setSubmitted(true);
+      if (!name.trim() || !roleKey.trim()) {
+        form.querySelector<HTMLInputElement>('input:invalid')?.focus();
+        return;
+      }
+      const incomplete = unconfiguredFilter(grants);
+      if (incomplete) {
+        setEditingScope(incomplete);
+        return;
+      }
+      setEditingScope(undefined);
+      setRequestBusy(true);
+      setError(undefined);
+      setKeyConflict(false);
+      try {
+        const input = {
+          key: roleKey,
+          title:
+            !creating && initial && nameDraft === undefined
+              ? initial.title
+              : name.trim(),
+          grants,
+          ...(!creating && request.data?.data.revision
+            ? { expectedRevision: request.data.data.revision }
+            : {}),
+        };
+        if (creating) await authz.createPermissionSet(input);
+        else await authz.updatePermissionSet(key, input);
+        setDirty(false);
+        parent.reload();
+        toaster.show({ type: 'success', title: t('settings.saved', { name }) });
+        leave.allow();
+        void navigate(closeTo, { replace: true });
+      } catch (next) {
+        if (
+          creating &&
+          next instanceof Error &&
+          'status' in next &&
+          next.status === 409
+        ) {
+          setKeyConflict(true);
+          document.getElementById('role-key')?.focus();
+        } else setError(next);
+      } finally {
+        setRequestBusy(false);
+      }
+    });
   };
   const sections = catalog
     ? configurePermissionScopes(

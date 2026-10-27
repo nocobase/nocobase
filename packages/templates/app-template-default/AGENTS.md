@@ -118,6 +118,10 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 - Comment what you changed and why the built-in path did not fit. On upgrade, an agent reconciling the template's version needs to know whether your change is still needed.
 - Record what the next agent needs to know in the matching `.agents/rules/` file, or a new one linked from the index below, so the guidance describes the application as it actually is without growing this file. If the framework's shared guidance is wrong for every application, update the source `@nocobase/app-skills` package instead of editing its synchronized copy.
 
+## Standard submissions
+
+Standard Repository writes require an operation key through the registered submission provider. Forms share `useSubmission` across all entries before asynchronous validation; custom effectful APIs explicitly join the receipt transaction. Follow [submission protection](.agents/skills/nocobase-app-development/references/submission.md) and [source upgrades](.agents/skills/nocobase-app-upgrade/references/submission-upgrade.md). Merge copied source and verify retained customizations on upgrade.
+
 ## Index
 
 | Read                                                                   | When                                                                                                         |

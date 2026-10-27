@@ -1,3 +1,4 @@
+import { createOperationKey } from '@nocobase/api-client';
 import { createUuid } from '@nocobase/app-client';
 import type { ApiClient } from '@nocobase/app-client';
 import type { JsonValue, RemoteSelectAst } from '@nocobase/api-client';
@@ -75,6 +76,7 @@ export async function prepareRelationLab(
   for (const name of ['A', 'B', 'C', 'D']) {
     const id = freshId();
     await api.repository(targetRepository(relation)).createOne({
+      idempotencyKey: createOperationKey(),
       values: {
         id,
         ...targetValues(relation, {
@@ -90,6 +92,7 @@ export async function prepareRelationLab(
     targetIds.push(id);
   }
   await api.repository(relationRepositories.projects).createOne({
+    idempotencyKey: createOperationKey(),
     values: {
       id: projectId,
       name: `${operation} · ${relation} · ${projectId.slice(-8)}`,
@@ -105,6 +108,7 @@ export async function prepareRelationLab(
       : targetIds.slice(0, 2);
   if (linkedIds.length)
     await api.repository(relationRepositories.projects).updateOne({
+      idempotencyKey: createOperationKey(),
       filter: { id: projectId },
       values: {
         [relation]: {
@@ -224,9 +228,10 @@ export async function executeRelationLab(
   input: LabInput,
 ): Promise<LabMutationResult> {
   const options = relationLabRequest(lab, input);
-  const result = await api
-    .repository(relationRepositories.projects)
-    .updateOne(options);
+  const result = await api.repository(relationRepositories.projects).updateOne({
+    ...options,
+    idempotencyKey: createOperationKey(),
+  });
   const related = result.record[lab.relation];
   const relatedRows: unknown[] = Array.isArray(related)
     ? related

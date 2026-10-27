@@ -1,3 +1,4 @@
+import { createOperationKey } from '@nocobase/api-client';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { useApiClient, ApiClientError } from '@nocobase/app-client';
@@ -109,7 +110,9 @@ export default function AtomicPage(): ReactElement {
     try {
       if (change === 'concurrent') {
         const results = await Promise.allSettled(
-          Array.from({ length: 10 }, () => repo.updateOne(input)),
+          Array.from({ length: 10 }, () =>
+            repo.updateOne({ ...input, idempotencyKey: createOperationKey() }),
+          ),
         );
         const succeeded = results.filter(
           (result) => result.status === 'fulfilled',
@@ -131,7 +134,10 @@ export default function AtomicPage(): ReactElement {
         setNotice(t('atomicConcurrentResult', { count: succeeded }));
         if (succeeded !== 10) setError(t('atomicPartial'));
       } else {
-        const result = await repo.updateOne(input);
+        const result = await repo.updateOne({
+          ...input,
+          idempotencyKey: createOperationKey(),
+        });
         trace({ action: 'updateOne', input, output: result });
         setNotice(t('atomicUpdated', { value: result.record.value }));
       }
