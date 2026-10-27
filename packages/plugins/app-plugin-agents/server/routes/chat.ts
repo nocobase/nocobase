@@ -180,7 +180,16 @@ const NativeSendSchema = z.strictObject({
   context: PageContextSchema.optional(),
   selectedModel: SelectedModel.optional(),
 });
-const SendSchema = NativeSendSchema;
+const SendSchema = NativeSendSchema.extend({
+  agentId: z
+    .string()
+    .min(1)
+    .max(128)
+    .optional()
+    .describe(
+      'Final Runner agent selection. Only an idle Runner conversation can change agents; binding, notice and message are committed together. Omit to keep the current agent.',
+    ),
+});
 const NativeMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant', 'system']),
@@ -609,7 +618,12 @@ export function createChatRoutes(
       );
       const parts: Exclude<UserModelMessage['content'], string> =
         request.message.parts;
+      if (request.agentId && agent.backend !== 'runner')
+        throw invalid(
+          'Only Runner conversations can select an agent when sending.',
+        );
       await agent.send([{ role: 'user', content: parts }], {
+        agentId: request.agentId,
         attachmentIds: [[...(request.attachmentIds ?? [])]],
         clientId: request.message.id,
         messageId: request.message.id,
@@ -668,7 +682,7 @@ export function createChatRoutes(
       },
     }),
     conversationParam,
-    apiValidator('json', SendSchema),
+    apiValidator('json', NativeSendSchema),
     async (context) => {
       const id = context.req.valid('param').conversationId;
       const request = context.req.valid('json');

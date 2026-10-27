@@ -116,6 +116,15 @@ describe('authentication translations', () => {
   it('retranslates an existing password mismatch', async () => {
     const value = await runtime();
     const { container } = renderPage(value, <RegisterPage />);
+    for (const [label, text] of [
+      ['Name', 'Test'],
+      ['Username', 'tester'],
+      ['Email', 'tester@example.test'],
+    ]) {
+      fireEvent.change(screen.getByLabelText(label!), {
+        target: { value: text },
+      });
+    }
     fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'one' },
     });

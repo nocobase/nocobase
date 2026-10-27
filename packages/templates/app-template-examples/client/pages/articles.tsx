@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { useApiClient } from '@nocobase/app-client';
@@ -75,7 +76,7 @@ export default function ArticlesPage(): ReactElement {
   const [form, setForm] = useState(emptyForm);
   const [original, setOriginal] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState<unknown>(undefined);
   useEffect(() => {
     const timer = setTimeout(() => {
       setQuery(search.trim());
@@ -141,8 +142,8 @@ export default function ArticlesPage(): ReactElement {
       setEditor(false);
       setPage(1);
       setRevision((value) => value + 1);
-    } catch {
-      setSaveError(true);
+    } catch (next) {
+      setSaveError(next);
     } finally {
       setSaving(false);
     }
@@ -353,7 +354,13 @@ export default function ArticlesPage(): ReactElement {
             </DialogTitle>
             <DialogDescription>{t('articles.editorHint')}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={(event) => void save(event)} className='contents'>
+          <FeedbackForm
+            submitting={saving}
+            error={saveError}
+            errorContent={t('articles.saveError')}
+            onSubmit={(event) => void save(event)}
+            className='contents'
+          >
             <div className='-mx-4 min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-1'>
               <div className='space-y-2'>
                 <Label htmlFor='article-title'>
@@ -361,6 +368,7 @@ export default function ArticlesPage(): ReactElement {
                 </Label>
                 <Input
                   id='article-title'
+                  name='title'
                   required
                   maxLength={255}
                   value={form.title}
@@ -373,6 +381,7 @@ export default function ArticlesPage(): ReactElement {
                 <Label htmlFor='article-summary'>{t('articles.summary')}</Label>
                 <Textarea
                   id='article-summary'
+                  name='summary'
                   maxLength={2000}
                   value={form.summary}
                   onChange={(event) =>
@@ -384,6 +393,7 @@ export default function ArticlesPage(): ReactElement {
                 <Label htmlFor='article-content'>{t('articles.content')}</Label>
                 <Textarea
                   id='article-content'
+                  name='content'
                   className='min-h-64'
                   maxLength={100000}
                   value={form.content}
@@ -414,11 +424,6 @@ export default function ArticlesPage(): ReactElement {
                   </SelectContent>
                 </Select>
               </div>
-              {saveError && (
-                <p role='alert' className='text-sm text-destructive'>
-                  {t('articles.saveError')}
-                </p>
-              )}
             </div>
             <div className='flex justify-end gap-2'>
               <Button
@@ -433,7 +438,7 @@ export default function ArticlesPage(): ReactElement {
                 {saving ? t('articles.saving') : t('actions.save')}
               </Button>
             </div>
-          </form>
+          </FeedbackForm>
         </DialogContent>
       </Dialog>
     </PageContainer>

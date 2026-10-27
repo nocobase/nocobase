@@ -294,7 +294,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
     if (state.stopping) throw conflict('OnlineAgent is stopping.');
     const text = userText(messages, input);
     credentials(this.context);
-    if (input?.overrides)
+    if (input?.overrides || input?.agentId)
       throw invalid('Queued messages keep the configuration of the work.');
     // A first message still being admitted is the work this one joins.
     while (state.admitting.has(this.sessionId))
@@ -347,7 +347,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
     if (!current)
       throw invalid('This is not a Runner OnlineAgent conversation.');
     const requested = input?.overrides ?? this.pendingOptions;
-    const config = requested
+    const resolved = requested
       ? await deps.configurator.resolve(
           this.context,
           requested,
@@ -355,8 +355,11 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
           this.boundary === 'http',
         )
       : current;
-    if (config.agentId !== this.agentId)
+    if (resolved.agentId !== this.agentId)
       throw conflict('Start a new conversation to choose another agent.');
+    const config = input?.agentId
+      ? { ...resolved, agentId: input.agentId }
+      : resolved;
     supported(config);
     if (state.active.size >= 1024)
       throw conflict('OnlineAgent execution limit exceeded.');
@@ -389,6 +392,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
         this.context.user.id,
         this.sessionId,
         {
+          agentId: input?.agentId,
           content: text,
           attachmentIds: input?.attachmentIds?.[0],
           clientId: input?.clientId,
@@ -408,6 +412,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
     }
     // Nothing after durable acceptance may turn it into a failed/retried business admission.
     this.response = writer;
+    this.agentId = config.agentId;
     this.pendingOptions = undefined;
     execution.runId = accepted.run!.id;
     execution.cursor = accepted.seq;

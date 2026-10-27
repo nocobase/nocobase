@@ -19,7 +19,7 @@ import {
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MemoryRouter, Outlet } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AppRouter } from '../../client/routing/app-router.js';
@@ -80,6 +80,7 @@ async function setup() {
   const accepted = vi.fn();
   const old = Promise.withResolvers<void>();
   function Page() {
+    const [privateFilter, setPrivateFilter] = useState('');
     useEffect(() => {
       let active = true;
       mounted();
@@ -96,6 +97,11 @@ async function setup() {
         <DialogContent>
           <DialogTitle>Protected dialog</DialogTitle>
           <DialogDescription>Protected content</DialogDescription>
+          <input
+            aria-label='Private filter'
+            value={privateFilter}
+            onChange={(event) => setPrivateFilter(event.target.value)}
+          />
         </DialogContent>
       </Dialog>
     );
@@ -170,6 +176,10 @@ async function setup() {
       session = null;
       await act(async () => refresh());
     },
+    switchUser: async () => {
+      session = { user: { id: 'other' }, session: { id: 'other-session' } };
+      await act(async () => refresh());
+    },
   };
 }
 
@@ -193,6 +203,19 @@ it('mounts only after the initial handshake and preserves runtime fail-closed po
   );
   expect(screen.queryByRole('dialog')).toBeNull();
   expect(await screen.findByText('Access denied')).toBeVisible();
+});
+
+it('clears mounted private list memory when the signed-in identity changes', async () => {
+  const probe = await setup();
+  await probe.open();
+  const filter = await screen.findByRole('textbox', { name: 'Private filter' });
+  fireEvent.change(filter, { target: { value: 'private condition' } });
+  expect(filter).toHaveValue('private condition');
+  await probe.switchUser();
+  await probe.open();
+  expect(
+    await screen.findByRole('textbox', { name: 'Private filter' }),
+  ).toHaveValue('');
 });
 
 it('keeps a timed-out session closed, supports retry, and reports sign-out failure', async () => {
