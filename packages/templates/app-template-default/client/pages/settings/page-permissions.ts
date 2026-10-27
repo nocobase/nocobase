@@ -101,6 +101,21 @@ export function pagePermissionNavigation(
     ({ type, id }) => !configuration.has(JSON.stringify([type, id])),
   );
   const resources = new Map(pages.map((page) => [page.id, page]));
+  const paths = new Map<string, string>();
+  const collectPaths = (items: readonly AppClientRegisteredRoute[]): void => {
+    for (const route of items) {
+      if (
+        route.componentLoader &&
+        typeof route.authz === 'object' &&
+        route.authz.resource.type === 'page' &&
+        !paths.has(route.authz.resource.id)
+      ) {
+        paths.set(route.authz.resource.id, route.path);
+      }
+      collectPaths(route.children ?? []);
+    }
+  };
+  collectPaths(routes);
   const seen = new Set<string>();
   const visit = (
     items: readonly RouteNavigationItem[],
@@ -130,6 +145,7 @@ export function pagePermissionNavigation(
                 : unnamed(route.path),
           ),
           rowId,
+          path: route.path,
           children: descendants,
         },
       ];
@@ -142,6 +158,7 @@ export function pagePermissionNavigation(
       id: `page:${page.id}`,
       label: text(page.title),
       rowId: permissionRowId(page, 'access'),
+      path: paths.get(page.id),
     }));
   return [
     ...navigation,
