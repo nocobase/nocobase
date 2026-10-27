@@ -403,6 +403,11 @@ export default function UsersPage(): ReactElement {
     rows.length,
     filtered,
   );
+  const canShowCreate =
+    listState === 'empty' ||
+    listState === 'no-results' ||
+    listState === 'ready' ||
+    listState === 'refresh-failed';
   return (
     <>
       <PageContainer>
@@ -412,7 +417,7 @@ export default function UsersPage(): ReactElement {
         <PageHeader
           title={t('settings.users')}
           description={t('settings.usersDescription')}
-          actions={rows.length || filtered ? create : undefined}
+          actions={canShowCreate ? create : undefined}
         />
         <div className='flex flex-wrap items-center gap-3'>
           <Input
@@ -529,7 +534,6 @@ export default function UsersPage(): ReactElement {
               </EmptyDescription>
             </Empty>
           }
-          emptyAction={create}
         />
         {request.data && (
           <p className='text-sm text-muted-foreground'>

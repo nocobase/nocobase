@@ -485,6 +485,48 @@ it('refuses deleting a changed rule and refreshes the list for explicit re-confi
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 });
 
+it('keeps one authorized create entry in the header for an empty list', async () => {
+  await renderWithApp(tree(), {
+    route: '/default-access',
+    namespace,
+    namespaces,
+    services,
+    fetch: answerApi(({ path }) =>
+      path === 'authorization/permissions'
+        ? { data: { unrestricted: true, permissions: [] } }
+        : path.endsWith('/options')
+          ? { data: catalog }
+          : { data: [] },
+    ),
+  });
+  const label = enUS.settings.defaultAccess.new;
+  const create = await screen.findByRole('button', { name: label });
+  expect(create).toHaveAttribute('href', '/default-access/create');
+  expect(screen.getAllByRole('button', { name: label })).toHaveLength(1);
+});
+
+it('hides the create entry for a read-only empty list', async () => {
+  await renderWithApp(tree(), {
+    route: '/default-access',
+    namespace,
+    namespaces,
+    services,
+    fetch: answerApi(({ path }) =>
+      path === 'authorization/permissions'
+        ? { data: { unrestricted: false, permissions: [] } }
+        : path.endsWith('/options')
+          ? { data: catalog }
+          : { data: [] },
+    ),
+  });
+  const label = enUS.settings.defaultAccess.new;
+  expect(
+    await screen.findByText(enUS.settings.defaultAccess.readOnlyEmpty),
+  ).toBeVisible();
+  expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
+});
+
 it('disables New rule with a reason when every available resource is already configured', async () => {
   await renderWithApp(tree(), {
     route: '/default-access',

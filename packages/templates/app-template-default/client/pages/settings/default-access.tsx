@@ -325,13 +325,24 @@ export default function DefaultAccessPage(): ReactElement {
     ) ??
     rules.error ??
     catalog.error;
+  const listState = resolveListState(
+    {
+      data: rules.data && catalog.data ? rows : undefined,
+      error: listError,
+    },
+    rows.length,
+    Boolean(search.trim()),
+  );
+  const canShowCreate =
+    listState === 'empty' ||
+    listState === 'no-results' ||
+    listState === 'ready' ||
+    listState === 'refresh-failed';
   return (
     <>
       <PermissionManagementPage
         tab='default-access'
-        actions={
-          rules.data && (rules.data.data.length || search) ? create : undefined
-        }
+        actions={canShowCreate ? create : undefined}
       >
         <div className='flex flex-wrap items-center gap-2'>
           <Input
@@ -375,14 +386,7 @@ export default function DefaultAccessPage(): ReactElement {
           showSelectedCount={false}
           pageSize={20}
           loading={rules.loading || catalog.loading}
-          listState={resolveListState(
-            {
-              data: rules.data && catalog.data ? rows : undefined,
-              error: listError,
-            },
-            rows.length,
-            Boolean(search.trim()),
-          )}
+          listState={listState}
           onRetry={() => {
             rules.reload();
             catalog.reload();
@@ -403,7 +407,6 @@ export default function DefaultAccessPage(): ReactElement {
               </EmptyDescription>
             </Empty>
           }
-          emptyAction={create}
         />
         <ConfirmAction
           error={<SettingsError error={error} />}
