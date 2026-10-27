@@ -350,8 +350,20 @@ Standard TanStack Table v8 table with controlled server pagination and sorting, 
 - Install: `yes n | pnpm exec shadcn add @nocobase/data-table`
 - Installs to: `client/components/data-table/column-header.tsx`, `client/components/data-table/data-table.tsx`, `client/components/data-table/index.ts`, `client/components/data-table/pagination.tsx`, `client/components/data-table/view-options.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/list-feedback`
 - Example: `@nocobase/data-table-demo` (`pnpm exec shadcn view @nocobase/data-table-demo`)
 - After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.
+
+### list-feedback
+
+Accessible list loading, empty, filtered, permission and request feedback for tables and cards.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/list-feedback`
+- Installs to: `client/components/list-feedback.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/list-feedback-demo` (`pnpm exec shadcn view @nocobase/list-feedback-demo`)
+- After installing: Pass resolveListState from @nocobase/app-client and the existing request retry/clear callbacks. Merge listFeedback translations listed in the components README. Gate emptyAction with the existing create permission.
 
 ## Page layout
 

@@ -1,3 +1,5 @@
+import type { ListState } from '@nocobase/app-client';
+import { ListFeedback } from '#components/list-feedback';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   type ColumnDef,
@@ -41,6 +43,10 @@ export interface DataTableProps<TData, TValue = unknown> {
   readonly onSortingChange?: OnChangeFn<SortingState>;
   readonly showSelectedCount?: boolean;
   readonly loading?: boolean;
+  readonly listState?: ListState;
+  readonly onRetry?: () => void;
+  readonly onClearFilters?: () => void;
+  readonly emptyAction?: ReactNode;
   readonly className?: string;
   /**
    * Rendered above the table and handed the table instance, so filters and
@@ -91,6 +97,10 @@ export function DataTable<TData, TValue = unknown>({
   onSortingChange,
   showSelectedCount = true,
   loading = false,
+  listState,
+  onRetry,
+  onClearFilters,
+  emptyAction,
 }: DataTableProps<TData, TValue>): ReactElement {
   const { t } = useTranslation();
   const tableData = useMemo(() => [...data], [data]);
@@ -134,6 +144,28 @@ export function DataTable<TData, TValue = unknown>({
   });
 
   const rows = table.getRowModel().rows;
+  const requestedState =
+    (listState === 'ready' && rows.length === 0 && columnFilters.length > 0
+      ? 'no-results'
+      : listState) ??
+    (loading && data.length === 0
+      ? 'loading'
+      : rows.length
+        ? 'ready'
+        : columnFilters.length
+          ? 'no-results'
+          : 'empty');
+  const state =
+    (requestedState === 'empty' || requestedState === 'no-results') &&
+    ((manualPagination && columnFilters.length === 0 && (rowCount ?? 0) > 0) ||
+      (!manualPagination && table.getPrePaginationRowModel().rows.length > 0))
+      ? 'loading'
+      : requestedState;
+  const clearFilters = () => {
+    table.resetColumnFilters();
+    table.setPageIndex(0);
+    onClearFilters?.();
+  };
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
@@ -142,70 +174,81 @@ export function DataTable<TData, TValue = unknown>({
           {toolbar(table)}
         </div>
       ) : null}
-      <div className='overflow-hidden rounded-lg border'>
-        <Table aria-busy={loading}>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    aria-sort={
-                      header.column.getCanSort()
-                        ? header.column.getIsSorted() === 'asc'
-                          ? 'ascending'
-                          : header.column.getIsSorted() === 'desc'
-                            ? 'descending'
-                            : 'none'
-                        : undefined
-                    }
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() ? 'selected' : undefined}
-                  className={onRowClick ? 'cursor-pointer' : undefined}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
+      <ListFeedback
+        state={state}
+        empty={emptyMessage}
+        emptyAction={emptyAction}
+        onClear={
+          columnFilters.length > 0 || onClearFilters ? clearFilters : undefined
+        }
+        onRetry={onRetry}
+        busy={loading}
+      >
+        <div className='overflow-hidden rounded-lg border'>
+          <Table aria-busy={loading}>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      aria-sort={
+                        header.column.getCanSort()
+                          ? header.column.getIsSorted() === 'asc'
+                            ? 'ascending'
+                            : header.column.getIsSorted() === 'desc'
+                              ? 'descending'
+                              : 'none'
+                          : undefined
+                      }
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='h-24 text-center text-muted-foreground'
-                >
-                  {emptyMessage ??
-                    t('dataTable.noResults', { defaultValue: 'No results.' })}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {pagination ? (
+              ))}
+            </TableHeader>
+            <TableBody>
+              {rows.length > 0 ? (
+                rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() ? 'selected' : undefined}
+                    className={onRowClick ? 'cursor-pointer' : undefined}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className='h-24 text-center text-muted-foreground'
+                  >
+                    {emptyMessage ??
+                      t('dataTable.noResults', { defaultValue: 'No results.' })}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </ListFeedback>
+      {pagination && (state === 'ready' || state === 'refresh-failed') ? (
         <DataTablePagination
           table={table}
           pageSizeOptions={pageSizeOptions}

@@ -5,7 +5,11 @@ import ArticlesPage from '../../client/pages/articles.tsx';
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
 
 async function mount(
-  options: { empty?: boolean; beforeRequest?: (request: Request) => void } = {},
+  options: {
+    empty?: boolean;
+    route?: string;
+    beforeRequest?: (request: Request) => void;
+  } = {},
 ) {
   return renderAuthenticatedClient(
     <QueryClientProvider
@@ -17,6 +21,7 @@ async function mount(
     </QueryClientProvider>,
     {
       member: true,
+      route: options.route,
       beforeRequest: options.beforeRequest,
       async prepare(server, session) {
         await server.connection.query
@@ -42,6 +47,22 @@ async function mount(
     },
   );
 }
+it('corrects an out-of-range page using the successful total before showing the actual list', async () => {
+  const pages: string[] = [];
+  await mount({
+    route: '/articles?page=999',
+    beforeRequest(request) {
+      const url = new URL(request.url);
+      if (request.method === 'GET' && url.pathname.endsWith('/articles'))
+        pages.push(url.searchParams.get('page') ?? '');
+    },
+  });
+  expect(
+    await screen.findByRole('button', { name: 'Welcome', exact: true }),
+  ).toBeVisible();
+  expect(pages).toEqual(['999', '1']);
+  expect(screen.queryByText('No articles yet.')).not.toBeInTheDocument();
+});
 it('loads articles, previews content, searches and filters persisted results', async () => {
   await mount();
   fireEvent.click(await screen.findByRole('button', { name: 'Welcome' }));
@@ -52,11 +73,11 @@ it('loads articles, previews content, searches and filters persisted results', a
   );
   const search = screen.getByRole('textbox', { name: 'Search titles…' });
   fireEvent.change(search, { target: { value: 'no-such-title' } });
-  expect(await screen.findByText('No matching articles')).toBeVisible();
+  expect(await screen.findByText('No matching results.')).toBeVisible();
   fireEvent.change(search, { target: { value: 'Welcome' } });
   expect(await screen.findByRole('button', { name: 'Welcome' })).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Published' }));
-  expect(await screen.findByText('No matching articles')).toBeVisible();
+  expect(await screen.findByText('No matching results.')).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Draft' }));
   expect(await screen.findByRole('button', { name: 'Welcome' })).toBeVisible();
 });
@@ -137,9 +158,9 @@ it('recovers from a load error to the real empty state', async () => {
     },
   });
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Unable to load articles',
+    'Unable to load this list.',
   );
   offline = false;
-  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByText('No matching articles')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+  expect(await screen.findByText('No articles yet.')).toBeVisible();
 });

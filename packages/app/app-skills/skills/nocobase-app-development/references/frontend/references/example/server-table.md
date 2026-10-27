@@ -14,6 +14,8 @@ The endpoint contract this assumes is the one in [types](types.md): `GET /api/pr
 
 The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
 
+Pass `emptyAction` only when the existing create permission explicitly allows it. Preserve the business empty content and use [shared list feedback](../list-feedback.md) for all request states.
+
 The changes, inside the list page's component; everything marked `// …` stays as it is there:
 
 ```tsx
@@ -24,11 +26,13 @@ import {
   useEffect,
   useEffectEvent,
   useMemo,
-  useReducer,
+  useCallback,
   useRef,
   useState,
 } from 'react';
 // … the other imports of the list page, without DataTable, and with ProjectList added to the import from ./types.js
+import { useQuery } from '@tanstack/react-query';
+import { resolveListState, listStateShowsData } from '@nocobase/app-client';
 import { ProjectsServerTable } from './projects-server-table.js';
 
 const PAGE_SIZES = [10, 20, 50] as const;
@@ -87,135 +91,99 @@ export default function ProjectsPage(): ReactElement {
     updateParams((params) => params.set('page', String(target)));
   });
 
-  const [reloadCount, reload] = useReducer((count: number) => count + 1, 0);
-  const requestKey = JSON.stringify([
-    search,
-    status ?? null,
-    page,
-    pageSize,
-    orderBy,
-    reloadCount,
-  ]);
-  const [result, setResult] = useState<{
-    readonly key: string;
-    readonly rows?: Project[];
-    /** Whether this batch was fetched with filters; tells "empty" apart from "no results". */
-    readonly filtered?: boolean;
-    readonly error?: unknown;
-    readonly total?: number;
-  }>();
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const key = JSON.stringify([
-      search,
+  const request = useQuery({
+    queryKey: [
+      'projects',
+      search.trim(),
       status ?? null,
       page,
       pageSize,
       orderBy,
-      reloadCount,
-    ]);
-    api
-      .request<ProjectList>({
+    ],
+    queryFn: ({ signal }) =>
+      api.request<ProjectList>({
         path: 'projects',
-        query: { q: search || undefined, status, page, pageSize, orderBy },
-        signal: controller.signal,
-      })
-      .then(
-        ({ data, meta }) => {
-          if (controller.signal.aborted) return;
-          setResult({
-            key,
-            rows: data,
-            total: meta.total,
-            filtered: search !== '' || status !== undefined,
-          });
-          const lastPage = Math.max(1, Math.ceil(meta.total / pageSize));
-          if (data.length === 0 && page > lastPage) goToPage(lastPage);
+        query: {
+          q: search.trim() || undefined,
+          status,
+          page,
+          pageSize,
+          orderBy,
         },
-        (error: unknown) => {
-          // Keep the previous batch on failure: after "Retry", show the old data and a small Spinner, not the skeleton.
-          if (!controller.signal.aborted) {
-            setResult((previous) => ({ ...previous, key, error }));
-          }
-        },
-      );
-    return () => controller.abort();
-  }, [api, search, status, page, pageSize, orderBy, reloadCount]);
+        signal,
+      }),
+    retry: false,
+  });
+  const reload = useCallback(() => {
+    void request.refetch();
+  }, [request.refetch]);
+  const rowsFiltered = Boolean(search.trim() || status);
+  const state = resolveListState(
+    request,
+    request.data?.data.length ?? 0,
+    rowsFiltered,
+  );
+  const rows = listStateShowsData(state) ? (request.data?.data ?? []) : [];
+  const loading = request.isFetching;
+  const lastPage =
+    request.isSuccess && !request.isPlaceholderData
+      ? Math.max(1, Math.ceil(request.data.meta.total / pageSize))
+      : undefined;
+  useEffect(() => {
+    if (lastPage !== undefined && page > lastPage) goToPage(lastPage);
+  }, [lastPage, page]);
+  const listState =
+    lastPage !== undefined && page > lastPage ? 'loading' : state;
 
   // … loading, rows, rowsFiltered, the focus handling after a delete, outletContext, the deletion state, the formatters
   // and the columns, as in the list page
 
-  let content: ReactElement;
-  if (error instanceof ApiClientError && error.status === 401) {
-    // The session ended; signing in again is the only way forward (guideline S4).
-    content = <SessionExpiredAlert />;
-  } else if (error) {
-    // … the error Alert, as in the list page
-  } else if (rows === undefined) {
-    content = <TableSkeleton label={t('status.loading')} />;
-  } else if (result?.total === 0 && !rowsFiltered) {
-    // No records at all (guideline S2). Decided by the total: an empty page past the end is not an empty list.
-    content = (
-      <Empty className='min-h-48 border border-dashed'>
-        <EmptyHeader>
-          <EmptyMedia variant='icon'>
-            <FolderKanbanIcon />
-          </EmptyMedia>
-          <EmptyTitle>{t('projects.empty.title')}</EmptyTitle>
-          <EmptyDescription>{t('projects.empty.description')}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          {/* While the list is empty the primary action is only here; the page header leaves it out, as in the list page (guideline L7). */}
+  const content = (
+    <ProjectsServerTable
+      columns={columns}
+      rows={rows}
+      total={request.data?.meta.total ?? 0}
+      listState={listState}
+      loading={loading}
+      onRetry={reload}
+      onClearFilters={clearFilters}
+      pagination={{ pageIndex: page - 1, pageSize }}
+      pageSizeOptions={PAGE_SIZES}
+      onPaginationChange={(next) => {
+        updateParams((params) => {
+          params.set('page', String(next.pageIndex + 1));
+          params.set('pageSize', String(next.pageSize));
+        });
+      }}
+      sorting={[columnSort]}
+      onSortingChange={(next) => {
+        const column = next.at(0);
+        updateParams((params) => {
+          if (column) params.set('orderBy', formatOrderBy(column));
+          else params.delete('orderBy');
+          // A new order starts on the first page.
+          params.delete('page');
+        });
+      }}
+      emptyAction={
+        canCreate === true ? (
           <Button
-            render={<Link to={{ pathname: 'new', search: location.search }} />}
             nativeButton={false}
+            render={<Link to={{ pathname: 'new', search: location.search }} />}
           >
-            <PlusIcon data-icon='inline-start' />
+            <PlusIcon />
             {t('projects.create.action')}
           </Button>
-        </EmptyContent>
-      </Empty>
-    );
-  } else {
-    content = (
-      <ProjectsServerTable
-        columns={columns}
-        rows={rows}
-        total={result?.total ?? 0}
-        pagination={{ pageIndex: page - 1, pageSize }}
-        pageSizeOptions={PAGE_SIZES}
-        onPaginationChange={(next) => {
-          updateParams((params) => {
-            params.set('page', String(next.pageIndex + 1));
-            params.set('pageSize', String(next.pageSize));
-          });
-        }}
-        sorting={[columnSort]}
-        onSortingChange={(next) => {
-          const column = next.at(0);
-          updateParams((params) => {
-            if (column) params.set('orderBy', formatOrderBy(column));
-            else params.delete('orderBy');
-            // A new order starts on the first page.
-            params.delete('page');
-          });
-        }}
-        // No results for the filters. Without filters an empty page only shows while a page past the end moves to the
-        // last one, so it stays blank.
-        emptyMessage={
-          rowsFiltered ? (
-            <div className='flex flex-col items-center gap-2'>
-              <span>{t('projects.empty.noResults')}</span>
-              <Button variant='link' size='sm' onClick={clearFilters}>
-                {t('projects.filters.clear')}
-              </Button>
-            </div>
-          ) : null
-        }
-      />
-    );
-  }
+        ) : null
+      }
+      emptyMessage={
+        <>
+          <h2>{t('projects.empty.title')}</h2>
+          <p>{t('projects.empty.description')}</p>
+        </>
+      }
+    />
+  );
 
   // … the returned page, as in the list page
 }
@@ -231,10 +199,13 @@ import type {
   SortingState,
 } from '@tanstack/react-table';
 import type { ReactElement, ReactNode } from 'react';
-import { DataTable } from '#components/data-table';
+import { DataTable, type DataTableProps } from '#components/data-table';
 import type { Project } from './types.js';
 
-export interface ProjectsServerTableProps {
+export interface ProjectsServerTableProps extends Pick<
+  DataTableProps<Project>,
+  'listState' | 'loading' | 'onRetry' | 'onClearFilters' | 'emptyAction'
+> {
   readonly columns: ColumnDef<Project>[];
   readonly rows: Project[];
   readonly total: number;
@@ -256,9 +227,11 @@ export function ProjectsServerTable({
   onSortingChange,
   emptyMessage,
   pageSizeOptions,
+  ...feedback
 }: ProjectsServerTableProps): ReactElement {
   return (
     <DataTable
+      {...feedback}
       columns={columns}
       data={rows}
       getRowId={(row) => String(row.id)}

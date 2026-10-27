@@ -5,7 +5,11 @@ import { useTableUrlState } from '#hooks/use-table-url-state';
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  resolveListState,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   UsersClient,
@@ -45,9 +49,8 @@ import {
   EmptyMedia,
   EmptyTitle,
   EmptyDescription,
-  EmptyContent,
 } from '#components/ui/empty';
-import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+import { ConfirmAction, SettingsError } from './shared.js';
 
 function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
   const canUpdate = useUserPermission('update', user.id);
@@ -259,7 +262,7 @@ export default function UsersPage(): ReactElement {
   const remote = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
-    ...(params.get('q') ? { q: params.get('q')! } : {}),
+    ...(params.get('q')?.trim() ? { q: params.get('q')!.trim() } : {}),
     ...(status !== 'all' ? { status } : {}),
     ...(roleScope ? { roleScope } : {}),
     ...(role ? { role } : {}),
@@ -382,7 +385,12 @@ export default function UsersPage(): ReactElement {
       </Button>
     ) : null;
   const filtered =
-    Boolean(params.get('q') || roleScope || role) || status !== 'all';
+    Boolean(params.get('q')?.trim() || roleScope || role) || status !== 'all';
+  const listState = resolveListState(
+    { data: request.data, error: request.error, isFetching: request.loading },
+    rows.length,
+    filtered,
+  );
   return (
     <>
       <PageContainer>
@@ -481,52 +489,36 @@ export default function UsersPage(): ReactElement {
           </p>
         )}
         <SettingsError error={options.error} retry={options.reload} />
-        <SettingsError error={request.error} retry={request.reload} />
-        {request.loading && !request.data ? (
-          <SettingsLoading />
-        ) : (
-          !request.error &&
-          (rows.length ? (
-            <DataTable<ManagedUser>
-              columns={columns}
-              data={rows}
-              getRowId={(row) => row.id}
-              manualPagination
-              rowCount={request.data?.meta.total ?? 0}
-              {...tableState}
-              manualSorting
-              showSelectedCount={false}
-              loading={request.loading}
-            />
-          ) : (
+        <DataTable<ManagedUser>
+          columns={columns}
+          data={rows}
+          getRowId={(row) => row.id}
+          manualPagination
+          rowCount={request.data?.meta.total ?? 0}
+          {...tableState}
+          manualSorting
+          showSelectedCount={false}
+          loading={request.loading}
+          listState={listState}
+          onRetry={request.reload}
+          onClearFilters={clearFilters}
+          emptyMessage={
             <Empty className='min-h-48 border border-dashed'>
               <EmptyMedia variant='icon'>
                 <UsersIcon />
               </EmptyMedia>
-              <EmptyTitle>
-                {t(filtered ? 'settings.noResults' : 'settings.noUsers')}
-              </EmptyTitle>
+              <EmptyTitle>{t('settings.noUsers')}</EmptyTitle>
               <EmptyDescription>
                 {t(
-                  filtered
-                    ? 'settings.clearHint'
-                    : canCreate && canAssign
-                      ? 'settings.usersDescription'
-                      : 'settings.usersReadOnlyEmpty',
+                  canCreate && canAssign
+                    ? 'settings.usersDescription'
+                    : 'settings.usersReadOnlyEmpty',
                 )}
               </EmptyDescription>
-              <EmptyContent>
-                {filtered ? (
-                  <Button variant='outline' onClick={clearFilters}>
-                    {t('settings.clear')}
-                  </Button>
-                ) : (
-                  create
-                )}
-              </EmptyContent>
             </Empty>
-          ))
-        )}
+          }
+          emptyAction={create}
+        />
         {request.data && (
           <p className='text-sm text-muted-foreground'>
             {t('settings.total', { count: request.data.meta.total })}

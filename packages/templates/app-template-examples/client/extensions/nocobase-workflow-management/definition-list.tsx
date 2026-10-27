@@ -1,3 +1,4 @@
+import type { ListState } from '@nocobase/app-client';
 import type { ReactElement, ReactNode } from 'react';
 import type {
   CellContext,
@@ -16,6 +17,8 @@ export interface WorkflowDefinitionRow {
   activity: ReactNode;
 }
 export interface WorkflowDefinitionListProps {
+  listState?: ListState;
+  onClearFilters?: () => void;
   rows: readonly WorkflowDefinitionRow[];
   categories?: ReactNode;
   search: ReactNode;
@@ -39,6 +42,8 @@ type DefinitionActivityMeta = ColumnMeta<WorkflowDefinitionRow, unknown> &
 
 export function WorkflowDefinitionList({
   rows,
+  listState,
+  onClearFilters,
   categories,
   search,
   status,
@@ -71,10 +76,22 @@ export function WorkflowDefinitionList({
           </Button>
         </div>
         {status}
-        {loaded && rows.length > 0 && (
+        {(listState !== undefined || loaded || loading) && (
           <div className='bg-card'>
             <DataTable
               data={rows}
+              loading={loading}
+              listState={
+                listState ??
+                (!loaded ? 'loading' : rows.length ? 'ready' : 'empty')
+              }
+              onRetry={onRefresh}
+              onClearFilters={onClearFilters}
+              emptyMessage={
+                <Empty>
+                  <EmptyDescription>{empty}</EmptyDescription>
+                </Empty>
+              }
               getRowId={(row) => row.id}
               pagination={false}
               manualSorting
@@ -99,11 +116,6 @@ export function WorkflowDefinitionList({
               ]}
             />
           </div>
-        )}
-        {loaded && rows.length === 0 && (
-          <Empty>
-            <EmptyDescription>{empty}</EmptyDescription>
-          </Empty>
         )}
       </div>
     </section>

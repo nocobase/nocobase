@@ -1,6 +1,11 @@
 import { RecordLink } from '#components/record-link';
 import { useTableUrlState } from '#hooks/use-table-url-state';
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  resolveListState,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
 import {
   useCan,
   type AuthorizationOptionsResponse,
@@ -28,9 +33,8 @@ import {
   EmptyMedia,
   EmptyTitle,
   EmptyDescription,
-  EmptyContent,
 } from '#components/ui/empty';
-import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+import { ConfirmAction, SettingsError } from './shared.js';
 import { useSettingsData } from './hooks.js';
 import {
   actionKey,
@@ -208,7 +212,7 @@ export default function DefaultAccessPage(): ReactElement {
     .filter((rule) =>
       `${name(rule)} ${rule.key}`
         .toLocaleLowerCase()
-        .includes(search.toLocaleLowerCase()),
+        .includes(search.trim().toLocaleLowerCase()),
     )
     .sort((a, b) => name(a).localeCompare(name(b), i18n.language));
   const tableState = useTableUrlState({
@@ -303,6 +307,13 @@ export default function DefaultAccessPage(): ReactElement {
       setBusy(false);
     }
   };
+  const listError =
+    [rules.error, catalog.error].find(
+      (error) =>
+        error instanceof ApiClientError && [401, 403].includes(error.status),
+    ) ??
+    rules.error ??
+    catalog.error;
   return (
     <>
       <PermissionManagementPage
@@ -344,62 +355,45 @@ export default function DefaultAccessPage(): ReactElement {
             </AlertDescription>
           </Alert>
         )}
-        <SettingsError
-          error={rules.error || catalog.error || (!removing && error)}
-          retry={() => {
+        <SettingsError error={!removing && error} />
+        <DataTable
+          {...tableState}
+          columns={columns}
+          data={rows}
+          getRowId={(rule) => rule.key}
+          showSelectedCount={false}
+          pageSize={20}
+          loading={rules.loading || catalog.loading}
+          listState={resolveListState(
+            {
+              data: rules.data && catalog.data ? rows : undefined,
+              error: listError,
+            },
+            rows.length,
+            Boolean(search.trim()),
+          )}
+          onRetry={() => {
             rules.reload();
             catalog.reload();
-            setError(undefined);
           }}
-        />
-        {(rules.loading && !rules.data) ||
-        (catalog.loading && !catalog.data) ? (
-          <SettingsLoading />
-        ) : (
-          !rules.error &&
-          !catalog.error &&
-          (rows.length ? (
-            <DataTable
-              {...tableState}
-              columns={columns}
-              data={rows}
-              getRowId={(rule) => rule.key}
-              showSelectedCount={false}
-              pageSize={20}
-            />
-          ) : (
+          onClearFilters={clearSearch}
+          emptyMessage={
             <Empty className='min-h-48 border border-dashed'>
               <EmptyMedia variant='icon'>
                 <ListFilterIcon />
               </EmptyMedia>
-              <EmptyTitle>
-                {t(
-                  search
-                    ? 'settings.noResults'
-                    : 'settings.defaultAccess.empty',
-                )}
-              </EmptyTitle>
+              <EmptyTitle>{t('settings.defaultAccess.empty')}</EmptyTitle>
               <EmptyDescription>
                 {t(
-                  search
-                    ? 'settings.clearHint'
-                    : canCreate
-                      ? 'settings.defaultAccess.emptyHint'
-                      : 'settings.defaultAccess.readOnlyEmpty',
+                  canCreate
+                    ? 'settings.defaultAccess.emptyHint'
+                    : 'settings.defaultAccess.readOnlyEmpty',
                 )}
               </EmptyDescription>
-              <EmptyContent>
-                {search ? (
-                  <Button variant='outline' onClick={clearSearch}>
-                    {t('settings.clear')}
-                  </Button>
-                ) : (
-                  create
-                )}
-              </EmptyContent>
             </Empty>
-          ))
-        )}
+          }
+          emptyAction={create}
+        />
         <ConfirmAction
           error={<SettingsError error={error} />}
           open={Boolean(removing)}

@@ -1,7 +1,14 @@
+import { ListFeedback } from '#components/list-feedback';
+import { useTableUrlState } from '#hooks/use-table-url-state';
+import { useSearchParams } from 'react-router';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { useApiClient } from '@nocobase/app-client';
-import { useQuery } from '@tanstack/react-query';
+import {
+  resolveListState,
+  listStateShowsData,
+  useApiClient,
+} from '@nocobase/app-client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useCallback,
@@ -10,14 +17,7 @@ import {
   type ReactElement,
   type FormEvent,
 } from 'react';
-import {
-  FileText,
-  Plus,
-  Search,
-  Pencil,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { Plus, Search, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { Textarea } from '#components/ui/textarea';
@@ -62,12 +62,32 @@ const emptyForm = {
 
 export default function ArticlesPage(): ReactElement {
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const { t, i18n } = useTranslation();
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
-  const [page, setPage] = useState(1);
-  const [revision, setRevision] = useState(0);
+  const [params, setParams] = useSearchParams();
+  const requestedPage = Number(params.get('page'));
+  const page =
+    Number.isSafeInteger(requestedPage) && requestedPage > 0
+      ? requestedPage
+      : 1;
+  const setPage = useCallback(
+    (next: number | ((previous: number) => number)) =>
+      setParams(
+        (old) => {
+          const updated = new URLSearchParams(old);
+          updated.set(
+            'page',
+            String(typeof next === 'function' ? next(page) : next),
+          );
+          return updated;
+        },
+        { replace: true },
+      ),
+    [page, setParams],
+  );
 
   const [preview, setPreview] = useState<Article | null>(null);
   const [editor, setEditor] = useState(false);
@@ -77,21 +97,15 @@ export default function ArticlesPage(): ReactElement {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   useEffect(() => {
+    if (search.trim() === query) return;
     const timer = setTimeout(() => {
       setQuery(search.trim());
       setPage(1);
     }, 250);
     return () => clearTimeout(timer);
-  }, [search]);
-  const {
-    data: result = {
-      data: [],
-      meta: { page: 1, pageSize: PAGE_SIZE, total: 0 },
-    },
-    isFetching: loading,
-    isError: error,
-  } = useQuery({
-    queryKey: ['articles', query, status, page, revision],
+  }, [search, query, setPage]);
+  const request = useQuery({
+    queryKey: ['articles', query, status, page],
     queryFn: ({ signal }) =>
       api.request<ArticlesResponse>({
         path: 'articles',
@@ -104,6 +118,32 @@ export default function ArticlesPage(): ReactElement {
         signal,
       }),
     retry: false,
+  });
+  const state = resolveListState(
+    request,
+    request.data?.data.length ?? 0,
+    Boolean(query) || status !== 'all',
+  );
+  const result =
+    listStateShowsData(state) || state === 'empty' || state === 'no-results'
+      ? request.data
+      : undefined;
+  const loading = request.isFetching;
+  const clearFilters = () => {
+    setSearch('');
+    setQuery('');
+    setStatus('all');
+    setPage(1);
+  };
+  // Only the current successful query can correct a now-out-of-range URL page.
+  useTableUrlState({
+    defaultPageSize: PAGE_SIZE,
+    pageSizeOptions: [PAGE_SIZE],
+    sortColumns: [],
+    rowCount:
+      request.isSuccess && !request.isPlaceholderData
+        ? request.data.meta.total
+        : undefined,
   });
   const openEditor = useCallback((article?: Article) => {
     setEditingId(article?.id ?? null);
@@ -139,8 +179,12 @@ export default function ArticlesPage(): ReactElement {
           : form,
       });
       setEditor(false);
+      void queryClient.invalidateQueries({
+        queryKey: ['articles'],
+        refetchType: 'none',
+      });
       setPage(1);
-      setRevision((value) => value + 1);
+      if (page === 1) void request.refetch();
     } catch {
       setSaveError(true);
     } finally {
@@ -153,15 +197,19 @@ export default function ArticlesPage(): ReactElement {
     );
   const statusLabel = (value: Article['status']): string =>
     t(`articles.${value}`);
-  const pages = Math.max(1, Math.ceil(result.meta.total / PAGE_SIZE));
+  const pages = Math.max(1, Math.ceil((result?.meta.total ?? 0) / PAGE_SIZE));
   return (
     <PageContainer>
       <PageHeader
         actions={
-          <Button onClick={() => openEditor()}>
-            <Plus className='size-4' />
-            {t('articles.new')}
-          </Button>
+          state === 'ready' ||
+          state === 'no-results' ||
+          state === 'refresh-failed' ? (
+            <Button onClick={() => openEditor()}>
+              <Plus className='size-4' />
+              {t('articles.new')}
+            </Button>
+          ) : undefined
         }
         description={t('articles.description')}
         title={t('articles.title')}
@@ -198,34 +246,34 @@ export default function ArticlesPage(): ReactElement {
           />
         </div>
       </div>
-      {loading ? (
-        <p role='status' className='py-12 text-center text-muted-foreground'>
-          {t('articles.loading')}
-        </p>
-      ) : error ? (
-        <div
-          role='alert'
-          className='space-y-3 rounded-xl border p-8 text-center'
-        >
-          <p>{t('articles.loadError')}</p>
-          <Button
-            variant='outline'
-            onClick={() => setRevision((value) => value + 1)}
-          >
-            {t('articles.retry')}
+      <ListFeedback
+        state={
+          (state === 'empty' || state === 'no-results') &&
+          page > 1 &&
+          (result?.meta.total ?? 0) > 0
+            ? 'loading'
+            : state
+        }
+        onClear={clearFilters}
+        onRetry={() => {
+          void request.refetch();
+        }}
+        busy={loading}
+        empty={
+          <>
+            <h2 className='font-semibold'>{t('articles.empty')}</h2>
+            <p>{t('articles.emptyHint')}</p>
+          </>
+        }
+        emptyAction={
+          <Button onClick={() => openEditor()}>
+            <Plus className='size-4' />
+            {t('articles.new')}
           </Button>
-        </div>
-      ) : result.data.length === 0 ? (
-        <div className='space-y-3 rounded-xl border border-dashed py-16 text-center'>
-          <FileText className='mx-auto size-8 text-muted-foreground' />
-          <h2 className='font-semibold'>{t('articles.empty')}</h2>
-          <p className='text-sm text-muted-foreground'>
-            {t('articles.emptyHint')}
-          </p>
-        </div>
-      ) : (
+        }
+      >
         <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-          {result.data.map((article) => (
+          {result?.data.map((article) => (
             <article
               key={article.id}
               className='flex flex-col rounded-xl border bg-card p-5 transition-shadow hover:shadow-md'
@@ -275,15 +323,15 @@ export default function ArticlesPage(): ReactElement {
             </article>
           ))}
         </div>
-      )}
-      {!loading && !error && (
+      </ListFeedback>
+      {result && listStateShowsData(state) && (
         <footer className='flex items-center justify-between gap-4 text-sm text-muted-foreground'>
           <span>{t('articles.total', { count: result.meta.total })}</span>
           <div className='flex items-center gap-3'>
             <Button
               variant='outline'
               size='icon'
-              disabled={page <= 1}
+              disabled={loading || page <= 1}
               aria-label={t('articles.previous')}
               onClick={() => setPage((value) => value - 1)}
             >
@@ -295,7 +343,7 @@ export default function ArticlesPage(): ReactElement {
             <Button
               variant='outline'
               size='icon'
-              disabled={page >= pages}
+              disabled={loading || page >= pages}
               aria-label={t('articles.next')}
               onClick={() => setPage((value) => value + 1)}
             >

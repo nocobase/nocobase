@@ -336,7 +336,11 @@ describe('workflow management pages', () => {
           },
         }),
       );
-      expect(await screen.findByText(copy.noResults)).toBeInTheDocument();
+      expect(
+        await screen.findByText(
+          (locale === 'en-US' ? enUS : zhCN).listFeedback.noResults,
+        ),
+      ).toBeInTheDocument();
     },
   );
 
@@ -483,7 +487,11 @@ describe('workflow management pages', () => {
           },
         }),
       );
-      expect(await screen.findByText(copy.noResults)).toBeInTheDocument();
+      expect(
+        await screen.findByText(
+          (locale === 'en-US' ? enUS : zhCN).listFeedback.noResults,
+        ),
+      ).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: copy.clear }));
       expect(input).toHaveValue('');
       await waitFor(() =>
@@ -496,7 +504,7 @@ describe('workflow management pages', () => {
   );
 
   it.each(['', '?workflowId=lifecycle.expenses'])(
-    'keeps the execution table and pagination visible with no records %s',
+    'shows loading then successful empty feedback while retaining pagination %s',
     async (query) => {
       let finish: ((value: unknown) => void) | undefined;
       api.request.mockImplementation(({ path }) =>
@@ -507,16 +515,17 @@ describe('workflow management pages', () => {
             }),
       );
       await view(<ExecutionsPage />, 'en-US', `/workflows/executions${query}`);
-      expect(screen.getByRole('table')).toBeInTheDocument();
-      expect(screen.getAllByRole('columnheader')).toHaveLength(4);
+      expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
+      expect(
+        screen.queryByText(enUS.workflows.noExecutions),
+      ).not.toBeInTheDocument();
       await waitFor(() => expect(finish).toBeDefined());
       finish?.({ data: [], meta: { page: 1, pageSize: 20, total: 0 } });
       const empty = await screen.findByText(
-        query ? enUS.workflows.noResults : enUS.workflows.noExecutions,
+        query ? enUS.listFeedback.noResults : enUS.workflows.noExecutions,
       );
-      expect(empty.closest('table')).toBe(screen.getByRole('table'));
-      expect(empty.closest('td')).toHaveAttribute('colspan', '4');
-      expect(screen.getAllByRole('columnheader')).toHaveLength(4);
+      expect(empty.closest('[role=status]')).toBeInTheDocument();
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
     },
@@ -1119,7 +1128,9 @@ it.each(['en-US', 'zh-CN'])(
     await userEvent.clear(input);
     await userEvent.type(input, 'no-match');
     await userEvent.keyboard('{Enter}');
-    await screen.findByText(copy.noResults);
+    await screen.findByText(
+      (locale === 'en-US' ? enUS : zhCN).listFeedback.noResults,
+    );
     await userEvent.clear(input);
     await userEvent.keyboard('{Enter}');
     await screen.findByRole('link', { name: copy.names.expenses });

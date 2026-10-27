@@ -5,6 +5,26 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  listFeedback: {
+    refreshTitle: '未能刷新此列表',
+    loadingDescription: '数据即将显示，请稍候。',
+    emptyDescription: '有可用记录时，将在此处显示。',
+    noResultsDescription: '请尝试其他关键词，或清空筛选条件查看更多记录。',
+    forbiddenDescription: '如需访问，请联系管理员。',
+    unauthenticatedDescription: '请登录以继续使用当前账号。',
+    failedDescription: '请重试，当前搜索和筛选条件将会保留。',
+    loading: '正在加载…',
+    empty: '暂无数据。',
+    noResults: '无匹配结果。',
+    forbidden: '您没有查看此列表的权限。',
+    unauthenticated: '会话已过期，请重新登录。',
+    failed: '列表加载失败。',
+    refreshFailed: '刷新失败，当前显示此前加载的数据。',
+    retry: '重试',
+    retrying: '正在重试…',
+    clear: '清空条件',
+    signIn: '重新登录',
+  },
   flowDiagram: {
     controls: '流程图控制',
     fitView: '适应画布',

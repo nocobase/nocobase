@@ -19,6 +19,7 @@ const preinstalled = [
   { group: 'lifecycle', item: 'lifecycle-diagram' },
   { group: 'components', item: 'flow-diagram' },
   { group: 'components', item: 'data-table' },
+  { group: 'components', item: 'list-feedback' },
   { group: 'components', item: 'record-link' },
   { group: 'auth', item: 'auth-forms' },
   { group: 'auth', item: 'auth-methods' },
