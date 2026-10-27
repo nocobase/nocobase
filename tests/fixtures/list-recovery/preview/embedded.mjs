@@ -6,6 +6,7 @@ import {
   preserveSampleAssets,
   resolveSampleRequest,
   sampleIds,
+  validateSampleIds,
 } from './routing.mjs';
 
 // This entry is copied only into an acceptance archive, next to carrier-embedded.js.
@@ -18,9 +19,10 @@ export async function createServer(scope) {
       'utf8',
     ),
   );
+  validateSampleIds(manifest.samples);
   if (sampleIds.some((id) => !manifest.samples?.[id]?.target)) {
     throw new Error(
-      'Acceptance preview requires provenance for all four samples',
+      'Acceptance preview requires provenance for both new samples',
     );
   }
   const origin = carrier.config.get('app.publicOrigin');
@@ -117,7 +119,7 @@ export async function createServer(scope) {
         const links = sampleIds
           .map((id) => {
             const sample = manifest.samples[id];
-            return `<li><a href="${escape(`${scope.basePath}/acceptance/${id}/`)}">${escape(id)}</a> — BASE ${escape(sample.base || 'new')} → TARGET ${escape(sample.target)}</li>`;
+            return `<li><a href="${escape(`${scope.basePath}/acceptance/${id}/`)}">${escape(id)}</a> — New application · Template ${escape(sample.target)}</li>`;
           })
           .join('');
         return new Response(

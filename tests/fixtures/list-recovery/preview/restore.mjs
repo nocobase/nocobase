@@ -1,3 +1,4 @@
+import { sampleIds, validateSampleIds } from './routing.mjs';
 import { createHash } from 'node:crypto';
 import { readFile, readdir, mkdir, stat } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
@@ -35,6 +36,7 @@ export async function restoreInputs(destination) {
   const manifest = JSON.parse(
     await readFile(path.join(destination, 'manifest.json'), 'utf8'),
   );
+  validateSampleIds(manifest.samples);
   for (const [name, expected] of Object.entries(manifest.files)) {
     const file = path.resolve(destination, name);
     if (!file.startsWith(`${path.resolve(destination)}/`))
@@ -49,7 +51,8 @@ export async function restoreInputs(destination) {
     )
       throw Error(`Recovery mismatch: ${name}`);
   }
-  for (const [id, sample] of Object.entries(manifest.samples)) {
+  for (const id of sampleIds) {
+    const sample = manifest.samples[id];
     const pkg = JSON.parse(
       await readFile(
         path.join(destination, sample.sourceDir, 'package.json'),

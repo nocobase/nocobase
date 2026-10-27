@@ -8,6 +8,7 @@ import {
   preserveSampleAssets,
   resolveSampleRequest,
   sampleIds,
+  validateSampleIds,
 } from '../fixtures/list-recovery/preview/routing.mjs';
 import { addBasePathToHtmlResponse } from '../../packages/app/app-host/src/redirects.ts';
 import { packSamples } from '../fixtures/list-recovery/preview/pack.mjs';
@@ -152,25 +153,22 @@ test('embedded samples receive isolated paths and lifecycle disposal', async () 
       assert.equal(socket.transport, transport);
       locations.add(data.dataDir);
     }
-    assert.equal(locations.size, 4);
+    assert.equal(locations.size, sampleIds.length);
     for (const dispose of callbacks) await dispose();
     for (const dispose of callbacks) await dispose();
-    assert.equal(globalThis.__previewDisposed.length, 4);
+    assert.equal(globalThis.__previewDisposed.length, sampleIds.length);
   } finally {
     delete globalThis.__previewDisposed;
     await rm(root, { recursive: true, force: true });
   }
 });
 
-test('packaging rejects incomplete upgrades before modifying the carrier', async () => {
+test('packaging rejects incomplete inputs before modifying the carrier', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'list-preview-pack-'));
   try {
     const manifest = path.join(root, 'manifest.json');
     await writeFile(manifest, JSON.stringify({ samples: {} }));
-    await assert.rejects(
-      packSamples(root, manifest),
-      /Unverified acceptance sample/,
-    );
+    await assert.rejects(packSamples(root, manifest), /requires exactly/);
     const source = path.join(root, 'default-new');
     await mkdir(source);
     await writeFile(
@@ -181,6 +179,7 @@ test('packaging rejects incomplete upgrades before modifying the carrier', async
       manifest,
       JSON.stringify({
         samples: {
+          'examples-new': {},
           'default-new': {
             sourceDir: 'default-new',
             target: 'target',
@@ -191,9 +190,29 @@ test('packaging rejects incomplete upgrades before modifying the carrier', async
     );
     await assert.rejects(
       packSamples(root, manifest),
-      /Incomplete template upgrade/,
+      /Incomplete template baseline/,
     );
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('preview identities exclude historical upgrade samples at every boundary', () => {
+  assert.deepEqual(sampleIds, ['default-new', 'examples-new']);
+  assert.doesNotThrow(() =>
+    validateSampleIds({ 'default-new': {}, 'examples-new': {} }),
+  );
+  for (const samples of [
+    {},
+    { 'default-new': {} },
+    { 'default-new': {}, 'examples-new': {}, 'default-upgraded': {} },
+  ]) {
+    assert.throws(() => validateSampleIds(samples), /requires exactly/);
+  }
+  assert.equal(
+    resolveSampleRequest(
+      new Request('https://preview.test/acceptance/default-upgraded/api/loans'),
+    ),
+    null,
+  );
 });

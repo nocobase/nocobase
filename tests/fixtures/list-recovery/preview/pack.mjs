@@ -9,12 +9,13 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { sampleIds } from './routing.mjs';
+import { sampleIds, validateSampleIds } from './routing.mjs';
 
-// Inputs are the four independently generated and verified build outputs.
+// Inputs are the two independently generated and verified build outputs.
 // This packages evidence; it never performs or marks a template upgrade.
 export async function packSamples(carrierDir, manifestFile) {
   const manifest = JSON.parse(await readFile(manifestFile, 'utf8'));
+  validateSampleIds(manifest.samples);
   const sources = new Set();
   for (const id of sampleIds) {
     const sample = manifest.samples?.[id];
@@ -31,7 +32,7 @@ export async function packSamples(carrierDir, manifestFile) {
       await readFile(path.join(source, 'package.json'), 'utf8'),
     );
     if (pkg.nocobase?.defaultTemplateVersion !== sample.target) {
-      throw new Error(`Incomplete template upgrade: ${id}`);
+      throw new Error(`Incomplete template baseline: ${id}`);
     }
     const template = `@nocobase/app-template-${id.split('-')[0]}`;
     if (
@@ -39,12 +40,6 @@ export async function packSamples(carrierDir, manifestFile) {
       sample.template !== template
     ) {
       throw new Error(`Wrong template identity: ${id}`);
-    }
-    if (
-      id.endsWith('-upgraded') &&
-      (!sample.base || sample.base === sample.target)
-    ) {
-      throw new Error(`Missing upgrade baseline: ${id}`);
     }
     for (const file of [
       'dist/server/embedded.js',

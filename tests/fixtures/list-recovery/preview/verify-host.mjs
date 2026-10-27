@@ -97,7 +97,7 @@ try {
     }),
     page = await context.newPage();
   for (const [index, id] of sampleIds.entries()) {
-    const count = [121, 120, 1, 121][index];
+    const count = [121, 120][index];
     const base = `${origin}${prefix}/acceptance/${id}/`;
     expect((await context.request.get(`${base}api/loans`)).status()).toBe(401);
     await page.goto(`${base}login`);
@@ -151,6 +151,31 @@ try {
       websocket: 'ping/pong passed',
     });
   }
+  // Deliberately replay each native cookie at the other application's API.
+  for (const id of sampleIds) {
+    const other = sampleIds.find((candidate) => candidate !== id);
+    const cookies = await context.cookies(
+      `${origin}${prefix}/acceptance/${id}/`,
+    );
+    const cookie = cookies
+      .map(({ name, value }) => `${name}=${value}`)
+      .join('; ');
+    assert.ok(cookie, 'Native login must establish a session');
+    const response = await fetch(
+      `${origin}${prefix}/acceptance/${other}/api/loans`,
+      {
+        headers: { cookie },
+      },
+    );
+    assert.equal(
+      response.status,
+      401,
+      'Other sample must reject the replayed session',
+    );
+  }
+  await page.goto(`${origin}${prefix}/acceptance/`);
+  await expect(page.getByRole('link')).toHaveCount(sampleIds.length);
+  await page.screenshot({ path: path.join(work, 'sample-entries.png') });
   // Logout one native session must not invalidate any other sample's session.
   const loggedOut = await context.request.post(
     `${origin}${prefix}/acceptance/default-new/api/auth/sign-out`,
@@ -182,7 +207,7 @@ try {
           process.execPath,
           [
             path.join(source, `tests/fixtures/list-recovery/${script}.mjs`),
-            id.endsWith('upgraded') ? 'old' : 'new',
+            'new',
           ],
           {
             cwd: source,
@@ -217,6 +242,7 @@ try {
         startupMs,
         rssBytes: process.memoryUsage().rss,
         logoutIsolation: 'passed',
+        crossSampleSessionRejection: 'passed',
         results,
       },
       null,
@@ -224,7 +250,7 @@ try {
     ),
   );
   console.log(
-    'Extracted preview: reset UI, WebSocket, logout isolation and 84 browser cases passed.',
+    'Extracted preview: reset UI, WebSocket, logout isolation and 42 browser cases passed.',
   );
 } finally {
   await browser?.close();

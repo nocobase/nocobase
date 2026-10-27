@@ -2,7 +2,13 @@
 
 This fixture supplies the application-owned equipment lending business and its browser assertions for Default and Examples. It does not supply a template upgrade engine, publish candidates, advance a template version, or turn a source patch into a version upgrade. Candidate packaging, target discovery and the upgrade completion checks use the shared version-upgrade tooling and the application's upgrade Skill.
 
-## Four independent applications
+## Current scope
+
+Only `default-new` and `examples-new` are active preview and verification inputs. Use the [two-sample recovery and preview guide](preview/README.md) for clean builds, isolated native login, reset and the 42 deletion/return scenarios. Historical upgrade records remain available separately; neither further candidate upgrade runs nor formal-package upgrade revalidation are required. Existing compatibility implementation stays intact.
+
+## Historical four-application matrix
+
+The following lifecycle and old-mode commands document previously completed evidence, not current work or required preview instances.
 
 | Sample ID           | Source                           | Required lifecycle                                                                                                                                                                  |
 | ------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,10 +58,10 @@ The original twelve scenarios cover single and batch deletion, failed and partia
 
 ## Version and release evidence
 
-For each sample, preserve BASE/TARGET names and versions, registry URL, tarball integrity, target manifest dependencies, installed lock, original and reconciled commits, discovered target guidance, resolved conflicts, source diff, final template baseline and the pre/post business snapshots. Candidate versions must increase explicitly and live only in the isolated registry. A same-version checkout overlay cannot satisfy this matrix. Public TARGET versions are recorded only after actual release; repeat target fetch, integrity verification, upgrade and this same matrix using those real packages before calling public version upgrades verified.
+For each sample, preserve BASE/TARGET names and versions, registry URL, tarball integrity, target manifest dependencies, installed lock, original and reconciled commits, discovered target guidance, resolved conflicts, source diff, final template baseline and the pre/post business snapshots. Candidate versions must increase explicitly and live only in the isolated registry. A same-version checkout overlay cannot satisfy this matrix. Unverified public-package upgrade behavior is not claimed as verified. These historical provenance rules do not create a requirement for additional upgrade tests.
 
 ## Preview handoff
 
-The current repository preview workflow is maintained in the external CI repository. It builds `packages/templates/app-template-examples` and deploys one archive to the PR application. It does not deploy these four generated applications or install this fixture. A ready generic Examples preview therefore does not prove that Equipment loans is available.
+The current repository preview workflow is maintained in the external CI repository. It builds `packages/templates/app-template-examples` and deploys one archive to the PR application. The capacity-gated carrier hook now packages only the two new applications; while disabled, the ordinary preview does not install this fixture. A ready generic Examples preview therefore does not prove that Equipment loans is available.
 
-Provide distinct live application entries for the four accepted samples, or an existing preview entry that explicitly identifies and reaches them. Verify each published entry and its Equipment loans menu, detail child page and header breadcrumb. Retain native login; do not publish passwords. Explain reset behavior before allowing a reset: it clears only this isolated sample's synthetic loans. Keep enough records to reach the second page, and provide valid/overflow/empty reset choices. The management CLI's offered release-deployment operations cannot upload new archives; use the existing authorized CI publishing mechanism. Report missing capabilities and the exact refusal instead of reusing a management credential or bypassing the CLI.
+Provide distinct live application entries for the two new samples, or an existing preview entry that explicitly identifies and reaches them. Verify each published entry and its Equipment loans menu, detail child page and header breadcrumb. Retain native login; do not publish passwords. Explain reset behavior before allowing a reset: it clears only this isolated sample's synthetic loans. Keep enough records to reach the second page, and provide valid/overflow/empty reset choices. The management CLI's offered release-deployment operations cannot upload new archives; use the existing authorized CI publishing mechanism. Report missing capabilities and the exact refusal instead of reusing a management credential or bypassing the CLI.

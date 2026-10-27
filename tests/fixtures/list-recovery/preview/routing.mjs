@@ -1,10 +1,17 @@
 // The host has already removed its mount path before dispatching to this wrapper.
-export const sampleIds = Object.freeze([
-  'default-new',
-  'default-upgraded',
-  'examples-new',
-  'examples-upgraded',
-]);
+export const sampleIds = Object.freeze(['default-new', 'examples-new']);
+
+export function validateSampleIds(samples) {
+  const ids = Object.keys(samples || {});
+  if (
+    ids.length !== sampleIds.length ||
+    sampleIds.some((id) => !ids.includes(id))
+  ) {
+    throw new Error(
+      'Preview requires exactly the Default and Examples new samples',
+    );
+  }
+}
 
 export function resolveSampleRequest(request) {
   const url = new URL(request.url);

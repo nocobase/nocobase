@@ -1,3 +1,4 @@
+import { sampleIds } from './routing.mjs';
 import { spawn } from 'node:child_process';
 import { mkdtemp, writeFile, readFile, mkdir, cp } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -32,7 +33,8 @@ export async function buildSamples(work) {
       );
     });
   try {
-    for (const [id, sample] of Object.entries(manifest.samples)) {
+    for (const id of sampleIds) {
+      const sample = manifest.samples[id];
       const cwd = path.join(work, sample.sourceDir);
       const start = Date.now();
       await writeFile(
