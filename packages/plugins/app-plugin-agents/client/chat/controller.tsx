@@ -850,6 +850,7 @@ export class ChatController {
       },
       {
         body: {
+          ...(input.agentId ? { agentId: input.agentId } : {}),
           ...(input.context ? { context: input.context } : {}),
           ...(input.attachmentIds?.length
             ? { attachmentIds: input.attachmentIds }
