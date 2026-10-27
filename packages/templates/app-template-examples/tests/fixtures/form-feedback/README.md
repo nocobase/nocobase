@@ -14,6 +14,8 @@ For a pre-upgrade business sample, keep the same schema, native authorization, r
 
 Run `pnpm nocobase config init` before the first start. Use independent configuration, database files and storage for every application. Start one fixture at a time with `pnpm dev` and record its printed server `Local:` URL. Local source bindings may share packages, but each running application needs its own Vite cache directory; do not share the entire mutable `node_modules/.vite` cache between concurrent runs. Sessions are obtained through the fixture's own native login and are never saved into evidence files.
 
+Run `pnpm typecheck` in each generated application after wiring the fixture and after source reconciliation; this checks the sample route against the application and authorization types as well as the client adapter.
+
 ## Run the same matrix
 
 From a template with Playwright installed:

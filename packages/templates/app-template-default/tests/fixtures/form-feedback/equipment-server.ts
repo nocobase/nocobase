@@ -1,3 +1,4 @@
+import type { Application } from '@nocobase/app-server/application';
 // Test-only routes for an isolated application; authentication and authorization remain native.
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { databaseManagerToken } from '@nocobase/db';
@@ -17,7 +18,7 @@ import {
 import { Hono } from 'hono';
 import { z } from 'zod';
 
-export const equipmentRoutes = defineApiRoutes((app) => {
+export const equipmentRoutes = defineApiRoutes<Application>((app) => {
   const routes = new Hono<AuthorizationEnv>();
   const auth = app.container.resolve(authenticationToken);
   const db = app.container.resolve(databaseManagerToken);
@@ -124,5 +125,5 @@ export const equipmentRoutes = defineApiRoutes((app) => {
       return c.json({ data: { ...input, workflow: 'submitted' } });
     },
   );
-  return routes;
+  return new Hono().route('/', routes);
 });
