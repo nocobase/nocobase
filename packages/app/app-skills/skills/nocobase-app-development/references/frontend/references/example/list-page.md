@@ -39,6 +39,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 import { DataTable } from '#components/data-table';
 import { DataTableColumnHeader } from '#components/data-table/column-header';
 import { useUrlSearch } from '#hooks/use-url-search';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { SessionExpiredAlert } from '#components/session-expired-alert';
@@ -111,7 +112,7 @@ export default function ProjectsPage(): ReactElement {
   // The search term lives in the URL behind a search box that keeps its own text (url-search.md): typing, input
   // methods, back and forward all stay in step. The status filter is read from the same parameters.
   const { searchParams, search, text, inputProps, updateParams, clear } =
-    useUrlSearch();
+    useUrlSearch({ resetParams: ['page'] });
   const statusParam = searchParams.get('status');
   // Treat an unrecognized value as no filter.
   const status = isProjectStatus(statusParam) ? statusParam : undefined;
@@ -120,6 +121,7 @@ export default function ProjectsPage(): ReactElement {
     updateParams((params) => {
       if (value && value !== 'all') params.set('status', value);
       else params.delete('status');
+      params.delete('page');
     });
   }
 
@@ -351,6 +353,11 @@ export default function ProjectsPage(): ReactElement {
   );
 
   // Check in the order "failed → first load → empty → data or no results".
+  const tableState = useTableUrlState({
+    sortColumns: ['name', 'updatedAt'],
+    rowCount: !loading && !error ? rows?.length : undefined,
+  });
+
   let content: ReactElement;
   if (error instanceof ApiClientError && error.status === 401) {
     // The session ended; signing in again is the only way forward (guideline S4).
@@ -419,6 +426,7 @@ export default function ProjectsPage(): ReactElement {
           </p>
         ) : null}
         <DataTable
+          {...tableState}
           columns={columns}
           data={rows}
           getRowId={(row) => row.id}
