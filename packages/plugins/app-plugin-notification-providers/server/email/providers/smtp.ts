@@ -81,7 +81,11 @@ export class SmtpChannel implements ChannelInstance<
     validateSmtpProviderConfig({ ...config, provider: 'smtp' });
   }
   private readonly transport: MailTransport;
-  constructor(context: ChannelContext, _config: SmtpChannelConfig) {
+  constructor(context: ChannelContext, config: SmtpChannelConfig) {
+    if (!context.container.has(mailerToken)) {
+      this.transport = createSmtpTransport({ ...config, provider: 'smtp' });
+      return;
+    }
     const mailer = context.container.resolve(mailerToken);
     const name = legacyMailerName(context.channelName);
     if (!mailer.available(name))

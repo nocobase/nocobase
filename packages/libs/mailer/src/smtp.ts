@@ -2,6 +2,7 @@ import { mailErrorCode as providerErrorCode } from './error.js';
 import { connect, type Socket } from 'node:net';
 import { connect as connectTls } from 'node:tls';
 import nodemailer from 'nodemailer';
+import type SMTPPool from 'nodemailer/lib/smtp-pool/index.js';
 import { MailExecutions } from './execution.js';
 import { validateSmtpProviderConfig } from './config.js';
 import type {
@@ -15,6 +16,90 @@ import type {
 export function createSmtpTransport(config: SmtpProviderConfig): MailTransport {
   validateSmtpProviderConfig(config);
   const executions = new MailExecutions();
+  const sockets = new Set<Socket>();
+  let activeSignal: AbortSignal | undefined;
+  // Only the current operation enters Nodemailer. Its implicit reconnect/requeue must never resend a credential.
+  const poolOptions: SMTPPool.Options & { maxRequeues: number } = {
+    pool: true,
+    maxConnections: 1,
+    maxMessages: Infinity,
+    maxRequeues: 0,
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: config.auth,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
+    logger: false,
+    debug: false,
+    getSocket(_options, callback) {
+      if (!activeSignal || activeSignal.aborted) {
+        callback(new Error('Mail submission cancelled.'), undefined);
+        return;
+      }
+      let supplied = false;
+      const connected = (): void => {
+        supplied = true;
+        callback(null, { connection: socket, secured: config.secure === true });
+      };
+      const socket = config.secure
+        ? connectTls(
+            { host: config.host, port: config.port, servername: config.host },
+            connected,
+          )
+        : connect({ host: config.host, port: config.port }, connected);
+      sockets.add(socket);
+      socket.once('close', () => sockets.delete(socket));
+      socket.once('error', (error: Error) => {
+        if (!supplied) {
+          supplied = true;
+          callback(error, undefined);
+        }
+      });
+      socket.setTimeout(10_000, () =>
+        socket.destroy(
+          Object.assign(new Error('Mail connection timed out.'), {
+            code: 'ETIMEDOUT',
+          }),
+        ),
+      );
+      if (activeSignal.aborted)
+        socket.destroy(new Error('Mail submission cancelled.'));
+    },
+  };
+  const transporter = nodemailer.createTransport(poolOptions);
+  let busy = false;
+  const waiting: Array<() => void> = [];
+  const release = (): void => {
+    const next = waiting.shift();
+    if (next) next();
+    else busy = false;
+  };
+  const acquire = (signal: AbortSignal): Promise<boolean> => {
+    if (signal.aborted) return Promise.resolve(false);
+    if (!busy) {
+      busy = true;
+      return Promise.resolve(true);
+    }
+    return new Promise((resolve) => {
+      const ready = (): void => {
+        signal.removeEventListener('abort', cancel);
+        resolve(true);
+      };
+      const cancel = (): void => {
+        const index = waiting.indexOf(ready);
+        if (index >= 0) waiting.splice(index, 1);
+        resolve(false);
+      };
+      waiting.push(ready);
+      signal.addEventListener('abort', cancel, { once: true });
+    });
+  };
+  const cancelled = (): MailResult => ({
+    status: 'submission_unknown',
+    error: { category: 'timeout', message: 'SMTP submission cancelled.' },
+  });
   return {
     async send(
       message: EmailMessage,
@@ -25,66 +110,18 @@ export function createSmtpTransport(config: SmtpProviderConfig): MailTransport {
           const signal = options.signal
             ? AbortSignal.any([deadline, options.signal])
             : deadline;
-          let socket: Socket | undefined;
+          if (!(await acquire(signal))) return cancelled();
+          if (signal.aborted) {
+            release();
+            return cancelled();
+          }
+          activeSignal = signal;
           const cancel = (): void => {
-            socket?.destroy(new Error('Mail submission cancelled.'));
+            // A single connection belongs to this operation; cancelled waiters never touch it.
+            for (const socket of sockets)
+              socket.destroy(new Error('Mail submission cancelled.'));
           };
           signal.addEventListener('abort', cancel, { once: true });
-          const transporter = nodemailer.createTransport({
-            host: config.host,
-            port: config.port,
-            secure: config.secure,
-            auth: config.auth,
-            connectionTimeout: 10_000,
-            greetingTimeout: 10_000,
-            socketTimeout: 20_000,
-            logger: false,
-            debug: false,
-            getSocket(
-              _options: unknown,
-              callback: (
-                error: Error | null,
-                options: { connection: Socket; secured: boolean } | undefined,
-              ) => void,
-            ) {
-              if (signal.aborted) {
-                callback(new Error('Mail submission cancelled.'), undefined);
-                return;
-              }
-              let supplied = false;
-              const connected = (): void => {
-                supplied = true;
-                callback(null, {
-                  connection: socket!,
-                  secured: config.secure === true,
-                });
-              };
-              socket = config.secure
-                ? connectTls(
-                    {
-                      host: config.host,
-                      port: config.port,
-                      servername: config.host,
-                    },
-                    connected,
-                  )
-                : connect({ host: config.host, port: config.port }, connected);
-              socket.once('error', (error) => {
-                if (!supplied) {
-                  supplied = true;
-                  callback(error, undefined);
-                }
-              });
-              socket.setTimeout(10_000, () =>
-                socket?.destroy(
-                  Object.assign(new Error('Mail connection timed out.'), {
-                    code: 'ETIMEDOUT',
-                  }),
-                ),
-              );
-              if (signal.aborted) cancel();
-            },
-          });
           try {
             const info = await transporter.sendMail({
               from: message.from ?? config.from,
@@ -115,8 +152,8 @@ export function createSmtpTransport(config: SmtpProviderConfig): MailTransport {
             };
           } finally {
             signal.removeEventListener('abort', cancel);
-            socket?.destroy();
-            transporter.close();
+            activeSignal = undefined;
+            release();
           }
         },
       );
@@ -131,7 +168,11 @@ export function createSmtpTransport(config: SmtpProviderConfig): MailTransport {
             },
           };
     },
-    close: () => executions.close(),
+    async close(): Promise<void> {
+      await executions.close();
+      transporter.close();
+      for (const socket of sockets) socket.destroy();
+    },
   };
 }
 

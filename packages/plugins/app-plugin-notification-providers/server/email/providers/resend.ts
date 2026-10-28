@@ -89,7 +89,11 @@ export class ResendChannel implements ChannelInstance<
   readonly capabilities: ChannelCapabilities = {
     idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
   };
-  constructor(context: ChannelContext, _config: ResendChannelConfig) {
+  constructor(context: ChannelContext, config: ResendChannelConfig) {
+    if (!context.container.has(mailerToken)) {
+      this.transport = createResendTransport({ ...config, provider: 'resend' });
+      return;
+    }
     const mailer = context.container.resolve(mailerToken);
     const name = legacyMailerName(context.channelName);
     if (!mailer.available(name))

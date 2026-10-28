@@ -356,3 +356,60 @@ describe('host mailer deployment variables', () => {
     },
   );
 });
+
+it('retains a single Mailer owner regardless of later duplicate provider registration', async () => {
+  const config = new AppConfig();
+  await config.loadAll();
+  const container = new ServiceContainer();
+  const app = { container, config } as AppPluginApplication;
+  const owner = new MailerProvider(app);
+  const duplicate = new MailerProvider(app);
+  owner.register();
+  const mailer = container.resolve(mailerToken);
+  const close = vi.spyOn(mailer, 'close');
+  duplicate.register();
+  expect(container.resolve(mailerToken)).toBe(mailer);
+  await duplicate.shutdown();
+  expect(close).not.toHaveBeenCalled();
+  await owner.shutdown();
+  expect(close).toHaveBeenCalledOnce();
+});
+
+it('keeps standalone bare legacy names and documents explicit legacy identities for the host API', async () => {
+  const channels = {
+    collision: {
+      provider: 'resend',
+      apiKey: 'synthetic-key',
+      from: 'sender@example.test',
+    },
+    legacyOnly: { provider: 'smtp', host: 'localhost', port: 2525 },
+  };
+  const config = new AppConfig().load({
+    name: 'test',
+    read: async () => ({
+      kind: 'map',
+      value: {
+        notification: { channels },
+        mail: {
+          collision: { provider: 'smtp', host: 'localhost', port: 2526 },
+        },
+      },
+    }),
+  });
+  await config.loadAll();
+  const container = new ServiceContainer();
+  const provider = new MailerProvider({
+    container,
+    config,
+  } as AppPluginApplication);
+  provider.register();
+  const host = container.resolve(mailerToken);
+  const standalone = createMailer({ channels });
+  expect(standalone.available('legacyOnly')).toBe(true);
+  expect(host.available('legacyOnly')).toBe(false);
+  expect(host.available(legacyMailerName('legacyOnly'))).toBe(true);
+  expect(host.provider?.('collision')).toBe('smtp');
+  expect(host.provider?.(legacyMailerName('collision'))).toBe('resend');
+  await provider.shutdown();
+  await standalone.close();
+});

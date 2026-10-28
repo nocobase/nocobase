@@ -1,3 +1,4 @@
+import { MailerProvider } from '@nocobase/app-server/mailer';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -32,6 +33,7 @@ export class NotificationProvider<
     NotificationProviderApplication,
 > extends ServiceProvider<TApplication> {
   public readonly name: string = '@nocobase/app-plugin-notification';
+  private mailerProvider?: MailerProvider;
   public override register(): void {
     if (!this.app.container.has(databaseManagerToken))
       throw new Error(
@@ -44,6 +46,8 @@ export class NotificationProvider<
     if (!this.app.container.has(loggingToken))
       throw new Error('Notification core requires the logging dependency.');
     const jobsConfiguration = this.jobsConfiguration();
+    this.mailerProvider = new MailerProvider(this.app);
+    this.mailerProvider.register();
     const registry = createNotificationRegistry();
     this.app.container.instance(notificationExtensionRegistryToken, registry);
     this.app.container.singleton(notificationRuntimeToken, (container) =>
@@ -68,6 +72,10 @@ export class NotificationProvider<
     );
   }
 
+  public override async boot(): Promise<void> {
+    await this.mailerProvider?.boot();
+  }
+
   public override async start(): Promise<void> {
     // Install mode starts providers before notification tables are migrated,
     // so this sets the executor up without touching them.
@@ -75,9 +83,13 @@ export class NotificationProvider<
   }
 
   public override async shutdown(): Promise<void> {
-    await this.app.container
-      .resolveIfCreated(notificationRuntimeToken)
-      ?.close();
+    try {
+      await this.app.container
+        .resolveIfCreated(notificationRuntimeToken)
+        ?.close();
+    } finally {
+      await this.mailerProvider?.shutdown();
+    }
   }
 
   /**

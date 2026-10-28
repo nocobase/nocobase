@@ -25,7 +25,9 @@ vi.mock('nodemailer', () => ({
   },
 }));
 
-describe.each(['legacy', 'class'] as const)('Smtp %s', (mode) => {
+const modes = ['legacy', 'class', 'standalone'] as const;
+
+describe.each(modes)('Smtp %s', (mode) => {
   beforeEach(() => {
     smtpMock.close.mockReset();
     smtpMock.sendMail.mockReset();
@@ -225,26 +227,27 @@ describe.each(['legacy', 'class'] as const)('Smtp %s', (mode) => {
 });
 
 async function createProvider(
-  mode: 'legacy' | 'class',
+  mode: 'legacy' | 'class' | 'standalone',
 ): Promise<
   Pick<NotificationProvider<PreparedEmailMessage>, 'send' | 'capabilities'>
 > {
-  if (mode === 'class') {
+  if (mode !== 'legacy') {
     const container = new ServiceContainer();
-    container.instance(
-      mailerToken,
-      createMailer({
-        channels: {
-          email: {
-            type: 'smtp',
-            host: 'smtp.example.com',
-            port: 587,
-            from: 'NocoBase <notifications@example.com>',
-            replyTo: 'support@example.com',
+    if (mode === 'class')
+      container.instance(
+        mailerToken,
+        createMailer({
+          channels: {
+            email: {
+              type: 'smtp',
+              host: 'smtp.example.com',
+              port: 587,
+              from: 'NocoBase <notifications@example.com>',
+              replyTo: 'support@example.com',
+            },
           },
-        },
-      }),
-    );
+        }),
+      );
     return new SmtpChannel(
       { channelName: 'email', container },
       {

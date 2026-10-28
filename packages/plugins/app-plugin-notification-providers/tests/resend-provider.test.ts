@@ -22,7 +22,9 @@ vi.mock('resend', () => ({
   },
 }));
 
-describe.each(['legacy', 'class'] as const)('Resend %s', (mode) => {
+const modes = ['legacy', 'class', 'standalone'] as const;
+
+describe.each(modes)('Resend %s', (mode) => {
   beforeEach(() => {
     resendMock.send.mockReset();
   });
@@ -121,25 +123,26 @@ describe.each(['legacy', 'class'] as const)('Resend %s', (mode) => {
 });
 
 async function createProvider(
-  mode: 'legacy' | 'class',
+  mode: 'legacy' | 'class' | 'standalone',
 ): Promise<
   Pick<NotificationProvider<PreparedEmailMessage>, 'send' | 'capabilities'>
 > {
-  if (mode === 'class') {
+  if (mode !== 'legacy') {
     const container = new ServiceContainer();
-    container.instance(
-      mailerToken,
-      createMailer({
-        channels: {
-          email: {
-            type: 'resend',
-            apiKey: 're_test',
-            from: 'NocoBase <notifications@example.com>',
-            replyTo: 'support@example.com',
+    if (mode === 'class')
+      container.instance(
+        mailerToken,
+        createMailer({
+          channels: {
+            email: {
+              type: 'resend',
+              apiKey: 're_test',
+              from: 'NocoBase <notifications@example.com>',
+              replyTo: 'support@example.com',
+            },
           },
-        },
-      }),
-    );
+        }),
+      );
     return new ResendChannel(
       { channelName: 'email', container },
       {

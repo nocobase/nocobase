@@ -232,7 +232,10 @@ export function createMailer(
 
 export class MailerProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-server/mailer';
+  private ownsMailer = false;
   public override register(): void {
+    if (this.app.container.has(mailerToken)) return;
+    this.ownsMailer = true;
     this.app.container.singleton(mailerToken, () =>
       createMailer(
         this.app.config.get<MailChannelsConfig>('notification') ?? {
@@ -243,9 +246,12 @@ export class MailerProvider extends ServiceProvider<AppPluginApplication> {
     );
   }
   public override async boot(): Promise<void> {
-    const warning = validateMailConfiguration(this.app.config.raw()).find(
-      (issue) => issue.level === 'warning',
-    );
+    if (!this.ownsMailer) return;
+    const warning = validateMailConfiguration({
+      mail: this.app.config.get('mail'),
+      notification: this.app.config.get('notification'),
+      auth: this.app.config.get('auth'),
+    }).find((issue) => issue.level === 'warning');
     if (!warning) return;
     const message = `${warning.message} ${warning.fix}`;
     if (this.app.container.has(loggingToken))
@@ -256,6 +262,7 @@ export class MailerProvider extends ServiceProvider<AppPluginApplication> {
     else console.warn(message);
   }
   public override async shutdown(): Promise<void> {
-    await this.app.container.resolveIfCreated(mailerToken)?.close();
+    if (this.ownsMailer)
+      await this.app.container.resolveIfCreated(mailerToken)?.close();
   }
 }

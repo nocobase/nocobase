@@ -1,6 +1,6 @@
 # Outbound mail
 
-Register `MailerProvider` from `@nocobase/app-server/mailer` once in the application and declare `mail` with `defineMailConfig()`. Authentication and notification email channels resolve the same `mailerToken`: each selected configuration has one lazy transport per application container, closed by the host. Restart after changing transport settings; live transport replacement is not supported. Neither declaration nor startup validation contacts a mail server.
+Declare `mail` with `defineMailConfig()` and register `MailerProvider` from `@nocobase/app-server/mailer` once in the application. The notification runtime supplies a lazy provider for existing notification applications that do not register one. Authentication and notification email channels resolve the same `mailerToken`: each selected configuration has one lazy transport per application container, closed by the host. Restart after changing transport settings; live transport replacement is not supported. Neither declaration nor startup validation contacts a mail server.
 
 ```yaml
 mail:
@@ -62,3 +62,19 @@ Legacy `notification.channels.<name>` SMTP/Resend configurations, `auth.password
 4. Move old secret variables to `MAIL_PASSWORD` / `MAIL_API_KEY` for `default`, or explicitly mapped named variables. Remove legacy environment mappings after migrating.
 
 An old `emailChannel` without `enabled: true` keeps automatic recovery off. Legacy references always resolve the old channel, even if `mail` contains the same name. `mailer` and `emailChannel` together are an error. Missing, invalid or disabled targets fail startup with a configuration path and correction hint; no credentials, recipients or reset links appear in these diagnostics. Custom callbacks do not require a default sender.
+
+## Direct Mailer API migration
+
+`createMailer({ channels })` keeps its original standalone API: bare names select legacy channels. The container's `mailerToken` selects new `mail.<name>` configurations with bare names. Existing direct host API callers must migrate explicitly; a bare legacy channel name is not a fallback in the host, which prevents accidentally switching senders when a new configuration has the same name:
+
+```ts
+import { mailerToken, legacyMailerName } from '@nocobase/app-server/mailer';
+
+const mailer = app.container.resolve(mailerToken);
+await mailer.send(legacyMailerName('system-email'), message); // Old notification channel.
+await mailer.send('default', message); // New mail.default sender.
+```
+
+The notification runtime installs a lazy host Mailer if none is registered and closes it after its own workers and channels stop. An existing application Mailer is retained and is closed by its original owner; duplicate MailerProvider registrations do not take ownership. Standalone legacy SMTP/Resend channel classes without a host binding retain their old channel-owned transport and close it themselves. To share senders in a custom host, register MailerProvider and pass the same container to its channel registry.
+
+SMTP transports retain one reusable connection per configuration, with bounded in-memory admission and serial submission. Cancellation of an active send drops the connection; a cancelled waiting send never transmits or interrupts the active one. Shutdown cancels operations before closing the connection. Lost submission responses remain `submission_unknown` and are never replayed by the SMTP pool.

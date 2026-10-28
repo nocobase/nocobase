@@ -27,7 +27,7 @@ notification:
       type: in-app
 ```
 
-Each named Channel owns one flat configuration and defaults to enabled. Email channels reference a shared host mailer; multiple channels and password recovery reuse its transport. Register `MailerProvider` and declare `mail` with `defineMailConfig`. Missing or disabled references fail startup. The `provider` alias remains supported; if both discriminators are supplied, they must match. YAML values are literal; the host maps environment variables to configuration paths. The separate in-app plugin supplies the inbox in this example. Feishu and DingTalk accept their official HTTPS Webhook hosts and reject redirects.
+Each named Channel owns one flat configuration and defaults to enabled. Email channels reference a shared host mailer; multiple channels and password recovery reuse its transport. Declare `mail` with `defineMailConfig`. The notification runtime installs a lazy shared Mailer when the application has none; an explicitly registered application Mailer retains ownership. Missing or disabled references fail startup. The `provider` alias remains supported; if both discriminators are supplied, they must match. YAML values are literal; the host maps environment variables to configuration paths. The separate in-app plugin supplies the inbox in this example. Feishu and DingTalk accept their official HTTPS Webhook hosts and reject redirects.
 
 ```ts
 const notification = app.container.resolve(notificationServiceToken);
@@ -65,3 +65,5 @@ Legacy helpers such as `defineSmtpProviderConfig` still produce supported `provi
 ## Legacy migration
 
 SMTP/Resend channel credentials and `SMTP_PASSWORD` / `RESEND_API_KEY` remain supported until v4.0.0, with one startup warning. Move those fields to `mail.<name>` and replace the channel with `provider: email` and optional `mailer`; omit the reference for `mail.default`. New default secrets use `MAIL_PASSWORD` / `MAIL_API_KEY`; named configurations use explicit secret mappings. See [outbound mail](../../app/app-server/docs/mail.md) for the complete migration, mailbox-setting coexistence and password-reset examples. Legacy channel classes delegate transport ownership to the host; their shutdown never closes a shared sender. Standalone deprecated provider-definition helpers still own their own transport because they have no application container.
+
+The core notification runtime closes its automatically installed Mailer after shutting down its workers and channels. Existing application-owned Mailers are closed only by the application. Standalone legacy channel classes without a host Mailer retain their original private transport lifecycle, like the deprecated helpers.

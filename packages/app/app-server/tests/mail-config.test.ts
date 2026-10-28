@@ -147,10 +147,12 @@ describe('outbound mail configuration', () => {
     await appConfig.loadAll();
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      await new MailerProvider({
+      const provider = new MailerProvider({
         config: appConfig,
         container: new ServiceContainer(),
-      } as AppPluginApplication).boot();
+      } as AppPluginApplication);
+      provider.register();
+      await provider.boot();
       expect(warning).toHaveBeenCalledExactlyOnceWith(
         expect.stringContaining('v4.0.0'),
       );
