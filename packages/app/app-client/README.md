@@ -47,7 +47,6 @@ import { defineAppRuntime } from '@nocobase/app-client/runtime';
 
 import locales from './locales/index.js';
 import plugins from './plugins.js';
-import routeComponentOverrides from './route-overrides.js';
 import serviceProviders from './providers/index.js';
 import reactProviders from './react-providers/index.js';
 import routes from './routes.js';
@@ -60,13 +59,10 @@ export default defineAppRuntime({
   routes,
   locales,
   plugins,
-  routeComponentOverrides,
 });
 ```
 
-`plugins` is the complete value returned by `defineClientPlugins()`. Runtime
-resolution collects its route component overrides automatically;
-`routeComponentOverrides` contains only overrides owned by the application.
+`plugins` is the complete value returned by `defineClientPlugins()`. Runtime resolution collects its route component overrides automatically. An application can explicitly pass `routeComponentOverrides` when it needs to replace an existing route's component; omit the option when no replacements are needed. The templates do not include empty route-override or source-extension entry files. UI Library source assets under `client/extensions/` are imported by the application where needed, without automatic extension discovery.
 
 Static import makes the composition plan available to runtime resolution. It does not register a service, execute lifecycle hooks, render a React component, load a route page, or load locale messages. Declaration modules must therefore remain side-effect-free.
 

@@ -191,6 +191,9 @@ describe('app client routes', () => {
     const resolved = resolveRoutes();
 
     expect(pageAuthorizations(resolved.routes)).toEqual([
+      { name: 'skill-projects', authorizedAs: 'skill-projects' },
+      { name: 'skill-projects-new', authorizedAs: 'skill-projects' },
+      { name: 'skill-projects-edit', authorizedAs: 'skill-projects' },
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },

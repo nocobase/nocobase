@@ -160,7 +160,10 @@ export function SessionView({
     <LinkOpenContext.Provider value={panel.open}>
       <div
         ref={viewportRef}
-        className={cn('flex h-full min-h-0', surface.panel && 'flex-col')}
+        className={cn(
+          'relative isolate flex h-full min-h-0',
+          surface.panel && 'flex-col',
+        )}
       >
         <Conversation
           session={session.data}
@@ -183,7 +186,7 @@ export function SessionView({
           <div
             aria-hidden
             className={cn(
-              'fixed inset-0 z-40 bg-black/30',
+              'absolute inset-0 z-40 bg-black/30',
               !surface.panel && 'xl:hidden',
             )}
             onClick={() => setDetails(false)}
@@ -928,7 +931,7 @@ function Details({
         'bg-background overflow-y-auto',
         inline
           ? 'max-h-[50%] min-h-0 shrink-0 border-t'
-          : 'fixed inset-y-0 right-0 z-50 w-[min(100%,22rem)] border-l shadow-xl xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none',
+          : 'absolute inset-y-0 right-0 z-50 w-[min(100%,22rem)] border-l shadow-xl xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none',
       )}
       aria-label={t('session.details')}
     >

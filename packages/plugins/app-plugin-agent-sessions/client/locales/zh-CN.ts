@@ -17,6 +17,7 @@ const zhCN: AgentSessionsResource = {
   },
   list: {
     panelEmpty: '暂无会话',
+    fold: '收起会话列表',
     expand: '展开会话列表',
     label: '会话',
     title: '我的 Agent',

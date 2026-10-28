@@ -425,14 +425,15 @@ When the user asks to disable or hide a feature, make it reversible by default:
 Do not declare a plugin's own page route a second time: registering another `/install` is a conflict, not a customization. Pick one of these, in order of preference:
 
 1. **Plugin options**: when the plugin supports them, pass options where the plugin is registered in `client/plugins.ts`; the plugin's README lists the options it accepts.
-2. **Source extension**: create `client/extensions/<name>/extension.ts`; it is discovered automatically.
-3. **Route override**: add an entry to `client/route-overrides.ts`; its `routeId` is `<plugin-package>:<route-name>`.
+2. **Route override**: explicitly pass `routeComponentOverrides` to `defineAppRuntime()` in `client/runtime.ts`; its `routeId` is `<plugin-package>:<route-name>`. Create a separate override module only when needed, as shown below.
 
 - An override replaces only `componentLoader`. The route identity, path, `auth` and owning plugin stay the same.
-- Source extensions and route overrides apply to App routes, the only kind of client route.
+- Route overrides can target registered application or plugin routes.
 - Keep the replacement page lazy, declare `componentEntry` so tools can find the source file, and default-export the component. `componentEntry` is the replacement module's path from the application root, without an extension.
 
-A route override replacing the scheduler plugin's schedule detail page (an App route; its id is the package name and the route name):
+The templates omit `route-overrides.ts` and `source-extensions.ts`. UI Library assets under `client/extensions/` are imported and composed like other application source; adding a file there does not register an extension automatically.
+
+For example, to replace the registered App Foundation page with an application-owned page, create the following optional module:
 
 ```ts
 // client/route-overrides.ts
@@ -444,41 +445,28 @@ import {
 export const routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[] =
   defineClientRouteComponentOverrides([
     {
-      routeId: '@nocobase/app-plugin-scheduler:schedule-detail',
-      componentEntry: './client/pages/schedule-detail/index',
-      componentLoader: () => import('./pages/schedule-detail/index.js'),
+      routeId: '@nocobase/app-plugin-foundation:foundation',
+      componentEntry: './client/pages/foundation/index',
+      componentLoader: () => import('./pages/foundation/index.js'),
     },
   ]);
 
 export default routeComponentOverrides;
 ```
 
-Or, instead of that entry (one override per route), a source extension, which keeps the override together with its own files under one folder; `client/source-extensions.ts` loads every `client/extensions/*/extension.ts`:
+Then explicitly import it in the existing `client/runtime.ts` and add it to the existing declaration, keeping all other runtime options:
 
 ```ts
-// client/extensions/schedule-ui/extension.ts
-import {
-  defineClientRouteComponentOverrides,
-  defineClientSourceExtension,
-  type AppClientSourceExtension,
-} from '@nocobase/app-client/plugins';
+import routeComponentOverrides from './route-overrides.js';
 
-const scheduleUiExtension: AppClientSourceExtension =
-  defineClientSourceExtension({
-    name: 'schedule-ui',
-    routeComponentOverrides: defineClientRouteComponentOverrides([
-      {
-        routeId: '@nocobase/app-plugin-scheduler:schedule-detail',
-        componentEntry: './client/extensions/schedule-ui/pages/schedule-detail',
-        componentLoader: () => import('./pages/schedule-detail.js'),
-      },
-    ]),
-  });
-
-export default scheduleUiExtension;
+// Existing imports and runtime options remain in place.
+const appRuntime = defineAppRuntime({
+  // …
+  routeComponentOverrides,
+});
 ```
 
-- **A route can be overridden only once across the three mechanisms**; a second override raises an error that names the route id. Pick one; do not stack them.
+- **A route can be overridden only once across all sources**, including plugin options and any explicitly configured source extensions; a second override raises an error that names the route id.
 - Sign-in, registration, forgot password and reset password are the application's own routes, not the plugin's: edit the matching page in `client/pages/auth/` directly, and do not add another mechanism.
 
 ## 11. Where rendering happens

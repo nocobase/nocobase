@@ -1,5 +1,23 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.5
+
+### Minor Changes
+
+- 4721806: Export shared server and client Demo Mode checks and a configurable request guard that refuses external effects before route handlers, with localized errors and explicit method/path exceptions.
+
+### Patch Changes
+
+- f037f2d: Make the demo writable collections environment variable optional in generated deployment manifests.
+- 4721806: Show localized permission set names for demo sign-in accounts without dataset role labels, including existing administrators.
+- 4721806: Prevent encoded line terminators from bypassing demo request guards and translate account role titles in the browser so language changes take effect without additional requests.
+
+  Reduce repeated permission queries during automatic demo sign-in and keep entry independent of dataset role labels.
+
+- 4721806: Display the daily reset time, language, and timezone in one row on wider screens.
+- Updated dependencies [f9ada4a]
+  - @nocobase/app-plugin-agents@1.0.0-beta.29
+
 ## 0.2.0-beta.4
 
 ### Patch Changes

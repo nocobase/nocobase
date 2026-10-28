@@ -37,7 +37,9 @@ test('starts indexing through application Providers and the original host jobs t
   expect(() => registry.register(registry.get('sqlite-vec')!)).toThrow();
   const service = app.container.resolve(knowledgeIndexingToken);
   const authorization = app.container.resolve(authorizationToken);
-  const models = app.container.resolve(agentsToken).models;
+  const agents = app.container.resolve(agentsToken);
+  expect(agents).not.toHaveProperty('vectors');
+  const models = agents.models;
   const saved = await models.services.create({
     title: 'Deterministic',
     provider: 'openai-compatible',

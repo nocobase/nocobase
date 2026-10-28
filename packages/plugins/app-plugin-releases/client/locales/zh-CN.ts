@@ -358,7 +358,6 @@ const zhCN: typeof enUS = {
     },
     initialAdmin: {
       title: '初始管理员',
-      expires: '首次部署时生成。请立即保存：{{hours}} 小时后删除。',
       kept: '首次部署时生成，保留到应用删除为止。',
       username: '用户名',
       email: '邮箱',

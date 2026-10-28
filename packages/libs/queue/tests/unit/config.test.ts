@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { createRedisBackend } from 'bullmq';
+import { InMemoryQueueService } from '../../src/memory/index.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -67,28 +67,6 @@ describe('configuration key selection', () => {
     );
   });
 
-  it('leaves the connection to a registered backend factory', () => {
-    const resolved = resolveQueueConfig(
-      { key: 'pg', entry: { adapter: 'redis', queueBackend: 'postgres' } },
-      { appName: 'crm', storagePath },
-    );
-    expect(resolved).toMatchObject({
-      adapter: 'redis',
-      queueBackend: 'postgres',
-      connection: undefined,
-    });
-    // Naming BullMQ's own Redis backend is the same as naming none.
-    expect(
-      resolveQueueConfig(
-        {
-          key: 'r',
-          entry: { adapter: 'redis', queueBackend: 'redis', connection: {} },
-        },
-        { appName: 'crm', storagePath },
-      ).queueBackend,
-    ).toBeUndefined();
-  });
-
   it('defaults the namespace to the application name and fills every default', () => {
     const resolved = resolveQueueConfig(
       { key: 'memory', entry: { adapter: 'inMemory' } },
@@ -112,7 +90,6 @@ describe('configuration key selection', () => {
 
   it.each([
     [{ adapter: 'inMemory', connection: {} }, /takes no connection/u],
-    [{ adapter: 'redis' }, /needs a redis connection/u],
     [
       { adapter: 'redis', connection: {}, persistence: { path: '/x' } },
       /only inMemory/u,
@@ -122,8 +99,7 @@ describe('configuration key selection', () => {
     [{ adapter: 'inMemory', rateLimit: { max: 1 } }, /rateLimit.duration/u],
     [{ adapter: 'inMemory', backoff: { type: 'linear' } }, /not supported/u],
     [{ adapter: 'inMemory', timeout: 1 }, /does not accept "timeout"/u],
-    [{ connection: {} }, /needs an adapter/u],
-    [{ adapter: 'custom' }, /needs an adapter/u],
+    [{ connection: {} }, /needs a non-empty adapter/u],
     [
       { adapter: 'inMemory', queueBackend: 'postgres' },
       /takes no queueBackend/u,
@@ -201,7 +177,10 @@ describe('queue service configuration', () => {
       memory: { adapter: 'inMemory' },
       other: { adapter: 'redis', queueBackend: 'custom', connection: {} },
     });
-    await expect(unknownBackend.setup()).rejects.toThrow(/not registered/u);
+    await expect(unknownBackend.setup()).resolves.toBeUndefined();
+    expect(() => unknownBackend.producer('selected', 'other')).toThrow(
+      /not registered/u,
+    );
 
     const nonObject = service({
       memory: 'inMemory' as never,
@@ -212,24 +191,24 @@ describe('queue service configuration', () => {
   it('keeps registration names unique per service', () => {
     const first = service(undefined);
     const second = service(undefined);
-    first.registerBackend('custom', createRedisBackend);
-    expect(() => first.registerBackend('custom', createRedisBackend)).toThrow(
-      /already registered/u,
-    );
-    expect(() => first.registerBackend('redis', createRedisBackend)).toThrow(
-      /already registered/u,
-    );
+    first.registerImplementation('custom', new InMemoryQueueService());
     expect(() =>
-      second.registerBackend('custom', createRedisBackend),
+      first.registerImplementation('custom', new InMemoryQueueService()),
+    ).toThrow(/already registered/u);
+    expect(() =>
+      first.registerImplementation('inMemory', new InMemoryQueueService()),
+    ).toThrow(/already registered/u);
+    expect(() =>
+      second.registerImplementation('custom', new InMemoryQueueService()),
     ).not.toThrow();
   });
 
   it('rejects registration once setup started and entry points after shutdown', async () => {
     const queue = service(undefined);
     await queue.setup();
-    expect(() => queue.registerBackend('late', createRedisBackend)).toThrow(
-      /before the queue service is set up/u,
-    );
+    expect(() =>
+      queue.registerImplementation('late', new InMemoryQueueService()),
+    ).toThrow(/before setup/u);
     await queue.shutdown();
     expect(() => queue.producer('new')).toThrow(/shut down/u);
   });

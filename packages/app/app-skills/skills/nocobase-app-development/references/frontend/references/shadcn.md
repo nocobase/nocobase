@@ -4,6 +4,8 @@
 
 ## 1. What the template ships and how to add the rest
 
+For applying a UI reference or a `DESIGN.md`, use [the shared design contract](../design-contract.md#from-design-to-shadcn-components) before choosing styles. It adapts upstream design-system and state-showcase methods to NocoBase's existing theme and route components; [sources and maintenance](../design-sources.md) records the reviewed revisions separately from the unchanged embedded component Skill. Verify references and footer geometry through [shared acceptance](../ui-acceptance.md). Do not run upstream new-App or preset workflows inside an existing App to implement a reference.
+
 The Default template ships these; Examples adds `badge`, `card`, `field`, `select`, `separator`, `skeleton`, `table`, `textarea`, `toggle` and `toggle-group`.
 
 | Primitive                                                                             | Used by                                                 |
