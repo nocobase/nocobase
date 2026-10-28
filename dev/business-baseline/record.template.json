@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "runId": "unknown",
+  "round": "unknown",
+  "scenario": "unknown",
+  "outcome": "not-run",
+  "model": {
+    "id": "gpt-6.1-sol",
+    "reasoningEffort": "high",
+    "deploymentRevision": "unknown",
+    "provider": "unknown"
+  },
+  "resources": {
+    "sourceCommit": "4c89e3cdd540965552834837313f47d4e0af8795",
+    "resourceManifestSha256": "unknown",
+    "materialsManifestSha256": "unknown",
+    "resourceArchiveSha256": "unknown",
+    "defaultVersion": "unknown",
+    "examplesVersion": "unknown",
+    "skillVersion": "unknown",
+    "lockfileSha256": "unknown",
+    "adapterSha256": "unknown"
+  },
+  "environment": {
+    "node": "24.21.0",
+    "pnpm": "11.7.0",
+    "os": "unknown",
+    "architecture": "x64",
+    "databaseVersion": "unknown",
+    "browserRevision": "unknown",
+    "baseURL": "unknown",
+    "checkout": "unknown",
+    "toolPermissions": "unknown",
+    "visibleResources": "unknown",
+    "timezone": "UTC",
+    "locale": "en-US"
+  },
+  "time": {
+    "promptDeliveredAt": "unknown",
+    "buildEndedAt": "unknown",
+    "acceptanceEndedAt": "unknown",
+    "wallSeconds": "unknown",
+    "buildExecutionSeconds": "unknown",
+    "evaluatorPreparationSeconds": "unknown",
+    "acceptanceSeconds": "unknown",
+    "waitingSeconds": "unknown",
+    "deadlineExceeded": "unknown"
+  },
+  "assertions": {
+    "passed": "unknown",
+    "failed": "unknown",
+    "blocked": "unknown",
+    "total": "unknown",
+    "passRate": "unknown",
+    "allPassed": "unknown",
+    "resultFile": "unknown"
+  },
+  "issues": {
+    "permissionRootCauses": "unknown",
+    "consistencyRootCauses": "unknown",
+    "records": []
+  },
+  "corrections": {
+    "humanCount": "unknown",
+    "automaticRetries": "unknown",
+    "events": []
+  },
+  "tokens": {
+    "input": "unknown",
+    "output": "unknown",
+    "cacheRead": "unknown",
+    "cacheWrite": "unknown",
+    "total": "unknown",
+    "providerDefinitions": "unknown",
+    "rawExport": "unknown"
+  },
+  "evidence": {
+    "prompt": "unknown",
+    "commandsAndExitCodes": "unknown",
+    "rawLogs": "unknown",
+    "generatedDiff": "unknown",
+    "screenshotsAndTraces": "unknown",
+    "databaseSnapshots": "unknown",
+    "discoveryEntry": "unknown",
+    "modelSubstitutions": "unknown"
+  },
+  "comparisonDrift": []
+}

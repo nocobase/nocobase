@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "rounds": ["before", "after"],
+  "runsPerScenarioPerRound": 1,
+  "scenarios": ["procurement", "customers", "onboarding", "expenses"],
+  "model": {
+    "id": "gpt-6.1-sol",
+    "reasoningEffort": "high",
+    "deploymentRevision": "unknown"
+  },
+  "limitsMinutes": { "environment": 30, "build": 90, "acceptance": 15 },
+  "humanCorrectionsInScoredBuild": 0,
+  "environment": {
+    "node": "24.21.0",
+    "pnpm": "11.7.0",
+    "database": "sqlite",
+    "browser": "Chromium 151.0.7922.34 (Playwright revision 1234)",
+    "timezone": "UTC",
+    "locale": "en-US",
+    "platform": "linux",
+    "architecture": "x64"
+  },
+  "permissions": {
+    "filesystem": "isolated-application-only",
+    "tools": ["local-shell", "local-native-browser", "local-test-http"],
+    "network": "package-install-and-isolated-test-instance-only",
+    "externalServices": false,
+    "managementStudio": false,
+    "businessActorsAdmin": false
+  },
+  "visibility": {
+    "builder": [
+      "selected-verbatim-prompt",
+      "clean-default-application",
+      "installed-package-skills"
+    ],
+    "evaluatorOnly": [
+      "other-prompts",
+      "frozen-seeds",
+      "assertions",
+      "adapter",
+      "results"
+    ]
+  },
+  "missingMetricValue": "unknown"
+}

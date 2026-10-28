@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "algorithm": "sha256",
+  "files": {
+    "README.md": "a7850fc900bc5809bab11234611c4efad46dca695fb53b98d9f3befcc70db080",
+    "adapter.md": "3bd7785423638ff6cac322fefb57d8bddd6318492ccfc83fc2373164e7d5d4dd",
+    "assertions/customers.json": "d14e3b87a637c3fec689045a79abd5e38027b2d1dff36ef74003a1406f249b67",
+    "assertions/expenses.json": "fe73b3e6e220c9ac6c3aa7eed4a28dfe7da3da7eaf8f5dbac25f258c36382799",
+    "assertions/onboarding.json": "2a975b4ba9ea8a1e1311cd6d58b94cdb1a153ebb44f6681bfb379dcd9f75540f",
+    "assertions/procurement.json": "cd22c3effcad38becac1e238033c070a0e83861815bacf0dbcdb13c8a932fe45",
+    "evaluate.mjs": "6752744b82bbeec72a3da88f736a349169c16c0c120558146e19fb52a051a155",
+    "instance.mjs": "eff3d1e81c7fcb365381c39e6d6db86406eb415711322ab836c3419912fe22e0",
+    "materials.mjs": "c6c02eea2ee8bb6993291e41e4724bc79bf3067a5c263e31885bc9f8119e147d",
+    "prompts/customers.txt": "bd8f168ec49981308042248f9e31c9583b4b05286430ee4248a39aecf3fa3851",
+    "prompts/expenses.txt": "cc2f5fa967867ee4ee8a28bba5c0a98032f2a7505cd0d73bc5bfcb588934f702",
+    "prompts/onboarding.txt": "ff611b818ef829693b63882b0758ca90601e93afb062d138f9d753f06aad431b",
+    "prompts/procurement.txt": "4202fd2d442a73b1e5a26f11e1e4229982e863ed89f098770759089a239f4754",
+    "protocol.json": "7196d2e7f36d6b0fdb9f4e5d2095d3fce81f210e5460bdbbe51157e965d47c50",
+    "record.template.json": "7102efb701bfbe18ee745fa8ed696d0302eef5a31919ff4498783724a9417ddc",
+    "resources.json": "0319689d10218fc492dee5038cb866fee63939925fd183f2d356a728429746c0",
+    "scenario-index.json": "403a586fded100349eb4ee7bd493ff3d7b19059548f2684e831b15f32c5dd77c",
+    "scenario-index.schema.json": "71637ad600e8cfe80b04d49fb559d831bcf106be722c4deb504a614723820060",
+    "seeds/customers.json": "ad562b9c5a3132a02c30fa959dfbf27bfe7d616b314aad6b7be8a33490f3d909",
+    "seeds/expenses.json": "fd21173a707fba5f9418342a31d9a3c7c4bdb36f253bd486c0a34d2d11bf63db",
+    "seeds/onboarding.json": "a882ed1b7b48b551fc513dd2debc0c56019cd7ef18e4f5d17beec465f2f3cf67",
+    "seeds/procurement.json": "d57483c2bda7cc1f40e96c304b8d046cade39bf174048b9a1996f629d96a64e5",
+    "shared.md": "6f1deaca5cc4c7baedb71252fe266f4d80893f90cbaf068d6deee2ef0fcb345b"
+  }
+}
