@@ -291,20 +291,28 @@ describe('JobExecutorServiceProvider', () => {
     );
   });
 
-  it('registers the service lazily under its token', async () => {
-    const { app, container } = await application();
+  it('registers lazily and freezes the same service at boot without opening resources', async () => {
+    const { app, container, logger } = await application();
     const provider = new JobExecutorServiceProvider(app);
 
     expect(provider.name).toBe('@nocobase/app-server/jobs');
     provider.register();
-    await provider.boot();
     expect(container.resolveIfCreated(jobExecutorServiceToken)).toBeUndefined();
 
     const service = container.resolve(jobExecutorServiceToken);
-    expect(container.resolve(jobExecutorServiceToken)).toBe(service);
+    expect(() => service.getJobExecutor(SCOPE)).toThrow(/registration/u);
+    await provider.boot();
+    expect(container.resolveIfCreated(jobExecutorServiceToken)).toBe(service);
+    expect(logger.warn).not.toHaveBeenCalled();
+    await expect(
+      readdir(path.join(rootDir, 'storage', 'jobs')),
+    ).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
     expect(service.getScheduleExecutor(SCOPE)).toBe(
       service.getScheduleExecutor(SCOPE),
     );
+    await provider.shutdown();
   });
 
   it('falls back to memory under the application name and storage directory', async () => {

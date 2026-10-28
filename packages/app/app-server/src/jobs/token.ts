@@ -4,7 +4,6 @@ import {
 } from '@nocobase/service-provider';
 
 import type { JobExecutorService } from '@nocobase/jobs';
-import type { JobsBackendRegistry } from '@nocobase/jobs/backend';
 
 /**
  * The application's ordinary and recurring jobs service. Each consumer asks
@@ -12,7 +11,3 @@ import type { JobsBackendRegistry } from '@nocobase/jobs/backend';
  */
 export const jobExecutorServiceToken: ServiceToken<JobExecutorService> =
   createServiceToken<JobExecutorService>('@nocobase/jobs/service');
-
-/** Application-local paired backend registration, available during register(). */
-export const jobsBackendRegistryToken: ServiceToken<JobsBackendRegistry> =
-  createServiceToken<JobsBackendRegistry>('@nocobase/jobs/backends');

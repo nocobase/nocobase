@@ -29,8 +29,7 @@ export class JobsBackendNotRegisteredError extends Error {
 }
 
 /** Pure parsing and both executor factories are registered atomically. */
-export interface JobsBackendAdapter<TConfig extends ResolvedJobsConfig> {
-  readonly name: string;
+export interface JobsImplementation<TConfig extends ResolvedJobsConfig> {
   resolve(
     config: JobsAdapterConfig,
     base: ResolvedJobsConfig,
@@ -64,8 +63,7 @@ export class JobsBackendRegistry {
   private readonly adapters = new Map<string, Resolver>();
   private frozen = false;
   public constructor(private readonly requireFreeze: boolean = false) {
-    this.register({
-      name: 'memory',
+    this.register('memory', {
       resolve: resolveMemoryJobsConfig,
       createJobExecutor: (config, { logger }) =>
         new BackendJobExecutor(new MemoryJobBackend(config), logger),
@@ -75,29 +73,33 @@ export class JobsBackendRegistry {
   }
 
   public register<TConfig extends ResolvedJobsConfig>(
-    adapter: JobsBackendAdapter<TConfig>,
+    name: string,
+    implementation: JobsImplementation<TConfig>,
   ): void {
     if (this.frozen) throw new Error('Jobs backend registration is closed.');
-    if (!adapter.name || this.adapters.has(adapter.name))
-      throw new Error(
-        `Jobs backend "${adapter.name}" is already registered or invalid.`,
-      );
+    if (typeof name !== 'string' || name.trim() === '')
+      throw new TypeError('A jobs adapter name must be a non-empty string.');
+    if (this.adapters.has(name))
+      throw new Error(`Jobs backend "${name}" is already registered.`);
     if (
-      typeof adapter.resolve !== 'function' ||
-      typeof adapter.createJobExecutor !== 'function' ||
-      typeof adapter.createScheduleExecutor !== 'function'
+      implementation === null ||
+      (typeof implementation !== 'object' &&
+        typeof implementation !== 'function') ||
+      typeof implementation.resolve !== 'function' ||
+      typeof implementation.createJobExecutor !== 'function' ||
+      typeof implementation.createScheduleExecutor !== 'function'
     )
-      throw new Error(
-        'A jobs backend requires a resolver and both executor factories.',
+      throw new TypeError(
+        'A jobs implementation requires a resolver and both executor factories.',
       );
-    this.adapters.set(adapter.name, (raw, base, dependencies) => {
-      const config = adapter.resolve(raw, base, dependencies);
+    this.adapters.set(name, (raw, base, dependencies) => {
+      const config = implementation.resolve(raw, base, dependencies);
       return {
         config,
         createJobExecutor: () =>
-          adapter.createJobExecutor(config, dependencies),
+          implementation.createJobExecutor(config, dependencies),
         createScheduleExecutor: () =>
-          adapter.createScheduleExecutor(config, dependencies),
+          implementation.createScheduleExecutor(config, dependencies),
       };
     });
   }

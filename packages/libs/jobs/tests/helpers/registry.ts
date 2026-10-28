@@ -9,8 +9,7 @@ export function testRegistry(
   job?: (config: ResolvedJobsConfig) => JobExecutor,
 ): JobsBackendRegistry {
   const registry = new JobsBackendRegistry();
-  registry.register({
-    name: 'test',
+  registry.register('test', {
     resolve: (raw, base) => ({ ...raw, ...base }),
     createJobExecutor: () => {
       throw new Error('unused');

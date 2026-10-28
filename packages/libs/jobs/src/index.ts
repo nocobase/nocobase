@@ -19,14 +19,14 @@ export type {
 } from './config.js';
 export { createJobExecutorService } from './create.js';
 export {
-  JobsBackendRegistry,
   JobsBackendNotRegisteredError,
-  type JobsBackendAdapter,
+  type JobsImplementation,
 } from './adapters.js';
 export { ScheduleHandlerNotRegisteredError } from './schedule/executor.js';
 export type {
   ManagedJobExecutorService,
   JobExecutorServiceDependencies,
+  JobExecutorServiceOptions,
   JobsFallbackEvent,
 } from './service.js';
 export {

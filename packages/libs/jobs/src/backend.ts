@@ -1,7 +1,6 @@
 export {
-  JobsBackendRegistry,
   JobsBackendNotRegisteredError,
-  type JobsBackendAdapter,
+  type JobsImplementation,
 } from './adapters.js';
 export type {
   JobsAdapterConfig,

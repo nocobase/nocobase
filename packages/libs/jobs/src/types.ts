@@ -1,3 +1,5 @@
+import type { JobsImplementation } from './adapters.js';
+import type { ResolvedJobsConfig } from './config.js';
 import type { JobExecutor } from './job/types.js';
 import type { ScheduleExecutor } from './schedule/types.js';
 
@@ -7,6 +9,13 @@ import type { ScheduleExecutor } from './schedule/types.js';
  * memory adapter's state file name; `name` selects a configuration key.
  */
 export interface JobExecutorService {
+  /** Registers pure configuration parsing and paired factories before setup. */
+  registerImplementation<TConfig extends ResolvedJobsConfig>(
+    name: string,
+    implementation: JobsImplementation<TConfig>,
+  ): void;
+  /** Freezes registration and validates the default; opens no executor resources. */
+  setup(): void;
   getScheduleExecutor(scope: string, name?: string): ScheduleExecutor;
   getJobExecutor(scope: string, name?: string): JobExecutor;
 }
