@@ -71,6 +71,9 @@ issueId)` says where firing it would take one issue without moving it (for a con
   `projects.comments.post` (`CommentWriter`) and reacts to new comments through `projectsTriggersToken`
   (`IssueTriggers.onCommentCreated`, answering whom it woke). Writing a comment touches the issue's last activity
   without changing its `revision`, so an open edit of the issue does not conflict.
+
+Server writers may pass `message` alongside `origin` in the options of `projects.comments.post`. Supported display messages are `studio.runAppended` with `{ agentName }` and `studio.stepEnded` with `{ status: 'completed' | 'failed' | 'cancelled' }`. The writer validates and stores the message in the existing origin JSON. Comment reads expose only its type and allowlisted parameters as optional `IssueComment.message`, never arbitrary provenance, and omit it after deletion. Ordinary HTTP create/edit bodies reject this field. Keep a safe English fallback in `content`; clients translate known message types and display the fallback for unknown types. No migration or additional read/write is required.
+
 - **Attachments** (`shared/attachments.ts`, `server/domains/attachments/`): files on an issue (its own) or sent with a
   comment, any type, up to 20 MiB each, stored through the file plugin (`@nocobase/app-plugin-file`) on the App's
   default Drive disk. A file starts as an upload of its uploader's attached to nothing (a person, or an agent working

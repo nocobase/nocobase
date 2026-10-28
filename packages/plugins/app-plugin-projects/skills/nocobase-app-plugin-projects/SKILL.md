@@ -98,6 +98,8 @@ grants from before roles moved to the App; the App converts them (for example, `
 
 ## Verification
 
+Server integrations can pass a typed `message` in `projects.comments.post` options: `studio.runAppended` with `{ agentName }`, or `studio.stepEnded` with `{ status: 'completed' | 'failed' | 'cancelled' }`. Keep safe fallback Markdown in `content`. Messages are validated, stored in existing origin JSON and returned only as the optional public `IssueComment.message` projection. Extra parameters and private origin fields are not exposed; deleted comments omit the message. Ordinary comment create/edit APIs cannot supply it. Translate known types in the host and fall back to `content` for unknown types.
+
 `statusEvents.fire` accepts optional `needsYou` and `next`, validated with the same progress rules as an issue update. Include the target in the event's `from` list to refresh these fields when an issue already has that status; this updates progress without replaying status activities or entry actions and returns `ignored/noTransition`. An event moving to a different status still records the provided actor and runs the normal transition.
 
 Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnblocked` and `onSubtasksFinished`, including `actor.trace.runId` when supplied. A status event moves as the system but records the actor it was fired with; pass the real actor when firing one, since an omitted actor defaults to the system.

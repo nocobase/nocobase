@@ -51,6 +51,19 @@ export interface MentionCandidate extends MentionRef {
   readonly hint?: string;
 }
 
+/** Server-authored display messages; private provenance is never part of their parameters. */
+export type CommentMessage =
+  | {
+      readonly type: 'studio.runAppended';
+      readonly params: { readonly agentName: string };
+    }
+  | {
+      readonly type: 'studio.stepEnded';
+      readonly params: {
+        readonly status: 'completed' | 'failed' | 'cancelled';
+      };
+    };
+
 export interface IssueComment {
   readonly id: string;
   readonly issueId: string;
@@ -70,6 +83,8 @@ export interface IssueComment {
   readonly via: 'cli' | 'api_key' | 'agent' | null;
   /** The originating run and attempt, when recorded by the application. Kept separate from the transport `via`. */
   readonly source?: ActivityVia | null;
+  /** Optional, validated display projection of a server-authored message. Absent once deleted. */
+  readonly message?: CommentMessage;
   readonly createdAt: string;
   readonly editedAt: string | null;
   readonly deleted: boolean;

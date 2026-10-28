@@ -1466,6 +1466,41 @@ describe('dependencies over HTTP', () => {
 });
 
 describe('comments over HTTP', () => {
+  it('rejects message and provenance on public comment writes and keeps the read permission boundary', async () => {
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Display message',
+    });
+    const message = {
+      type: 'studio.runAppended',
+      params: { agentName: 'Sol' },
+    } as const;
+    for (const extra of [{ message }, { origin: { message } }]) {
+      const response = await call(`/issues/${issue.id}/comments`, {
+        role: 'member',
+        method: 'POST',
+        body: JSON.stringify({ content: 'Hi', ...extra }),
+      });
+      expect(response.status).toBe(400);
+    }
+    await h.services.comments.post(
+      { type: 'system', id: null },
+      issue.id,
+      { content: 'Fallback.' },
+      { message, origin: { runId: 'private-run' } },
+    );
+    expect((await call(`/issues/${issue.id}/comments`)).status).toBe(401);
+    expect(
+      (await call(`/issues/${issue.id}/comments`, { role: 'none' })).status,
+    ).toBe(404);
+    const response = await call(`/issues/${issue.id}/comments`, {
+      role: 'member',
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      data: [{ root: { message } }],
+    });
+  });
+
   it('posts, reacts with an encoded emoji, follows and lists mentions', async () => {
     await call('/issues', {
       role: 'member',
