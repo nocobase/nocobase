@@ -18,6 +18,12 @@ import { discoveryKey } from '../../client/use-choice-discovery.js';
 import { sessionMemoryKey } from '../../client/use-session-memory.js';
 import type { Session } from '../../shared/api.js';
 
+vi.mock('@nocobase/app-plugin-authentication/client', () => ({
+  useAuthentication: () => ({ session: { user: { id: 'viewer' } } }),
+}));
+
+let width = 1600;
+
 const recent: Session = {
   id: 'recent',
   computerId: 'computer',
@@ -50,6 +56,20 @@ function Location() {
 
 beforeEach(() => {
   localStorage.clear();
+  width = 1600;
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(private readonly callback: ResizeObserverCallback) {}
+      observe() {
+        this.callback(
+          [{ contentRect: { width } } as ResizeObserverEntry],
+          this as unknown as ResizeObserver,
+        );
+      }
+      disconnect() {}
+    },
+  );
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: query.includes('min-width'),
     addEventListener: vi.fn(),
@@ -153,12 +173,16 @@ async function setup(route = '/agent-sessions', cachedSettings = false) {
   });
   await renderWithApp(
     <QueryClientProvider client={client}>
-      <Location />
-      <Routes>
-        <Route path='/agent-sessions' element={<AgentSessionsPage />}>
-          <Route path=':sessionId' element={<p>Opened recent session</p>} />
-        </Route>
-      </Routes>
+      <AgentSessionsConfigContext.Provider
+        value={{ cli: 'app', connectPrompt: null, linkPanels: {} }}
+      >
+        <Location />
+        <Routes>
+          <Route path='/agent-sessions' element={<AgentSessionsPage />}>
+            <Route path=':sessionId' element={<p>Opened recent session</p>} />
+          </Route>
+        </Routes>
+      </AgentSessionsConfigContext.Provider>
     </QueryClientProvider>,
     {
       route,
@@ -433,7 +457,10 @@ describe('archived view', () => {
     ).toBeNull();
 
     fireEvent.click(
-      within(list).getByRole('button', { name: 'Archived', exact: true }),
+      within(list).getByRole('button', {
+        name: 'Back to sessions',
+        exact: true,
+      }),
     );
     expect(
       await within(list).findByRole('heading', { name: 'My agents' }),
@@ -451,7 +478,9 @@ describe('archived view', () => {
     });
     fireEvent.click(archived);
     await within(list).findByText('Old investigation');
-    fireEvent.click(archived);
+    fireEvent.click(
+      within(list).getByRole('button', { name: 'Back to sessions' }),
+    );
     expect(await screen.findByRole('textbox', { name: 'Draft' })).toHaveValue(
       'Unsent reply',
     );
@@ -488,6 +517,7 @@ describe('archived view', () => {
   });
 
   it('leaves the archived list from the collapsed rail when starting a new session', async () => {
+    width = 1000;
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query !== '(min-width: 1600px)',
       addEventListener: vi.fn(),

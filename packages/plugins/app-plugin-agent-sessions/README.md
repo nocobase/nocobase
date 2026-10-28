@@ -49,6 +49,8 @@ agentSessions({ routes: false }),
 
 The optional `listHeading` component is drawn in place of the page list's title, such as a switch between the application's own kinds of sessions. The archived list keeps its title, and a host's panel keeps the title it gives.
 
+The page list can be folded to a rail and reopened over the conversation when space is limited. Layout choices are saved per viewer and width band. A host with another conversation surface can pass the same `layoutStoragePrefix` to `agentSessionsRoute()` and the exported `useSessionsLayout(width, storagePrefix)` hook to share these choices without moving the list when switching surfaces.
+
 ### Tying records to sessions
 
 An application ties its own records to sessions, such as the issues an agent created, and says how each stands and how its work starts. Register a link kind with a resolver from a service provider's `boot`:
