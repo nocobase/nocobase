@@ -535,8 +535,6 @@ const idID: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Administrator pertama',
-      expires:
-        'Dihasilkan untuk penerapan pertama. Simpan sekarang: dihapus di {{hours}} h.',
       kept: 'Dihasilkan untuk penerapan pertama; itu disimpan sampai aplikasi dihapus.',
       username: 'Nama Pengguna',
       email: 'Email',

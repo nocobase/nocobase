@@ -1,11 +1,11 @@
 # @nocobase/queue
 
-Application queues for NocoBase: a producer publishes messages on a channel of a named queue, consumers registered on that queue receive them, and a manager adjusts the queue at runtime. The application's `QueueService` routes each queue to one of two implementations, chosen by the configuration key the queue selects.
+Application queues for NocoBase: producers publish JSON messages on channels, consumers handle them, and managers control queues. The application owns one `QueueService`, with built-in Memory and explicitly registered backend implementations. Redis/BullMQ is provided by the commercial Server-only `@nocobase/app-plugin-queue-redis`, not by this package.
 
-| `adapter`  | Implementation                                                         | Deployment                                                                                                      |
-| ---------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `redis`    | BullMQ 6.3.6 through its public `Queue` and `Worker` APIs              | Any number of instances share a queue and compete for its jobs                                                  |
-| `inMemory` | `InMemoryQueueService`, in process memory, with a state file per queue | One process; unfinished jobs are written at a clean shutdown, and everything since start is lost on a hard kill |
+| `adapter`  | Implementation                                                                        | Deployment                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `redis`    | Commercial `@nocobase/app-plugin-queue-redis` (explicit Server registration required) | Multiple instances compete for shared jobs                                                                      |
+| `inMemory` | `InMemoryQueueService`, in process memory, with a state file per queue                | One process; unfinished jobs are written at a clean shutdown, and everything since start is lost on a hard kill |
 
 The package holds no module-level service or registry and reads neither application settings nor the process environment. Applications compose it through `@nocobase/app-server/queue`, which supplies the application name, the storage directory and the logger; plugins resolve the application's service from `queueServiceToken` and never create one of their own.
 
@@ -42,12 +42,6 @@ const queue: AppConfigFactory<AppQueueConfig> = defineAppConfig(
       adapter: 'inMemory',
       persistence: { path: paths.storage('queue') },
     },
-    redis: {
-      adapter: 'redis',
-      connection: { host: '127.0.0.1', port: 6379, db: 0 },
-      removeOnComplete: { count: 1000 },
-      removeOnFail: { age: 604_800 },
-    },
   }),
 );
 
@@ -62,33 +56,29 @@ A queue's key is chosen when its first entry point is obtained: the `configKey` 
 
 ```yaml
 queue:
-  default: redis
-  redis:
-    adapter: redis
+  default: memory
+  memory:
+    adapter: inMemory
     namespace: crm # Defaults to the application name.
-    connection:
-      host: redis.internal
-      port: 6379
     concurrency: 4
     rateLimit: { max: 10, duration: 1000 }
     attempts: 3
     backoff: { type: exponential, delay: 1000 }
 ```
 
-| Field                                      | Default                              | Meaning                                                                                                          |
-| ------------------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `adapter`                                  | required                             | `inMemory` for the in-process queue, `redis` for BullMQ                                                          |
-| `queueBackend`                             | BullMQ's Redis backend               | `redis` only: the name of a BullMQ backend factory registered with `registerBackend()`                           |
-| `connection`                               | required for BullMQ's Redis backend  | BullMQ connection options, handed over as they are, or what the named factory interprets; `inMemory` takes none  |
-| `persistence.path`                         | `storage/queue`                      | `inMemory` only: the directory of the state files                                                                |
-| `namespace`                                | the application name                 | Isolates applications sharing a backend                                                                          |
-| `concurrency`                              | `1`                                  | Jobs of one queue this instance runs at once                                                                     |
-| `rateLimit`                                | untouched                            | `{ max, duration }` starts per window across every instance of one physical queue; `null` removes a stored limit |
-| `attempts`, `backoff`                      | `1`, none                            | Tries per job and the retry delay; only BullMQ's `fixed` and `exponential` strategies are accepted               |
-| `removeOnComplete`, `removeOnFail`         | `{ count: 1000 }`, `{ age: 604800 }` | How many finished jobs are kept; `age` is in seconds                                                             |
-| `jobIdProducer`                            | none                                 | `(queue, channel, message) => string`; code configuration only                                                   |
-| `setupTimeoutMs`                           | `10000`                              | Initialization budget of each queue                                                                              |
-| `shutdownTimeoutMs`, `cancellationGraceMs` | `30000`, `5000`                      | Wait for running jobs at shutdown, then send the shutdown signal and wait this much longer                       |
+| Field                                      | Default                              | Meaning                                                                                                              |
+| ------------------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `adapter`                                  | required                             | `inMemory` for the in-process queue, `redis` for BullMQ                                                              |
+| `connection`, `queueBackend`               | backend-defined                      | Backend-owned connection and selector; Memory accepts neither. Redis configuration belongs to the commercial plugin. |
+| `persistence.path`                         | `storage/queue`                      | `inMemory` only: the directory of the state files                                                                    |
+| `namespace`                                | the application name                 | Isolates applications sharing a backend                                                                              |
+| `concurrency`                              | `1`                                  | Jobs of one queue this instance runs at once                                                                         |
+| `rateLimit`                                | untouched                            | `{ max, duration }` starts per window across every instance of one physical queue; `null` removes a stored limit     |
+| `attempts`, `backoff`                      | `1`, none                            | Tries per job and the retry delay; only BullMQ's `fixed` and `exponential` strategies are accepted                   |
+| `removeOnComplete`, `removeOnFail`         | `{ count: 1000 }`, `{ age: 604800 }` | How many finished jobs are kept; `age` is in seconds                                                                 |
+| `jobIdProducer`                            | none                                 | `(queue, channel, message) => string`; code configuration only                                                       |
+| `setupTimeoutMs`                           | `10000`                              | Initialization budget of each queue                                                                                  |
+| `shutdownTimeoutMs`, `cancellationGraceMs` | `30000`, `5000`                      | Wait for running jobs at shutdown, then send the shutdown signal and wait this much longer                           |
 
 A section in the former format — `connections`, `worker` and `jobs` — is ignored with one warning. Its `default` is ignored too unless it names a key of the current format, so an application that has not migrated its configuration starts on the built-in memory configuration instead of failing.
 
@@ -125,15 +115,13 @@ export class EmailConsumerProvider extends ServiceProvider<AppPluginApplication>
 await queue.producer('email').publish('send', { to: 'user@example.com' });
 ```
 
-A plugin that reads a configuration key from its own settings passes it as the second argument of `producer()`, `consumer()` and `manager()`. The provider's `start()` calls `setup()`, so a plugin's `boot()` can register handlers and configure queues but cannot publish yet. A plugin that registers a backend factory does so in `register()`, before `setup()` freezes the registry:
+A plugin can obtain entry points in `register()` before a backend implementation is registered. Entry points bind the logical queue and configuration key; implementation selection waits until setup. Register handlers and configure managers in `boot()`, and publish only after host start.
 
-```ts
-public override register(): void {
-  this.app.container.resolve(queueServiceToken).registerBackend('custom', customBackendFactory);
-}
-```
+## Implementing a backend
 
-A configuration selects the factory with `adapter: redis` and `queueBackend: custom`; without `queueBackend` it runs on BullMQ's own Redis backend, whose name `redis` cannot be registered again. Names are unique per service. A backend factory is BullMQ's `BackendFactory`; it receives the configuration's `connection` as BullMQ's `opts.connection` and interprets it.
+A backend Provider resolves the host's `queueServiceToken` in `register()` and calls `registerImplementation(adapter, implementation)`. Names are unique per service; `inMemory` cannot be replaced, and setup freezes registration. `validateConfig(ResolvedQueueConfig)` checks backend options synchronously without network access; `createRuntime(QueueRuntimeContext)` returns resources owned and closed by the host. Runtime, prepared-job, resolved-option and dispatch result types are public exports. Only the dispatch capability is passed to the backend, not the concrete handler registry. Registration must not connect, start workers or call setup.
+
+The final OSS API has neither `registerBackend()` nor `redisQueueIdentity`. Migrate BullMQ factories and identity imports to `@nocobase/app-plugin-queue-redis/server`; do not reimplement Redis as an OSS compatibility bridge.
 
 ## Publishing
 
@@ -163,7 +151,7 @@ One queue has one worker per service, whatever the number of handlers, and `conc
 
 ## Setup and shutdown
 
-`setup()` freezes the backend registry, validates every configuration key and backend name, initializes every queue requested so far, and only then starts the workers of queues with handlers. Any failure fails the whole setup and releases what was initialized; there is no fallback to memory. After setup, a queue requested for the first time initializes on first use, and a failure there stays with that queue.
+`setup()` freezes implementation registration and validates every configuration's common structure/options. Every registered implementation validates all its configurations, including unused ones, without connecting. A missing implementation fails when selected by `queue.default` or a queue; an unused declaration only warns that backend validation is deferred. No selected Redis configuration falls back to Memory. Setup opens all requested queues before starting consumption and releases resources on failure. A later lazy queue failure does not poison other queues and can be retried. Per-queue initialization has an independent `setupTimeoutMs` budget; a caller's publish timeout does not cancel shared initialization. Failed or late initialization is closed, including a final cleanup after it settles.
 
 `shutdown()` is idempotent. For each queue it stops taking jobs and waits `shutdownTimeoutMs` for running jobs, then sends the shutdown signal and waits `cancellationGraceMs`. The shutdown signal is not a cancellation: a job whose handlers stop on it returns to waiting without spending an attempt. Handlers can still publish while running jobs finish; new publishes are then refused, accepted ones settle, and the queue is closed. A handler still running after the grace period makes `shutdown()` reject: closing a connection does not stop code. On BullMQ, such a job is recovered by lock expiry and stalled detection.
 
@@ -173,14 +161,14 @@ One queue has one worker per service, whatever the number of handlers, and `conc
 
 Each queue reads `<persistence.path>/queue.<base64url(JSON.stringify([namespace, queue]))>.state.json` when it initializes and replaces it through a synced temporary file at shutdown. It records waiting jobs, delayed jobs with their due time, and jobs the shutdown interrupted, which do not count as failures. The history is kept in memory only, so a finished job's ID can be published again after a restart. A file that fails validation stops the queue from initializing and is never overwritten. The file is not locked: one process owns it, so processes of one application, or different applications, must not share a `persistence.path` with the same namespace and queue. A process killed without shutting down loses every change since it started, and jobs completed since then run again.
 
-## Redis
+## Redis migration
 
-A queue's BullMQ prefix is `nbq:{<sha256 of JSON.stringify([namespace, queue])>}` and its BullMQ name is `q-` followed by the base64url of the queue name, so every key of one queue shares a hash tag. The ioredis `keyPrefix` option is not supported. Redis Cluster is not supported yet: BullMQ builds a single-node client from connection options, and a Cluster needs a client instance whose lifecycle this package would have to own.
+Install and explicitly register `@nocobase/app-plugin-queue-redis/server` in the application's Server plugin composition. Its `./config` entry supplies typed Redis queue configuration; merge it into the existing `queue` section. The OSS templates deliberately declare Memory only and never import the commercial package. Existing unselected Redis declarations do not require the plugin until selected.
 
-Redis must persist its data (AOF or RDB) and use `maxmemory-policy noeviction`. A disconnected Redis never falls back to memory; BullMQ reconnects and resumes, and the queue and worker errors it reports are written to the logger.
+Keep the Redis connection target, namespace, logical queue names and BullMQ version unchanged. Do not drain, rename or recreate historical queues. Redis identity/envelope and global rate-limit rules are owned by the commercial plugin. Rollback requires a compatible OSS/plugin/composition set; uninstalling the plugin alone on this final OSS version cannot restore Redis. There is no exactly-once guarantee.
 
 ## Testing
 
-`pnpm test` runs the unit tests and the shared contract against `inMemory`. `pnpm test:integration` starts a disposable Redis with Docker Compose and runs the same contract against `redis`, plus Redis-specific tests; set `KEEP_TEST_REDIS=1` to keep the container. Run one integration suite at a time.
+`pnpm test` runs Memory, public message/handler behavior and generic implementation registration/failure tests. `tests/contract/queue-contract.ts` accepts a `register` hook for backend suites. Redis integration tests belong to the commercial package; source-contract reuse is separate from packed-install acceptance.
 
 In an application's tests, point `persistence.path` at a temporary directory, or select a `memory` key that does, so state files stay out of the working tree.

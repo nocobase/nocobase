@@ -25,6 +25,7 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   list: {
     panelEmpty: 'Chưa có cuộc trò chuyện',
+    fold: 'Ẩn phiên',
     expand: 'Hiển thị phiên',
     label: 'Phiên',
     title: 'Đại lý của tôi',

@@ -1309,13 +1309,13 @@ export function createReleasesApi(
       // A password: it stays out of the command line, so it never lands in a terminal's history or an agent's log.
       ...cliRoute(false),
       description:
-        'Requires the `deploy` action on the App. People only: agents and keys are refused. The first administrator its first deployment generated, until someone saves it (`dismiss`) or 24 hours pass (a preview App’s stays until the App goes).',
+        'Requires the `deploy` action on the App. People only: agents and keys are refused. The first administrator its first deployment generated, until someone saves it (`dismiss`) or the App is removed.',
       responses: {
         200: dataResponse(ReleasesInitialAdminSchema),
         ...apiErrorResponses,
         404: apiErrorResponse(
           404,
-          'Nothing to show: it was saved or expired, or none was generated (`INITIAL_ADMIN_UNAVAILABLE`).',
+          'Nothing to show: it was saved or none was generated (`INITIAL_ADMIN_UNAVAILABLE`).',
         ),
       },
     }),

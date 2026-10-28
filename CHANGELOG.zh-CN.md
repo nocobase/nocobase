@@ -2,6 +2,17 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`release-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [release-beta/2026-10-28.2](https://github.com/nocobase/nocobase/releases/tag/release-beta%2F2026-10-28.2)
+
+### 🎉 新特性
+
+- **[演示模式]** 完善演示账户角色显示和重置布局，并为应用提供统一的演示模式判断及有副作用请求拦截能力。 ([#11204](https://github.com/nocobase/nocobase/pull/11204)) by @gchust
+
+### 🐛 修复
+
+- **[Agent]** 会话刷新时及时显示已保存的进度消息，并保留正在生成的执行机回复。 ([#11202](https://github.com/nocobase/nocobase/pull/11202)) by @2013xile
+- **[演示模式]** 部署时不再要求填写演示模式的可写数据表变量。 ([#11207](https://github.com/nocobase/nocobase/pull/11207)) by @2013xile
+
 ## [release-beta/2026-10-28.1](https://github.com/nocobase/nocobase/releases/tag/release-beta%2F2026-10-28.1)
 
 ### 🎉 新特性

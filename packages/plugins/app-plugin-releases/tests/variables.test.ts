@@ -4,7 +4,7 @@
  * them (and refuses one missing a required variable), what it generates, the first administrator, sample data on a
  * first deployment, and what counts as changed.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 
 import {
@@ -100,6 +100,7 @@ describe('variables', () => {
     });
   });
   afterEach(async () => {
+    vi.useRealTimers();
     await harness.close();
   });
 
@@ -323,7 +324,7 @@ describe('variables', () => {
     ).toBe(false);
   });
 
-  it('shows the generated first administrator to a person who may deploy, until it is saved or expires', async () => {
+  it('shows the generated first administrator only to a person who may deploy', async () => {
     const { admin, release } = await upload();
     await harness.services.releases.setAppVariable(
       admin,
@@ -343,7 +344,7 @@ describe('variables', () => {
       username: 'nocobase',
       email: 'admin@nocobase.com',
       password,
-      expiresAt: expect.any(String),
+      expiresAt: null,
     });
     // Never an agent's or a key's, and never someone's who may not deploy.
     const agent = await harness.services.callerForUser('admin', 'agent');
@@ -354,23 +355,114 @@ describe('variables', () => {
     await expect(
       harness.services.releases.readInitialAdmin(viewer, 'shop'),
     ).rejects.toMatchObject({ status: 'PERMISSION_DENIED' });
-    // Expired.
+  });
+
+  it.each([false, true])(
+    'retains the first administrator after 24 hours and restoration (preview: %s)',
+    async (preview) => {
+      const appId = preview ? 'shop-preview' : 'shop';
+      const { admin, release } = await upload();
+      let releaseId = release.id;
+      if (preview) {
+        await harness.services.releases.createApp(admin, {
+          id: appId,
+          name: 'Shop preview',
+          environmentId: 'staging',
+          previewOf: 'shop',
+        });
+        releaseId = (
+          await harness.services.releases.promoteRelease(
+            admin,
+            'shop',
+            release.id,
+            appId,
+          )
+        ).id;
+      }
+      await harness.services.releases.setAppVariable(
+        admin,
+        appId,
+        'SMTP_PASSWORD',
+        { value: 'x' },
+      );
+      await deploy(releaseId, appId);
+      const shown = await harness.services.releases.readInitialAdmin(
+        admin,
+        appId,
+      );
+      expect(shown).toMatchObject({
+        password: lastEnv().INITIAL_ADMIN_PASSWORD,
+        expiresAt: null,
+      });
+      const query = harness.database.connection().query;
+      const before = await query
+        .selectFrom('relDeployments')
+        .select(['initialAdmin', 'initialAdminExpiresAt'])
+        .where('id', '=', shown.deploymentId)
+        .executeTakeFirst();
+      expect(before?.initialAdmin).toBeTruthy();
+      expect(before?.initialAdminExpiresAt).toBeNull();
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(Date.now() + 25 * 60 * 60 * 1000);
+      await harness.services.releases.restore();
+      expect(
+        await harness.services.releases.readInitialAdmin(admin, appId),
+      ).toEqual(shown);
+      expect(
+        await harness.services.releases.readInitialAdmin(admin, appId),
+      ).toEqual(shown);
+      const after = await query
+        .selectFrom('relDeployments')
+        .select('initialAdmin')
+        .where('id', '=', shown.deploymentId)
+        .executeTakeFirst();
+      expect(after?.initialAdmin).toBe(before?.initialAdmin);
+      await harness.services.releases.deleteApp(admin, appId, {
+        confirm: appId,
+      });
+      expect(
+        await query
+          .selectFrom('relDeployments')
+          .select('id')
+          .where('appId', '=', appId)
+          .execute(),
+      ).toEqual([]);
+    },
+  );
+
+  it('reads a legacy expired administrator without clearing it during reads or restoration', async () => {
+    const { admin, release } = await upload();
+    await harness.services.releases.setAppVariable(
+      admin,
+      'shop',
+      'SMTP_PASSWORD',
+      { value: 'x' },
+    );
+    await deploy(release.id);
+    const shown = await harness.services.releases.readInitialAdmin(
+      admin,
+      'shop',
+    );
     await harness.database
       .connection()
       .query.updateTable('relDeployments')
       .set({ initialAdminExpiresAt: new Date(Date.now() - 1000) })
       .where('appId', '=', 'shop')
       .execute();
-    await expect(
-      harness.services.releases.readInitialAdmin(admin, 'shop'),
-    ).rejects.toMatchObject({ reason: 'INITIAL_ADMIN_UNAVAILABLE' });
+    expect(
+      await harness.services.releases.readInitialAdmin(admin, 'shop'),
+    ).toEqual(shown);
+    await harness.services.releases.restore();
+    expect(
+      await harness.services.releases.readInitialAdmin(admin, 'shop'),
+    ).toEqual(shown);
     const row = await harness.database
       .connection()
       .query.selectFrom('relDeployments')
       .select('initialAdmin')
       .where('appId', '=', 'shop')
       .executeTakeFirst();
-    expect(row?.initialAdmin).toBeNull();
+    expect(row?.initialAdmin).toBeTruthy();
   });
 
   it('forgets the first administrator once someone saved it', async () => {

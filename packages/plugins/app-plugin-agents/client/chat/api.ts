@@ -76,6 +76,7 @@ export class ChatApi {
     id: string,
     accepted: (clientId: string) => void,
     resent?: (options: OnlineAgentResendOptions) => Promise<void>,
+    reconnecting?: () => (available: boolean) => void,
   ): DefaultChatTransport<AppUIMessage> {
     return new DefaultChatTransport<AppUIMessage>({
       api: chatPath('messages', id),
@@ -104,6 +105,7 @@ export class ChatApi {
       },
       prepareReconnectToStreamRequest: () => ({ api: chatPath('events', id) }),
       fetch: async (input, init) => {
+        const recovered = init?.method === 'GET' ? reconnecting?.() : undefined;
         try {
           const body =
             typeof init?.body === 'string'
@@ -120,6 +122,7 @@ export class ChatApi {
             ...(body ? { json: body } : {}),
             ...(init?.signal ? { signal: init.signal } : {}),
           });
+          recovered?.(true);
           const path =
             typeof input === 'string'
               ? input
@@ -144,8 +147,10 @@ export class ChatApi {
             accepted(body.message.id);
           return new Response(stream, { headers: UI_MESSAGE_STREAM_HEADERS });
         } catch (error) {
-          if (error instanceof ApiClientError && error.status === 204)
+          if (error instanceof ApiClientError && error.status === 204) {
+            recovered?.(false);
             return new Response(null, { status: 204 });
+          }
           throw error;
         }
       },

@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/queue",
   "version": "0.1.0-beta.9",
-  "description": "Application queues for NocoBase: producers, consumers and managers over BullMQ on Redis, or an in-process queue for one instance.",
+  "description": "Application queues with an in-process backend and application-owned backend implementations.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -29,20 +29,15 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node ./scripts/clean-dist.mjs && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run tests --exclude **/tests/integration/**",
-    "test:integration": "node ./scripts/test-integration.mjs",
+    "test": "vitest run tests",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format"
-  },
-  "dependencies": {
-    "bullmq": "6.3.6",
-    "ioredis": "catalog:"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

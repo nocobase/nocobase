@@ -51,6 +51,10 @@ The application Skill's complete examples live under `packages/app/app-skills/sk
 
 Maintained executable fixtures also live in `packages/tools/app-testing/tests/`, with its minimal App in `tests/fixtures/app/`, and scaffold tests in `packages/tools/create-plugin/template/tests/`. Inspect the current exports and fixture configuration before borrowing code; keep tests focused on the plugin's behavior rather than copying the harness's own tests.
 
+## Component reuse check
+
+For changed client source, run [the shared component checker](ui-design.md#verify-component-reuse) with the plugin as its root. Record scanned scope, findings and reviewed exceptions alongside the source/import audit. Missing dependencies or parse errors are incomplete checks, not a pass. Follow the plugin test commands above as well; this scan neither runs browser checks nor proves every custom wrapper reuses shadcn.
+
 ## Select observable checks
 
 | Changed surface           | Verify                                                                                                                    |
@@ -87,7 +91,7 @@ Run migrations against a real test database, verifying both physical schema and 
 
 Call actual component loaders and render public components through their supported imports. For routed Tabs, cover a direct child URL, reload, back/forward navigation, the parent redirect, denied children, and preserved queries. A page calling a Server endpoint needs a real page-to-API workflow in the target App.
 
-For UI work, verify shadcn interaction and keyboard behavior, the shared theme in light/dark modes, and loading, empty, error, and success states. An App alias resolving in one development environment does not prove compiled plugin imports resolve for an installed consumer.
+For UI work, use [shared UI design and host acceptance](ui-design.md): compare original references under their recorded modes and authorized exceptions, verify actual overlay/footer geometry with long content and narrow viewports, and check affected business journeys in the host. Verify shadcn interaction and keyboard behavior, the shared theme in light/dark modes, host density and style isolation, and loading, empty, error, and success states. Record missing browser or host evidence as Not verified. An App alias resolving in one development environment does not prove compiled plugin imports resolve for an installed consumer.
 
 Use `en-US` as the locale key-shape source, confirm every locale manifest of the plugin and of libraries it depends on that ship translations lists all ten [supported languages](i18n.md#ship-all-ten-supported-languages) with complete resources, run the repository’s `i18n:check`/strict check only when that script is available (otherwise use plugin typechecking and the App’s own checks), and render at least two supported languages. Public components must also work outside their plugin's render subtree. Server request tests cover session/header/default locale resolution and stable `code/ns/key/params` plus translated messages. Jobs, mail, and notifications must load resources before obtaining a fixed translator for a non-default recipient locale. Ensure emitted locale chunks are present in the build and tarball. See [internationalization](i18n.md).
 

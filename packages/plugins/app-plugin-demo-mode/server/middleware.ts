@@ -1,24 +1,9 @@
-import {
-  getRequestLocale,
-  TRANSLATOR_CONTEXT_KEY,
-  type Translator,
-} from '@nocobase/i18n/server';
-import type { Context, MiddlewareHandler } from 'hono';
+import type { MiddlewareHandler } from 'hono';
 
-import {
-  DEMO_MODE_ERROR_DOMAIN,
-  DEMO_READ_ONLY_MESSAGE,
-  DEMO_READ_ONLY_REASON,
-} from './errors.js';
 import type { DemoRequestState, DemoWriteGuard, DemoSqlRule } from './guard.js';
-import { DEMO_MODE_NAMESPACE } from './namespace.js';
+import { respondDemoReadOnly } from './read-only-response.js';
 
-/**
- * The `Server-Timing` metric a response carries when the request had a write refused. Browsers expose it to page
- * scripts through `PerformanceResourceTiming.serverTiming`, so the client plugin notices every refusal without
- * wrapping `fetch` or depending on how an application reads its errors.
- */
-export const DEMO_SERVER_TIMING_METRIC = 'demo-read-only';
+export { DEMO_SERVER_TIMING_METRIC } from './read-only-response.js';
 
 /**
  * Routes that end or change sessions other than the caller's own, such as Better Auth's `revoke-other-sessions` and the
@@ -78,46 +63,6 @@ export function createDemoModeMiddleware(
     };
     logger?.info(details, 'Demo mode refused a write');
     if (context.res.status < 400) return;
-    await replaceWithDemoError(context);
-    try {
-      context.res.headers.append('Server-Timing', DEMO_SERVER_TIMING_METRIC);
-    } catch {
-      // A response whose headers are immutable cannot carry the metric; the error body still says what happened.
-    }
+    respondDemoReadOnly(context);
   };
-}
-
-async function replaceWithDemoError(context: Context): Promise<void> {
-  const translator = context.get(TRANSLATOR_CONTEXT_KEY) as
-    Translator | undefined;
-  const locale = getRequestLocale(context);
-  const requestId = context.get('requestId') as string | undefined;
-  const body = {
-    error: {
-      code: 400,
-      status: 'FAILED_PRECONDITION',
-      reason: DEMO_READ_ONLY_REASON,
-      domain: DEMO_MODE_ERROR_DOMAIN,
-      message: DEMO_READ_ONLY_MESSAGE,
-      ...(translator && locale
-        ? {
-            localizedMessage: {
-              locale,
-              message: translator('errors.readOnly', {
-                ns: DEMO_MODE_NAMESPACE,
-                defaultValue: DEMO_READ_ONLY_MESSAGE,
-              }),
-            },
-          }
-        : {}),
-      ...(requestId ? { requestId } : {}),
-    },
-  };
-  const headers = new Headers(context.res.headers);
-  headers.delete('content-length');
-  headers.delete('content-encoding');
-  headers.set('content-type', 'application/json; charset=UTF-8');
-  // Cleared first so Hono does not merge the failed response's headers, such as its length, into the new one.
-  context.res = undefined;
-  context.res = new Response(JSON.stringify(body), { status: 400, headers });
 }

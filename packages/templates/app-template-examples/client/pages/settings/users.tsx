@@ -46,6 +46,25 @@ import {
 } from '#components/ui/select';
 import { ConfirmAction, SettingsError } from './shared.js';
 
+function UsersRefreshing(): ReactElement | null {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    // Fast background reads should not flash feedback on overlay close.
+    const timer = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  return visible ? (
+    <span
+      role='status'
+      className='flex items-center gap-2 text-sm text-muted-foreground'
+    >
+      <Spinner aria-hidden='true' className='size-4' />
+      {t('settings.loading')}
+    </span>
+  ) : null;
+}
+
 function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
   const canUpdate = useUserPermission('update', user.id);
   const canAssign = useUserPermission('assign-role', user.id);
@@ -496,9 +515,11 @@ export default function UsersPage(): ReactElement {
               {t('settings.clear')}
             </Button>
           )}
-          {active && hasCurrentResponse && request.loading && request.data ? (
-            <Spinner className='text-muted-foreground' />
-          ) : null}
+          <div className='ml-auto flex h-8 w-28 items-center justify-end'>
+            {active && hasCurrentResponse && request.loading && request.data ? (
+              <UsersRefreshing />
+            ) : null}
+          </div>
         </div>
         {Boolean(roleScope) !== Boolean(role) && (
           <p role='alert' className='text-sm text-destructive'>

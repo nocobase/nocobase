@@ -157,31 +157,6 @@ export type {
   WorkSignal,
 } from './runners/index.js';
 export type { PeopleSource } from './kernel/people.js';
-export type {
-  Embedder,
-  VectorAvailability,
-  VectorCollection,
-  VectorCollectionSpec,
-  VectorCollectionStatus,
-  VectorFilter,
-  VectorIndexInfo,
-  VectorItem,
-  VectorItemState,
-  VectorMatch,
-  VectorMetadata,
-  VectorMetric,
-  VectorProblem,
-  Vectors,
-  VectorsConfig,
-  VectorsStatus,
-  VectorSourceItem,
-  VectorStore,
-  VectorStoreContext,
-  VectorStoreInfo,
-  VectorStoreRegistry,
-  VectorStoreType,
-  VectorUnavailableCode,
-} from './vectors/index.js';
 
 export type { AgentsConfig } from './providers/agents.js';
 

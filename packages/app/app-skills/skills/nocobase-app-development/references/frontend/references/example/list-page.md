@@ -1,6 +1,6 @@
 # List page: `index.tsx`
 
-Part of the [projects worked example](../example.md).
+Part of the [projects worked example](../example.md). For the runnable, continuously tested core, start with the [executable list and edit example](../executable-list-edit.md).
 
 **Depends on**: [delete dialog](delete-dialog.md), [status badge](../i18n.md#dynamic-keys), [session alert](session-expired-alert.md), [types](types.md), [search hook](url-search.md), [copy](copy.md); the `projects` route in [section 1 of `page.md`](../page.md#1-declare-the-route).
 
@@ -412,10 +412,12 @@ export default function ProjectsPage(): ReactElement {
             {t('projects.filters.clear')}
           </Button>
         ) : null}
-        {/* Reloading keeps the old data and shows only a small Spinner here. */}
-        {loading && rows !== undefined ? (
-          <Spinner className='text-muted-foreground' />
-        ) : null}
+        {/* Reserve space even when a fast refresh finishes before feedback appears. */}
+        <div className='ml-auto flex h-8 w-8 shrink-0 items-center justify-center'>
+          {active && loading && rows !== undefined ? (
+            <RefreshIndicator />
+          ) : null}
+        </div>
       </div>
       {content}
 
@@ -437,5 +439,15 @@ export default function ProjectsPage(): ReactElement {
       <Outlet context={outletContext} />
     </PageContainer>
   );
+}
+
+function RefreshIndicator(): ReactElement | null {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    // Unmounting on completion or while covered cancels pending feedback.
+    const timer = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  return visible ? <Spinner className='text-muted-foreground' /> : null;
 }
 ```

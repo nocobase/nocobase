@@ -117,6 +117,7 @@ pnpm exec vitest run <related-test-files>
 
 - Give ESLint only the changed `.ts`, `.tsx`, `.js` and `.mjs` files, test files included; it has no configuration for `.css` or `.md` and exits nonzero on them. Prettier takes every changed file, CSS and Markdown too.
 - Primitives the change added are changed files too: formatted with Prettier, their built-in English translated as ["English built into primitives"](references/shadcn.md#english-built-into-primitives) lists, and otherwise exactly what the CLI wrote.
+- Run the [targeted component checker](component-selection.md#run-the-targeted-check) on the changed client source in each owning package. Review actual imports and local wrappers against the component source list; resolve findings and review every native/custom exception. Record the command and scanned scope; a missing parser or failed scan is Not verified.
 - Lint does not check the shadcn skill's "Critical Rules". Read the changed components against them: items inside their groups, `gap-*` rather than `space-*`, `data-icon` and no sizing classes on icons inside components, full `Card` structure, semantic tokens ([`references/shadcn.md`](references/shadcn.md)).
 - Choose the related tests by searching `tests/` for the changed component, page or route name.
 - A changed route always includes `tests/client/client-routes.test.ts`.

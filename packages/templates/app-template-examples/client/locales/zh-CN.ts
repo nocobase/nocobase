@@ -1,9 +1,11 @@
+import { zhCN as skillProjectszhCN } from '../pages/skill-projects/locales.js';
 import { workflowNamesZhCN } from '../../shared/workflow-names.js';
 import type { AppResource } from './en-US.js';
 import agentChatZhCN from '#extensions/nocobase-agent-chat/locales/zh-CN';
 import systemZhCN from './system/zh-CN.js';
 
 const zhCN: AppResource = {
+  skillProjects: skillProjectszhCN,
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
   ...agentChatZhCN,

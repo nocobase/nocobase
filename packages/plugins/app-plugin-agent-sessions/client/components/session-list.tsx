@@ -13,6 +13,7 @@ import {
   ArrowLeftIcon,
   ChevronDownIcon,
   LaptopIcon,
+  PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PlusIcon,
   SearchIcon,
@@ -55,6 +56,8 @@ export function SessionList({
   activeId,
   className,
   rail = false,
+  placement = rail ? 'rail' : 'column',
+  onFold,
   onExpand,
   archived,
   onArchivedChange,
@@ -64,6 +67,8 @@ export function SessionList({
   readonly className?: string | undefined;
   /** Folded to a narrow rail, to make room for an open record's panel; `onExpand` unfolds it. */
   readonly rail?: boolean;
+  readonly placement?: 'column' | 'rail' | 'overlay';
+  readonly onFold?: (() => void) | undefined;
   readonly onExpand?: () => void;
   /** Whether the archived sessions show, when the caller follows it; otherwise the list keeps it itself. */
   readonly archived?: boolean;
@@ -72,46 +77,64 @@ export function SessionList({
   readonly onNewSession?: () => void;
 }): ReactElement {
   const { t } = useTranslation();
-  if (rail)
-    return (
-      <section
-        className={cn(
-          'hidden h-full w-12 shrink-0 flex-col items-center gap-2 border-r py-3 md:flex',
-          className,
-        )}
-        aria-label={t('list.label')}
-        data-testid='session-list-rail'
-      >
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          aria-label={t('list.expand')}
-          title={t('list.expand')}
-          onClick={onExpand}
-        >
-          <PanelLeftOpenIcon />
-        </Button>
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          aria-label={t('list.new')}
-          title={t('list.new')}
-          onClick={onNewSession}
-          nativeButton={false}
-          render={<Link to='/agent-sessions?new' />}
-        >
-          <PlusIcon />
-        </Button>
-      </section>
-    );
-  return (
+  const full = (overlay: boolean) => (
     <FullSessionList
       activeId={activeId}
-      className={className}
+      className={cn(
+        className,
+        overlay &&
+          'absolute inset-y-0 left-0 z-40 bg-background shadow-xl md:border-r',
+      )}
       archived={archived}
       onArchivedChange={onArchivedChange}
       onNewSession={onNewSession}
+      onFold={onFold}
     />
+  );
+  if (placement === 'column') return full(false);
+  const folded = (
+    <section
+      className={cn(
+        'hidden h-full w-12 shrink-0 flex-col items-center gap-2 border-r py-3 md:flex',
+        className,
+      )}
+      aria-label={t('list.label')}
+      data-testid='session-list-rail'
+    >
+      <Button
+        variant='ghost'
+        size='icon-sm'
+        aria-label={t('list.expand')}
+        title={t('list.expand')}
+        aria-expanded={placement === 'overlay'}
+        onClick={placement === 'overlay' ? onFold : onExpand}
+      >
+        <PanelLeftOpenIcon />
+      </Button>
+      <Button
+        variant='ghost'
+        size='icon-sm'
+        aria-label={t('list.new')}
+        title={t('list.new')}
+        onClick={onNewSession}
+        nativeButton={false}
+        render={<Link to='/agent-sessions?new' />}
+      >
+        <PlusIcon />
+      </Button>
+    </section>
+  );
+  if (placement === 'rail') return folded;
+  return (
+    <>
+      {folded}
+      <div
+        aria-hidden
+        className='absolute inset-0 z-30 bg-black/20'
+        onClick={onFold}
+      />
+      {full(true)}
+    </>
   );
 }
 
@@ -119,12 +142,14 @@ function FullSessionList({
   activeId,
   className,
   archived: controlled,
+  onFold,
   onArchivedChange,
   onNewSession,
 }: {
   readonly activeId: string | undefined;
   readonly className?: string | undefined;
   readonly archived?: boolean | undefined;
+  readonly onFold?: (() => void) | undefined;
   readonly onArchivedChange?: ((archived: boolean) => void) | undefined;
   readonly onNewSession?: (() => void) | undefined;
 }): ReactElement {
@@ -141,8 +166,8 @@ function FullSessionList({
   const [computersOpen, setComputersOpen] = useState(false);
   const surface = useSessionSurface();
   const ListHeading = useContext(AgentSessionsConfigContext)?.listHeading;
-  // The standalone page shares the compact history layout with host-owned panels.
-  const compact = !surface.panel || Boolean(surface.renderHeaderActions);
+  // Only embedded panels use the compact header; the page keeps its list toolbar.
+  const compact = surface.panel && Boolean(surface.renderHeaderActions);
   // The standalone page names the archived view; a host panel keeps its mode title.
   const title =
     surface.panelTitle ??
@@ -240,6 +265,18 @@ function FullSessionList({
               render={<Link to='/agent-sessions?new' />}
             >
               <PlusIcon />
+            </Button>
+          )}
+          {!surface.panel && onFold && (
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              className='hidden size-9 shrink-0 md:inline-flex [&_svg]:size-4'
+              aria-label={t('list.fold')}
+              title={t('list.fold')}
+              onClick={onFold}
+            >
+              <PanelLeftCloseIcon />
             </Button>
           )}
         </div>
