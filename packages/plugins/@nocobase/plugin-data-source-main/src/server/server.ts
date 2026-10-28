@@ -30,6 +30,7 @@ import {
   beforeInitOptions,
 } from './hooks';
 import { beforeCreateCheckFieldInMySQL } from './hooks/beforeCreateCheckFieldInMySQL';
+import { beforeCreateForInterfaceDefaultType } from './hooks/beforeCreateForInterfaceDefaultType';
 import { beforeCreateForValidateField, beforeUpdateForValidateField } from './hooks/beforeCreateForValidateField';
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { beforeDestoryField } from './hooks/beforeDestoryField';
@@ -164,6 +165,10 @@ export class PluginDataSourceMainServer extends Plugin {
         },
       );
     });
+
+    // Apply the interface's documented default data type before any hook
+    // reads model.type (#10398)
+    this.app.db.on('fields.beforeCreate', beforeCreateForInterfaceDefaultType());
 
     // 要在 beforeInitOptions 之前处理
     this.app.db.on('fields.beforeCreate', beforeCreateCheckFieldInMySQL(this.app.db));
