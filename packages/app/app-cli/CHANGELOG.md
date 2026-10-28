@@ -1,5 +1,18 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.30
+
+### Minor Changes
+
+- 07b14c0: `pnpm build --tar` also packs the application's `Dockerfile` and `Dockerfile.dockerignore` when it has them, so a server builds the image from the release archive alone with `docker build --build-arg DIST=prebuilt .` in the extracted directory, without the sources or a registry.
+
+### Patch Changes
+
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.23
+
 ## 1.0.0-beta.29
 
 ### Patch Changes

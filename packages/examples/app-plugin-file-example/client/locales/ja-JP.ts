@@ -3,6 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  retrySubmission: '元の操作を再試行',
+
   officePreviewTitle: 'ローカル オフィスのプレビュー',
   officePreviewDescription:
     '以下の DOCX、XLSX、または PPTX ファイルをアップロードし、[プレビュー] を選択します。 Office Online や外部プレビュー サービスを使用せずに、ドキュメントをブラウザーで表示します。注文の添付ファイルは同じプレビューを使用します。',

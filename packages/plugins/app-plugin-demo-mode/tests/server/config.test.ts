@@ -1,7 +1,16 @@
 import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { defineDemoModeConfig } from '../../server/config.js';
+import {
+  AppConfig,
+  buildVariablesManifest,
+  defaultAppConfigs,
+} from '@nocobase/app-server/config';
+
+import {
+  defineDemoModeConfig,
+  DEMO_MODE_WRITABLE_COLLECTIONS_ENV,
+} from '../../server/config.js';
 import { demoModeServiceToken } from '../../server/tokens.js';
 import { createStandaloneServer } from '../fixtures/app/server/standalone.js';
 
@@ -90,6 +99,36 @@ it('uses deployment defaults for daily resets', async () => {
     'NOCOBASE_DEMO_RESET_TIMEZONE',
     'NOCOBASE_DEMO_RESET_LANGUAGE',
   ]);
+});
+
+it('marks demo environment variables as optional in the generated manifest', async () => {
+  const config = new AppConfig();
+  await config.loadAll();
+  const sections = defaultAppConfigs({
+    demoMode: defineDemoModeConfig(),
+  });
+  config.mergeDefaults(sections({} as never));
+  config.defineSections(sections.sections!);
+
+  const manifest = buildVariablesManifest({
+    app: { name: 'demo-mode' },
+    variables: config.environmentVariableMappings(),
+    defaults: config.layers().defaults,
+  });
+  const demoVariables = manifest.variables.filter(({ name }) =>
+    name.startsWith('NOCOBASE_DEMO_'),
+  );
+
+  expect(
+    demoVariables.find(
+      ({ name }) => name === DEMO_MODE_WRITABLE_COLLECTIONS_ENV,
+    ),
+  ).toMatchObject({
+    path: 'demoMode.allowCollections',
+    required: false,
+    hasDefault: false,
+  });
+  expect(demoVariables.every(({ required }) => !required)).toBe(true);
 });
 
 it.each([

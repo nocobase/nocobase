@@ -1,4 +1,5 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { renderSettingsClient as renderWithApp } from '../helpers/settings-client.js';
+import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import {
   AuthorizationClient,

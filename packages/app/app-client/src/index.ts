@@ -161,6 +161,17 @@ export {
 } from './list-state.js';
 
 export {
+  SubmissionController,
+  deriveSubmissionKey,
+  PendingSubmissionError,
+  SubmissionTimeoutError,
+  useSubmission,
+  type Submission,
+  type SubmissionOptions,
+  type SubmissionStorage,
+} from './submission.js';
+
+export {
   FormFeedback,
   formFeedbackErrors,
   normalizeFormFieldPath,

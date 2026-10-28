@@ -1,5 +1,22 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.4
+
+### Minor Changes
+
+- 451bf75: Locate editable validation errors in form layout order, preserve input on failed submissions, and provide accessible field feedback with a source reconciliation guide for existing applications.
+
+  Show validation reasons beside their fields or groups without a top summary, preserve automatic error focus, and retain safe form messages for unmapped failures or unavailable focus targets.
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+### Patch Changes
+
+- Updated dependencies [e3d9a52]
+  - @nocobase/api-client@1.0.0-beta.6
+
 ## 4.0.0-beta.3
 
 ### Minor Changes

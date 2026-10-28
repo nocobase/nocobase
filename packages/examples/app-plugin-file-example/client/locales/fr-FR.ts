@@ -3,6 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  retrySubmission: 'Réessayer l’opération initiale',
+
   officePreviewTitle: 'Aperçu du bureau local',
   officePreviewDescription:
     "Téléchargez un fichier DOCX, XLSX ou PPTX ci-dessous, puis sélectionnez Aperçu. Les documents s'affichent dans votre navigateur sans Office Online ni service de prévisualisation externe. Les pièces jointes de commande utilisent le même aperçu.",
