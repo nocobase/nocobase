@@ -142,11 +142,17 @@ test('does not ask for a declaration for a Vite virtual module', async () => {
   }
 });
 
-test('treats the plugin Skill example as source material while checking executable Skill scripts', async () => {
+test('treats the declared Skill examples as source material while checking other assets and scripts', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'runtime-deps-test-'));
   try {
     const skill = 'skills/nocobase-app-plugin-development';
+    const appSkill = 'skills/nocobase-app-development';
     const sources = {
+      [`${appSkill}/assets/list-edit-example/server/routes/projects.ts`]:
+        'app-example-only',
+      [`${appSkill}/assets/list-edit-example-extra/index.ts`]:
+        'app-other-asset',
+      [`${appSkill}/scripts/verify.mjs`]: 'app-script-runtime',
       [`${skill}/assets/testing-example/client/index.ts`]: 'example-only',
       [`${skill}/assets/other-example/index.ts`]: 'other-asset',
       [`${skill}/scripts/verify.mjs`]: 'script-runtime',
@@ -164,7 +170,13 @@ test('treats the plugin Skill example as source material while checking executab
     );
     assert.deepEqual(
       violations.map(({ dependency }) => dependency),
-      ['other-asset', 'other-skill-runtime', 'script-runtime'],
+      [
+        'app-other-asset',
+        'app-script-runtime',
+        'other-asset',
+        'other-skill-runtime',
+        'script-runtime',
+      ],
     );
 
     // The same path in another package is not an exemption for shipped code.
@@ -175,7 +187,15 @@ test('treats the plugin Skill example as source material while checking executab
     );
     assert.deepEqual(
       otherPackage.map(({ dependency }) => dependency),
-      ['example-only', 'other-asset', 'other-skill-runtime', 'script-runtime'],
+      [
+        'app-example-only',
+        'app-other-asset',
+        'app-script-runtime',
+        'example-only',
+        'other-asset',
+        'other-skill-runtime',
+        'script-runtime',
+      ],
     );
   } finally {
     await rm(root, { recursive: true, force: true });
