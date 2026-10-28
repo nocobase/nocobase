@@ -157,28 +157,62 @@ describe('bounded claim candidate pages', () => {
     );
     expect(visited.filter((id) => id === 'blocker-001')).toHaveLength(1);
   });
-  it('preserves priority, timestamp and id ordering across page boundaries', async () => {
-    const { conn, ids, runner } = await fixture(100);
-    // All three sort axes cross a page boundary; an availableAt in the future remains excluded.
+  it('orders cross-page candidates by priority when later fields favor the other run', async () => {
+    const { conn, ids, runner } = await fixture(49, 2);
+    // The first target is row 50 and the second starts page two.
+    const sortedIds = [...ids].sort();
+    const lowerId = sortedIds[0]!;
+    const higherId = sortedIds[1]!;
+    const now = h.clock.now().getTime();
     await runsRepo(conn).updateMany({
-      filter: { id: 'blocker-000' },
-      values: { priority: -3 },
+      filter: { id: higherId },
+      values: { priority: 0, createdAt: new Date(now + 2).toISOString() },
     });
     await runsRepo(conn).updateMany({
-      filter: { id: 'blocker-050' },
-      values: {
-        createdAt: new Date(h.clock.now().getTime() - 1).toISOString(),
-      },
+      filter: { id: lowerId },
+      values: { priority: 1, createdAt: new Date(now - 2).toISOString() },
+    });
+    expect(
+      (await claim(h, runner, 2)).map((payload) => payload.run.id),
+    ).toEqual([higherId, lowerId]);
+  });
+
+  it('orders cross-page candidates by createdAt when id favors the other run', async () => {
+    const { conn, ids, runner } = await fixture(49, 2);
+    const sortedIds = [...ids].sort();
+    const lowerId = sortedIds[0]!;
+    const higherId = sortedIds[1]!;
+    const now = h.clock.now().getTime();
+    await runsRepo(conn).updateMany({
+      filter: { id: higherId },
+      values: { priority: 0, createdAt: new Date(now - 2).toISOString() },
     });
     await runsRepo(conn).updateMany({
-      filter: { id: 'blocker-099' },
-      values: {
-        availableAt: new Date(h.clock.now().getTime() + 1).toISOString(),
-      },
+      filter: { id: lowerId },
+      values: { priority: 0, createdAt: new Date(now + 2).toISOString() },
     });
-    expect((await claim(h, runner)).map((payload) => payload.run.id)).toEqual(
-      ids,
-    );
+    expect(
+      (await claim(h, runner, 2)).map((payload) => payload.run.id),
+    ).toEqual([higherId, lowerId]);
+  });
+
+  it('orders cross-page candidates by id when priority and createdAt tie', async () => {
+    const { conn, ids, runner } = await fixture(49, 2);
+    const sortedIds = [...ids].sort();
+    const lowerId = sortedIds[0]!;
+    const higherId = sortedIds[1]!;
+    const createdAt = h.clock.now().toISOString();
+    await runsRepo(conn).updateMany({
+      filter: { id: lowerId },
+      values: { priority: 0, createdAt },
+    });
+    await runsRepo(conn).updateMany({
+      filter: { id: higherId },
+      values: { priority: 0, createdAt },
+    });
+    expect(
+      (await claim(h, runner, 2)).map((payload) => payload.run.id),
+    ).toEqual([lowerId, higherId]);
   });
 
   it('stops reading pages after transactional recheck finds the runner full', async () => {
