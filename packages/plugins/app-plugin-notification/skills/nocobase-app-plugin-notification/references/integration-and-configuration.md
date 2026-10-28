@@ -11,22 +11,23 @@ Application configuration snapshots populate both aliases for channels with a va
 Use `NotificationConfigInput` for code defaults and standalone manager input, accepting either discriminator. Use `app.config.get<NotificationConfig>('notification')` for application reads: its channel entries retain the required `provider: string` type for existing consumers. `type` remains optional in this legacy-compatible type so existing provider-only code defaults still compile. Class extensions continue receiving a `ChannelConfig` with `type`; the application-level compatibility alias is not passed to their constructors.
 
 ```yaml
+mail:
+  default:
+    provider: smtp
+    host: smtp.example.com
+    port: 587
+    from: notifications@example.com
+  marketing:
+    provider: resend
+    apiKey: replace-with-the-resend-api-key
+    from: marketing@example.com
 notification:
   channels:
     system-email:
-      type: smtp
-      host: smtp.example.com
-      port: 587
-      auth:
-        {
-          user: notifications@example.com,
-          pass: replace-with-the-smtp-password,
-        }
-      from: notifications@example.com
+      type: email
     marketing-email:
-      type: resend
-      apiKey: replace-with-the-resend-api-key
-      from: marketing@example.com
+      type: email
+      mailer: marketing
     ops-feishu:
       type: feishu-webhook
       webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
@@ -40,7 +41,7 @@ notification:
 
 `notification.retry.maxAttempts` is the maximum number of automatic attempts for one Delivery, including the first attempt; it defaults to `1`, so automatic retries are disabled by default. `notification.retry.intervalMs` is the fixed wait between automatic attempts and defaults to `5000` milliseconds. A validated Provider `Retry-After` hint takes precedence over this interval.
 
-YAML values are literal; `${NAME}` is not interpolated. The application maps environment variables in `server/config/notification.ts`. `defineMailChannelsConfig` supports both discriminators independently of notification plugins. Its default `SMTP_PASSWORD` mapping targets `channels.system-email.auth.pass`; add `RESEND_API_KEY: envString('channels.marketing-email.apiKey', { secret: true, required: false })` for the marketing channel above. SMTP supports `host`, `port`, `secure`, `auth`, `from`, and `replyTo`; Resend uses `apiKey`, `from`, and optional `replyTo`. Webhook Providers use `webhookUrl` and optional signing `secret`. Feishu requires HTTPS on `open.feishu.cn` or `open.larksuite.com`; DingTalk requires HTTPS on `oapi.dingtalk.com`. Redirects are rejected. Keep credentials out of public descriptors and logs.
+YAML values are literal; `${NAME}` is not interpolated. Declare outbound senders with `defineMailConfig` in `server/config/mail.ts`. Default `MAIL_PASSWORD` / `MAIL_API_KEY` mappings target `default.auth.pass` / `default.apiKey`; named senders use explicit mappings, such as `MARKETING_API_KEY: envString('marketing.apiKey', { secret: true, required: false })`. SMTP supports `host`, `port`, `secure`, `auth`, `from`, and `replyTo`; Resend uses `apiKey`, `from`, and optional `replyTo`. Keep `defineMailChannelsConfig` on the notification section during legacy migration so `SMTP_PASSWORD` / `RESEND_API_KEY` remain mapped to the old channel. Webhook Providers use `webhookUrl` and optional signing `secret`. Feishu requires HTTPS on `open.feishu.cn` or `open.larksuite.com`; DingTalk requires HTTPS on `oapi.dingtalk.com`. Redirects are rejected. Keep credentials out of public descriptors and logs.
 
 Keep Channel names and Provider identifiers stable while deliveries remain pending or retryable. Removing, disabling, or changing a Channel's Provider prevents the old Delivery from being retried elsewhere.
 

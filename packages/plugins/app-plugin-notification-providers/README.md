@@ -56,7 +56,7 @@ await notification.send({
 
 Email requires native email addresses and subject plus text or HTML. Arrays create separate emails and retries. Webhooks forbid recipients and accept only complete HTTP(S) targets. There is no user-to-address resolution, common content renderer, Provider instance name, or Provider routing. Use the normal `send()` API for delivery verification and keep credentials on the server.
 
-Register one class directly with `registry.registerChannelType(SmtpChannel)`, or use the Server plugin to register all built-ins. `EmailNotificationChannelConfig`, `SmtpChannelConfig`, `ResendChannelConfig`, `FeishuWebhookChannelConfig` and `DingTalkWebhookChannelConfig` describe their normalized `type` configurations. See the [complete extension example](../app-plugin-notification/skills/nocobase-app-plugin-notification/references/channel-and-provider-extensions.md).
+Register one class directly with `registry.registerChannelType(EmailChannel)`, or use the Server plugin to register all built-ins. `EmailNotificationChannelConfig`, `SmtpChannelConfig`, `ResendChannelConfig`, `FeishuWebhookChannelConfig` and `DingTalkWebhookChannelConfig` describe their normalized `type` configurations. See the [complete extension example](../app-plugin-notification/skills/nocobase-app-plugin-notification/references/channel-and-provider-extensions.md).
 
 The Server plugin also installs the legacy `email` and `im` message handlers from its compatibility module, preserving third-party `registerProvider()` extensions. This compatibility setup is separate from the class registration path. New extensions and application code should only call `registerChannelType()`; direct class registration does not install legacy handlers.
 
