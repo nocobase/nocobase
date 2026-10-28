@@ -44,10 +44,10 @@ async function anIssue(viewer = alice()): Promise<Issue> {
 
 describe('writing comments', () => {
   it.each([
-    { type: 'studio.runAppended', params: { agentName: 'Sol' } },
-    { type: 'studio.stepEnded', params: { status: 'completed' } },
-    { type: 'studio.stepEnded', params: { status: 'failed' } },
-    { type: 'studio.stepEnded', params: { status: 'cancelled' } },
+    { type: 'example.notice', params: {} },
+    { type: 'example.enabled', params: { enabled: true } },
+    { type: 'acme-app.event', params: { count: 42 } },
+    { type: 'example.freeForm', params: { text: '  raw  ' } },
   ] as const)(
     'stores and projects a server display message: %j',
     async (message) => {
@@ -97,7 +97,7 @@ describe('writing comments', () => {
     },
   );
 
-  it('projects only allowlisted parameters and ignores invalid stored messages', async () => {
+  it('projects only the public envelope and ignores invalid stored messages', async () => {
     const issue = await anIssue();
     const { comment } = await h.services.comments.post(
       { type: 'system', id: null },
@@ -105,15 +105,15 @@ describe('writing comments', () => {
       { content: 'Safe fallback.' },
       {
         message: {
-          type: 'studio.runAppended',
-          params: { agentName: 'Sol', runId: 'secret' },
+          type: 'example.notice',
+          params: { name: 'Example', count: 0, enabled: false },
           inputId: 'secret',
         } as CommentMessage,
       },
     );
     expect(comment.message).toEqual({
-      type: 'studio.runAppended',
-      params: { agentName: 'Sol' },
+      type: 'example.notice',
+      params: { name: 'Example', count: 0, enabled: false },
     });
     const rows = h.database
       .connection()
@@ -121,10 +121,10 @@ describe('writing comments', () => {
     for (const message of [
       null,
       [],
-      { type: 'future.notice', params: {} },
-      { type: 'studio.runAppended', params: { agentName: '' } },
-      { type: 'studio.runAppended', params: { agentName: 123 } },
-      { type: 'studio.stepEnded', params: { status: 'running' } },
+      { type: 'invalid-type', params: {} },
+      { type: 'example.notice', params: { nested: {} } },
+      { type: 'example.notice', params: { value: null } },
+      { type: 'example.finished', params: { value: [] } },
     ]) {
       await rows.updateOne({
         filter: { id: comment.id },
@@ -148,8 +148,8 @@ describe('writing comments', () => {
         { content: 'Fallback.' },
         {
           message: {
-            type: 'studio.stepEnded',
-            params: { status: 'running' },
+            type: 'example.finished',
+            params: { nested: {} },
           } as unknown as CommentMessage,
         },
       ),
@@ -158,8 +158,8 @@ describe('writing comments', () => {
       await h.services.commentQueries.list(h.database.connection(), issue.id),
     ).toEqual([]);
     const message = {
-      type: 'studio.runAppended',
-      params: { agentName: 'Sol' },
+      type: 'example.notice',
+      params: { text: 'Example' },
     } as const;
     const posted = await h.services.comments.post(
       { type: 'system', id: null },

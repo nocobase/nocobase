@@ -52,17 +52,12 @@ export interface MentionCandidate extends MentionRef {
 }
 
 /** Server-authored display messages; private provenance is never part of their parameters. */
-export type CommentMessage =
-  | {
-      readonly type: 'studio.runAppended';
-      readonly params: { readonly agentName: string };
-    }
-  | {
-      readonly type: 'studio.stepEnded';
-      readonly params: {
-        readonly status: 'completed' | 'failed' | 'cancelled';
-      };
-    };
+export interface CommentMessage {
+  /** Namespaced application-defined identifier, at most 100 characters. */
+  readonly type: string;
+  /** At most 10 public primitive values; strings are at most 500 characters. */
+  readonly params: Readonly<Record<string, string | number | boolean>>;
+}
 
 export interface IssueComment {
   readonly id: string;

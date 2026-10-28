@@ -1471,7 +1471,7 @@ describe('comments over HTTP', () => {
       title: 'Display message',
     });
     const message = {
-      type: 'studio.runAppended',
+      type: 'example.notice',
       params: { agentName: 'Sol' },
     } as const;
     for (const extra of [{ message }, { origin: { message } }]) {
