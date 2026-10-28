@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Attachments, Sender as AntSender } from '@ant-design/x';
 import { Alert, Button, Flex, Space, Spin, theme, Tooltip, Typography, type GetRef, type UploadFile } from 'antd';
 import { EditOutlined, InfoCircleOutlined, PaperClipOutlined } from '@ant-design/icons';
@@ -26,6 +26,7 @@ import { ContextItem } from './ContextItem';
 import { FileCardList, useAttachmentFileCards } from './Attachments';
 import { ModelSwitcher } from './ModelSwitcher';
 import { SearchSwitch } from './SearchSwitch';
+import { CompactSenderOptions } from './CompactSenderOptions';
 
 type SenderRef = GetRef<typeof AntSender> & {
   nativeElement?: HTMLElement;
@@ -45,6 +46,7 @@ type UploadRequestOptions = {
 const senderClassName = css`
   width: 100%;
   min-width: 0;
+  container: ai-chat-sender / inline-size;
 
   .ant-sender-content {
     padding: 16px;
@@ -53,6 +55,36 @@ const senderClassName = css`
 
   .ant-sender-footer {
     min-width: 0;
+  }
+
+  @container ai-chat-sender (max-width: 480px) {
+    .ant-sender-content {
+      padding: 12px;
+    }
+
+    textarea {
+      font-size: 16px;
+    }
+
+    .ai-chat-sender-compact-toolbar > * {
+      min-width: 0;
+    }
+
+    .ai-chat-sender-compact-toolbar .ant-btn,
+    .ai-chat-sender-submit .ant-btn.ant-sender-actions-btn {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .ai-chat-sender-compact-toolbar .ai-chat-sender-submit .ant-btn.ant-sender-actions-btn.ant-btn-primary {
+      border: 4px solid transparent;
+      padding: 0;
+      background-clip: padding-box;
+      box-shadow: none;
+    }
+    .ant-sender-footer {
+      padding: 0 8px 4px;
+    }
   }
 `;
 
@@ -150,6 +182,8 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
   const t = useT();
   const { token } = theme.useToken();
   const senderRef = useRef<SenderRef | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [compact, setCompact] = useState(false);
   const runtime = useChatBoxRuntime();
   const { chatBoxModel, chatConversationModel, chatSenderModel } = runtime;
   const currentConversation = chatConversationModel.currentConversation;
@@ -174,8 +208,26 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
   const showWebSearch = options.showWebSearch !== false;
   const placeholder = options.placeholder || 'Enter your question';
   const containerMargin = runtime.mode === 'block' ? '8px 0 0' : '8px 16px';
-  const disclaimerMargin = runtime.mode === 'block' ? '10px 0 0' : '10px 0';
+  const disclaimerMargin = compact ? '6px 0 0' : runtime.mode === 'block' ? '10px 0 0' : '10px 0';
 
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    const updateWidth = (width: number) => {
+      if (width > 0) {
+        setCompact(width <= 480);
+      }
+    };
+    updateWidth(container.getBoundingClientRect().width);
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => updateWidth(entry.contentRect.width));
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     chatSenderModel.setSenderRef(senderRef);
     return () => {
@@ -290,6 +342,7 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
 
   return (
     <div
+      ref={containerRef}
       style={{
         margin: containerMargin,
         minWidth: 0,
@@ -312,12 +365,20 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
         header={<SenderHeader options={options} />}
         loading={responseLoading}
         footer={({ components }) => (
-          <SenderFooter components={components} handleSubmit={submit} options={options} value={value} />
+          <SenderFooter
+            components={components}
+            handleSubmit={submit}
+            options={options}
+            value={value}
+            compact={compact}
+          />
         )}
         disabled={!currentEmployee || readonly}
         placeholder={t(placeholder)}
         actions={false}
-        autoSize={{ minRows: 2, maxRows: 8 }}
+        autoSize={{ minRows: compact ? 1 : 2, maxRows: compact ? 4 : 8 }}
+        submitType={compact ? 'shiftEnter' : 'enter'}
+        style={compact ? { borderRadius: 16, boxShadow: 'none', background: token.colorFillQuaternary } : undefined}
       />
       {options.showDisclaimer !== false ? (
         <Typography.Text
@@ -385,7 +446,8 @@ const SenderFooter: React.FC<{
   handleSubmit: (content: string) => void;
   options: SenderOptions;
   value: string;
-}> = observer(({ components, handleSubmit, options, value }) => {
+  compact: boolean;
+}> = observer(({ components, handleSubmit, options, value, compact }) => {
   const { SendButton, LoadingButton } = components;
   const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
   const runtime = useChatBoxRuntime();
@@ -414,7 +476,7 @@ const SenderFooter: React.FC<{
     }
 
     nativeElement.onkeydown = (event) => {
-      if (event.key === 'Enter' && !event.shiftKey) {
+      if (!compact && !event.isComposing && event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
         if (!value && contextItems.length) {
           senderButtonRef.current?.click();
@@ -427,11 +489,26 @@ const SenderFooter: React.FC<{
         nativeElement.onkeydown = null;
       }
     };
-  }, [contextItems, senderRef, value]);
+  }, [compact, contextItems, senderRef, value]);
 
+  if (compact) {
+    return (
+      <Flex className="ai-chat-sender-compact-toolbar" align="center" gap={4} style={{ minWidth: 0 }}>
+        {options.showUpload !== false ? <UploadFiles disabled={disabled} /> : null}
+        <CompactSenderOptions options={options} />
+        <Flex className="ai-chat-sender-submit" style={{ marginInlineStart: 'auto', flexShrink: 0 }}>
+          {loading ? (
+            <LoadingButton type="default" />
+          ) : (
+            <SendButton ref={senderButtonRef} type="primary" disabled={false} onClick={handleEmptySubmit} />
+          )}
+        </Flex>
+      </Flex>
+    );
+  }
   return (
-    <Flex justify="space-between" align="center" gap={8} style={{ minWidth: 0 }}>
-      <Flex gap="middle" align="center" wrap style={{ minWidth: 0 }}>
+    <Flex justify="space-between" align="flex-end" gap={8} style={{ minWidth: 0 }}>
+      <Flex className="ai-chat-sender-tools" gap="middle" align="center" wrap style={{ minWidth: 0, flex: 1 }}>
         {showContextSelector ? (
           <AddContextButton
             onAdd={addContextItems}
@@ -449,7 +526,7 @@ const SenderFooter: React.FC<{
           <ModelSwitcher disabled={disabled} allowedModelKeys={options.allowedModels} />
         ) : null}
       </Flex>
-      <Flex align="center" gap="middle">
+      <Flex className="ai-chat-sender-submit" align="center" gap="middle" style={{ flexShrink: 0 }}>
         {loading ? (
           <LoadingButton type="default" />
         ) : (

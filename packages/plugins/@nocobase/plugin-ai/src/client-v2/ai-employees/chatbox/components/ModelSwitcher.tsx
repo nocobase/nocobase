@@ -29,8 +29,9 @@ import { AddLLMModal } from './AddLLMModal';
 
 export const ModelSwitcher: React.FC<{
   disabled?: boolean;
+  block?: boolean;
   allowedModelKeys?: string[];
-}> = observer(({ disabled, allowedModelKeys }) => {
+}> = observer(({ disabled, allowedModelKeys, block = false }) => {
   const t = useT();
   const app = useApp();
   const { message } = AntdApp.useApp();
@@ -128,6 +129,7 @@ export const ModelSwitcher: React.FC<{
         const isSelected = selectedModel && isSameModel(selectedModel, target);
         items.push({
           key: getModelKey(target),
+          style: block ? { minHeight: 44 } : undefined,
           label: (
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span>{t(item.label)}</span>
@@ -157,6 +159,7 @@ export const ModelSwitcher: React.FC<{
     }
     items.push({
       key: 'add-model',
+      style: block ? { minHeight: 44 } : undefined,
       icon: <PlusOutlined />,
       label: t('Add LLM service'),
       onClick: () => {
@@ -169,7 +172,7 @@ export const ModelSwitcher: React.FC<{
     });
 
     return items;
-  }, [handleSelect, hasConfigPermission, message, selectedModel, servicesWithModels, t, token.colorPrimary]);
+  }, [block, handleSelect, hasConfigPermission, message, selectedModel, servicesWithModels, t, token.colorPrimary]);
 
   if (!currentEmployee) {
     return null;
@@ -186,24 +189,31 @@ export const ModelSwitcher: React.FC<{
       <Dropdown
         disabled={disabled}
         menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
-        trigger={['hover']}
+        trigger={['click']}
         open={isOpen}
         onOpenChange={setIsOpen}
         overlayStyle={{ zIndex: 1200 }}
       >
-        <span
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={t('Model')}
           onClick={(event) => event.stopPropagation()}
           style={{
+            border: 0,
+            minWidth: 0,
+            maxWidth: '100%',
             display: 'inline-flex',
             alignItems: 'center',
             gap: 4,
-            fontSize: 12,
+            fontSize: block ? token.fontSize : 12,
             backgroundColor: token.colorFillTertiary,
             borderRadius: 6,
-            height: 28,
+            height: block ? 44 : 28,
             padding: '0 8px',
             cursor: 'pointer',
-            minWidth: hasModels ? 'auto' : undefined,
+            width: block ? '100%' : undefined,
+            fontFamily: 'inherit',
             userSelect: 'none',
           }}
         >
@@ -214,13 +224,15 @@ export const ModelSwitcher: React.FC<{
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              maxWidth: 88,
+              maxWidth: block ? undefined : 88,
+              flex: block ? 1 : undefined,
+              textAlign: 'start',
             }}
           >
             {hasModels ? selectedLabel : t('No model available')}
           </span>
           <DownOutlined style={{ fontSize: 10, color: hasModels ? token.colorTextSecondary : token.colorError }} />
-        </span>
+        </button>
       </Dropdown>
       {hasConfigPermission ? (
         <AddLLMModal
@@ -267,7 +279,7 @@ function isAllowedOrCurrentModel(model: ModelRef, allowedSet: Set<string>, curre
   return currentConversationModel ? isSameModel(model, currentConversationModel) : false;
 }
 
-function getModelLabel(services: LLMServiceItem[], model: ModelRef | null | undefined) {
+export function getModelLabel(services: LLMServiceItem[], model: ModelRef | null | undefined) {
   if (!model) {
     return '';
   }

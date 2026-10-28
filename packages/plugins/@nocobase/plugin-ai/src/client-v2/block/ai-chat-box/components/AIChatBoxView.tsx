@@ -48,6 +48,26 @@ const { Header } = Layout;
 export const AI_CHAT_BOX_CORE_MIN_WIDTH = 400;
 export const AI_CHAT_BOX_CORE_MIN_HEIGHT = 420;
 
+const responsiveBlockClassName = css`
+  container: ai-chat-box / inline-size;
+  max-width: 100%;
+
+  .ai-chat-box-mobile-title {
+    display: none;
+    min-width: 0;
+    flex: 1;
+    margin-inline: 8px;
+  }
+  @container ai-chat-box (max-width: 480px) {
+    .ai-chat-box-mobile-title {
+      display: block;
+    }
+    .ai-chat-box-header .ant-btn-icon-only {
+      width: 44px;
+      height: 44px;
+    }
+  }
+`;
 const compactHeaderClassName = css`
   .ant-btn {
     padding-inline: 4px;
@@ -60,7 +80,7 @@ const compactHeaderClassName = css`
 
 const headerActionsClassName = css`
   height: 100%;
-  flex-shrink: 0;
+  min-width: 0;
 `;
 
 const headerActionItemsClassName = css`
@@ -69,11 +89,14 @@ const headerActionItemsClassName = css`
   gap: 6px;
   height: 40px;
   min-width: 0;
+  overflow-x: auto;
+  flex: 1 1 auto;
 
   > div {
     display: flex;
     align-items: center;
     height: 40px;
+    flex-shrink: 0;
     line-height: normal;
   }
 `;
@@ -97,6 +120,7 @@ const chatBoxFlexContentStyles = `
   flex: 1 1 auto;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -132,10 +156,7 @@ const ChatBoxItem: React.FC<{
   model: FlowModel;
 }> = ({ model }) => {
   return (
-    <div
-      className={chatBoxItemClassName}
-      style={{ minWidth: AI_CHAT_BOX_CORE_MIN_WIDTH, minHeight: AI_CHAT_BOX_CORE_MIN_HEIGHT }}
-    >
+    <div className={chatBoxItemClassName} style={{ minWidth: 0, minHeight: AI_CHAT_BOX_CORE_MIN_HEIGHT }}>
       <Droppable model={model}>
         <div className={chatBoxRendererClassName}>
           <FlowModelRenderer model={model} showFlowSettings={false} hideRemoveInSettings extraToolbarItems={[]} />
@@ -307,9 +328,10 @@ export const AIChatBoxView: React.FC = observer(() => {
 
   return (
     <Layout
+      className={responsiveBlockClassName}
       style={{
         width: '100%',
-        minWidth,
+        minWidth: `min(100%, ${minWidth}px)`,
         height,
         minHeight: 420,
         overflow: 'hidden',
@@ -333,6 +355,7 @@ export const AIChatBoxView: React.FC = observer(() => {
             onClick={closeSidePanel}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
                 closeSidePanel();
               }
             }}
@@ -344,12 +367,19 @@ export const AIChatBoxView: React.FC = observer(() => {
               left: showMessagesPanel ? undefined : 0,
               right: showMessagesPanel ? 0 : undefined,
               width: showMessagesPanel ? messagesPanelWidth : conversationPanelWidth,
+              maxWidth: 'calc(100% - 44px)',
               height: '100%',
               backgroundColor: token.colorBgContainer,
               zIndex: 11,
               borderLeft: showMessagesPanel ? `1px solid ${token.colorBorder}` : undefined,
               borderRight: showMessagesPanel ? undefined : `1px solid ${token.colorBorder}`,
               overflow: 'hidden',
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                closeSidePanel();
+              }
             }}
           >
             <SidePanel title={showConversations ? t('Conversation list') : t('Messages')}>
@@ -363,13 +393,14 @@ export const AIChatBoxView: React.FC = observer(() => {
         style={{
           height: '100%',
           minHeight: 0,
+          minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
         }}
       >
         <Header
-          className={compactHeaderClassName}
+          className={`${compactHeaderClassName} ai-chat-box-header`}
           style={{
             backgroundColor: token.colorBgContainer,
             borderBottom: `1px solid ${token.colorBorder}`,
@@ -398,6 +429,9 @@ export const AIChatBoxView: React.FC = observer(() => {
               </ChatBoxUnreadBadge>
             </Tooltip>
           </Flex>
+          <Typography.Text className="ai-chat-box-mobile-title" ellipsis>
+            {t('Conversation')}
+          </Typography.Text>
           <Flex className={headerActionsClassName} align="center" gap={6}>
             <div className={headerActionItemsClassName}>{model.renderActions()}</div>
             {flowSettingsEnabled ? model.renderConfigureActions() : null}
