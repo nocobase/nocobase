@@ -142,6 +142,34 @@ for(const method of ['lock','run']){
   const lease=await lock.tryLock();assert.ok(lease);await lease.release();time.advance(101);time.flush();await runtime.close();await runtime.close();assert.equal(time.pendingTimers,0);
 }
 console.log(JSON.stringify({initialBackendTimerFailureCases:2}));
+
+async function verifyLeaseBoundaries(createBackend, backendTimers) {
+  let finalization=0;let startup=0;
+  for(const method of ['run','tryRun'])for(const phase of ['before','after'])for(const businessFails of [false,true])for(const releaseFails of [false,true]){
+    const time=new testing.ManualTime();const cause=new Error('Final lease clock failed');const business=new Error('Independent business failure');let failClock=false;let releases=0;
+    const clock={now(){if(failClock){failClock=false;throw cause;}return time.now();}};
+    const backend=createBackend();const acquire=backend.acquire.bind(backend);
+    backend.acquire=async request=>{const grant=await acquire(request);if(!grant)return undefined;return{notAfter:grant.notAfter,release:async()=>{const call=++releases;try{if(releaseFails&&call===1)throw new Error('Release failed');await grant.release();}finally{if(phase==='after'&&call===1)failClock=true;}}};};
+    const runtime=await core.createConcurrentRuntime({backend,namespace:'finalize',clock,scheduler:time,logger(){throw new Error('Diagnostic failure');}});
+    const executor=await runtime.manager.createSynchronous('r',{ttl:100});const runner=()=>{if(phase==='before')failClock=true;if(businessFails)throw business;return 42;};
+    const error=await(method==='run'?executor.run(runner):executor.tryRun(runner)).then(()=>null,error=>error);
+    assert.equal(releases,1);if(businessFails)assert.equal(error,business);else{assert.ok(error instanceof core.ConcurrentLeaseLostError);assert.equal(error.cause,cause);}
+    time.advance(101);time.flush();await runtime.close();await runtime.close();assert.equal(releases,releaseFails?2:1);assert.equal(time.pendingTimers,0);finalization++;
+  }
+  for(const method of ['lock','tryLock','boundedLock','run','tryRun','boundedRun'])for(const releaseFails of [false,true]){
+    const time=new testing.ManualTime();const cause=new Error('Nested monitor failed');const callbacks=[];let ttlTimers=0;let releases=0;let entered=0;
+    const scheduler={setTimer(notify,delay){callbacks.push(notify);if(delay===100){const call=++ttlTimers;if(call===backendTimers+1)notify();if(call===backendTimers+2)throw cause;}return time.setTimer(notify,delay);}};
+    const backend=createBackend();const acquire=backend.acquire.bind(backend);
+    backend.acquire=async request=>{const grant=await acquire(request);if(!grant)return undefined;return{notAfter:grant.notAfter,release:async()=>{if(++releases===1&&releaseFails)throw new Error('Release failed');await grant.release();}};};
+    const runtime=await core.createConcurrentRuntime({backend,namespace:'startup-loss',clock:time,scheduler});const lock=await runtime.manager.createLock('r',{ttl:100});const executor=await runtime.manager.createSynchronous('r',{ttl:100});const runner=()=>{entered++;return 42;};
+    const work=method==='lock'?lock.lock():method==='tryLock'?lock.tryLock():method==='boundedLock'?lock.tryLock(10):method==='run'?executor.run(runner):method==='tryRun'?executor.tryRun(runner):executor.tryRun(runner,10);
+    const error=await work.then(()=>null,error=>error);assert.equal(entered,0);assert.ok(error instanceof core.ConcurrentLeaseLostError);assert.equal(error.cause,cause);assert.equal(releases,1);
+    time.advance(101);time.flush();await runtime.close();await runtime.close();assert.equal(releases,releaseFails?2:1);assert.equal(time.pendingTimers,0);const count=callbacks.length;for(const notify of callbacks)notify();assert.equal(callbacks.length,count);assert.equal(time.pendingTimers,0);startup++;
+  }
+  return {finalization,startup};
+}
+
+console.log(JSON.stringify({leaseBoundaryCases:await verifyLeaseBoundaries(()=>new LocalConcurrentBackend(),1)}));
 const ordinary = [];
 for (const method of ['lock', 'run']) {
   const time = new testing.ManualTime();
