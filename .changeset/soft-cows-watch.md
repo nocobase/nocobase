@@ -2,4 +2,4 @@
 '@nocobase/app-plugin-repository-example': patch
 ---
 
-Show distinct loading, empty, no-results, access-denied and request-failure states in repository example tables.
+Show distinct list feedback states, keep Customers' empty copy concise and keep its search controls together at all widths.
