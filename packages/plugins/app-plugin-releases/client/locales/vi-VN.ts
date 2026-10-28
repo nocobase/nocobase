@@ -536,8 +536,6 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Người quản trị đầu tiên',
-      expires:
-        'Được tạo cho lần triển khai đầu tiên. Hãy lưu ngay: thông tin này sẽ bị xóa sau {{hours}} giờ.',
       kept: 'Được tạo cho lần triển khai đầu tiên; nó được giữ cho đến khi ứng dụng bị xóa.',
       username: 'Tên người dùng',
       email: 'Email',
