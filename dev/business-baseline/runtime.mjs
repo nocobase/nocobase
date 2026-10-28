@@ -314,6 +314,10 @@ export async function verifyRuntime(appRoot, profileName) {
   );
   const profile = JSON.parse(bytes);
   const privateRoot = await privateRootFor(appRoot, root);
+  assert(
+    privateRoot || path.resolve(appRoot).startsWith(root + path.sep),
+    'External applications require a private runtime identity',
+  );
   if (privateRoot) {
     const identity = JSON.parse(
       await readFile(path.join(privateRoot, '.baseline-private.json')),

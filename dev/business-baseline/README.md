@@ -10,7 +10,7 @@ The source snapshot is commit `4c89e3cdd540965552834837313f47d4e0af8795`. `resou
 
 ## Prepare and start
 
-Run from the repository root, with Node 24.21.0 and pnpm 11.7.0. Dependencies use the repository lockfile and installed workspace packages; this is a source-workspace baseline, not a published-package installation experiment. Each preparation creates `.business-baseline/private-<round>-<scenario>/`, preserving the repository layout with public Git sources and independent copies of the exact dependencies/artifacts enumerated by the frozen profile. The application lives in that private root’s `.business-baseline/<scenario>` (or `after-<scenario>`). Configuration, storage, credentials and databases are never copied. No dependency points back to the shared workspace or pnpm store. Stop other development sessions in this application before resetting it.
+Run from the repository root, with Node 24.21.0 and pnpm 11.7.0. Dependencies use the repository lockfile and installed workspace packages; this is a source-workspace baseline, not a published-package installation experiment. Each preparation creates a private root outside this checkout and inside its task working directory at `../.business-baseline/private-<round>-<scenario>/`, preserving the repository layout with public Git sources and independent copies of the exact dependencies/artifacts enumerated by the frozen profile. The application lives in that private root’s `.business-baseline/<scenario>` (or `after-<scenario>`). Configuration, storage, credentials and databases are never copied. No dependency points back to the shared workspace or pnpm store. Stop other development sessions in this application before resetting it.
 
 ```bash
 pnpm install

@@ -24,6 +24,25 @@ const secret = (name) =>
     name,
   );
 
+export const privateRuntimeBase = (sourceRoot) =>
+  path.join(path.dirname(path.resolve(sourceRoot)), '.business-baseline');
+
+export async function assertAncestorModulesAbsent(root) {
+  const checked = [];
+  let ancestor = path.dirname(path.resolve(root));
+  for (;;) {
+    const modules = path.join(ancestor, 'node_modules');
+    const entry = await lstat(modules).catch((error) => {
+      if (error.code !== 'ENOENT') throw error;
+      return undefined;
+    });
+    assert(!entry, `Ancestor node_modules must be absent: ${modules}`);
+    checked.push(modules);
+    if (path.dirname(ancestor) === ancestor) return checked;
+    ancestor = path.dirname(ancestor);
+  }
+}
+
 // Copy only enumerated public sources/dependencies. Never traverse an installation or a task directory.
 export async function copyEntry(sourceRoot, targetRoot, name, expectedHash) {
   assert(!path.isAbsolute(name) && !name.split('/').includes('..'));
@@ -76,6 +95,7 @@ export async function copyEntry(sourceRoot, targetRoot, name, expectedHash) {
 export async function assertPrivateBoundary(root) {
   root = path.resolve(root);
   assert.equal(await realpath(root), root, 'Private root must not redirect');
+  const ancestorModules = await assertAncestorModulesAbsent(root);
   let files = 0;
   let links = 0;
   async function walk(directory) {
@@ -106,18 +126,21 @@ export async function assertPrivateBoundary(root) {
     }
   }
   await walk(root);
-  return { files, links };
+  return { files, links, ancestorModules };
 }
 
 export async function privateRootFor(appRoot, sourceRoot) {
+  sourceRoot = path.resolve(sourceRoot);
+  const base = privateRuntimeBase(sourceRoot);
+  assert(
+    !inside(path.join(sourceRoot, '.business-baseline'), path.resolve(appRoot)),
+    'Checkout-nested runtimes must remain archived; prepare an external private root',
+  );
   let candidate = path.resolve(appRoot);
-  while (inside(sourceRoot, candidate) && candidate !== sourceRoot) {
+  while (inside(base, candidate) && candidate !== base) {
     const marker = path.join(candidate, '.baseline-private.json');
     if (await lstat(marker).catch(() => null)) {
-      assert.equal(
-        path.dirname(candidate),
-        path.join(sourceRoot, '.business-baseline'),
-      );
+      assert.equal(path.dirname(candidate), base);
       assert(path.basename(candidate).startsWith('private-'));
       const identity = JSON.parse(await readFile(marker, 'utf8'));
       assert.equal(
@@ -126,6 +149,7 @@ export async function privateRootFor(appRoot, sourceRoot) {
         'Private runtime moved without a new boundary check',
       );
       assert.equal(path.resolve(identity.sourceRoot), sourceRoot);
+      await assertAncestorModulesAbsent(candidate);
       return candidate;
     }
     candidate = path.dirname(candidate);
@@ -161,11 +185,9 @@ export async function preparePrivateRuntime({
 }) {
   sourceRoot = path.resolve(sourceRoot);
   targetRoot = path.resolve(targetRoot);
-  assert.equal(
-    path.dirname(targetRoot),
-    path.join(sourceRoot, '.business-baseline'),
-  );
+  assert.equal(path.dirname(targetRoot), privateRuntimeBase(sourceRoot));
   assert(path.basename(targetRoot).startsWith('private-'));
+  await assertAncestorModulesAbsent(targetRoot);
   assert(
     !(await lstat(targetRoot).catch(() => null)),
     'Private runtime already exists; preserve its source/evidence',

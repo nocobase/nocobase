@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { actionInput, checkUI, createdRecords } from './observations.mjs';
 import { checkSyncedSkills, verifyRuntime } from './runtime.mjs';
+import { privateRuntimeBase } from './isolation.mjs';
 
 const directory = fileURLToPath(new URL('.', import.meta.url));
 export const scenarios = ['procurement', 'customers', 'onboarding', 'expenses'];
@@ -194,8 +195,7 @@ async function main() {
   const round = process.env.BASELINE_ROUND ?? 'before';
   assert(['before', 'after'].includes(round));
   const appRoot = path.join(
-    repo,
-    '.business-baseline',
+    privateRuntimeBase(repo),
     `private-${round}-${scenario}`,
     '.business-baseline',
     round === 'after' ? `after-${scenario}` : scenario,

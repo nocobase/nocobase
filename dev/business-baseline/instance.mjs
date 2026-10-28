@@ -23,6 +23,7 @@ import {
   assertPrivateBoundary,
   isolatedEnvironment,
   preparePrivateRuntime,
+  privateRuntimeBase,
 } from './isolation.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('../../', import.meta.url)));
@@ -41,8 +42,7 @@ assert(
 );
 const round = requestedRound ?? 'before';
 const privateRoot = path.join(
-  root,
-  '.business-baseline',
+  privateRuntimeBase(root),
   `private-${round}-${scenario}`,
 );
 const target = path.join(

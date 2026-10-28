@@ -19,6 +19,8 @@ import {
   copyEntry,
   isolatedEnvironment,
   preparePrivateRuntime,
+  privateRootFor,
+  privateRuntimeBase,
 } from '../../dev/business-baseline/isolation.mjs';
 
 async function fixture(run) {
@@ -101,7 +103,7 @@ test('private recovery copies only frozen dependency entries and preserves the o
       '.pnpm/tool/node_modules/tool',
       path.join(source, 'node_modules/tool'),
     );
-    await mkdir(path.join(source, '.business-baseline'));
+    await mkdir(privateRuntimeBase(source));
     const profileBytes = Buffer.from(
       JSON.stringify({
         round: 'before',
@@ -115,7 +117,7 @@ test('private recovery copies only frozen dependency entries and preserves the o
         },
       }) + '\n',
     );
-    const targetRoot = path.join(source, '.business-baseline/private-fixture');
+    const targetRoot = path.join(privateRuntimeBase(source), 'private-fixture');
     const receipt = await preparePrivateRuntime({
       sourceRoot: source,
       targetRoot,
@@ -266,5 +268,84 @@ test('private command environment disables workspace builds and inherited module
       { cwd: target, env: { ...env, NODE_PATH: source }, encoding: 'utf8' },
     );
     assert.equal(result.status, 0, result.stderr);
+  });
+});
+
+test('ancestor probe reproduces the nested checkout leak and rejects CJS and ESM fallback from the external root', async () => {
+  await fixture(async ({ source }) => {
+    const moduleName = 'outside-baseline-module';
+    const shared = path.join(source, 'node_modules', moduleName);
+    await mkdir(shared, { recursive: true });
+    await writeFile(
+      path.join(shared, 'package.json'),
+      JSON.stringify({ name: moduleName, main: 'index.js' }),
+    );
+    await writeFile(
+      path.join(shared, 'index.js'),
+      'module.exports = "shared ancestor resolved";',
+    );
+    const nested = path.join(source, '.business-baseline/private-probe');
+    const external = path.join(privateRuntimeBase(source), 'private-probe');
+    const probes = {
+      cjs: `try { console.log(JSON.stringify({resolved:require.resolve('${moduleName}'), value:require('${moduleName}')})); } catch (error) { console.log(JSON.stringify({code:error.code})); }`,
+      mjs: `try { const loaded = await import('${moduleName}'); console.log(JSON.stringify({resolved:import.meta.resolve('${moduleName}'), value:loaded.default})); } catch (error) { console.log(JSON.stringify({code:error.code})); }`,
+    };
+    for (const directory of [nested, external]) {
+      await mkdir(directory, { recursive: true });
+      for (const [extension, content] of Object.entries(probes)) {
+        const script = path.join(directory, `probe.${extension}`);
+        await writeFile(script, content);
+        const result = spawnSync(process.execPath, [script], {
+          cwd: directory,
+          env: isolatedEnvironment(process.env, source),
+          encoding: 'utf8',
+        });
+        assert.equal(result.status, 0, result.stderr);
+        const observed = JSON.parse(result.stdout);
+        if (directory === nested) {
+          // Positive control: the old layout leaks even with the native global-search flag enabled.
+          assert.equal(observed.value, 'shared ancestor resolved');
+          assert(observed.resolved.includes('node_modules/' + moduleName));
+        } else
+          assert.equal(
+            observed.code,
+            extension === 'cjs' ? 'MODULE_NOT_FOUND' : 'ERR_MODULE_NOT_FOUND',
+          );
+      }
+    }
+    await assert.rejects(
+      assertPrivateBoundary(nested),
+      /Ancestor node_modules/,
+    );
+    await assertPrivateBoundary(external);
+    // A later module directory in the task ancestor must also fail the gate.
+    await mkdir(path.join(path.dirname(source), 'node_modules'));
+    await assert.rejects(
+      assertPrivateBoundary(external),
+      /Ancestor node_modules/,
+    );
+  });
+});
+
+test('runtime identity requires the external task layout and its original physical root', async () => {
+  await fixture(async ({ source }) => {
+    const root = path.join(privateRuntimeBase(source), 'private-identity');
+    const app = path.join(root, '.business-baseline/smoke');
+    await mkdir(app, { recursive: true });
+    const marker = path.join(root, '.baseline-private.json');
+    await writeFile(marker, JSON.stringify({ root, sourceRoot: source }));
+    assert.equal(await privateRootFor(app, source), root);
+    await assert.rejects(
+      privateRootFor(
+        path.join(source, '.business-baseline/private-old/app'),
+        source,
+      ),
+      /Checkout-nested runtimes/,
+    );
+    await writeFile(
+      marker,
+      JSON.stringify({ root: root + '-moved', sourceRoot: source }),
+    );
+    await assert.rejects(privateRootFor(app, source), /Private runtime moved/);
   });
 });
