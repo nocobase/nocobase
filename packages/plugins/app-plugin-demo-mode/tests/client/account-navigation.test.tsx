@@ -1,4 +1,5 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { renderDemo } from '../helpers/render-demo.js';
+import { answerApi } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
@@ -21,12 +22,10 @@ it.each([
   'loads fresh account state when switching to %s',
   async (redirect, navigation) => {
     const signIns: string[] = [];
-    await renderWithApp(<AccountAction redirect={redirect} />, {
+    await renderDemo(<AccountAction redirect={redirect} />, {
       plugins: [demoMode()],
       route: '/projects?state=open#today',
       fetch: answerApi((call) => {
-        if (call.method === 'GET' && call.path === 'demoMode/status')
-          return { data: { enabled: true } };
         if (call.method === 'GET' && call.path === 'demoMode/accounts')
           return { data: [] };
         if (

@@ -69,9 +69,40 @@ it('runs the published non-AI example through authorized HTTP, visitor entry and
     const entries = await (await app.request('/demoMode/accounts')).json();
     expect(entries.data).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ username: rootSession.user.username }),
-        expect.objectContaining({ username: admin.username }),
+        expect.objectContaining({
+          username: rootSession.user.username,
+          role: 'root',
+          roleTitles: [
+            {
+              key: 'permissionSets.builtIn.root',
+              ns: '@nocobase/app-plugin-authorization',
+              defaultValue: 'root',
+            },
+          ],
+        }),
+        expect.objectContaining({
+          username: admin.username,
+          role: 'demo.manager',
+        }),
       ]),
+    );
+    const chineseEntries = await (
+      await app.request('/demoMode/accounts', {
+        headers: { 'accept-language': 'zh-CN' },
+      })
+    ).json();
+    expect(chineseEntries.data).toContainEqual(
+      expect.objectContaining({
+        username: rootSession.user.username,
+        role: 'root',
+        roleTitles: [
+          {
+            key: 'permissionSets.builtIn.root',
+            ns: '@nocobase/app-plugin-authorization',
+            defaultValue: 'root',
+          },
+        ],
+      }),
     );
     const documentation = await app.request('/swagger', {
       headers: {
@@ -85,6 +116,9 @@ it('runs the published non-AI example through authorized HTTP, visitor entry and
     const document = await documentation.json();
     expect(findUndeclaredApiRoutes(app.application.apiRouter!)).toEqual([]);
     expect(findApiDocumentSchemaProblems(document)).toEqual([]);
+    expect(
+      document.components.schemas.DemoModeSignInAccount.properties.roleTitles,
+    ).toMatchObject({ type: 'array' });
     expect(
       Object.entries(document.paths).find(([path]) =>
         path.endsWith('/api/demoMode/accounts/signInDefault'),

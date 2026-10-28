@@ -1,4 +1,5 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { renderDemo } from '../helpers/render-demo.js';
+import { answerApi } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -49,8 +50,6 @@ const bob = { username: 'bob', name: 'Bob', role: '审核人' };
 function demoApi(accounts: readonly object[], signIns: string[] = []) {
   return vi.fn(
     answerApi((call) => {
-      if (call.method === 'GET' && call.path === 'demoMode/status')
-        return { data: { enabled: true } };
       if (call.method === 'GET' && call.path === 'demoMode/accounts')
         return { data: accounts };
       if (
@@ -71,7 +70,7 @@ function demoApi(accounts: readonly object[], signIns: string[] = []) {
 describe('demo sign-in page', () => {
   it('enters the account `?as=` names once', async () => {
     const signIns: string[] = [];
-    await renderWithApp(<DemoSignInPage />, {
+    await renderDemo(<DemoSignInPage />, {
       plugins: [demoMode()],
       fetch: demoApi([{ ...ann, current: false }], signIns),
       locale: 'zh-CN',
@@ -84,7 +83,7 @@ describe('demo sign-in page', () => {
 
   it('lists the accounts when the named one cannot be entered', async () => {
     const signIns: string[] = [];
-    await renderWithApp(<DemoSignInPage />, {
+    await renderDemo(<DemoSignInPage />, {
       plugins: [demoMode()],
       fetch: demoApi([{ ...bob, current: false }], signIns),
       locale: 'zh-CN',

@@ -7,3 +7,10 @@ export {
 } from './config.js';
 export { DEMO_READ_ONLY_REASON, DemoReadOnlyError } from './errors.js';
 export { DEMO_SERVER_TIMING_METRIC } from './middleware.js';
+export { isDemoMode, type DemoModeContainer } from './is-demo-mode.js';
+export {
+  demoEffectsGuard,
+  type DemoEffectsGuardOptions,
+  type DemoEffectsGuardAllowRule,
+  type DemoEffectsGuardApplication,
+} from './effects-guard.js';
