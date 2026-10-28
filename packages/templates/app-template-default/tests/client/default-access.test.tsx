@@ -343,7 +343,7 @@ it('keeps failed deletion in its confirmation and deletes only after explicit co
   expect(screen.getByRole('alertdialog')).toBeVisible();
   expect(screen.queryByText('Private server detail')).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Delete', exact: true }));
-  await screen.findByText(enUS.settings.defaultAccess.empty);
+  await screen.findByText(enUS.listFeedback.empty);
   expect(deletes).toBe(2);
 });
 it('retains the create draft when the server rejects a duplicate and shows a contextual error', async () => {
@@ -483,6 +483,46 @@ it('refuses deleting a changed rule and refreshes the list for explicit re-confi
   ).toBeVisible();
   expect(writes).toBe(0);
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+});
+
+it('keeps one authorized create entry in the header for an empty list', async () => {
+  await renderWithApp(tree(), {
+    route: '/default-access',
+    namespace,
+    namespaces,
+    services,
+    fetch: answerApi(({ path }) =>
+      path === 'authorization/permissions'
+        ? { data: { unrestricted: true, permissions: [] } }
+        : path.endsWith('/options')
+          ? { data: catalog }
+          : { data: [] },
+    ),
+  });
+  const label = enUS.settings.defaultAccess.new;
+  const create = await screen.findByRole('button', { name: label });
+  expect(create).toHaveAttribute('href', '/default-access/create');
+  expect(screen.getAllByRole('button', { name: label })).toHaveLength(1);
+});
+
+it('hides the create entry for a read-only empty list', async () => {
+  await renderWithApp(tree(), {
+    route: '/default-access',
+    namespace,
+    namespaces,
+    services,
+    fetch: answerApi(({ path }) =>
+      path === 'authorization/permissions'
+        ? { data: { unrestricted: false, permissions: [] } }
+        : path.endsWith('/options')
+          ? { data: catalog }
+          : { data: [] },
+    ),
+  });
+  const label = enUS.settings.defaultAccess.new;
+  expect(await screen.findByText(enUS.listFeedback.empty)).toBeVisible();
+  expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
 });
 
 it('disables New rule with a reason when every available resource is already configured', async () => {
@@ -733,16 +773,14 @@ it.each(['transport', 'server'])(
     await userEvent.click(
       screen.getByRole('button', { name: 'Delete', exact: true }),
     );
-    expect(
-      await screen.findByText(enUS.settings.defaultAccess.empty),
-    ).toBeVisible();
+    expect(await screen.findByText(enUS.listFeedback.empty)).toBeVisible();
     expect(screen.getByRole('alertdialog')).toBeVisible();
     expect(screen.getByText(enUS.settings.failed)).toBeVisible();
     await userEvent.click(
       screen.getByRole('button', { name: 'Cancel', exact: true }),
     );
     await waitFor(() =>
-      expect(screen.getByText(enUS.settings.defaultAccess.empty)).toBeVisible(),
+      expect(screen.getByText(enUS.listFeedback.empty)).toBeVisible(),
     );
     expect(writes).toBe(1);
   },

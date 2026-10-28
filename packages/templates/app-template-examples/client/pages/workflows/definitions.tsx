@@ -1,3 +1,4 @@
+import { resolveListState } from '@nocobase/app-client';
 import { RecordLink } from '#components/record-link';
 import { useMatch, useLocation } from 'react-router';
 import { CategoryManager, type Category } from './categories.js';
@@ -122,7 +123,18 @@ export default function DefinitionsPage(): ReactElement {
           {...nameFilter.inputProps}
         />
       }
-      status={<DataState {...request} retry={request.reload} />}
+      listState={resolveListState(
+        request,
+        request.data?.data.length ?? 0,
+        Boolean(normalizedName) || category !== 'all',
+      )}
+      onClearFilters={() =>
+        nameFilter.clear((next) => {
+          next.delete('category');
+          next.delete('workflowId');
+          next.delete('page');
+        })
+      }
       loaded={Boolean(request.data)}
       loading={request.loading}
       labels={{
@@ -131,11 +143,6 @@ export default function DefinitionsPage(): ReactElement {
         executionCount: t('workflows.executionCount'),
         executionActivity: t('workflows.executionActivity'),
       }}
-      empty={t(
-        normalizedName || category !== 'all'
-          ? 'workflows.noResults'
-          : 'workflows.noDefinitions',
-      )}
       sort={sort}
       onSort={() =>
         nameFilter.updateParams((next) =>

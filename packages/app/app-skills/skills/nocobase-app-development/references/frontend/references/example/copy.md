@@ -2,7 +2,7 @@
 
 Part of the [projects worked example](../example.md).
 
-Rules: [`i18n.md`](../i18n.md). Every key the handbook's examples pass to `t()` or name in a route, in both languages. Add the groups your feature uses; `actions.create`, `actions.saving`, `actions.discard`, `actions.signInAgain` and `'status.sessionExpired'` are the shared keys the template does not have yet (["Existing shared keys" in `i18n.md`](../i18n.md#existing-shared-keys)).
+Rules: [`i18n.md`](../i18n.md). Every key the handbook's examples pass to `t()` or name in a route, in both languages. Add the groups your feature uses; built-in list feedback uses the template's shared `listFeedback.*` translations. `actions.create`, `actions.saving`, `actions.discard`, `actions.signInAgain` and `'status.sessionExpired'` are the shared keys the template does not have yet (["Existing shared keys" in `i18n.md`](../i18n.md#existing-shared-keys)).
 
 ```ts
 // client/locales/en-US.ts (the groups the handbook's examples add; merge them into the existing file)
@@ -156,11 +156,6 @@ const enUS = {
       removeMember: 'Remove member {{index}}',
       budgetInvalid: 'Enter a number',
       customerRequired: 'Choose a customer',
-    },
-    empty: {
-      title: 'No projects yet',
-      description: 'Create your first project to start tracking progress.',
-      noResults: 'No projects match your filters',
     },
     error: {
       title: 'Projects could not be loaded',

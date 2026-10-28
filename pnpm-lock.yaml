@@ -5151,6 +5151,9 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
+      knex:
+        specifier: 'catalog:'
+        version: 3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0)
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
