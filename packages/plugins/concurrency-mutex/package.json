@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/concurrency-local",
+  "name": "@nocobase/concurrency-mutex",
   "version": "0.0.1",
   "description": "In-process fixed-TTL concurrency backend using async-mutex state gates.",
   "type": "module",

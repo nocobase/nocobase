@@ -1,4 +1,4 @@
-# @nocobase/concurrency-local
+# @nocobase/concurrency-mutex
 
 ## 0.0.1
 

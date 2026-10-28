@@ -1,10 +1,12 @@
-# @nocobase/concurrency-local
+# @nocobase/concurrency-mutex
 
 An in-process fixed-TTL backend for `@nocobase/concurrency`, using the public `Mutex` from `async-mutex@0.5.0` only for short synchronous state transitions. Requires Node 24 ESM. Install core alongside this adapter; core is a peer so errors, backend contracts, leases and execution logic share one identity.
 
+The package lives at `packages/plugins/concurrency-mutex` in the source repository. It is a backend adapter for the concurrency contract, not an application plugin requiring registration. Its public constructor remains `LocalConcurrentBackend`.
+
 ```js
 import { createConcurrentRuntime } from '@nocobase/concurrency';
-import { LocalConcurrentBackend } from '@nocobase/concurrency-local';
+import { LocalConcurrentBackend } from '@nocobase/concurrency-mutex';
 
 const backend = new LocalConcurrentBackend();
 const runtime = await createConcurrentRuntime({

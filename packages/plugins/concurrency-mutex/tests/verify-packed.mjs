@@ -10,35 +10,37 @@ const coreRoot = dirname(
   dirname(fileURLToPath(import.meta.resolve('@nocobase/concurrency'))),
 );
 const metadata = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+if (metadata.name !== '@nocobase/concurrency-mutex')
+  throw new Error('Unexpected mutex package name');
 const coreMetadata = JSON.parse(
   readFileSync(join(coreRoot, 'package.json'), 'utf8'),
 );
 const artifacts = resolve(
   process.argv[2] ??
-    mkdtempSync(join(tmpdir(), 'concurrency-local-artifacts-')),
+    mkdtempSync(join(tmpdir(), 'concurrency-mutex-artifacts-')),
 );
 mkdirSync(artifacts, { recursive: true });
 const coreTarball = join(
   artifacts,
   `nocobase-concurrency-${coreMetadata.version}.tgz`,
 );
-const localTarball = join(
+const mutexTarball = join(
   artifacts,
-  `nocobase-concurrency-local-${metadata.version}.tgz`,
+  `nocobase-concurrency-mutex-${metadata.version}.tgz`,
 );
 execFileSync('pnpm', ['pack', '--out', coreTarball], {
   cwd: coreRoot,
   stdio: 'inherit',
 });
-execFileSync('pnpm', ['pack', '--out', localTarball], {
+execFileSync('pnpm', ['pack', '--out', mutexTarball], {
   cwd: root,
   stdio: 'inherit',
 });
-const consumer = mkdtempSync(join(tmpdir(), 'concurrency-local-consumer-'));
+const consumer = mkdtempSync(join(tmpdir(), 'concurrency-mutex-consumer-'));
 writeFileSync(
   join(consumer, 'package.json'),
   JSON.stringify({
-    name: 'packed-local-consumer',
+    name: 'packed-mutex-consumer',
     private: true,
     type: 'module',
   }),
@@ -54,7 +56,7 @@ execFileSync(
     '--no-audit',
     '--no-fund',
     coreTarball,
-    localTarball,
+    mutexTarball,
     `typescript@${tsVersion}`,
   ],
   { cwd: consumer, stdio: 'inherit' },
@@ -63,7 +65,7 @@ writeFileSync(
   join(consumer, 'consumer.ts'),
   readFileSync(join(root, 'tests/consumer.ts'), 'utf8').replaceAll(
     '../src/index.ts',
-    '@nocobase/concurrency-local',
+    '@nocobase/concurrency-mutex',
   ),
 );
 writeFileSync(
@@ -92,8 +94,11 @@ import {setImmediate} from 'node:timers/promises';
 import * as core from '@nocobase/concurrency';
 import * as port from '@nocobase/concurrency/backend';
 import * as testing from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '@nocobase/concurrency-local';
-for(const entry of ['@nocobase/concurrency','@nocobase/concurrency/backend','@nocobase/concurrency/testing','@nocobase/concurrency-local']) assert.match(import.meta.resolve(entry),/node_modules.*dist/);
+import { LocalConcurrentBackend } from '@nocobase/concurrency-mutex';
+for(const entry of ['@nocobase/concurrency','@nocobase/concurrency/backend','@nocobase/concurrency/testing','@nocobase/concurrency-mutex']) assert.match(import.meta.resolve(entry),/node_modules.*dist/);
+const installed = JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../package.json', import.meta.resolve('@nocobase/concurrency-mutex')), 'utf8'));
+assert.equal(installed.name,'@nocobase/concurrency-mutex');
+assert.equal(installed.peerDependencies['@nocobase/concurrency'], '^' + ${JSON.stringify(coreMetadata.version)});
 for(const name of ['ConcurrentConfigurationError','ConcurrentAcquireError','ConcurrentAbortError','ConcurrentLeaseLostError','ConcurrentReleaseError','ConcurrentCloseError']) {assert.equal(core[name],port[name]);assert.equal(core[name],testing[name]);}
 const contract = await testing.runBackendContract({createBackend:()=>new LocalConcurrentBackend()});
 const faults = await testing.runCoreFaultContract();
@@ -141,7 +146,7 @@ execFileSync(process.execPath, ['run.mjs'], {
 const evidence = {
   consumer,
   status: 'passed',
-  artifacts: [coreTarball, localTarball].map((path) => ({
+  artifacts: [coreTarball, mutexTarball].map((path) => ({
     path,
     sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
   })),

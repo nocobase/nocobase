@@ -1,5 +1,5 @@
 ---
-"@nocobase/concurrency-local": patch
+"@nocobase/concurrency-mutex": patch
 ---
 
 Support cancellable unbounded ordinary acquisition with the initial backend protocol v1 while preserving single and bounded try waits.
