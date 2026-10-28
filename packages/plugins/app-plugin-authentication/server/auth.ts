@@ -222,7 +222,8 @@ export class Auth {
     const { connection, passwordReset, passwordResetServices, ...config } =
       options;
     this.resetPolicy = new PasswordResetPolicy(
-      passwordReset ?? {},
+      passwordReset ??
+        (config.emailAndPassword?.sendResetPassword ? {} : false),
       config,
       connection,
       passwordResetServices ?? {},

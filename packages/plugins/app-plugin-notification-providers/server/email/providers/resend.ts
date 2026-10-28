@@ -1,3 +1,4 @@
+import { mailerToken, legacyMailerName } from '@nocobase/app-server/mailer';
 import type {
   ChannelCapabilities,
   ChannelContext,
@@ -88,8 +89,17 @@ export class ResendChannel implements ChannelInstance<
   readonly capabilities: ChannelCapabilities = {
     idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
   };
-  constructor(_context: ChannelContext, config: ResendChannelConfig) {
-    this.transport = createResendTransport({ ...config, provider: 'resend' });
+  constructor(context: ChannelContext, _config: ResendChannelConfig) {
+    const mailer = context.container.resolve(mailerToken);
+    const name = legacyMailerName(context.channelName);
+    if (!mailer.available(name))
+      throw new Error(
+        'Legacy email channel is unavailable. Configure notification.channels.<name> or migrate to mail.<name>.',
+      );
+    this.transport = {
+      send: (message, options) => mailer.send(name, message, options),
+      close: async () => {},
+    };
   }
   validateMessage(
     input: unknown,

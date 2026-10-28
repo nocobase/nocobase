@@ -38,17 +38,28 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
   auth,
   context,
 ) => {
+  const reset = auth.passwordReset;
   if (
-    auth.passwordReset?.enabled !== undefined &&
-    typeof auth.passwordReset.enabled !== 'boolean'
+    reset !== undefined &&
+    typeof reset !== 'boolean' &&
+    (!reset || typeof reset !== 'object' || Array.isArray(reset))
   )
-    context.error('passwordReset.enabled', 'must be true or false.');
-  if (
-    auth.passwordReset?.emailChannel !== undefined &&
-    (typeof auth.passwordReset.emailChannel !== 'string' ||
-      !auth.passwordReset.emailChannel.trim())
-  )
-    context.error('passwordReset.emailChannel', 'must be a non-empty string.');
+    context.error('passwordReset', 'must be a boolean or an object.');
+  if (reset && typeof reset === 'object') {
+    if (reset.enabled !== undefined && typeof reset.enabled !== 'boolean')
+      context.error('passwordReset.enabled', 'must be true or false.');
+    for (const key of ['mailer', 'emailChannel'] as const)
+      if (
+        reset[key] !== undefined &&
+        (typeof reset[key] !== 'string' || !reset[key].trim())
+      )
+        context.error(`passwordReset.${key}`, 'must be a non-empty string.');
+    if (reset.template !== undefined && typeof reset.template !== 'function')
+      context.error(
+        'passwordReset.template',
+        'must be a function declared in server/config/auth.ts.',
+      );
+  }
   const emailAndPassword: Record<string, unknown> =
     (auth.emailAndPassword as Record<string, unknown> | undefined) ?? {};
   for (const field of BOOLEAN_FIELDS) {

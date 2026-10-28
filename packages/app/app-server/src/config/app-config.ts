@@ -193,7 +193,6 @@ export class AppConfig {
 
   /** Every issue the declared rules find in the current configuration, warnings included. Throws nothing. */
   public async validate(): Promise<readonly ConfigIssue[]> {
-    if (this.sections.size === 0) return [];
     return validateConfigSections(
       this.requireCurrent().raw(),
       this.overrides.raw(),

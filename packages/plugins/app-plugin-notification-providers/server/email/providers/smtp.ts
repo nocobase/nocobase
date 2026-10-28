@@ -1,3 +1,4 @@
+import { mailerToken, legacyMailerName } from '@nocobase/app-server/mailer';
 import type {
   ChannelContext,
   ChannelInstance,
@@ -80,8 +81,17 @@ export class SmtpChannel implements ChannelInstance<
     validateSmtpProviderConfig({ ...config, provider: 'smtp' });
   }
   private readonly transport: MailTransport;
-  constructor(_context: ChannelContext, config: SmtpChannelConfig) {
-    this.transport = createSmtpTransport({ ...config, provider: 'smtp' });
+  constructor(context: ChannelContext, _config: SmtpChannelConfig) {
+    const mailer = context.container.resolve(mailerToken);
+    const name = legacyMailerName(context.channelName);
+    if (!mailer.available(name))
+      throw new Error(
+        'Legacy email channel is unavailable. Configure notification.channels.<name> or migrate to mail.<name>.',
+      );
+    this.transport = {
+      send: (message, options) => mailer.send(name, message, options),
+      close: async () => {},
+    };
   }
   validateMessage(
     input: unknown,

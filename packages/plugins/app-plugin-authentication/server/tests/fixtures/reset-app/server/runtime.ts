@@ -19,7 +19,10 @@ import {
 } from '@nocobase/app-server/runtime';
 
 import authenticationPlugin, { defineAuthConfig } from '../../../../index.js';
-import { defineMailChannelsConfig } from '@nocobase/app-server/mailer';
+import {
+  defineMailConfig,
+  defineMailChannelsConfig,
+} from '@nocobase/app-server/mailer';
 
 const appRuntime: AppRuntimeDefinition = defineAppRuntime({
   createAppConfig: (context) => {
@@ -52,6 +55,7 @@ const appRuntime: AppRuntimeDefinition = defineAppRuntime({
         passwordReset: { enabled: true },
       },
     }),
+    mail: defineMailConfig(),
     notification: defineMailChannelsConfig({ defaults: { channels: {} } }),
     caching: defineAppConfig({
       defaults: {

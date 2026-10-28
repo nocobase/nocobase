@@ -11,6 +11,7 @@ describe('@nocobase/app-plugin-notification-providers bootstrap', () => {
 
     registerBuiltInNotificationProviders(registry);
 
+    expect(registry.channelType('email')?.type).toBe('email');
     expect(registry.channelType('smtp')?.type).toBe('smtp');
     expect(registry.channelType('resend')?.type).toBe('resend');
     expect(registry.channelType('feishu-webhook')?.type).toBe('feishu-webhook');

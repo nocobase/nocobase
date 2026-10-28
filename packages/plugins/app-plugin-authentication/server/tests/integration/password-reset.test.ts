@@ -274,6 +274,16 @@ describe('password reset policy', () => {
     },
   );
 
+  it('preserves opt-in for an old emailChannel-only configuration', async () => {
+    const fixture = await setup({
+      passwordReset: { emailChannel: 'system-email' },
+      passwordResetServices: {
+        mailer: { available: () => true, send: vi.fn(), close: async () => {} },
+      },
+    });
+    expect(fixture.auth.passwordResetAvailable()).toBe(false);
+  });
+
   it('keeps SMTP failure private and preserves explicit session settings for automatic sending', async () => {
     const send = vi.fn().mockResolvedValue({
       status: 'failed',

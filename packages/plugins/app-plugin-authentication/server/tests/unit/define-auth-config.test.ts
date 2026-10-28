@@ -79,3 +79,30 @@ describe('defineAuthConfig', () => {
     ]);
   });
 });
+
+it.each([
+  true,
+  false,
+  { mailer: 'marketing' },
+  { template: () => ({ to: 'synthetic@example.test', subject: 'Reset' }) },
+])(
+  'accepts boolean or object password reset settings with a custom callback',
+  async (passwordReset) => {
+    const { issues } = await validate({
+      passwordReset,
+      emailAndPassword: { sendResetPassword: () => {} },
+    });
+    expect(issues).toEqual([]);
+  },
+);
+
+it.each([
+  ['yes', 'auth.passwordReset'],
+  [{ mailer: '' }, 'auth.passwordReset.mailer'],
+  [{ template: 'invalid' }, 'auth.passwordReset.template'],
+] as const)('rejects malformed reset settings', async (passwordReset, path) => {
+  const { issues } = await validate({ passwordReset });
+  expect(issues).toContainEqual(
+    expect.objectContaining({ level: 'error', path }),
+  );
+});

@@ -8,7 +8,7 @@ import '../server/email/channel.js';
 import '../server/im/channel.js';
 
 const channels = {
-  'system-email': { type: 'smtp', host: 'localhost', port: 587 },
+  'system-email': { type: 'email' },
   marketing: { provider: 'resend', apiKey: 'key', from: 'a@example.com' },
   alerts: {
     type: 'feishu-webhook',

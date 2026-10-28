@@ -1,11 +1,9 @@
-import {
-  defineAppConfig,
-  type AppConfigFactory,
-} from '@nocobase/app-server/config';
+import { type AppConfigFactory } from '@nocobase/app-server/config';
+import { defineMailConfig } from '@nocobase/app-server/mailer';
 import { mailConfig, type MailConfig } from '@nocobase/app-plugin-mail/server';
 
 // These providers are offline fixtures owned by Mail Example; no external credentials are needed.
-const mail: AppConfigFactory<MailConfig> = defineAppConfig({
+const mail: AppConfigFactory<MailConfig> = defineMailConfig({
   defaults: (runtime) => ({
     ...mailConfig(runtime),
     providers: {

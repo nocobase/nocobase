@@ -1,3 +1,4 @@
+import { createMailer, mailerToken } from '@nocobase/app-server/mailer';
 import { ServiceContainer } from '@nocobase/service-provider';
 import {
   type NotificationProvider,
@@ -124,9 +125,23 @@ async function createProvider(
 ): Promise<
   Pick<NotificationProvider<PreparedEmailMessage>, 'send' | 'capabilities'>
 > {
-  if (mode === 'class')
+  if (mode === 'class') {
+    const container = new ServiceContainer();
+    container.instance(
+      mailerToken,
+      createMailer({
+        channels: {
+          email: {
+            type: 'resend',
+            apiKey: 're_test',
+            from: 'NocoBase <notifications@example.com>',
+            replyTo: 'support@example.com',
+          },
+        },
+      }),
+    );
     return new ResendChannel(
-      { channelName: 'email', container: new ServiceContainer() },
+      { channelName: 'email', container },
       {
         type: 'resend',
         apiKey: 're_test',
@@ -134,6 +149,7 @@ async function createProvider(
         replyTo: 'support@example.com',
       },
     );
+  }
   return createResendProviderDefinition().createProvider(
     providerContext(),
     defineResendProviderConfig({

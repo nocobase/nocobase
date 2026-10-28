@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { MailExecutions, type EmailMessage } from '@nocobase/mailer';
-import type { Mailer } from '@nocobase/app-server/mailer';
+import { legacyMailerName, type Mailer } from '@nocobase/app-server/mailer';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   APIError,
@@ -16,7 +16,10 @@ type ResetSender = NonNullable<
 >;
 type ResetData = Parameters<ResetSender>[0];
 
-export interface PasswordResetConfig {
+export type PasswordResetConfig = boolean | PasswordResetOptions;
+
+export interface PasswordResetOptions {
+  readonly mailer?: string;
   readonly enabled?: boolean;
   readonly emailChannel?: string;
   readonly template?: (data: ResetData, appName: string) => EmailMessage;
@@ -42,19 +45,28 @@ export class PasswordResetPolicy {
   private readonly requestAddress = new AsyncLocalStorage<string | undefined>();
 
   public constructor(
-    config: PasswordResetConfig,
+    input: PasswordResetConfig,
     private readonly options: BetterAuthOptions,
     private readonly connection: DatabaseConnection,
     private readonly services: PasswordResetServices,
   ) {
+    const config: PasswordResetOptions =
+      typeof input === 'boolean'
+        ? { mailer: 'default', enabled: input }
+        : input;
+    const enabled = config.enabled ?? config.emailChannel === undefined;
     this.executions = services.executions ?? new MailExecutions();
     const configuredSender = options.emailAndPassword?.sendResetPassword;
     const custom =
       typeof configuredSender === 'function' ? configuredSender : undefined;
-    const channel = config.emailChannel ?? 'system-email';
+    const channel =
+      config.mailer ??
+      (config.emailChannel !== undefined || config.enabled !== undefined
+        ? legacyMailerName(config.emailChannel ?? 'system-email')
+        : 'default');
     this.automatic =
       !custom &&
-      config.enabled === true &&
+      enabled &&
       configuredResetOrigin(options.baseURL) &&
       services.mailer?.available(channel) === true;
     this.available =

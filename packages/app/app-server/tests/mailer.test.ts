@@ -7,6 +7,7 @@ import {
 } from '../src/config/index.js';
 import {
   createMailer,
+  legacyMailerName,
   defineMailChannelsConfig,
   MailerProvider,
   mailerToken,
@@ -43,9 +44,9 @@ describe('host mailer ownership', () => {
         'system-email': { provider: 'smtp', host: 'localhost', port: 25 },
       },
     });
-    expect(mailer.available('system-email')).toBe(true);
+    expect(mailer.available(legacyMailerName('system-email'))).toBe(true);
     expect(created.count).toBe(0);
-    await mailer.send('system-email', {
+    await mailer.send(legacyMailerName('system-email'), {
       to: 'synthetic@example.test',
       subject: 'Synthetic',
     });
@@ -53,7 +54,38 @@ describe('host mailer ownership', () => {
     await mailer.close();
     await mailer.close();
     expect(created.closed).toBe(1);
-    expect(mailer.available('system-email')).toBe(false);
+    expect(mailer.available(legacyMailerName('system-email'))).toBe(false);
+  });
+
+  it('reuses each named sender under concurrent sends and closes all senders once', async () => {
+    created.count = 0;
+    created.closed = 0;
+    const mailer = createMailer(
+      { channels: {} },
+      {
+        default: { provider: 'smtp', host: 'localhost', port: 2525 },
+        marketing: {
+          provider: 'resend',
+          apiKey: 'synthetic-key',
+          from: 'sender@example.test',
+        },
+      },
+    );
+    const message = { to: 'synthetic@example.test', subject: 'Synthetic' };
+    await Promise.all(
+      ['default', 'marketing', 'default', 'marketing'].map((name) =>
+        mailer.send(name, message),
+      ),
+    );
+    expect(created.count).toBe(2);
+    await mailer.close();
+    await mailer.close();
+    expect(created.closed).toBe(2);
+    expect(await mailer.send('default', message)).toMatchObject({
+      status: 'failed',
+      disposition: 'never',
+    });
+    expect(created.count).toBe(2);
   });
 
   it.each([
@@ -72,9 +104,9 @@ describe('host mailer ownership', () => {
     expect(error).not.toHaveBeenCalled();
     const mailer = createMailer({ channels });
     try {
-      expect(mailer.available('email')).toBe(true);
+      expect(mailer.available(legacyMailerName('email'))).toBe(true);
       expect(
-        await mailer.send('email', {
+        await mailer.send(legacyMailerName('email'), {
           to: 'synthetic@example.test',
           subject: 'Test',
         }),
@@ -106,9 +138,9 @@ describe('host mailer ownership', () => {
         'Channel type and provider must match when both are configured.',
       );
       const mailer = createMailer({ channels });
-      expect(mailer.available('email')).toBe(false);
+      expect(mailer.available(legacyMailerName('email'))).toBe(false);
       expect(
-        await mailer.send('email', {
+        await mailer.send(legacyMailerName('email'), {
           to: 'synthetic@example.test',
           subject: 'Test',
         }),
@@ -132,9 +164,9 @@ describe('host mailer ownership', () => {
     );
     expect(error).not.toHaveBeenCalled();
     const mailer = createMailer({ channels });
-    expect(mailer.available('marketing')).toBe(true);
+    expect(mailer.available(legacyMailerName('marketing'))).toBe(true);
     expect(
-      await mailer.send('marketing', {
+      await mailer.send(legacyMailerName('marketing'), {
         to: 'synthetic@example.test',
         subject: 'Test',
       }),
@@ -171,7 +203,7 @@ describe('host mailer ownership', () => {
       'invalidAuth2',
       'invalidAuth3',
     ])
-      expect(mailer.available(channel)).toBe(false);
+      expect(mailer.available(legacyMailerName(channel))).toBe(false);
   });
 
   it('registers without creating unused resources at shutdown', async () => {
@@ -318,7 +350,7 @@ describe('host mailer deployment variables', () => {
       );
       expect(
         createMailer({ channels: { 'system-email': channel } }).available(
-          'system-email',
+          legacyMailerName('system-email'),
         ),
       ).toBe(false);
     },

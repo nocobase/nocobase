@@ -1,3 +1,4 @@
+import { createMailer, mailerToken } from '@nocobase/app-server/mailer';
 import { ServiceContainer } from '@nocobase/service-provider';
 import type {
   NotificationProvider,
@@ -228,9 +229,24 @@ async function createProvider(
 ): Promise<
   Pick<NotificationProvider<PreparedEmailMessage>, 'send' | 'capabilities'>
 > {
-  if (mode === 'class')
+  if (mode === 'class') {
+    const container = new ServiceContainer();
+    container.instance(
+      mailerToken,
+      createMailer({
+        channels: {
+          email: {
+            type: 'smtp',
+            host: 'smtp.example.com',
+            port: 587,
+            from: 'NocoBase <notifications@example.com>',
+            replyTo: 'support@example.com',
+          },
+        },
+      }),
+    );
     return new SmtpChannel(
-      { channelName: 'email', container: new ServiceContainer() },
+      { channelName: 'email', container },
       {
         type: 'smtp',
         host: 'smtp.example.com',
@@ -239,6 +255,7 @@ async function createProvider(
         replyTo: 'support@example.com',
       },
     );
+  }
   return createSmtpProviderDefinition().createProvider(
     providerContext(),
     defineSmtpProviderConfig({

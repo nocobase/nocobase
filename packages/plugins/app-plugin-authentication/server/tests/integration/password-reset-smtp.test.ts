@@ -50,9 +50,13 @@ async function receiver(stall = false) {
   return { port: address.port, messages, sockets, close };
 }
 
-it.each(['http://localhost', 'https://public.example.test'])(
-  'resets through real SMTP without notification or authorization using public origin %s',
-  async (publicOrigin) => {
+it.each([
+  ['http://localhost', 'legacy'],
+  ['https://public.example.test', 'default'],
+  ['https://public.example.test', 'named'],
+] as const)(
+  'resets through real SMTP without notification or authorization using public origin %s and %s mailer',
+  async (publicOrigin, mode) => {
     const json = (body: unknown) => ({
       method: 'POST',
       headers: { 'content-type': 'application/json', origin: publicOrigin },
@@ -63,16 +67,33 @@ it.each(['http://localhost', 'https://public.example.test'])(
       createServer: createStandaloneServer,
       config: {
         app: { publicOrigin },
-        notification: {
-          channels: {
-            'system-email': {
-              provider: 'smtp',
-              host: '127.0.0.1',
-              port: smtp.port,
-              from: 'sender@example.test',
-            },
-          },
-        },
+        ...(mode === 'legacy'
+          ? {
+              notification: {
+                channels: {
+                  'system-email': {
+                    provider: 'smtp',
+                    host: '127.0.0.1',
+                    port: smtp.port,
+                    from: 'sender@example.test',
+                  },
+                },
+              },
+            }
+          : {
+              auth: {
+                passwordReset:
+                  mode === 'default' ? true : { mailer: 'marketing' },
+              },
+              mail: {
+                [mode === 'default' ? 'default' : 'marketing']: {
+                  provider: 'smtp',
+                  host: '127.0.0.1',
+                  port: smtp.port,
+                  from: 'sender@example.test',
+                },
+              },
+            }),
       },
     });
     try {
@@ -156,5 +177,22 @@ it.each(['http://localhost', 'https://public.example.test'])(
       await app.close();
       await smtp.close();
     }
+  },
+);
+
+it.each([
+  { auth: { passwordReset: true } },
+  { auth: { passwordReset: { mailer: 'missing' } } },
+  {
+    auth: {
+      passwordReset: { mailer: 'default', emailChannel: 'system-email' },
+    },
+  },
+])(
+  'refuses startup for an unresolved or ambiguous reset mailer',
+  async (config) => {
+    await expect(
+      createTestApp({ createServer: createStandaloneServer, config }),
+    ).rejects.toThrow(/auth\.passwordReset/u);
   },
 );

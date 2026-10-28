@@ -26,6 +26,9 @@ describe('Examples Mail environment composition', () => {
         env: {
           MAIL_OAUTH_RETURN_URL: '/mail/accounts',
           MAIL_SYNC_BATCH_SIZE: '15',
+          MAIL_PROVIDER: 'smtp',
+          MAIL_HOST: 'smtp.example.test',
+          MAIL_PORT: '2525',
         },
         registerDisposer(): void {},
       },
@@ -38,9 +41,16 @@ describe('Examples Mail environment composition', () => {
       'demo-imap-smtp': { type: 'mail-example-imap-smtp' },
     });
     expect(runtime.config.get('mail.mail')).toBeUndefined();
-    expect(
-      Object.keys(runtime.config.sectionEnvironmentVariables()),
-    ).toHaveLength(7);
+    expect(runtime.config.get('mail.default')).toEqual({
+      provider: 'smtp',
+      host: 'smtp.example.test',
+      port: 2525,
+    });
+    expect(runtime.config.sectionEnvironmentVariables()).toMatchObject({
+      MAIL_HOST: 'mail.default.host',
+      MAIL_OAUTH_RETURN_URL: 'mail.oauthReturnUrl',
+    });
+    expect(await runtime.config.validate()).toEqual([]);
     expect(runtime.config.publicValues()).toEqual({});
   });
 });

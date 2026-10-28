@@ -301,3 +301,7 @@ Trusted middleware can call `addRepositoryRequestConstraint(context, { repositor
 ## Inspecting registered plugins
 
 `app.registeredServerPlugins` is an immutable snapshot of explicit Server registrations, including provider-only and locales-only plugins. Each entry contains the resolved package identity, version, locations and static contribution counts. Reading it never imports plugins again, constructs providers or executes route factories. It establishes registration rather than configuration or actual use. `AppPluginApplication` makes the snapshot optional for compatibility with older and hand-composed hosts. Plugins exposing this information over HTTP must enforce their own access boundary and avoid returning filesystem locations or private plugin options.
+
+## Outbound mail
+
+See [outbound mail configuration and migration](docs/mail.md) for shared SMTP/Resend senders used by authentication and notifications.

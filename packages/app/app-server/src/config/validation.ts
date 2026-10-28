@@ -1,3 +1,4 @@
+import { validateMailConfiguration } from './mail.js';
 import type { ConfigMap } from '@nocobase/config';
 
 import type {
@@ -66,7 +67,7 @@ export async function validateConfigSections(
   overrides: ConfigMap,
   sections: ReadonlyMap<string, AppConfigRules>,
 ): Promise<ConfigIssue[]> {
-  const issues: ConfigIssue[] = [];
+  const issues: ConfigIssue[] = validateMailConfiguration(current);
   for (const [section, rules] of sections) {
     issues.push(...publicPathIssues(current, section, rules.public));
     const value = readPath(current, [section]);

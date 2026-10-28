@@ -1,3 +1,5 @@
+import { validateMailConfiguration } from '../config/mail.js';
+import { loggingToken } from '../logging/token.js';
 import {
   createMailTransport,
   isMailChannelConfig,
@@ -16,17 +18,28 @@ import {
   defineAppConfig,
   resolveChannelType,
   envString,
+  envInteger,
+  envBoolean,
   type AppConfigDefinition,
   type AppConfigFactory,
   type ConfigValidator,
+  type EnvironmentMapping,
 } from '../config/index.js';
 import type { AppPluginApplication } from '../plugins/index.js';
+
+/** Named outbound configurations; Mail plugin settings may coexist in this section. */
+export type MailConfig = Readonly<Record<string, unknown>>;
+
+/** Keep legacy channel identities distinct from mail names during migration. */
+export const legacyMailerName = (name: string): string =>
+  `notification.channels.${name}`;
 
 export interface MailChannelsConfig {
   readonly channels: Readonly<Record<string, unknown>>;
 }
 
 export interface Mailer {
+  provider?(name: string): 'smtp' | 'resend' | undefined;
   available(channel: string): boolean;
   send(
     channel: string,
@@ -115,30 +128,95 @@ export function defineMailChannelsConfig<T extends MailChannelsConfig>(
   });
 }
 
-export function createMailer(config: MailChannelsConfig): Mailer {
+/** Environment parser errors must not echo operator-supplied values. */
+function mailEnvironment(mapping: EnvironmentMapping): EnvironmentMapping {
+  return {
+    ...mapping,
+    parse(value) {
+      try {
+        return mapping.parse ? mapping.parse(value) : value;
+      } catch {
+        throw new Error(
+          `Invalid environment value at mail.${mapping.path}. Check the declared variable type.`,
+        );
+      }
+    },
+  };
+}
+
+/** Declare outbound mail without publishing credentials to the browser. */
+export function defineMailConfig<T extends object = MailConfig>(
+  definition: AppConfigDefinition<T> = { defaults: {} as T },
+): AppConfigFactory<T> {
+  return defineAppConfig({
+    ...definition,
+    public: [],
+    env: {
+      MAIL_PROVIDER: envString('default.provider', { required: false }),
+      MAIL_HOST: envString('default.host', { required: false }),
+      MAIL_PORT: mailEnvironment(
+        envInteger('default.port', { required: false }),
+      ),
+      MAIL_SECURE: mailEnvironment(
+        envBoolean('default.secure', { required: false }),
+      ),
+      MAIL_USER: envString('default.auth.user', { required: false }),
+      MAIL_PASSWORD: envString('default.auth.pass', {
+        secret: true,
+        required: false,
+      }),
+      MAIL_FROM: envString('default.from', { required: false }),
+      MAIL_API_KEY: envString('default.apiKey', {
+        secret: true,
+        required: false,
+      }),
+      ...definition.env,
+    },
+  });
+}
+
+export function createMailer(
+  config: MailChannelsConfig = { channels: {} },
+  mail?: MailConfig,
+): Mailer {
   const transports = new Map<string, MailTransport>();
   let closed = false;
-  const available = (channel: string): boolean => {
-    const value = mailChannel(config.channels[channel]);
-    return !closed && value !== undefined && value.enabled !== false;
+  const resolve = (name: string): EmailChannelConfig | undefined => {
+    const prefix = 'notification.channels.';
+    return name.startsWith(prefix)
+      ? mailChannel(config.channels[name.slice(prefix.length)])
+      : mail === undefined
+        ? mailChannel(config.channels[name])
+        : mailChannel(mail[name]);
   };
   return {
-    available,
-    async send(channel, message, options): Promise<MailResult> {
-      const value = mailChannel(config.channels[channel]);
-      if (closed || !value || value.enabled === false)
-        return {
-          status: 'failed',
-          disposition: 'never',
-          error: {
-            category: 'configuration',
-            message: 'Email channel unavailable.',
-          },
-        };
-      let transport = transports.get(channel);
+    provider(name) {
+      return resolve(name)?.provider;
+    },
+    available(name) {
+      const value = resolve(name);
+      return !closed && value !== undefined && value.enabled !== false;
+    },
+    async send(name, message, options): Promise<MailResult> {
+      const identity =
+        mail === undefined && !name.startsWith('notification.channels.')
+          ? legacyMailerName(name)
+          : name;
+      let transport = transports.get(identity);
+      if (closed) transport = undefined;
       if (!transport) {
+        const value = resolve(name);
+        if (closed || !value || value.enabled === false)
+          return {
+            status: 'failed',
+            disposition: 'never',
+            error: {
+              category: 'configuration',
+              message: 'Mailer unavailable.',
+            },
+          };
         transport = createMailTransport(value);
-        transports.set(channel, transport);
+        transports.set(identity, transport);
       }
       return transport.send(message, options);
     },
@@ -160,8 +238,22 @@ export class MailerProvider extends ServiceProvider<AppPluginApplication> {
         this.app.config.get<MailChannelsConfig>('notification') ?? {
           channels: {},
         },
+        this.app.config.get<MailConfig>('mail') ?? {},
       ),
     );
+  }
+  public override async boot(): Promise<void> {
+    const warning = validateMailConfiguration(this.app.config.raw()).find(
+      (issue) => issue.level === 'warning',
+    );
+    if (!warning) return;
+    const message = `${warning.message} ${warning.fix}`;
+    if (this.app.container.has(loggingToken))
+      this.app.container
+        .resolve(loggingToken)
+        .getLogger('mail')
+        .warn({}, message);
+    else console.warn(message);
   }
   public override async shutdown(): Promise<void> {
     await this.app.container.resolveIfCreated(mailerToken)?.close();

@@ -63,3 +63,7 @@ Verify channels through the normal business flow or a server-side command resolv
 The running application documents the log routes under the `Notification` tag at `/api/swagger/docs` (JSON at `/api/swagger`, signed in). Their operation IDs are `notificationsListLogs` and `notificationsGetLog`. The plugin does not expose a generic HTTP send endpoint or test form metadata. An application-owned send endpoint must enforce its business authorization and recipient rules.
 
 Verification creates a real delivery. Scope the channel and recipient before sending, and preserve existing logs, including historical test notifications.
+
+## Shared outbound email
+
+Configure SMTP/Resend under `mail.<name>` with the host `defineMailConfig` factory and register `MailerProvider`. Built-in email channels use `{ provider: email }` for `mail.default`, or `{ provider: email, mailer: marketing }` for `mail.marketing`. Authentication password reset can share the same transport, but sends directly without notification records, queue or retries. Ordinary notifications keep their queue and history; Resend retains delivery-ID idempotency. Missing or disabled mailer references fail startup. Legacy SMTP/Resend channels still work with a startup migration warning until v4.0.0; move credentials to `mail` and replace the old channel with an email reference. Default secrets use `MAIL_PASSWORD` / `MAIL_API_KEY`; named senders require explicit mappings marked `secret: true`.
