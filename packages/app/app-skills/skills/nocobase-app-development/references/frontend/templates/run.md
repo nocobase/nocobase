@@ -14,6 +14,13 @@
 - Tested viewports, themes and languages:
 - Plugin owner and host configuration, if applicable:
 
+## Component check
+
+- Checker command, owning package and scanned files/count:
+- Result and unhandled findings (or Not verified with reason):
+- Printed exceptions, their reasons and source-review outcome:
+- Other custom/wrapped interactions reviewed against the design component list:
+
 ## Baseline
 
 Console errors seen on an existing page (for example, the homepage). They come from the application shell and are not issues of this page:

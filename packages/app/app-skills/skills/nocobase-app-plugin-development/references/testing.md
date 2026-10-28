@@ -51,6 +51,10 @@ The application Skill's complete examples live under `packages/app/app-skills/sk
 
 Maintained executable fixtures also live in `packages/tools/app-testing/tests/`, with its minimal App in `tests/fixtures/app/`, and scaffold tests in `packages/tools/create-plugin/template/tests/`. Inspect the current exports and fixture configuration before borrowing code; keep tests focused on the plugin's behavior rather than copying the harness's own tests.
 
+## Component reuse check
+
+For changed client source, run [the shared component checker](ui-design.md#verify-component-reuse) with the plugin as its root. Record scanned scope, findings and reviewed exceptions alongside the source/import audit. Missing dependencies or parse errors are incomplete checks, not a pass. Follow the plugin test commands above as well; this scan neither runs browser checks nor proves every custom wrapper reuses shadcn.
+
 ## Select observable checks
 
 | Changed surface           | Verify                                                                                                                    |

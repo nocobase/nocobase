@@ -2,6 +2,10 @@
 
 Use these checks with the existing [review checklist](ui-guidelines.md#review-checklist), not as another review round. Applications and plugins share the same outcomes; the owning development Skill supplies test commands and the host used for integration. Read the [design contract](design-contract.md) before classifying a default-pattern difference as a failure.
 
+## Component reuse and source evidence
+
+Apply [component selection and source review](component-selection.md). Compare the planned components with actual imports and wrapper implementations; include each changed interaction. Record the checker command, scope and result, then review every exception and any interaction outside its detection scope. An unexplained hand-built duplicate is a guideline violation; a successful scan alone does not prove reuse. For a quick change, put this evidence in the delivery report.
+
 ## Reference fidelity
 
 - Open the original reference, not only the written summary. Compare the declared `V` requirements and `D` criteria at the recorded viewport and state. Check grouping, hierarchy, density, action location, overlay choice and the visual qualities selected by the reference mode.

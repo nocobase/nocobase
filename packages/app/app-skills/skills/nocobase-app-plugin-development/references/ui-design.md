@@ -27,6 +27,10 @@ Use the shared workflow's quick/theme/full classification, design/review templat
 - For copy, use [plugin internationalization](i18n.md), including all supported plugin languages, rather than assuming the host's locale keys exist.
 - For implementation checks, use [testing and delivery](testing.md). Do not run the App workflow's application-only commands in the plugin or rewrite host routes to imitate an App example.
 
+## Verify component reuse
+
+Read `component-selection.md` beside the shared design contract. Use its selection order, component-source table, narrow native-exception rules and checker. From an installed App root, run `node .agents/skills/nocobase-app-development/scripts/check-ui-components.mjs --root packages/<plugin> <changed-client-paths-relative-to-plugin>`. In a source checkout, the script is `packages/app/app-skills/skills/nocobase-app-development/scripts/check-ui-components.mjs` and `--root` is the plugin directory. Resolve these paths before execution; a standalone plugin may use the synchronized script from its fixture App. Run against plugin-owned source, not just a host page that mounts it. Review actual imports and wrappers, every printed exception and the cases the checker cannot detect.
+
 ## Verify the assembled system
 
 Apply the shared acceptance checks inside the host, including reference fidelity, actual footer geometry, keyboard/focus behavior, nested overlays, translated long labels, and affected cross-module return paths. Verify theme and density changes do not break the plugin, and plugin styles do not alter surrounding host UI. Keep focused browser regression coverage when changing a shared overlay. Record unavailable host/browser evidence as Not verified, not a pass inferred from a package build.

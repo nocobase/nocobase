@@ -29,6 +29,14 @@ One row for every line of the "Review checklist" at the end of [`ui-guidelines.m
 | --------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------- |
 | Page template and overlay choices (T1–T5, I1) | Pass / Fail / Not verified / Not applicable (why) | Design section, screenshot file name or code location |
 
+## Component source review
+
+| Interaction / wrapper | Actual source and underlying primitive | Matches selection order?   | Custom/native justification and behavior evidence |
+| --------------------- | -------------------------------------- | -------------------------- | ------------------------------------------------- |
+|                       |                                        | Pass / Fail / Not verified |                                                   |
+
+At design review, verify the planned sources and custom gaps. At acceptance, inspect the actual imports and wrapper source, record the checker scope/result, and review its exceptions and undetected cases. Do not equate an uppercase component name or a clean scan with shadcn reuse.
+
 ## Reference comparison
 
 | Reference requirement | Mode and viewport/state | Result                     | Evidence or authorized difference |

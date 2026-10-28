@@ -64,6 +64,8 @@ A small page change reads existing decisions and updates only what it changes. D
 
 ## From design to shadcn components
 
+Follow [component selection and source review](component-selection.md) for the reuse order, custom exceptions, source evidence and automated check. Visual page exceptions do not silently waive component reuse.
+
 Inspect the installed component source and `components.json` before relying on widths, spacing, responsive order, close behavior or footer layout. Keep the version-matched [shadcn integration guide](references/shadcn.md) as the implementation entry. Map reference colors, type, density and radius into the existing [theme](references/theme.md); use existing component variants and composition before introducing custom components. For plugin-owned code, use the plugin Skill's component ownership, generation, theme and testing instructions instead of the application's import paths or commands.
 
 When establishing or changing a system-wide theme or component pattern, use an existing component showcase or a scoped development fixture to show the affected variants and states together: normal, focus, disabled, pending, error and long content, in supported light/dark themes. Add one realistic composition, such as a customer form in its actual overlay. Keep contrast checks next to the foreground/background pair. Do not generate a new showcase application or install every primitive for a small change.

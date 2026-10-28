@@ -106,6 +106,8 @@ For initialization prerequisites introduced by the feature, apply [setup readine
 
 ## Frontend work
 
+Before implementing interactions, follow [component selection and source review](references/frontend/component-selection.md): existing business component → installed shadcn primitive → registry addition → justified custom composition/primitive. Record the actual component source and run the targeted component checker before delivery; a matching screenshot alone does not justify duplicating a primitive.
+
 Application and plugin UI share [the UI design contract](references/frontend/design-contract.md). Read the application's existing design records and original UI references first: record whether a reference controls appearance, structure or style, apply authorized page exceptions, and retain reusable decisions outside synchronized Skills. Use the contract's system-design section when planning a business system across modules; do not redesign the system for a small edit. Plugin implementation still belongs to `nocobase-app-plugin-development`, whose UI entry points to these same design and acceptance rules.
 
 For business lists, reuse the template-provided `DataTable` and companions from `#components/data-table`, backed by the supported TanStack Table v8 dependency. Use its controlled manual mode for server paging/sorting. Do not replace it with an agent-written table engine when a dependency version is incompatible; inspect and repair the dependency first. See [tables](references/frontend/references/table.md).

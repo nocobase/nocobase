@@ -59,11 +59,11 @@ Wireframe:
 
 ## 4. Component list
 
-| Area | Component | Notes |
-| ---- | --------- | ----- |
-|      |           |       |
+| Area / interaction | Component and underlying primitive | Source file / public import / registry item | Reused / Added / Composed / Custom | Custom gap, alternatives and verification |
+| ------------------ | ---------------------------------- | ------------------------------------------- | ---------------------------------- | ----------------------------------------- |
+|                    |                                    |                                             |                                    |                                           |
 
-Components come from `client/components/ui/` or `client/components/`; for a component that has to be added, mark it "New" and give its source (the shadcn registry name).
+Follow [component selection](../component-selection.md): reuse existing business components, then installed primitives, then add missing registry items. List the source of local wrappers and their underlying primitives. For custom/native interactions, explain why reuse or composition cannot satisfy the requirement (or cite the explicit user instruction), and map their behavior to acceptance criteria. Use the owning plugin's paths for plugin UI.
 
 ## 5. States
 

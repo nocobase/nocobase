@@ -18,6 +18,8 @@ This ownership determines which package imports, UI primitives, locales, depende
 
 ## Start common UI with shadcn/ui
 
+Use the shared selection order and source verification in [the UI entry](ui-design.md#verify-component-reuse). Prefer an existing plugin-owned business composition before adding a primitive; document an unmet capability before implementing a custom interaction. A UI reference changes the visual target, not automatically the component foundation.
+
 Before implementing buttons, inputs, forms, selects, dialogs, sheets, tables, tabs, tooltips, dropdown menus, and similar common patterns, check shadcn/ui and generate the matching primitive into the plugin. Use ordinary semantic HTML for document structure and Tailwind utilities for composition, but do not hand-build a duplicate interactive primitive when shadcn provides one.
 
 shadcn/ui distributes source rather than a shared NocoBase runtime package. Runtime UI used by a plugin belongs to that plugin under `client/components/ui/`, is published with the plugin, and resolves through that plugin's `package.json#imports`. Registry items use a different ownership model: once installed, their source belongs to the receiving package and resolves its own `#components/ui/*` mappings.
