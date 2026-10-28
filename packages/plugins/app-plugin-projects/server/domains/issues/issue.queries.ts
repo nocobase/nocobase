@@ -39,6 +39,7 @@ import {
   deletedIssues,
   requireVisible,
   visibleIssues,
+  visibleIssueIds,
 } from './issue.access.js';
 import {
   findIssue,
@@ -57,6 +58,11 @@ import { FIXED_STATUSES } from '../../../shared/statuses.js';
 import { oneOf } from '../../kernel/db.js';
 
 export interface IssueQueries {
+  /** Reauthorize explicit ids without hydrating issue rows, children or dependency counts. */
+  visibleIds(
+    viewer: Viewer,
+    ids: readonly string[],
+  ): Promise<ReadonlySet<string>>;
   /** Authorized relations for database-side tree grouping and exact statistics. */
   hierarchySource(
     viewer: Viewer,
@@ -367,6 +373,7 @@ function unknownStatus(key: string): StatusDefinition {
 
 export function createIssueQueries(deps: QueryDeps): IssueQueries {
   return {
+    visibleIds: (viewer, ids) => visibleIssueIds(deps.tx.read(), viewer, ids),
     hierarchySource: (viewer, query) =>
       hierarchySource(deps.tx.read(), viewer, query),
     async hierarchy(viewer, query, options) {
