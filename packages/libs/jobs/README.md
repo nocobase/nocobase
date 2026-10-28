@@ -2,10 +2,10 @@
 
 Ordinary one-off tasks and persistent recurring jobs for NocoBase applications. The application's jobs service hands each consumer — a plugin, or the application's own code — a scoped `JobExecutor` for tasks or `ScheduleExecutor` for recurring rules. They share application configuration, service ownership and shutdown, but use separate backend identities and lifecycles.
 
-| Adapter  | Backend                                                                                  | Deployment                                                                              |
-| -------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `redis`  | BullMQ ordinary queues and job schedulers, through public APIs only                      | Multiple workers claim tasks and firings; recovery can replay work                      |
-| `memory` | Process memory, read from a local state file at setup and written back whole at shutdown | One process; a process killed without shutting down loses what changed since it started |
+| Adapter  | Owner                                        | Deployment                                                  |
+| -------- | -------------------------------------------- | ----------------------------------------------------------- |
+| `memory` | This package                                 | One process; pending snapshots are written only at shutdown |
+| `redis`  | Commercial `@nocobase/app-plugin-jobs-redis` | Multiple workers; recovery can replay accepted work         |
 
 The package exports job classes, errors, factories and types. It holds no module-level service or registry and reads neither application settings nor the process environment. Applications compose it through `@nocobase/app-server/jobs`, which supplies the application name, the storage directory and the logger. Plugins and application code use it through that composition, never by creating a service of their own.
 
@@ -45,12 +45,6 @@ const jobs: AppConfigFactory<AppJobsConfig> = defineAppConfig(({ paths }) => ({
     adapter: 'memory',
     persistence: { path: paths.storage('jobs') },
   },
-  redis: {
-    adapter: 'redis',
-    connection: { host: '127.0.0.1', port: 6379, db: 0 },
-    removeOnComplete: { count: 1000 },
-    removeOnFail: { age: 604_800 },
-  },
 }));
 
 export default jobs;
@@ -66,22 +60,18 @@ The `jobs` section maps configuration keys to configurations, and `default` name
 
 ```yaml
 jobs:
-  default: redis
-  redis:
-    connection:
-      host: redis.internal
-      port: 6379
+  default: memory
+  memory:
+    adapter: memory
 ```
 
-| Option                              | Adapter | Meaning                                                                                                                                                                                           |
-| ----------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `adapter`                           | both    | `redis` or `memory`.                                                                                                                                                                              |
-| `namespace`                         | both    | Isolates applications that share a backend. Defaults to the application name. Set it when deployments with the same name share one Redis, and use a hash tag such as `{my-app}` on Redis Cluster. |
-| `concurrency`                       | both    | Jobs one executor worker runs at the same time, not a global limit. Defaults to `1`.                                                                                                              |
-| `attempts`                          | both    | Ordinary failure budget per task or firing, the first try included. Defaults to `1`. Ordinary task interruption and recovery do not consume this budget.                                          |
-| `connection`                        | redis   | Redis connection options, handed to BullMQ as they are.                                                                                                                                           |
-| `removeOnComplete` / `removeOnFail` | redis   | How many finished jobs BullMQ keeps: `true`, a count, or `{ count, age }` with `age` in seconds. Default `{ count: 1000 }` and `{ age: 604800 }`; applies to ordinary tasks and schedule firings. |
-| `persistence.path`                  | memory  | The directory holding the state files. Defaults to `storage/jobs`.                                                                                                                                |
+| Option             | Adapter | Meaning                                                                                                                                                                                           |
+| ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `adapter`          | both    | `memory`, or a name supplied by a registered backend plugin.                                                                                                                                      |
+| `namespace`        | both    | Isolates applications that share a backend. Defaults to the application name. Set it when deployments with the same name share one Redis, and use a hash tag such as `{my-app}` on Redis Cluster. |
+| `concurrency`      | both    | Jobs one executor worker runs at the same time, not a global limit. Defaults to `1`.                                                                                                              |
+| `attempts`         | both    | Ordinary failure budget per task or firing, the first try included. Defaults to `1`. Ordinary task interruption and recovery do not consume this budget.                                          |
+| `persistence.path` | memory  | The directory holding the state files. Defaults to `storage/jobs`.                                                                                                                                |
 
 A consumer's configuration is chosen as follows:
 
@@ -89,7 +79,15 @@ A consumer's configuration is chosen as follows:
 2. Otherwise the key `jobs.default` names. A default naming no configuration is an error.
 3. Without `jobs.default`, a built-in memory configuration under `storage/jobs`. Outside `develop` and `development` this logs a warning, because it serves one process only. Set `jobs.default: memory` to keep that choice without the warning.
 
-Redis must persist its data (AOF or RDB) and use `maxmemory-policy noeviction`; otherwise tasks and rules can be evicted or lost on restart. Every consumer opens its own queue and worker connections, so count them in the connection budget.
+Redis is not bundled. Install and register `@nocobase/app-plugin-jobs-redis` on every producer and consumer before selecting `adapter: redis`. Its `./config` export owns Redis connection and retention types; these are no longer exported by `@nocobase/jobs`. A selected backend that has no registered adapter throws `JobsBackendNotRegisteredError`; there is no Memory fallback. An unused Redis configuration does not require the plugin. Keep the application's existing Redis configuration, namespace and scope unchanged during migration; see the commercial plugin README for configuration and rolling-upgrade requirements.
+
+When upgrading an application generated from an older template, add `adapter: redis` explicitly to every Redis Jobs entry in `config.yml` that previously relied on the template's TypeScript defaults. Templates now provide only Memory defaults; `jobs.redis.connection` alone does not identify a Redis backend. Preserve existing connection, namespace and scope values, and install and register the commercial Server plugin before selecting those configurations.
+
+### Backend extension contract
+
+`JobsBackendRegistry` is owned by one application or explicit standalone test service. A backend registers one `JobsBackendAdapter` containing a synchronous pure `resolve(config, base)` and both `createJobExecutor(config, defaults)` and `createScheduleExecutor(config, defaults)` factories. Import the public executor implementations and backend contracts from `@nocobase/jobs/backend`; never import package-private Redis files. The shared executors continue to own payload validation, Job reconstruction, rule lifecycle, events and interruption behavior.
+
+A Server provider synchronously calls `app.container.resolve(jobsBackendRegistryToken).register(adapter)` during `register()`. Resolving the Jobs service early is permitted, but acquiring an executor before the registry freezes at boot is not. Registration rejects duplicate names, incomplete pairs and late changes. Pure configuration validation at boot checks the default; named configurations are validated only when selected. Factories remain lazy, and registration, validation and executor acquisition must not open backend connections. Standalone tests may pass an explicitly registered registry as the third argument to `createJobExecutorService`; the default standalone registry supplies Memory only.
 
 ## Ordinary one-off tasks
 
@@ -278,9 +276,7 @@ Rules live in the backend; handlers live in the process that registered them.
 
 ## The Schedule redis adapter
 
-- The namespace is the BullMQ `prefix` and the scope is the queue name. Every function goes through the public API of BullMQ's `Queue`, `Worker` and `Job`: the package opens no Redis client of its own and relies on no key layout, script or job id format.
-- Each firing runs on one instance, and a worker that stops leaves the rule to the others.
-- Redis Cluster is not recommended with BullMQ 6.3.6. If it is used, the namespace must be a hash tag such as `{my-app}`.
+The implementation is owned by `@nocobase/app-plugin-jobs-redis`, not this package. Its namespace remains the BullMQ prefix and its scope remains the queue name; registration and connection requirements are documented with the commercial plugin. Recovery can replay effects, so handlers still need idempotency.
 
 ## Testing
 
@@ -304,5 +300,5 @@ This package's own suites:
 
 ```bash
 pnpm --filter @nocobase/jobs test
-pnpm --filter @nocobase/jobs test:integration  # starts Redis in Docker
+pnpm --filter @nocobase/app-plugin-jobs-redis test:integration  # commercial repository; starts Redis in Docker
 ```

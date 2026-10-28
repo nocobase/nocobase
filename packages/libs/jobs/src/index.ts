@@ -14,13 +14,15 @@ export {
 } from './job/types.js';
 export type {
   MemoryJobsAdapterConfig,
-  RedisJobsAdapterConfig,
   JobsAdapterConfig,
   JobsConfig,
-  JobsRedisConnectionOptions,
-  JobsRetentionPolicy,
 } from './config.js';
 export { createJobExecutorService } from './create.js';
+export {
+  JobsBackendRegistry,
+  JobsBackendNotRegisteredError,
+  type JobsBackendAdapter,
+} from './adapters.js';
 export { ScheduleHandlerNotRegisteredError } from './schedule/executor.js';
 export type {
   ManagedJobExecutorService,

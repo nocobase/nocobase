@@ -87,6 +87,7 @@ describe('JobExecutorServiceProvider', () => {
     const { app, container } = await application();
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
+    await provider.boot();
     const service = container.resolve(jobExecutorServiceToken);
     const handled = vi.fn();
 
@@ -135,6 +136,7 @@ describe('JobExecutorServiceProvider', () => {
       nodeEnv: 'production',
     });
     provider.register();
+    await provider.boot();
     const service = container.resolve(jobExecutorServiceToken);
     const executor = service.getJobExecutor(SCOPE);
 
@@ -164,6 +166,7 @@ describe('JobExecutorServiceProvider', () => {
     });
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
+    await provider.boot();
     const service = container.resolve(jobExecutorServiceToken);
     const first = service.getJobExecutor(SCOPE, 'first');
     expect(service.getJobExecutor(SCOPE, 'second')).toBe(first);
@@ -186,6 +189,7 @@ describe('JobExecutorServiceProvider', () => {
       nodeEnv: 'production',
     });
     provider.register();
+    await provider.boot();
     const service = container.resolve(jobExecutorServiceToken);
     const executor = service.getJobExecutor(SCOPE, 'missing');
 
@@ -215,6 +219,7 @@ describe('JobExecutorServiceProvider', () => {
       const { app, container, logger } = await application();
       const provider = new JobExecutorServiceProvider(app, { nodeEnv });
       provider.register();
+      await provider.boot();
 
       container.resolve(jobExecutorServiceToken).getJobExecutor(SCOPE);
       await provider.shutdown();
@@ -227,6 +232,7 @@ describe('JobExecutorServiceProvider', () => {
     const { app, container } = await application({ default: 'missing' });
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
+    await expect(provider.boot()).rejects.toThrow(/jobs.default/u);
     const service = container.resolve(jobExecutorServiceToken);
 
     expect(() => service.getJobExecutor(SCOPE)).toThrow(/jobs.default/u);
@@ -240,6 +246,7 @@ describe('JobExecutorServiceProvider', () => {
     });
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
+    await provider.boot();
     const service = container.resolve(jobExecutorServiceToken);
     const ordinary = service.getJobExecutor(SCOPE);
     const otherScope = '@acme/other';
@@ -290,6 +297,7 @@ describe('JobExecutorServiceProvider', () => {
 
     expect(provider.name).toBe('@nocobase/app-server/jobs');
     provider.register();
+    await provider.boot();
     expect(container.resolveIfCreated(jobExecutorServiceToken)).toBeUndefined();
 
     const service = container.resolve(jobExecutorServiceToken);
@@ -305,6 +313,7 @@ describe('JobExecutorServiceProvider', () => {
       nodeEnv: 'production',
     });
     provider.register();
+    await provider.boot();
     const { scope, job: definition } = await job();
 
     const executor = container
@@ -332,6 +341,7 @@ describe('JobExecutorServiceProvider', () => {
       const { app, container, logger } = await application();
       const provider = new JobExecutorServiceProvider(app, { nodeEnv });
       provider.register();
+      await provider.boot();
 
       container.resolve(jobExecutorServiceToken).getScheduleExecutor(SCOPE);
 
@@ -352,6 +362,7 @@ describe('JobExecutorServiceProvider', () => {
       nodeEnv: 'production',
     });
     provider.register();
+    await provider.boot();
 
     const executor = container
       .resolve(jobExecutorServiceToken)
@@ -370,6 +381,7 @@ describe('JobExecutorServiceProvider', () => {
     const { app } = await application();
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
+    await provider.boot();
 
     await provider.start();
     await provider.shutdown();
@@ -382,6 +394,7 @@ describe('JobExecutorServiceProvider', () => {
     const { app, container } = await application();
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
+    await provider.boot();
     const executor = container
       .resolve(jobExecutorServiceToken)
       .getScheduleExecutor(SCOPE);

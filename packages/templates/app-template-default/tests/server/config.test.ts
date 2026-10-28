@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -31,6 +31,37 @@ describe('application config', () => {
   });
   afterAll(async () => {
     await rm(configRoot, { recursive: true, force: true });
+  });
+
+  it('merges the Redis YAML example with the real template defaults', async () => {
+    const source = await readFile(
+      new URL('../../config.example.yml', import.meta.url),
+      'utf8',
+    );
+    const example = source.match(/^# jobs:\n(?:#(?: {2,}.*)?\n)*/m)?.[0];
+    expect(example).toBeDefined();
+    const examplePath = path.join(configRoot, 'redis-example.yml');
+    await writeFile(
+      examplePath,
+      source.replace(example!, example!.replace(/^# ?/gm, '')),
+    );
+    const runtime = await resolveStandaloneAppRuntime(appRuntime, {
+      rootDir: templateRootDir,
+      configPath: examplePath,
+      env: { AUTH_SECRET: 'test-auth-secret-at-least-32-characters' },
+    });
+
+    expect(runtime.config.get<AppJobsConfig>('jobs')).toEqual({
+      memory: {
+        adapter: 'memory',
+        persistence: { path: runtime.paths.storage('jobs') },
+      },
+      default: 'redis',
+      redis: {
+        adapter: 'redis',
+        connection: { host: '127.0.0.1', port: 6379 },
+      },
+    });
   });
 
   it('assembles module defaults in the runtime', async () => {
@@ -87,12 +118,6 @@ describe('application config', () => {
       memory: {
         adapter: 'memory',
         persistence: { path: runtime.paths.storage('jobs') },
-      },
-      redis: {
-        adapter: 'redis',
-        connection: { host: '127.0.0.1', port: 6379, db: 0 },
-        removeOnComplete: { count: 1000 },
-        removeOnFail: { age: 604_800 },
       },
     });
     expect(runtime.config.get<AppSessionConfigInput>('session')!.default).toBe(

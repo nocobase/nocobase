@@ -4,6 +4,7 @@ import {
   type JobsFallbackEvent,
   type JobsLogger,
 } from '@nocobase/jobs';
+import { JobsBackendRegistry } from '@nocobase/jobs/backend';
 import {
   ServiceProvider,
   type ServiceResolver,
@@ -12,7 +13,7 @@ import {
 import { loggingToken } from '../logging/index.js';
 import type { AppPluginApplication } from '../plugins/index.js';
 import type { AppJobsConfig } from './config.js';
-import { jobExecutorServiceToken } from './token.js';
+import { jobExecutorServiceToken, jobsBackendRegistryToken } from './token.js';
 
 export interface JobExecutorServiceProviderOptions {
   /** The application's `NODE_ENV`; the memory fallback is only reported outside development. */
@@ -34,6 +35,7 @@ const DEVELOPMENT_ENVIRONMENTS: ReadonlySet<string> = new Set([
 export class JobExecutorServiceProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-server/jobs';
   private service: ManagedJobExecutorService | undefined;
+  private readonly backends = new JobsBackendRegistry(true);
 
   public constructor(
     app: AppPluginApplication,
@@ -43,11 +45,24 @@ export class JobExecutorServiceProvider extends ServiceProvider<AppPluginApplica
   }
 
   public override register(): void {
+    this.app.container.instance(jobsBackendRegistryToken, this.backends);
     this.app.container.singleton(jobExecutorServiceToken, (container) =>
       this.create(container),
     );
   }
 
+  public override async boot(): Promise<void> {
+    this.backends.freeze();
+    this.backends.select(
+      this.app.config.get<AppJobsConfig>('jobs'),
+      undefined,
+      '@nocobase/app-server/preflight',
+      {
+        appName: this.app.appName,
+        storagePath: this.app.paths.storage('jobs'),
+      },
+    );
+  }
   public override async shutdown(): Promise<void> {
     await this.service?.shutdown();
   }
@@ -75,6 +90,7 @@ export class JobExecutorServiceProvider extends ServiceProvider<AppPluginApplica
           else console.warn(message);
         },
       },
+      this.backends,
     );
     return this.service;
   }

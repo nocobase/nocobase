@@ -1,25 +1,16 @@
 import type { JobsConfig } from './config.js';
-import { createMemoryScheduleExecutor } from './schedule/memory/index.js';
-import { createRedisScheduleExecutor } from './schedule/redis/index.js';
+import { JobsBackendRegistry } from './adapters.js';
 import {
   createJobExecutorServiceWith,
   type ManagedJobExecutorService,
   type JobExecutorServiceDependencies,
 } from './service.js';
 
-/**
- * Creates the jobs service for one application. `config` is the
- * application's `jobs` section; `dependencies` carry what the package
- * would otherwise have to read from the application.
- */
+/** Creates a lazy service. External backends must be explicitly registered. */
 export function createJobExecutorService(
   config: JobsConfig | undefined,
   dependencies: JobExecutorServiceDependencies,
+  registry: JobsBackendRegistry = new JobsBackendRegistry(),
 ): ManagedJobExecutorService {
-  return createJobExecutorServiceWith(config, dependencies, {
-    memory: (resolved, { logger }) =>
-      createMemoryScheduleExecutor(resolved, { logger }),
-    redis: (resolved, { logger }) =>
-      createRedisScheduleExecutor(resolved, { logger }),
-  });
+  return createJobExecutorServiceWith(config, dependencies, registry);
 }

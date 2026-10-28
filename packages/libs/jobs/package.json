@@ -14,6 +14,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./backend": {
+      "types": "./src/backend.ts",
+      "import": "./src/backend.ts"
     }
   },
   "files": [
@@ -24,6 +28,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./backend": {
+        "types": "./dist/backend.d.ts",
+        "import": "./dist/backend.js"
       }
     },
     "access": "public"
@@ -32,7 +40,6 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run tests --exclude **/tests/integration/**",
-    "test:integration": "node ./scripts/test-integration.mjs",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
@@ -41,9 +48,7 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "bullmq": "6.3.6",
-    "cron-parser": "^5.10.0",
-    "ioredis": "catalog:"
+    "cron-parser": "^5.10.0"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

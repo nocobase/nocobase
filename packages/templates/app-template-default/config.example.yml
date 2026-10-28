@@ -146,9 +146,13 @@ snowflake:
 # process that is killed loses what changed since it started. It serves one process: every other process or instance
 # would run its own copy. Set default to memory to keep that without the startup warning, or to redis to run several.
 # Redis must persist its data (AOF or RDB) and use maxmemory-policy noeviction, or schedules can be lost.
+# Install the commercial @nocobase/app-plugin-jobs-redis package and register its Server plugin
+# from @nocobase/app-plugin-jobs-redis/server in server/plugins.ts on every producer and consumer.
+# Upgrading deployments must set adapter: redis explicitly; templates no longer supply Redis defaults.
 # jobs:
 #   default: redis
 #   redis:
+#     adapter: redis
 #     connection:
 #       host: 127.0.0.1
 #       port: 6379
