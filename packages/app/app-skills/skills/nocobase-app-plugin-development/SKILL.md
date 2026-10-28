@@ -21,7 +21,7 @@ These English references adapt the plugin development guide into task-specific i
 | Register, configure, upgrade, disable, unregister, or diagnose plugin integration                     | [Registration and lifecycle](references/registration.md)             |
 | Choose Client components, ServiceProviders, React Providers, configuration, or API access             | [Client architecture](references/client.md)                          |
 | Define Server configuration defaults, environment mappings, validation, or browser-visible fields    | [Plugin configuration](references/configuration.md)                  |
-| Build or change any plugin UI                                                                         | [shadcn components and styling](references/client-components.md)     |
+| Build or change any plugin UI                                                                         | [Shared UI design and host acceptance](references/ui-design.md), then [shadcn components and styling](references/client-components.md) |
 | Add business pages, menus, Tabs, route dialogs/drawers, child routes, or page overrides                 | [Client routing](references/client-routing.md)                       |
 | Design configuration entities, settings permissions, routed editors and safe saves                    | [System settings](references/system-settings.md)                     |
 | Define service contracts, Tokens, dependency injection, or lifecycle                                  | [Services and Providers](references/services.md)                     |
@@ -40,6 +40,8 @@ For Realtime changes, check whether the target workspace or application provides
 For worked implementations and tests, read the matching [Server Route examples](references/server-route-examples.md), [ServiceToken and Provider examples](references/service-examples.md), [Client examples](references/client-examples.md), or [Repository examples](references/repository-examples.md). These supplement the topic references with concrete code and point to maintained source fixtures; adapt their explicit example access policies to the requested product.
 
 ## Rules that apply before implementation
+
+For UI work, first read [the shared UI design entry](references/ui-design.md): it locates the same design contract, reference modes, authorized exceptions and acceptance rules used by application development. Read the host's design decisions before choosing a layout, retain approved decisions outside synchronized Skills, and verify the rendered plugin in the host. Package ownership and implementation remain governed by this Skill.
 
 When creating a page or writing a page component, refer to [Pages, routes, and menus](references/client-pages-and-routes.md) for page component structure and route declarations. For nested pages, page-level navigation Tabs, route dialogs/drawers, or navigation groups, also read [Child routes, Tabs, overlays, navigation groups, and Outlet](references/client-child-routes.md). Before using the page and overlay examples, [copy the required component source into the plugin](references/client-components.md#copy-page-and-route-components-into-the-plugin). The examples import these plugin-owned copies through relative `.js` paths; the host's private breadcrumb component is excluded. For route overlay component availability and hook context boundaries, read [route dialogs and drawers](references/client-routing.md#route-dialogs-and-drawers).
 

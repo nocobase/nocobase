@@ -1,5 +1,7 @@
 # Client Components and shadcn/ui
 
+Before selecting a layout, read [shared UI design and host acceptance](ui-design.md). Original references and the host's confirmed design contract govern visual choices; the instructions below govern plugin-owned implementation. Do not create a separate visual rulebook for plugins.
+
 Use this reference for plugin-owned pages, React Providers, reusable component exports, and internal UI. A component becomes part of runtime behavior only when a Route loads it, a React Provider renders it, another module imports it, or the package exposes it through a public export; there is no `client.components` contribution.
 
 ## Decide component ownership first
