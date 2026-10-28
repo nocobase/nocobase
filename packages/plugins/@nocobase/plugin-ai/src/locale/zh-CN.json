@@ -199,6 +199,7 @@
   "Messages": "消息",
   "Mistral models": "Mistral 模型",
   "300+ latest mainstream models across leading model families": "300+最新各系列主流模型",
+  "Models from OpenAI, Anthropic, Google, DeepSeek and others through one OpenAI-compatible API": "通过一个 OpenAI 兼容 API 使用 OpenAI、Anthropic、Google、DeepSeek 等厂商的模型",
   "Model": "模型",
   "Model ID already exists": "模型标识已存在",
   "Model ID is required": "请输入模型标识",
