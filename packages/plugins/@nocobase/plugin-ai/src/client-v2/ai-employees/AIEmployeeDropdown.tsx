@@ -20,6 +20,8 @@ export type AIEmployeeDropdownProps = {
   currentEmployee?: AIEmployee;
   disabled?: boolean;
   block?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSelect: (aiEmployee: AIEmployee) => void;
 };
 
@@ -50,11 +52,15 @@ export const AIEmployeeDropdown: React.FC<AIEmployeeDropdownProps> = ({
   currentEmployee,
   disabled,
   block = false,
+  open: controlledOpen,
+  onOpenChange,
   onSelect,
 }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const visibleEmployees = aiEmployees.filter(
     (employee) => employee.category === 'business' && employee.deprecated !== true,
   );

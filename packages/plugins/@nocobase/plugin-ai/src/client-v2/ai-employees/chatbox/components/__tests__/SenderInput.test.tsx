@@ -77,6 +77,7 @@ vi.mock('@ant-design/x', async () => {
     Sender: React.forwardRef<
       { nativeElement?: HTMLTextAreaElement },
       {
+        className?: string;
         autoSize?: { minRows: number; maxRows: number };
         submitType?: string;
         value?: string;
@@ -88,14 +89,14 @@ vi.mock('@ant-design/x', async () => {
         }) => React.ReactNode;
         header?: React.ReactNode;
       }
-    >(({ value = '', onChange, onBlur, onSubmit, footer, header, autoSize, submitType }, ref) => {
+    >(({ className, value = '', onChange, onBlur, onSubmit, footer, header, autoSize, submitType }, ref) => {
       const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
       React.useImperativeHandle(ref, () => ({
         nativeElement: textareaRef.current ?? undefined,
       }));
 
       return (
-        <div>
+        <div className={className}>
           {header}
           <textarea
             data-testid="sender-input"
@@ -185,6 +186,7 @@ vi.mock('../CompactSenderOptions', () => ({
 }));
 describe('Sender input state', () => {
   beforeEach(() => {
+    mocks.runtime.mode = 'block';
     mocks.resize = undefined;
     mocks.disconnect.mockClear();
     vi.stubGlobal(
@@ -323,6 +325,19 @@ describe('Sender input state', () => {
     expect(mocks.disconnect).toHaveBeenCalled();
   });
 
+  it('keeps global chat controls and desktop input behavior at sidebar and phone widths', () => {
+    mocks.runtime.mode = 'global';
+    const { container, getByTestId, queryByRole } = render(<Sender />);
+    const input = getByTestId('sender-input');
+    for (const width of [450, 375, 320]) {
+      act(() => mocks.resize?.(width));
+      expect(container.querySelector('.ai-chat-sender-compact-toolbar')).toBeNull();
+      expect(container.querySelector('.ai-chat-sender-responsive')).toBeNull();
+      expect(queryByRole('button', { name: 'Chat options' })).toBeNull();
+      expect(input.getAttribute('data-min-rows')).toBe('2');
+      expect(input.getAttribute('data-submit-type')).toBe('enter');
+    }
+  });
   it('does not intercept Enter while an IME composition is in progress', () => {
     const { getByTestId } = render(<Sender />);
     const input = getByTestId('sender-input');

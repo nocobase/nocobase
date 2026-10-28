@@ -90,10 +90,10 @@ describe('compact sender options', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(trigger);
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
-    expect(getByRole('dialog')).toBeTruthy();
+    expect(getByRole('dialog', { name: 'Chat options' })).toBeTruthy();
     expect(getByText('Work context')).toBeTruthy();
     expect(getByRole('button', { name: 'Select model' })).toBeTruthy();
-    fireEvent.keyDown(getByRole('dialog'), { key: 'Escape', keyCode: 27 });
+    fireEvent.keyDown(getByRole('dialog', { name: 'Chat options' }), { key: 'Escape', keyCode: 27 });
     await waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'));
   });
 

@@ -30,8 +30,10 @@ import { AddLLMModal } from './AddLLMModal';
 export const ModelSwitcher: React.FC<{
   disabled?: boolean;
   block?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   allowedModelKeys?: string[];
-}> = observer(({ disabled, allowedModelKeys, block = false }) => {
+}> = observer(({ disabled, allowedModelKeys, block = false, open, onOpenChange }) => {
   const t = useT();
   const app = useApp();
   const { message } = AntdApp.useApp();
@@ -190,8 +192,8 @@ export const ModelSwitcher: React.FC<{
         disabled={disabled}
         menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
         trigger={['click']}
-        open={isOpen}
-        onOpenChange={setIsOpen}
+        open={open ?? isOpen}
+        onOpenChange={onOpenChange ?? setIsOpen}
         overlayStyle={{ zIndex: 1200 }}
       >
         <button

@@ -33,6 +33,14 @@ const optionsDrawerClassName = css`
 export const CompactSenderOptions: React.FC<{ options: SenderOptions }> = observer(({ options }) => {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<'employee' | 'model' | 'context' | null>(null);
+  const closeOptions = () => {
+    setActiveMenu(null);
+    setOpen(false);
+  };
+  const setMenuOpen = (menu: NonNullable<typeof activeMenu>, nextOpen: boolean) => {
+    setActiveMenu((current) => (nextOpen ? menu : current === menu ? null : current));
+  };
   const runtime = useChatBoxRuntime();
   const { chatBoxModel, chatConversationModel } = runtime;
   const { currentEmployee, readonly, model } = chatBoxModel;
@@ -83,11 +91,32 @@ export const CompactSenderOptions: React.FC<{ options: SenderOptions }> = observ
       </Button>
       <Drawer
         className={optionsDrawerClassName}
-        title={t('Chat options')}
+        title={
+          <span
+            ref={(title) => {
+              // This antd version does not forward aria-label to its dialog element or link the visible title.
+              title?.closest('[role="dialog"]')?.setAttribute('aria-label', t('Chat options'));
+            }}
+          >
+            {t('Chat options')}
+          </span>
+        }
         placement="bottom"
         height="auto"
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={(event) => {
+          if (event.type === 'keydown' && activeMenu) {
+            setActiveMenu(null);
+            return;
+          }
+          closeOptions();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && activeMenu) {
+            event.stopPropagation();
+            setActiveMenu(null);
+          }
+        }}
         forceRender
         zIndex={1150}
         styles={{
@@ -100,13 +129,25 @@ export const CompactSenderOptions: React.FC<{ options: SenderOptions }> = observ
           {showEmployee ? (
             <Flex vertical gap={8}>
               <Typography.Text type="secondary">{t('AI employee')}</Typography.Text>
-              <AIEmployeeSwitcher block disabled={readonly} allowedUsernames={options.allowedAIEmployees} />
+              <AIEmployeeSwitcher
+                block
+                disabled={readonly}
+                allowedUsernames={options.allowedAIEmployees}
+                open={open && activeMenu === 'employee'}
+                onOpenChange={(nextOpen) => setMenuOpen('employee', nextOpen)}
+              />
             </Flex>
           ) : null}
           {showModel ? (
             <Flex vertical gap={8}>
               <Typography.Text type="secondary">{t('Model')}</Typography.Text>
-              <ModelSwitcher block disabled={disabled} allowedModelKeys={options.allowedModels} />
+              <ModelSwitcher
+                block
+                disabled={disabled}
+                allowedModelKeys={options.allowedModels}
+                open={open && activeMenu === 'model'}
+                onOpenChange={(nextOpen) => setMenuOpen('model', nextOpen)}
+              />
             </Flex>
           ) : null}
           {showContext || showSearch ? (
@@ -118,7 +159,9 @@ export const CompactSenderOptions: React.FC<{ options: SenderOptions }> = observ
                     contextItems={contextItems}
                     onAdd={chat.addContextItems}
                     onRemove={chat.removeContextItem}
-                    onSelect={() => setOpen(false)}
+                    open={open && activeMenu === 'context'}
+                    onOpenChange={(nextOpen) => setMenuOpen('context', nextOpen)}
+                    onSelect={closeOptions}
                     disabled={disabled}
                     ignore={(key) => key === 'flow-model.variable'}
                   />

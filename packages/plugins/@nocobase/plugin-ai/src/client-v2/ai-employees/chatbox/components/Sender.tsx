@@ -46,7 +46,9 @@ type UploadRequestOptions = {
 const senderClassName = css`
   width: 100%;
   min-width: 0;
-  container: ai-chat-sender / inline-size;
+  &.ai-chat-sender-responsive {
+    container: ai-chat-sender / inline-size;
+  }
 
   .ant-sender-content {
     padding: 16px;
@@ -183,8 +185,9 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
   const { token } = theme.useToken();
   const senderRef = useRef<SenderRef | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [compact, setCompact] = useState(false);
+  const [narrow, setNarrow] = useState(false);
   const runtime = useChatBoxRuntime();
+  const compact = runtime.mode === 'block' && narrow;
   const { chatBoxModel, chatConversationModel, chatSenderModel } = runtime;
   const currentConversation = chatConversationModel.currentConversation;
   const currentEmployee = chatBoxModel.currentEmployee;
@@ -217,7 +220,7 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
     }
     const updateWidth = (width: number) => {
       if (width > 0) {
-        setCompact(width <= 480);
+        setNarrow(width <= 480);
       }
     };
     updateWidth(container.getBoundingClientRect().width);
@@ -349,7 +352,7 @@ export const Sender: React.FC<SenderOptions> = observer((options) => {
       }}
     >
       <AntSender
-        className={senderClassName}
+        className={`${senderClassName}${runtime.mode === 'block' ? ' ai-chat-sender-responsive' : ''}`}
         value={value}
         ref={senderRef}
         onChange={(nextValue) => {

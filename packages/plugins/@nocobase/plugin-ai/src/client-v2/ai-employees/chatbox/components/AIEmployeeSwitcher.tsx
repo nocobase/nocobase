@@ -17,8 +17,10 @@ import { useChatBoxRuntime } from '../stores/runtime';
 export const AIEmployeeSwitcher: React.FC<{
   disabled?: boolean;
   block?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   allowedUsernames?: string[];
-}> = observer(({ disabled, allowedUsernames, block }) => {
+}> = observer(({ disabled, allowedUsernames, block, open, onOpenChange }) => {
   const repository = useAIConfigRepository();
   const allowedUsernameSet = allowedUsernames?.length ? new Set(allowedUsernames) : null;
   const aiEmployees = allowedUsernameSet
@@ -38,6 +40,8 @@ export const AIEmployeeSwitcher: React.FC<{
       currentEmployee={currentEmployee}
       disabled={disabled}
       block={block}
+      open={open}
+      onOpenChange={onOpenChange}
       onSelect={(employee) =>
         switchAIEmployee(employee, {
           clear: {

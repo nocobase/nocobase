@@ -55,10 +55,12 @@ export const AddContextButton: React.FC<{
   onAdd: (item: ContextItem) => void;
   onRemove: (type: string, uid: string) => void;
   onSelect?: (key: string) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   disabled?: boolean;
   ignore?: (key: string, workContext: WorkContextOptions) => boolean;
   runtime?: ChatBoxRuntime;
-}> = ({ contextItems, onAdd, onRemove, onSelect, disabled, ignore, runtime }) => {
+}> = ({ contextItems, onAdd, onRemove, onSelect, disabled, ignore, runtime, open, onOpenChange }) => {
   const t = useT();
   const app = useApp();
   const ctx = useFlowContext();
@@ -129,6 +131,8 @@ export const AddContextButton: React.FC<{
 
   return (
     <Dropdown
+      open={open}
+      onOpenChange={onOpenChange}
       menu={{ items, onClick }}
       placement="topLeft"
       disabled={disabled || !items.length}
