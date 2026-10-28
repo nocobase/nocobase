@@ -24,9 +24,9 @@ mail:
 notification:
   channels:
     system-email:
-      type: email
+      provider: email
     marketing-email:
-      type: email
+      provider: email
       mailer: marketing
     ops-feishu:
       type: feishu-webhook

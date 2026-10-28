@@ -85,7 +85,7 @@ notification:
       type: in-app
 
     # Email uses mail.default; uncomment after configuring it below.
-    # email:
+    # system-email:
     #   provider: email
     # newsletter:
     #   provider: email

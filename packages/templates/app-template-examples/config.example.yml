@@ -85,7 +85,7 @@ notification:
       type: in-app
 
     # Email uses mail.default; uncomment after configuring it below.
-    # email:
+    # system-email:
     #   provider: email
     # newsletter:
     #   provider: email
@@ -220,7 +220,8 @@ logging:
 #       type: mail-example-imap-smtp
 
 # Shared outbound senders for password reset and notifications (independent of the offline mailbox providers).
-mail: {}
+mail:
+  providers: {} # Offline mailbox defaults come from server/config/mail.ts.
   # Outbound defaults: MAIL_PROVIDER/HOST/PORT/SECURE/USER/PASSWORD/FROM/API_KEY override these fields.
   # YAML is literal; ${NAME} is not expanded. Named senders need explicit env mappings in server/config/mail.ts.
   # default:

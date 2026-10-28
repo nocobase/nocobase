@@ -18,14 +18,14 @@ auth:
   passwordReset: true
 notification:
   channels:
-    email:
+    system-email:
       provider: email
     newsletter:
       provider: email
       mailer: marketing
 ```
 
-`default` is the conventional outbound name. `auth.passwordReset: { mailer: marketing }` selects another sender without requiring `mail.default`; the object enables recovery unless explicitly disabled. A TypeScript `template(data, appName)` returns an `EmailMessage`. Keep `app.publicOrigin` operator-controlled: automatic recovery still requires a trusted reset origin. `false` disables recovery, including custom callbacks. A custom `emailAndPassword.sendResetPassword` takes precedence and needs no mail configuration. Omitting `passwordReset` keeps automatic recovery off and preserves custom callback behavior.
+`system-email` and `newsletter` are application-defined channel names; retain existing channel names when migrating. `default` is the conventional outbound name. `auth.passwordReset: { mailer: marketing }` selects another sender without requiring `mail.default`; the object enables recovery unless explicitly disabled. A TypeScript `template(data, appName)` returns an `EmailMessage`. Keep `app.publicOrigin` operator-controlled: automatic recovery still requires a trusted reset origin. `false` disables recovery, including custom callbacks. A custom `emailAndPassword.sendResetPassword` takes precedence and needs no mail configuration. Omitting `passwordReset` keeps automatic recovery off and preserves custom callback behavior.
 
 Reset emails are sent directly, outside notifications: no notification record, queue or retry contains their temporary links. Existing rate limits, bounded background execution, origin checks and sanitized diagnostics still apply. Ordinary notifications retain their original delivery records, queue and retry policy. Resend channels retain delivery-ID idempotency; SMTP does not advertise idempotency.
 
