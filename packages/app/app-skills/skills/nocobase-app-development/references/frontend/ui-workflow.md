@@ -2,7 +2,7 @@
 
 This is the entry point for the application's frontend work: read it before writing or changing anything under `client/` — pages, components, styles or copy. It decides which of three workflows a change takes and what counts as done:
 
-- **Quick change**: edit directly, then run the static checks and the related tests and look at the changed element once in the browser.
+- **Quick change**: edit directly, then run the static checks and the related tests and verify the changed element and affected interactions in the browser.
 - **Theme change**: change tokens or presets as [`references/theme.md`](references/theme.md) describes and verify with its theme tests and browser check.
 - **Full workflow**: a design file reviewed once, development, then one independent acceptance review in the browser.
 
@@ -22,7 +22,7 @@ Decide before you start, and say in one sentence in your reply which workflow yo
 | Theme change  | The change is to theme tokens or presets: the primary color, fonts, density, radius or shadows of the whole application, or adding, changing or removing a preset. Follow ["Theme change"](#theme-change) below. No design file unless the user asks                                                                       |
 | Quick change  | None of the above applies. For example: changing copy; adjusting styling details on one page; adding a button, a column, a form field or a filter to an existing page; fixing a UI bug; a refactor that changes neither appearance nor behavior                                                                            |
 
-When unsure, explain the difference in one sentence (the full workflow adds a design, a design review and an independent acceptance review) and let the user choose. A quick change needs only the next section; a theme change needs only [`references/theme.md`](references/theme.md).
+When unsure, choose the workflow that fits the requested scope and explain why in one sentence; ask only when missing information prevents that choice. A quick change needs only the next section; a theme change needs only [`references/theme.md`](references/theme.md).
 
 ## Theme change
 
@@ -37,7 +37,7 @@ When unsure, explain the difference in one sentence (the full workflow adds a de
 2. Follow the confirmed reference and system/page decisions, then the surrounding components, spacing and copy style. Update the durable page record when an authorized exception changes; a quick change does not require a new record when it changes no design decision.
 3. Run the checks in ["Self-check before finishing" in `frontend-dev.md`](frontend-dev.md#self-check-before-finishing): type checking, lint and formatting of the changed files, and the existing tests that cover them.
 4. A change that adds or alters behavior (a column, filter, button or field) extends the component test of that page, or adds one when there is none; a bug fix a component test can reproduce adds that test; a copy-only or styling-only change needs none (see [`references/testing.md`](references/testing.md)).
-5. When the change is visible at runtime — copy, styling, a new column, filter or button, a UI bug fix — start or reuse the application and sign in as item 1 of [step 4.1](#41-run-check-main-agent) describes (the printed `Local:` URL, the same host, no password entered by you), open the page once and look at the changed element: copy in both languages, styling in light and dark, at 375px and, when spacing, type, radius or shadow changed, in both presets (in the browser, or with two or three shots of the screenshot tool, [`scripts/capture.md`](scripts/capture.md)), a bug fix by reproducing the original steps. If no browser or sign-in session is available, say so in the report instead of claiming it works.
+5. When the change is visible at runtime — copy, styling, a new column, filter or button, a UI bug fix — start or reuse the application and sign in as item 1 of [step 4.1](#41-run-check-main-agent) describes (the printed `Local:` URL, the same host, no password entered by you), open the page and verify the changed element and affected interactions: copy in both languages, styling in light and dark, at 375px and, when spacing, type, radius or shadow changed, in both presets (in the browser, or with two or three shots of the screenshot tool, [`scripts/capture.md`](scripts/capture.md)), a bug fix by reproducing the original steps. If no browser or sign-in session is available, say so in the report instead of claiming it works. For asynchronous behavior, follow [transition verification](references/testing.md#asynchronous-transitions), scoped to the affected interaction.
 6. Apply the relevant [acceptance checks](ui-acceptance.md), including reference comparison and browser geometry for an overlay/footer change. Report what you changed, which checks and tests you ran with their results, and what you looked at in the browser. If you saved a sign-in session for the check, delete `storage/ui-workflow/auth.json` (and `auth-limited.json`) first: they hold live sign-in cookies.
 
 A quick change writes no temporary design file or run record and starts no reviewer subagent. If partway through you find the change goes beyond a quick change (for example, it needs a new interaction or a change to the page structure), stop, explain the situation, and switch to the full workflow.
@@ -50,7 +50,7 @@ Five steps: design → design review → development → acceptance review → r
 
 - **Main agent**: writes the design, writes the code, fixes issues.
 - **Reviewer**: a new subagent (with its own context) for the design review, and another for the acceptance review. Give it the original references, reference modes, application-owned design records, authorized exceptions, guidelines, design file, screenshots, run record and changed files — not your reasoning. The reviewer only reports issues and does not modify files. If the environment does not support subagents, re-read everything from the files and do the review yourself as a separate pass, and mark the record "Non-independent review".
-- **User**: confirms the design and has the final say on design changes.
+- **User**: sets requirements and may request design review before implementation. Design presentation does not require a reply before work continues.
 
 ### Artifacts
 
@@ -82,11 +82,9 @@ When done, set the status in `design.md` to "Pending review".
 
 1. Start a new subagent and review with the ["Design review prompt" in `templates/prompts.md`](templates/prompts.md#design-review-prompt); the record goes in `review-design.md`. Issues are classified as blocking or suggestion and cite guideline IDs.
 2. If there are blocking issues: revise the design, and record how each issue was handled in the design's "Review responses" section (give a reason for each suggestion you do not adopt). There is no second review.
-3. Ask the user to confirm: in a few sentences, summarize the page structure, the main interactions, the issues the review found and how they were handled, and the questions awaiting the user's decision, and include the path to `design.md`.
-   - Once the user confirms, set the status to "Confirmed" and move on to development.
-   - If the user has already said explicitly not to wait for confirmation and to finish in one go: record that in `design.md`, continue with development, and summarize the design in the final report so it can be confirmed afterwards.
+3. Present the design: summarize the page structure, main interactions and review findings with their resolutions, and include the path to `design.md`. Set its status to "Ready for implementation" and continue directly to development. Wait only if the user explicitly requested review before implementation, a blocking question requires their decision, or an action exceeds the authorized scope; continue unaffected work while awaiting that input.
 
-The confirmed design is the basis for development and the acceptance review.
+The reviewed design is the basis for development and the acceptance review.
 
 ### Step 3: Development
 
@@ -113,7 +111,7 @@ If you find during development that the design is not feasible, follow "Design c
    - Simulate failure states per status: `block` for a network failure (the retryable state), `fulfill` with `status: 403` or `404` for the states that offer no "Retry", `500` for a server error. `offline` also cuts Vite's hot update connection, and the page does a full reload when the network comes back.
    - Record any state you cannot simulate as "Not verified" and give the reason.
 5. Record console errors, failed endpoint requests (4xx, 5xx, except those the check caused on purpose) and page errors.
-6. Screenshots: one per key state, saved to `screenshots/`, with file names matching those referenced in the acceptance criteria. The screenshot tool ([`scripts/capture.md`](scripts/capture.md)) takes them in batch, in both color modes, both presets and at narrow widths, and collects console errors and failed requests at the same time.
+6. Screenshots: one per key state, saved to `screenshots/`, with file names matching those referenced in the acceptance criteria. The screenshot tool ([`scripts/capture.md`](scripts/capture.md)) takes them in batch, in both color modes, both presets and at narrow widths, and collects console errors and failed requests at the same time. Verify affected asynchronous interactions with [transition verification](references/testing.md#asynchronous-transitions); screenshots alone do not establish continuity.
 7. Write the run record `run.md` from [`templates/run.md`](templates/run.md).
 
 #### 4.2 Independent review (new subagent)
@@ -142,7 +140,7 @@ Use the ["Acceptance review prompt" in `templates/prompts.md`](templates/prompts
 The final report includes:
 
 - **What was done**: pages, routes, changed files.
-- **Design**: reference modes, reference-fidelity results, authorized exceptions, confirmation status and design changes; paths to the retained system/page decisions.
+- **Design**: the implemented approach, reference modes, reference-fidelity results, authorized exceptions, design changes and unresolved decisions; paths to the retained system/page decisions.
 - **Acceptance review**: which issues the review found; the results of the fixes and rechecks.
 - **Screenshots**: attach or display the key screenshots when the client can show images; otherwise give their paths.
 - **Outstanding**: unresolved issues, and what was not verified and why.
@@ -153,8 +151,8 @@ Cleanup: first retain the confirmed decisions as described under Artifacts. Dele
 
 When development or the acceptance review shows that the design is not feasible (endpoint limits, something a component cannot do, conflicting interactions), or that it needs adjusting:
 
-1. Pause development of the affected parts.
+1. Identify the affected parts and whether the change can be resolved within the requested scope.
 2. In the "Change log" of `design.md`, record what changed, why, which reference requirements and acceptance criteria it affects, and which durable record needs updating.
-3. For a small change (one that does not affect the page structure or the main interactions), record it and continue, and list it in the final report; for a large change, ask the user to confirm first.
+3. Explain material changes to the page structure or main interactions and continue when they remain within the requested scope. Ask only when a blocking decision needs user input, the change exceeds the authorized scope, or the user explicitly requested review first; pause only the dependent work. Include the changes in the final report.
 
 Do not implement a design you know is flawed just to "match the design", and do not deviate from the design without leaving a record.
