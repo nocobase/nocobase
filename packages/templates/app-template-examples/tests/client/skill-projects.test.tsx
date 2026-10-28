@@ -57,7 +57,9 @@ it.each(['fast', 'slow'])(
     );
     await screen.findByText('Alpha');
     const slot = screen.getByTestId('refresh-slot');
-    await userEvent.click(screen.getByRole('button', { name: 'Edit project' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Edit', exact: true }),
+    );
     await screen.findByRole('textbox', { name: 'Name' });
     vi.useFakeTimers();
     await act(() => vi.advanceTimersByTimeAsync(1000));
@@ -113,13 +115,13 @@ it('revalidates a corrected name, keeps a rejected draft, and refreshes the list
       return { data: current };
     }),
   );
-  await user.click(await screen.findByRole('button', { name: 'Edit project' }));
+  await user.click(
+    await screen.findByRole('button', { name: 'Edit', exact: true }),
+  );
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await user.clear(name);
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
-  expect(
-    (await screen.findAllByText('Enter a project name.')).length,
-  ).toBeGreaterThan(0);
+  expect(await screen.findAllByText('Enter a project name.')).toHaveLength(1);
   expect(writes).toHaveLength(0);
   await user.type(name, 'New Alpha');
   await waitFor(() =>
@@ -148,7 +150,7 @@ it.each([
   'renders an empty list and creates a project in %s',
   async (locale, copy) => {
     let created = false;
-    await mount(
+    const view = await mount(
       answerApi(({ method, json }) => {
         if (method === 'POST') {
           created = true;
@@ -164,12 +166,23 @@ it.each([
     );
     expect(await screen.findByText(copy.empty)).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: copy.create }));
+    await screen.findByRole('textbox', { name: copy.name });
+    expect(
+      screen.getByRole('button', { name: copy.createAction, exact: true }),
+    ).toBeEnabled();
     await userEvent.type(
-      await screen.findByRole('textbox', { name: copy.name }),
+      screen.getByRole('textbox', { name: copy.name }),
       'Alpha{Enter}',
     );
     expect(await screen.findByText('Alpha')).toBeVisible();
     expect(created).toBe(true);
+    expect(view.toasts()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: copy.created.replace('{{name}}', 'Alpha'),
+        }),
+      ]),
+    );
   },
 );
 
@@ -238,7 +251,7 @@ it('keeps the original payload/key after an unknown result, blocks close and app
     return transport(request);
   }) as typeof fetch);
   await userEvent.click(
-    await screen.findByRole('button', { name: 'Edit project' }),
+    await screen.findByRole('button', { name: 'Edit', exact: true }),
   );
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await userEvent.clear(name);
@@ -271,7 +284,7 @@ it('keeps the original payload/key after an unknown result, blocks close and app
     expect.arrayContaining([
       expect.objectContaining({
         type: 'success',
-        title: 'Saved Confirmed Alpha.',
+        title: 'Saved “Confirmed Alpha”.',
       }),
     ]),
   );
@@ -300,3 +313,243 @@ it('shows a named skeleton without a create action until the initial read finish
     screen.getAllByRole('button', { name: 'Create project' }),
   ).toHaveLength(1);
 });
+
+it.each(['cancel', 'save', 'removed', 'lastPageRemoved'])(
+  'preserves page 2 and restores focus after %s and the completed return read',
+  async (action) => {
+    let rows = Array.from({ length: 12 }, (_, index) => ({
+      id: `project-${String(index).padStart(2, '0')}`,
+      name: `Project ${index + 1}`,
+    }));
+    let reads = 0;
+    let finish!: () => void;
+    const refreshed = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    await mount(
+      answerApi(async ({ path, method, json }) => {
+        if (path === 'skillProjects') {
+          if (++reads > 1) await refreshed;
+          return { data: [...rows], meta: { total: rows.length } };
+        }
+        const id = path.split('/')[1];
+        if (method === 'PATCH') {
+          rows = rows.map((row) =>
+            row.id === id
+              ? { ...row, name: (json as { name: string }).name }
+              : row,
+          );
+        }
+        return { data: rows.find((row) => row.id === id) };
+      }),
+    );
+    await screen.findByText('Project 1');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Go to next page' }),
+    );
+    expect(screen.getByText('Page 2 of 2')).toBeVisible();
+    const opener = screen.getAllByRole('button', {
+      name: 'Edit',
+      exact: true,
+    })[0];
+    await userEvent.click(opener);
+    const name = await screen.findByRole('textbox', { name: 'Name' });
+    if (action === 'save') {
+      await userEvent.clear(name);
+      await userEvent.type(name, 'Renamed project');
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Save', exact: true }),
+      );
+    } else {
+      if (action === 'lastPageRemoved') rows = rows.slice(0, 10);
+      if (action === 'removed')
+        rows = rows.filter((row) => row.id !== 'project-10');
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    }
+    await waitFor(() => expect(reads).toBe(2));
+    await act(async () => {
+      finish();
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByText(
+        action === 'lastPageRemoved' ? 'Page 1 of 1' : 'Page 2 of 2',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        action === 'lastPageRemoved' ? 'Project 1' : 'Project 12',
+      ),
+    ).toBeVisible();
+    if (action === 'save')
+      expect(screen.getByText('Renamed project')).toBeVisible();
+    await waitFor(() =>
+      expect(
+        action === 'removed' || action === 'lastPageRemoved'
+          ? screen.getByRole('region', { name: 'Projects' })
+          : opener,
+      ).toHaveFocus(),
+    );
+  },
+);
+
+it('returns a direct edit link to a stable page focus target', async () => {
+  let reads = 0;
+  await mount(
+    answerApi(({ path }) => {
+      if (path === 'skillProjects') {
+        reads += 1;
+        return list();
+      }
+      return { data: original };
+    }),
+    '/skill-projects/abc/edit',
+  );
+  await screen.findByRole('textbox', { name: 'Name' });
+  await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  await screen.findByText('Alpha');
+  expect(reads).toBe(1);
+  await waitFor(() =>
+    expect(screen.getByRole('region', { name: 'Projects' })).toHaveFocus(),
+  );
+});
+
+it.each([
+  ['en-US', enUS.skillProjects],
+  ['zh-CN', zhCN.skillProjects],
+] as const)(
+  'confirms dirty cancellation and Escape in %s without losing the draft on rejection',
+  async (locale, copy) => {
+    const nativeConfirm = vi.spyOn(window, 'confirm');
+    await mount(
+      answerApi(({ path }) =>
+        path === 'skillProjects' ? list() : { data: original },
+      ),
+      '/skill-projects/abc/edit',
+      locale,
+    );
+    const name = await screen.findByRole('textbox', { name: copy.name });
+    await userEvent.type(name, ' draft');
+    await userEvent.click(screen.getByRole('button', { name: copy.cancel }));
+    expect(
+      await screen.findByRole('alertdialog', { name: copy.discard }),
+    ).toBeVisible();
+    await userEvent.click(
+      screen.getByRole('button', { name: copy.keepEditing }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(name).toHaveValue('Alpha draft');
+    await userEvent.keyboard('{Escape}');
+    await screen.findByRole('alertdialog', { name: copy.discard });
+    await userEvent.click(
+      screen.getByRole('button', { name: copy.discardAction }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText('Alpha')).toBeVisible();
+    expect(nativeConfirm).not.toHaveBeenCalled();
+  },
+);
+
+it('keeps a consistent frame across held loading, retryable error and recovery', async () => {
+  let finish!: () => void;
+  let reads = 0;
+  const held = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  await mount(
+    answerApi(async ({ path }) => {
+      if (path === 'skillProjects') return list();
+      if (++reads === 1) {
+        await held;
+        return Response.json(
+          {
+            error: {
+              status: 'INTERNAL',
+              reason: 'UNAVAILABLE',
+              message: 'Unavailable',
+            },
+          },
+          { status: 500 },
+        );
+      }
+      return { data: original };
+    }),
+    '/skill-projects/abc/edit',
+  );
+  expect(screen.getByRole('dialog')).toHaveClass('sm:max-w-md');
+  expect(
+    screen.getByRole('status', { name: 'Loading projects…' }),
+  ).toBeInTheDocument();
+  await act(async () => {
+    finish();
+  });
+  const alert = await screen.findByRole('alert');
+  expect(alert).toHaveAttribute('data-slot', 'alert');
+  expect(screen.getByRole('dialog')).toHaveClass('sm:max-w-md');
+  await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+  await screen.findByRole('textbox', { name: 'Name' });
+  expect(screen.getByRole('dialog')).toHaveClass('sm:max-w-md');
+});
+
+it.each([
+  ['en-US', enUS.skillProjects],
+  ['zh-CN', zhCN.skillProjects],
+] as const)(
+  'shows localized list error recovery for 401/403/500 in %s',
+  async (locale, copy) => {
+    for (const status of [401, 403, 500]) {
+      let failed = true;
+      const view = await mount(
+        answerApi(() =>
+          failed
+            ? Response.json(
+                {
+                  error: {
+                    status: 'INTERNAL',
+                    reason: 'UNAVAILABLE',
+                    message: 'Unavailable',
+                  },
+                },
+                { status },
+              )
+            : list(),
+        ),
+        '/skill-projects',
+        locale,
+      );
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveAttribute('data-slot', 'alert');
+      expect(alert).toHaveTextContent(
+        status === 401
+          ? copy.expired
+          : status === 403
+            ? copy.denied
+            : copy.failed,
+      );
+      expect(
+        screen.queryByRole('button', { name: copy.create }),
+      ).not.toBeInTheDocument();
+      if (status === 500) {
+        failed = false;
+        await userEvent.click(screen.getByRole('button', { name: copy.retry }));
+        expect(await screen.findByText('Alpha')).toBeVisible();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      } else {
+        expect(
+          screen.queryByRole('button', { name: copy.retry }),
+        ).not.toBeInTheDocument();
+        if (status === 401)
+          expect(
+            screen.getByRole('link', { name: copy.signIn }),
+          ).toHaveAttribute('href', '/login');
+      }
+      view.unmount();
+    }
+  },
+);

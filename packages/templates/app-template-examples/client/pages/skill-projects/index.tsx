@@ -1,15 +1,26 @@
 import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
+import { FolderIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '#components/data-table';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
+import { Alert, AlertDescription } from '#components/ui/alert';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '#components/ui/table';
 import { Button } from '#components/ui/button';
 import {
   Empty,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
   EmptyDescription,
   EmptyContent,
@@ -18,6 +29,7 @@ import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 import { useListLocation } from '#hooks/use-list-location';
 import { useListData } from '#hooks/use-list-data';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 
 export interface SkillProject {
   id: string;
@@ -33,6 +45,30 @@ export default function SkillProjectsPage(): ReactElement {
     meta: { total: number };
   }>('skillProjects', { active, keepPreviousData: true });
   const { data, reload, replaceData } = request;
+  const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
+    sortColumns: [],
+    rowCount:
+      !request.loading && !request.error ? data?.data.length : undefined,
+  });
+  const returnTargetRef = useRef<HTMLDivElement>(null);
+  const returningRef = useRef(false);
+  useEffect(() => {
+    if (!active) {
+      returningRef.current = true;
+      return;
+    }
+    if (!returningRef.current) return;
+    // Let the overlay restore its opener first; direct links and removed rows
+    // still need a stable destination after the return read has settled.
+    const frame = requestAnimationFrame(() => {
+      if (!document.activeElement || document.activeElement === document.body)
+        returnTargetRef.current?.focus();
+      if (!request.loading) returningRef.current = false;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [active, request.loading, data]);
   const context = useMemo(
     () => ({
       reload: reload,
@@ -79,7 +115,7 @@ export default function SkillProjectsPage(): ReactElement {
             }
             nativeButton={false}
           >
-            {t('skillProjects.edit')}
+            {t('skillProjects.editAction')}
           </Button>
         ),
       },
@@ -98,13 +134,22 @@ export default function SkillProjectsPage(): ReactElement {
   );
   return (
     <PageContainer>
-      <PageHeader
-        title={t('skillProjects.title')}
-        description={t('skillProjects.description')}
-        actions={
-          request.data?.data.length && !request.error ? createAction : undefined
-        }
-      />
+      <div
+        ref={returnTargetRef}
+        tabIndex={-1}
+        role='region'
+        aria-label={t('skillProjects.title')}
+      >
+        <PageHeader
+          title={t('skillProjects.title')}
+          description={t('skillProjects.description')}
+          actions={
+            request.data?.data.length && !request.error
+              ? createAction
+              : undefined
+          }
+        />
+      </div>
       <div
         className='flex h-8 items-center justify-end'
         data-testid='refresh-slot'
@@ -114,30 +159,56 @@ export default function SkillProjectsPage(): ReactElement {
         ) : null}
       </div>
       {request.error ? (
-        <div role='alert' className='space-y-2'>
-          <p>
-            {t(
-              status === 401
-                ? 'skillProjects.expired'
-                : status === 403
-                  ? 'skillProjects.denied'
-                  : 'skillProjects.failed',
+        <Alert variant='destructive'>
+          <AlertDescription className='flex flex-col items-start gap-2'>
+            <p>
+              {t(
+                status === 401
+                  ? 'skillProjects.expired'
+                  : status === 403
+                    ? 'skillProjects.denied'
+                    : 'skillProjects.failed',
+              )}
+            </p>
+            {status === 401 ? (
+              <Link to='/login'>{t('skillProjects.signIn')}</Link>
+            ) : status === 403 ? null : (
+              <Button onClick={request.reload}>
+                {t('skillProjects.retry')}
+              </Button>
             )}
-          </p>
-          {status === 401 ? (
-            <Link to='/login'>{t('skillProjects.signIn')}</Link>
-          ) : status === 403 ? null : (
-            <Button onClick={request.reload}>{t('skillProjects.retry')}</Button>
-          )}
-        </div>
+          </AlertDescription>
+        </Alert>
       ) : null}
       {!request.data && !request.error ? (
         <div role='status' aria-label={t('skillProjects.loading')}>
-          <Skeleton className='h-24 w-full' />
+          <Table aria-hidden='true'>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('skillProjects.name')}</TableHead>
+                <TableHead>{t('skillProjects.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[0, 1, 2].map((row) => (
+                <TableRow key={row}>
+                  <TableCell>
+                    <Skeleton className='h-4 w-40' />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className='h-8 w-16' />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       ) : request.data?.data.length === 0 && !request.error ? (
-        <Empty>
+        <Empty className='min-h-48 border'>
           <EmptyHeader>
+            <EmptyMedia variant='icon'>
+              <FolderIcon />
+            </EmptyMedia>
             <EmptyTitle>{t('skillProjects.emptyTitle')}</EmptyTitle>
             <EmptyDescription>{t('skillProjects.empty')}</EmptyDescription>
           </EmptyHeader>
@@ -149,6 +220,9 @@ export default function SkillProjectsPage(): ReactElement {
             <p>{t('skillProjects.cap')}</p>
           ) : null}
           <DataTable
+            paginationState={tableState.paginationState}
+            onPaginationChange={tableState.onPaginationChange}
+            pageSizeOptions={tableState.pageSizeOptions}
             columns={columns}
             data={request.data.data}
             getRowId={(row) => row.id}

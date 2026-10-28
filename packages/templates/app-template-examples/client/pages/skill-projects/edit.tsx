@@ -19,6 +19,17 @@ import { useForm } from 'react-hook-form';
 import { FeedbackForm } from '#components/feedback-form';
 import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
+import { Alert, AlertDescription } from '#components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '#components/ui/alert-dialog';
 import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
 import { Input } from '#components/ui/input';
@@ -42,33 +53,39 @@ export default function SkillProjectEditPage(): ReactElement {
   if (!projectId) return <ProjectEditor key='new' />;
   if (request.error || !request.data)
     return (
-      <RouteDialog title={t('skillProjects.edit')} footer={<CancelButton />}>
+      <RouteDialog
+        title={t('skillProjects.edit')}
+        className='sm:max-w-md'
+        footer={<CancelButton />}
+      >
         {request.error ? (
-          <div role='alert'>
-            <p>
-              {t(
-                status === 404
-                  ? 'skillProjects.gone'
-                  : status === 401
-                    ? 'skillProjects.expired'
-                    : status === 403
-                      ? 'skillProjects.denied'
-                      : 'skillProjects.failed',
+          <Alert variant='destructive'>
+            <AlertDescription className='flex flex-col items-start gap-2'>
+              <p>
+                {t(
+                  status === 404
+                    ? 'skillProjects.gone'
+                    : status === 401
+                      ? 'skillProjects.expired'
+                      : status === 403
+                        ? 'skillProjects.denied'
+                        : 'skillProjects.failed',
+                )}
+              </p>
+              {status === 401 ? (
+                <Link to='/login'>{t('skillProjects.signIn')}</Link>
+              ) : [403, 404].includes(status ?? 0) ? null : (
+                <Button onClick={request.reload}>
+                  {t('skillProjects.retry')}
+                </Button>
               )}
-            </p>
-            {status === 401 ? (
-              <Link to='/login'>{t('skillProjects.signIn')}</Link>
-            ) : [403, 404].includes(status ?? 0) ? null : (
-              <Button onClick={request.reload}>
-                {t('skillProjects.retry')}
-              </Button>
-            )}
-          </div>
+            </AlertDescription>
+          </Alert>
         ) : (
           <div
             role='status'
             aria-label={t('skillProjects.loading')}
-            className='space-y-2'
+            className='flex flex-col gap-2'
           >
             <Skeleton className='h-4 w-16' />
             <Skeleton className='h-8 w-full' />
@@ -122,13 +139,35 @@ function ProjectEditor({
   const [gone, setGone] = useState(false);
   const busyRef = useRef(false);
   const savedRef = useRef(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const discardRef = useRef<{
+    promise: Promise<boolean>;
+    resolve: (value: boolean) => void;
+  } | null>(null);
+  const decideDiscard = (discard: boolean) => {
+    discardRef.current?.resolve(discard);
+    discardRef.current = null;
+    setConfirmDiscard(false);
+  };
+  useEffect(
+    () => () => {
+      discardRef.current?.resolve(false);
+    },
+    [],
+  );
   useNavigationGuard(() => {
     if (savedRef.current) return true;
     if (busyRef.current || submission.submitting || submission.pending)
       return false;
-    return (
-      !form.formState.isDirty || window.confirm(t('skillProjects.discard'))
-    );
+    if (!form.formState.isDirty) return true;
+    if (discardRef.current) return discardRef.current.promise;
+    let resolve!: (value: boolean) => void;
+    const promise = new Promise<boolean>((done) => {
+      resolve = done;
+    });
+    discardRef.current = { promise, resolve };
+    setConfirmDiscard(true);
+    return promise;
   });
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
@@ -176,7 +215,9 @@ function ProjectEditor({
       onSaved(saved.data);
       toaster.show({
         type: 'success',
-        title: t('skillProjects.saved', { name: saved.data.name }),
+        title: t(project ? 'skillProjects.saved' : 'skillProjects.created', {
+          name: saved.data.name,
+        }),
       });
       await navigate({ pathname: '..', search: location.search });
     }
@@ -201,12 +242,37 @@ function ProjectEditor({
             {t(
               submission.submitting
                 ? 'skillProjects.saving'
-                : 'skillProjects.save',
+                : project
+                  ? 'skillProjects.save'
+                  : 'skillProjects.createAction',
             )}
           </Button>
         </>
       }
     >
+      <AlertDialog
+        open={confirmDiscard}
+        onOpenChange={(open) => {
+          if (!open) decideDiscard(false);
+        }}
+      >
+        <AlertDialogContent className='sm:max-w-md'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('skillProjects.discard')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('skillProjects.discardHint')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('skillProjects.keepEditing')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => decideDiscard(true)}>
+              {t('skillProjects.discardAction')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <FeedbackForm
         id={formId}
         error={error}
@@ -226,7 +292,7 @@ function ProjectEditor({
       >
         <fieldset
           disabled={submission.submitting || submission.pending || gone}
-          className='space-y-2'
+          className='flex flex-col gap-2'
         >
           <Label htmlFor={`${formId}-name`}>
             {t('skillProjects.name')} <span aria-hidden='true'>*</span>
@@ -248,7 +314,11 @@ function ProjectEditor({
             })}
           />
           {form.formState.errors.name ? (
-            <p id={`${formId}-error`} className='text-sm text-destructive'>
+            <p
+              id={`${formId}-error`}
+              data-feedback-field-error
+              className='text-sm text-destructive'
+            >
               {form.formState.errors.name.message}
             </p>
           ) : null}

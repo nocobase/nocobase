@@ -1,8 +1,11 @@
 export const enUS = {
   emptyTitle: 'No projects',
-  saved: 'Saved {{name}}.',
+  saved: 'Saved “{{name}}”.',
+  created: 'Created “{{name}}”.',
+  createAction: 'Create',
+  editAction: 'Edit',
   uncertain:
-    'The save result is unknown. Keep this form open and retry Save with the original name to confirm it.',
+    'The save result is unknown. Keep this form open and retry with the original name to confirm it.',
   title: 'Projects',
   description: 'Create and rename projects.',
   name: 'Name',
@@ -26,11 +29,17 @@ export const enUS = {
   required: 'Enter a project name.',
   tooLong: 'Use at most 100 characters.',
   discard: 'Discard your unsaved changes?',
+  discardHint: 'Your changes will be lost.',
+  keepEditing: 'Keep editing',
+  discardAction: 'Discard',
 };
 
 export const zhCN = {
   emptyTitle: '暂无项目',
-  saved: '已保存 {{name}}。',
+  saved: '已保存“{{name}}”。',
+  created: '已创建“{{name}}”。',
+  createAction: '创建',
+  editAction: '编辑',
   uncertain: '保存结果尚未确定，请保留此表单并使用原名称再次保存，以确认结果。',
   title: '项目',
   description: '创建项目并修改名称。',
@@ -54,4 +63,7 @@ export const zhCN = {
   required: '请输入项目名称。',
   tooLong: '最多输入 100 个字符。',
   discard: '放弃尚未保存的修改？',
+  discardHint: '尚未保存的修改将丢失。',
+  keepEditing: '继续编辑',
+  discardAction: '放弃修改',
 };
