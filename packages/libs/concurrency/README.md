@@ -1,5 +1,7 @@
 # @nocobase/concurrency
 
+Each acquisition captures its cancellation signal synchronously at call entry. Reusing or changing the options object afterward does not replace that call's signal, change its cancellation reason, or redirect listener cleanup; a call made without a signal remains uncancelled by signals added later.
+
 Lease checks before and after executor release convert clock failures into a retained lease-loss signal with the original cause, so checks cannot bypass release. Independent business failures retain their identity and priority; release failures remain tracked for close retry. A lease already lost during synchronous monitor startup is rejected before delivery or runner entry, with the original monitoring failure preserved.
 
 Acquisition-deadline registration and rearm failures are retained as acquisition errors and abort the backend request. Core still waits for the backend result: a busy result cannot hide the fault, and a confirmed grant is tracked and released rather than delivered. Caller cancellation or runtime closing keeps priority; failed release remains retryable during close.

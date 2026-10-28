@@ -71,6 +71,7 @@ writeFileSync(
   join(consumer, 'run.mjs'),
   `
 import assert from 'node:assert/strict';
+import {getEventListeners} from 'node:events';
 import * as core from '@nocobase/concurrency';
 import * as port from '@nocobase/concurrency/backend';
 import * as testing from '@nocobase/concurrency/testing';
@@ -138,6 +139,39 @@ for(let i=0;i<200;i++){
 assert.equal(closeMargins.length,200);assert.ok(Math.min(...closeMargins)>=0);
 console.log(JSON.stringify({closeSchedulerSamples:200,earlyCloseWaits:closeMargins.filter(value=>value<0).length,minCloseMarginMs:Math.min(...closeMargins)}));
 
+
+async function verifySignalSnapshots(createBackend){
+  let cases=0;
+  for(const method of ['lock','tryLock','boundedLock','run','tryRun','boundedRun'])for(const timing of ['entry','waiting'])for(const cancelled of ['original','replacement','neither']){
+    const time=new testing.ManualTime();const backend=createBackend();const runtime=await core.createConcurrentRuntime({backend,namespace:'signal-snapshot',clock:time,scheduler:time});
+    const lock=await runtime.manager.createLock('r',{ttl:1000});const executor=await runtime.manager.createSynchronous('r',{ttl:1000});const holder=await lock.lock();
+    const original=new AbortController();const replacement=new AbortController();const originalReason=new Error('Original request cancelled');const external=()=>{};const externalReplacement=()=>{};
+    original.signal.addEventListener('abort',external);replacement.signal.addEventListener('abort',externalReplacement);
+    const options={signal:original.signal};const entered=testing.deferred();const gate=testing.deferred();const acquire=backend.acquire.bind(backend);
+    backend.acquire=async request=>{entered.resolve(request);await gate.promise;return acquire(request);};
+    let acquired=false;let runs=0;const runner=()=>{runs++;return 42;};const release=async lease=>{if(lease){acquired=true;await lease.release();}};
+    const work=method==='lock'?lock.lock(options).then(release):method==='tryLock'?lock.tryLock(0,options).then(release):method==='boundedLock'?lock.tryLock(10,options).then(release):method==='run'?executor.run(runner,options).then(()=>{acquired=true;}):(method==='tryRun'?executor.tryRun(runner,0,options):executor.tryRun(runner,10,options)).then(result=>{acquired=result.acquired;});
+    const observed=work.then(()=>({ok:true}),error=>({ok:false,error}));
+    if(timing==='waiting')await entered.promise;options.signal=replacement.signal;
+    if(cancelled==='original')original.abort(originalReason);else if(cancelled==='replacement')replacement.abort(new Error('Replacement request cancelled'));
+    await holder.release();gate.resolve();const result=await observed;await runtime.close();
+    if(cancelled==='original'){assert.equal(result.ok,false);assert.ok(result.error instanceof core.ConcurrentAbortError);assert.equal(result.error.cause instanceof core.ConcurrentAbortError?result.error.cause.cause:result.error.cause,originalReason);assert.equal(acquired,false);assert.equal(runs,0);}
+    else{assert.deepEqual(result,{ok:true});assert.equal(acquired,true);assert.equal(runs,['run','tryRun','boundedRun'].includes(method)?1:0);}
+    assert.deepEqual(getEventListeners(original.signal,'abort'),[external]);assert.deepEqual(getEventListeners(replacement.signal,'abort'),[externalReplacement]);assert.equal(time.pendingTimers,0);cases++;
+  }
+  for(const mode of ['getter','absent','clock']){
+    const time=new testing.ManualTime();const original=new AbortController();const replacement=new AbortController();replacement.abort(new Error('Unrelated signal'));let reads=0;let mutate=false;
+    const options=mode==='absent'?{}:mode==='getter'?{get signal(){return ++reads===1?original.signal:replacement.signal;}}:{signal:original.signal};
+    const clock=mode==='clock'?{now(){if(mutate)options.signal=replacement.signal;return time.now();}}:time;
+    const runtime=await core.createConcurrentRuntime({backend:createBackend(),namespace:'snapshot-'+mode,clock,scheduler:time});const lock=await runtime.manager.createLock('r');mutate=true;
+    const work=lock.tryLock(10,options);if(mode==='absent')options.signal=replacement.signal;
+    const lease=await work;assert.ok(lease);await lease.release();await runtime.close();if(mode==='getter')assert.equal(reads,1);
+    assert.deepEqual(getEventListeners(original.signal,'abort'),[]);assert.deepEqual(getEventListeners(replacement.signal,'abort'),[]);assert.equal(time.pendingTimers,0);cases++;
+  }
+  return cases;
+}
+
+console.log(JSON.stringify({signalSnapshotCases:await verifySignalSnapshots(()=>new testing.ControlledBackend({acquire:async(request,context)=>request.signal.aborted?undefined:{notAfter:context.clock.now()+request.resource.ttl,release:async()=>{}}}))}));
 async function verifyLeaseBoundaries(createBackend, backendTimers) {
   let finalization=0;let startup=0;
   for(const method of ['run','tryRun'])for(const phase of ['before','after'])for(const businessFails of [false,true])for(const releaseFails of [false,true]){

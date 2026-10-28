@@ -260,6 +260,8 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
     trying: boolean,
     deliver: (lease: ManagedLease) => T | Promise<T>,
   ): Promise<T | undefined> {
+    // Snapshot caller-owned cancellation before deferred or reentrant work.
+    const signal = options?.signal;
     // Take the timestamp at the public entry, not after a microtask or a backend call.
     const start = this.context.clock.now();
     return this.track(async () => {
@@ -275,18 +277,18 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
           : { kind: 'bounded', deadline: start + timeout };
       if (wait.kind === 'bounded' && !Number.isFinite(wait.deadline))
         throw new ConcurrentConfigurationError('Invalid deadline');
-      if (options.signal?.aborted)
+      if (signal?.aborted)
         throw new ConcurrentAbortError('Acquisition was cancelled', {
-          cause: options.signal.reason,
+          cause: signal.reason,
         });
       const controller = new AbortController();
       const onAbort = (): void =>
         controller.abort(
           new ConcurrentAbortError('Acquisition was cancelled', {
-            cause: options.signal?.reason,
+            cause: signal?.reason,
           }),
         );
-      options.signal?.addEventListener('abort', onAbort, { once: true });
+      signal?.addEventListener('abort', onAbort, { once: true });
       this.waiting.add(controller);
       let cancelDeadline = (): void => {};
       let deadlineVersion = 0;
@@ -336,7 +338,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
         grant?: BackendGrant,
         loss?: ConcurrentLeaseLostError,
       ): Error | undefined => {
-        if (options.signal?.aborted || this.state !== 'open')
+        if (signal?.aborted || this.state !== 'open')
           return new ConcurrentAbortError(
             'Acquisition cancelled before delivery',
             { cause: controller.signal.reason },
@@ -372,7 +374,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
             signal: controller.signal,
           });
         } catch (cause) {
-          if (options.signal?.aborted || this.state !== 'open') {
+          if (signal?.aborted || this.state !== 'open') {
             this.diagnostic('acquire', cause);
             throw new ConcurrentAbortError('Acquisition cancelled', { cause });
           }
@@ -402,7 +404,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
           }
         } catch (cause) {
           error =
-            options.signal?.aborted || this.state !== 'open'
+            signal?.aborted || this.state !== 'open'
               ? new ConcurrentAbortError(
                   'Acquisition cancelled before delivery',
                   { cause },
@@ -426,7 +428,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
       } finally {
         deadlineVersion++;
         this.cancelTimer(cancelDeadline);
-        options.signal?.removeEventListener('abort', onAbort);
+        signal?.removeEventListener('abort', onAbort);
         this.waiting.delete(controller);
         this.changed();
       }
