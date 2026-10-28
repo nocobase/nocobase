@@ -5,7 +5,13 @@ import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
-import { screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route, useLocation } from 'react-router';
 import { expect, it, vi } from 'vitest';
@@ -58,6 +64,79 @@ function Location() {
     </output>
   );
 }
+
+it.each(['fast', 'slow'] as const)(
+  'keeps the user table on drawer close and only indicates a slow refresh (%s)',
+  async (speed) => {
+    const user = userEvent.setup();
+    let refresh = false;
+    let complete!: () => void;
+    const response = new Promise<void>((resolve) => {
+      complete = resolve;
+    });
+    await renderWithApp(
+      <Routes>
+        <Route path='/settings/users' element={<UsersPage />}>
+          <Route path=':userId' element={<UserDetail />}>
+            <Route path='edit' element={<UserForm />} />
+          </Route>
+        </Route>
+      </Routes>,
+      {
+        route: '/settings/users',
+        namespace,
+        namespaces,
+        services,
+        fetch: answerApi(async ({ path }) => {
+          if (path === 'authorization/permissions')
+            return { data: { unrestricted: true, permissions: [] } };
+          if (path === 'users/options') return options;
+          if (path === 'users/alice') return { data: row };
+          if (refresh) await response;
+          return {
+            data: [{ ...row, name: refresh ? 'Alice refreshed' : row.name }],
+            meta: { total: 1 },
+          };
+        }),
+      },
+    );
+    await user.click(await screen.findByRole('link', { name: 'Alice' }));
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: 'Name *' })).toHaveValue(
+        'Alice',
+      ),
+    );
+    refresh = true;
+    vi.useFakeTimers();
+    try {
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(screen.queryByText(enUS.settings.loading)).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', { name: 'Cancel', exact: true }),
+        );
+      });
+      expect(screen.getByRole('link', { name: 'Alice' })).toBeVisible();
+      expect(screen.queryByText(enUS.settings.loading)).not.toBeInTheDocument();
+      if (speed === 'slow') {
+        await act(() => vi.advanceTimersByTimeAsync(1000));
+        expect(screen.getByText(enUS.settings.loading)).toBeVisible();
+        expect(screen.getByRole('link', { name: 'Alice' })).toBeVisible();
+      }
+      await act(async () => {
+        complete();
+        await response;
+      });
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(
+        screen.getByRole('link', { name: 'Alice refreshed' }),
+      ).toBeVisible();
+      expect(screen.queryByText(enUS.settings.loading)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);
 
 it('uses role labels and paired server filters, retaining the source and ordering when clearing filters', async () => {
   const calls = vi.fn(({ path }: { path: string }) =>

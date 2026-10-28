@@ -31,6 +31,7 @@ import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { StatusBadge } from '#components/status-badge';
+import { Spinner } from '#components/ui/spinner';
 import {
   Select,
   SelectTrigger,
@@ -46,6 +47,25 @@ import {
   EmptyContent,
 } from '#components/ui/empty';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+
+function UsersRefreshing(): ReactElement | null {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    // Fast background reads should not flash feedback on overlay close.
+    const timer = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  return visible ? (
+    <span
+      role='status'
+      className='flex items-center gap-2 text-sm text-muted-foreground'
+    >
+      <Spinner aria-hidden='true' className='size-4' />
+      {t('settings.loading')}
+    </span>
+  ) : null;
+}
 
 function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
   const canUpdate = useUserPermission('update', user.id);
@@ -477,12 +497,10 @@ export default function UsersPage(): ReactElement {
               {t('settings.clear')}
             </Button>
           )}
+          <div className='ml-auto flex h-8 w-28 items-center justify-end'>
+            {active && request.data && request.loading && <UsersRefreshing />}
+          </div>
         </div>
-        {request.data && request.loading && (
-          <span role='status' className='text-sm text-muted-foreground'>
-            {t('settings.loading')}
-          </span>
-        )}
         {Boolean(roleScope) !== Boolean(role) && (
           <p role='alert' className='text-sm text-destructive'>
             {t('settings.roleFilterIncomplete')}
