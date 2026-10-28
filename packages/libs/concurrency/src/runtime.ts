@@ -103,12 +103,7 @@ class ManagedLease implements Lease {
           if (!this.checkLoss()) this.armLossTimer();
         } catch (cause) {
           this.timerVersion++;
-          this.loss ??= new ConcurrentLeaseLostError(
-            'Lease monitoring failed',
-            { cause },
-          );
-          this.controller.abort(this.loss);
-          this.runtime.diagnostic('cleanup', cause);
+          this.monitoringFailed(cause);
         }
       },
       Number.isFinite(remaining) ? Math.max(0, Math.ceil(remaining)) : 0,
@@ -116,8 +111,24 @@ class ManagedLease implements Lease {
     if (version !== this.timerVersion) this.runtime.cancelTimer(cancel);
     else this.cancelTimer = cancel;
   }
+  private monitoringFailed(cause: unknown): ConcurrentLeaseLostError {
+    const loss = (this.loss ??= new ConcurrentLeaseLostError(
+      'Lease monitoring failed',
+      { cause },
+    ));
+    this.controller.abort(loss);
+    this.runtime.diagnostic('cleanup', cause);
+    return loss;
+  }
   checkLoss(): ConcurrentLeaseLostError | undefined {
-    if (!this.loss && this.runtime.context.clock.now() >= this.grant.notAfter) {
+    if (this.loss) return this.loss;
+    let expired: boolean;
+    try {
+      expired = this.runtime.context.clock.now() >= this.grant.notAfter;
+    } catch (cause) {
+      return this.monitoringFailed(cause);
+    }
+    if (expired && !this.loss) {
       this.loss = new ConcurrentLeaseLostError(
         'The conservative lease budget is exhausted',
       );
@@ -321,13 +332,17 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
           failDeadline(cause);
         }
       };
-      const deliveryError = (grant?: BackendGrant): Error | undefined => {
+      const deliveryError = (
+        grant?: BackendGrant,
+        loss?: ConcurrentLeaseLostError,
+      ): Error | undefined => {
         if (options.signal?.aborted || this.state !== 'open')
           return new ConcurrentAbortError(
             'Acquisition cancelled before delivery',
             { cause: controller.signal.reason },
           );
         if (deadlineError) return deadlineError;
+        if (loss) return loss;
         if (
           (wait.kind === 'bounded' &&
             this.context.clock.now() >= wait.deadline) ||
@@ -383,7 +398,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
           error = deliveryError(grant);
           if (!error) {
             lease.start();
-            error = deliveryError(grant);
+            error = deliveryError(grant, lease.checkLoss());
           }
         } catch (cause) {
           error =

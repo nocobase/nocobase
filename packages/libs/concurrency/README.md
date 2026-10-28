@@ -1,5 +1,7 @@
 # @nocobase/concurrency
 
+Lease checks before and after executor release convert clock failures into a retained lease-loss signal with the original cause, so checks cannot bypass release. Independent business failures retain their identity and priority; release failures remain tracked for close retry. A lease already lost during synchronous monitor startup is rejected before delivery or runner entry, with the original monitoring failure preserved.
+
 Acquisition-deadline registration and rearm failures are retained as acquisition errors and abort the backend request. Core still waits for the backend result: a busy result cannot hide the fault, and a confirmed grant is tracked and released rather than delivered. Caller cancellation or runtime closing keeps priority; failed release remains retryable during close.
 
 Node 24 ESM coordination with fixed-TTL, non-reentrant locks and serial executors. Applications explicitly supply a backend; this package contains no production storage adapter. A runtime exclusively owns the supplied backend, initializes it once and closes it during runtime shutdown. Supply a fresh backend instance for each runtime; reusing one is rejected even during initialization or after close.
