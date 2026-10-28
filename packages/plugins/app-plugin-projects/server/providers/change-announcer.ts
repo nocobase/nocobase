@@ -45,6 +45,13 @@ export interface AnnouncedEvent {
   readonly issueId?: unknown;
   readonly changes?: unknown;
   readonly moved?: unknown;
+  readonly discussionOnly?: unknown;
+  readonly mentions?: unknown;
+  readonly notice?: {
+    readonly kind?: unknown;
+    readonly type?: unknown;
+    readonly actor?: { readonly type?: unknown };
+  };
 }
 
 export interface ChangeAnnouncer {
@@ -60,26 +67,64 @@ export function createChangeAnnouncer(
 ): ChangeAnnouncer {
   // Per domain: the issues named so far, or null once an event names none.
   let pending = new Map<PmChangeDomain, Set<string> | null>();
+  let discussionOnly = true;
+  let comment = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const flush = (): void => {
     if (timer) clearTimeout(timer);
     timer = undefined;
     const gathered = pending;
+    const discussions = discussionOnly && comment;
     pending = new Map();
+    discussionOnly = true;
+    comment = false;
     for (const [domain, issueIds] of gathered)
       publish(
         domain === 'issues' &&
           issueIds &&
           issueIds.size > 0 &&
           issueIds.size <= ANNOUNCED_ISSUES_MAX
-          ? { kind: 'pm.changed', domain, issueIds: [...issueIds] }
+          ? {
+              kind: 'pm.changed',
+              domain,
+              issueIds: [...issueIds],
+              ...(discussions ? { discussionOnly: true } : {}),
+            }
           : { kind: 'pm.changed', domain },
       );
   };
 
   return {
     add(event) {
+      // Notices remain delivery events, not an additional refresh source. A waiting,
+      // mention or unknown notice nevertheless prevents narrowing this batch.
+      if (event.type.startsWith('notice.')) {
+        if (!(
+          event.type === 'notice.planned' &&
+          event.notice?.kind === 'info' &&
+          event.notice.type === 'commented' &&
+          typeof event.notice.actor?.type === 'string' &&
+          event.notice.actor.type !== 'user'
+        ))
+          discussionOnly = false;
+        if (!timer) {
+          timer = setTimeout(flush, delayMs);
+          timer.unref?.();
+        }
+        return;
+      }
+      const safeComment =
+        event.type === 'comment.created' &&
+        event.discussionOnly === true &&
+        Array.isArray(event.mentions) &&
+        event.mentions.length === 0;
+      comment ||= safeComment;
+      discussionOnly &&=
+        safeComment ||
+        (event.type === 'issue.changed' &&
+          event.discussionOnly === true &&
+          event.moved !== true);
       const domain = domainOf(event.type);
       const named =
         domain === 'issues' &&
@@ -101,6 +146,8 @@ export function createChangeAnnouncer(
       if (timer) clearTimeout(timer);
       timer = undefined;
       pending = new Map();
+      discussionOnly = true;
+      comment = false;
     },
   };
 }

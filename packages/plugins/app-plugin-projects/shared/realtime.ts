@@ -16,4 +16,22 @@ export interface PmChangeEvent {
    * which issues a list or a project holds may have changed too.
    */
   readonly issueIds?: readonly string[];
+  /** Only comment threads and activity changed; absent or mixed changes require the full snapshot. */
+  readonly discussionOnly?: true;
+}
+
+/** Only accept a well-formed, explicitly classified issue announcement. */
+export function isDiscussionOnly(payload: unknown): payload is PmChangeEvent & {
+  readonly discussionOnly: true;
+  readonly issueIds: readonly string[];
+} {
+  const change = payload as Partial<PmChangeEvent> | null;
+  return (
+    change?.kind === 'pm.changed' &&
+    change.domain === 'issues' &&
+    change.discussionOnly === true &&
+    Array.isArray(change.issueIds) &&
+    change.issueIds.length > 0 &&
+    change.issueIds.every((id) => typeof id === 'string' && id.length > 0)
+  );
 }

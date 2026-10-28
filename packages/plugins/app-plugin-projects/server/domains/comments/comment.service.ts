@@ -248,6 +248,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
       ? await mapOne(tx, parent.id, options.viewer)
       : null;
     let triggered: readonly MentionRef[] = [];
+    let triggerChanged = false;
     const triggers = deps.triggers();
     if (
       actor.type !== SYSTEM_KIND &&
@@ -255,17 +256,40 @@ export function createCommentService(deps: CommentDeps): CommentService {
       options.trigger !== false &&
       triggers.onCommentCreated
     )
-      triggered = await triggers.onCommentCreated(tx, {
-        comment,
-        issue,
-        parent: parentComment,
-        actor,
-        userId: options.userId ?? options.forUserId ?? null,
-        mentions: refs,
-      });
-    tx.emit({ type: 'issue.changed', issueId: issue.id });
+      triggered = await triggers.onCommentCreated(
+        {
+          ...tx,
+          emit: (event) => {
+            triggerChanged = true;
+            tx.emit(event);
+          },
+        },
+        {
+          comment,
+          issue,
+          parent: parentComment,
+          actor,
+          userId: options.userId ?? options.forUserId ?? null,
+          mentions: refs,
+        },
+      );
+    // A person's ordinary comment may settle an execution guard without starting a run.
+    // Restrict the shortcut to notes or the executor's own report, with no structured effects.
+    const discussionOnly =
+      refs.length === 0 &&
+      triggered.length === 0 &&
+      !triggerChanged &&
+      !issue.needsYou &&
+      (options.kind ?? PLAIN_COMMENT) === PLAIN_COMMENT &&
+      (note ||
+        (actor.type !== 'user' &&
+          actor.type === issue.executor?.type &&
+          actor.id === issue.executor.id));
+    const scope = discussionOnly ? { discussionOnly: true as const } : {};
+    tx.emit({ type: 'issue.changed', issueId: issue.id, ...scope });
     tx.emit({
       type: 'comment.created',
+      ...scope,
       issueId: issue.id,
       commentId: id,
       rootId: comment.rootId,
