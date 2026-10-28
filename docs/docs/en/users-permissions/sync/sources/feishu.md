@@ -21,16 +21,20 @@ The **Feishu / Lark** plugin synchronizes users and departments from a Feishu or
 
 ## Contact Permissions and Visibility Scope
 
-In the app's **Permissions**, enable the contact read permissions. Common ones (names subject to the open platform):
+In the app's **Permissions**, enable the following permissions:
 
-| Purpose | Permission | Notes |
-| --- | --- | --- |
-| Read basic user info | Obtaining basic contact information | Reads user IDs and names. **Required**; without it, synchronized nicknames are empty. |
-| Read department info | Obtaining department basic information | Reads department names and hierarchy. |
-| Traverse departments | Obtaining organizational structure (departments) | Reads the child department list. |
+| Permission | Scope | Required | Purpose |
+| --- | --- | --- | --- |
+| Obtaining user basic information | `contact:user.base:readonly` | Yes | Reads user names, `open_id` / `union_id` and other basic fields. |
+| Obtaining department basic information | `contact:department.base:readonly` | Yes | Reads department names and hierarchy. |
+| Obtaining department organizational structure | `contact:department.organize:readonly` | Yes | Traverses child departments; reads department owners. |
+| Obtaining user organizational structure | `contact:user.department:readonly` | Yes | Reads the user's departments and main department. |
+| Obtaining user user ID | `contact:user.id:readonly` | Required for `user_id` identifier | Reads the `user_id` field. |
+| Obtaining user phone number | `contact:user.phone:readonly` | Required to sync phones | Reads phone numbers; required when the identifier is `mobile`. |
+| Obtaining user email information | `contact:user.email:readonly` | Required to sync emails | Reads emails; required when the identifier is `email`. |
 
 :::warning
-API permissions decide which fields the app can read, while the **contact visibility scope** decides which departments and users the app can read — both must be configured. The synchronization scope follows the visibility scope: only granted departments and users are synchronized. After changing permissions or the scope, run a full synchronization again. Event subscription does not replace read permissions: on every event NocoBase still calls the Feishu API to fetch the latest user or department data.
+Without **Obtaining user basic information**, the API does not return user names and synchronized nicknames are empty. API permissions decide which fields the app can read, while the **contact visibility scope** decides which departments and users the app can read — both must be configured. The synchronization scope follows the visibility scope: only granted departments and users are synchronized. After changing permissions or the scope, run a full synchronization again. Event subscription does not replace read permissions: on every event NocoBase still calls the Feishu API to fetch the latest user or department data.
 :::
 
 ## Add a Feishu Sync Source
@@ -122,7 +126,7 @@ Other Feishu user fields such as avatar, job title and employee number are not s
 ## Troubleshooting
 
 - Empty sync results or missing departments: check the contact permissions and whether the department is within the visibility scope.
-- Empty nicknames: enable **Obtaining basic contact information** and run a full synchronization again.
+- Empty nicknames: enable **Obtaining user basic information** (`contact:user.base:readonly`) and run a full synchronization again.
 - Users skipped: check whether the user has a value for the configured identifier field and whether it matches the authenticator's choice.
 - HTTP callback returns 401: no Verification Token or Encrypt Key configured, or token verification failed; 403: the source has been switched to Stream mode.
 - `redirect_uri` or callback URL errors: make sure the URL configured on the open platform matches the one shown in NocoBase exactly, including any sub-path prefix (`APP_PUBLIC_PATH`).
