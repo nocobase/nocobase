@@ -117,6 +117,19 @@ const configurationRoutes = [
 ] as unknown as AppClientRegisteredRoute[];
 
 describe('application-owned permission presentation', () => {
+  it('omits the generic Page access description and retains other section descriptions', () => {
+    const sections = permissionSections(source, [], (value) =>
+      typeof value === 'string' ? value : value.key,
+    );
+
+    expect(
+      sections.find((section) => section.id === 'pages')?.description,
+    ).toBe(undefined);
+    expect(
+      sections.find((section) => section.id === 'business')?.description,
+    ).toBe('settings.businessOperationsHint');
+  });
+
   it('can hide a created-record selector while retaining a related-record selector and stored policy', () => {
     const resource = {
       type: 'composite',

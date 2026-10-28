@@ -5,6 +5,19 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  listFeedback: {
+    loading: '加载中',
+    empty: '暂无数据',
+    noResults: '无结果',
+    forbidden: '无权访问',
+    unauthenticated: '会话已过期',
+    failed: '列表加载失败',
+    refreshFailed: '刷新失败，仍显示旧数据',
+    retry: '重试',
+    retrying: '正在重试…',
+    clear: '清空筛选',
+    signIn: '登录',
+  },
   flowDiagram: {
     controls: '流程图控制',
     fitView: '适应画布',
@@ -176,7 +189,7 @@ const systemZhCN: SystemResource = {
     back: '返回',
   },
   dataTable: {
-    noResults: '暂无数据。',
+    noResults: '无结果',
     sortAscending: '升序',
     sortDescending: '降序',
     hideColumn: '隐藏',

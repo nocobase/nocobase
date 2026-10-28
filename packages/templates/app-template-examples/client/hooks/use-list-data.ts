@@ -59,8 +59,7 @@ export function useListData<T>(
     path: result.path,
     data: result.path === path || keepPreviousData ? result.data : undefined,
     loading: !active || result.path !== path || result.key !== key,
-    error:
-      result.path === path && result.key === key ? result.error : undefined,
+    error: result.path === path ? result.error : undefined,
     revision,
     reload: useCallback(() => {
       invalidate();

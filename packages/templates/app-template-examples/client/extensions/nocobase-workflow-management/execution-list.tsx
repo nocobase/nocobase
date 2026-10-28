@@ -1,3 +1,4 @@
+import type { ListState } from '@nocobase/app-client';
 import type { ReactElement, ReactNode } from 'react';
 import type {
   CellContext,
@@ -17,12 +18,14 @@ export interface WorkflowExecutionRow {
   createdAt: ReactNode;
 }
 export interface WorkflowExecutionListProps {
+  listState?: ListState;
+  onClearFilters?: () => void;
   rows: readonly WorkflowExecutionRow[];
   loaded: boolean;
   loading: boolean;
   filters: ReactNode;
   status?: ReactNode;
-  empty: ReactNode;
+  empty?: ReactNode;
   labels: {
     refresh: string;
     record: string;
@@ -47,6 +50,8 @@ type ExecutionDateMeta = ColumnMeta<WorkflowExecutionRow, unknown> &
 
 export function WorkflowExecutionList({
   rows,
+  listState,
+  onClearFilters,
   loaded,
   loading,
   filters,
@@ -72,53 +77,61 @@ export function WorkflowExecutionList({
         </Button>
       </div>
       {status}
-      <div className='bg-card'>
-        <DataTable
-          data={rows}
-          getRowId={(row) => row.id}
-          pagination={false}
-          manualSorting
-          sortingState={[{ id: 'createdAt', desc: order === 'newest' }]}
-          loading={loading}
-          emptyMessage={
-            loaded ? (
-              <Empty>
-                <EmptyDescription>{empty}</EmptyDescription>
-              </Empty>
-            ) : (
-              ''
-            )
-          }
-          columns={[
-            {
-              id: 'record',
-              header: labels.record,
-              enableSorting: false,
-              cell: ExecutionRecordCell,
-            },
-            {
-              id: 'workflow',
-              header: labels.workflow,
-              enableSorting: false,
-              cell: ExecutionWorkflowCell,
-            },
-            {
-              id: 'state',
-              header: labels.state,
-              enableSorting: false,
-              cell: ExecutionStateCell,
-            },
-            {
-              id: 'createdAt',
-              accessorFn: (row) => row.createdAt,
-              enableSorting: true,
-              meta: activityMeta,
-              header: ExecutionDateHeader,
-              cell: ExecutionCreatedAtCell,
-            },
-          ]}
-        />
-      </div>
+      {(listState !== undefined || loaded || loading) && (
+        <div className='bg-card'>
+          <DataTable
+            data={rows}
+            listState={
+              listState ??
+              (!loaded ? 'loading' : rows.length ? 'ready' : 'empty')
+            }
+            onRetry={onRefresh}
+            onClearFilters={onClearFilters}
+            getRowId={(row) => row.id}
+            pagination={false}
+            manualSorting
+            sortingState={[{ id: 'createdAt', desc: order === 'newest' }]}
+            loading={loading}
+            emptyMessage={
+              loaded ? (
+                <Empty>
+                  <EmptyDescription>{empty}</EmptyDescription>
+                </Empty>
+              ) : (
+                ''
+              )
+            }
+            columns={[
+              {
+                id: 'record',
+                header: labels.record,
+                enableSorting: false,
+                cell: ExecutionRecordCell,
+              },
+              {
+                id: 'workflow',
+                header: labels.workflow,
+                enableSorting: false,
+                cell: ExecutionWorkflowCell,
+              },
+              {
+                id: 'state',
+                header: labels.state,
+                enableSorting: false,
+                cell: ExecutionStateCell,
+              },
+              {
+                id: 'createdAt',
+                accessorFn: (row) => row.createdAt,
+                enableSorting: true,
+                meta: activityMeta,
+                header: ExecutionDateHeader,
+                cell: ExecutionCreatedAtCell,
+              },
+            ]}
+          />
+        </div>
+      )}
       <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
         <p>{pagination}</p>
         <div className='flex gap-2'>

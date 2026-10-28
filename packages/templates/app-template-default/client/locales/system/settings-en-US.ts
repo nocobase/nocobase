@@ -50,10 +50,6 @@ const settings = {
     records: 'Selected records ({{count}})',
     retained: 'Retain existing configuration',
     search: 'Search business objects or keys',
-    empty: 'No default data scopes',
-    emptyHint:
-      'Create a rule to configure baseline access for a business object.',
-    readOnlyEmpty: 'Ask an administrator to configure baseline data access.',
     noResources:
       'Every available business object already has a default rule, or no configurable objects are registered.',
     unsupported:
@@ -86,8 +82,6 @@ const settings = {
     'Manage user information, account security and role assignments. Review each permission separately.',
   businessOperationsHint:
     'Choose the operations this role can perform and the data each operation can use.',
-  pageAccessHint:
-    'Choose the business pages this role can open. All system settings, including user management and business configuration, are controlled under Configuration permissions. Data and business actions require separate permissions.',
   roleAssignment: 'Role assignment',
   accountSecurity: 'Account security',
   userInformation: 'User information',
@@ -145,10 +139,6 @@ const settings = {
   noResults: 'No matching results',
   clearHint: 'Try a different search or clear the filters.',
   noUsers: 'No users yet',
-  usersReadOnlyEmpty:
-    'Contact an administrator to add users or grant the permissions needed to create users and assign roles.',
-  rolesReadOnlyEmpty:
-    'Contact an administrator to create a role or grant you permission to create roles.',
   noRoleAccess:
     'This user can still sign in and use account basics. No business access is granted by roles.',
   noAssignedRoles: 'No assigned roles',

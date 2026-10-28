@@ -1,4 +1,5 @@
-import { useTranslation } from '@nocobase/i18n/client';
+import type { ListState } from '@nocobase/app-client';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import {
   type ColumnDef,
   type PaginationState,
@@ -41,13 +42,17 @@ export interface DataTableProps<TData, TValue = unknown> {
   readonly onSortingChange?: OnChangeFn<SortingState>;
   readonly showSelectedCount?: boolean;
   readonly loading?: boolean;
+  readonly listState?: ListState;
+  readonly onRetry?: () => void;
+  readonly onClearFilters?: () => void;
+  readonly emptyAction?: ReactNode;
   readonly className?: string;
   /**
    * Rendered above the table and handed the table instance, so filters and
    * `DataTableViewOptions` can read and drive its state.
    */
   readonly toolbar?: (table: TableInstance<TData>) => ReactNode;
-  /** Shown in place of the body when no row survives filtering. */
+  /** Shown in the table body when no row survives filtering. */
   readonly emptyMessage?: ReactNode;
   /** Set to `false` to render every row and hide the pagination footer. */
   readonly pagination?: boolean;
@@ -91,8 +96,11 @@ export function DataTable<TData, TValue = unknown>({
   onSortingChange,
   showSelectedCount = true,
   loading = false,
+  listState,
+  onRetry,
+  onClearFilters,
+  emptyAction,
 }: DataTableProps<TData, TValue>): ReactElement {
-  const { t } = useTranslation();
   const tableData = useMemo(() => [...data], [data]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -134,12 +142,56 @@ export function DataTable<TData, TValue = unknown>({
   });
 
   const rows = table.getRowModel().rows;
+  const requestedState =
+    (listState === 'ready' && rows.length === 0
+      ? columnFilters.length > 0
+        ? 'no-results'
+        : 'empty'
+      : listState) ??
+    (loading && data.length === 0
+      ? 'loading'
+      : rows.length
+        ? 'ready'
+        : columnFilters.length
+          ? 'no-results'
+          : 'empty');
+  const state =
+    (requestedState === 'empty' || requestedState === 'no-results') &&
+    ((manualPagination && columnFilters.length === 0 && (rowCount ?? 0) > 0) ||
+      (!manualPagination && table.getPrePaginationRowModel().rows.length > 0))
+      ? 'loading'
+      : requestedState;
+  const clearFilters = () => {
+    table.resetColumnFilters();
+    table.setPageIndex(0);
+    onClearFilters?.();
+  };
+  const hasStateActions =
+    (state === 'no-results' &&
+      (columnFilters.length > 0 || onClearFilters !== undefined)) ||
+    ((state === 'failed' || state === 'refresh-failed') &&
+      onRetry !== undefined) ||
+    state === 'unauthenticated';
+  const showRows =
+    rows.length > 0 && (state === 'ready' || state === 'refresh-failed');
+  const showFeedback = !showRows || state === 'refresh-failed';
+  const feedbackColumnCount = Math.max(1, table.getVisibleLeafColumns().length);
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
-      {toolbar ? (
+      {toolbar || hasStateActions ? (
         <div className='flex flex-wrap items-center gap-2'>
-          {toolbar(table)}
+          {toolbar?.(table)}
+          <ListFeedbackActions
+            state={state}
+            onClear={
+              columnFilters.length > 0 || onClearFilters
+                ? clearFilters
+                : undefined
+            }
+            onRetry={onRetry}
+            busy={loading}
+          />
         </div>
       ) : null}
       <div className='overflow-hidden rounded-lg border'>
@@ -173,39 +225,41 @@ export function DataTable<TData, TValue = unknown>({
             ))}
           </TableHeader>
           <TableBody>
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() ? 'selected' : undefined}
-                  className={onRowClick ? 'cursor-pointer' : undefined}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
+            {showFeedback ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='h-24 text-center text-muted-foreground'
-                >
-                  {emptyMessage ??
-                    t('dataTable.noResults', { defaultValue: 'No results.' })}
+                <TableCell colSpan={feedbackColumnCount} className='p-0'>
+                  <ListFeedback
+                    state={state}
+                    empty={emptyMessage}
+                    emptyAction={emptyAction}
+                  />
                 </TableCell>
               </TableRow>
-            )}
+            ) : null}
+            {showRows
+              ? rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() ? 'selected' : undefined}
+                    className={onRowClick ? 'cursor-pointer' : undefined}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              : null}
           </TableBody>
         </Table>
       </div>
-      {pagination ? (
+      {pagination &&
+      (state === 'ready' || (state === 'refresh-failed' && rows.length > 0)) ? (
         <DataTablePagination
           table={table}
           pageSizeOptions={pageSizeOptions}

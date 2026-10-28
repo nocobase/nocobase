@@ -234,7 +234,7 @@ For live updates, read the installed `nocobase-realtime` Skill in `.agents/skill
 
 Data reloads when the user acts (a search, "Retry", a refresh button) or after the page's own writes. For live updates, declare the server Topic during provider boot and reuse the host client through `useRealtimeTopic` or `useRealtimeRefresh` from `@nocobase/app-client`. A watch's `onReady` runs after that Topic is acknowledged, including reconnects; `onOpen` only describes the transport. Refresh authoritative API data on readiness because disconnected events are not replayed. Use `enabled: false` for inactive pages, return the refresh promise for burst coalescing and one in-flight follow-up, and use `refreshRealtimeQueries(queryClient, filters, signal)` for TanStack Query snapshots. It matches exact keys, prefixes and predicates, waits for pre-event reads (including initial loading), and follows them with a fresh read without repeatedly cancelling slow requests. Bare `invalidateQueries` with `cancelRefetch: false` can reuse a pre-event response and lose the change. For lower-level code, resolve `realtimeClientToken` and call `watch(topic, { onEvent, onReady, onError })`; close its handle on cleanup. Personal inbox usage is documented in the `nocobase-app-plugin-notification-in-app` Skill.
 
-There is no shared data-loading hook; write it directly in the component: `useApiClient()` + `useEffect` + `AbortController`. Do not reach for TanStack Query in a page: one loading pattern across pages keeps states and errors consistent. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
+For an individual record read, write the request in the component with `useApiClient()` + `useEffect` + `AbortController`; lists use the shared `useListData` and `resolveListState` pattern in [`table.md`](table.md). Do not reach for TanStack Query in a page: one loading pattern across pages keeps states and errors consistent. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
 
 ```tsx
 // client/pages/projects/project-summary.tsx (excerpt; the complete file is in example/project-summary.md)
@@ -279,7 +279,7 @@ export function ProjectSummary({
   // During a reload this is still the last successful data, so the UI does not have to be cleared.
   const project = result?.project;
 
-  // … reload(), the four states and the card: example/project-summary.md
+  // … reload(), list feedback and the card: example/project-summary.md
 }
 ```
 

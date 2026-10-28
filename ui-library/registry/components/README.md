@@ -6,6 +6,7 @@ Single components that pages are built from. Each is its own item, installs into
 | ------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `page-container`   | `page-container.tsx`                                                    | `PageContainer`                                                                                                                                                                                                                                                  |
 | `page-header`      | `page-header.tsx`                                                       | `PageHeader`                                                                                                                                                                                                                                                     |
+| `list-feedback`    | `list-feedback.tsx`                                                     | `ListFeedback`, `ListFeedbackActions`                                                                                                                                                                                                                            |
 | `route-dialog`     | `route-dialog.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts` | `RouteDialog`, `useRouteOverlay`                                                                                                                                                                                                                                 |
 | `route-drawer`     | `route-drawer.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts` | `RouteDrawer`, `useRouteOverlay`                                                                                                                                                                                                                                 |
 | `route-child-page` | `route-child-page.tsx`                                                  | `RouteChildPage`                                                                                                                                                                                                                                                 |
@@ -93,7 +94,7 @@ The shared DataTable and its column header and pagination controls use these key
 | `dataTable.sortAscending`  | Asc                                        | 升序                                 |
 | `dataTable.sortDescending` | Desc                                       | 降序                                 |
 | `dataTable.hideColumn`     | Hide                                       | 隐藏                                 |
-| `dataTable.noResults`      | No results.                                | 暂无结果。                           |
+| `dataTable.noResults`      | No results                                 | 无结果                               |
 | `dataTable.selectedCount`  | {{selected}} of {{total}} row(s) selected. | 已选择 {{selected}} / {{total}} 行。 |
 | `dataTable.rowsPerPage`    | Rows per page                              | 每页行数                             |
 | `dataTable.pageOf`         | Page {{page}} of {{pageCount}}             | 第 {{page}} 页，共 {{pageCount}} 页  |
@@ -135,6 +136,20 @@ The shared DataTable and its column header and pagination controls use these key
 | `flowDiagram.leavesTo`       | Leaves to                                    | 可转到                      |
 | `flowDiagram.arrivesFrom`    | Arrives from                                 | 来自                        |
 | `flowDiagram.otherRoutes`    | Other routes                                 | 其他流转                    |
+
+| Key                            | English                               | Chinese                |
+| ------------------------------ | ------------------------------------- | ---------------------- |
+| `listFeedback.loading`         | Loading                               | 加载中                 |
+| `listFeedback.empty`           | No data yet                           | 暂无数据               |
+| `listFeedback.noResults`       | No results                            | 无结果                 |
+| `listFeedback.forbidden`       | Access denied                         | 无权访问               |
+| `listFeedback.unauthenticated` | Session expired                       | 会话已过期             |
+| `listFeedback.failed`          | Unable to load list                   | 列表加载失败           |
+| `listFeedback.refreshFailed`   | Refresh failed; showing previous data | 刷新失败，仍显示旧数据 |
+| `listFeedback.retry`           | Retry                                 | 重试                   |
+| `listFeedback.retrying`        | Retrying…                             | 正在重试…              |
+| `listFeedback.clear`           | Clear filters                         | 清空筛选               |
+| `listFeedback.signIn`          | Sign in                               | 登录                   |
 
 ## In a plugin
 
@@ -236,6 +251,12 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 ## Record Link
 
 `RecordLink` renders a React Router link for clickable record names and identifiers. It uses foreground text with medium weight at rest, an underline on hover and a visible keyboard focus. Pass the destination as `to`, including the current list query in `to.search` when navigating to a child route. Native Link props and refs are preserved. It adds no translation keys and does not replace action buttons or menu items.
+
+## List feedback
+
+`ListFeedback` renders the state returned by `resolveListState` from `@nocobase/app-client`. Pass the original query snapshot, including `isPlaceholderData`; retry refetches the same query, and clear synchronizes the controls, applied filters and first page. `DataTable` accepts `listState`, `onRetry`, `onClearFilters` and `emptyAction`; its legacy `emptyMessage` remains business content for successful unfiltered emptiness. Gate creation with existing permissions. Installed sources need a three-way source merge, including request owners and translations, to upgrade.
+
+Default list states use a compact themed treatment with a neutral icon, a short title and standard actions. Refresh failures use a concise inline warning beside retained rows and keep the standard retry action available. Motion respects reduced-motion preferences. The shared Translations table includes every status and action key required for an installed copy.
 
 ## Form failure feedback
 
