@@ -6,6 +6,13 @@
 
 Remove legacy vector collections and their workers, stores and public types. Model services, Embedding and Knowledge indexing remain available. See [the migration guide](docs/vectors-migration.md) before upgrading. Existing data and historical migrations are retained.
 
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- f9ada4a: Keep conversation message catch-up when a newer detail read supersedes a refresh.
+  Preserve live runner replies while reconciling saved conversation history.
+
 ## 1.0.0-beta.28
 
 ### Minor Changes
