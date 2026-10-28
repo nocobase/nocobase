@@ -74,6 +74,17 @@ export const packageSuites = [
     ],
   },
   {
+    // Candidate pagination must preserve cursor order and avoid duplicate claims on PostgreSQL.
+    paths: [
+      'packages/plugins/app-plugin-agents/server/core/runs/claim.ts',
+      'packages/plugins/app-plugin-agents/server/routes/runners/runner.ts',
+      'packages/plugins/app-plugin-agents/tests/claim-pagination.test.ts',
+    ],
+    dialect: 'postgres',
+    filter: '@nocobase/app-plugin-agents',
+    tests: ['tests/claim-pagination.test.ts'],
+  },
+  {
     // SQL Server requires rebuilding the unique index before shrinking the legacy artifact-key column.
     paths: [
       'packages/plugins/app-plugin-releases/database/migrations/',
