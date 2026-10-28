@@ -4,14 +4,27 @@ import type {
   ResendProviderConfig,
 } from './types.js';
 
+/** A safe configuration diagnostic with a field path relative to the sender. */
+export class MailConfigError extends Error {
+  public constructor(
+    public readonly field: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 export function validateSmtpProviderConfig(config: SmtpProviderConfig): void {
   validateHeaders(config);
   if (typeof config.host !== 'string' || !config.host.trim())
-    throw new Error('SMTP host is required.');
+    throw new MailConfigError('host', 'SMTP host is required.');
   if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535)
-    throw new Error('SMTP port must be an integer between 1 and 65535.');
+    throw new MailConfigError(
+      'port',
+      'SMTP port must be an integer between 1 and 65535.',
+    );
   if (config.secure !== undefined && typeof config.secure !== 'boolean')
-    throw new Error('SMTP secure must be a boolean.');
+    throw new MailConfigError('secure', 'SMTP secure must be a boolean.');
   if (
     config.auth !== undefined &&
     (typeof config.auth !== 'object' ||
@@ -19,7 +32,7 @@ export function validateSmtpProviderConfig(config: SmtpProviderConfig): void {
       typeof config.auth.user !== 'string' ||
       typeof config.auth.pass !== 'string')
   )
-    throw new Error('SMTP authentication is invalid.');
+    throw new MailConfigError('auth', 'SMTP authentication is invalid.');
 }
 
 export function validateResendProviderConfig(
@@ -27,18 +40,22 @@ export function validateResendProviderConfig(
 ): void {
   validateHeaders(config);
   if (typeof config.apiKey !== 'string' || !config.apiKey.trim())
-    throw new Error('Resend API key is required.');
+    throw new MailConfigError('apiKey', 'Resend API key is required.');
   if (typeof config.from !== 'string' || !config.from.trim())
-    throw new Error('Resend sender is required.');
+    throw new MailConfigError('from', 'Resend sender is required.');
 }
 
 function validateHeaders(config: {
   readonly from?: string;
   readonly replyTo?: string;
 }): void {
-  for (const value of [config.from, config.replyTo]) {
+  for (const field of ['from', 'replyTo'] as const) {
+    const value = config[field];
     if (value !== undefined && (typeof value !== 'string' || !value.trim()))
-      throw new Error('Email sender or reply address is invalid.');
+      throw new MailConfigError(
+        field,
+        'Email sender or reply address is invalid.',
+      );
   }
 }
 

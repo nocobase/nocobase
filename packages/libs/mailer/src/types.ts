@@ -58,3 +58,8 @@ export interface MailSendOptions {
   readonly signal?: AbortSignal;
   readonly idempotencyKey?: string;
 }
+
+/** Opt in to bounded SMTP connection reuse without changing existing channel behavior. */
+export interface MailTransportOptions {
+  readonly reuseConnections?: boolean;
+}

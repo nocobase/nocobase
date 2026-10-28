@@ -197,6 +197,7 @@ export class AuthenticationProvider<
           caching
             .getCounter({ namespace: 'password-reset-rate-limit' })
             .increment(key, 1, 60_000),
+        warning: (message) => logger?.warn({}, message),
         report: (category) =>
           logger?.warn(
             { category },

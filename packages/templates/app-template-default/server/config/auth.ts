@@ -12,6 +12,8 @@ import { bearer, deviceAuthorization, username } from 'better-auth/plugins';
  */
 const CLI_CLIENT_IDS: readonly string[] = ['nocobase-cli'];
 
+// defineAuthConfig supplies AUTH_EMAIL_* mappings and validates the private auth.email sender.
+// Automatic recovery requires passwordReset.enabled: true; leave the switch absent for custom callback compatibility.
 const auth: AppConfigFactory<AuthConfig> = defineAuthConfig({
   defaults: {
     plugins: [

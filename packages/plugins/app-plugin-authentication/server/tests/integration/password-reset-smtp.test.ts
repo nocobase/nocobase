@@ -34,6 +34,7 @@ async function receiver(stall = false) {
           socket.write('250-local.test\r\n250 PIPELINING\r\n');
         else if (line === 'DATA') {
           data = true;
+          message = '';
           socket.write('354 send data\r\n');
         } else if (line === 'QUIT') socket.end('221 bye\r\n');
         else socket.write('250 ok\r\n');
@@ -50,9 +51,13 @@ async function receiver(stall = false) {
   return { port: address.port, messages, sockets, close };
 }
 
-it.each(['http://localhost', 'https://public.example.test'])(
-  'resets through real SMTP without notification or authorization using public origin %s',
-  async (publicOrigin) => {
+it.each([
+  ['http://localhost', false],
+  ['https://public.example.test', false],
+  ['https://public.example.test', true],
+] as const)(
+  'resets through real SMTP without notification or authorization using public origin %s (independent %s)',
+  async (publicOrigin, independent) => {
     const json = (body: unknown) => ({
       method: 'POST',
       headers: { 'content-type': 'application/json', origin: publicOrigin },
@@ -63,16 +68,29 @@ it.each(['http://localhost', 'https://public.example.test'])(
       createServer: createStandaloneServer,
       config: {
         app: { publicOrigin },
-        notification: {
-          channels: {
-            'system-email': {
-              provider: 'smtp',
-              host: '127.0.0.1',
-              port: smtp.port,
-              from: 'sender@example.test',
-            },
-          },
-        },
+        ...(independent
+          ? {
+              auth: {
+                email: {
+                  provider: 'smtp',
+                  host: '127.0.0.1',
+                  port: smtp.port,
+                  from: 'sender@example.test',
+                },
+              },
+            }
+          : {
+              notification: {
+                channels: {
+                  'system-email': {
+                    provider: 'smtp',
+                    host: '127.0.0.1',
+                    port: smtp.port,
+                    from: 'sender@example.test',
+                  },
+                },
+              },
+            }),
       },
     });
     try {
