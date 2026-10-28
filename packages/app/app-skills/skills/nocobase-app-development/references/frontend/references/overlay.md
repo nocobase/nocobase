@@ -85,7 +85,7 @@ An overlay reads its context from whichever view it opens over, so every such vi
 
 The list opens all three overlays, so its context carries both sets of fields. It builds the context with `useMemo` and places `<Outlet context={outletContext} />` at the end of its `PageContainer`; the code is the list page, [`example/list-page.md`](example/list-page.md) (`outletContext`, and the `focusSearchAfterReloadRef` effect behind `afterDelete`), explained in [section 9 of `table.md`](table.md#9-child-routes-and-refreshing-the-list).
 
-- Closing an overlay does not reload the parent page: the parent stays mounted, and its form contents and scroll position are kept. When the parent page's data needs refreshing, the child route calls a function from the context.
+- Closing an overlay does not remount or reload the whole parent page: its form contents and scroll position are kept. Data revalidation is separate: lists using `useListLocation` and `useListData` suspend reads while covered and read again on return. A child write calls the context reload function to invalidate the list. Follow [list loading feedback](table.md#6-loading-the-list) so paused parents show no refresh indicator and fast return reads do not flash one.
 - Keep the context stable with `useMemo`: the child route's loading effect lists the context functions as dependencies, so an object that changes on every render causes repeated requests.
 - A child route reads it with `useOutletContext<ProjectsOutletContext>()`. It gets the context of the nearest `<Outlet>` above it: the drawer gets the list's or the dashboard's, and the edit dialog gets the drawer's, or the list's when a row's menu opened it.
 - On a page with tabs, the overlays the header opens render through the tab's `Outlet`, so each tab places one and passes on the page's context, which it reads with `useOutletContext()` ([`example/detail-page-tabs.md`](example/detail-page-tabs.md)). A tab whose own children need more adds their fields to the same object.
@@ -372,24 +372,28 @@ The details below describe `sheet.tsx` as the registry writes it today; the file
 
 ## 6. Plain dialogs: sizes and scrolling
 
-A `Dialog` from `#components/ui/dialog` defaults to `sm:max-w-lg` and grows with its content without limit. Give it the width guideline I1 assigns to what it holds, and when its content can outgrow the screen, cap its height with the one idiom `max-h-[calc(100dvh-2rem)]` and scroll only its body, so the header and the footer's buttons stay in view (guideline A4):
+A `Dialog` from `#components/ui/dialog` currently defaults to `sm:max-w-lg`, `p-6`, a viewport height cap and `overflow-y-auto` on the whole popup. Inspect the installed source because older or customized copies can differ. For a fixed-footer design, override the popup's scrolling and scroll only its body; changing it to flex alone does not remove its default `overflow-y-auto`:
 
 ```tsx
 // A small form: 1–4 fields, the width alone.
 <DialogContent className='sm:max-w-md'>…</DialogContent>
 
 // Content that can outgrow the screen: a fixed header and footer around a scrolling body.
-<DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>
-  <DialogHeader>…</DialogHeader>
+<DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-2xl'>
+  <DialogHeader className='shrink-0'>…</DialogHeader>
   <div className='-mx-6 min-h-0 flex-1 overflow-y-auto px-6'>…</div>
-  <DialogFooter>…</DialogFooter>
+  <DialogFooter className='shrink-0'>…</DialogFooter>
 </DialogContent>
 ```
 
 - `flex flex-col` replaces the content's grid, and `min-h-0 flex-1` lets the body shrink and scroll; `-mx-6 … px-6` matches the content's `p-6` and runs its scrollbar along the dialog's edge. When the body is the form, put the classes on the `form` and keep the submit button in `DialogFooter` with `form='…'`.
-- Do not cap the height any other way (`90vh`, `85dvh`, `calc(100svh-2rem)`, `min(40rem,…)`), and do not put `overflow-y-auto` on `DialogContent` itself: the footer would scroll away with the content.
+- `overflow-hidden` overrides the popup's default scrolling; `shrink-0` keeps the header and footer from being compressed. Use the viewport cap above rather than adding a competing cap. Verify actual geometry with long content and at a short viewport height as [the shared acceptance checks](../ui-acceptance.md#overlay-and-action-layout) describe.
 - Large read-only content (a transcript, a diff, a file preview) uses the same structure at `sm:max-w-4xl`, usually with no footer.
 - `RouteDialog` and `RouteDrawer` are built this way already; pass them only a width.
+
+### Footer ownership
+
+In a plain `Dialog`, use one `DialogFooter` directly in the content structure. Its `-mx-6 -mb-6` compensates for the current popup's `p-6`; extra padded wrappers or a different popup padding require checking that relationship. In `RouteDialog` or `RouteDrawer`, pass the buttons (or a component returning them as a fragment) to `footer`: the route wrapper already supplies the footer layout. Do not put another `DialogFooter`, `SheetFooter` or outer padded footer in that slot. Inspect older copies before assuming the latest spacing or mobile order. For an authorized layout exception, use a supported variant or scoped composition and verify it instead of stacking conflicting footer containers.
 
 ## 7. Verification checklist
 

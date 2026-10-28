@@ -470,10 +470,12 @@ export default function ProjectsPage(): ReactElement {
             {t('projects.filters.clear')}
           </Button>
         ) : null}
-        {/* Reloading keeps the old data and shows only a small Spinner here. */}
-        {loading && rows !== undefined ? (
-          <Spinner className='text-muted-foreground' />
-        ) : null}
+        {/* Reserve space even when a fast refresh finishes before feedback appears. */}
+        <div className='ml-auto flex h-8 w-8 shrink-0 items-center justify-center'>
+          {active && loading && rows !== undefined ? (
+            <RefreshIndicator />
+          ) : null}
+        </div>
       </div>
       {content}
 
@@ -495,6 +497,16 @@ export default function ProjectsPage(): ReactElement {
       <Outlet context={outletContext} />
     </PageContainer>
   );
+}
+
+function RefreshIndicator(): ReactElement | null {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    // Unmounting on completion or while covered cancels pending feedback.
+    const timer = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  return visible ? <Spinner className='text-muted-foreground' /> : null;
 }
 
 function TableSkeleton({ label }: { readonly label: string }): ReactElement {

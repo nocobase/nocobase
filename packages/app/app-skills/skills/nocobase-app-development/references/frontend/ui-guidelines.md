@@ -1,14 +1,14 @@
 # UI guidelines
 
-These are this application's UI design guidelines: foundations, page structure, page templates (list, detail, form, settings), interaction choices, data freshness, states, copy, accessibility and adaptation. They define what the interface should look like, not how to write the code (for that, see [`frontend-dev.md`](frontend-dev.md)). Every rule has an ID and is marked Must or Should. Use them to design pages, review designs and review implementations. When you design or review a UI in the full workflow, read the whole document; for a quick change, read the items related to the change.
+These are the shared UI guidelines for NocoBase 3 applications and embedded plugins: foundations, page structure, page templates, interaction choices, data freshness, states, copy, accessibility and adaptation. Apply them through [the design contract](design-contract.md), which distinguishes product defaults from usability requirements and defines how user references and authorized exceptions take precedence. Implementation remains in the owning development Skill (for applications, [`frontend-dev.md`](frontend-dev.md)). Every rule has an ID and is marked Must or Should. For the full workflow, read the whole document; for a quick change, read the items related to the change.
 
 ## How to use
 
-- **When designing**: first choose a page template from section T, then satisfy the rules section by section.
+- **When designing**: first read the reference and system/page decisions, then choose a page template from section T where it fits; record any authorized replacement instead of forcing the reference into a default template.
 - **When reviewing**: go through the review checklist at the end item by item, and cite rule IDs in issues, for example "violates T1.4".
-- An unmet rule marked Must is an issue. When you do not adopt a rule marked Should, give the reason in the design file's "Guideline trade-offs" section.
+- An unmet usability or integration requirement is an issue. A Must product default applies unless the design contract records an authorized replacement; review that replacement and its acceptance criterion instead. A Should departure needs a reason in "Guideline trade-offs". A visual exception never waives usable controls, permission checks or correct data.
 - For a situation the guidelines do not cover: follow the closest rule, and record the situation under "Open questions" in the design file.
-- **Scope**: the rules govern the UI a page adds itself. Parts that come with shared components (the × in a dialog's top-right corner, pagination buttons, table header menus and so on) keep the component's default behavior. When they need to change, modify the shared component so every page changes together; do not build a separate version in a single page.
+- **Scope**: shared components supply their default behavior. Prefer their props, variants and composition for a recorded page exception; change shared source only for an intentional shared change with its consumers checked. Plugin copies belong to the plugin and inherit the host's theme; do not change host globals for a local reference. This document describes outcomes, not permission to import private host components.
 
 ## F Foundations
 
@@ -24,7 +24,7 @@ These are this application's UI design guidelines: foundations, page structure, 
 
 **F5 [Must] All icons come from lucide-react**; the button controls the size of an icon inside it, and a standalone icon uses `size-4`.
 
-**F6 [Must] Everything is clearly readable in both the light and dark themes**. Using only semantic tokens satisfies this automatically; you do not need `dark:` prefixes.
+**F6 [Must] Everything is clearly readable in both the light and dark themes**. Use semantic tokens so the host controls both themes; when their values change, verify readability rather than assuming a token name guarantees contrast.
 
 **F7 [Must] Explain intentional fixed sizes**: where a fixed value is genuinely needed, such as a control width, a viewport-relative maximum height or an image size, you may use a literal value, but record it in the design file's "Guideline trade-offs" section. The standard layouts in ["Common layouts" of `references/styling.md`](references/styling.md#common-layouts) (the `grid-cols-[8rem_1fr]` label–value grid, `w-full sm:w-40` filters, `sm:max-w-xs` search) and the overlay sizes of I1 and I13 (`max-h-[calc(100dvh-2rem)]`, `w-auto min-w-40`) are already approved and need no entry. This exception does not apply to color, font size or spacing.
 
@@ -120,7 +120,7 @@ Kanban boards, calendars and similar pages have no template yet. When designing 
 | Large read-only content (a transcript, a diff, a file preview)                                            | Dialog                                                                  | `sm:max-w-4xl`                                               | scrolling body                          |
 | A few options, filter conditions, quick actions                                                           | DropdownMenu or Popover                                                 | sized to its content (I13)                                   | —                                       |
 
-Every confirmation is an AlertDialog, never a Dialog with two buttons. A dialog that is not a route overlay and whose content can outgrow the screen caps its height with one idiom, `max-h-[calc(100dvh-2rem)]`, keeps its header and footer fixed and scrolls only its body, so the footer's buttons never scroll out of view (A4): `DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'` around a body of `-mx-6 min-h-0 flex-1 overflow-y-auto px-6` ([`references/overlay.md`](references/overlay.md#6-plain-dialogs-sizes-and-scrolling)). Do not use other caps (`90vh`, `85dvh`, `calc(100svh-2rem)`), and do not scroll the whole dialog. `RouteDialog` and `RouteDrawer` already do this.
+Every confirmation is an AlertDialog, never a Dialog with two buttons. A dialog that is not a route overlay and whose content can outgrow the screen caps its height with one idiom, `max-h-[calc(100dvh-2rem)]`, keeps its header and footer fixed and scrolls only its body, so the footer's buttons never scroll out of view (A4): `DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-2xl'` with `shrink-0` on its header and footer around a body of `-mx-6 min-h-0 flex-1 overflow-y-auto px-6` ([`references/overlay.md`](references/overlay.md#6-plain-dialogs-sizes-and-scrolling)). Do not use other caps (`90vh`, `85dvh`, `calc(100svh-2rem)`), and do not scroll the whole dialog. `RouteDialog` and `RouteDrawer` already do this.
 
 Stacking rules: a drawer can open a dialog (for example, to edit from the detail view) and a confirmation dialog; a dialog can open only a confirmation dialog on top of it. Esc and clicking the backdrop close only the topmost layer. Edit opened from a list row's menu is the dialog alone over the list; edit opened from the detail drawer stacks the dialog on the drawer, and closing it returns to the drawer; edit opened from the header of a record page with tabs stacks the dialog on the tab being shown, and closing it returns to that tab.
 
@@ -138,7 +138,7 @@ Stacking rules: a drawer can open a dialog (for example, to edit from the detail
 
 Do not show raw backend error messages (untranslated exception messages, stack traces, SQL) to the user.
 
-**I4 [Must] Loading indicators**: the first load shows a skeleton (S1); an action triggered by a button shows its loading state on that button; a reload (search, refresh) keeps the old data and shows a lightweight loading indicator instead of replacing the whole block with a skeleton.
+**I4 [Must] Loading indicators**: the first load shows a skeleton (S1); an action triggered by a button shows its loading state on that button; a reload (search, refresh) keeps the old data and shows a lightweight loading indicator instead of replacing the whole block with a skeleton. Distinguish paused or covered content from an active request: a paused list does not show refresh feedback. For background refreshes with retained data, delay only the visual indicator briefly (for example, 300ms), cancel its timer when refreshing stops or the view becomes inactive, and reserve its toolbar space so fast responses do not flash feedback or shift content. Do not delay the request, data updates, errors, permission checks or submit-button feedback.
 
 **I5 [Should]** The search box searches automatically as the user types (debounced by about 300ms), without the user pressing Enter.
 
@@ -197,12 +197,14 @@ Do not show raw backend error messages (untranslated exception messages, stack t
 - **A2 [Must]** Do not convey information by color alone: states have text, and errors have a text explanation.
 - **A3 [Must]** Keep a visible focus style, and keep it consistent across links, buttons and inputs.
 - **A4 [Must]** Usable at a width of 375px: the toolbar wraps, tables can scroll horizontally, dialogs stay within the screen (when the content is too long, the dialog scrolls internally and its footer buttons stay reachable), buttons are not covered, and long text does not break the layout.
-- **A5 [Must]** Text-to-background contrast meets WCAG AA. Semantic tokens meet it by default; custom colors must be verified.
+- **A5 [Must]** Text-to-background contrast meets WCAG AA. Verify changed foreground/background token pairs in every supported theme; an application can customize their values.
 - **A6 [Must] Where focus goes**: when an action removes the element that has focus (deleting a row, closing a drawer, a record that no longer exists), move focus to a stable place (such as the search box or the page title); do not let focus fall to the top level of the page.
 - **A7 [Must] Reliable input**: text boxes support Chinese input methods (IME composition), typing character by character, and editing in the middle of the text; while the user is typing, external state (the URL, endpoint responses, auto-refresh) must not overwrite or interrupt the text box's content.
 - **A8 [Should]** Informational messages (such as the result cap notice) do not use alert semantics, which interrupt screen reader announcements; use those only for errors.
 
 ## Review checklist
+
+First apply the reference modes and authorized exceptions from [the design contract](design-contract.md). Include [shared acceptance checks](ui-acceptance.md) where relevant, especially actual browser geometry for overlay changes. An authorized default replacement is recorded with its evidence; it is not silently skipped or reported as a violation of the old default.
 
 The design review and the acceptance review both go through this checklist item by item: the review record's "Review checklist" section gets one row per item, and each unmet item is also an issue that cites its IDs. The checklist covers every Must rule; a rule the page cannot trigger (no detail view, no settings page) is marked "Not applicable" rather than skipped silently.
 
