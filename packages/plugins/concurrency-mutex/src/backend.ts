@@ -5,7 +5,6 @@ import {
 } from '@nocobase/concurrency';
 import type {
   ConcurrentBackend,
-  ConcurrentBackendSession,
   BackendContext,
   BackendAcquireRequest,
   BackendGrant,
@@ -44,26 +43,54 @@ function delay(
     if (signal.aborted) finish();
   });
 }
-class LocalSession implements ConcurrentBackendSession {
-  get protocolVersion(): 1 {
-    return 1;
-  }
+export class LocalConcurrentBackend implements ConcurrentBackend {
+  readonly protocolVersion = 1;
+  private state?: { context: BackendContext; registry: LocalResourceRegistry };
+  private initialized = false;
   private closing = false;
   private closed = false;
   private readonly attempts = new Set<AbortController>();
   private readonly grants = new Set<BackendGrant>();
   private releases = 0;
-  constructor(
-    private readonly context: BackendContext,
-    private readonly registry: LocalResourceRegistry,
-    private readonly retryInterval: number,
-    private readonly onClosed: () => void,
-  ) {}
-  async validateResource(resource: ResourceSpec): Promise<void> {
+  private readonly retryInterval: number;
+  constructor(options: LocalConcurrentBackendOptions = {}) {
+    this.retryInterval = positive(
+      options.retryIntervalMs ?? 10,
+      'retryIntervalMs',
+    );
+  }
+  async initialize(context: BackendContext): Promise<void> {
+    if (this.initialized || this.closing || this.closed)
+      throw new ConcurrentConfigurationError(
+        'Local backend cannot be initialized twice',
+      );
+    this.initialized = true;
+    if (context.protocolVersion !== 1)
+      throw new ConcurrentConfigurationError(
+        'Local backend requires protocol v1',
+      );
+    if (!context.namespace || !Number.isFinite(context.clock.now()))
+      throw new ConcurrentConfigurationError('Invalid local backend context');
+    positive(context.operationTimeoutMs, 'operationTimeoutMs');
+    positive(context.cleanupTimeoutMs, 'cleanupTimeoutMs');
+    this.state = { context, registry: new LocalResourceRegistry(context) };
+  }
+  private opened(): {
+    context: BackendContext;
+    registry: LocalResourceRegistry;
+  } {
+    if (!this.state)
+      throw new ConcurrentConfigurationError(
+        'Local backend is not initialized',
+      );
     if (this.closing)
-      throw new ConcurrentAcquireError('Local session is closing');
+      throw new ConcurrentAcquireError('Local backend is closing');
+    return this.state;
+  }
+  async validateResource(resource: ResourceSpec): Promise<void> {
+    const { context } = this.opened();
     if (
-      resource.namespace !== this.context.namespace ||
+      resource.namespace !== context.namespace ||
       resource.kind !== 'lock' ||
       typeof resource.name !== 'string' ||
       !resource.name.length
@@ -74,8 +101,7 @@ class LocalSession implements ConcurrentBackendSession {
   async acquire(
     request: BackendAcquireRequest,
   ): Promise<BackendGrant | undefined> {
-    if (this.closing)
-      throw new ConcurrentAcquireError('Local session is closing');
+    const { context, registry } = this.opened();
     const controller = new AbortController();
     const onAbort = (): void => controller.abort(request.signal.reason);
     this.attempts.add(controller);
@@ -103,24 +129,21 @@ class LocalSession implements ConcurrentBackendSession {
         this.closing ||
         controller.signal.aborted ||
         (request.wait.kind === 'bounded' &&
-          this.context.clock.now() >= request.wait.deadline);
+          context.clock.now() >= request.wait.deadline);
       while (!unavailable()) {
-        const notAfter = await this.registry.transition(
-          key,
-          (state, effects) => {
-            // Recheck after waiting for the gate; one caller never cancels the shared Mutex.
-            if (unavailable()) return undefined;
-            this.registry.purge(state, effects);
-            if (state.holder) return undefined;
-            const expiresAt = this.context.clock.now() + request.resource.ttl;
-            if (!Number.isFinite(expiresAt))
-              throw new ConcurrentConfigurationError(
-                'Invalid local lease deadline',
-              );
-            this.registry.grant(state, request.token, expiresAt, effects);
-            return expiresAt;
-          },
-        );
+        const notAfter = await registry.transition(key, (state, effects) => {
+          // Recheck after waiting for the gate; one caller never cancels the shared Mutex.
+          if (unavailable()) return undefined;
+          registry.purge(state, effects);
+          if (state.holder) return undefined;
+          const expiresAt = context.clock.now() + request.resource.ttl;
+          if (!Number.isFinite(expiresAt))
+            throw new ConcurrentConfigurationError(
+              'Invalid local lease deadline',
+            );
+          registry.grant(state, request.token, expiresAt, effects);
+          return expiresAt;
+        });
         if (notAfter !== undefined) {
           let inFlight: Promise<void> | undefined;
           let released = false;
@@ -130,11 +153,11 @@ class LocalSession implements ConcurrentBackendSession {
               if (inFlight) return inFlight;
               if (released) return Promise.resolve();
               this.releases++;
-              const work = this.registry
+              const work = registry
                 .transition(key, (state, effects) => {
-                  this.registry.purge(state, effects);
+                  registry.purge(state, effects);
                   if (state.holder?.token === request.token)
-                    this.registry.clear(state, effects);
+                    registry.clear(state, effects);
                 })
                 .then(() => {
                   released = true;
@@ -163,11 +186,11 @@ class LocalSession implements ConcurrentBackendSession {
           request.wait.kind === 'bounded'
             ? Math.min(
                 this.retryInterval,
-                request.wait.deadline - this.context.clock.now(),
+                request.wait.deadline - context.clock.now(),
               )
             : this.retryInterval;
         if (interval <= 0) return undefined;
-        await delay(this.context, interval, controller.signal);
+        await delay(context, interval, controller.signal);
       }
       return undefined;
     } finally {
@@ -179,68 +202,12 @@ class LocalSession implements ConcurrentBackendSession {
     if (this.closed) return;
     this.closing = true;
     for (const controller of this.attempts)
-      controller.abort(new ConcurrentAcquireError('Local session is closing'));
+      controller.abort(new ConcurrentAcquireError('Local backend is closing'));
     if (this.attempts.size || this.grants.size || this.releases)
       throw new ConcurrentCloseError(
-        'Local session still has visible work or unreturned grants',
+        'Local backend still has visible work or unreturned grants',
       );
+    await this.state?.registry.drain();
     this.closed = true;
-    this.onClosed();
-  }
-}
-
-export class LocalConcurrentBackend implements ConcurrentBackend {
-  private context?: BackendContext;
-  private registry?: LocalResourceRegistry;
-  private readonly sessions = new Set<LocalSession>();
-  private closed = false;
-  private readonly retryInterval: number;
-  constructor(options: LocalConcurrentBackendOptions = {}) {
-    this.retryInterval = positive(
-      options.retryIntervalMs ?? 10,
-      'retryIntervalMs',
-    );
-  }
-  async openSession(
-    context: BackendContext,
-  ): Promise<ConcurrentBackendSession> {
-    if (this.closed)
-      throw new ConcurrentConfigurationError('Local backend is closed');
-    if (context.protocolVersion !== 1)
-      throw new ConcurrentConfigurationError(
-        'Local backend requires protocol v1',
-      );
-    if (!context.namespace || !Number.isFinite(context.clock.now()))
-      throw new ConcurrentConfigurationError('Invalid local backend context');
-    positive(context.operationTimeoutMs, 'operationTimeoutMs');
-    positive(context.cleanupTimeoutMs, 'cleanupTimeoutMs');
-    if (
-      this.context &&
-      (this.context.clock !== context.clock ||
-        this.context.scheduler !== context.scheduler)
-    )
-      throw new ConcurrentConfigurationError(
-        'Shared local sessions must use the same clock and scheduler instances',
-      );
-    this.context ??= context;
-    this.registry ??= new LocalResourceRegistry(context);
-    const session = new LocalSession(
-      context,
-      this.registry,
-      this.retryInterval,
-      () => {
-        this.sessions.delete(session);
-      },
-    );
-    this.sessions.add(session);
-    return session;
-  }
-  async close(): Promise<void> {
-    if (this.sessions.size)
-      throw new ConcurrentCloseError(
-        'Close all local sessions before closing the backend',
-      );
-    this.closed = true;
-    await this.registry?.drain();
   }
 }

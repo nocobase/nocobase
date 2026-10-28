@@ -50,18 +50,15 @@ async function fixture(schedulerOverride?: Scheduler) {
     scheduler: schedulerOverride ?? time,
   };
   const a = await createConcurrentRuntime(options);
-  const b = await createConcurrentRuntime(options);
+
   return {
     time,
     backend,
     a,
-    b,
     lock: await a.manager.createLock('shared'),
-    contender: await b.manager.createLock('shared'),
+    contender: await a.manager.createLock('shared'),
     async close() {
       await a.close();
-      await b.close();
-      await backend.close();
     },
   };
 }
@@ -78,10 +75,10 @@ describe('Local public integration', () => {
     ).toBeGreaterThan(5);
     expect((await runCoreFaultContract()).cases).toHaveLength(5);
   });
-  it('shares backend/namespace, separates instances/namespaces, and shares executor lock kind', async () => {
+  it('shares same-runtime lock kind and isolates distinct backend instances', async () => {
     const f = await fixture();
     const c = await createConcurrentRuntime({
-      backend: f.backend,
+      backend: new LocalConcurrentBackend(),
       namespace: 'other',
       clock: f.time,
       scheduler: f.time,
@@ -94,7 +91,7 @@ describe('Local public integration', () => {
     const held = await f.lock.lock();
     expect(await f.contender.tryLock()).toBeUndefined();
     expect(
-      await (await f.b.manager.createSynchronous('shared')).tryRun(() => 1),
+      await (await f.a.manager.createSynchronous('shared')).tryRun(() => 1),
     ).toEqual({ acquired: false });
     const independent = await (await c.manager.createLock('shared')).lock();
     const other = await (await d.manager.createLock('shared')).lock();
@@ -103,7 +100,6 @@ describe('Local public integration', () => {
     await held.release();
     await c.close();
     await d.close();
-    await separate.close();
     await f.close();
   });
   it('uses cancellable 10ms bounded retries and single performs no retry', async () => {
@@ -230,7 +226,6 @@ describe('Local public integration', () => {
     expect(lease).toBeDefined();
     await lease?.release();
     await runtime.close();
-    await backend.close();
     expect(time.pendingTimers).toBe(0);
   });
   it('does not propagate acquisition cancellation after runner entry', async () => {
@@ -277,7 +272,6 @@ describe('Local public integration', () => {
     expect(await lock.tryLock()).toBeUndefined();
     await next?.release();
     await runtime.close();
-    await backend.close();
     expect(time.pendingTimers).toBe(0);
   });
   it('lets new work enter after TTL without forcibly stopping an expired runner', async () => {
@@ -363,7 +357,6 @@ describe('Local public integration', () => {
       }
       expect(caught).toBe(true);
       await runtime.close();
-      await backend.close();
     },
   );
   it('maps only reason/cause loss and tolerates cyclic or throwing cause getters', async () => {
@@ -404,23 +397,25 @@ describe('Local public integration', () => {
       await f.close();
     }
   });
-  it('close times out, retains expired manual leases, and only cancels its own session', async () => {
+  it('close cancels pending waits but retains expired manual leases until returned', async () => {
     const f = await fixture();
+    const backendClose = vi.spyOn(f.backend, 'close');
     const held = await f.contender.lock();
-    const waiting = f.lock.lock();
-    const aborted = rejection(waiting, ConcurrentAbortError);
+    const aborted = rejection(f.lock.lock(), ConcurrentAbortError);
     await flush();
-    await f.a.close();
+    const failed = rejection(f.a.close({ timeoutMs: 1 }), ConcurrentCloseError);
     await aborted;
-    expect(await f.contender.tryLock()).toBeUndefined();
-    const closing = f.b.close({ timeoutMs: 1 });
-    const failed = rejection(closing, ConcurrentCloseError);
     f.time.advance(30000);
     f.time.flush();
     await failed;
+    expect(backendClose).not.toHaveBeenCalled();
+    await expect(f.contender.tryLock()).rejects.toBeInstanceOf(
+      ConcurrentAcquireError,
+    );
     await held.release();
-    await f.b.close();
-    await f.backend.close();
+    await f.a.close();
+    expect(backendClose).toHaveBeenCalledTimes(1);
+    expect(f.time.pendingTimers).toBe(0);
   });
   it('close waits for a real runner and retries executor cleanup failures', async () => {
     const f = await fixture();
@@ -444,8 +439,6 @@ describe('Local public integration', () => {
     end.resolve();
     await releaseFailed;
     await f.a.close();
-    await f.b.close();
-    await f.backend.close();
   });
   it('reports backend faults as errors rather than normal busy', async () => {
     const f = await fixture();
@@ -472,16 +465,16 @@ describe('Local public integration', () => {
       operationTimeoutMs: 5000,
       cleanupTimeoutMs: 5000,
     };
-    const session = await backend.openSession(context);
+    await backend.initialize(context);
     await expect(
-      session.validateResource({
+      backend.validateResource({
         namespace: 'wrong',
         name: 'r',
         kind: 'lock',
         ttl: 10,
       }),
     ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
-    const grant = await session.acquire({
+    const grant = await backend.acquire({
       resource: { namespace: 'direct', name: 'r', kind: 'lock', ttl: 10 },
       token: 'one',
       requestId: 'request',
@@ -492,12 +485,11 @@ describe('Local public integration', () => {
     time.advance(10);
     time.flush();
     await flush();
-    await expect(session.close()).rejects.toBeInstanceOf(ConcurrentCloseError);
+    await expect(backend.close()).rejects.toBeInstanceOf(ConcurrentCloseError);
     await grant?.release();
-    await session.close();
     await backend.close();
   });
-  it('rejects unknown options, invalid timings and mismatched clock domains', async () => {
+  it('rejects unknown options, invalid timings and backend reuse', async () => {
     const f = await fixture();
     for (const options of [
       { ttl: 10, owner: '' },
@@ -517,9 +509,6 @@ describe('Local public integration', () => {
     await expect(
       createConcurrentRuntime({ backend: f.backend, namespace: 'wrong' }),
     ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
-    await expect(f.backend.close()).rejects.toBeInstanceOf(
-      ConcurrentCloseError,
-    );
     await f.close();
     await expect(
       createConcurrentRuntime({ backend: f.backend, namespace: 'closed' }),
@@ -572,7 +561,6 @@ describe('Local public integration', () => {
     expect(max).toBe(1);
     expect(results).toHaveLength(20);
     await runtime.close();
-    await backend.close();
   });
 });
 

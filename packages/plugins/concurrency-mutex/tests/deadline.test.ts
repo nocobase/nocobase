@@ -22,12 +22,11 @@ describe('Mutex bounded acquisition deadlines', () => {
       const backend = new LocalConcurrentBackend({ retryIntervalMs: 1 });
       const options = { backend, namespace: 'early', clock: time, scheduler };
       const owner = await createConcurrentRuntime(options);
-      const waiter = await createConcurrentRuntime(options);
       const held = await (
         await owner.manager.createLock('r', { ttl: 100 })
       ).lock();
-      const lock = await waiter.manager.createLock('r');
-      const executor = await waiter.manager.createSynchronous('r');
+      const lock = await owner.manager.createLock('r');
+      const executor = await owner.manager.createSynchronous('r');
       let settled = false;
       const work =
         method === 'lock'
@@ -55,8 +54,6 @@ describe('Mutex bounded acquisition deadlines', () => {
       await work;
       expect(settled).toBe(true);
       await owner.close();
-      await waiter.close();
-      await backend.close();
       expect(time.pendingTimers).toBe(0);
     });
 
@@ -87,7 +84,6 @@ describe('Mutex bounded acquisition deadlines', () => {
       expect(lease).toBeDefined();
       await lease?.release();
       await runtime.close();
-      await backend.close();
       expect(time.pendingTimers).toBe(0);
     });
   }

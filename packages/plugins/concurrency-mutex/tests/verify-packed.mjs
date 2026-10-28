@@ -106,15 +106,15 @@ for(const method of ['lock','run']){
   const time=new testing.ManualTime();const callbacks=[];
   const scheduler={setTimer(notify,delay){callbacks.push({notify,delay});return time.setTimer(notify,delay);}};
   const backend=new LocalConcurrentBackend({retryIntervalMs:1});const options={backend,namespace:'early-deadline',clock:time,scheduler};
-  const owner=await core.createConcurrentRuntime(options);const waiter=await core.createConcurrentRuntime(options);
+  const owner=await core.createConcurrentRuntime(options);
   const held=await (await owner.manager.createLock('r',{ttl:100})).lock();
-  const lock=await waiter.manager.createLock('r');const executor=await waiter.manager.createSynchronous('r');
+  const lock=await owner.manager.createLock('r');const executor=await owner.manager.createSynchronous('r');
   const flush=async()=>{for(let i=0;i<50;i++)await Promise.resolve();};
   const work=method==='lock'?lock.tryLock(10).then(async lease=>{assert.ok(lease);await lease.release();}):executor.tryRun(()=>42,10).then(result=>assert.deepEqual(result,{acquired:true,value:42}));
   await flush();const timer=callbacks.find(callback=>callback.delay===10);assert.ok(timer);time.advance(8.25);timer.notify();await flush();time.advance(0.75);await held.release();time.flush();await work;
   const queued=method==='lock'?lock.tryLock(10):executor.tryRun(()=>{throw new Error('Must not run');},10);time.advance(10);assert.deepEqual(await queued,method==='lock'?undefined:{acquired:false});
   const next=await lock.tryLock();assert.ok(next);await next.release();
-  await owner.close();await waiter.close();await backend.close();assert.equal(time.pendingTimers,0);
+  await owner.close();assert.equal(time.pendingTimers,0);
 }
 const ordinary = [];
 for (const method of ['lock', 'run']) {
@@ -122,35 +122,36 @@ for (const method of ['lock', 'run']) {
   const local = new LocalConcurrentBackend({retryIntervalMs: 10000});
   const options = {backend: local, namespace: 'packed-wait', clock: time, scheduler: time};
   const owner = await core.createConcurrentRuntime(options);
-  const waiter = await core.createConcurrentRuntime(options);
   const held = await (await owner.manager.createLock('r', {ttl: 120000})).lock();
   let settled = false;
   const work = method === 'lock'
-    ? (await waiter.manager.createLock('r')).lock().then(async lease => {settled=true;await lease.release();})
-    : (await waiter.manager.createSynchronous('r')).run(() => {settled=true;});
+    ? (await owner.manager.createLock('r')).lock().then(async lease => {settled=true;await lease.release();})
+    : (await owner.manager.createSynchronous('r')).run(() => {settled=true;});
   const flush = async () => {for(let i=0;i<50;i++) await Promise.resolve();};
   await flush();time.advance(60000);time.flush();await flush();
   assert.equal(settled,false);
   await held.release();time.advance(10000);time.flush();await work;
   assert.equal(settled,true);
-  await owner.close();await waiter.close();await local.close();
+  await owner.close();
   assert.equal(time.pendingTimers,0);ordinary.push(method);
 }
 const backend = new LocalConcurrentBackend();
 const a = await core.createConcurrentRuntime({backend,namespace:'packed'});
-const b = await core.createConcurrentRuntime({backend,namespace:'packed'});
+await assert.rejects(core.createConcurrentRuntime({backend,namespace:'other'}),core.ConcurrentConfigurationError);
 assert.equal('createSemaphore' in a.manager,false);
 assert.equal('capabilities' in a,false);
 const lock = await a.manager.createLock('r');
-const executor = await b.manager.createSynchronous('r');
+const executor = await a.manager.createSynchronous('r');
 const lease = await lock.lock();assert.deepEqual(await executor.tryRun(()=>1),{acquired:false});await lease.release();
 let active=0;let max=0;
 const executors = [await a.manager.createSynchronous('r'),executor];
 await Promise.all(Array.from({length:20},(_,i)=>executors[i%2].run(async({signal})=>{signal.throwIfAborted();active++;max=Math.max(max,active);await setImmediate();active--;})));
 assert.equal(max,1);
 assert.equal(await executor.run(()=>42),42);
-await a.close();await b.close();await backend.close();
-console.log(JSON.stringify({contract,faults,ordinaryWaitsBeyond30Seconds:ordinary,multiManagerMaxActive:max}));
+await a.close();await a.close();
+await assert.rejects(core.createConcurrentRuntime({backend,namespace:'closed'}),core.ConcurrentConfigurationError);
+await assert.rejects(backend.validateResource({namespace:'packed',name:'r',kind:'lock',ttl:30000}),core.ConcurrentAcquireError);
+console.log(JSON.stringify({contract,faults,ordinaryWaitsBeyond30Seconds:ordinary,sameRuntimeMaxActive:max}));
 `,
 );
 execFileSync(process.execPath, ['run.mjs'], {

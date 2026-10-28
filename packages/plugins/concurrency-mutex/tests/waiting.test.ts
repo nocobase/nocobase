@@ -26,10 +26,10 @@ describe('Local ordinary waits', () => {
           scheduler: time,
         };
         const a = await createConcurrentRuntime(options);
-        const b = await createConcurrentRuntime(options);
+
         const holder = await a.manager.createLock('r', { ttl: 120000 });
-        const lock = await b.manager.createLock('r');
-        const executor = await b.manager.createSynchronous('r');
+        const lock = await a.manager.createLock('r');
+        const executor = await a.manager.createSynchronous('r');
         const lease = await holder.lock();
         const controller = new AbortController();
         let ran = false;
@@ -67,7 +67,11 @@ describe('Local ordinary waits', () => {
           time.advance(10000);
           time.flush();
         } else if (outcome === 'abort') controller.abort();
-        else await b.close();
+        else {
+          const closing = a.close();
+          await lease.release();
+          await closing;
+        }
         const result = await observed;
         if (outcome === 'grant') {
           expect(result.ok).toBe(true);
@@ -77,19 +81,19 @@ describe('Local ordinary waits', () => {
           if (result.ok) throw new Error('Expected cancellation');
           expect(result.error).toBeInstanceOf(ConcurrentAbortError);
           expect(ran).toBe(false);
-          // Closing/cancelling the contender must not release another session's holder.
-          expect(await holder.tryLock()).toBeUndefined();
+          // Close waits for manual leases; cancellation never releases them.
+          if (outcome !== 'close')
+            expect(await holder.tryLock()).toBeUndefined();
           await lease.release();
         }
         await a.close();
-        await b.close();
-        await backend.close();
+
         expect(time.pendingTimers).toBe(0);
       },
     );
   }
 
-  it('rejects an unsupported protocol version before opening a Local session', async () => {
+  it('rejects an unsupported protocol version before initializing a Local backend', async () => {
     const time = new ManualTime();
     const context: BackendContext = {
       protocolVersion: 1,
@@ -103,7 +107,7 @@ describe('Local ordinary waits', () => {
     // Deliberately simulate an incompatible JavaScript core.
     Object.defineProperty(context, 'protocolVersion', { value: 2 });
     const backend = new LocalConcurrentBackend();
-    await expect(backend.openSession(context)).rejects.toBeInstanceOf(
+    await expect(backend.initialize(context)).rejects.toBeInstanceOf(
       ConcurrentConfigurationError,
     );
     await backend.close();
