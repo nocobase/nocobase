@@ -4,6 +4,7 @@
  */
 import type { OpenAPIV3_1 } from '@nocobase/app-server/router';
 import { z } from 'zod';
+import { CommentMessageSchema } from '../domains/comments/comment.message.js';
 
 import {
   BUSINESS_KEYS,
@@ -1048,6 +1049,7 @@ export const IssueCommentSchema: z.ZodType<IssueComment> = z
     rootId: z.string(),
     via: z.enum(['cli', 'api_key', 'agent']).nullable(),
     source: ActivityViaSchema.nullable().optional(),
+    message: CommentMessageSchema.optional(),
     createdAt: dateTime,
     editedAt: dateTime.nullable(),
     deleted: z.boolean(),

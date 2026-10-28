@@ -6,7 +6,7 @@ import type { IssueTriggers } from '../../server/domains/issues/index.js';
 import { createProjects } from '../../server/composition.js';
 import { permissionsOf } from '../permissions.js';
 import type { Issue } from '../../shared/issues.js';
-import type { MentionRef } from '../../shared/comments.js';
+import type { CommentMessage, MentionRef } from '../../shared/comments.js';
 import { createHarness, type Harness } from '../harness.js';
 
 let h: Harness;
@@ -43,6 +43,138 @@ async function anIssue(viewer = alice()): Promise<Issue> {
 }
 
 describe('writing comments', () => {
+  it.each([
+    { type: 'example.notice', params: {} },
+    { type: 'example.enabled', params: { enabled: true } },
+    { type: 'acme-app.event', params: { count: 42 } },
+    { type: 'example.freeForm', params: { text: '  raw  ' } },
+  ] as const)(
+    'stores and projects a server display message: %j',
+    async (message) => {
+      const issue = await anIssue();
+      const { comment } = await h.services.comments.post(
+        { type: 'system', id: null },
+        issue.id,
+        { content: 'Safe fallback.' },
+        { message, origin: { runId: 'private-run', inputId: 'private-input' } },
+      );
+      expect(comment.message).toEqual(message);
+      expect(comment).not.toHaveProperty('origin');
+      const stored = await h.database
+        .connection()
+        .repository<{ origin: unknown }>('pmComments')
+        .findOne({ filter: { id: comment.id } });
+      expect(stored?.origin).toMatchObject({
+        runId: 'private-run',
+        inputId: 'private-input',
+        message,
+      });
+      expect(
+        (
+          await h.services.commentQueries.list(
+            h.database.connection(),
+            issue.id,
+          )
+        )[0]?.message,
+      ).toEqual(message);
+      expect(
+        (await h.services.commentQueries.threads(bob(), issue.id, {})).data[0]
+          ?.root.message,
+      ).toEqual(message);
+      expect(
+        (await h.services.issueQueries.detail(bob(), issue.id)).threads[0]?.root
+          .message,
+      ).toEqual(message);
+      await h.services.comments.remove(admin(), comment.id);
+      expect(
+        (
+          await h.services.commentQueries.list(
+            h.database.connection(),
+            issue.id,
+          )
+        )[0],
+      ).not.toHaveProperty('message');
+    },
+  );
+
+  it('projects only the public envelope and ignores invalid stored messages', async () => {
+    const issue = await anIssue();
+    const { comment } = await h.services.comments.post(
+      { type: 'system', id: null },
+      issue.id,
+      { content: 'Safe fallback.' },
+      {
+        message: {
+          type: 'example.notice',
+          params: { name: 'Example', count: 0, enabled: false },
+          inputId: 'secret',
+        } as CommentMessage,
+      },
+    );
+    expect(comment.message).toEqual({
+      type: 'example.notice',
+      params: { name: 'Example', count: 0, enabled: false },
+    });
+    const rows = h.database
+      .connection()
+      .repository<{ id: string; origin: unknown }>('pmComments');
+    for (const message of [
+      null,
+      [],
+      { type: 'invalid-type', params: {} },
+      { type: 'example.notice', params: { nested: {} } },
+      { type: 'example.notice', params: { value: null } },
+      { type: 'example.finished', params: { value: [] } },
+    ]) {
+      await rows.updateOne({
+        filter: { id: comment.id },
+        values: { origin: { message, runId: 'secret' } },
+      });
+      const [read] = await h.services.commentQueries.list(
+        h.database.connection(),
+        issue.id,
+      );
+      expect(read).not.toHaveProperty('message');
+      expect(read?.content).toBe('Safe fallback.');
+    }
+  });
+
+  it('rejects malformed server messages and prevents origin or ordinary comments from supplying one', async () => {
+    const issue = await anIssue();
+    await expect(
+      h.services.comments.post(
+        { type: 'system', id: null },
+        issue.id,
+        { content: 'Fallback.' },
+        {
+          message: {
+            type: 'example.finished',
+            params: { nested: {} },
+          } as unknown as CommentMessage,
+        },
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_COMMENT_MESSAGE' });
+    expect(
+      await h.services.commentQueries.list(h.database.connection(), issue.id),
+    ).toEqual([]);
+    const message = {
+      type: 'example.notice',
+      params: { text: 'Example' },
+    } as const;
+    const posted = await h.services.comments.post(
+      { type: 'system', id: null },
+      issue.id,
+      { content: 'Fallback.' },
+      { origin: { message } },
+    );
+    expect(posted.comment).not.toHaveProperty('message');
+    const created = await h.services.comments.create(alice(), issue.id, {
+      content: 'Human comment.',
+      ...{ message, origin: { message } },
+    });
+    expect(created.comment).not.toHaveProperty('message');
+  });
+
   it('returns the originating execution on comments and activities, and hides it when the comment is deleted', async () => {
     const issue = await anIssue();
     h.services.kinds.add({
