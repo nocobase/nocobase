@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- 22748f7: `agentSessionsRoute()` takes a `listHeading` component, drawn in place of the page list's title, so an application can put a switch to its other sessions there.
+- Updated dependencies [451bf75]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/agent-protocol@0.1.0-beta.16
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
 ## 1.0.0-beta.12
 
 ### Patch Changes
