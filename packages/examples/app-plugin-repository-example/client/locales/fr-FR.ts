@@ -329,6 +329,20 @@ const frFR: LocaleResource<typeof enUS> = {
   empty:
     "Aucun enregistrement pour l'instant. Créez le premier enregistrement pour commencer.",
   loading: 'Chargement…',
+  listFeedback: {
+    loading: 'Chargement',
+    empty: 'Aucune donnée',
+    noResults: 'Aucun résultat',
+    forbidden: 'Accès refusé',
+    unauthenticated: 'La session a expiré',
+    failed: 'Impossible de charger la liste',
+    refreshFailed:
+      'Échec de l’actualisation ; affichage des données précédentes',
+    retry: 'Réessayer',
+    retrying: 'Nouvelle tentative…',
+    clear: 'Effacer les filtres',
+    signIn: 'Se connecter',
+  },
   select: 'Sélectionnez un enregistrement',
   createTitle: 'Créer {{entity}}',
   editTitle: 'Modifier {{entity}}',

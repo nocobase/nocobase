@@ -142,6 +142,7 @@ describe('model kinds', () => {
 
   it('embeds, reranks and writes short texts, recording each use apart from runs', async () => {
     const harness = await create();
+    expect(harness.services).not.toHaveProperty('vectors');
     const gateway = harness.services.models.gateway;
     const embedded = await gateway.embed({
       model: { modelService: 'local', model: 'mock-embed' },

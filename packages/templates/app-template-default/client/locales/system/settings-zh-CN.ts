@@ -44,9 +44,6 @@ const settings = {
     records: '指定记录（{{count}} 条）',
     retained: '保留现有配置',
     search: '搜索业务对象或标识',
-    empty: '暂无默认数据范围',
-    emptyHint: '新建规则，为业务对象配置基础数据访问范围。',
-    readOnlyEmpty: '请联系管理员配置基础数据访问范围。',
     noResources: '可用业务对象均已配置默认规则，或当前没有可配置的业务对象。',
     unsupported:
       '此规则包含当前插件目录中不存在的配置，已保留原值并以只读方式展示。',
@@ -75,8 +72,6 @@ const settings = {
     '管理用户资料、账号安全和角色分配，请逐项确认需要授予的权限。',
   businessOperationsHint:
     '设置此角色可以执行的业务操作，以及每项操作可使用的数据范围。',
-  pageAccessHint:
-    '设置此角色可访问的业务页面。系统设置（包括用户管理、业务配置项）统一在“配置项权限”中控制。页面内的数据和业务操作仍需单独授权。',
   roleAssignment: '角色分配',
   accountSecurity: '账号安全',
   userInformation: '用户资料',
@@ -134,9 +129,6 @@ const settings = {
   noResults: '没有匹配的结果',
   clearHint: '请更换搜索条件或清除筛选。',
   noUsers: '暂无用户',
-  usersReadOnlyEmpty:
-    '请联系管理员添加用户，或授予创建用户和分配角色所需的权限。',
-  rolesReadOnlyEmpty: '请联系管理员创建角色，或授予你创建角色的权限。',
   noRoleAccess: '此用户仍可登录并使用账号基础功能，角色未授予业务访问。',
   noAssignedRoles: '未分配角色',
   noRoles: '暂无角色',

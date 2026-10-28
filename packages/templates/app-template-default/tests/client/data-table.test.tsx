@@ -114,14 +114,19 @@ describe('standard DataTable', () => {
     expect(screen.getByText('Page 4 of 6')).toBeVisible();
     expect(screen.getByText('row-0')).toBeVisible();
   });
-  it('keeps empty-state and paging controls localized in Chinese', async () => {
+  it('localizes successful emptiness and keeps the table headers without paging controls', async () => {
     await renderWithApp(
       <DataTable columns={columns} data={[]} showSelectedCount={false} />,
       { namespace, namespaces, locale: 'zh-CN' },
     );
-    expect(screen.getByText(zhCN.dataTable.noResults)).toBeVisible();
+    expect(screen.getByText(zhCN.listFeedback.empty)).toBeVisible();
+    expect(screen.getByRole('table')).toBeVisible();
+    expect(screen.getByRole('columnheader', { name: 'ID' })).toBeVisible();
     expect(
-      screen.getByRole('button', { name: zhCN.dataTable.nextPage }),
-    ).toBeDisabled();
+      screen.queryByText(zhCN.dataTable.noResults),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: zhCN.dataTable.nextPage }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -12,13 +12,16 @@ Rules: [section 1 of `table.md`](../table.md#1-choosing-a-table-component). This
 
 The endpoint contract this assumes is the one in [types](types.md): `GET /api/projects` takes `page` (from 1), `pageSize` (at most 100) and `orderBy` besides `q` and `status`, and returns `{ data: Project[], meta: { page, pageSize, total } }` (`ProjectList`), where `total` counts the matching records on all pages. `orderBy` names a column the endpoint sorts by, `name` (in the order of the request's language) or `updatedAt`, followed by ` desc` for descending; the page always sends it, `updatedAt desc` by default (guideline T1.8).
 
-The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Read [delete and recover a list](../table.md#delete-and-recover-a-list) first; its shared hooks own response isolation and bounded correction. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
+The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, list feedback, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Read [delete and recover a list](../table.md#delete-and-recover-a-list) first; its shared hooks own response isolation and bounded correction. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
+
+Keep the standard create action in the page header as in [`example/list-page.md`](list-page.md), including for a successful empty result; never pass it as `emptyAction`. The server table renders each built-in list state with its matching icon and one short line. Clear and Retry stay in the existing toolbar, and sign-in recovery stays in the authentication flow. Preserve the optional business-specific `emptyMessage` and `emptyAction` pass-through.
 
 The changes, inside the list page's component; everything marked `// …` stays as it is there:
 
 ```tsx
 // client/pages/projects/index.tsx (server-paginated: the list page with these changes)
 import type { ColumnSort } from '@tanstack/react-table';
+import { resolveListState } from '@nocobase/app-client';
 import { type ReactElement } from 'react';
 import { useListData } from '#hooks/use-list-data';
 import { useListLocation } from '#hooks/use-list-location';
@@ -77,10 +80,13 @@ export default function ProjectsPage(): ReactElement {
     pageSize: String(pageSize),
     orderBy,
   });
-  const request = useListData<ProjectList>(`projects?${remote}`, {
+  const requestPath = `projects?${remote}`;
+  const request = useListData<ProjectList>(requestPath, {
     active,
     keepPreviousData: true,
   });
+  const hasCurrentResponse = request.path === requestPath;
+  const response = hasCurrentResponse ? request.data : undefined;
   const tableState = useTableUrlState({
     active,
     revision: request.revision,
@@ -90,79 +96,45 @@ export default function ProjectsPage(): ReactElement {
     pageSizeOptions: PAGE_SIZES,
     sortColumns: SORTABLE,
     rowCount:
-      !request.loading && !request.error ? request.data?.meta.total : undefined,
+      hasCurrentResponse && !request.loading && !request.error
+        ? response?.meta.total
+        : undefined,
   });
   const reload = request.reload;
   const loading = request.loading;
   const error = tableState.error ?? request.error;
-  const rows = request.data?.data;
-  const result = request.data ? { total: request.data.meta.total } : undefined;
-  const displayedQuery = new URLSearchParams(request.path.split('?')[1]);
+  const rows = response?.data ?? [];
+  const result = response ? { total: response.meta.total } : undefined;
+  const displayedQuery = new URLSearchParams(requestPath.split('?')[1]);
   const rowsFiltered = Boolean(
     displayedQuery.get('q') || displayedQuery.get('status'),
+  );
+  const listState = resolveListState(
+    { data: response, error, isPending: loading && !hasCurrentResponse },
+    result?.total ?? 0,
+    rowsFiltered,
   );
 
   // … the focus handling after a delete, outletContext, the deletion state, the formatters
   // and the columns, as in the list page
 
   // Retry uses reload, and detail/batch deletions call reload once after the operation settles.
-  let content: ReactElement;
-  if (error instanceof ApiClientError && error.status === 401) {
-    // The session ended; signing in again is the only way forward (guideline S4).
-    content = <SessionExpiredAlert />;
-  } else if (error) {
-    // … the error Alert, as in the list page
-  } else if (rows === undefined) {
-    content = <TableSkeleton label={t('status.loading')} />;
-  } else if (result?.total === 0 && !rowsFiltered) {
-    // No records at all (guideline S2). Decided by the total: an empty page past the end is not an empty list.
-    content = (
-      <Empty className='min-h-48 border border-dashed'>
-        <EmptyHeader>
-          <EmptyMedia variant='icon'>
-            <FolderKanbanIcon />
-          </EmptyMedia>
-          <EmptyTitle>{t('projects.empty.title')}</EmptyTitle>
-          <EmptyDescription>{t('projects.empty.description')}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          {/* While the list is empty the primary action is only here; the page header leaves it out, as in the list page (guideline L7). */}
-          <Button
-            render={<Link to={{ pathname: 'new', search: location.search }} />}
-            nativeButton={false}
-          >
-            <PlusIcon data-icon='inline-start' />
-            {t('projects.create.action')}
-          </Button>
-        </EmptyContent>
-      </Empty>
-    );
-  } else {
-    content = (
-      <ProjectsServerTable
-        columns={columns}
-        rows={rows}
-        total={result?.total ?? 0}
-        pagination={tableState.paginationState}
-        pageSizeOptions={PAGE_SIZES}
-        onPaginationChange={tableState.onPaginationChange}
-        sorting={tableState.sortingState}
-        onSortingChange={tableState.onSortingChange}
-        // No results for the filters. Without filters an empty page only shows while a page past the end moves to the
-        // last one, so it stays blank.
-        emptyMessage={
-          rowsFiltered ? (
-            <div className='flex flex-col items-center gap-2'>
-              <span>{t('projects.empty.noResults')}</span>
-              <Button variant='link' size='sm' onClick={clearFilters}>
-                {t('projects.filters.clear')}
-              </Button>
-            </div>
-          ) : null
-        }
-      />
-    );
-  }
+  const content = (
+    <ProjectsServerTable
+      columns={columns}
+      rows={rows}
+      total={result?.total ?? 0}
+      listState={listState}
+      loading={loading}
+      onRetry={reload}
+      onClearFilters={clearFilters}
+      pagination={tableState.paginationState}
+      pageSizeOptions={PAGE_SIZES}
+      onPaginationChange={tableState.onPaginationChange}
+      sorting={tableState.sortingState}
+      onSortingChange={tableState.onSortingChange}
+    />
+  );
 
   // … the returned page, as in the list page
 }
@@ -177,11 +149,19 @@ import type {
   PaginationState,
   SortingState,
 } from '@tanstack/react-table';
-import type { ReactElement, ReactNode } from 'react';
-import { DataTable } from '#components/data-table';
+import type { ReactElement } from 'react';
+import { DataTable, type DataTableProps } from '#components/data-table';
 import type { Project } from './types.js';
 
-export interface ProjectsServerTableProps {
+export interface ProjectsServerTableProps extends Pick<
+  DataTableProps<Project>,
+  | 'listState'
+  | 'loading'
+  | 'onRetry'
+  | 'onClearFilters'
+  | 'emptyMessage'
+  | 'emptyAction'
+> {
   readonly columns: ColumnDef<Project>[];
   readonly rows: Project[];
   readonly total: number;
@@ -189,7 +169,6 @@ export interface ProjectsServerTableProps {
   readonly onPaginationChange: (pagination: PaginationState) => void;
   readonly sorting: SortingState;
   readonly onSortingChange: (sorting: SortingState) => void;
-  readonly emptyMessage: ReactNode;
   readonly pageSizeOptions: readonly number[];
 }
 
@@ -201,13 +180,14 @@ export function ProjectsServerTable({
   onPaginationChange,
   sorting,
   onSortingChange,
-  emptyMessage,
   pageSizeOptions,
+  ...listFeedback
 }: ProjectsServerTableProps): ReactElement {
   return (
     <DataTable
       columns={columns}
       data={rows}
+      {...listFeedback}
       getRowId={(row) => String(row.id)}
       manualPagination
       rowCount={total}
@@ -220,7 +200,6 @@ export function ProjectsServerTable({
       onSortingChange={(next) =>
         onSortingChange(typeof next === 'function' ? next(sorting) : next)
       }
-      emptyMessage={emptyMessage}
       pageSizeOptions={pageSizeOptions}
       showSelectedCount={false}
     />

@@ -25,6 +25,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   list: {
     panelEmpty: 'Nenhuma conversa',
+    fold: 'Ocultar sessões',
     expand: 'Mostrar sessões',
     label: 'Sessões',
     title: 'Meus agentes',

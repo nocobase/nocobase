@@ -25,6 +25,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   list: {
     panelEmpty: '暫無會話',
+    fold: '收合工作階段列表',
     expand: '展示場次',
     label: '會議',
     title: '我的經紀人',

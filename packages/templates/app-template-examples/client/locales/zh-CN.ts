@@ -1,9 +1,11 @@
+import { zhCN as skillProjectszhCN } from '../pages/skill-projects/locales.js';
 import { workflowNamesZhCN } from '../../shared/workflow-names.js';
 import type { AppResource } from './en-US.js';
 import agentChatZhCN from '#extensions/nocobase-agent-chat/locales/zh-CN';
 import systemZhCN from './system/zh-CN.js';
 
 const zhCN: AppResource = {
+  skillProjects: skillProjectszhCN,
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
   ...agentChatZhCN,
@@ -384,9 +386,6 @@ const zhCN: AppResource = {
     previous: '上一页',
     next: '下一页',
     pagination: '第 {{page}} 页 · 共 {{total}} 条执行记录',
-    noDefinitions: '暂无流程定义。',
-    noExecutions: '暂无执行记录，请从对应的示例页面发起流程。',
-    noResults: '该流程暂无执行记录。',
     loading: '正在加载工作流',
     failed: '工作流加载失败，请重试。',
     forbidden: '你没有查看此流程的权限。',
@@ -569,7 +568,6 @@ const zhCN: AppResource = {
     loading: '正在读取数字示例…',
     error: '无法读取数字示例，请检查网络和登录状态后重试。',
     retry: '重试',
-    empty: '当前范围没有记录，聚合结果显示在下方。',
     rows: '字段读取结果',
     aggregates: '聚合结果',
     field: '字段 / 类型',
@@ -683,11 +681,6 @@ const zhCN: AppResource = {
     archived: '已归档',
     filter: '按状态筛选',
     search: '搜索文章标题…',
-    loading: '正在加载文章…',
-    loadError: '文章加载失败，请检查网络连接后重试。',
-    retry: '重试',
-    empty: '没有找到文章',
-    emptyHint: '换个关键词，或创建你的第一篇文章。',
     noSummary: '暂无摘要',
     read: '阅读文章',
     total: '共 {{count}} 篇文章',
@@ -721,7 +714,7 @@ const zhCN: AppResource = {
     loading: '正在加载订单…',
     loadError: '无法加载订单。请确认已登录，且外部 CRM 数据库可以访问。',
     retry: '重试',
-    empty: '没有符合条件的订单',
+    empty: '暂无订单。',
     emptyHint:
       'SQLite 替身库会在启动时写入样例订单；接到真实 CRM 后显示的是它的数据。',
     columns: {

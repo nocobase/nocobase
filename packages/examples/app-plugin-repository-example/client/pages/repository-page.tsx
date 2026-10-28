@@ -1,4 +1,9 @@
-import { useSubmission } from '@nocobase/app-client';
+import {
+  listStateShowsData,
+  resolveListState,
+  useSubmission,
+  type ListState,
+} from '@nocobase/app-client';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import {
@@ -15,6 +20,16 @@ import {
 } from '../components/ui/sheet.js';
 import { useApiClient, ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import {
+  CircleAlert,
+  Inbox,
+  LoaderCircle,
+  LockKeyhole,
+  LogIn,
+  RefreshCw,
+  SearchX,
+  X,
+} from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -55,6 +70,104 @@ import {
 
 const NS = '@nocobase/app-plugin-repository-example';
 const PAGE_SIZE = 10;
+const listFeedback = {
+  loading: ['listFeedback.loading', 'Loading', LoaderCircle],
+  empty: ['listFeedback.empty', 'No data yet', Inbox],
+  'no-results': ['listFeedback.noResults', 'No results', SearchX],
+  forbidden: ['listFeedback.forbidden', 'Access denied', LockKeyhole],
+  unauthenticated: ['listFeedback.unauthenticated', 'Session expired', LogIn],
+  failed: ['listFeedback.failed', 'Unable to load list', CircleAlert],
+} as const;
+
+function RepositoryListFeedback({
+  state,
+  empty,
+}: {
+  readonly state: ListState;
+  readonly empty?: string;
+}): ReactElement {
+  const { t } = useTranslation(NS);
+  const [key, fallback, Icon] =
+    listFeedback[state as keyof typeof listFeedback];
+  return (
+    <div
+      role={
+        state === 'failed' ||
+        state === 'forbidden' ||
+        state === 'unauthenticated'
+          ? 'alert'
+          : 'status'
+      }
+      aria-busy={state === 'loading'}
+      className='flex min-h-24 items-center justify-center gap-2 px-4 py-6 text-sm text-muted-foreground'
+    >
+      <Icon
+        aria-hidden='true'
+        className={
+          state === 'loading' ? 'size-4 motion-safe:animate-spin' : 'size-4'
+        }
+      />
+      <span className='flex flex-col gap-1 text-center'>
+        <span>{t(key, { defaultValue: fallback })}</span>
+        {state === 'empty' && empty && (
+          <span className='font-normal'>{empty}</span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function RepositoryListFeedbackActions({
+  state,
+  onClear,
+  onRetry,
+  busy,
+}: {
+  readonly state: ListState;
+  readonly onClear: () => void;
+  readonly onRetry: () => void;
+  readonly busy: boolean;
+}): ReactElement | null {
+  const { t } = useTranslation(NS);
+  if (state === 'no-results') {
+    return (
+      <Button type='button' variant='outline' onClick={onClear}>
+        <X aria-hidden='true' />
+        {t('listFeedback.clear')}
+      </Button>
+    );
+  }
+  if (state === 'failed' || state === 'refresh-failed') {
+    return (
+      <Button type='button' variant='outline' disabled={busy} onClick={onRetry}>
+        {busy ? (
+          <LoaderCircle
+            aria-hidden='true'
+            className='motion-safe:animate-spin'
+          />
+        ) : (
+          <RefreshCw aria-hidden='true' />
+        )}
+        {busy ? t('listFeedback.retrying') : t('listFeedback.retry')}
+      </Button>
+    );
+  }
+  if (state === 'unauthenticated') {
+    return (
+      <Button
+        type='button'
+        variant='outline'
+        nativeButton={false}
+        render={<Link to='/login' />}
+      >
+        <LogIn aria-hidden='true' />
+        {t('listFeedback.signIn')}
+      </Button>
+    );
+  }
+  return null;
+}
+
 interface Trace {
   readonly id: number;
   readonly action: string;
@@ -111,6 +224,10 @@ function EntityWorkspace({
   const [page, setPage] = useState(0);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadedRequestPath, setLoadedRequestPath] = useState<string>();
+  const [listFailure, setListFailure] = useState<
+    { readonly requestPath: string; readonly error: unknown } | undefined
+  >();
   const submission = useSubmission();
   const [requestBusy, setRequestBusy] = useState(false);
   const busy = requestBusy || submission.submitting;
@@ -123,6 +240,37 @@ function EntityWorkspace({
   const [traces, setTraces] = useState<Trace[]>([]);
   const traceIdRef = useRef(0);
   const entryLockRef = useRef(false);
+  const requestPath = JSON.stringify([entity.key, query.trim(), page]);
+  const currentListData = loadedRequestPath === requestPath ? rows : undefined;
+  const listState = resolveListState(
+    {
+      data: currentListData,
+      error:
+        listFailure?.requestPath === requestPath
+          ? listFailure.error
+          : undefined,
+      isPending: loading && currentListData === undefined,
+    },
+    currentListData?.length ?? 0,
+    Boolean(query.trim()),
+  );
+  const visibleRows = listStateShowsData(listState) ? rows : [];
+  const currentCount =
+    currentListData !== undefined &&
+    (listState === 'ready' ||
+      listState === 'refresh-failed' ||
+      listState === 'empty' ||
+      listState === 'no-results')
+      ? count
+      : undefined;
+  const emptyFeedbackState: Exclude<ListState, 'ready' | 'refresh-failed'> =
+    listState === 'refresh-failed'
+      ? query.trim()
+        ? 'no-results'
+        : 'empty'
+      : listState === 'ready'
+        ? 'empty'
+        : listState;
   const refresh = (): void => {
     setLoading(true);
     setError('');
@@ -165,6 +313,7 @@ function EntityWorkspace({
         active = false;
       };
     }
+    const requestPath = JSON.stringify([entity.key, query.trim(), page]);
     const filter = searchFilter(entity, query);
     const options = {
       filter,
@@ -186,12 +335,13 @@ function EntityWorkspace({
         }
         setRows(records);
         setCount(total);
+        setLoadedRequestPath(requestPath);
+        setListFailure(undefined);
         recordTrace('count', { filter }, total);
         recordTrace('findMany', options, records);
       })
       .catch((value: unknown) => {
-        if (active)
-          setError(value instanceof Error ? value.message : t('loadError'));
+        if (active) setListFailure({ requestPath, error: value });
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -300,9 +450,11 @@ function EntityWorkspace({
               <div className='flex flex-wrap items-center justify-between gap-3'>
                 <CardTitle>
                   {t(entity.key)}{' '}
-                  <span className='text-sm font-normal text-muted-foreground'>
-                    {t('count', { count })}
-                  </span>
+                  {currentCount !== undefined && (
+                    <span className='text-sm font-normal text-muted-foreground'>
+                      {t('count', { count: currentCount })}
+                    </span>
+                  )}
                 </CardTitle>
                 <div className='flex gap-2'>
                   <Button
@@ -327,7 +479,7 @@ function EntityWorkspace({
             </CardHeader>
             <CardContent className='space-y-4'>
               <form
-                className='flex gap-2'
+                className='flex flex-wrap gap-2'
                 onSubmit={(event) => {
                   event.preventDefault();
                   setPage(0);
@@ -335,19 +487,34 @@ function EntityWorkspace({
                   refresh();
                 }}
               >
-                <Input
-                  aria-label={t('search')}
-                  placeholder={t('search')}
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                <div className='flex w-full min-w-0 gap-2 sm:w-auto sm:flex-1'>
+                  <Input
+                    className='min-w-0 flex-1'
+                    aria-label={t('search')}
+                    placeholder={t('search')}
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                  <Button
+                    className='shrink-0 whitespace-nowrap'
+                    type='submit'
+                    variant='outline'
+                    disabled={busy || loading}
+                  >
+                    {t('apply')}
+                  </Button>
+                </div>
+                <RepositoryListFeedbackActions
+                  state={listState}
+                  busy={loading}
+                  onClear={() => {
+                    setSearch('');
+                    setQuery('');
+                    setPage(0);
+                    refresh();
+                  }}
+                  onRetry={refresh}
                 />
-                <Button
-                  type='submit'
-                  variant='outline'
-                  disabled={busy || loading}
-                >
-                  {t('apply')}
-                </Button>
               </form>
               <div
                 className='overflow-hidden rounded-lg border'
@@ -370,7 +537,23 @@ function EntityWorkspace({
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-border/60'>
-                    {rows.map((row) => (
+                    {listState === 'refresh-failed' && (
+                      <tr>
+                        <td colSpan={entity.fields.length + 1} className='p-0'>
+                          <div
+                            role='alert'
+                            className='flex items-center justify-center gap-2 border-b border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive'
+                          >
+                            <CircleAlert
+                              aria-hidden='true'
+                              className='size-4'
+                            />
+                            {t('listFeedback.refreshFailed')}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {visibleRows.map((row) => (
                       <tr
                         key={row.id}
                         className='transition-colors hover:bg-muted/30'
@@ -446,22 +629,22 @@ function EntityWorkspace({
                         </td>
                       </tr>
                     ))}
+                    {!visibleRows.length && (
+                      <tr>
+                        <td colSpan={entity.fields.length + 1} className='p-0'>
+                          <RepositoryListFeedback
+                            state={emptyFeedbackState}
+                            empty={
+                              entity.key === 'customers'
+                                ? undefined
+                                : t('empty')
+                            }
+                          />
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
-                {loading ? (
-                  <p
-                    role='status'
-                    className='py-8 text-center text-muted-foreground'
-                  >
-                    {t('loading')}
-                  </p>
-                ) : (
-                  rows.length === 0 && (
-                    <p className='py-8 text-center text-muted-foreground'>
-                      {t('empty')}
-                    </p>
-                  )
-                )}
               </div>
               <div className='flex items-center justify-end gap-3'>
                 <Button
@@ -479,7 +662,12 @@ function EntityWorkspace({
                 <Button
                   size='sm'
                   variant='outline'
-                  disabled={loading || busy || (page + 1) * PAGE_SIZE >= count}
+                  disabled={
+                    loading ||
+                    busy ||
+                    currentCount === undefined ||
+                    (page + 1) * PAGE_SIZE >= currentCount
+                  }
                   onClick={() => {
                     setLoading(true);
                     setPage((value) => value + 1);

@@ -1,3 +1,4 @@
+import { resolveListState } from '@nocobase/app-client';
 import { RecordLink } from '#components/record-link';
 import { useMatch } from 'react-router';
 import { Badge } from '#components/ui/badge';
@@ -131,17 +132,16 @@ export default function ExecutionsPage(): ReactElement {
       }
       status={
         <>
-          <DataState {...request} retry={request.reload} />
           {catalog.status && <DataState {...catalog} retry={catalog.reload} />}
         </>
       }
+      listState={resolveListState(
+        request,
+        request.data?.data.length ?? 0,
+        Boolean(normalizedName) || Boolean(workflowId),
+      )}
       loaded={Boolean(request.data)}
       loading={request.loading}
-      empty={t(
-        workflowId || normalizedName
-          ? 'workflows.noResults'
-          : 'workflows.noExecutions',
-      )}
       labels={{
         refresh: t('workflows.refresh'),
         record: t('workflows.record'),

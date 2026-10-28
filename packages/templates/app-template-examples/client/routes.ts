@@ -32,6 +32,29 @@ import {
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
+    name: 'skill-projects',
+    path: '/skill-projects',
+    auth: 'required',
+    authz: {
+      resource: { type: 'page', id: 'skill-projects' },
+      action: 'access',
+    },
+    navigation: { title: 'skillProjects.title', icon: FilePenLine },
+    componentLoader: () => import('./pages/skill-projects/index.js'),
+    children: [
+      {
+        name: 'skill-projects-new',
+        path: 'new',
+        componentLoader: () => import('./pages/skill-projects/edit.js'),
+      },
+      {
+        name: 'skill-projects-edit',
+        path: ':projectId/edit',
+        componentLoader: () => import('./pages/skill-projects/edit.js'),
+      },
+    ],
+  },
+  {
     name: 'systemManagement',
     children: [],
     navigation: {

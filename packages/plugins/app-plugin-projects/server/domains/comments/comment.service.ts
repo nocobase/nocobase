@@ -9,6 +9,7 @@ import {
   PLAIN_COMMENT,
   REACTION_EMOJIS,
   type CommentReaction,
+  type CommentMessage,
   type CreateCommentRequest,
   type IssueComment,
   type MentionRef,
@@ -40,6 +41,7 @@ import {
 } from './comment.access.js';
 import './comment.events.js';
 import { mapComments } from './comment.queries.js';
+import { CommentMessageSchema } from './comment.message.js';
 import {
   addReaction,
   findComment,
@@ -169,6 +171,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
     options: {
       readonly kind?: string;
       readonly origin?: Readonly<Record<string, unknown>>;
+      readonly message?: CommentMessage;
       readonly trigger?: boolean;
       /** The person writing, whose right to mention each principal is checked. */
       readonly userId: string | null;
@@ -178,6 +181,21 @@ export function createCommentService(deps: CommentDeps): CommentService {
     },
   ) {
     const content = contentOf(input);
+    const parsedMessage =
+      options.message === undefined
+        ? undefined
+        : CommentMessageSchema.safeParse(options.message);
+    if (parsedMessage && !parsedMessage.success)
+      throw invalid(
+        'INVALID_COMMENT_MESSAGE',
+        'Invalid comment display message.',
+      );
+    // The explicit writer option owns this field; arbitrary provenance cannot impersonate a message.
+    const origin = {
+      ...(options.origin ?? (actor.trace ? { trace: actor.trace } : {})),
+    };
+    delete origin.message;
+    if (parsedMessage?.success) origin.message = parsedMessage.data;
     let parent: CommentRecord | undefined;
     if (input.parentId) {
       parent = await findComment(tx.conn, input.parentId);
@@ -205,7 +223,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
       content,
       parentId: parent?.id ?? null,
       rootId: parent?.rootId ?? id,
-      origin: options.origin ?? (actor.trace ? { trace: actor.trace } : null),
+      origin: Object.keys(origin).length ? origin : null,
       via: actor.via ?? null,
       createdAt: now,
       updatedAt: now,
@@ -336,6 +354,9 @@ export function createCommentService(deps: CommentDeps): CommentService {
         return write(tx, actor, issue, input, {
           ...(options.kind ? { kind: options.kind } : {}),
           ...(options.origin ? { origin: options.origin } : {}),
+          ...(options.message === undefined
+            ? {}
+            : { message: options.message }),
           ...(options.trigger === undefined
             ? {}
             : { trigger: options.trigger }),

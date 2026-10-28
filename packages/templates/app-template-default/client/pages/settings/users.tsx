@@ -9,7 +9,12 @@ import {
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
-import { useApiClient, useSubmission, useToaster } from '@nocobase/app-client';
+import {
+  resolveListState,
+  useApiClient,
+  useSubmission,
+  useToaster,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   UsersClient,
@@ -25,12 +30,13 @@ import {
   type ReactElement,
 } from 'react';
 import { Link, Outlet, useLocation, useResolvedPath } from 'react-router';
-import { PlusIcon, UsersIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { StatusBadge } from '#components/status-badge';
+import { Spinner } from '#components/ui/spinner';
 import {
   Select,
   SelectTrigger,
@@ -38,14 +44,26 @@ import {
   SelectContent,
   SelectItem,
 } from '#components/ui/select';
-import {
-  Empty,
-  EmptyMedia,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-} from '#components/ui/empty';
-import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+import { ConfirmAction, SettingsError } from './shared.js';
+
+function UsersRefreshing(): ReactElement | null {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    // Fast background reads should not flash feedback on overlay close.
+    const timer = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  return visible ? (
+    <span
+      role='status'
+      className='flex items-center gap-2 text-sm text-muted-foreground'
+    >
+      <Spinner aria-hidden='true' className='size-4' />
+      {t('settings.loading')}
+    </span>
+  ) : null;
+}
 
 function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
   const canUpdate = useUserPermission('update', user.id);
@@ -273,10 +291,12 @@ export default function UsersPage(): ReactElement {
         }
       : {}),
   });
+  const requestPath = `users?${remote}`;
   const request = useSettingsData<{
     data: readonly ManagedUser[];
     meta: { total: number };
-  }>(`users?${remote}`, { keepPreviousData: true, active });
+  }>(requestPath, { keepPreviousData: true, active });
+  const hasCurrentResponse = request.path === requestPath;
   const tableState = useTableUrlState({
     active,
     revision: request.revision,
@@ -284,7 +304,9 @@ export default function UsersPage(): ReactElement {
     pageSizeOptions: [20, 50, 100],
     sortColumns: ['name'],
     rowCount:
-      !request.loading && !request.error ? request.data?.meta.total : undefined,
+      hasCurrentResponse && !request.loading && !request.error
+        ? request.data?.meta.total
+        : undefined,
   });
   const clearFilters = () => {
     setQuery('');
@@ -317,6 +339,24 @@ export default function UsersPage(): ReactElement {
   const canCreate = useUserPermission('create');
   const canAssign = useUserPermission('assign-role');
   const rows = request.data?.data ?? [];
+  const filtered =
+    Boolean(params.get('q') || roleScope || role) || status !== 'all';
+  const listState = resolveListState(
+    {
+      data: hasCurrentResponse ? request.data : undefined,
+      error: tableState.error ?? request.error,
+      isPending: request.loading && !hasCurrentResponse,
+    },
+    hasCurrentResponse ? (request.data?.meta.total ?? rows.length) : 0,
+    filtered,
+  );
+  const canShowCreate =
+    canCreate &&
+    canAssign &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
   const columns = useMemo<ColumnDef<ManagedUser>[]>(
     () => [
       {
@@ -389,8 +429,6 @@ export default function UsersPage(): ReactElement {
         {t('settings.newUser')}
       </Button>
     ) : null;
-  const filtered =
-    Boolean(params.get('q') || roleScope || role) || status !== 'all';
   return (
     <>
       <PageContainer>
@@ -400,7 +438,7 @@ export default function UsersPage(): ReactElement {
         <PageHeader
           title={t('settings.users')}
           description={t('settings.usersDescription')}
-          actions={rows.length || filtered ? create : undefined}
+          actions={canShowCreate ? create : undefined}
         />
         <div className='flex flex-wrap items-center gap-3'>
           <Input
@@ -472,73 +510,37 @@ export default function UsersPage(): ReactElement {
               ))}
             </SelectContent>
           </Select>
-          {filtered && (
+          {filtered && listState !== 'no-results' && (
             <Button variant='ghost' onClick={clearFilters}>
               {t('settings.clear')}
             </Button>
           )}
+          <div className='ml-auto flex h-8 w-28 items-center justify-end'>
+            {active && hasCurrentResponse && request.loading && request.data ? (
+              <UsersRefreshing />
+            ) : null}
+          </div>
         </div>
-        {request.data && request.loading && (
-          <span role='status' className='text-sm text-muted-foreground'>
-            {t('settings.loading')}
-          </span>
-        )}
         {Boolean(roleScope) !== Boolean(role) && (
           <p role='alert' className='text-sm text-destructive'>
             {t('settings.roleFilterIncomplete')}
           </p>
         )}
         <SettingsError error={options.error} retry={options.reload} />
-        <SettingsError
-          error={tableState.error ?? request.error}
-          retry={request.reload}
+        <DataTable<ManagedUser>
+          columns={columns}
+          data={rows}
+          getRowId={(row) => row.id}
+          manualPagination
+          rowCount={request.data?.meta.total ?? 0}
+          {...tableState}
+          manualSorting
+          showSelectedCount={false}
+          loading={request.loading}
+          listState={listState}
+          onRetry={request.reload}
+          onClearFilters={clearFilters}
         />
-        {request.loading && !request.data ? (
-          <SettingsLoading />
-        ) : (
-          !tableState.error &&
-          !request.error &&
-          (rows.length ? (
-            <DataTable<ManagedUser>
-              columns={columns}
-              data={rows}
-              getRowId={(row) => row.id}
-              manualPagination
-              rowCount={request.data?.meta.total ?? 0}
-              {...tableState}
-              manualSorting
-              showSelectedCount={false}
-              loading={request.loading}
-            />
-          ) : (
-            <Empty className='min-h-48 border border-dashed'>
-              <EmptyMedia variant='icon'>
-                <UsersIcon />
-              </EmptyMedia>
-              <EmptyTitle>
-                {t(filtered ? 'settings.noResults' : 'settings.noUsers')}
-              </EmptyTitle>
-              <EmptyDescription>
-                {t(
-                  filtered
-                    ? 'settings.clearHint'
-                    : canCreate && canAssign
-                      ? 'settings.usersDescription'
-                      : 'settings.usersReadOnlyEmpty',
-                )}
-              </EmptyDescription>
-              <EmptyContent>
-                {filtered ? (
-                  <Button variant='outline' onClick={clearFilters}>
-                    {t('settings.clear')}
-                  </Button>
-                ) : (
-                  create
-                )}
-              </EmptyContent>
-            </Empty>
-          ))
-        )}
         {request.data && (
           <p className='text-sm text-muted-foreground'>
             {t('settings.total', { count: request.data.meta.total })}

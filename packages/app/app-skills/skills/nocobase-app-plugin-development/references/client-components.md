@@ -1,5 +1,7 @@
 # Client Components and shadcn/ui
 
+Before selecting a layout, read [shared UI design and host acceptance](ui-design.md). Original references and the host's confirmed design contract govern visual choices; the instructions below govern plugin-owned implementation. Do not create a separate visual rulebook for plugins.
+
 Use this reference for plugin-owned pages, React Providers, reusable component exports, and internal UI. A component becomes part of runtime behavior only when a Route loads it, a React Provider renders it, another module imports it, or the package exposes it through a public export; there is no `client.components` contribution.
 
 ## Decide component ownership first
@@ -15,6 +17,8 @@ Use this reference for plugin-owned pages, React Providers, reusable component e
 This ownership determines which package imports, UI primitives, locales, dependencies, exports, tests, and upgrade rules apply.
 
 ## Start common UI with shadcn/ui
+
+Use the shared selection order and source verification in [the UI entry](ui-design.md#verify-component-reuse). Prefer an existing plugin-owned business composition before adding a primitive; document an unmet capability before implementing a custom interaction. A UI reference changes the visual target, not automatically the component foundation.
 
 Before implementing buttons, inputs, forms, selects, dialogs, sheets, tables, tabs, tooltips, dropdown menus, and similar common patterns, check shadcn/ui and generate the matching primitive into the plugin. Use ordinary semantic HTML for document structure and Tailwind utilities for composition, but do not hand-build a duplicate interactive primitive when shadcn provides one.
 

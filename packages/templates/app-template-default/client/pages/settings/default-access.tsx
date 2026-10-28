@@ -3,6 +3,7 @@ import { RecordLink } from '#components/record-link';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import {
   ApiClientError,
+  resolveListState,
   useApiClient,
   useSubmission,
   useToaster,
@@ -15,12 +16,13 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import { useRef, useState, type ReactElement } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { ListFilterIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
+import { MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
 import { Input } from '#components/ui/input';
 import {
   DropdownMenu,
@@ -29,14 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
-import {
-  Empty,
-  EmptyMedia,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-} from '#components/ui/empty';
-import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+import { ConfirmAction, SettingsError } from './shared.js';
 import { useSettingsData } from './hooks.js';
 import {
   actionKey,
@@ -61,10 +56,11 @@ export default function DefaultAccessPage(): ReactElement {
   const catalog = useSettingsData<{ data: AuthorizationOptionsResponse }>(
     'authorization/defaultAccess/options',
   );
-  const canCreate = useCan({
+  const createPermission = useCan({
     resource: { type: 'settings', id: 'authorization.default-access' },
     action: 'create',
-  }).can;
+  });
+  const canCreate = createPermission.can && !createPermission.isPending;
   const canDelete = useCan({
     resource: { type: 'settings', id: 'authorization.default-access' },
     action: 'delete',
@@ -233,6 +229,30 @@ export default function DefaultAccessPage(): ReactElement {
         ? rows.length
         : undefined,
   });
+  const listError =
+    [rules.error, catalog.error].find(
+      (error) =>
+        error instanceof ApiClientError && [401, 403].includes(error.status),
+    ) ??
+    tableState.error ??
+    rules.error ??
+    catalog.error;
+  const listData = rules.data && catalog.data ? rows : undefined;
+  const listState = resolveListState(
+    {
+      data: listData,
+      error: listError,
+      isPending: !listData && (rules.loading || catalog.loading),
+    },
+    rows.length,
+    Boolean(search.trim()),
+  );
+  const canShowCreate =
+    canCreate &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
   const clearSearch = () =>
     setParams(
       (old) => {
@@ -331,9 +351,7 @@ export default function DefaultAccessPage(): ReactElement {
     <>
       <PermissionManagementPage
         tab='default-access'
-        actions={
-          rules.data && (rules.data.data.length || search) ? create : undefined
-        }
+        actions={canShowCreate ? create : undefined}
       >
         <div className='flex flex-wrap items-center gap-2'>
           <Input
@@ -355,11 +373,16 @@ export default function DefaultAccessPage(): ReactElement {
               )
             }
           />
-          {search && (
+          {search && listState !== 'no-results' && (
             <Button variant='ghost' onClick={clearSearch}>
               {t('settings.clear')}
             </Button>
           )}
+          {active &&
+          (rules.loading || catalog.loading) &&
+          (rules.data || catalog.data) ? (
+            <Spinner className='text-muted-foreground' />
+          ) : null}
         </div>
         {conflict && (
           <Alert variant='destructive'>
@@ -368,67 +391,22 @@ export default function DefaultAccessPage(): ReactElement {
             </AlertDescription>
           </Alert>
         )}
-        <SettingsError
-          error={
-            (tableState.error ?? rules.error) ||
-            catalog.error ||
-            (!removing && error)
-          }
-          retry={() => {
+        <SettingsError error={!removing && error} />
+        <DataTable
+          {...tableState}
+          columns={columns}
+          data={rows}
+          getRowId={(rule) => rule.key}
+          showSelectedCount={false}
+          pageSize={20}
+          loading={rules.loading || catalog.loading}
+          listState={listState}
+          onRetry={() => {
             rules.reload();
             catalog.reload();
-            setError(undefined);
           }}
+          onClearFilters={clearSearch}
         />
-        {(rules.loading && !rules.data) ||
-        (catalog.loading && !catalog.data) ? (
-          <SettingsLoading />
-        ) : (
-          !tableState.error &&
-          !rules.error &&
-          !catalog.error &&
-          (rows.length ? (
-            <DataTable
-              {...tableState}
-              columns={columns}
-              data={rows}
-              getRowId={(rule) => rule.key}
-              showSelectedCount={false}
-              pageSize={20}
-            />
-          ) : (
-            <Empty className='min-h-48 border border-dashed'>
-              <EmptyMedia variant='icon'>
-                <ListFilterIcon />
-              </EmptyMedia>
-              <EmptyTitle>
-                {t(
-                  search
-                    ? 'settings.noResults'
-                    : 'settings.defaultAccess.empty',
-                )}
-              </EmptyTitle>
-              <EmptyDescription>
-                {t(
-                  search
-                    ? 'settings.clearHint'
-                    : canCreate
-                      ? 'settings.defaultAccess.emptyHint'
-                      : 'settings.defaultAccess.readOnlyEmpty',
-                )}
-              </EmptyDescription>
-              <EmptyContent>
-                {search ? (
-                  <Button variant='outline' onClick={clearSearch}>
-                    {t('settings.clear')}
-                  </Button>
-                ) : (
-                  create
-                )}
-              </EmptyContent>
-            </Empty>
-          ))
-        )}
         <ConfirmAction
           error={<SettingsError error={error} />}
           open={Boolean(removing)}

@@ -61,7 +61,6 @@ export function setPermission(
 }
 
 const sectionDescriptions: Readonly<Record<string, string>> = {
-  pages: 'pageAccessHint',
   business: 'businessOperationsHint',
   users: 'userAccountsHint',
   configuration: 'configurationPermissionsHint',
