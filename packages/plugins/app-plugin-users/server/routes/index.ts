@@ -12,6 +12,8 @@ import { loggingToken } from '@nocobase/app-server/logging';
 import {
   ApiError,
   apiErrorHandler,
+  executeIdempotentMutation,
+  repositoryIdempotencyToken,
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -24,6 +26,7 @@ import {
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
+import { databaseManagerToken } from '@nocobase/db';
 import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
 import { Hono, type MiddlewareHandler } from 'hono';
@@ -75,6 +78,88 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const authorization = container.resolve(authorizationToken);
     const users = container.resolve(userManagementServiceToken);
+    const submit = async <T>(
+      context: import('hono').Context<AuthorizationEnv>,
+      input: unknown,
+      execute: (service: typeof users) => Promise<T>,
+    ): Promise<T> => {
+      const protection = container.has(repositoryIdempotencyToken)
+        ? container.resolve(repositoryIdempotencyToken)
+        : undefined;
+      const key = context.req.header('Idempotency-Key');
+      if (!protection || (!protection.required && !key)) {
+        if (key)
+          throw new ApiError({
+            status: 'FAILED_PRECONDITION',
+            domain: 'users',
+            reason: 'IDEMPOTENCY_UNAVAILABLE',
+            message: 'Operation receipts are unavailable.',
+          });
+        return execute(users);
+      }
+      if (!key)
+        throw new ApiError({
+          status: 'INVALID_ARGUMENT',
+          domain: 'users',
+          reason: 'OPERATION_KEY_REQUIRED',
+          message: 'Standard writes require an Idempotency-Key header.',
+        });
+      const principal = await protection.principal(context);
+      if (!principal)
+        throw new ApiError({
+          status: 'PERMISSION_DENIED',
+          domain: 'users',
+          reason: 'PRINCIPAL_REQUIRED',
+          message: 'An authenticated principal is required.',
+        });
+      const result = await executeIdempotentMutation({
+        connection: container.resolve(databaseManagerToken).connection(),
+        key,
+        principal,
+        operation: `${context.req.method} ${new URL(context.req.url).pathname}`,
+        input,
+        authorize: () => undefined,
+        authorizeReplay: async () => {
+          const userId = context.req.param('userId');
+          await requireUserAction(context, userId ?? '*', 'read');
+          if (userId && context.req.method !== 'DELETE') {
+            if (context.req.method === 'PATCH') {
+              if (
+                !input ||
+                typeof input !== 'object' ||
+                !('roleScopes' in input) ||
+                Object.keys(input).some((key) => key !== 'roleScopes')
+              )
+                await users.assertCanAdminister(
+                  userId,
+                  actorOf(context),
+                  'update',
+                );
+              if (input && typeof input === 'object' && 'roleScopes' in input)
+                await users.assertCanAdminister(
+                  userId,
+                  actorOf(context),
+                  'assign-role',
+                );
+            } else {
+              const action = context.req.path.includes('/roleScopes/')
+                ? 'assign-role'
+                : context.req.path.endsWith('/resetPassword')
+                  ? 'reset-password'
+                  : context.req.path.endsWith('/revokeSessions')
+                    ? 'revoke-sessions'
+                    : context.req.path.endsWith('/disable')
+                      ? 'disable'
+                      : 'enable';
+              await users.assertCanAdminister(userId, actorOf(context), action);
+            }
+          }
+        },
+        execute: (transaction) => execute(users.withConnection(transaction)),
+      });
+      context.header('Idempotency-Replayed', String(result.replayed));
+      return result.data;
+    };
     const securityLogger = container.has(loggingToken)
       ? container.resolve(loggingToken).getLogger('security')
       : undefined;
@@ -331,10 +416,23 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ),
         },
       }),
+      apiValidator(
+        'header',
+        z.object({
+          'idempotency-key': z
+            .string()
+            .optional()
+            .describe(
+              'Required in strict operation receipt mode; reuse the original key and input for retry.',
+            ),
+        }),
+      ),
       apiValidator('json', CreateUserInput),
       async (context) => {
         const input = context.req.valid('json');
-        const user = await users.create(input);
+        const user = await submit(context, input, (service) =>
+          service.create(input),
+        );
         logSecurityEvent(securityLogger, context, 'user.create', user.id, {
           roleScopes: Object.keys(input.roleScopes ?? {}).sort(),
         });
@@ -409,6 +507,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({
+          'idempotency-key': z
+            .string()
+            .optional()
+            .describe(
+              'Required in strict operation receipt mode; reuse the original key and input for retry.',
+            ),
+        }),
+      ),
       apiValidator('json', UpdateUserInput),
       async (context) => {
         const { userId } = context.req.valid('param');
@@ -420,7 +529,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           await requireUserAction(context, userId, 'update');
         if (input.roleScopes !== undefined)
           await requireUserAction(context, userId, 'assign-role');
-        const user = await users.update(userId, input, actorOf(context));
+        const user = await submit(context, input, (service) =>
+          service.update(userId, input, actorOf(context)),
+        );
         logSecurityEvent(securityLogger, context, 'user.update', userId);
         for (const [roleScope, value] of Object.entries(input.roleScopes ?? {}))
           logSecurityEvent(
@@ -464,10 +575,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       apiValidator('query', DeleteUserQuery),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.remove(userId, context.get('authz').identity.principal.id);
+        await submit(context, context.req.valid('query'), async (service) => {
+          await service.remove(userId, actorOf(context));
+          return null;
+        });
         logSecurityEvent(securityLogger, context, 'user.delete', userId);
         return context.body(null, 204);
       },
@@ -497,9 +615,15 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.disable(userId, actorOf(context));
+        const user = await submit(context, null, (service) =>
+          service.disable(userId, actorOf(context)),
+        );
         logSecurityEvent(securityLogger, context, 'user.disable', userId);
         return context.json({ data: user });
       },
@@ -527,9 +651,15 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.enable(userId, actorOf(context));
+        const user = await submit(context, null, (service) =>
+          service.enable(userId, actorOf(context)),
+        );
         logSecurityEvent(securityLogger, context, 'user.enable', userId);
         return context.json({ data: user });
       },
@@ -565,15 +695,16 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserRoleScopeParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       apiValidator('json', ReplaceUserRoleScopeInput),
       async (context) => {
         const { userId, scope } = context.req.valid('param');
         const { value } = context.req.valid('json');
-        const user = await users.replaceRoleScope(
-          userId,
-          scope,
-          value,
-          actorOf(context),
+        const user = await submit(context, { scope, value }, (service) =>
+          service.replaceRoleScope(userId, scope, value, actorOf(context)),
         );
         logSecurityEvent(securityLogger, context, 'user.role.update', userId, {
           roleScope: scope,
@@ -605,14 +736,21 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       apiValidator('json', ResetUserPasswordInput),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.resetPassword(
-          userId,
-          context.req.valid('json').password,
-          actorOf(context),
-        );
+        await submit(context, context.req.valid('json'), async (service) => {
+          await service.resetPassword(
+            userId,
+            context.req.valid('json').password,
+            actorOf(context),
+          );
+          return null;
+        });
         logSecurityEvent(
           securityLogger,
           context,
@@ -646,9 +784,16 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.revokeSessions(userId, actorOf(context));
+        await submit(context, null, async (service) => {
+          await service.revokeSessions(userId, actorOf(context));
+          return null;
+        });
         logSecurityEvent(
           securityLogger,
           context,
@@ -956,12 +1101,14 @@ function logSecurityEvent(
       }
     | undefined,
   context: {
+    readonly res: Response;
     get(key: 'authz'): AuthorizationEnv['Variables']['authz'];
   },
   event: string,
   targetUserId: string,
   details: Readonly<Record<string, unknown>> = {},
 ): void {
+  if (context.res.headers.get('Idempotency-Replayed') === 'true') return;
   logger?.info(
     {
       event,
@@ -1000,6 +1147,7 @@ function actorOf(context: {
 
 async function requireUserAction(
   context: {
+    readonly res: Response;
     get(key: 'authz'): AuthorizationEnv['Variables']['authz'];
   },
   userId: string,

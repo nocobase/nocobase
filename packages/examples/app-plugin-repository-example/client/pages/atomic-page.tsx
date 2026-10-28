@@ -1,3 +1,4 @@
+import { useSubmission, deriveSubmissionKey } from '@nocobase/app-client';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { useApiClient, ApiClientError } from '@nocobase/app-client';
@@ -56,6 +57,7 @@ interface Trace {
 }
 export default function AtomicPage(): ReactElement {
   const api = useApiClient();
+  const submission = useSubmission();
   const repo = useMemo(() => atomicRepository(api), [api]);
   const { t } = useTranslation(NS);
   const [records, setRecords] = useState<AtomicCounter[]>([]);
@@ -107,34 +109,47 @@ export default function AtomicPage(): ReactElement {
       change === 'concurrent' ? { increment: 1 } : change,
     );
     try {
-      if (change === 'concurrent') {
-        const results = await Promise.allSettled(
-          Array.from({ length: 10 }, () => repo.updateOne(input)),
-        );
-        const succeeded = results.filter(
-          (result) => result.status === 'fulfilled',
-        ).length;
-        trace({
-          action: '10 × updateOne',
-          input,
-          output: results.map((result) =>
-            result.status === 'fulfilled'
-              ? result.value
-              : {
-                  error:
-                    result.reason instanceof Error
-                      ? result.reason.message
-                      : t('error'),
-                },
-          ),
-        });
-        setNotice(t('atomicConcurrentResult', { count: succeeded }));
-        if (succeeded !== 10) setError(t('atomicPartial'));
-      } else {
-        const result = await repo.updateOne(input);
-        trace({ action: 'updateOne', input, output: result });
-        setNotice(t('atomicUpdated', { value: result.record.value }));
-      }
+      await submission.run({ id, change }, async (idempotencyKey) => {
+        if (change === 'concurrent') {
+          const results = await Promise.allSettled(
+            Array.from({ length: 10 }, (_, index) =>
+              repo.updateOne({
+                ...input,
+                idempotencyKey: deriveSubmissionKey(
+                  idempotencyKey,
+                  String(index),
+                ),
+              }),
+            ),
+          );
+          const succeeded = results.filter(
+            (result) => result.status === 'fulfilled',
+          ).length;
+          trace({
+            action: '10 × updateOne',
+            input,
+            output: results.map((result) =>
+              result.status === 'fulfilled'
+                ? result.value
+                : {
+                    error:
+                      result.reason instanceof Error
+                        ? result.reason.message
+                        : t('error'),
+                  },
+            ),
+          });
+          setNotice(t('atomicConcurrentResult', { count: succeeded }));
+          if (succeeded !== 10) throw new Error(t('atomicPartial'));
+        } else {
+          const result = await repo.updateOne({
+            ...input,
+            idempotencyKey,
+          });
+          trace({ action: 'updateOne', input, output: result });
+          setNotice(t('atomicUpdated', { value: result.record.value }));
+        }
+      });
     } catch (value) {
       const message =
         value instanceof ApiClientError && value.status === 404
@@ -231,7 +246,9 @@ export default function AtomicPage(): ReactElement {
                     max={1000000}
                     step={1}
                     aria-label={`${t(scenario.title)} — ${t('atomicAmount')}`}
-                    disabled={busy || loading || !record}
+                    disabled={
+                      busy || submission.submitting || loading || !record
+                    }
                     value={amounts[scenario.id]}
                     onChange={(event) =>
                       setAmounts((current) => ({
@@ -248,6 +265,7 @@ export default function AtomicPage(): ReactElement {
                       variant={action === 'decrement' ? 'outline' : 'default'}
                       disabled={
                         busy ||
+                        submission.submitting ||
                         loading ||
                         !record ||
                         ((action === 'increment' || action === 'decrement') &&

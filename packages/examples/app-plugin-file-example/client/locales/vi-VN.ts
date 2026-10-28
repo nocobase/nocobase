@@ -3,6 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  retrySubmission: 'Thử lại thao tác ban đầu',
+
   officePreviewTitle: 'Xem trước văn phòng địa phương',
   officePreviewDescription:
     'Tải lên tệp DOCX, XLSX hoặc PPTX bên dưới rồi chọn Xem trước. Tài liệu hiển thị trong trình duyệt của bạn mà không cần Office Online hoặc dịch vụ xem trước bên ngoài. Tệp đính kèm đơn đặt hàng sử dụng cùng một bản xem trước.',

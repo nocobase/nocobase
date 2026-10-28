@@ -66,3 +66,5 @@ export type {
   JsonValue,
   JsonValueOf,
 } from '@nocobase/repository-input';
+
+export { createOperationKey } from './operation-key.js';

@@ -43,6 +43,7 @@
         "extractLegacyCollectionMetadata",
         "filterOperatorsForFieldType",
         "findCollectionArtifactNameConflicts",
+        "getRepositoryMutationIdentity",
         "isManagedField",
         "isSortableFieldType",
         "isTaskLockBusyError",

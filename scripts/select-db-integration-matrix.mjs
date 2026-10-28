@@ -29,6 +29,20 @@ const sharedFiles = new Set([
 // `pnpm test:db`, in the Database tests workflow, when a path they guard changes.
 export const packageSuites = [
   ...['postgres', 'mysql'].map((dialect) => ({
+    // A losing receipt claim must roll back before reading the committed winner on each server dialect.
+    paths: [
+      'packages/app/app-server/src/router/idempotency.ts',
+      'packages/app/app-server/src/router/repository-routes.ts',
+      'packages/app/app-server/tests/idempotency.test.ts',
+      'packages/templates/app-template-default/database/main/migrations/202611020002_create_mutation_receipts.ts',
+      'packages/templates/app-template-examples/database/main/migrations/202611020002_create_mutation_receipts.ts',
+      'packages/templates/app-template-examples/database/analytics/migrations/202611020002_create_mutation_receipts.ts',
+    ],
+    dialect,
+    filter: '@nocobase/app-server',
+    tests: ['tests/idempotency.test.ts'],
+  })),
+  ...['postgres', 'mysql'].map((dialect) => ({
     // Execution and withdrawal must observe the winner after waiting on the same session row.
     paths: [
       'packages/plugins/app-plugin-agent-sessions/server/service.ts',

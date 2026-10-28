@@ -1,3 +1,5 @@
+import { createOperationKey } from '@nocobase/api-client';
+import { deriveSubmissionKey } from '@nocobase/app-client';
 import { createUuid } from '@nocobase/app-client';
 import type { ApiClient, RemoteRepository } from '@nocobase/app-client';
 import type { RemoteSelectAst } from '@nocobase/api-client';
@@ -162,6 +164,7 @@ export async function loadRelationProjectState(
 export async function runRelationMutationScenario(
   api: ApiClient,
   requestedRunId: string = createUuid(),
+  operationKey: string = createOperationKey(),
 ): Promise<RelationMutationScenario> {
   const runId = requestedRunId.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36);
   if (!runId) throw new Error('A relation mutation run ID is required.');
@@ -191,7 +194,10 @@ export async function runRelationMutationScenario(
       assignee: { connect: { id: 'user-1' } },
     },
   };
-  const connectTaskResult = await tasks.createOne(connectTaskInput);
+  const connectTaskResult = await tasks.createOne({
+    ...connectTaskInput,
+    idempotencyKey: deriveSubmissionKey(operationKey, 'prepare'),
+  });
   calls.push({
     repository: relationRepositories.tasks,
     action: 'createOne',
@@ -241,7 +247,10 @@ export async function runRelationMutationScenario(
     },
     select: relationProjectSelect,
   };
-  const createResult = await projects.createOne(createInput);
+  const createResult = await projects.createOne({
+    ...createInput,
+    idempotencyKey: deriveSubmissionKey(operationKey, 'mutate'),
+  });
   calls.push({
     repository: relationRepositories.projects,
     action: 'createOne',
@@ -295,7 +304,10 @@ export async function runRelationMutationScenario(
     },
     select: relationProjectSelect,
   };
-  const updateResult = await projects.updateOne(updateInput);
+  const updateResult = await projects.updateOne({
+    ...updateInput,
+    idempotencyKey: deriveSubmissionKey(operationKey, 'attach'),
+  });
   calls.push({
     repository: relationRepositories.projects,
     action: 'updateOne',
@@ -315,7 +327,10 @@ export async function runRelationMutationScenario(
     },
     select: relationProjectSelect,
   };
-  const setResult = await projects.updateOne(setInput);
+  const setResult = await projects.updateOne({
+    ...setInput,
+    idempotencyKey: deriveSubmissionKey(operationKey, 'delete'),
+  });
   calls.push({
     repository: relationRepositories.projects,
     action: 'updateOne',

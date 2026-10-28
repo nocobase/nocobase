@@ -9,7 +9,7 @@ import {
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import { useApiClient, useSubmission, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   UsersClient,
@@ -77,14 +77,21 @@ function UserActions({
   const [action, setAction] = useState<
     'disable' | 'enable' | 'revokeSessions'
   >();
-  const [busy, setBusy] = useState(false);
+  const [requestBusy, setRequestBusy] = useState(false);
   const [error, setError] = useState<unknown>();
+  const submission = useSubmission();
+  const busy = requestBusy || submission.submitting;
   const run = async () => {
     if (!action) return;
-    setBusy(true);
+    setRequestBusy(true);
     setError(undefined);
     try {
-      const updated = await client[action](user.id);
+      const outcome = await submission.run(
+        { action, id: user.id },
+        async (key) => ({ updated: await client[action](user.id, key) }),
+      );
+      if (!outcome) return;
+      const updated = outcome.updated;
       toaster.show({
         type: 'success',
         title: t(`settings.userActionSaved.${action}`, { name: user.name }),
@@ -94,7 +101,7 @@ function UserActions({
     } catch (next) {
       setError(next);
     } finally {
-      setBusy(false);
+      setRequestBusy(false);
     }
   };
   if (!canRevoke && !(user.disabledAt ? canEnable : canDisable)) return <></>;

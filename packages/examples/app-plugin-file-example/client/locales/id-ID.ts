@@ -3,6 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  retrySubmission: 'Coba lagi operasi semula',
+
   officePreviewTitle: 'Pratinjau Kantor Lokal',
   officePreviewDescription:
     'Unggah file DOCX, XLSX atau PPTX di bawah, lalu pilih Pratinjau. Dokumen dirender di browser Anda tanpa Office Online atau layanan pratinjau eksternal. Lampiran pesanan menggunakan pratinjau yang sama.',
