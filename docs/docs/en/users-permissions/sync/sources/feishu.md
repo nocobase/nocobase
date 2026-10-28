@@ -25,7 +25,7 @@ In the app's **Permissions**, enable the following permissions:
 
 | Permission | Scope | Required | Purpose |
 | --- | --- | --- | --- |
-| Obtaining user basic information | `contact:user.base:readonly` | Yes | Reads user names, `open_id` / `union_id` and other basic fields. |
+| Obtaining user basic information | `contact:user.base:readonly` | Yes | Reads user names, `open_id` / `union_id` and other basic fields; without it the API returns no names and synchronized nicknames are empty. |
 | Obtaining department basic information | `contact:department.base:readonly` | Yes | Reads department names and hierarchy. |
 | Obtaining department organizational structure | `contact:department.organize:readonly` | Yes | Traverses child departments; reads department owners. |
 | Obtaining user organizational structure | `contact:user.department:readonly` | Yes | Reads the user's departments and main department. |
@@ -33,8 +33,14 @@ In the app's **Permissions**, enable the following permissions:
 | Obtaining user phone number | `contact:user.phone:readonly` | Required to sync phones | Reads phone numbers; required when the identifier is `mobile`. |
 | Obtaining user email information | `contact:user.email:readonly` | Required to sync emails | Reads emails; required when the identifier is `email`. |
 
+Then configure the **contact permission scope** (which departments and members the app can access):
+
+1. On the **Development Config → Permissions** page, click **Configure** on the right of the "Accessible data scope" column of a contact permission (enabling a contact permission also redirects here automatically).
+2. Select the departments and members the app can access. For the first setup, choosing **All members** is recommended to verify the pipeline, then narrow it down as needed.
+3. Click **OK** to save.
+
 :::warning
-Without **Obtaining user basic information**, the API does not return user names and synchronized nicknames are empty. API permissions decide which fields the app can read, while the **contact visibility scope** decides which departments and users the app can read — both must be configured. The synchronization scope follows the visibility scope: only granted departments and users are synchronized. After changing permissions or the scope, run a full synchronization again. Event subscription does not replace read permissions: on every event NocoBase still calls the Feishu API to fetch the latest user or department data.
+The contact permission scope and the "app availability scope" (who can use the app) are two independent settings — do not confuse them; only the contact permission scope affects data synchronization. API permissions decide which fields the app can read, while the contact permission scope decides which departments and users — both must be configured. The synchronization scope follows the permission scope; run a full synchronization again after changing it. Event subscription does not replace read permissions: on every event NocoBase still calls the Feishu API to fetch the latest user or department data.
 :::
 
 ## Add a Feishu Sync Source
@@ -125,7 +131,7 @@ Other Feishu user fields such as avatar, job title and employee number are not s
 
 ## Troubleshooting
 
-- Empty sync results or missing departments: check the contact permissions and whether the department is within the visibility scope.
+- Empty sync results or missing departments: check the contact permissions and whether the department is within the contact permission scope (see above for configuration).
 - Empty nicknames: enable **Obtaining user basic information** (`contact:user.base:readonly`) and run a full synchronization again.
 - Users skipped: check whether the user has a value for the configured identifier field and whether it matches the authenticator's choice.
 - HTTP callback returns 401: no Verification Token or Encrypt Key configured, or token verification failed; 403: the source has been switched to Stream mode.
