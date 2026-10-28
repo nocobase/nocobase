@@ -2,6 +2,8 @@
 
 New Default and Examples applications register `SubmissionProvider`: standard Repository `createOne`, `updateOne` and `deleteOne` endpoints require `Idempotency-Key`. The receipt migration must be installed on the same managed connection as the business write. A missing key is rejected. Native user account administration (including role assignment, deletion, password reset and session revocation), Permission Set create/update/delete, and default-access create/update/delete also use the same receipt contract and retain their native authorization checks. Reads and unadapted custom HTTP routes are unchanged. The standard form pattern uses `useSubmission` from `@nocobase/app-client`; disabling a button or relying on React Hook Form's `isSubmitting` alone does not coordinate Enter, an external footer, confirmation and programmatic entry points.
 
+For a complete runnable form and list, use the [executable list and edit example](frontend/references/executable-list-edit.md).
+
 ## One form, one operation
 
 Create one `useSubmission({ scope })` controller for a form, scoped by the server-authenticated identity, action, target and stable form instance. All entry points call its `run(snapshot, execute)` before asynchronous validation. `submitting` drives buttons, spinners and close guards. Run `form.handleSubmit` inside `execute`; return without sending if invalid. Unlike `trigger()`, `handleSubmit` records a submission attempt, so React Hook Form revalidates corrected fields on change after a failed submission. Do not generate ids or timestamps afresh on a retry: derive them from the operation key or retain them in the original snapshot. Use a separate controller for an independent form.
