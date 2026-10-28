@@ -89,11 +89,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
       </I18nProvider>,
     );
     if (recordId || !waitForEmpty) return;
-    await screen.findByText(
-      locale === 'zh-CN'
-        ? '暂无记录，新增第一条记录开始体验。'
-        : 'No records yet. Create the first record to get started.',
-    );
+    await screen.findByText(locale === 'zh-CN' ? '暂无数据' : 'No data yet');
   }
   it('creates, searches, reads, edits, checks existence and deletes a customer', async () => {
     await show('crm');
@@ -198,9 +194,35 @@ describe('Repository pages with real HTTP and SQLite', () => {
     expect(screen.getByRole('columnheader', { name: 'Name' })).toBeVisible();
     expect(await screen.findByRole('status')).toHaveTextContent('Loading');
     expect(screen.queryByText('No data yet')).not.toBeInTheDocument();
+    const search = screen.getByRole('textbox', {
+      name: 'Search by name / number / ID',
+    });
+    const searchButton = screen.getByRole('button', {
+      name: 'Search',
+      exact: true,
+    });
+    expect(search.parentElement).toContainElement(searchButton);
+    expect(search.parentElement).toHaveClass(
+      'flex',
+      'w-full',
+      'min-w-0',
+      'gap-2',
+      'sm:w-auto',
+      'sm:flex-1',
+    );
+    expect(search).toHaveClass('min-w-0', 'flex-1');
+    expect(searchButton).toHaveClass('shrink-0', 'whitespace-nowrap');
 
     resolveRows([]);
     expect(await screen.findByText('No data yet')).toBeVisible();
+    expect(
+      screen.queryByText(
+        'No records yet. Create the first record to get started.',
+      ),
+    ).not.toBeInTheDocument();
+  });
+  it('keeps the custom empty copy on other repository example lists', async () => {
+    await show('orders');
     expect(
       screen.getByText(
         'No records yet. Create the first record to get started.',

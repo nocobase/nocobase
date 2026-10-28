@@ -4,11 +4,11 @@ A working Repository API plugin demonstrating `defineRepositoryApiRoutes`, array
 
 ## Open the example
 
-This workspace registers the plugin in `@nocobase/app-template-default`. `db apply` runs the application's pending migrations and then its seeds.
+This workspace registers the plugin in `@nocobase/app-template-examples`; the Default template does not include it. `db apply` runs the application's pending migrations and then its seeds.
 
 ```bash
-pnpm --filter @nocobase/app-template-default exec nocobase db apply
-pnpm --filter @nocobase/app-template-default dev
+pnpm --filter @nocobase/app-template-examples exec nocobase db apply
+pnpm --filter @nocobase/app-template-examples dev
 ```
 
 Sign in and expand **CRM example** or **Orders example** in the sidebar. Each child menu opens its own page:
@@ -20,6 +20,8 @@ Sign in and expand **CRM example** or **Orders example** in the sidebar. Each ch
 View details opens the child route `<list-path>/details/:recordId`, for example `/repository-example/crm/details/demo-customer-1`. Detail URLs load records directly, support refresh, show related records, and provide a Back to list action. Relation headings use singular labels for belongsTo and plural labels for hasMany. Related records link to their detail pages; customer cards show name, company and email, and foreign-key fields display the related name. New and Edit open a right-side drawer with focus management and Escape/Cancel dismissal. Relation and status fields use shadcn Select, with full-width triggers and readable selected labels. Successful saves close the drawer and refresh the list or current detail; errors keep the drawer and entered values visible.
 
 The active child expands its parent group. Each page has a stable URL, so refresh and browser history retain the selected entity.
+
+The Customers toolbar keeps the Search field and Search button together at desktop and narrow widths; auxiliary filter actions may wrap. Its successful-empty state stays concise, while other repository lists retain their application-supplied empty copy. The Examples template includes this maintained plugin package, so new apps receive its version selected by the template. Existing apps pick up a released plugin change through the supported version-selected template update; copied template source still requires the documented three-way reconciliation.
 
 Paths are relative to the application's mount point. For an application mounted at `/main`, the CRM URL is `/main/repository-example/crm`.
 

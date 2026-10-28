@@ -487,19 +487,23 @@ function EntityWorkspace({
                   refresh();
                 }}
               >
-                <Input
-                  aria-label={t('search')}
-                  placeholder={t('search')}
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-                <Button
-                  type='submit'
-                  variant='outline'
-                  disabled={busy || loading}
-                >
-                  {t('apply')}
-                </Button>
+                <div className='flex w-full min-w-0 gap-2 sm:w-auto sm:flex-1'>
+                  <Input
+                    className='min-w-0 flex-1'
+                    aria-label={t('search')}
+                    placeholder={t('search')}
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                  <Button
+                    className='shrink-0 whitespace-nowrap'
+                    type='submit'
+                    variant='outline'
+                    disabled={busy || loading}
+                  >
+                    {t('apply')}
+                  </Button>
+                </div>
                 <RepositoryListFeedbackActions
                   state={listState}
                   busy={loading}
@@ -630,7 +634,11 @@ function EntityWorkspace({
                         <td colSpan={entity.fields.length + 1} className='p-0'>
                           <RepositoryListFeedback
                             state={emptyFeedbackState}
-                            empty={t('empty')}
+                            empty={
+                              entity.key === 'customers'
+                                ? undefined
+                                : t('empty')
+                            }
                           />
                         </td>
                       </tr>
