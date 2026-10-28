@@ -138,7 +138,7 @@ Stacking rules: a drawer can open a dialog (for example, to edit from the detail
 
 Do not show raw backend error messages (untranslated exception messages, stack traces, SQL) to the user.
 
-**I4 [Must] Loading indicators**: the first load shows a skeleton (S1); an action triggered by a button shows its loading state on that button; a reload (search, refresh) keeps the old data and shows a lightweight loading indicator instead of replacing the whole block with a skeleton.
+**I4 [Must] Loading indicators**: the first load shows a skeleton (S1); an action triggered by a button shows its loading state on that button; a reload (search, refresh) keeps the old data and shows a lightweight loading indicator instead of replacing the whole block with a skeleton. Distinguish paused or covered content from an active request: a paused list does not show refresh feedback. For background refreshes with retained data, delay only the visual indicator briefly (for example, 300ms), cancel its timer when refreshing stops or the view becomes inactive, and reserve its toolbar space so fast responses do not flash feedback or shift content. Do not delay the request, data updates, errors, permission checks or submit-button feedback.
 
 **I5 [Should]** The search box searches automatically as the user types (debounced by about 300ms), without the user pressing Enter.
 

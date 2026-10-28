@@ -107,8 +107,8 @@ Each behavior below is in `useUrlSearch` (`client/hooks/use-url-search.ts`, [`ex
 
 The pattern of ["Loading data in a component" in `api.md`](api.md#loading-data-in-a-component), with four list-specific points (all in [`example/list-page.md`](example/list-page.md)):
 
-- The shared `useListData` request path includes every server-side filter and ordering value. Its current request identity includes the refresh revision and active state; `loading` remains true until that identity succeeds or fails. The search term goes to the endpoint as `q`.
-- A reload keeps the previous rows on screen with a small `Spinner` in the toolbar (guideline I4), also after a failure, so "Retry" shows old data plus the spinner rather than the skeleton.
+- The shared `useListData` request path includes every server-side filter and ordering value. Its current request identity includes the refresh revision and active state; `loading` remains true until that identity succeeds or fails, and is also true while `active` is false. It is a readiness flag, not proof that a network request is running; preserve it for request validity and pagination checks. The search term goes to the endpoint as `q`.
+- A reload keeps the previous rows on screen. Mount refresh feedback only when `active && request.loading && rows !== undefined`; an inactive parent must not display it. Delay the visual `Spinner` briefly (300ms in the example), clear the timer on unmount, and keep an always-mounted toolbar slot to prevent layout shifts (guideline I4). A fast response cancels the pending indicator; a slow response shows it until success or failure. Retry with retained rows follows the same pattern rather than replacing them with a skeleton. Delay presentation only, without changing `request.loading` or delaying the request, error handling or data updates.
 - Derive whether displayed rows were filtered from `request.path`, which identifies their last response, rather than the current URL while the next query loads. Clearing filters must not flash "No projects yet" over a previous filtered result.
 - `request.reload` has a stable identity and invalidates the previous request synchronously before advancing the refresh revision. Pass it through the child routes' context; do not replace it with a separate page-local request loop.
 
@@ -237,7 +237,7 @@ export function useSelectColumn(): ColumnDef<Project> {
 
 - "New project" in the page header is a `Button` rendered as a `Link` to `new` that keeps the query string ([section 2 of `styling.md`](styling.md#2-components-are-built-on-base-ui-not-radix)).
 - `<Outlet context={outletContext} />` goes at the end of `PageContainer`; the context is memoized, as [section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page) explains. It carries `reload` and `afterDelete` for the create dialog and the drawer (`ProjectsOutletContext`), and `onSaved` and `onNotFound` for the edit dialog a row's menu opens (`ProjectEditOutletContext`), both of which refresh the list.
-- After a save, the child route calls `reload()`; the list refreshes in the background and keeps its rows.
+- After a save, the child route calls `reload()` to invalidate the list. While covered, the list keeps its rows and suspends reads; returning activates a fresh read. Keep invalidation independent of whether the delayed refresh indicator is visible.
 - A delete from the detail drawer calls `afterDelete()` before closing: it refreshes the list and, once `loading` is false again, focuses the search box (`focusSearchAfterReloadRef`), because the row whose link had focus is gone (guideline A6). The list's own delete dialog focuses the search box directly (`deletedFocusRef`).
 
 ## 10. Complete code
@@ -248,12 +248,13 @@ The complete list page, `client/pages/projects/index.tsx`, is [`example/list-pag
 
 Try it by hand in a browser; static checks cannot find input method and focus problems:
 
-- Type with a Chinese input method, edit in the middle, and type quickly: the input drops no characters and the cursor does not jump; about 300ms after typing stops, `?q=` appears in the address bar and the list refreshes, keeping the old data and showing a Spinner while it refreshes.
+- Type with a Chinese input method, edit in the middle, and type quickly: the input drops no characters and the cursor does not jump; about 300ms after typing stops, `?q=` appears in the address bar and the list refreshes, keeping the old data; a fast refresh shows no Spinner, while a slow refresh shows it after the short presentation delay.
 - Change the status filter within 300ms of typing: the address bar keeps both `q` and `status`.
 - Refresh the page, use the browser's back and forward, and click the sidebar menu: the input, the filters and the list stay consistent.
 - "Clear filters": appears as soon as the first character is typed; after a click, the button disappears, focus is on the search box, and "No projects yet" does not flash.
 - All four states have appeared: the first-load skeleton, empty, no results, and failed (403 has no "Retry"; for other errors, focus is on the search box after "Retry").
 - The name link, "New project" and the "Edit" menu item open their child routes, "Edit" as the dialog alone; opening a child route's URL directly also works; after closing, the query parameters are still there.
+- Open and close an overlay, cancel an unchanged form, save a change, and return through browser history. The covered list shows no refresh indicator; on return, fast reads do not flash one, slow reads show it, and success or failure clears it without shifting the table. Verify updated values after saving and preserved query, pagination and scroll context. Use deferred responses and fake timers for component assertions, including completion or unmount before the delay expires; inspect the transition in the browser, not only its settled screenshot.
 - The date and number columns sort, and a server-paginated list keeps the sort in the URL and starts it on the first page.
 - Delete a record in the detail drawer: after the list refreshes, focus is on the search box.
 - At a width of 375px, the toolbar wraps and the table scrolls horizontally; everything is legible in both the light and dark themes (guidelines A4 and F6).

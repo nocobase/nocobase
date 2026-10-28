@@ -22,6 +22,14 @@ For an overlay or footer change, use the actual installed components in a browse
 - Check the intended close behavior, keyboard focus, nested overlays and return destination. Keep Cancel separate from Submit; prevent duplicate submissions and preserve input after failure.
 - Keep a focused browser regression test when fixing a reproducible layout bug or changing a shared overlay. Cover the relevant long-content, narrow and pending cases rather than taking a static class-name snapshot. A copy-only change needs a visual check, not a new test suite.
 
+## Loading transitions
+
+For affected data views, distinguish the first load, an active refresh with retained data, and a paused or covered parent. Follow [I4](ui-guidelines.md) and the [list loading pattern](references/table.md#6-loading-the-list).
+
+- Exercise opening and closing the overlay, cancelling an unchanged form, saving, and browser back/forward. A covered parent shows no refresh feedback; returning preserves the list context and verifies fresh data.
+- Cover both fast and held responses. Fast refreshes finish without flashing an indicator; slow ones show delayed feedback while keeping rows. Finishing, failing, covering or unmounting the view cancels pending feedback. Errors and permission changes still take effect promptly.
+- Use deferred responses and fake timers for component assertions, including completion before the indicator delay and repeated transitions. In the browser, check the transition and table position at desktop and narrow widths; a settled screenshot alone cannot detect a flash or layout shift.
+
 ## General usability
 
 For the elements affected by the change, check semantic controls and accessible names, visible focus, keyboard operation, focus restoration, labels and inline errors, pending feedback, and reduced-motion preferences when adding motion. Fixed headers and footers must not cover the focused element. Essential text must remain readable under wrapping, zoom and the supported languages. Verify contrast when introducing theme colors; a token name does not prove its value meets the required contrast in a custom theme.
