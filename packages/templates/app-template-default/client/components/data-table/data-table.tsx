@@ -52,7 +52,7 @@ export interface DataTableProps<TData, TValue = unknown> {
    * `DataTableViewOptions` can read and drive its state.
    */
   readonly toolbar?: (table: TableInstance<TData>) => ReactNode;
-  /** Shown in place of the body when no row survives filtering. */
+  /** Shown in the table body when no row survives filtering. */
   readonly emptyMessage?: ReactNode;
   /** Set to `false` to render every row and hide the pagination footer. */
   readonly pagination?: boolean;
@@ -172,6 +172,10 @@ export function DataTable<TData, TValue = unknown>({
     ((state === 'failed' || state === 'refresh-failed') &&
       onRetry !== undefined) ||
     state === 'unauthenticated';
+  const showRows =
+    rows.length > 0 && (state === 'ready' || state === 'refresh-failed');
+  const showFeedback = !showRows || state === 'refresh-failed';
+  const feedbackColumnCount = Math.max(1, table.getVisibleLeafColumns().length);
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
@@ -190,45 +194,50 @@ export function DataTable<TData, TValue = unknown>({
           />
         </div>
       ) : null}
-      <ListFeedback
-        state={state}
-        empty={emptyMessage}
-        emptyAction={emptyAction}
-      >
-        {rows.length > 0 &&
-        (state === 'ready' || state === 'refresh-failed') ? (
-          <div className='overflow-hidden rounded-lg border'>
-            <Table aria-busy={loading}>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        colSpan={header.colSpan}
-                        aria-sort={
-                          header.column.getCanSort()
-                            ? header.column.getIsSorted() === 'asc'
-                              ? 'ascending'
-                              : header.column.getIsSorted() === 'desc'
-                                ? 'descending'
-                                : 'none'
-                            : undefined
-                        }
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
+      <div className='overflow-hidden rounded-lg border'>
+        <Table aria-busy={loading}>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    aria-sort={
+                      header.column.getCanSort()
+                        ? header.column.getIsSorted() === 'asc'
+                          ? 'ascending'
+                          : header.column.getIsSorted() === 'desc'
+                            ? 'descending'
+                            : 'none'
+                        : undefined
+                    }
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </TableHead>
                 ))}
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {showFeedback ? (
+              <TableRow>
+                <TableCell colSpan={feedbackColumnCount} className='p-0'>
+                  <ListFeedback
+                    state={state}
+                    empty={emptyMessage}
+                    emptyAction={emptyAction}
+                  />
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {showRows
+              ? rows.map((row) => (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() ? 'selected' : undefined}
@@ -244,12 +253,11 @@ export function DataTable<TData, TValue = unknown>({
                       </TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : null}
-      </ListFeedback>
+                ))
+              : null}
+          </TableBody>
+        </Table>
+      </div>
       {pagination &&
       (state === 'ready' || (state === 'refresh-failed' && rows.length > 0)) ? (
         <DataTablePagination
