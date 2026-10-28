@@ -46,7 +46,8 @@ function compilePath(path: string): RegExp {
       return `/${segment.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}`;
     })
     .join('');
-  return new RegExp(`^${source}/?$`, 'u');
+  // Hono decodes URL-encoded line terminators before matching routes.
+  return new RegExp(`^${source}/?$`, 'su');
 }
 
 /** Refuses non-read requests before route handlers can perform external effects. Register after i18n. */

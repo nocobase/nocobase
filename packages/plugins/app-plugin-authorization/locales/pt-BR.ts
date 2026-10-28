@@ -3,12 +3,6 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
-  permissionSets: {
-    builtIn: {
-      root: 'Administrador do sistema',
-      member: 'Membro',
-    },
-  },
   sections: {
     pages: 'Permissões de página',
     page: 'Páginas',

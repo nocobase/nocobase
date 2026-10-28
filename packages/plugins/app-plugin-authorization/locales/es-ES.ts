@@ -3,12 +3,6 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
-  permissionSets: {
-    builtIn: {
-      root: 'Administrador del sistema',
-      member: 'Miembro',
-    },
-  },
   sections: {
     pages: 'Permisos de página',
     page: 'Páginas',

@@ -56,6 +56,30 @@ async function guardedRouter(
 }
 
 describe('demoEffectsGuard', () => {
+  it.each(['%0A', '%0D', '%E2%80%A8', '%E2%80%A9'])(
+    'guards a routed parameter containing the encoded line terminator %s',
+    async (encoded) => {
+      const router = new Hono();
+      let effects = 0;
+      await demoEffectsGuard({ paths: ['/api/outbound/*'] }).register(router, {
+        container: container(true),
+      });
+      router.post('/api/outbound/:id/send', (context) => {
+        effects++;
+        return context.json({ sent: true });
+      });
+
+      const response = await router.request(`/api/outbound/${encoded}/send`, {
+        method: 'POST',
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        error: { reason: 'DEMO_READ_ONLY' },
+      });
+      expect(effects).toBe(0);
+    },
+  );
+
   it.each(['POST', 'PUT', 'PATCH', 'DELETE'])(
     'refuses %s before parsing the body or running business effects',
     async (method) => {

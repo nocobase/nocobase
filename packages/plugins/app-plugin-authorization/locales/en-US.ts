@@ -4,9 +4,6 @@ import type { LocaleResource } from '@nocobase/i18n';
  * Display vocabulary shared by the client and server locale catalogues.
  */
 const enUS = {
-  permissionSets: {
-    builtIn: { root: 'System administrator', member: 'Member' },
-  },
   // Workspace sections this plugin registers through `authz.ui`.
   sections: {
     pages: 'Page access',

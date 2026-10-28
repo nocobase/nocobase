@@ -13,8 +13,6 @@ import {
   type TestDatabase,
 } from '@nocobase/app-testing/server';
 import { createMigrator, databaseManagerToken } from '@nocobase/db';
-import { createI18nMiddleware } from '@nocobase/i18n/server';
-import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -45,12 +43,12 @@ let accounts: DemoAccountSummary[];
 let ids: Record<string, string>;
 let administratorIds: string[];
 let authorizationEnabled: boolean;
+let datasetUnavailable: boolean;
 let roleSets: { key: string; title?: string }[];
 let roleAssignments: {
   subject: { type: string; id: string };
   permissionSet: string;
 }[];
-let i18n: Awaited<ReturnType<typeof createTestI18nRuntime>>;
 
 async function routes(): Promise<Hono> {
   const services = new Map<unknown, unknown>([
@@ -87,7 +85,16 @@ async function routes(): Promise<Hono> {
         allowCollections: [],
       },
     ],
-    [demoDataToken, { status: async () => ({ datasetId: 'demo', accounts }) }],
+    [
+      demoDataToken,
+      {
+        status: async () => {
+          if (datasetUnavailable)
+            throw new Error('Dataset labels unavailable.');
+          return { datasetId: 'demo', accounts };
+        },
+      },
+    ],
   ]);
   if (!authorizationEnabled) services.delete(authorizationToken);
   const app = {
@@ -100,7 +107,6 @@ async function routes(): Promise<Hono> {
     },
   };
   const api = new Hono();
-  api.use('*', createI18nMiddleware(i18n));
   api.on(['GET', 'POST'], '/auth/*', (context) =>
     auth.handler(context.req.raw),
   );
@@ -135,7 +141,6 @@ async function signedInUser(cookie: string): Promise<string | null> {
 }
 
 beforeAll(async () => {
-  i18n = await createTestI18nRuntime();
   testDatabase = await createTestDatabase();
   const database = testDatabase.database;
   for (const [packageName, directory] of [
@@ -206,6 +211,7 @@ beforeEach(() => {
   accounts = listed;
   administratorIds = [ids.owner!];
   authorizationEnabled = true;
+  datasetUnavailable = false;
   roleSets = [];
   roleAssignments = [];
 });
@@ -223,6 +229,7 @@ describe('demo quick sign-in', () => {
           username: 'owner',
           name: 'Super Admin',
           role: 'System administrator',
+          roleTitles: ['System administrator'],
           current: false,
         },
       ],
@@ -251,12 +258,21 @@ describe('demo quick sign-in', () => {
     ];
     const response = await call('GET', '/demoMode/accounts');
     expect(response.status).toBe(200);
-    expect((await response.json()).data).toMatchObject([
+    const { data } = await response.json();
+    expect(data).toMatchObject([
       { username: 'ann', role: 'Admin' },
       { username: 'bob', role: 'Sales manager, Auditor, untitled' },
       { username: 'eve', role: '' },
       { username: 'owner', role: 'System administrator' },
     ]);
+    expect(data[0]).not.toHaveProperty('roleTitles');
+    expect(data[1].roleTitles).toEqual([
+      'Sales manager',
+      'Auditor',
+      'untitled',
+    ]);
+    expect(data[2]).not.toHaveProperty('roleTitles');
+    expect(data[3].roleTitles).toEqual(['System administrator']);
   });
 
   it('keeps unlabeled accounts available without Authorization', async () => {
@@ -350,11 +366,19 @@ describe('demo quick sign-in', () => {
   });
 
   it('leaves normal entry available when no enabled Super Admin exists', async () => {
-    for (const candidates of [[], [ids.cat!]]) {
+    for (const candidates of [[], [ids.cat!], [ids.robot!]]) {
       administratorIds = candidates;
       const response = await call('POST', '/demoMode/accounts/signInDefault');
       expect(await response.json()).toEqual({ data: { signedIn: false } });
     }
+  });
+
+  it('enters an administrator without depending on dataset role labels', async () => {
+    datasetUnavailable = true;
+    const response = await call('POST', '/demoMode/accounts/signInDefault');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: { signedIn: true } });
+    expect(await signedInUser(cookieOf(response))).toBe(ids.owner);
   });
 
   it('offers nothing outside demo mode or when switched off', async () => {

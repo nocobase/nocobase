@@ -3,12 +3,6 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
-  permissionSets: {
-    builtIn: {
-      root: '系統管理員',
-      member: '成員',
-    },
-  },
   sections: {
     pages: '頁面許可權',
     page: '頁數',
