@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "previousMaterialsSha256": "6fadf58af873cd30a06d7ab02aeb53e166f14b46622a2b044cb05ec48a12122a",
+  "version": 3,
+  "previousMaterialsSha256": "54ff3c8fef4aa994046c09113ad352af441ff1fc075a0efdde604ab1d30e3c58",
   "revision": "Evaluator observation and runtime binding corrections; common bounded Tailwind environment",
   "algorithm": "sha256",
   "files": {
@@ -22,7 +22,7 @@
     "record.template.json": "899382d1a524e3eed99eaa32bd5e9f53d703aebc6581857cfa540a1200ebb692",
     "resources.json": "0319689d10218fc492dee5038cb866fee63939925fd183f2d356a728429746c0",
     "runtime.md": "8af7af6ef733f009ad9cc24270c7f4a19bbd237d2acc0b76951230e096099f2d",
-    "runtime.mjs": "fe99f9b2d59d707e832f64d673650e9ae29e7252e98aff6c39332fd415ff4528",
+    "runtime.mjs": "3abb274a08452f862d63f10f10484b46baa6b9c3a62e3955856ac85b800a15e0",
     "scenario-index.json": "403a586fded100349eb4ee7bd493ff3d7b19059548f2684e831b15f32c5dd77c",
     "scenario-index.schema.json": "71637ad600e8cfe80b04d49fb559d831bcf106be722c4deb504a614723820060",
     "seeds/customers.json": "ad562b9c5a3132a02c30fa959dfbf27bfe7d616b314aad6b7be8a33490f3d909",

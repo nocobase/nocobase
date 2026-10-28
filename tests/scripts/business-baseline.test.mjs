@@ -342,14 +342,25 @@ test('synchronized Skill copies cannot drift from the resolved package', async (
   try {
     const upstream = path.join(
       directory,
-      'node_modules/fixture-package/skills/fixture',
+      'node_modules/@nocobase/fixture-package/skills/fixture',
     );
     const installed = path.join(directory, '.agents/skills/fixture');
     await mkdir(upstream, { recursive: true });
     await mkdir(installed, { recursive: true });
     await writeFile(
+      path.join(directory, 'package.json'),
+      JSON.stringify({ dependencies: { '@nocobase/fixture-package': '*' } }),
+    );
+    await writeFile(
+      path.join(
+        directory,
+        'node_modules/@nocobase/fixture-package/package.json',
+      ),
+      JSON.stringify({ name: '@nocobase/fixture-package' }),
+    );
+    await writeFile(
       path.join(directory, '.agents/.skills-sync.json'),
-      JSON.stringify({ fixture: 'fixture-package' }),
+      JSON.stringify({ fixture: '@nocobase/fixture-package' }),
     );
     await writeFile(path.join(upstream, 'SKILL.md'), 'Frozen original');
     await writeFile(path.join(installed, 'SKILL.md'), 'Frozen original');
@@ -358,6 +369,12 @@ test('synchronized Skill copies cannot drift from the resolved package', async (
     await assert.rejects(
       checkSyncedSkills(directory),
       /Synchronized Skill drift/,
+    );
+    await rm(installed, { recursive: true });
+    await writeFile(path.join(directory, '.agents/.skills-sync.json'), '{}');
+    await assert.rejects(
+      checkSyncedSkills(directory),
+      /Installed Skill ownership drift/,
     );
   } finally {
     await rm(directory, { recursive: true, force: true });

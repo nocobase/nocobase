@@ -220,9 +220,46 @@ export async function captureRuntime(appRoot, round = 'before', approved = {}) {
 }
 
 export async function checkSyncedSkills(appRoot) {
+  const application = JSON.parse(
+    await readFile(path.join(appRoot, 'package.json')),
+  );
+  const packages = [
+    ...new Set(
+      Object.keys({
+        ...application.dependencies,
+        ...application.devDependencies,
+        ...application.optionalDependencies,
+      }),
+    ),
+  ]
+    .filter((name) => name.startsWith('@nocobase/'))
+    .sort();
+  const expectedOwners = {};
+  for (const name of packages) {
+    const packageRoot = path.join(appRoot, 'node_modules', name);
+    const manifest = JSON.parse(
+      await readFile(path.join(packageRoot, 'package.json')),
+    );
+    if (manifest.nocobase?.cli) continue;
+    const entries = await readdir(path.join(packageRoot, 'skills'), {
+      withFileTypes: true,
+    }).catch((error) => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    });
+    for (const entry of entries)
+      if (entry.isDirectory()) {
+        assert(
+          !expectedOwners[entry.name],
+          `Duplicate upstream Skill: ${entry.name}`,
+        );
+        expectedOwners[entry.name] = name;
+      }
+  }
   const owners = JSON.parse(
     await readFile(path.join(appRoot, '.agents/.skills-sync.json')),
   );
+  assert.deepEqual(owners, expectedOwners, 'Installed Skill ownership drift');
   assert.deepEqual(
     (await readdir(path.join(appRoot, '.agents/skills'))).sort(),
     Object.keys(owners).sort(),
