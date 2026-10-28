@@ -376,12 +376,18 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
           visibleIssues(f, viewer),
           ...(options?.unfinishedOnly
             ? [
-                f.or([
-                  f.and(
-                    FINISHED_KEYS.map((key) => f.string('statusKey').ne(key)),
-                  ),
-                  oneOf(f, 'id', options.includeIds ?? []),
-                ]),
+                options.includeIds?.length
+                  ? f.or([
+                      f.and(
+                        FINISHED_KEYS.map((key) =>
+                          f.string('statusKey').ne(key),
+                        ),
+                      ),
+                      oneOf(f, 'id', options.includeIds),
+                    ])
+                  : f.and(
+                      FINISHED_KEYS.map((key) => f.string('statusKey').ne(key)),
+                    ),
               ]
             : []),
         ]),

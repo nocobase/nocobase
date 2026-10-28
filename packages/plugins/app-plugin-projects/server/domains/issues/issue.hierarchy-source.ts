@@ -104,7 +104,7 @@ export async function hierarchySource(
   const selected = client
     .select(
       fields.map((field) =>
-        field.includes(' as ') ? field.split(' as ')[1]! : field,
+        field.includes(' as ') ? field.split(' as ')[1] : field,
       ),
     )
     .from(

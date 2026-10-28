@@ -575,14 +575,18 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         const children = readableIds
           ? new Map<string, number>()
           : await childCounts(conn, ids);
-        if (readableIds) {
-          for (const child of await liveChildren(conn, ids, readableIds)) {
-            if (readableIds.has(child.id) && child.parentIssueId)
-              children.set(
-                child.parentIssueId,
-                (children.get(child.parentIssueId) ?? 0) + 1,
-              );
-          }
+        if (readableIds && ids.length && readableIds.size) {
+          const counts = await conn.query
+            .selectFrom('pmIssues')
+            .select('parentIssueId')
+            .select((eb) => [eb.fn.countAll().as('count')])
+            .where('deletedAt', 'is', null)
+            .where('parentIssueId', 'in', ids)
+            .where('id', 'in', [...readableIds])
+            .groupBy('parentIssueId')
+            .execute();
+          for (const row of counts)
+            children.set(String(row.parentIssueId), Number(row.count));
         }
         const blocked = await blockedCounts(
           conn,
