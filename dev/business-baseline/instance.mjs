@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   mkdir,
   readFile,
@@ -12,32 +13,47 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scenarios } from './evaluate.mjs';
-import { checkSyncedSkills, verifyRuntime } from './runtime.mjs';
+import {
+  captureRuntime,
+  checkSyncedSkills,
+  compareRuntime,
+  verifyRuntime,
+} from './runtime.mjs';
+import {
+  assertPrivateBoundary,
+  isolatedEnvironment,
+  preparePrivateRuntime,
+} from './isolation.mjs';
 
-const root = fileURLToPath(new URL('../../', import.meta.url));
+const root = path.resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const base = '4c89e3cdd540965552834837313f47d4e0af8795';
 const source = 'packages/templates/app-template-default';
 const [command, scenario, requestedRound] = process.argv.slice(2);
 assert(
-  ['prepare', 'config', 'start', 'reset', 'bind'].includes(command) &&
+  ['prepare', 'config', 'start', 'reset', 'bind', 'build'].includes(command) &&
     [...scenarios, 'smoke'].includes(scenario) &&
     (command === 'bind'
       ? process.argv.length === 5
       : [4, 5].includes(process.argv.length)) &&
     (requestedRound === undefined ||
       ['before', 'after'].includes(requestedRound)),
-  'Usage: node dev/business-baseline/instance.mjs <prepare|config|start|reset|bind> <scenario|smoke> [before|after]',
+  'Usage: node dev/business-baseline/instance.mjs <prepare|config|start|reset|bind|build> <scenario|smoke> [before|after]',
 );
 const round = requestedRound ?? 'before';
-const target = path.join(
+const privateRoot = path.join(
   root,
+  '.business-baseline',
+  `private-${round}-${scenario}`,
+);
+const target = path.join(
+  privateRoot,
   '.business-baseline',
   round === 'after' ? `after-${scenario}` : scenario,
 );
 const marker = path.join(target, '.baseline-instance.json');
 const port = scenario === 'smoke' ? 14759 : 14752 + scenarios.indexOf(scenario);
 const env = {
-  ...process.env,
+  ...isolatedEnvironment(process.env, root),
   TZ: 'UTC',
   APP_SERVER_HOST: '127.0.0.1',
   APP_SERVER_PORT: String(port),
@@ -46,6 +62,7 @@ const env = {
   DB_DIALECT: 'sqlite',
   DB_FILENAME: path.join(target, 'storage/database.sqlite'),
   APP_SAMPLE_DATA: 'false',
+  APP_STORAGE_DIR: path.join(target, 'storage'),
   NOCOBASE_STRICT_STARTUP: 'true',
 };
 // Host process settings must not redirect an isolated baseline into another backend/configuration.
@@ -102,6 +119,27 @@ if (command === 'prepare') {
     !(await stat(target).catch(() => null)),
     'Instance already exists; preserve scored source and evidence',
   );
+  await mkdir(path.dirname(privateRoot), { recursive: true });
+  if (
+    !(await stat(path.join(privateRoot, '.baseline-private.json')).catch(
+      () => null,
+    ))
+  ) {
+    console.log(
+      JSON.stringify({
+        privateRuntime: await preparePrivateRuntime({
+          sourceRoot: root,
+          targetRoot: privateRoot,
+          sourceCommit: base,
+          profileBytes: await readFile(
+            path.join(root, '.business-baseline', `runtime-${round}.json`),
+          ),
+        }),
+      }),
+    );
+  }
+  // A private copy must match the original profile before it can become an application environment.
+  await verifyRuntime(path.join(privateRoot, source), round);
   await mkdir(target, { recursive: true });
   const files = execFileSync(
     'git',
@@ -112,6 +150,7 @@ if (command === 'prepare') {
     .split('\n');
   for (const file of files) {
     const relative = file.slice(source.length + 1);
+    if (relative === '.npmrc') continue;
     const destination = path.join(target, relative);
     await mkdir(path.dirname(destination), { recursive: true });
     await writeFile(
@@ -123,13 +162,13 @@ if (command === 'prepare') {
     );
   }
   // Own the cache directory; symlinking node_modules itself shares Vite's mutable cache.
-  const dependencies = path.join(root, source, 'node_modules');
+  const dependencies = path.join(privateRoot, source, 'node_modules');
   const localDependencies = path.join(target, 'node_modules');
   await mkdir(localDependencies);
   for (const entry of await readdir(dependencies)) {
     if (entry.startsWith('.vite')) continue;
     await symlink(
-      path.join(dependencies, entry),
+      path.relative(localDependencies, path.join(dependencies, entry)),
       path.join(localDependencies, entry),
     );
   }
@@ -161,7 +200,11 @@ if (command === 'prepare') {
       JSON.stringify({ ...identity, ...binding }, null, 2) + '\n',
     );
     console.log(JSON.stringify(binding));
-  } else if (command === 'config' || command === 'start') {
+  } else if (
+    command === 'config' ||
+    command === 'start' ||
+    command === 'build'
+  ) {
     assert.equal(identity.environment, 'bounded-tailwind-client-v1');
     const checked = await verifyRuntime(target, identity.runtime.round);
     assert.equal(
@@ -175,7 +218,7 @@ if (command === 'prepare') {
       await checkSyncedSkills(target);
       await pnpm(['nocobase', 'config', 'init', '--dialect', 'sqlite']);
       await pnpm(['nocobase', 'config', 'check']);
-    } else {
+    } else if (command === 'start') {
       console.log(
         JSON.stringify({ synchronizedSkills: await checkSyncedSkills(target) }),
       );
@@ -183,6 +226,65 @@ if (command === 'prepare') {
         `Requested local test entry: http://127.0.0.1:${port}/baseline-${scenario}/; use the printed Local URL.`,
       );
       await pnpm(['dev']);
+    } else {
+      const sharedApp = path.join(root, source);
+      const sharedBefore = await captureRuntime(sharedApp);
+      const receipt = {
+        scenario,
+        round,
+        startedAt: new Date().toISOString(),
+        runtime: checked,
+        environment: {
+          NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD:
+            env.NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD,
+          NODE_OPTIONS: env.NODE_OPTIONS,
+        },
+      };
+      const digest = (value) =>
+        createHash('sha256').update(JSON.stringify(value)).digest('hex');
+      receipt.sharedBeforeSha256 = digest(sharedBefore);
+      let buildError;
+      try {
+        await pnpm(['build']);
+        receipt.build = 'passed';
+      } catch (error) {
+        buildError = error;
+        receipt.build = 'failed';
+        receipt.buildError = error.message;
+      }
+      let resourceError;
+      try {
+        receipt.privateAfter = await verifyRuntime(target, round);
+        receipt.boundaryAfter = await assertPrivateBoundary(privateRoot);
+      } catch (error) {
+        resourceError = error;
+        receipt.privateError = error.message;
+      }
+      try {
+        const sharedAfter = await captureRuntime(sharedApp);
+        receipt.sharedAfterSha256 = digest(sharedAfter);
+        compareRuntime(sharedAfter, sharedBefore);
+      } catch (error) {
+        resourceError ??= error;
+        receipt.sharedError = error.message;
+      } finally {
+        receipt.resourcesUnchanged = !resourceError;
+        receipt.finishedAt = new Date().toISOString();
+        const evidence = path.join(
+          privateRoot,
+          '.business-baseline',
+          'build-receipts',
+        );
+        await mkdir(evidence, { recursive: true });
+        await writeFile(
+          path.join(evidence, `${scenario}-${Date.now()}.json`),
+          JSON.stringify(receipt, null, 2) + '\n',
+          { flag: 'wx' },
+        );
+        console.log(JSON.stringify(receipt));
+      }
+      if (resourceError) throw resourceError;
+      if (buildError) throw buildError;
     }
   } else {
     // The only deletion scope is this marked disposable instance's storage, never arbitrary DB paths.

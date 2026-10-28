@@ -160,7 +160,7 @@ if (command === 'seal' || command === 'revise') {
           ? {
               previousMaterialsSha256: previous.sha256,
               revision:
-                'Evaluator observation and runtime binding corrections; common bounded Tailwind environment',
+                'Collection tooling revision; frozen business materials retained',
             }
           : {}),
         algorithm: 'sha256',

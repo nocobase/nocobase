@@ -196,6 +196,8 @@ async function main() {
   const appRoot = path.join(
     repo,
     '.business-baseline',
+    `private-${round}-${scenario}`,
+    '.business-baseline',
     round === 'after' ? `after-${scenario}` : scenario,
   );
   const deadline = Date.now() + 15 * 60_000;

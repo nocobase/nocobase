@@ -13,16 +13,28 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
+import { assertPrivateBoundary, privateRootFor } from './isolation.mjs';
 
 export const sourceCommit = '4c89e3cdd540965552834837313f47d4e0af8795';
 const root = path.resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const git = (repo, args) =>
-  execFileSync('git', args, {
-    cwd: repo,
-    encoding: 'utf8',
-    maxBuffer: 32 * 1024 * 1024,
-  });
+  execFileSync(
+    'git',
+    repo === root
+      ? args
+      : [
+          '--no-optional-locks',
+          `--git-dir=${path.join(root, '.git')}`,
+          `--work-tree=${repo}`,
+          ...args,
+        ],
+    {
+      cwd: repo,
+      encoding: 'utf8',
+      maxBuffer: 32 * 1024 * 1024,
+    },
+  );
 const sourcePaths = [
   'packages',
   'package.json',
@@ -87,6 +99,7 @@ async function sourceChanges(repo, round, approved) {
     sourceCommit,
     '--',
     ...sourcePaths,
+    ':(exclude)**/.npmrc',
   ])
     .trim()
     .split('\n')
@@ -97,6 +110,7 @@ async function sourceChanges(repo, round, approved) {
     '--exclude-standard',
     '--',
     ...sourcePaths,
+    ':(exclude)**/.npmrc',
   ])
     .trim()
     .split('\n')
@@ -131,7 +145,7 @@ async function sourceChanges(repo, round, approved) {
   return result;
 }
 
-async function resolutions(appRoot) {
+async function resolutions(appRoot, resourceRoot) {
   const result = {};
   const dependencies = path.join(appRoot, 'node_modules');
   for (const entry of await readdir(dependencies)) {
@@ -144,14 +158,14 @@ async function resolutions(appRoot) {
     for (const name of names) {
       const resolved = await realpath(path.join(dependencies, name));
       assert(
-        resolved.startsWith(root + path.sep),
+        resolved.startsWith(resourceRoot + path.sep),
         `Dependency resolves outside this checkout: ${name}`,
       );
       const manifest = JSON.parse(
         await readFile(path.join(resolved, 'package.json')),
       );
       result[name] = {
-        path: path.relative(root, resolved),
+        path: path.relative(resourceRoot, resolved),
         name: manifest.name,
         version: manifest.version,
       };
@@ -162,10 +176,17 @@ async function resolutions(appRoot) {
   );
 }
 
-export async function captureRuntime(appRoot, round = 'before', approved = {}) {
+export async function captureRuntime(
+  appRoot,
+  round = 'before',
+  approved = {},
+  resourceRoot = root,
+) {
   assert(['before', 'after'].includes(round));
-  const changes = await sourceChanges(root, round, approved);
-  const lockSha256 = hash(await readFile(path.join(root, 'pnpm-lock.yaml')));
+  const changes = await sourceChanges(resourceRoot, round, approved);
+  const lockSha256 = hash(
+    await readFile(path.join(resourceRoot, 'pnpm-lock.yaml')),
+  );
   assert.equal(
     lockSha256,
     hash(
@@ -179,7 +200,7 @@ export async function captureRuntime(appRoot, round = 'before', approved = {}) {
     'Repository lockfile drift',
   );
   const installedLockSha256 = hash(
-    await readFile(path.join(root, 'node_modules/.pnpm/lock.yaml')),
+    await readFile(path.join(resourceRoot, 'node_modules/.pnpm/lock.yaml')),
   );
   assert.equal(
     installedLockSha256,
@@ -187,7 +208,7 @@ export async function captureRuntime(appRoot, round = 'before', approved = {}) {
     'Installed lockfile differs from frozen lockfile',
   );
   const artifacts = {
-    external: await treeHashes(path.join(root, 'node_modules/.pnpm')),
+    external: await treeHashes(path.join(resourceRoot, 'node_modules/.pnpm')),
   };
   // Workspace exports sometimes resolve to generated dist instead of TypeScript (notably dev-config).
   const manifests = git(root, [
@@ -203,9 +224,11 @@ export async function captureRuntime(appRoot, round = 'before', approved = {}) {
     .filter((name) => /^packages\/[^/]+\/[^/]+\/package\.json$/.test(name));
   for (const manifest of manifests) {
     const directory = path.dirname(manifest);
-    const hashes = await treeHashes(path.join(root, directory, 'dist'));
+    const hashes = await treeHashes(path.join(resourceRoot, directory, 'dist'));
     if (Object.keys(hashes).length) artifacts[directory + '/dist'] = hashes;
-    const links = await treeHashes(path.join(root, directory, 'node_modules'));
+    const links = await treeHashes(
+      path.join(resourceRoot, directory, 'node_modules'),
+    );
     if (Object.keys(links).length)
       artifacts[directory + '/node_modules'] = links;
   }
@@ -214,7 +237,7 @@ export async function captureRuntime(appRoot, round = 'before', approved = {}) {
     lockSha256,
     installedLockSha256,
     sourceChanges: changes,
-    resolutions: await resolutions(appRoot),
+    resolutions: await resolutions(appRoot, resourceRoot),
     artifacts,
   };
 }
@@ -290,8 +313,25 @@ export async function verifyRuntime(appRoot, profileName) {
     path.join(root, '.business-baseline', `runtime-${profileName}.json`),
   );
   const profile = JSON.parse(bytes);
+  const privateRoot = await privateRootFor(appRoot, root);
+  if (privateRoot) {
+    const identity = JSON.parse(
+      await readFile(path.join(privateRoot, '.baseline-private.json')),
+    );
+    assert.equal(
+      identity.profileSha256,
+      hash(bytes),
+      'Private runtime profile changed',
+    );
+    await assertPrivateBoundary(privateRoot);
+  }
   compareRuntime(
-    await captureRuntime(appRoot, profileName, profile.approved),
+    await captureRuntime(
+      appRoot,
+      profileName,
+      profile.approved,
+      privateRoot ?? root,
+    ),
     profile.runtime,
   );
   return {
@@ -309,9 +349,12 @@ async function main() {
   const [command, round, registration] = process.argv.slice(2);
   assert(
     ['bind', 'check'].includes(command) && ['before', 'after'].includes(round),
-    'Usage: node dev/business-baseline/runtime.mjs <bind|check> <before|after> [reviewed-changes.json]',
+    'Usage: node dev/business-baseline/runtime.mjs bind before | bind after <reviewed-changes.json> | check <before|after> [application-directory]',
   );
-  const appRoot = path.join(root, 'packages/templates/app-template-default');
+  const appRoot =
+    command === 'check' && registration
+      ? path.resolve(registration)
+      : path.join(root, 'packages/templates/app-template-default');
   const output = path.join(root, '.business-baseline', `runtime-${round}.json`);
   if (command === 'bind') {
     const approved =
