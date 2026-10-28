@@ -72,8 +72,6 @@ const settings = {
     '管理用户资料、账号安全和角色分配，请逐项确认需要授予的权限。',
   businessOperationsHint:
     '设置此角色可以执行的业务操作，以及每项操作可使用的数据范围。',
-  pageAccessHint:
-    '设置此角色可访问的业务页面。系统设置（包括用户管理、业务配置项）统一在“配置项权限”中控制。页面内的数据和业务操作仍需单独授权。',
   roleAssignment: '角色分配',
   accountSecurity: '账号安全',
   userInformation: '用户资料',

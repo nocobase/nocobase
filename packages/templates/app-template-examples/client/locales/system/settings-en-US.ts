@@ -82,8 +82,6 @@ const settings = {
     'Manage user information, account security and role assignments. Review each permission separately.',
   businessOperationsHint:
     'Choose the operations this role can perform and the data each operation can use.',
-  pageAccessHint:
-    'Choose the business pages this role can open. All system settings, including user management and business configuration, are controlled under Configuration permissions. Data and business actions require separate permissions.',
   roleAssignment: 'Role assignment',
   accountSecurity: 'Account security',
   userInformation: 'User information',

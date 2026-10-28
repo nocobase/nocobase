@@ -122,6 +122,8 @@ When BASE → TARGET changes notification contracts, read [Notification upgrades
 
 When the target adds standard form feedback, follow [form feedback source upgrades](references/form-feedback-upgrade.md). Reconcile copied components and application-owned form consumers as well as dependencies, and verify new and retained applications with the same scenarios.
 
+When the template changes the permission workspace, follow [Permission editor source upgrades](references/edge-cases.md#permission-editor-source-upgrades). Merge copied permission models and translations while preserving application-specific descriptions, grants and role behavior; a dependency update alone does not update them.
+
 When the template changes list-return behavior, read [list navigation upgrades](references/list-navigation-upgrade.md). Merge the routing context, breadcrumb and back-link sources together, and examine application-owned detail links and forms; updating dependencies alone does not update these copied sources.
 
 When the template changes loading, empty, filtered or failed list feedback, follow [list feedback source upgrades](references/list-feedback-upgrade.md). Reconcile copied components, request owners, translations and business empty content together, and verify both new and upgraded applications with retained permissions and records.
