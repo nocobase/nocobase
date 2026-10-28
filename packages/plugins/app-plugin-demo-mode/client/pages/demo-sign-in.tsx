@@ -1,9 +1,15 @@
-import { Loading } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import { Link, useSearchParams } from 'react-router';
 
 import { useDemoAccounts } from '../accounts.js';
+import { DemoEntryLoadingContext } from '../demo-mode-context.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
 /**
@@ -13,6 +19,7 @@ import { DEMO_MODE_NAMESPACE } from '../namespace.js';
  */
 export default function DemoSignInPage(): ReactElement {
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
+  const loading = useContext(DemoEntryLoadingContext);
   const [params] = useSearchParams();
   const requested = params.get('as');
   const redirect = params.get('redirect') ?? undefined;
@@ -46,7 +53,7 @@ export default function DemoSignInPage(): ReactElement {
   const entering = automatic !== null && !failed && pending === null;
 
   if ((requested && accounts === null) || entering) {
-    return <Loading fullscreen label={t('status.loading')} />;
+    return <>{loading}</>;
   }
 
   return (

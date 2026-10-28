@@ -17,9 +17,6 @@ const resource: DemoModeResource = {
       'Beralih ke salah satu akun di bawah untuk melihat apa yang dapat diakses setiap peran.',
     loading: 'Memuat akun…',
   },
-  status: {
-    loading: 'Memuat',
-  },
   accounts: {
     title: 'Akun',
     description:

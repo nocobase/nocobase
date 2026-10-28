@@ -21,7 +21,7 @@ The example's cleanup deletes all rows in `demotasks` and `demoprojects`, includ
 
 Retain the application's Authentication, Authorization and Users plugins. Register Demo Mode with `pnpm nocobase plugin register demo-mode`, as described in [enable the deployment](../SKILL.md#enable-the-deployment). Add `DemoProvider` to `server/providers/index.ts` and `demoProjectRoutes` to `server/routes/index.ts`. Register the `demoMode` configuration section as described in [enable the deployment](../SKILL.md#enable-the-deployment).
 
-Mount `DemoModeMenu` from `@nocobase/app-plugin-demo-mode/client/menu` in the existing top header action row, before the appearance and avatar controls, following [the required header entry](visitor-entry.md#required-header-entry). It supplies the demo notice and account switching in one dropdown.
+Connect the application's existing loading component as described in [entry loading](visitor-entry.md#required-entry-loading). Mount `DemoModeMenu` from `@nocobase/app-plugin-demo-mode/client/menu` in the existing top header action row, before the appearance and avatar controls, following [the required header entry](visitor-entry.md#required-header-entry). It supplies the demo notice and account switching in one dropdown.
 
 Configure the isolated deployment:
 

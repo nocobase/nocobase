@@ -1,10 +1,29 @@
 import { createAppClientConfig } from '@nocobase/app-client';
+import { defineClientPlugin } from '@nocobase/app-client/plugins';
 import {
   renderWithApp,
   type RenderedApp,
   type RenderWithAppOptions,
 } from '@nocobase/app-testing/client';
-import type { ReactElement } from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
+
+import { DemoEntryLoadingContext } from '../../client/index.js';
+
+export const appEntryLoading = defineClientPlugin({
+  packageName: '@test/demo-entry-app',
+  reactProviders: [
+    {
+      name: 'demo-entry-loading',
+      component: ({ children }: PropsWithChildren): ReactElement => (
+        <DemoEntryLoadingContext
+          value={<p role='status'>Application loading</p>}
+        >
+          {children}
+        </DemoEntryLoadingContext>
+      ),
+    },
+  ],
+});
 
 export function renderDemo(
   ui: ReactElement,

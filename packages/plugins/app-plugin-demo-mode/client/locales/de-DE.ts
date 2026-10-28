@@ -17,9 +17,6 @@ const resource: DemoModeResource = {
       'Wechseln Sie zu einem der folgenden Konten, um zu sehen, worauf die einzelnen Rollen zugreifen können.',
     loading: 'Konten werden geladen…',
   },
-  status: {
-    loading: 'Wird geladen',
-  },
   accounts: {
     title: 'Konten',
     description:

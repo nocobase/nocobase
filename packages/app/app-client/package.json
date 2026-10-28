@@ -57,7 +57,6 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@tanstack/react-query": "catalog:",
-    "cn": "catalog:",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^17.0.0",

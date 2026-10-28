@@ -16,9 +16,6 @@ const resource = {
       'Switch to an account below to see what each role can access.',
     loading: 'Loading accounts…',
   },
-  status: {
-    loading: 'Loading',
-  },
   accounts: {
     title: 'Accounts',
     description:

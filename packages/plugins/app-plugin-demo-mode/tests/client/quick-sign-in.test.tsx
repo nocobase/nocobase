@@ -1,4 +1,4 @@
-import { renderDemo } from '../helpers/render-demo.js';
+import { appEntryLoading, renderDemo } from '../helpers/render-demo.js';
 import { answerApi } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -71,14 +71,16 @@ describe('demo sign-in page', () => {
   it('enters the account `?as=` names once', async () => {
     const signIns: string[] = [];
     await renderDemo(<DemoSignInPage />, {
-      plugins: [demoMode()],
+      plugins: [appEntryLoading(), demoMode()],
       fetch: demoApi([{ ...ann, current: false }], signIns),
       locale: 'zh-CN',
       route: '/demo-sign-in?as=ann&redirect=/opportunities',
     });
 
     await waitFor(() => expect(signIns).toEqual(['ann']));
-    expect(screen.getByRole('status')).toHaveTextContent(/^加载中$/u);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /^Application loading$/u,
+    );
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });

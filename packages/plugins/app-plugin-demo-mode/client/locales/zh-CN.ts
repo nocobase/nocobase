@@ -15,9 +15,6 @@ const resource: DemoModeResource = {
     accountsDescription: '可以直接切换到下面的账户，看看不同角色看到的内容。',
     loading: '正在加载账户…',
   },
-  status: {
-    loading: '加载中',
-  },
   accounts: {
     title: '账号',
     description: '以下面任一账号进入演示，看看每个角色看到的系统。',

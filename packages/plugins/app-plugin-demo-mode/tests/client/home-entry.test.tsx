@@ -1,6 +1,6 @@
-import { renderDemo } from '../helpers/render-demo.js';
+import { appEntryLoading, renderDemo } from '../helpers/render-demo.js';
 import { answerApi } from '@nocobase/app-testing/client';
-import { act, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import demoMode from '../../client/index.js';
@@ -15,8 +15,8 @@ it('enters Super Admin before rendering the home page and preserves the applicat
     complete = resolve;
   });
   const calls: string[] = [];
-  const rendered = await renderDemo(<p>Protected home page</p>, {
-    plugins: [demoMode()],
+  await renderDemo(<p>Protected home page</p>, {
+    plugins: [appEntryLoading(), demoMode()],
     server: {
       publicBasePath: '/main',
       fetch: answerApi((call) => {
@@ -34,9 +34,9 @@ it('enters Super Admin before rendering the home page and preserves the applicat
     expect(calls).toContain('POST demoMode/accounts/signInDefault'),
   );
   expect(screen.queryByText('Protected home page')).not.toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent(/^Loading$/u);
-  await act(() => rendered.app.runtime.i18n.changeLanguage('zh-CN'));
-  expect(screen.getByRole('status')).toHaveTextContent(/^加载中$/u);
+  expect(screen.getByRole('status')).toHaveTextContent(
+    /^Application loading$/u,
+  );
   complete({ data: { signedIn: true } });
   await waitFor(() =>
     expect(replace).toHaveBeenCalledWith('/main?view=board#today'),

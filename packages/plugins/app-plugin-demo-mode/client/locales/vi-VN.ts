@@ -17,9 +17,6 @@ const resource: DemoModeResource = {
       'Chuyển sang một tài khoản bên dưới để xem nội dung mà từng vai trò có thể truy cập.',
     loading: 'Đang tải tài khoản…',
   },
-  status: {
-    loading: 'Đang tải',
-  },
   accounts: {
     title: 'Tài khoản',
     description:

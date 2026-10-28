@@ -29,9 +29,7 @@ function scannedDirectories(appRoot) {
     ) {
       continue;
     }
-    const sources =
-      packageName === 'app-client' ? ['src', 'dist'] : SOURCE_DIRECTORIES;
-    for (const directory of sources) {
+    for (const directory of SOURCE_DIRECTORIES) {
       const candidate = path.join(scope, packageName, directory);
       if (existsSync(candidate)) {
         directories.push(realpathSync(candidate));

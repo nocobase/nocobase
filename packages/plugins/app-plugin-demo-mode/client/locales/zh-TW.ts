@@ -15,9 +15,6 @@ const resource: DemoModeResource = {
     accountsDescription: '可以直接切換到下方的帳戶，看看不同角色看到的內容。',
     loading: '正在載入帳戶…',
   },
-  status: {
-    loading: '載入中',
-  },
   accounts: {
     title: '帳號',
     description: '以下列任一帳號進入示範，看看每個角色看到的系統。',
