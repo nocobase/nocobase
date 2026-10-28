@@ -6,15 +6,23 @@ Part of the [projects worked example](../example.md).
 
 **Add first**: `yes n | pnpm exec shadcn add alert field select`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
 
+The assumed custom REST backend must implement the [transaction receipt adapter](../../../submission.md#server-contract-and-custom-actions) before this form is used; the header alone does not provide idempotency.
+
 Rules: [`form.md`](../form.md). The fields are name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). The form renders no buttons: the container puts the submit button outside the `<FeedbackForm>` and links it through `formId`.
 
 ```tsx
 // client/pages/projects/project-form.tsx
 import { FeedbackForm } from '#components/feedback-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  useApiClient,
+  useToaster,
+  useSubmission,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, useEffect, useMemo } from 'react';
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
+import { type ReactElement, useEffect, useMemo, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -63,6 +71,11 @@ export function ProjectForm({
   const { t } = useTranslation();
   const api = useApiClient();
   const toaster = useToaster();
+  const { session } = useAuthentication();
+  const submission = useSubmission({
+    scope: `${session?.user.id}:projects:${formId}`,
+  });
+  const entry = useRef(false);
 
   // The schema lives in the component so validation messages can be built with t and follow the current language.
   const schema = useMemo(
@@ -104,7 +117,7 @@ export function ProjectForm({
     label: t(`projects.status.${value}`),
   }));
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const validatedSubmit = form.handleSubmit(async (values) => {
     // values is the data after validation and trimming; empty optional text becomes null.
     const json = {
       name: values.name,
@@ -112,19 +125,23 @@ export function ProjectForm({
       status: values.status,
     };
     let saved: Project;
-    onSubmittingChange?.(true);
     try {
-      const result = project
-        ? await api.request<{ data: Project }>({
-            path: `projects/${encodeURIComponent(project.id)}`,
-            method: 'PATCH',
-            json,
-          })
-        : await api.request<{ data: Project }>({
-            path: 'projects',
-            method: 'POST',
-            json,
-          });
+      const result = await submission.run(json, (key) =>
+        project
+          ? api.request<{ data: Project }>({
+              path: `projects/${encodeURIComponent(project.id)}`,
+              method: 'PATCH',
+              headers: { 'Idempotency-Key': key },
+              json,
+            })
+          : api.request<{ data: Project }>({
+              path: 'projects',
+              method: 'POST',
+              headers: { 'Idempotency-Key': key },
+              json,
+            }),
+      );
+      if (!result) return;
       saved = result.data;
     } catch (error: unknown) {
       const apiError = error instanceof ApiClientError ? error : undefined;
@@ -154,9 +171,9 @@ export function ProjectForm({
         });
       }
       return;
-    } finally {
-      onSubmittingChange?.(false);
     }
+    // Let the container close; the synchronous entry lock stays held through onSubmitted.
+    onSubmittingChange?.(false);
     toaster.show({
       type: 'success',
       title: project
@@ -165,6 +182,19 @@ export function ProjectForm({
     });
     onSubmitted(saved);
   });
+
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (entry.current) return;
+    entry.current = true;
+    onSubmittingChange?.(true);
+    try {
+      await validatedSubmit(event);
+    } finally {
+      entry.current = false;
+      onSubmittingChange?.(false);
+    }
+  };
 
   const rootError = form.formState.errors.root;
 

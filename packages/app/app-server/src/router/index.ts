@@ -47,3 +47,15 @@ export class RouterProvider<
     this.app.container.instance(cliToken, new CliService());
   }
 }
+
+export {
+  repositoryIdempotencyToken,
+  executeIdempotentMutation,
+  mutationDigest,
+  mutationRetryWindowMs,
+  mutationReceiptCollection,
+  pruneMutationReceipts,
+  type RepositoryIdempotencyConfig,
+  type IdempotentMutationOptions,
+  type IdempotentMutationResult,
+} from './idempotency.js';

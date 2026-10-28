@@ -25,6 +25,7 @@ type AnyFieldDefinition = NonNullable<CollectionDefinition['fields']>[number];
 /** What the document generator needs to describe one data endpoint. */
 export interface RepositoryEndpointDescriptor {
   readonly exposure: string;
+  readonly idempotency?: 'required' | 'optional';
   readonly collection: string;
   readonly connection: string | undefined;
   readonly action: RepositoryApiAction;
@@ -882,6 +883,21 @@ function buildOperation(
   return {
     ...base,
     description: `\`${descriptor.exposure}\` exposes the \`${descriptor.collection}\` Collection. The body accepts only the options listed; any other option is refused with 400 \`UNSUPPORTED_REPOSITORY_OPTION\`.`,
+    ...(descriptor.idempotency &&
+    ['createOne', 'updateOne', 'deleteOne'].includes(action)
+      ? {
+          parameters: [
+            {
+              in: 'header' as const,
+              name: 'Idempotency-Key',
+              required: descriptor.idempotency === 'required',
+              schema: { type: 'string' as const },
+              description:
+                'Timestamp.UUID for one logical operation. Required when operation receipts are enabled in strict mode; retry the identical request with this key within 24 hours. Different content conflicts. Expired keys are refused.',
+            },
+          ],
+        }
+      : {}),
     requestBody: {
       required: true,
       content: {
@@ -902,7 +918,9 @@ function buildOperation(
       ...(['findOne', 'updateOne', 'deleteOne'].includes(action)
         ? { '404': errorRef('NotFound') }
         : {}),
-      ...(action === 'updateOne' || action === 'deleteOne'
+      ...(action === 'updateOne' ||
+      action === 'deleteOne' ||
+      (action === 'createOne' && descriptor.idempotency)
         ? { '409': errorRef('Conflict') }
         : {}),
       '413': errorRef('PayloadTooLarge'),

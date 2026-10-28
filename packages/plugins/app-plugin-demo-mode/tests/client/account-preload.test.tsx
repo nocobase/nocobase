@@ -1,4 +1,5 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { renderDemo } from '../helpers/render-demo.js';
+import { answerApi } from '@nocobase/app-testing/client';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -16,11 +17,10 @@ it('preloads accounts and opens the header menu on hover without another request
   const pending = new Promise((resolve) => {
     complete = resolve;
   });
-  await renderWithApp(<DemoModeMenu />, {
+  await renderDemo(<DemoModeMenu />, {
     plugins: [demoMode()],
     route: '/projects',
     fetch: answerApi((call) => {
-      if (call.path === 'demoMode/status') return { data: { enabled: true } };
       if (call.path === 'demoMode/accounts') {
         reads++;
         return pending;
@@ -64,7 +64,7 @@ it('shares pending loads and refreshes every consumer after a data change during
   const pending = new Promise((resolve) => {
     complete = resolve;
   });
-  await renderWithApp(
+  await renderDemo(
     <>
       <AccountList refreshable />
       <AccountList />
@@ -73,7 +73,6 @@ it('shares pending loads and refreshes every consumer after a data change during
       plugins: [demoMode()],
       route: '/projects',
       fetch: answerApi((call) => {
-        if (call.path === 'demoMode/status') return { data: { enabled: true } };
         if (call.path === 'demoMode/accounts')
           return ++reads === 1 ? pending : { data: [bob] };
         return new Response(null, { status: 404 });
@@ -90,11 +89,10 @@ it('shares pending loads and refreshes every consumer after a data change during
 
 it('keeps loaded accounts visible if a background refresh fails', async () => {
   let reads = 0;
-  await renderWithApp(<AccountList refreshable />, {
+  await renderDemo(<AccountList refreshable />, {
     plugins: [demoMode()],
     route: '/projects',
     fetch: answerApi((call) => {
-      if (call.path === 'demoMode/status') return { data: { enabled: true } };
       if (call.path === 'demoMode/accounts')
         return ++reads === 1
           ? { data: [ann] }

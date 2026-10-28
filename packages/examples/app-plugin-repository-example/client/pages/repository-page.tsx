@@ -1,3 +1,4 @@
+import { useSubmission } from '@nocobase/app-client';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import {
@@ -12,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '../components/ui/sheet.js';
-import { createUuid, useApiClient, ApiClientError } from '@nocobase/app-client';
+import { useApiClient, ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useCallback,
@@ -110,7 +111,9 @@ function EntityWorkspace({
   const [page, setPage] = useState(0);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const submission = useSubmission();
+  const [requestBusy, setRequestBusy] = useState(false);
+  const busy = requestBusy || submission.submitting;
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [detail, setDetail] = useState<ExampleRecord>();
@@ -119,6 +122,7 @@ function EntityWorkspace({
   const [lookup, setLookup] = useState('');
   const [traces, setTraces] = useState<Trace[]>([]);
   const traceIdRef = useRef(0);
+  const entryLockRef = useRef(false);
   const refresh = (): void => {
     setLoading(true);
     setError('');
@@ -197,7 +201,9 @@ function EntityWorkspace({
     };
   }, [entity, page, query, recordId, recordTrace, repo, revision, t]);
   async function perform(action: () => Promise<void>): Promise<void> {
-    setBusy(true);
+    if (entryLockRef.current) return;
+    entryLockRef.current = true;
+    setRequestBusy(true);
     setError('');
     setNotice('');
     try {
@@ -205,7 +211,8 @@ function EntityWorkspace({
     } catch (value) {
       setError(message(value));
     } finally {
-      setBusy(false);
+      entryLockRef.current = false;
+      setRequestBusy(false);
     }
   }
   async function open(id: string, edit: boolean): Promise<void> {
@@ -227,41 +234,46 @@ function EntityWorkspace({
     values: Record<string, string>,
     items: OrderItemDraft[] = [],
   ): Promise<void> {
-    const data = mutationValues(entity, values);
-    if (editing === 'new') {
-      const input = {
-        values: {
-          id: createUuid(),
-          ...data,
-          ...(entity.key === 'orders' && items.length
-            ? {
-                items: {
-                  create: items.map((item) => ({
-                    id: item.id,
-                    product: { connect: { id: item.productId } },
-                    quantity: Number(item.quantity),
-                    unitPriceCents: Number(item.unitPriceCents),
-                  })),
-                },
-              }
-            : {}),
-        },
-        select: detailSelect(entity),
-      };
-      const result = await repo.createOne(input);
-      recordTrace('createOne', input, result);
-      if (recordId) setDetail(result.record);
-    } else if (editing) {
-      const input = {
-        filter: { id: editing.id },
-        values: data,
-        ifVersion: editing.version,
-        select: detailSelect(entity),
-      };
-      const result = await repo.updateOne(input);
-      recordTrace('updateOne', input, result);
-      if (recordId) setDetail(result.record);
-    }
+    await submission.run(
+      { entity: entity.key, target: editing, values, items },
+      async (idempotencyKey) => {
+        const data = mutationValues(entity, values);
+        if (editing === 'new') {
+          const input = {
+            values: {
+              id: idempotencyKey.slice(14),
+              ...data,
+              ...(entity.key === 'orders' && items.length
+                ? {
+                    items: {
+                      create: items.map((item) => ({
+                        id: item.id,
+                        product: { connect: { id: item.productId } },
+                        quantity: Number(item.quantity),
+                        unitPriceCents: Number(item.unitPriceCents),
+                      })),
+                    },
+                  }
+                : {}),
+            },
+            select: detailSelect(entity),
+          };
+          const result = await repo.createOne({ ...input, idempotencyKey });
+          recordTrace('createOne', input, result);
+          if (recordId) setDetail(result.record);
+        } else if (editing) {
+          const input = {
+            filter: { id: editing.id },
+            values: data,
+            ifVersion: editing.version,
+            select: detailSelect(entity),
+          };
+          const result = await repo.updateOne({ ...input, idempotencyKey });
+          recordTrace('updateOne', input, result);
+          if (recordId) setDetail(result.record);
+        }
+      },
+    );
     setEditing(undefined);
     setNotice(t('saved'));
     refresh();
@@ -495,7 +507,11 @@ function EntityWorkspace({
                       filter: { id: deleting.id },
                       ifVersion: deleting.version,
                     };
-                    const result = await repo.deleteOne(input);
+                    const result = await submission.run(
+                      input,
+                      (idempotencyKey) =>
+                        repo.deleteOne({ ...input, idempotencyKey }),
+                    );
                     recordTrace('deleteOne', input, result);
                     setDeleting(undefined);
                     setDetail(undefined);

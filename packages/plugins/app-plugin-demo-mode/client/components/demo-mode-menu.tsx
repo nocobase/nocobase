@@ -1,11 +1,11 @@
 import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ChevronDown } from 'lucide-react';
-import { useContext, useId, useState, type ReactElement } from 'react';
+import { useId, useState, type ReactElement } from 'react';
 import { useLocation } from 'react-router';
 
 import { useDemoAccounts } from '../accounts.js';
-import { DemoModeContext } from '../demo-mode-context.js';
+import { useDemoMode } from '../demo-mode-context.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ import {
 
 /** A standalone demo entry for the application's header, beside its theme and account controls. */
 export function DemoModeMenu(): ReactElement | null {
-  const enabled = useContext(DemoModeContext);
+  const enabled = useDemoMode();
   return enabled ? <EnabledDemoModeMenu /> : null;
 }
 

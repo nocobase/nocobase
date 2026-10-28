@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+const createOperationKey = () => `${Date.now()}.${randomUUID()}`;
 // @vitest-environment node
 import { expect } from 'vitest';
 import { createAppTest } from '@nocobase/app-testing/server';
@@ -22,7 +24,11 @@ const test = createAppTest({
 });
 const json = (body: unknown, method = 'POST') => ({
   method,
-  headers: { 'content-type': 'application/json', origin: 'http://localhost' },
+  headers: {
+    'content-type': 'application/json',
+    origin: 'http://localhost',
+    'Idempotency-Key': createOperationKey(),
+  },
   body: JSON.stringify(body),
 });
 

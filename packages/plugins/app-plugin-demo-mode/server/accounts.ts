@@ -6,7 +6,10 @@ import { demoDataError } from './errors.js';
 import { migratePartitionedCookies } from './sign-in-cookies.js';
 import type { DemoAccountSummary } from '../shared/data.js';
 
-import type { DemoSignInAccount } from '../shared/accounts.js';
+import type {
+  DemoAccountRoleTitle,
+  DemoSignInAccount,
+} from '../shared/accounts.js';
 export type { DemoSignInAccount } from '../shared/accounts.js';
 
 export interface DemoAccountSignInDependencies {
@@ -24,6 +27,14 @@ interface Candidate {
   readonly username: string;
   readonly name: string;
   readonly role: string;
+  readonly roleTitles?: readonly DemoAccountRoleTitle[];
+}
+
+interface AccountRecord {
+  readonly id: string;
+  readonly username: string | null;
+  readonly email: string;
+  readonly name: string;
 }
 
 /** The path below the API root every route of this service is reached under. */
@@ -43,6 +54,7 @@ export class DemoAccountSignIn {
       username: account.username,
       name: account.name,
       role: account.role,
+      ...(account.roleTitles ? { roleTitles: account.roleTitles } : {}),
       current: session?.user.id === account.id,
     }));
   }
@@ -65,6 +77,24 @@ export class DemoAccountSignIn {
         `No account ${username} can be entered.`,
         'NOT_FOUND',
       );
+    const cookies = await this.createSession(request, account, clientAddress);
+    return {
+      account: {
+        username: account.username,
+        name: account.name,
+        role: account.role,
+        ...(account.roleTitles ? { roleTitles: account.roleTitles } : {}),
+        current: true,
+      },
+      cookies,
+    };
+  }
+
+  private async createSession(
+    request: Request,
+    account: Pick<Candidate, 'id' | 'username'>,
+    clientAddress?: string,
+  ): Promise<string[]> {
     const authRoot = authRootOf(request.url);
     const forwarded = new Headers(request.headers);
     for (const name of ['content-length', 'content-type'])
@@ -89,17 +119,9 @@ export class DemoAccountSignIn {
     if (!response.ok)
       throw demoDataError(
         'DEMO_ACCOUNT_SIGN_IN_FAILED',
-        `Signing in as ${username} failed with ${response.status}.`,
+        `Signing in as ${account.username} failed with ${response.status}.`,
       );
-    return {
-      account: {
-        username: account.username,
-        name: account.name,
-        role: account.role,
-        current: true,
-      },
-      cookies: migratePartitionedCookies(response.headers.getSetCookie()),
-    };
+    return migratePartitionedCookies(response.headers.getSetCookie());
   }
 
   /** Signs an anonymous home-page visitor in as an existing Super Admin, leaving an existing session intact. */
@@ -119,6 +141,7 @@ export class DemoAccountSignIn {
         .filter((set) => sets.protection(set.key)?.unrestricted)
         .map((set) => set.key),
     );
+    if (!roots.size) return [];
     const administrators = new Set(
       (await sets.listAssignments())
         .filter(
@@ -128,43 +151,106 @@ export class DemoAccountSignIn {
         )
         .map((assignment) => String(assignment.subject.id)),
     );
-    const account = (await this.candidates()).find((candidate) =>
-      administrators.has(candidate.id),
+    if (!administrators.size) return [];
+    // Default entry needs an eligible identity, not dataset labels or localized role names.
+    const account = (await this.eligibleUsers()).find((candidate) =>
+      administrators.has(String(candidate.id)),
     );
     if (!account) return [];
-    return (await this.signIn(request, account.username, clientAddress))
-      .cookies;
+    return this.createSession(
+      request,
+      { id: String(account.id), username: account.username || account.email },
+      clientAddress,
+    );
+  }
+
+  private async eligibleUsers(): Promise<AccountRecord[]> {
+    return this.deps.database
+      .query()
+      .selectFrom('user')
+      .select(['id', 'username', 'email', 'name'])
+      .where('disabledAt', 'is', null)
+      .where('deletedAt', 'is', null)
+      .where('kind', '=', 'person')
+      .orderBy('createdAt', 'asc')
+      .orderBy('id', 'asc')
+      .execute<AccountRecord>();
   }
 
   private async candidates(): Promise<Candidate[]> {
     if (!this.deps.enabled()) return [];
     const [accounts, users] = await Promise.all([
       this.deps.accounts(),
-      this.deps.database
-        .query()
-        .selectFrom('user')
-        .select(['id', 'username', 'email', 'name'])
-        .where('disabledAt', 'is', null)
-        .where('deletedAt', 'is', null)
-        .where('kind', '=', 'person')
-        .orderBy('createdAt', 'asc')
-        .orderBy('id', 'asc')
-        .execute<{
-          id: string;
-          username: string | null;
-          email: string;
-          name: string;
-        }>(),
+      this.eligibleUsers(),
     ]);
     const labels = new Map(
       accounts.map((account) => [account.username, account.role]),
     );
-    return users.map((user) => ({
-      id: String(user.id),
-      username: user.username || user.email,
-      name: user.name,
-      role: labels.get(user.username ?? '') ?? '',
-    }));
+    const assignedRoles = users.some(
+      (user) => !labels.get(user.username ?? '')?.trim(),
+    )
+      ? await this.assignedRoles()
+      : new Map<string, DemoAccountRoleTitle[]>();
+    return users.map((user) => {
+      const label = labels.get(user.username ?? '')?.trim();
+      const roleTitles = label ? undefined : assignedRoles.get(String(user.id));
+      return {
+        id: String(user.id),
+        username: user.username || user.email,
+        name: user.name,
+        role:
+          label ||
+          [
+            ...new Set(
+              (roleTitles ?? []).map((title) =>
+                typeof title === 'string' ? title : title.defaultValue,
+              ),
+            ),
+          ].join(', '),
+        ...(roleTitles?.length ? { roleTitles } : {}),
+      };
+    });
+  }
+
+  private async assignedRoles(): Promise<Map<string, DemoAccountRoleTitle[]>> {
+    const api = this.deps.authorization?.()?.permissionSets;
+    if (!api) return new Map();
+    const [sets, assignments] = await Promise.all([
+      api.list(),
+      api.listAssignments(),
+    ]);
+    const visible = new Map(
+      sets
+        .filter((set) => !api.protection(set.key)?.hidden)
+        .map((set) => [set.key, set]),
+    );
+    const roles = new Map<string, Set<string>>();
+    for (const assignment of assignments) {
+      if (
+        assignment.subject.type !== 'user' ||
+        !visible.has(assignment.permissionSet)
+      )
+        continue;
+      const id = String(assignment.subject.id);
+      const keys = roles.get(id) ?? new Set<string>();
+      keys.add(assignment.permissionSet);
+      roles.set(id, keys);
+    }
+    return new Map(
+      [...roles].map(([id, keys]) => {
+        const unrestricted = [...keys].filter(
+          (key) => api.protection(key)?.unrestricted,
+        );
+        const titles = (unrestricted.length ? unrestricted : [...keys]).map(
+          (key): DemoAccountRoleTitle => {
+            const title = visible.get(key)?.title;
+            if (typeof title === 'string') return title.trim() || key;
+            return title ? { ...title, defaultValue: key } : key;
+          },
+        );
+        return [id, titles];
+      }),
+    );
   }
 }
 

@@ -1,9 +1,10 @@
+import { renderDemo } from '../helpers/render-demo.js';
 import { apiClientToken } from '@nocobase/app-client';
 import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { answerApi } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -111,14 +112,12 @@ const everything = [
 ];
 
 function demoApi({
-  enabled = true,
   permissions = everything,
   configuration = view(),
   onRead,
   data = status,
 }: {
   data?: typeof status;
-  enabled?: boolean;
   permissions?: readonly object[];
   configuration?: ReturnType<typeof view>;
   onRead?: (path: string) => Promise<void>;
@@ -127,7 +126,7 @@ function demoApi({
     if (call.method === 'GET') await onRead?.(call.path);
     if (call.path === 'authorization/permissions')
       return { data: { unrestricted: false, permissions } };
-    if (call.path === 'demoMode/status') return { data: { enabled } };
+
     if (call.path === 'demoMode/data') return { data };
     if (call.path === 'demoMode/accounts')
       return {
@@ -150,8 +149,9 @@ const renderSettings = (
   fetch: ReturnType<typeof demoApi>,
   onDataChange?: () => void,
   components?: DemoSettingsComponents,
+  demoModeEnabled = true,
 ) =>
-  renderWithApp(
+  renderDemo(
     <DemoModeSettings
       components={components}
       onDataChange={onDataChange}
@@ -161,6 +161,7 @@ const renderSettings = (
     />,
     {
       plugins: [demoMode()],
+      demoModeEnabled,
       fetch,
       locale: 'zh-CN',
       services: (app) => {
@@ -179,11 +180,13 @@ describe.each(['default', 'host'] as const)(
     const render = (
       fetch: ReturnType<typeof demoApi>,
       onDataChange?: () => void,
+      demoModeEnabled = true,
     ) =>
       renderSettings(
         fetch,
         onDataChange,
         presentation === 'host' ? hostComponents : undefined,
+        demoModeEnabled,
       );
     it('shows the demo data with the application’s names and how visitors enter', async () => {
       await render(demoApi());
@@ -270,7 +273,7 @@ describe.each(['default', 'host'] as const)(
     });
 
     it('explains when the application is not a demo', async () => {
-      await render(demoApi({ enabled: false }));
+      await render(demoApi(), undefined, false);
       expect(
         await screen.findByText('这个应用不是演示环境'),
       ).toBeInTheDocument();
@@ -330,7 +333,7 @@ it('shows the server schedule and next reset in English', async () => {
       language: 'en-US',
     },
   };
-  await renderWithApp(<ScheduleCard configuration={configuration} />, {
+  await renderDemo(<ScheduleCard configuration={configuration} />, {
     plugins: [demoMode()],
     locale: 'en-US',
   });

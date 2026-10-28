@@ -544,8 +544,6 @@ const esES: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Primer administrador',
-      expires:
-        'Generado para el primer despliegue. Guárdalo ahora: se elimina en {{hours}} h.',
       kept: 'Generado para el primer despliegue; se conserva hasta que se elimina la aplicación.',
       username: 'Nombre de usuario',
       email: 'Correo electrónico',

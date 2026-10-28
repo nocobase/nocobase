@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- cc0b521: Allow task-linked conversation questions to settle when their task resumes, using the recorded status transition time while preserving newer questions and unread replies.
+- Updated dependencies [451bf75]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
 ## 0.1.0-beta.20
 
 ### Patch Changes

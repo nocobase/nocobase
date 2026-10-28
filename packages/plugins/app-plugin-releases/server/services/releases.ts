@@ -243,9 +243,8 @@ export interface DeploymentRecord {
   /** The variables it runs with, sealed; null for one made before variables, or with none. */
   readonly env: string | null;
   readonly variablesFingerprint: string | null;
-  /** The first administrator it generated, sealed; cleared once saved or expired. */
+  /** The first administrator it generated, sealed; cleared once saved. */
   readonly initialAdmin: string | null;
-  readonly initialAdminExpiresAt: Date | null;
   readonly initialAdminSavedBy: string | null;
   readonly initialAdminSavedAt: Date | null;
   readonly createdAt: Date;
@@ -1604,12 +1603,6 @@ export class ReleasesService {
    * not report every App as stopped or a finished deployment as still running.
    */
   public async restore(): Promise<void> {
-    await this.clearExpiredInitialAdmins().catch((error: unknown) =>
-      this.diagnostic.warn(
-        'Failed to clear expired first administrators',
-        error,
-      ),
-    );
     const interrupted = (
       await this.query()
         .selectFrom('relDeployments')
@@ -1979,7 +1972,7 @@ export class ReleasesService {
 
   /**
    * The first administrator the App's first deployment generated, for a person who may deploy it: until someone
-   * says it is saved, and for 24 hours (a preview App's until the App goes).
+   * says it is saved or the App is removed.
    */
   public async readInitialAdmin(
     caller: Caller,
@@ -1987,11 +1980,10 @@ export class ReleasesService {
   ): Promise<InitialAdminView> {
     const app = await this.requireApp(appId);
     await this.requireInitialAdminReader(caller, app);
-    await this.clearExpiredInitialAdmins();
     const found = await this.initialAdminOf(app);
     if (!found)
       throw new ReleasesError(
-        'This App has no first administrator to show: it was saved, it expired, or the application did not generate one.',
+        'This App has no first administrator to show: it was saved or the application did not generate one.',
         'INITIAL_ADMIN_UNAVAILABLE',
         'NOT_FOUND',
       );
@@ -2014,19 +2006,6 @@ export class ReleasesService {
       })
       .where('appId', '=', appId)
       .where('initialAdmin', 'is not', null)
-      .execute();
-  }
-
-  /** Clears the first administrators whose 24 hours are over. */
-  public async clearExpiredInitialAdmins(
-    now: Date = new Date(),
-  ): Promise<void> {
-    await this.query()
-      .updateTable('relDeployments')
-      .set({ initialAdmin: null })
-      .where('initialAdmin', 'is not', null)
-      .where('initialAdminExpiresAt', 'is not', null)
-      .where('initialAdminExpiresAt', '<=', now)
       .execute();
   }
 
@@ -2057,19 +2036,13 @@ export class ReleasesService {
       .where('initialAdmin', 'is not', null)
       .orderBy('createdAt', 'desc')
       .execute<Row>();
-    const now = new Date();
     for (const deployment of rows.map(decodeDeployment)) {
-      if (
-        deployment.initialAdminExpiresAt &&
-        deployment.initialAdminExpiresAt <= now
-      )
-        continue;
       const admin = this.openInitialAdmin(deployment);
       if (!admin) continue;
       return {
         deploymentId: deployment.id,
         ...admin,
-        expiresAt: iso(deployment.initialAdminExpiresAt),
+        expiresAt: null,
       };
     }
     return null;
@@ -2261,7 +2234,6 @@ export class ReleasesService {
     readonly env: string | null;
     readonly variablesFingerprint: string | null;
     readonly initialAdmin: string | null;
-    readonly initialAdminExpiresAt: Date | null;
   }> {
     let context = await this.variablesContext(app);
     const plan = planGenerated(release.variables, context, configFile);
@@ -2295,7 +2267,6 @@ export class ReleasesService {
     for (const [name, variable] of plan.oneShot)
       generated[name] = generateVariable(variable.generate!);
     let initialAdmin: string | null = null;
-    let initialAdminExpiresAt: Date | null = null;
     if (plan.initialAdmin) {
       const password =
         (await this.earlierInitialAdmin(app))?.password ?? randomPassword();
@@ -2311,10 +2282,6 @@ export class ReleasesService {
         this.options.secrets,
         'initial-admin',
       );
-      // A preview App's goes with the preview; any other's is deleted after a day.
-      initialAdminExpiresAt = app.previewOf
-        ? null
-        : new Date(Date.now() + INITIAL_ADMIN_TTL_MS);
     }
     const resolved = resolveVariables({
       manifest: release.variables,
@@ -2339,7 +2306,6 @@ export class ReleasesService {
       variablesFingerprint:
         release.variables || names.length > 0 ? resolved.fingerprint : null,
       initialAdmin,
-      initialAdminExpiresAt,
     };
   }
 
@@ -3477,8 +3443,6 @@ export class ReleasesService {
 
 // --- Variables --------------------------------------------------------------------------------------------------
 
-const INITIAL_ADMIN_TTL_MS = 24 * 60 * 60 * 1000;
-
 interface VariablesContext {
   readonly environment: EnvironmentRecord;
   readonly environmentVariables: readonly StoredEnvironmentVariable[];
@@ -3931,7 +3895,6 @@ function decodeDeployment(row: Row): DeploymentRecord {
     env: nullableString(row.env),
     variablesFingerprint: nullableString(row.variablesFingerprint),
     initialAdmin: nullableString(row.initialAdmin),
-    initialAdminExpiresAt: decodeOptionalDate(row.initialAdminExpiresAt),
     initialAdminSavedBy: nullableString(row.initialAdminSavedBy),
     initialAdminSavedAt: decodeOptionalDate(row.initialAdminSavedAt),
     createdAt: decodeDate(row.createdAt),

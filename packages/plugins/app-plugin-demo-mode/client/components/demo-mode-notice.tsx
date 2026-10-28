@@ -1,4 +1,8 @@
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  useApiClient,
+  useClientApplication,
+  useToaster,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useEffect,
@@ -38,26 +42,15 @@ export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
   const api = useApiClient();
   const toaster = useToaster();
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
-  const [enabled, setEnabled] = useState<boolean>();
+  const app = useClientApplication();
+  const [enabled] = useState(
+    () =>
+      app.config.public.has('demoMode.enabled') &&
+      app.config.public.get('demoMode.enabled') === true,
+  );
   const { pathname } = useLocation();
   const home = pathname === '/';
   const previousPathRef = useRef(pathname);
-
-  useEffect(() => {
-    let active = true;
-    api
-      .request<{ data: { enabled: boolean } }>({ path: '/demoMode/status' })
-      .then((payload) => {
-        if (active) setEnabled(payload.data.enabled);
-      })
-      // Without the status no toast is shown; the server still refuses writes.
-      .catch(() => {
-        if (active) setEnabled(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api]);
 
   useEffect(() => {
     const refresh = previousPathRef.current !== pathname;
@@ -84,15 +77,7 @@ export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
 
   return (
     <DemoModeContext value={enabled}>
-      {home && enabled === undefined ? (
-        <p role='status' className='p-4 text-sm text-muted-foreground'>
-          {t('accounts.entering')}
-        </p>
-      ) : home && enabled ? (
-        <DemoHomeEntry>{children}</DemoHomeEntry>
-      ) : (
-        children
-      )}
+      {home && enabled ? <DemoHomeEntry>{children}</DemoHomeEntry> : children}
     </DemoModeContext>
   );
 }
