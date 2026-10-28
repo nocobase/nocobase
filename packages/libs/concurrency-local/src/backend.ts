@@ -46,8 +46,8 @@ function delay(
   });
 }
 class LocalSession implements ConcurrentBackendSession {
-  get protocolVersion(): 2 {
-    return 2;
+  get protocolVersion(): 3 {
+    return 3;
   }
   readonly capabilities: ConcurrentCapabilities = Object.freeze({
     lock: true,
@@ -94,6 +94,7 @@ class LocalSession implements ConcurrentBackendSession {
         !request.token ||
         !request.requestId ||
         (request.wait.kind !== 'single' &&
+          request.wait.kind !== 'unbounded' &&
           (request.wait.kind !== 'bounded' ||
             !Number.isFinite(request.wait.deadline)))
       )
@@ -165,13 +166,15 @@ class LocalSession implements ConcurrentBackendSession {
           return grant;
         }
         if (request.wait.kind === 'single' || unavailable()) return undefined;
-        const remaining = request.wait.deadline - this.context.clock.now();
-        if (remaining <= 0) return undefined;
-        await delay(
-          this.context,
-          Math.min(this.retryInterval, remaining),
-          controller.signal,
-        );
+        const interval =
+          request.wait.kind === 'bounded'
+            ? Math.min(
+                this.retryInterval,
+                request.wait.deadline - this.context.clock.now(),
+              )
+            : this.retryInterval;
+        if (interval <= 0) return undefined;
+        await delay(this.context, interval, controller.signal);
       }
       return undefined;
     } finally {
@@ -210,9 +213,9 @@ export class LocalConcurrentBackend implements ConcurrentBackend {
   ): Promise<ConcurrentBackendSession> {
     if (this.closed)
       throw new ConcurrentConfigurationError('Local backend is closed');
-    if (context.protocolVersion !== 2)
+    if (context.protocolVersion !== 3)
       throw new ConcurrentConfigurationError(
-        'Local backend requires protocol v2',
+        'Local backend requires protocol v3',
       );
     if (!context.namespace || !Number.isFinite(context.clock.now()))
       throw new ConcurrentConfigurationError('Invalid local backend context');

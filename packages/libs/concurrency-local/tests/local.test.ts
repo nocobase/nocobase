@@ -76,7 +76,7 @@ describe('Local public integration', () => {
         })
       ).cases.length,
     ).toBeGreaterThan(5);
-    expect((await runCoreFaultContract()).cases).toHaveLength(3);
+    expect((await runCoreFaultContract()).cases).toHaveLength(5);
   });
   it('shares backend/namespace, separates instances/namespaces, and shares executor lock kind', async () => {
     const f = await fixture();
@@ -128,22 +128,22 @@ describe('Local public integration', () => {
     await f.close();
     expect(f.time.pendingTimers).toBe(0);
   });
-  it('defaults to finite 30000ms and honors explicit wait/abort without leaking listeners', async () => {
+  it('honors bounded try waits and ordinary cancellation without leaking listeners', async () => {
     const f = await fixture();
-    const held = await f.lock.lock();
-    const work = f.contender.lock();
-    const failed = rejection(work, ConcurrentAcquireError);
+    const held = await (
+      await f.a.manager.createLock('shared', { ttl: 120000 })
+    ).lock();
+    const work = f.contender.tryLock(30000);
     await flush();
     f.time.advance(30000);
     f.time.flush();
-    await failed;
+    expect(await work).toBeUndefined();
     await held.release();
     const second = await f.lock.lock();
     const controller = new AbortController();
     const add = vi.spyOn(controller.signal, 'addEventListener');
     const remove = vi.spyOn(controller.signal, 'removeEventListener');
     const waiting = f.contender.lock({
-      timeoutMs: 100,
       signal: controller.signal,
     });
     const cancelled = rejection(waiting, ConcurrentAbortError);
@@ -168,7 +168,7 @@ describe('Local public integration', () => {
     const abort = new AbortController();
     const a = f.contender.lock({ signal: abort.signal });
     const failed = rejection(a, ConcurrentAbortError);
-    const b = f.contender.lock({ timeoutMs: 100 });
+    const b = f.contender.lock();
     await flush();
     abort.abort();
     await failed;
@@ -464,7 +464,7 @@ describe('Local public integration', () => {
     const time = new ManualTime();
     const backend = new LocalConcurrentBackend();
     const context: BackendContext = {
-      protocolVersion: 2,
+      protocolVersion: 3,
       managerId: 'direct',
       namespace: 'direct',
       clock: time,
@@ -575,7 +575,7 @@ describe('Local public integration', () => {
 describe('internal registry reference and effect invariants', () => {
   function context(time: Clock & Scheduler): BackendContext {
     return {
-      protocolVersion: 2,
+      protocolVersion: 3,
       managerId: 'unit',
       namespace: 'unit',
       operationTimeoutMs: 5000,

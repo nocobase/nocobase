@@ -97,6 +97,26 @@ for(const entry of ['@nocobase/concurrency','@nocobase/concurrency/backend','@no
 for(const name of ['ConcurrentConfigurationError','ConcurrentAcquireError','ConcurrentAbortError','ConcurrentLeaseLostError','ConcurrentReleaseError','ConcurrentCloseError']) {assert.equal(core[name],port[name]);assert.equal(core[name],testing[name]);}
 const contract = await testing.runBackendContract({createBackend:()=>new LocalConcurrentBackend()});
 const faults = await testing.runCoreFaultContract();
+const ordinary = [];
+for (const method of ['lock', 'run']) {
+  const time = new testing.ManualTime();
+  const local = new LocalConcurrentBackend({retryIntervalMs: 10000});
+  const options = {backend: local, namespace: 'packed-wait', clock: time, scheduler: time};
+  const owner = await core.createConcurrentRuntime(options);
+  const waiter = await core.createConcurrentRuntime(options);
+  const held = await (await owner.manager.createLock('r', {ttl: 120000})).lock();
+  let settled = false;
+  const work = method === 'lock'
+    ? (await waiter.manager.createLock('r')).lock().then(async lease => {settled=true;await lease.release();})
+    : (await waiter.manager.createSynchronous('r')).run(() => {settled=true;});
+  const flush = async () => {for(let i=0;i<50;i++) await Promise.resolve();};
+  await flush();time.advance(60000);time.flush();await flush();
+  assert.equal(settled,false);
+  await held.release();time.advance(10000);time.flush();await work;
+  assert.equal(settled,true);
+  await owner.close();await waiter.close();await local.close();
+  assert.equal(time.pendingTimers,0);ordinary.push(method);
+}
 const backend = new LocalConcurrentBackend();
 const a = await core.createConcurrentRuntime({backend,namespace:'packed'});
 const b = await core.createConcurrentRuntime({backend,namespace:'packed'});
@@ -109,7 +129,7 @@ await Promise.all(Array.from({length:20},(_,i)=>executors[i%2].run(async({signal
 assert.equal(max,1);
 assert.equal(await executor.run(()=>42),42);
 await a.close();await b.close();await backend.close();
-console.log(JSON.stringify({contract,faults,multiManagerMaxActive:max}));
+console.log(JSON.stringify({contract,faults,ordinaryWaitsBeyond30Seconds:ordinary,multiManagerMaxActive:max}));
 `,
 );
 execFileSync(process.execPath, ['run.mjs'], {
