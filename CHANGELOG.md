@@ -2,6 +2,17 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `release-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [release-beta/2026-10-28.2](https://github.com/nocobase/nocobase/releases/tag/release-beta%2F2026-10-28.2)
+
+### 🎉 New Features
+
+- **[Demo mode]** Improve demo account roles and reset layout, and let applications share mode checks and block requests that cause external effects. ([#11204](https://github.com/nocobase/nocobase/pull/11204)) by @gchust
+
+### 🐛 Bug Fixes
+
+- **[Agents]** Keep saved progress messages current and live runner replies visible during conversation refreshes. ([#11202](https://github.com/nocobase/nocobase/pull/11202)) by @2013xile
+- **[Demo mode]** Deployments no longer require the Demo Mode writable collections variable. ([#11207](https://github.com/nocobase/nocobase/pull/11207)) by @2013xile
+
 ## [release-beta/2026-10-28.1](https://github.com/nocobase/nocobase/releases/tag/release-beta%2F2026-10-28.1)
 
 ### 🎉 New Features
