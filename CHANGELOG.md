@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.35](https://github.com/nocobase/nocobase/compare/v2.2.34...v2.2.35) - 2026-10-28
+
+### 🐛 Bug Fixes
+
+- **[Authentication]** Fixed authenticator options being rendered before their auth type plugin finished loading, which made LDAP sign-in fail with "must either provide a buffer via raw or some value" after an application reload ([#11182](https://github.com/nocobase/nocobase/pull/11182)) by @hongboji
+
 ## [v2.2.34](https://github.com/nocobase/nocobase/compare/v2.2.33...v2.2.34) - 2026-10-27
 
 ### 🚀 Improvements
