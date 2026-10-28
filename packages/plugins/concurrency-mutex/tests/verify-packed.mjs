@@ -116,6 +116,24 @@ for(const method of ['lock','run']){
   const next=await lock.tryLock();assert.ok(next);await next.release();
   await owner.close();assert.equal(time.pendingTimers,0);
 }
+const flush=async()=>{for(let i=0;i<50;i++)await Promise.resolve();};
+for(const method of ['lock','run']){
+  const time=new testing.ManualTime();let calls=0;const cause=new Error('Core lease timer failed');
+  const scheduler={setTimer(notify,delay){if(++calls===2)throw cause;return time.setTimer(notify,delay);}};
+  const runtime=await core.createConcurrentRuntime({backend:new LocalConcurrentBackend(),namespace:'grant-timer',clock:time,scheduler});
+  const lock=await runtime.manager.createLock('r',{ttl:100});const executor=await runtime.manager.createSynchronous('r',{ttl:100});
+  await assert.rejects(method==='lock'?lock.lock():executor.run(()=>{throw new Error('Must not enter runner');}),error=>error instanceof core.ConcurrentAcquireError&&error.cause===cause);
+  time.advance(101);time.flush();await flush();await runtime.close();await runtime.close();assert.equal(time.pendingTimers,0);
+}
+{
+  const time=new testing.ManualTime();const callbacks=[];const gate=testing.deferred();const entered=testing.deferred();
+  const runtime=await core.createConcurrentRuntime({backend:new LocalConcurrentBackend(),namespace:'close-timer',clock:time,scheduler:{setTimer(notify,delay){callbacks.push({notify,delay});return time.setTimer(notify,delay);}}});
+  const executor=await runtime.manager.createSynchronous('r',{ttl:100});const work=executor.run(async()=>{entered.resolve();await gate.promise;});await entered.promise;
+  let settled=false;const closing=runtime.close({timeoutMs:10}).then(()=>{settled=true;},error=>{settled=true;return error;});const timer=callbacks.find(callback=>callback.delay===10);assert.ok(timer);
+  time.advance(9.25);timer.notify();await flush();assert.equal(settled,false);gate.resolve();await work;assert.equal(await closing,undefined);
+  const count=callbacks.length;for(const callback of callbacks)callback.notify();assert.equal(callbacks.length,count);assert.equal(time.pendingTimers,0);
+}
+console.log(JSON.stringify({confirmedGrantTimerFailureCases:2,realRunnerCloseAt9_25Ms:'passed'}));
 const ordinary = [];
 for (const method of ['lock', 'run']) {
   const time = new testing.ManualTime();
