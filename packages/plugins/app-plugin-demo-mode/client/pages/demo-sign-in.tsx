@@ -1,9 +1,9 @@
+import { Loading } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
 import { useDemoAccounts } from '../accounts.js';
-import { Loading } from '../components/loading.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
 /**
@@ -46,7 +46,7 @@ export default function DemoSignInPage(): ReactElement {
   const entering = automatic !== null && !failed && pending === null;
 
   if ((requested && accounts === null) || entering) {
-    return <Loading fullscreen />;
+    return <Loading fullscreen label={t('status.loading')} />;
   }
 
   return (

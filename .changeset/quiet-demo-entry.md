@@ -1,5 +1,8 @@
 ---
 '@nocobase/app-plugin-demo-mode': patch
+'@nocobase/app-client': minor
+'@nocobase/app-template-default': patch
+'@nocobase/app-template-examples': patch
 ---
 
-Use the standard NocoBase loading screen while automatically signing in through demo links.
+Share the standard NocoBase loading components between application templates and automatic demo sign-in.

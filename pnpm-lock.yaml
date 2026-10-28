@@ -706,6 +706,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.4(react@19.2.8)
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
     devDependencies:
       '@nocobase/dev-config':
         specifier: workspace:*

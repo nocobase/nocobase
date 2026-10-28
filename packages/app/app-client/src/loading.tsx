@@ -2,7 +2,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import type { ComponentPropsWithoutRef, ReactElement } from 'react';
 
 import { BrandLoadingMark } from './brand-loading-mark.js';
-import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 import { cn } from 'cn';
 
 export interface LoadingProps extends ComponentPropsWithoutRef<'div'> {
@@ -11,7 +10,7 @@ export interface LoadingProps extends ComponentPropsWithoutRef<'div'> {
 }
 
 export function Loading(inputProps: LoadingProps): ReactElement {
-  const { t } = useTranslation(DEMO_MODE_NAMESPACE);
+  const { t } = useTranslation();
   const {
     className,
     fullscreen = false,
