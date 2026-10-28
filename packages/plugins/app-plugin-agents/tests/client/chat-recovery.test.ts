@@ -145,6 +145,36 @@ it('does not carry the 204 latch into another run in the same conversation', asy
   expect(f.stream).toHaveBeenCalledTimes(2);
 });
 
+it('reads idle history after a superseded detail refresh without reconnecting', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  };
+  agentsQueryClient().setQueryData(chatKeys.conversation('c1'), f.state.detail);
+  f.state.messages = [user, answer];
+  let release!: (detail: typeof f.state.detail) => void;
+  vi.spyOn(f.api, 'conversation').mockImplementationOnce(
+    () => new Promise((resolve) => (release = resolve)),
+  );
+  const history = vi.spyOn(f.api, 'messages');
+
+  // Match the subscription acknowledgement chain while a newer detail query supersedes refresh.
+  const acknowledged = f.controller
+    .refresh('c1')
+    .then(() => f.controller.resume('c1'));
+  f.controller.detailRequest('c1');
+  f.controller.observeDetail(f.state.detail);
+  release(f.state.detail);
+  await acknowledged;
+
+  expect(history).toHaveBeenCalled();
+  expect(
+    f.controller.history('c1').state.items.map((message) => message.id),
+  ).toContain('answer');
+  expect(f.stream).not.toHaveBeenCalled();
+});
+
 it('hides the previous transport error while recovering and clears it after a successful replay', async () => {
   const f = fixture(),
     output = f.output();

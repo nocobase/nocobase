@@ -972,8 +972,13 @@ export class ChatController {
       agentsQueryClient().getQueryData<ConversationDetail>(
         chatKeys.conversation(id),
       );
-    if (!detail || !chatIsRunning(detail) || detail.execution?.waitingApproval)
+    if (!detail) return;
+    if (!chatIsRunning(detail) || detail.execution?.waitingApproval) {
+      const chat = this.chats.get(id);
+      if (chat?.status !== 'submitted' && chat?.status !== 'streaming')
+        await this.loadHistory(id);
       return;
+    }
     const key = this.recoveryKey(id, detail);
     const pending = this.recoveries.get(id);
     let chat = this.chat(id);
