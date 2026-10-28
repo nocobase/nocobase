@@ -2,4 +2,4 @@
 "@nocobase/concurrency-local": patch
 ---
 
-Support cancellable unbounded ordinary acquisition with backend protocol v3 while preserving single and bounded try waits.
+Support cancellable unbounded ordinary acquisition with the initial backend protocol v1 while preserving single and bounded try waits.

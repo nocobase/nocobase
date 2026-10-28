@@ -89,10 +89,10 @@ describe('Local ordinary waits', () => {
     );
   }
 
-  it('rejects protocol v2 before opening a Local session', async () => {
+  it('rejects an unsupported protocol version before opening a Local session', async () => {
     const time = new ManualTime();
     const context: BackendContext = {
-      protocolVersion: 3,
+      protocolVersion: 1,
       managerId: 'test',
       namespace: 'test',
       operationTimeoutMs: 5000,
@@ -100,7 +100,7 @@ describe('Local ordinary waits', () => {
       clock: time,
       scheduler: time,
     };
-    // Deliberately simulate an old JavaScript core.
+    // Deliberately simulate an incompatible JavaScript core.
     Object.defineProperty(context, 'protocolVersion', { value: 2 });
     const backend = new LocalConcurrentBackend();
     await expect(backend.openSession(context)).rejects.toBeInstanceOf(

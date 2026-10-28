@@ -460,11 +460,11 @@ describe('Local public integration', () => {
     await lease?.release();
     await f.close();
   });
-  it('tracks direct v2 grants until return even after resource expiry', async () => {
+  it('tracks direct protocol grants until return even after resource expiry', async () => {
     const time = new ManualTime();
     const backend = new LocalConcurrentBackend();
     const context: BackendContext = {
-      protocolVersion: 3,
+      protocolVersion: 1,
       managerId: 'direct',
       namespace: 'direct',
       clock: time,
@@ -575,7 +575,7 @@ describe('Local public integration', () => {
 describe('internal registry reference and effect invariants', () => {
   function context(time: Clock & Scheduler): BackendContext {
     return {
-      protocolVersion: 3,
+      protocolVersion: 1,
       managerId: 'unit',
       namespace: 'unit',
       operationTimeoutMs: 5000,

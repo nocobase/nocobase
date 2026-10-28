@@ -46,8 +46,8 @@ function delay(
   });
 }
 class LocalSession implements ConcurrentBackendSession {
-  get protocolVersion(): 3 {
-    return 3;
+  get protocolVersion(): 1 {
+    return 1;
   }
   readonly capabilities: ConcurrentCapabilities = Object.freeze({
     lock: true,
@@ -213,9 +213,9 @@ export class LocalConcurrentBackend implements ConcurrentBackend {
   ): Promise<ConcurrentBackendSession> {
     if (this.closed)
       throw new ConcurrentConfigurationError('Local backend is closed');
-    if (context.protocolVersion !== 3)
+    if (context.protocolVersion !== 1)
       throw new ConcurrentConfigurationError(
-        'Local backend requires protocol v3',
+        'Local backend requires protocol v1',
       );
     if (!context.namespace || !Number.isFinite(context.clock.now()))
       throw new ConcurrentConfigurationError('Invalid local backend context');
