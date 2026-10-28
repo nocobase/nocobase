@@ -102,6 +102,20 @@ assert.equal(installed.peerDependencies['@nocobase/concurrency'], '^' + ${JSON.s
 for(const name of ['ConcurrentConfigurationError','ConcurrentAcquireError','ConcurrentAbortError','ConcurrentLeaseLostError','ConcurrentReleaseError','ConcurrentCloseError']) {assert.equal(core[name],port[name]);assert.equal(core[name],testing[name]);}
 const contract = await testing.runBackendContract({createBackend:()=>new LocalConcurrentBackend()});
 const faults = await testing.runCoreFaultContract();
+for(const method of ['lock','run']){
+  const time=new testing.ManualTime();const callbacks=[];
+  const scheduler={setTimer(notify,delay){callbacks.push({notify,delay});return time.setTimer(notify,delay);}};
+  const backend=new LocalConcurrentBackend({retryIntervalMs:1});const options={backend,namespace:'early-deadline',clock:time,scheduler};
+  const owner=await core.createConcurrentRuntime(options);const waiter=await core.createConcurrentRuntime(options);
+  const held=await (await owner.manager.createLock('r',{ttl:100})).lock();
+  const lock=await waiter.manager.createLock('r');const executor=await waiter.manager.createSynchronous('r');
+  const flush=async()=>{for(let i=0;i<50;i++)await Promise.resolve();};
+  const work=method==='lock'?lock.tryLock(10).then(async lease=>{assert.ok(lease);await lease.release();}):executor.tryRun(()=>42,10).then(result=>assert.deepEqual(result,{acquired:true,value:42}));
+  await flush();const timer=callbacks.find(callback=>callback.delay===10);assert.ok(timer);time.advance(8.25);timer.notify();await flush();time.advance(0.75);await held.release();time.flush();await work;
+  const queued=method==='lock'?lock.tryLock(10):executor.tryRun(()=>{throw new Error('Must not run');},10);time.advance(10);assert.deepEqual(await queued,method==='lock'?undefined:{acquired:false});
+  const next=await lock.tryLock();assert.ok(next);await next.release();
+  await owner.close();await waiter.close();await backend.close();assert.equal(time.pendingTimers,0);
+}
 const ordinary = [];
 for (const method of ['lock', 'run']) {
   const time = new testing.ManualTime();
