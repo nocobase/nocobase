@@ -156,6 +156,16 @@ console.log(JSON.stringify({defaultSchedulerSamples:100,earlyNotifications,minAb
 console.log(JSON.stringify({ backend: result, faults: await testing.runCoreFaultContract() }));
 `,
 );
+writeFileSync(
+  join(consumer, 'deadline-failure.mjs'),
+  readFileSync(join(root, 'tests/fixtures/deadline-failure.mjs'), 'utf8'),
+);
+for (const mode of ['busy', 'grant', 'release-retry'])
+  execFileSync(process.execPath, ['deadline-failure.mjs', mode], {
+    cwd: consumer,
+    stdio: 'inherit',
+    timeout: 5000,
+  });
 execFileSync(process.execPath, ['run.mjs'], {
   cwd: consumer,
   stdio: 'inherit',

@@ -279,24 +279,47 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
       this.waiting.add(controller);
       let cancelDeadline = (): void => {};
       let deadlineVersion = 0;
+      let deadlineError: ConcurrentAcquireError | undefined;
+      const failDeadline = (cause: unknown): void => {
+        deadlineError ??= new ConcurrentAcquireError(
+          'Acquisition deadline monitoring failed',
+          { cause },
+        );
+        deadlineVersion++;
+        const cancel = cancelDeadline;
+        cancelDeadline = () => {};
+        this.cancelTimer(cancel);
+        controller.abort(deadlineError);
+      };
       const armDeadline = (): void => {
         if (wait.kind !== 'bounded' || controller.signal.aborted) return;
         const version = ++deadlineVersion;
-        this.cancelTimer(cancelDeadline);
-        cancelDeadline = this.context.scheduler.setTimer(
-          () => {
-            if (version !== deadlineVersion || controller.signal.aborted)
-              return;
-            if (this.context.clock.now() < wait.deadline) {
-              armDeadline();
-              return;
-            }
-            controller.abort(
-              new ConcurrentAcquireError('Acquisition deadline elapsed'),
-            );
-          },
-          Math.max(0, Math.ceil(wait.deadline - this.context.clock.now())),
-        );
+        const previous = cancelDeadline;
+        cancelDeadline = () => {};
+        this.cancelTimer(previous);
+        try {
+          const cancel = this.context.scheduler.setTimer(
+            () => {
+              if (version !== deadlineVersion || controller.signal.aborted)
+                return;
+              try {
+                if (this.context.clock.now() < wait.deadline) armDeadline();
+                else
+                  controller.abort(
+                    new ConcurrentAcquireError('Acquisition deadline elapsed'),
+                  );
+              } catch (cause) {
+                failDeadline(cause);
+              }
+            },
+            Math.max(0, Math.ceil(wait.deadline - this.context.clock.now())),
+          );
+          if (version !== deadlineVersion || controller.signal.aborted)
+            this.cancelTimer(cancel);
+          else cancelDeadline = cancel;
+        } catch (cause) {
+          failDeadline(cause);
+        }
       };
       const deliveryError = (grant?: BackendGrant): Error | undefined => {
         if (options.signal?.aborted || this.state !== 'open')
@@ -304,6 +327,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
             'Acquisition cancelled before delivery',
             { cause: controller.signal.reason },
           );
+        if (deadlineError) return deadlineError;
         if (
           (wait.kind === 'bounded' &&
             this.context.clock.now() >= wait.deadline) ||
@@ -319,7 +343,8 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
       try {
         armDeadline();
         const early = deliveryError();
-        if (early instanceof ConcurrentAbortError) throw early;
+        if (early && (early instanceof ConcurrentAbortError || deadlineError))
+          throw early;
         // No backend call has started, so an elapsed wait is a normal miss.
         if (early) return undefined;
         let grant: BackendGrant | undefined;
@@ -336,6 +361,10 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
             this.diagnostic('acquire', cause);
             throw new ConcurrentAbortError('Acquisition cancelled', { cause });
           }
+          if (deadlineError) {
+            if (cause !== deadlineError) this.diagnostic('acquire', cause);
+            throw deadlineError;
+          }
           throw new ConcurrentAcquireError(
             'Backend acquisition failed or its result is unknown',
             { cause },
@@ -343,15 +372,19 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
         }
         if (!grant) {
           const error = deliveryError();
-          if (error instanceof ConcurrentAbortError) throw error;
+          if (error && (error instanceof ConcurrentAbortError || deadlineError))
+            throw error;
           return undefined;
         }
         const lease = new ManagedLease(this, grant);
         this.leases.add(lease);
         let error: Error | undefined;
         try {
-          lease.start();
           error = deliveryError(grant);
+          if (!error) {
+            lease.start();
+            error = deliveryError(grant);
+          }
         } catch (cause) {
           error =
             options.signal?.aborted || this.state !== 'open'
@@ -359,9 +392,10 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
                   'Acquisition cancelled before delivery',
                   { cause },
                 )
-              : new ConcurrentAcquireError('Lease monitoring could not start', {
+              : (deadlineError ??
+                new ConcurrentAcquireError('Lease monitoring could not start', {
                   cause,
-                });
+                }));
         }
         if (error) {
           this.abandoned.add(lease);
