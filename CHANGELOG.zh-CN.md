@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.35](https://github.com/nocobase/nocobase/compare/v2.2.34...v2.2.35) - 2026-10-28
+
+### 🐛 修复
+
+- **[用户认证]** 修复认证器选项在认证类型插件加载完成前被渲染，导致应用重载后 LDAP 登录报 "must either provide a buffer via raw or some value" 的问题 ([#11182](https://github.com/nocobase/nocobase/pull/11182)) by @hongboji
+
 ## [v2.2.34](https://github.com/nocobase/nocobase/compare/v2.2.33...v2.2.34) - 2026-10-27
 
 ### 🚀 优化
