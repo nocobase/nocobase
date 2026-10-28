@@ -18,7 +18,8 @@
     "timezone": "UTC",
     "locale": "en-US",
     "platform": "linux",
-    "architecture": "x64"
+    "architecture": "x64",
+    "tailwindScanning": "bounded-tailwind-client-v1"
   },
   "permissions": {
     "filesystem": "isolated-application-only",

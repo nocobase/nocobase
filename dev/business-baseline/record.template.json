@@ -19,7 +19,11 @@
     "examplesVersion": "unknown",
     "skillVersion": "unknown",
     "lockfileSha256": "unknown",
-    "adapterSha256": "unknown"
+    "adapterSha256": "unknown",
+    "runtimeProfileSha256": "unknown",
+    "runtimeInventory": "unknown",
+    "synchronizedSkillReceipt": "unknown",
+    "approvedAfterResourceChanges": "unknown"
   },
   "environment": {
     "node": "24.21.0",

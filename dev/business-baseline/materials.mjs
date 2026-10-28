@@ -10,8 +10,9 @@ const root = path.resolve(directory, '../..');
 const base = '4c89e3cdd540965552834837313f47d4e0af8795';
 const command = process.argv[2];
 assert(
-  ['seal', 'check', 'archive'].includes(command) && process.argv.length === 3,
-  'Usage: node dev/business-baseline/materials.mjs <seal|check|archive>',
+  ['seal', 'revise', 'check', 'archive'].includes(command) &&
+    process.argv.length === 3,
+  'Usage: node dev/business-baseline/materials.mjs <seal|revise|check|archive>',
 );
 const git = (args) =>
   execFileSync('git', args, { cwd: root, maxBuffer: 64 * 1024 * 1024 });
@@ -112,22 +113,40 @@ async function validateScenarios() {
 }
 
 await validateScenarios();
-if (command === 'seal') {
-  assert(
-    !(await stat(path.join(directory, 'materials.json')).catch(() => null)),
-    'Materials already sealed; do not silently change the evaluation contract',
-  );
+if (command === 'seal' || command === 'revise') {
+  let previous;
+  if (command === 'revise') {
+    const bytes = await readFile(path.join(directory, 'materials.json'));
+    const manifest = JSON.parse(bytes);
+    for (const [file, hash] of Object.entries(manifest.files)) {
+      if (
+        /^(assertions|seeds|prompts)\//.test(file) ||
+        file === 'resources.json'
+      )
+        assert.equal(
+          digest(await readFile(path.join(directory, file))),
+          hash,
+          `Frozen business material changed: ${file}`,
+        );
+    }
+    previous = { version: manifest.version, sha256: digest(bytes) };
+  } else
+    assert(
+      !(await stat(path.join(directory, 'materials.json')).catch(() => null)),
+      'Materials already sealed; do not silently change the evaluation contract',
+    );
   const resources = {};
   for (const file of resourcePaths)
     resources[file] = digest(git(['show', `${base}:${file}`]));
-  await writeFile(
-    path.join(directory, 'resources.json'),
-    JSON.stringify(
-      { sourceCommit: base, algorithm: 'sha256', files: resources },
-      null,
-      2,
-    ) + '\n',
-  );
+  if (!previous)
+    await writeFile(
+      path.join(directory, 'resources.json'),
+      JSON.stringify(
+        { sourceCommit: base, algorithm: 'sha256', files: resources },
+        null,
+        2,
+      ) + '\n',
+    );
   const materials = {};
   for (const file of await filesUnder(directory))
     if (file !== 'materials.json')
@@ -135,7 +154,18 @@ if (command === 'seal') {
   await writeFile(
     path.join(directory, 'materials.json'),
     JSON.stringify(
-      { version: 1, algorithm: 'sha256', files: materials },
+      {
+        version: previous ? previous.version + 1 : 1,
+        ...(previous
+          ? {
+              previousMaterialsSha256: previous.sha256,
+              revision:
+                'Evaluator observation and runtime binding corrections; common bounded Tailwind environment',
+            }
+          : {}),
+        algorithm: 'sha256',
+        files: materials,
+      },
       null,
       2,
     ) + '\n',

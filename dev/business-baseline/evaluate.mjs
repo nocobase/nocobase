@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { actionInput, checkUI, createdRecords } from './observations.mjs';
+import { checkSyncedSkills, verifyRuntime } from './runtime.mjs';
 
 const directory = fileURLToPath(new URL('.', import.meta.url));
 export const scenarios = ['procurement', 'customers', 'onboarding', 'expenses'];
@@ -89,9 +91,29 @@ export async function evaluate({
       await withinDeadline(() => adapter.reset(structuredClone(seed)));
       for (const step of item.steps) {
         const result = await withinDeadline(() =>
-          adapter.execute(step.action, structuredClone(step.input)),
+          adapter.execute(step.action, actionInput(step.action, step.input)),
         );
         await checkEvidence(result?.evidence, evidenceDir);
+        if (step.action === 'concurrent' && step.input.operation === 'create') {
+          result.value = {
+            ...result.value,
+            ...createdRecords(
+              result.persisted?.before,
+              result.persisted?.after,
+            ),
+          };
+        }
+        if (step.action === 'ui') {
+          result.value = {
+            ...result.value,
+            ...checkUI(step.input.flow, suite.scenario, result.ui),
+          };
+          for (const stage of [
+            ...result.ui.stages,
+            ...(result.ui.roleStates ?? []),
+          ])
+            await checkEvidence(stage.evidence, evidenceDir);
+        }
         observations.push(result);
         assertSubset(result.value, step.expect);
       }
@@ -169,11 +191,32 @@ async function main() {
     process.env.BASELINE_URL ??
       `http://127.0.0.1:${14752 + scenarios.indexOf(scenario)}/baseline-${scenario}/`,
   );
+  const round = process.env.BASELINE_ROUND ?? 'before';
+  assert(['before', 'after'].includes(round));
+  const appRoot = path.join(
+    repo,
+    '.business-baseline',
+    round === 'after' ? `after-${scenario}` : scenario,
+  );
+  const deadline = Date.now() + 15 * 60_000;
   const signal = AbortSignal.timeout(15 * 60_000);
+  let runtime;
+  let synchronizedSkills;
   let adapter;
   let adapterHash = 'unknown';
   let setupError;
   try {
+    const identity = JSON.parse(
+      await readFile(path.join(appRoot, '.baseline-instance.json')),
+    );
+    assert.equal(identity.runtime.round, round);
+    runtime = await verifyRuntime(appRoot, round);
+    assert.equal(
+      runtime.profileSha256,
+      identity.runtime.profileSha256,
+      'Instance runtime profile changed',
+    );
+    synchronizedSkills = await checkSyncedSkills(appRoot);
     adapterHash = digest(await readFile(path.resolve(adapterFile)));
     const module = await import(pathToFileURL(path.resolve(adapterFile)).href);
     adapter = await module.createAdapter({
@@ -200,6 +243,7 @@ async function main() {
     seed: JSON.parse(seedBytes),
     adapter,
     evidenceDir,
+    deadline,
   });
   await writeFile(
     path.join(evidenceDir, 'result.json'),
@@ -207,6 +251,8 @@ async function main() {
       {
         ...result,
         baseURL,
+        runtime,
+        synchronizedSkills,
         materialsSha256: digest(manifestBytes),
         adapterSha256: adapterHash,
         suiteSha256: digest(suiteBytes),

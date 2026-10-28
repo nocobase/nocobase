@@ -15,6 +15,7 @@ Run from the repository root, with Node 24.21.0 and pnpm 11.7.0. Dependencies us
 ```bash
 pnpm install
 PLAYWRIGHT_BROWSERS_PATH="$PWD/.business-baseline/browsers" pnpm --filter @nocobase/app-template-default exec playwright install chromium
+node dev/business-baseline/runtime.mjs bind before
 node dev/business-baseline/materials.mjs check
 node dev/business-baseline/materials.mjs archive
 node dev/business-baseline/instance.mjs prepare procurement
@@ -39,6 +40,6 @@ The adapter path is evaluator-owned and must be created against the finished app
 
 `reset` removes only the selected independent application's `storage` directory after verifying its marker; source, configuration and captured evidence remain. Next startup reapplies migrations and seeds. To start a new clean build rather than retest generated code, retain its diff/evidence and use a new clean application directory in a separate authorized checkout; never overwrite a scored build. For preparation smoke tests, use `smoke` as the scenario to keep all four scored directories untouched.
 
-Preparation verified configuration, database initialization, the health endpoint and reset on the smoke instance. The frontend request timed out, and the isolated-cache restart exceeded the existing Vite 120-second readiness limit. Resolve this source-workspace frontend startup problem before delivering a scored prompt. Preserve the existing timeout and assertion requirements; do not count health-only startup as a usable business page.
+Both rounds use the same registered `bounded-tailwind-client-v1` environment overlay, which explicitly limits application Tailwind scanning to `client` while preserving existing plugin content and theme sources. The original resource archive is retained. See [runtime binding](runtime.md) for actual installed dependency/Skill checks, the one-time before profile and exact reviewed after-resource registration. Preparing an application pins its runtime profile; configuration, startup and acceptance refuse resource drift. Existing preparation-only smoke instances enroll with `node dev/business-baseline/instance.mjs bind smoke before` before configuration.
 
 See [shared conventions](shared.md) for the future example directory/index/synchronization contract and [adapter semantics](adapter.md) for real HTTP, browser and transaction checks. This collection machinery adds no queries, writes, locks, polls or transactions to product requests or runner claims.
