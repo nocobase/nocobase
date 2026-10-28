@@ -1,5 +1,7 @@
 # @nocobase/concurrency-mutex
 
+Retry-timer registration and cancellation failures settle the acquisition Promise instead of escaping timer or native abort callbacks; abort listeners are removed even on failure. If cancellation arrives during registration, settlement waits until the cancellation handle is available. A failed resource-grant transition compensates its holder and ticket under the real Mutex gate, guarded by state identity, version and token. Failed compensation remains retained for retryable backend drain; it never clears a successor holder.
+
 An in-process fixed-TTL backend for `@nocobase/concurrency`, using the public `Mutex` from `async-mutex@0.5.0` only for short synchronous state transitions. Requires Node 24 ESM. Install core alongside this adapter; core is a peer so errors, backend contracts, leases and execution logic share one identity.
 
 The package lives at `packages/plugins/concurrency-mutex` in the source repository. It is a backend adapter for the concurrency contract, not an application plugin requiring registration. Its public constructor remains `LocalConcurrentBackend`.

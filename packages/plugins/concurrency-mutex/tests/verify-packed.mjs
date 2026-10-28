@@ -134,6 +134,14 @@ for(const method of ['lock','run']){
   const count=callbacks.length;for(const callback of callbacks)callback.notify();assert.equal(callbacks.length,count);assert.equal(time.pendingTimers,0);
 }
 console.log(JSON.stringify({confirmedGrantTimerFailureCases:2,realRunnerCloseAt9_25Ms:'passed'}));
+for(const method of ['lock','run']){
+  const time=new testing.ManualTime();const cause=new Error('First backend timer failed');let calls=0;
+  const runtime=await core.createConcurrentRuntime({backend:new LocalConcurrentBackend(),namespace:'backend-timer',clock:time,scheduler:{setTimer(notify,delay){if(++calls===1)throw cause;return time.setTimer(notify,delay);}}});
+  const lock=await runtime.manager.createLock('r',{ttl:100});const executor=await runtime.manager.createSynchronous('r',{ttl:100});
+  await assert.rejects(method==='lock'?lock.lock():executor.run(()=>{throw new Error('Must not enter runner');}),error=>error instanceof core.ConcurrentAcquireError&&error.cause===cause);
+  const lease=await lock.tryLock();assert.ok(lease);await lease.release();time.advance(101);time.flush();await runtime.close();await runtime.close();assert.equal(time.pendingTimers,0);
+}
+console.log(JSON.stringify({initialBackendTimerFailureCases:2}));
 const ordinary = [];
 for (const method of ['lock', 'run']) {
   const time = new testing.ManualTime();
@@ -172,6 +180,16 @@ await assert.rejects(backend.validateResource({namespace:'packed',name:'r',kind:
 console.log(JSON.stringify({contract,faults,ordinaryWaitsBeyond30Seconds:ordinary,sameRuntimeMaxActive:max}));
 `,
 );
+writeFileSync(
+  join(consumer, 'retry-failure.mjs'),
+  readFileSync(join(root, 'tests/fixtures/retry-failure.mjs'), 'utf8'),
+);
+for (const mode of ['timer', 'abort', 'deadline'])
+  execFileSync(process.execPath, ['retry-failure.mjs', mode], {
+    cwd: consumer,
+    stdio: 'inherit',
+    timeout: 5000,
+  });
 execFileSync(process.execPath, ['run.mjs'], {
   cwd: consumer,
   stdio: 'inherit',

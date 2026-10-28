@@ -24,8 +24,14 @@ export interface ResourceState {
 export class LocalResourceRegistry {
   private readonly resources = new Map<string, ResourceState>();
   private readonly operations = new Set<Promise<unknown>>();
+  private readonly rollbackByEffects = new WeakMap<
+    (() => void)[],
+    () => Promise<void>
+  >();
+  private readonly pendingRollbacks = new Set<() => Promise<void>>();
   async drain(): Promise<void> {
     while (this.operations.size) await Promise.allSettled([...this.operations]);
+    for (const rollback of [...this.pendingRollbacks]) await rollback();
   }
   transition<T>(
     key: string,
@@ -101,9 +107,21 @@ export class LocalResourceRegistry {
           state.effects--;
         }
       }
-      if (failed) throw failure;
+      if (failed) {
+        const rollback = this.rollbackByEffects.get(effects);
+        if (rollback) {
+          this.pendingRollbacks.add(rollback);
+          try {
+            await rollback();
+          } catch {
+            /* Retain cleanup for drain retry without masking the original failure. */
+          }
+        }
+        throw failure;
+      }
       return result;
     } finally {
+      this.rollbackByEffects.delete(effects);
       state.references--;
       this.collect(state);
     }
@@ -136,6 +154,22 @@ export class LocalResourceRegistry {
       cancelled: false,
     };
     state.timer = ticket;
+    const rollback = async (): Promise<void> => {
+      await this.transition(
+        state.key,
+        (current, cleanup) => {
+          if (
+            current.timer === ticket &&
+            current.version === ticket.version &&
+            current.holder?.token === token
+          )
+            this.clear(current, cleanup);
+        },
+        state,
+      );
+      this.pendingRollbacks.delete(rollback);
+    };
+    this.rollbackByEffects.set(effects, rollback);
     const schedule = (): void => {
       const fire = (): void => {
         if (ticket.cancelled) return;

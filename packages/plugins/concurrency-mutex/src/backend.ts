@@ -27,20 +27,50 @@ function delay(
   timeout: number,
   signal: AbortSignal,
 ): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let done = false;
+    let registering = true;
+    let notified = false;
     let cancel = (): void => {};
-    const finish = (): void => {
+    const finish = (failure?: { cause: unknown }): void => {
       if (done) return;
+      notified = true;
+      if (registering) return;
       done = true;
-      cancel();
-      signal.removeEventListener('abort', finish);
-      resolve();
+      signal.removeEventListener('abort', onAbort);
+      let failed = failure !== undefined;
+      let error = failure?.cause;
+      const cleanup = cancel;
+      cancel = () => {};
+      try {
+        cleanup();
+      } catch (cause) {
+        if (!failed) {
+          failed = true;
+          error = cause;
+        }
+      }
+      if (failed)
+        reject(
+          error instanceof Error
+            ? error
+            : new ConcurrentAcquireError('Retry timer failed', {
+                cause: error,
+              }),
+        );
+      else resolve();
     };
-    signal.addEventListener('abort', finish, { once: true });
-    cancel = context.scheduler.setTimer(finish, timeout);
-    if (done) cancel();
-    if (signal.aborted) finish();
+    const onAbort = (): void => finish();
+    signal.addEventListener('abort', onAbort, { once: true });
+    try {
+      if (!signal.aborted)
+        cancel = context.scheduler.setTimer(() => finish(), timeout);
+      registering = false;
+      if (notified || signal.aborted) finish();
+    } catch (cause) {
+      registering = false;
+      finish({ cause });
+    }
   });
 }
 export class LocalConcurrentBackend implements ConcurrentBackend {
