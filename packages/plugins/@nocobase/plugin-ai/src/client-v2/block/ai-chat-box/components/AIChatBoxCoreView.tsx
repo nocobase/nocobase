@@ -153,6 +153,7 @@ export const AIChatBoxCoreView: React.FC = observer(() => {
         height: '100%',
         maxHeight: '100%',
         minHeight: 0,
+        minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -169,6 +170,7 @@ export const AIChatBoxCoreView: React.FC = observer(() => {
         style={{
           backgroundColor: 'transparent',
           padding: 0,
+          minWidth: 0,
           flex: '0 0 auto',
           position: 'relative',
         }}

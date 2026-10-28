@@ -16,54 +16,64 @@ import { supportsWebSearchForModel } from '../../../repositories/AIConfigReposit
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { useChatBoxRuntime } from '../stores/runtime';
 
-export const SearchSwitch: React.FC<{ disabled?: boolean }> = observer(({ disabled }) => {
-  const t = useT();
-  const repository = useAIConfigRepository();
-  const { chatBoxModel, chatConversationModel } = useChatBoxRuntime();
-  const webSearch = chatConversationModel.webSearch;
-  const model = chatBoxModel.model;
-  const services = repository.llmServices;
+export const SearchSwitch: React.FC<{ disabled?: boolean; showLabel?: boolean }> = observer(
+  ({ disabled, showLabel }) => {
+    const t = useT();
+    const repository = useAIConfigRepository();
+    const { chatBoxModel, chatConversationModel } = useChatBoxRuntime();
+    const webSearch = chatConversationModel.webSearch;
+    const model = chatBoxModel.model;
+    const services = repository.llmServices;
 
-  useEffect(() => {
-    repository.getLLMServices().catch(console.error);
-  }, [repository]);
+    useEffect(() => {
+      repository.getLLMServices().catch(console.error);
+    }, [repository]);
 
-  const currentService = useMemo(() => {
-    if (!model) {
-      return null;
-    }
-    return services.find((service) => service.llmService === model.llmService) || null;
-  }, [model, services]);
+    const currentService = useMemo(() => {
+      if (!model) {
+        return null;
+      }
+      return services.find((service) => service.llmService === model.llmService) || null;
+    }, [model, services]);
 
-  const supportWebSearch = supportsWebSearchForModel(currentService, model?.model);
+    const supportWebSearch = supportsWebSearchForModel(currentService, model?.model);
 
-  useEffect(() => {
-    if (!supportWebSearch && webSearch) {
-      chatConversationModel.setWebSearch(false);
-    }
-  }, [chatConversationModel, supportWebSearch, webSearch]);
+    useEffect(() => {
+      if (!supportWebSearch && webSearch) {
+        chatConversationModel.setWebSearch(false);
+      }
+    }, [chatConversationModel, supportWebSearch, webSearch]);
 
-  const switchChecked = () => {
-    if (supportWebSearch) {
-      chatConversationModel.setWebSearch(!webSearch);
-    }
-  };
+    const switchChecked = () => {
+      if (supportWebSearch) {
+        chatConversationModel.setWebSearch(!webSearch);
+      }
+    };
 
-  if (disabled) {
-    return <Button type="text" icon={<GlobalOutlined />} disabled />;
-  }
+    const label = disabled
+      ? t('Web search')
+      : t(webSearch ? 'Disable search' : supportWebSearch ? 'Enable search' : 'Web search not supported');
 
-  if (webSearch) {
     return (
-      <Tooltip title={t('Disable search')} arrow={false}>
-        <Button color="primary" variant="filled" icon={<GlobalOutlined />} onClick={switchChecked} />
+      <Tooltip title={showLabel ? undefined : label} arrow={false}>
+        <Button
+          type={webSearch && !disabled ? 'default' : 'text'}
+          color={webSearch && !disabled ? 'primary' : undefined}
+          variant={webSearch && !disabled ? 'filled' : undefined}
+          icon={<GlobalOutlined />}
+          aria-label={label}
+          aria-pressed={webSearch}
+          onClick={switchChecked}
+          disabled={disabled || !supportWebSearch}
+          style={
+            showLabel
+              ? { minHeight: 44, height: 'auto', width: '100%', justifyContent: 'flex-start', paddingBlock: 8 }
+              : undefined
+          }
+        >
+          {showLabel ? <span style={{ minWidth: 0, whiteSpace: 'normal', textAlign: 'start' }}>{label}</span> : null}
+        </Button>
       </Tooltip>
     );
-  }
-
-  return (
-    <Tooltip title={supportWebSearch ? t('Enable search') : t('Web search not supported')} arrow={false}>
-      <Button type="text" icon={<GlobalOutlined />} onClick={switchChecked} disabled={!supportWebSearch} />
-    </Tooltip>
-  );
-});
+  },
+);
