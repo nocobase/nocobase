@@ -120,6 +120,8 @@ for (const method of ['lock', 'run']) {
 const backend = new LocalConcurrentBackend();
 const a = await core.createConcurrentRuntime({backend,namespace:'packed'});
 const b = await core.createConcurrentRuntime({backend,namespace:'packed'});
+assert.equal('createSemaphore' in a.manager,false);
+assert.equal('capabilities' in a,false);
 const lock = await a.manager.createLock('r');
 const executor = await b.manager.createSynchronous('r');
 const lease = await lock.lock();assert.deepEqual(await executor.tryRun(()=>1),{acquired:false});await lease.release();

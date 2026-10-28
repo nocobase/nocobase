@@ -497,15 +497,19 @@ describe('Local public integration', () => {
     await session.close();
     await backend.close();
   });
-  it('rejects unsupported capabilities, invalid timings and mismatched clock domains', async () => {
+  it('rejects unknown options, invalid timings and mismatched clock domains', async () => {
     const f = await fixture();
-    for (const options of [{ owner: '' }, { priority: 0 }, { autoRenew: true }])
+    for (const options of [
+      { ttl: 10, owner: '' },
+      { ttl: 10, priority: 0 },
+      { ttl: 10, autoRenew: true },
+      { ttl: 10, autoRenew: false },
+    ])
       await expect(
         f.a.manager.createSynchronous('r', options),
       ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
-    await expect(f.a.manager.createSemaphore('s', 2)).rejects.toBeInstanceOf(
-      ConcurrentConfigurationError,
-    );
+    expect(f.a.manager).not.toHaveProperty('createSemaphore');
+    expect(f.a).not.toHaveProperty('capabilities');
     for (const value of [0, -1, 1.1, NaN, Infinity, 2147483648])
       expect(
         () => new LocalConcurrentBackend({ retryIntervalMs: value }),

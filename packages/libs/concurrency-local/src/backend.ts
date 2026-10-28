@@ -10,7 +10,6 @@ import type {
   BackendAcquireRequest,
   BackendGrant,
   ResourceSpec,
-  ConcurrentCapabilities,
 } from '@nocobase/concurrency/backend';
 import { LocalResourceRegistry } from './registry.ts';
 
@@ -49,12 +48,6 @@ class LocalSession implements ConcurrentBackendSession {
   get protocolVersion(): 1 {
     return 1;
   }
-  readonly capabilities: ConcurrentCapabilities = Object.freeze({
-    lock: true,
-    executor: true,
-    semaphore: false,
-    autoRenew: false,
-  });
   private closing = false;
   private closed = false;
   private readonly attempts = new Set<AbortController>();

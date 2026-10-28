@@ -41,7 +41,7 @@ Runtime close belongs to core: it refuses new work, cancels only undelivered acq
 
 ## Supported scope
 
-Capabilities are `lock:true`, `executor:true`, `semaphore:false`, `autoRenew:false`. Core rejects owner, priority (including zero), automatic renewal and semaphore creation before storage effects. There is no extend, reentrancy, read/write mode, final atomic validity proof, strong replay barrier or automatic migration of existing business locks. See core's documentation for independent acquisition/executor signals, conservative success semantics and business error priority.
+Only fixed-TTL Lock and SynchronousExecutor are exposed, with both provided by every Local session. There is no placeholder semaphore API, automatic-renewal option or capability map. Unknown options are rejected rather than accepted as no-ops. There is no extend, reentrancy, read/write mode, final atomic validity proof, strong replay barrier or automatic migration of existing business locks. See core's documentation for independent acquisition/executor signals, conservative success semantics and business error priority.
 
 ## Verification
 
