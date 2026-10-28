@@ -82,7 +82,7 @@ export class ControlledBackend implements ConcurrentBackend {
   ): Promise<ConcurrentBackendSession> {
     this.contexts.push(context);
     return {
-      protocolVersion: 2,
+      protocolVersion: 3,
       capabilities: {
         lock: true,
         executor: true,
@@ -153,10 +153,7 @@ export async function runBackendContract(
         !(await executor.tryRun(() => 1)).acquired,
         'executor shares lock kind',
       );
-      await rejects(
-        () => contender.lock({ timeoutMs: 1 }),
-        ConcurrentAcquireError,
-      );
+      check((await contender.tryLock(1)) === undefined, 'bounded busy');
       const separate = await (
         await isolated.manager.createLock('shared')
       ).lock();
@@ -240,14 +237,14 @@ export async function runCoreFaultContract(): Promise<ContractResult> {
     const controller = new AbortController();
     const expected =
       mode === 'abort' ? ConcurrentAbortError : ConcurrentAcquireError;
+    const runner = (): void => {
+      ran = true;
+    };
     const result = rejects(
       () =>
-        executor.run(
-          () => {
-            ran = true;
-          },
-          { timeoutMs: 10, signal: controller.signal },
-        ),
+        mode === 'deadline'
+          ? executor.tryRun(runner, 10, { signal: controller.signal })
+          : executor.run(runner, { signal: controller.signal }),
       expected,
     );
     await entered.promise;
@@ -264,6 +261,48 @@ export async function runCoreFaultContract(): Promise<ContractResult> {
     await runtime.close();
     check(time.pendingTimers === 0, 'fault timer cleanup');
     cases.push(`late ${mode} grant`);
+  }
+  for (const method of ['lock', 'run'] as const) {
+    const time = new ManualTime();
+    const entered = deferred<BackendAcquireRequest>();
+    const response = deferred<BackendGrant | undefined>();
+    const backend = new ControlledBackend({
+      acquire: (request) => {
+        entered.resolve(request);
+        return response.promise;
+      },
+    });
+    const runtime = await createConcurrentRuntime({
+      backend,
+      namespace: 'unbounded',
+      clock: time,
+      scheduler: time,
+    });
+    const lock = await runtime.manager.createLock('r');
+    const executor = await runtime.manager.createSynchronous('r');
+    let ran = false;
+    const work =
+      method === 'lock'
+        ? lock.lock().then((lease) => lease.release())
+        : executor.run(() => {
+            ran = true;
+          });
+    const request = await entered.promise;
+    check(request.wait.kind === 'unbounded', 'ordinary wait policy');
+    check(time.pendingTimers === 0, 'ordinary wait has no deadline timer');
+    time.advance(60000);
+    time.flush();
+    check(!request.signal.aborted && !ran, 'ordinary wait survives 30 seconds');
+    response.resolve({ notAfter: time.now() + 30000, release: async () => {} });
+    await work;
+    check(method === 'lock' || ran, 'ordinary runner starts after grant');
+    check(
+      backend.requests.length === 1,
+      'core does not retry ordinary acquisition',
+    );
+    await runtime.close();
+    check(time.pendingTimers === 0, 'ordinary wait cleanup');
+    cases.push(`unbounded ${method}`);
   }
   return { cases };
 }

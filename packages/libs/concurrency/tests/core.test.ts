@@ -120,20 +120,18 @@ describe('public core', () => {
     const runtime = await createConcurrentRuntime({
       backend,
       namespace: 'wait',
-      defaultAcquireTimeoutMs: 7,
       clock: time,
       scheduler: time,
     });
     const lock = await runtime.manager.createLock('r');
-    const work = lock.lock();
-    const failed = rejection(work, ConcurrentAcquireError);
+    const work = lock.tryLock(7);
     const request = await entered.promise;
     expect(request.wait).toEqual({ kind: 'bounded', deadline: 7 });
     time.advance(7);
     time.flush();
     expect(request.signal.aborted).toBe(true);
     response.resolve(undefined);
-    await failed;
+    expect(await work).toBeUndefined();
     expect(backend.requests).toHaveLength(1);
     await runtime.close();
   });
@@ -171,7 +169,7 @@ describe('public core', () => {
     await runtime.close();
   });
   it('runs the published deterministic fault driver', async () => {
-    expect((await testing.runCoreFaultContract()).cases).toHaveLength(3);
+    expect((await testing.runCoreFaultContract()).cases).toHaveLength(5);
   });
   it('re-exports identical constructors without loading a test framework', () => {
     for (const name of [
@@ -208,7 +206,7 @@ describe('public core', () => {
   it('opens an asynchronous session with default budgets and unique request identities', async () => {
     const f = await fixture();
     expect(f.backend.contexts[0]).toMatchObject({
-      protocolVersion: 2,
+      protocolVersion: 3,
       operationTimeoutMs: 5000,
       cleanupTimeoutMs: 5000,
     });
@@ -217,7 +215,7 @@ describe('public core', () => {
     const b = await f.lock.tryLock();
     await b?.release();
     const [first, second] = f.backend.requests;
-    expect(first.wait).toEqual({ kind: 'bounded', deadline: 30000 });
+    expect(first.wait).toEqual({ kind: 'unbounded' });
     expect(second.wait).toEqual({ kind: 'single' });
     expect(first.resource.ttl).toBe(30000);
     expect(first.token).not.toBe(second.token);
@@ -259,9 +257,10 @@ describe('public core', () => {
       await expect(
         f.runtime.manager.createLock('r', { ttl: value }),
       ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
-      await expect(f.lock.lock({ timeoutMs: value })).rejects.toBeInstanceOf(
-        ConcurrentConfigurationError,
-      );
+      if (value !== 0)
+        await expect(f.lock.tryLock(value)).rejects.toBeInstanceOf(
+          ConcurrentConfigurationError,
+        );
       await expect(
         createConcurrentRuntime({
           backend: f.backend,
@@ -290,6 +289,7 @@ describe('public core', () => {
     const session = await f.backend.openSession(f.backend.contexts[0]);
     for (const bad of [
       { ...session, protocolVersion: 1 },
+      { ...session, protocolVersion: 2 },
       {
         ...session,
         capabilities: { ...session.capabilities, autoRenew: true },
@@ -340,10 +340,10 @@ describe('public core', () => {
         scheduler: time,
       });
       const executor = await runtime.manager.createSynchronous('r');
-      const work = executor.run(runner, {
-        timeoutMs: 5,
-        signal: controller.signal,
-      });
+      const work =
+        mode === 'deadline'
+          ? executor.tryRun(runner, 5, { signal: controller.signal })
+          : executor.run(runner, { signal: controller.signal });
       const assertion = rejection(
         work,
         mode === 'abort' || mode === 'closing'

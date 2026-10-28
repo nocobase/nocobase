@@ -9,9 +9,6 @@ export interface ExecutorOptions extends ConcurrentOptions {
 export interface AcquireOptions {
   signal?: AbortSignal;
 }
-export interface WaitOptions extends AcquireOptions {
-  timeoutMs?: number;
-}
 export interface Lease {
   release(): Promise<void>;
 }
@@ -19,14 +16,14 @@ export interface ExecutorContext {
   readonly signal: AbortSignal;
 }
 export interface Lock {
-  lock(options?: WaitOptions): Promise<Lease>;
+  lock(options?: AcquireOptions): Promise<Lease>;
   tryLock(
     timeoutMs?: number,
     options?: AcquireOptions,
   ): Promise<Lease | undefined>;
 }
 export interface Semaphore {
-  acquire(options?: WaitOptions): Promise<Lease>;
+  acquire(options?: AcquireOptions): Promise<Lease>;
   tryAcquire(
     timeoutMs?: number,
     options?: AcquireOptions,
@@ -37,7 +34,7 @@ export type TryRunResult<T> =
 export interface SynchronousExecutor {
   run<T>(
     runner: (context: ExecutorContext) => T | Promise<T>,
-    options?: WaitOptions,
+    options?: AcquireOptions,
   ): Promise<T>;
   tryRun<T>(
     runner: (context: ExecutorContext) => T | Promise<T>,
@@ -78,7 +75,6 @@ export interface ConcurrentDiagnostic {
 export interface ConcurrentRuntimeOptions {
   backend: ConcurrentBackend;
   namespace: string;
-  defaultAcquireTimeoutMs?: number;
   operationTimeoutMs?: number;
   cleanupTimeoutMs?: number;
   clock?: Clock;

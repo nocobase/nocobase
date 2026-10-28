@@ -14,7 +14,9 @@ export type ResourceSpec = { namespace: string; name: string; ttl: number } & (
   { kind: 'lock' } | { kind: 'semaphore'; permits: number }
 );
 export type WaitPolicy =
-  { kind: 'single' } | { kind: 'bounded'; deadline: number };
+  | { kind: 'single' }
+  | { kind: 'bounded'; deadline: number }
+  | { kind: 'unbounded' };
 export interface BackendAcquireRequest {
   readonly requestId: string;
   readonly token: string;
@@ -27,7 +29,7 @@ export interface BackendGrant {
   release(): Promise<void>;
 }
 export interface BackendContext {
-  readonly protocolVersion: 2;
+  readonly protocolVersion: 3;
   readonly managerId: string;
   readonly namespace: string;
   readonly operationTimeoutMs: number;
@@ -36,7 +38,7 @@ export interface BackendContext {
   readonly scheduler: Scheduler;
 }
 export interface ConcurrentBackendSession {
-  readonly protocolVersion: 2;
+  readonly protocolVersion: 3;
   readonly capabilities: ConcurrentCapabilities;
   validateResource(resource: ResourceSpec): Promise<void>;
   acquire(request: BackendAcquireRequest): Promise<BackendGrant | undefined>;

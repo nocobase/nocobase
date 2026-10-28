@@ -29,7 +29,6 @@ import type {
   Lease,
   ExecutorContext,
   AcquireOptions,
-  WaitOptions,
   CloseOptions,
   TryRunResult,
 } from './types.ts';
@@ -252,7 +251,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
     resource: ResourceSpec,
     timeoutMs: number | undefined,
     options: AcquireOptions,
-    single: boolean,
+    trying: boolean,
     deliver: (lease: ManagedLease) => T | Promise<T>,
   ): Promise<T | undefined> {
     // Take the timestamp at the public entry, not after a microtask or a backend call.
@@ -260,14 +259,16 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
     return this.track(async () => {
       this.requireOpen();
       supported(options);
-      const timeout = milliseconds(
-        timeoutMs ??
-          (single ? 0 : (this.options.defaultAcquireTimeoutMs ?? 30000)),
-        'timeoutMs',
-        single,
-      );
-      const wait: WaitPolicy =
-        timeout === 0
+      if ('timeoutMs' in options)
+        throw new ConcurrentConfigurationError(
+          'Pass timeoutMs only as the positional argument of a try method',
+        );
+      const timeout = trying
+        ? milliseconds(timeoutMs ?? 0, 'timeoutMs', true)
+        : 0;
+      const wait: WaitPolicy = !trying
+        ? { kind: 'unbounded' }
+        : timeout === 0
           ? { kind: 'single' }
           : { kind: 'bounded', deadline: start + timeout };
       if (wait.kind === 'bounded' && !Number.isFinite(wait.deadline))
@@ -470,17 +471,17 @@ class ManagedLock implements Lock {
     private readonly runtime: Runtime,
     private readonly resource: ResourceSpec,
   ) {}
-  async lock(options: WaitOptions = {}): Promise<Lease> {
+  async lock(options: AcquireOptions = {}): Promise<Lease> {
     const lease = await this.runtime.acquire(
       this.resource,
-      options.timeoutMs,
+      undefined,
       options,
       false,
       (lease) => lease,
     );
     if (!lease)
       throw new ConcurrentAcquireError(
-        'Resource was not acquired within the wait budget',
+        'Backend returned without granting the resource',
       );
     return lease;
   }
@@ -504,11 +505,11 @@ class ManagedExecutor implements SynchronousExecutor {
   ) {}
   async run<T>(
     runner: (context: ExecutorContext) => T | Promise<T>,
-    options: WaitOptions = {},
+    options: AcquireOptions = {},
   ): Promise<T> {
     const result = await this.runtime.acquire(
       this.resource,
-      options.timeoutMs,
+      undefined,
       options,
       false,
       (lease) =>
@@ -516,7 +517,7 @@ class ManagedExecutor implements SynchronousExecutor {
     );
     if (!result)
       throw new ConcurrentAcquireError(
-        'Resource was not acquired within the wait budget',
+        'Backend returned without granting the resource',
       );
     return result.value;
   }
@@ -542,12 +543,12 @@ export async function createConcurrentRuntime(
   options: ConcurrentRuntimeOptions,
 ): Promise<ConcurrentRuntime> {
   nonempty(options.namespace, 'namespace');
-  milliseconds(
-    options.defaultAcquireTimeoutMs ?? 30000,
-    'defaultAcquireTimeoutMs',
-  );
+  if ('defaultAcquireTimeoutMs' in options)
+    throw new ConcurrentConfigurationError(
+      'defaultAcquireTimeoutMs is unsupported; only try methods have acquisition deadlines',
+    );
   const context: BackendContext = Object.freeze({
-    protocolVersion: 2,
+    protocolVersion: 3,
     managerId: randomUUID(),
     namespace: options.namespace,
     operationTimeoutMs: milliseconds(
@@ -564,7 +565,7 @@ export async function createConcurrentRuntime(
   const session = await options.backend.openSession(context);
   const caps = session.capabilities;
   if (
-    session.protocolVersion !== 2 ||
+    session.protocolVersion !== 3 ||
     !caps ||
     typeof caps.lock !== 'boolean' ||
     typeof caps.executor !== 'boolean' ||

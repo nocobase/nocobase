@@ -5,7 +5,7 @@ Node 24 ESM coordination with fixed-TTL, non-reentrant locks and serial executor
 ## Public entries
 
 - `@nocobase/concurrency`: `createConcurrentRuntime`, caller interfaces and six shared error constructors.
-- `@nocobase/concurrency/backend`: protocol v2 extension interfaces, `defaultClock`, `defaultScheduler`, `encodeResourceKey` and the identical error constructors.
+- `@nocobase/concurrency/backend`: protocol v3 extension interfaces, `defaultClock`, `defaultScheduler`, `encodeResourceKey` and the identical error constructors.
 - `@nocobase/concurrency/testing`: compiled, framework-neutral `runBackendContract`, `runCoreFaultContract`, `ControlledBackend`, `ManualTime`, `deferred` and shared errors. No Vitest runtime dependency.
 
 Source exports are used inside the workspace; published exports resolve to JavaScript and declarations in `dist`. Adapters declare core as a peer, import only these public entries, and never duplicate errors, leases or execution logic.
@@ -43,11 +43,11 @@ await backend.close();
 console.log(await runCoreFaultContract());
 ```
 
-With a production backend, create a lock using `await runtime.manager.createLock(name, { ttl })`; `lock({ timeoutMs, signal })` throws on busy, while `tryLock(timeoutMs, { signal })` returns `undefined` only for normal non-acquisition. Each successful call returns a distinct `Lease` with `release(): Promise<void>`. Prefer executors to manual `finally` blocks when preserving business exceptions matters. `tryRun` returns `{ acquired: false }` or `{ acquired: true, value }`.
+With a production backend, create a lock using `await runtime.manager.createLock(name, { ttl })`. `lock({ signal })` and executor `run(runner, { signal })` wait until acquisition succeeds, is cancelled, or fails; neither accepts an acquisition timeout. Only `tryLock(timeoutMs, { signal })` and `tryRun(runner, timeoutMs, { signal })` accept a finite wait budget. `tryLock` returns `undefined` only for normal non-acquisition. Each successful call returns a distinct `Lease` with `release(): Promise<void>`. Prefer executors to manual `finally` blocks when preserving business exceptions matters. `tryRun` returns `{ acquired: false }` or `{ acquired: true, value }`.
 
 ## Time and delivery
 
-TTL, default acquisition wait and close wait default to 30000ms. `operationTimeoutMs` and `cleanupTimeoutMs` default to 5000ms and describe individual backend command budgets, not hard deadlines for third-party compound methods. Milliseconds are integers in 1..2147483647; only try waits allow 0. Omitted/zero try waits mean at most one attempt, not a zero-length delivery deadline. The backend owns bounded retries; core calls `session.acquire` once per logical request.
+TTL and close wait default to 30000ms. Ordinary `lock`, reserved `acquire`, and `run` have no overall acquisition deadline; they do not stop waiting after 30 seconds. `WaitOptions` and `defaultAcquireTimeoutMs` are not public configuration. JavaScript calls that supply removed acquisition timeout options are rejected before backend effects. `operationTimeoutMs` and `cleanupTimeoutMs` default to 5000ms and describe individual backend command budgets, not hard deadlines for third-party compound methods. Milliseconds are integers in 1..2147483647; only positional try waits allow 0. Omitted/zero try waits mean at most one attempt, not a zero-length delivery deadline. The backend owns cancellable retries for ordinary and bounded waits; core calls `session.acquire` once per logical request.
 
 The monotonic clock and scheduler can be injected for deterministic testing. A grant's `notAfter` belongs to that same clock domain and includes conservative elapsed acquisition time. Final delivery checks cancellation, closing, wait deadline and grant budget. Confirmed late grants are released without invoking the runner; unknown backend results throw rather than becoming busy. Visible promises remain tracked until settlement. Waiting budgets do not forcibly interrupt backend methods or business callbacks.
 
@@ -59,9 +59,9 @@ The six errors are `ConcurrentConfigurationError`, `ConcurrentAcquireError`, `Co
 
 `runtime.close({ timeoutMs })` rejects new work, cancels this session's undelivered acquisitions and waits for real callbacks and manual lease returns. Expired manual leases still require return. Failed executor/late-grant cleanup is retained and retried on subsequent close calls. Timeout leaves the runtime closing and permits another wait. In-flight session close is retained across timeouts. Runtime close does not close the shared backend; backend close does not own external clients. Closed means visible lifecycle drained, not that remote commands were withdrawn or Redis is empty.
 
-## Protocol v2 and resource domains
+## Protocol v3 and resource domains
 
-The public backend has `openSession(context)` and `close()`. A session provides immutable `protocolVersion: 2`, capabilities, `validateResource`, `acquire` and `close`. Each request has unique `requestId` and token; each confirmed grant has `notAfter` and identity-bound `release`. Tokens are not server-side terminal replay barriers. No renew, validate-and-release or cancel-acquire protocol exists.
+The public backend has `openSession(context)` and `close()`. A session provides immutable `protocolVersion: 3`, capabilities, `validateResource`, `acquire` and `close`. Each request has unique `requestId` and token; each confirmed grant has `notAfter` and identity-bound `release`. Tokens are not server-side terminal replay barriers. No renew, validate-and-release or cancel-acquire protocol exists. Wait policies are `unbounded` for ordinary acquisition, `single` for omitted/zero try waits, and `bounded` with a monotonic deadline for positive try waits. Version 2 adapters are rejected rather than silently shortening ordinary waits; adapters must negotiate version 3. The resource-key encoding remains version 2 and does not change with this session-protocol revision.
 
 Competition uses the exact `(namespace, kind, name)` tuple, without trimming or Unicode/case normalization. Lock and same-name executor share `kind: 'lock'`; semaphore is a separate kind. `encodeResourceKey` returns `nb-concurrency:v2:` plus base64url UTF-8 of `JSON.stringify([namespace, name])`; Redis libraries add their own `mutex:`/`semaphore:` kind prefix. Local adapters must preserve the same tuple identity. Changing the encoding requires draining and migrating all participants.
 
