@@ -355,6 +355,7 @@
   "Preview run JavaScript code": "Preview run JavaScript code",
   "Enter your question": "Enter your question",
   "AI disclaimer": "AI can make mistakes, please check important info.",
+  "Chat options": "Chat options",
   "ai.tools.getContextApis.title": "Get context APIs",
   "ai.tools.getContextApis.about": "Get available API methods from context",
   "ai.tools.getContextEnvs.title": "Get context environment",

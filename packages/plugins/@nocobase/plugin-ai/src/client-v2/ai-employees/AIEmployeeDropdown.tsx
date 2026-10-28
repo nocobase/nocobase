@@ -19,6 +19,9 @@ export type AIEmployeeDropdownProps = {
   aiEmployees: AIEmployee[];
   currentEmployee?: AIEmployee;
   disabled?: boolean;
+  block?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSelect: (aiEmployee: AIEmployee) => void;
 };
 
@@ -48,11 +51,16 @@ export const AIEmployeeDropdown: React.FC<AIEmployeeDropdownProps> = ({
   aiEmployees,
   currentEmployee,
   disabled,
+  block = false,
+  open: controlledOpen,
+  onOpenChange,
   onSelect,
 }) => {
   const t = useT();
   const { token } = theme.useToken();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const visibleEmployees = aiEmployees.filter(
     (employee) => employee.category === 'business' && employee.deprecated !== true,
   );
@@ -80,6 +88,7 @@ export const AIEmployeeDropdown: React.FC<AIEmployeeDropdownProps> = ({
         const selected = currentEmployee?.username === employee.username;
         return {
           key: employee.username,
+          style: block ? { minHeight: 44 } : undefined,
           label: (
             <span
               style={{
@@ -112,21 +121,29 @@ export const AIEmployeeDropdown: React.FC<AIEmployeeDropdownProps> = ({
           overflow: 'auto',
         },
       }}
-      trigger={['hover']}
+      trigger={['click']}
       open={open}
       onOpenChange={setOpen}
       overlayStyle={{ zIndex: 1200 }}
     >
-      <span
+      <button
+        type="button"
+        disabled={disabled}
+        aria-label={t('AI employee')}
         onClick={(event) => event.stopPropagation()}
         style={{
+          border: 0,
+          minWidth: 0,
+          maxWidth: '100%',
+          width: block ? '100%' : undefined,
+          fontFamily: 'inherit',
           display: 'inline-flex',
           alignItems: 'center',
           gap: 4,
-          fontSize: 12,
+          fontSize: block ? token.fontSize : 12,
           backgroundColor: token.colorFillTertiary,
           borderRadius: 6,
-          height: 28,
+          height: block ? 44 : 28,
           padding: '0 8px',
           cursor: disabled ? 'not-allowed' : 'pointer',
           userSelect: 'none',
@@ -139,13 +156,15 @@ export const AIEmployeeDropdown: React.FC<AIEmployeeDropdownProps> = ({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            maxWidth: 160,
+            maxWidth: block ? undefined : 160,
+            flex: block ? 1 : undefined,
+            textAlign: 'start',
           }}
         >
           {currentLabel}
         </span>
         <DownOutlined style={{ fontSize: 10, color: hasEmployees ? token.colorTextSecondary : token.colorError }} />
-      </span>
+      </button>
     </Dropdown>
   );
 };

@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AddContextButton } from '../AddContextButton';
 
 const mocks = vi.hoisted(() => ({
@@ -72,6 +72,7 @@ vi.mock('../chatbox/hooks/useChatMessageActions', () => ({
 }));
 
 describe('AddContextButton', () => {
+  beforeEach(() => vi.clearAllMocks());
   it('does not let the pick-block menu click select the containing block', () => {
     const onParentClick = vi.fn();
 
@@ -85,5 +86,16 @@ describe('AddContextButton', () => {
 
     expect(mocks.workContextOnClick).toHaveBeenCalledTimes(1);
     expect(onParentClick).not.toHaveBeenCalled();
+  });
+
+  it('notifies the host before starting the context action', () => {
+    const onSelect = vi.fn();
+    render(<AddContextButton onAdd={vi.fn()} onRemove={vi.fn()} onSelect={onSelect} />);
+
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('work-context-menu-item'));
+    expect(onSelect).toHaveBeenCalledWith('flow-model');
+    expect(mocks.workContextOnClick).toHaveBeenCalledTimes(1);
+    expect(onSelect.mock.invocationCallOrder[0]).toBeLessThan(mocks.workContextOnClick.mock.invocationCallOrder[0]);
   });
 });

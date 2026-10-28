@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Sender } from '../Sender';
 
 const mocks = vi.hoisted(() => {
@@ -48,6 +48,8 @@ const mocks = vi.hoisted(() => {
   return {
     runtime,
     attachmentsGetDropContainer: undefined as (() => HTMLElement | null | undefined) | undefined,
+    resize: undefined as ((width: number) => void) | undefined,
+    disconnect: vi.fn(),
     send: vi.fn(),
     cancelRequest: vi.fn(),
     finishEditingMessage: vi.fn(),
@@ -75,6 +77,9 @@ vi.mock('@ant-design/x', async () => {
     Sender: React.forwardRef<
       { nativeElement?: HTMLTextAreaElement },
       {
+        className?: string;
+        autoSize?: { minRows: number; maxRows: number };
+        submitType?: string;
         value?: string;
         onChange?: (value: string) => void;
         onBlur?: () => void;
@@ -84,17 +89,19 @@ vi.mock('@ant-design/x', async () => {
         }) => React.ReactNode;
         header?: React.ReactNode;
       }
-    >(({ value = '', onChange, onBlur, onSubmit, footer, header }, ref) => {
+    >(({ className, value = '', onChange, onBlur, onSubmit, footer, header, autoSize, submitType }, ref) => {
       const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
       React.useImperativeHandle(ref, () => ({
         nativeElement: textareaRef.current ?? undefined,
       }));
 
       return (
-        <div>
+        <div className={className}>
           {header}
           <textarea
             data-testid="sender-input"
+            data-min-rows={autoSize?.minRows}
+            data-submit-type={submitType}
             ref={textareaRef}
             value={value}
             onBlur={onBlur}
@@ -174,8 +181,37 @@ vi.mock('../../stores/runtime', () => ({
   useChatBoxRuntime: () => mocks.runtime,
 }));
 
+vi.mock('../CompactSenderOptions', () => ({
+  CompactSenderOptions: () => <button type="button">Chat options</button>,
+}));
 describe('Sender input state', () => {
   beforeEach(() => {
+    mocks.runtime.mode = 'block';
+    mocks.resize = undefined;
+    mocks.disconnect.mockClear();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class implements ResizeObserver {
+        constructor(callback: ResizeObserverCallback) {
+          mocks.resize = (width) =>
+            callback(
+              [
+                {
+                  target: document.createElement('div'),
+                  contentRect: new DOMRect(0, 0, width, 100),
+                  borderBoxSize: [],
+                  contentBoxSize: [],
+                  devicePixelContentBoxSize: [],
+                },
+              ],
+              this,
+            );
+        }
+        observe() {}
+        unobserve() {}
+        disconnect = mocks.disconnect;
+      },
+    );
     mocks.runtime.chatSenderModel.senderValue = 'prefill';
     mocks.runtime.chatSenderModel.setSenderValue.mockClear();
     mocks.runtime.chatSenderModel.setSenderRef.mockClear();
@@ -185,6 +221,7 @@ describe('Sender input state', () => {
     mocks.send.mockClear();
   });
 
+  afterEach(() => vi.unstubAllGlobals());
   it('limits attachment drops to the mounted chat box', () => {
     const dropContainer = document.createElement('div');
     mocks.runtime.chatBoxModel.chatBoxRef.current = dropContainer;
@@ -260,5 +297,51 @@ describe('Sender input state', () => {
 
     expect(mocks.send).not.toHaveBeenCalled();
     expect(mocks.runtime.chatSenderModel.setSenderValue).not.toHaveBeenCalledWith('');
+  });
+
+  it('uses a compact single-row toolbar for narrow containers and preserves the input across resizing', () => {
+    const { container, getByTestId, getByRole, unmount } = render(<Sender />);
+    const input = getByTestId('sender-input') as HTMLTextAreaElement;
+    fireEvent.change(input, { target: { value: '未发送的草稿' } });
+
+    act(() => mocks.resize?.(320));
+    expect(container.querySelector('.ai-chat-sender-compact-toolbar')).not.toBeNull();
+    expect(getByRole('button', { name: 'Chat options' })).toBeTruthy();
+    expect(input.getAttribute('data-min-rows')).toBe('1');
+    expect(input.getAttribute('data-submit-type')).toBe('shiftEnter');
+    expect(fireEvent.keyDown(input, { key: 'Enter' })).toBe(true);
+    expect(mocks.send).not.toHaveBeenCalled();
+
+    act(() => mocks.resize?.(480));
+    expect(container.querySelector('.ai-chat-sender-compact-toolbar')).not.toBeNull();
+    act(() => mocks.resize?.(0));
+    expect(container.querySelector('.ai-chat-sender-compact-toolbar')).not.toBeNull();
+    act(() => mocks.resize?.(481));
+    expect(container.querySelector('.ai-chat-sender-compact-toolbar')).toBeNull();
+    expect(input.value).toBe('未发送的草稿');
+    expect(input.getAttribute('data-submit-type')).toBe('enter');
+    expect(input.getAttribute('data-min-rows')).toBe('2');
+    unmount();
+    expect(mocks.disconnect).toHaveBeenCalled();
+  });
+
+  it('keeps global chat controls and desktop input behavior at sidebar and phone widths', () => {
+    mocks.runtime.mode = 'global';
+    const { container, getByTestId, queryByRole } = render(<Sender />);
+    const input = getByTestId('sender-input');
+    for (const width of [450, 375, 320]) {
+      act(() => mocks.resize?.(width));
+      expect(container.querySelector('.ai-chat-sender-compact-toolbar')).toBeNull();
+      expect(container.querySelector('.ai-chat-sender-responsive')).toBeNull();
+      expect(queryByRole('button', { name: 'Chat options' })).toBeNull();
+      expect(input.getAttribute('data-min-rows')).toBe('2');
+      expect(input.getAttribute('data-submit-type')).toBe('enter');
+    }
+  });
+  it('does not intercept Enter while an IME composition is in progress', () => {
+    const { getByTestId } = render(<Sender />);
+    const input = getByTestId('sender-input');
+    expect(fireEvent.keyDown(input, { key: 'Enter', isComposing: true })).toBe(true);
+    expect(mocks.send).not.toHaveBeenCalled();
   });
 });
