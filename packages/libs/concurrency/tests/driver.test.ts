@@ -25,3 +25,17 @@ it('executes the framework-neutral public backend driver with a controlled test 
   expect(result.cases.length).toBeGreaterThan(5);
   expect(held.size).toBe(0);
 });
+
+it('cleans the first owned runtime if the driver incorrectly reuses its backend', async () => {
+  let closed = 0;
+  const backend = new ControlledBackend({
+    acquire: async () => undefined,
+    close: async () => {
+      closed++;
+    },
+  });
+  await expect(
+    runBackendContract({ createBackend: () => backend }),
+  ).rejects.toThrow('Backend is already owned');
+  expect(closed).toBe(1);
+});

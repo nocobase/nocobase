@@ -3,7 +3,7 @@ import { defaultClock, defaultScheduler } from './backend/index.ts';
 import type {
   BackendContext,
   BackendGrant,
-  ConcurrentBackendSession,
+  ConcurrentBackend,
   ResourceSpec,
   WaitPolicy,
 } from './backend/index.ts';
@@ -30,6 +30,7 @@ import type {
   TryRunResult,
 } from './types.ts';
 
+const ownedBackends = new WeakSet<ConcurrentBackend>();
 function milliseconds(
   value: number,
   name: string,
@@ -148,11 +149,12 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
   private readonly waiting = new Set<AbortController>();
   private readonly observers = new Set<() => void>();
   private state: 'open' | 'closing' | 'closed' = 'open';
-  private sessionClose?: Promise<void>;
-  private sessionClosed = false;
+  private backendClose?: Promise<void>;
+  private backendClosed = false;
+  private backendCloseError?: ConcurrentCloseError;
   constructor(
     readonly context: BackendContext,
-    private readonly session: ConcurrentBackendSession,
+    private readonly backend: ConcurrentBackend,
     private readonly options: ConcurrentRuntimeOptions,
   ) {}
   changed(): void {
@@ -199,7 +201,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
   createLock(name: string, options: ConcurrentOptions = {}): Promise<Lock> {
     return this.track(async () => {
       const resource = this.resource(name, options);
-      await this.session.validateResource(resource);
+      await this.backend.validateResource(resource);
       this.requireOpen();
       return new ManagedLock(this, resource);
     });
@@ -210,7 +212,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
   ): Promise<SynchronousExecutor> {
     return this.track(async () => {
       const resource = this.resource(name, options);
-      await this.session.validateResource(resource);
+      await this.backend.validateResource(resource);
       this.requireOpen();
       return new ManagedExecutor(this, resource);
     });
@@ -297,7 +299,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
         if (early) return undefined;
         let grant: BackendGrant | undefined;
         try {
-          grant = await this.session.acquire({
+          grant = await this.backend.acquire({
             requestId: randomUUID(),
             token: randomUUID(),
             resource,
@@ -383,6 +385,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
   close(options: CloseOptions = {}): Promise<void> {
     const timeout = milliseconds(options.timeoutMs ?? 30000, 'close timeoutMs');
     if (this.state === 'closed') return Promise.resolve();
+    const previousBackendCloseError = this.backendCloseError;
     this.state = 'closing';
     for (const controller of this.waiting)
       controller.abort(new ConcurrentAbortError('Runtime is closing'));
@@ -405,28 +408,35 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
           finish();
           return;
         }
+        if (
+          this.backendCloseError &&
+          this.backendCloseError !== previousBackendCloseError
+        ) {
+          finish(this.backendCloseError);
+          return;
+        }
         if (this.operations.size || this.leases.size) return;
-        if (this.sessionClosed) {
+        if (this.backendClosed) {
           this.state = 'closed';
           finish();
           return;
         }
-        if (!this.sessionClose) {
-          this.sessionClose = Promise.resolve().then(() =>
-            this.session.close(),
+        if (!this.backendClose) {
+          this.backendClose = Promise.resolve().then(() =>
+            this.backend.close(),
           );
-          void this.sessionClose.then(
+          void this.backendClose.then(
             () => {
-              this.sessionClosed = true;
+              this.backendClosed = true;
               this.changed();
             },
             (cause) => {
-              this.sessionClose = undefined;
-              finish(
-                new ConcurrentCloseError('Backend session close failed', {
-                  cause,
-                }),
+              this.backendClose = undefined;
+              this.backendCloseError = new ConcurrentCloseError(
+                'Backend close failed',
+                { cause },
               );
+              this.changed();
             },
           );
         }
@@ -546,14 +556,27 @@ export async function createConcurrentRuntime(
     clock: options.clock ?? defaultClock,
     scheduler: options.scheduler ?? defaultScheduler,
   });
-  const session = await options.backend.openSession(context);
-  if (session.protocolVersion !== 1) {
+  const backend = options.backend;
+  if (ownedBackends.has(backend))
+    throw new ConcurrentConfigurationError(
+      'Backend is already owned; create a new backend for each runtime',
+    );
+  ownedBackends.add(backend);
+  try {
+    if (backend.protocolVersion !== 1)
+      throw new ConcurrentConfigurationError('Unsupported backend protocol');
+    await backend.initialize(context);
+  } catch (error) {
     try {
-      await session.close();
-    } catch {
-      /* Preserve the incompatible protocol error. */
+      await backend.close();
+    } catch (cleanup) {
+      try {
+        options.logger?.({ phase: 'cleanup', error: cleanup });
+      } catch {
+        /* Preserve initialization failure. */
+      }
     }
-    throw new ConcurrentConfigurationError('Unsupported backend protocol');
+    throw error;
   }
-  return new Runtime(context, session, { ...options });
+  return new Runtime(context, backend, { ...options });
 }

@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
+import type { ConcurrentRuntime } from '../index.ts';
 import {
   createConcurrentRuntime,
   ConcurrentAbortError,
   ConcurrentAcquireError,
+  ConcurrentConfigurationError,
 } from '../index.ts';
 import type {
   ConcurrentBackend,
@@ -11,7 +13,6 @@ import type {
   BackendGrant,
   Clock,
   Scheduler,
-  ConcurrentBackendSession,
   ResourceSpec,
 } from '../backend/index.ts';
 export * from '../errors.ts';
@@ -69,32 +70,39 @@ export interface ControlledBackendHooks {
     context: BackendContext,
   ): Promise<BackendGrant | undefined>;
   validateResource?(resource: ResourceSpec): Promise<void>;
-  closeSession?(): Promise<void>;
+  close?(): Promise<void>;
 }
 /** Fault fixture only: no competition engine and no private controls required of adapters. */
 export class ControlledBackend implements ConcurrentBackend {
+  readonly protocolVersion = 1;
   readonly contexts: BackendContext[] = [];
   readonly requests: BackendAcquireRequest[] = [];
+  private closed = false;
   constructor(private readonly hooks: ControlledBackendHooks) {}
-  async openSession(
-    context: BackendContext,
-  ): Promise<ConcurrentBackendSession> {
+  async initialize(context: BackendContext): Promise<void> {
+    if (this.closed || this.contexts.length)
+      throw new ConcurrentConfigurationError(
+        'Backend cannot be initialized twice',
+      );
     this.contexts.push(context);
-    return {
-      protocolVersion: 1,
-      validateResource: async (resource) => {
-        await this.hooks.validateResource?.(resource);
-      },
-      acquire: (request) => {
-        this.requests.push(request);
-        return this.hooks.acquire(request, context);
-      },
-      close: async () => {
-        await this.hooks.closeSession?.();
-      },
-    };
   }
-  async close(): Promise<void> {}
+  async validateResource(resource: ResourceSpec): Promise<void> {
+    await this.hooks.validateResource?.(resource);
+  }
+  acquire(request: BackendAcquireRequest): Promise<BackendGrant | undefined> {
+    const context = this.contexts[0];
+    if (!context || this.closed)
+      return Promise.reject(
+        new ConcurrentConfigurationError('Backend is not open'),
+      );
+    this.requests.push(request);
+    return this.hooks.acquire(request, context);
+  }
+  async close(): Promise<void> {
+    if (this.closed) return;
+    await this.hooks.close?.();
+    this.closed = true;
+  }
 }
 export interface BackendContractDriver {
   createBackend(): ConcurrentBackend | Promise<ConcurrentBackend>;
@@ -126,21 +134,22 @@ export async function runBackendContract(
   const backend = await driver.createBackend();
   const namespace = `contract:${randomUUID()}`;
   const a = await createConcurrentRuntime({ backend, namespace });
-  const b = await createConcurrentRuntime({ backend, namespace });
-  const isolated = await createConcurrentRuntime({
-    backend,
-    namespace: `${namespace}:isolated`,
-  });
+
+  let isolated: ConcurrentRuntime | undefined;
   const cases: string[] = [];
   try {
+    isolated = await createConcurrentRuntime({
+      backend: await driver.createBackend(),
+      namespace: `${namespace}:isolated`,
+    });
     const lock = await a.manager.createLock('shared');
-    const contender = await b.manager.createLock('shared');
-    const executor = await b.manager.createSynchronous('shared');
+    const contender = await a.manager.createLock('shared');
+    const executor = await a.manager.createSynchronous('shared');
     const lease = await lock.lock();
     try {
       check(
         (await contender.tryLock()) === undefined,
-        'shared managers compete',
+        'same-runtime handles compete',
       );
       check(
         !(await executor.tryRun(() => 1)).acquired,
@@ -185,10 +194,7 @@ export async function runBackendContract(
     await next?.release();
     cases.push('executor result and cleanup', 'business identity');
   } finally {
-    await a.close();
-    await b.close();
-    await isolated.close();
-    await backend.close();
+    await Promise.all([a.close(), isolated?.close()]);
   }
   return { cases };
 }

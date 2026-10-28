@@ -1,3 +1,4 @@
+import type * as BackendPort from '../src/backend/index.ts';
 import {
   createConcurrentRuntime,
   type Lease,
@@ -7,7 +8,6 @@ import type {
   ConcurrentBackend,
   BackendContext,
   ResourceSpec,
-  ConcurrentBackendSession,
 } from '../src/backend/index.ts';
 import { runBackendContract, ControlledBackend } from '../src/testing/index.ts';
 
@@ -82,7 +82,7 @@ export type NoCaps = import('../src/index.ts').ConcurrentCapabilities;
 
 export function backendSurface(
   resource: ResourceSpec,
-  session: ConcurrentBackendSession,
+  backend: ConcurrentBackend,
 ): void {
   const kind: 'lock' = resource.kind;
   void kind;
@@ -90,6 +90,13 @@ export function backendSurface(
   resource.kind = 'semaphore';
   // @ts-expect-error No reserved capacity field exists.
   resource.permits;
-  // @ts-expect-error Backend sessions have no placeholder capability map.
-  session.capabilities;
+  // @ts-expect-error Backends have no placeholder capability map.
+  backend.capabilities;
+  const version: 1 = backend.protocolVersion;
+  void version;
+  // @ts-expect-error There is no shared session factory.
+  backend.openSession;
 }
+
+// @ts-expect-error Shared sessions are not part of the owned-backend contract.
+export type NoSession = BackendPort.ConcurrentBackendSession;

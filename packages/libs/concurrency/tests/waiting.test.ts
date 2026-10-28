@@ -142,7 +142,7 @@ describe('ordinary acquisition contract', () => {
   );
 
   it.each([undefined, 0, 30000])(
-    'rejects removed global acquisition budgets %s before opening a session',
+    'rejects removed global acquisition budgets %s before claiming a backend',
     async (defaultAcquireTimeoutMs) => {
       const backend = new ControlledBackend({ acquire: async () => undefined });
       const options = {
@@ -157,27 +157,17 @@ describe('ordinary acquisition contract', () => {
     },
   );
 
-  it('rejects and closes a session with an unsupported protocol version', async () => {
+  it('rejects and closes an owned backend with an unsupported protocol version', async () => {
     let closed = 0;
     const backend = new ControlledBackend({
       acquire: async () => undefined,
-      closeSession: async () => {
+      close: async () => {
         closed++;
       },
     });
+    Object.defineProperty(backend, 'protocolVersion', { value: 2 });
     await expect(
-      createConcurrentRuntime({
-        backend: {
-          openSession: async (context) => {
-            const session = await backend.openSession(context);
-            // Deliberately simulate an incompatible JavaScript adapter.
-            Object.defineProperty(session, 'protocolVersion', { value: 2 });
-            return session;
-          },
-          close: async () => {},
-        },
-        namespace: 'old-protocol',
-      }),
+      createConcurrentRuntime({ backend, namespace: 'bad-protocol' }),
     ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
     expect(closed).toBe(1);
     expect(backend.requests).toHaveLength(0);

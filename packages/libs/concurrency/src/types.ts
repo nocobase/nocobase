@@ -44,6 +44,7 @@ export interface CloseOptions {
 }
 export interface ConcurrentRuntime {
   readonly manager: ConcurrentManager;
+  /** Drain real work, then close the backend; failed or timed-out close can be retried. */
   close(options?: CloseOptions): Promise<void>;
 }
 export interface ConcurrentDiagnostic {
@@ -51,6 +52,7 @@ export interface ConcurrentDiagnostic {
   readonly error: unknown;
 }
 export interface ConcurrentRuntimeOptions {
+  /** Transfers ownership of a fresh backend; do not share or reuse it. */
   backend: ConcurrentBackend;
   namespace: string;
   operationTimeoutMs?: number;

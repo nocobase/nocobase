@@ -69,8 +69,7 @@ describe('public core', () => {
     expect(f.runtime.manager).not.toHaveProperty('createSemaphore');
     expect(f.runtime.manager).not.toHaveProperty('createReadWriteLock');
     expect(f.runtime).not.toHaveProperty('capabilities');
-    const session = await f.backend.openSession(f.backend.contexts[0]);
-    expect(session).not.toHaveProperty('capabilities');
+    expect(f.backend).not.toHaveProperty('capabilities');
     const lease = await f.lock.lock();
     expect(f.backend.requests[0].resource).toEqual({
       namespace: 'test',
@@ -79,7 +78,6 @@ describe('public core', () => {
       ttl: 30000,
     });
     await lease.release();
-    await session.close();
     await f.runtime.close();
   });
   it('rearms early lease timers and ignores cancelled callbacks', async () => {
@@ -221,7 +219,7 @@ describe('public core', () => {
       ).size,
     ).toBe(inputs.length);
   });
-  it('opens an asynchronous session with default budgets and unique request identities', async () => {
+  it('initializes an owned backend with default budgets and unique request identities', async () => {
     const f = await fixture();
     expect(f.backend.contexts[0]).toMatchObject({
       protocolVersion: 1,
@@ -309,18 +307,11 @@ describe('public core', () => {
       ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
     }
     expect(f.backend.requests).toHaveLength(0);
-    const session = await f.backend.openSession(f.backend.contexts[0]);
-    for (const bad of [
-      { ...session, protocolVersion: 0 },
-      { ...session, protocolVersion: 2 },
-    ]) {
-      const backend = { openSession: async () => bad, close: async () => {} };
-      // Deliberately invalid extension input from JavaScript, not a declaration suppression.
+    for (const version of [0, 2]) {
+      const backend = new ControlledBackend({ acquire: async () => undefined });
+      Object.defineProperty(backend, 'protocolVersion', { value: version });
       await expect(
-        createConcurrentRuntime({
-          backend: backend as port.ConcurrentBackend,
-          namespace: 'bad',
-        }),
+        createConcurrentRuntime({ backend, namespace: 'bad' }),
       ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
     }
     await f.runtime.close();
@@ -538,12 +529,12 @@ describe('public core', () => {
     await manual.release();
     await f.runtime.close();
   });
-  it('tracks visible session close beyond a timeout and permits retry', async () => {
+  it('tracks visible owned backend close beyond a timeout and permits retry', async () => {
     const f = await fixture();
     const gate = deferred<void>();
     const backend = new ControlledBackend({
       acquire: async () => undefined,
-      closeSession: () => gate.promise,
+      close: () => gate.promise,
     });
     const runtime = await createConcurrentRuntime({
       backend,

@@ -38,14 +38,13 @@ export interface BackendContext {
   readonly clock: Clock;
   readonly scheduler: Scheduler;
 }
-export interface ConcurrentBackendSession {
+/** Single-use backend owned and closed by one runtime. */
+export interface ConcurrentBackend {
   readonly protocolVersion: 1;
+  /** Initialize once; close must also handle partial initialization. */
+  initialize(context: BackendContext): Promise<void>;
   validateResource(resource: ResourceSpec): Promise<void>;
   acquire(request: BackendAcquireRequest): Promise<BackendGrant | undefined>;
-  close(): Promise<void>;
-}
-export interface ConcurrentBackend {
-  openSession(context: BackendContext): Promise<ConcurrentBackendSession>;
   close(): Promise<void>;
 }
 export const defaultClock: Clock = Object.freeze({
