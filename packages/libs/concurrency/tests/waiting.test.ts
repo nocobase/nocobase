@@ -157,7 +157,7 @@ describe('ordinary acquisition contract', () => {
     },
   );
 
-  it('rejects and closes a v2 session instead of silently shortening ordinary waits', async () => {
+  it('rejects and closes a session with an unsupported protocol version', async () => {
     let closed = 0;
     const backend = new ControlledBackend({
       acquire: async () => undefined,

@@ -82,7 +82,7 @@ export class ControlledBackend implements ConcurrentBackend {
   ): Promise<ConcurrentBackendSession> {
     this.contexts.push(context);
     return {
-      protocolVersion: 3,
+      protocolVersion: 1,
       capabilities: {
         lock: true,
         executor: true,

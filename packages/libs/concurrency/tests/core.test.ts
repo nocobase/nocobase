@@ -206,7 +206,7 @@ describe('public core', () => {
   it('opens an asynchronous session with default budgets and unique request identities', async () => {
     const f = await fixture();
     expect(f.backend.contexts[0]).toMatchObject({
-      protocolVersion: 3,
+      protocolVersion: 1,
       operationTimeoutMs: 5000,
       cleanupTimeoutMs: 5000,
     });
@@ -288,7 +288,7 @@ describe('public core', () => {
     ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
     const session = await f.backend.openSession(f.backend.contexts[0]);
     for (const bad of [
-      { ...session, protocolVersion: 1 },
+      { ...session, protocolVersion: 0 },
       { ...session, protocolVersion: 2 },
       {
         ...session,

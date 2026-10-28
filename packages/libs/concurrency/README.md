@@ -5,7 +5,7 @@ Node 24 ESM coordination with fixed-TTL, non-reentrant locks and serial executor
 ## Public entries
 
 - `@nocobase/concurrency`: `createConcurrentRuntime`, caller interfaces and six shared error constructors.
-- `@nocobase/concurrency/backend`: protocol v3 extension interfaces, `defaultClock`, `defaultScheduler`, `encodeResourceKey` and the identical error constructors.
+- `@nocobase/concurrency/backend`: protocol v1 extension interfaces, `defaultClock`, `defaultScheduler`, `encodeResourceKey` and the identical error constructors.
 - `@nocobase/concurrency/testing`: compiled, framework-neutral `runBackendContract`, `runCoreFaultContract`, `ControlledBackend`, `ManualTime`, `deferred` and shared errors. No Vitest runtime dependency.
 
 Source exports are used inside the workspace; published exports resolve to JavaScript and declarations in `dist`. Adapters declare core as a peer, import only these public entries, and never duplicate errors, leases or execution logic.
@@ -59,9 +59,9 @@ The six errors are `ConcurrentConfigurationError`, `ConcurrentAcquireError`, `Co
 
 `runtime.close({ timeoutMs })` rejects new work, cancels this session's undelivered acquisitions and waits for real callbacks and manual lease returns. Expired manual leases still require return. Failed executor/late-grant cleanup is retained and retried on subsequent close calls. Timeout leaves the runtime closing and permits another wait. In-flight session close is retained across timeouts. Runtime close does not close the shared backend; backend close does not own external clients. Closed means visible lifecycle drained, not that remote commands were withdrawn or Redis is empty.
 
-## Protocol v3 and resource domains
+## Protocol v1 and resource domains
 
-The public backend has `openSession(context)` and `close()`. A session provides immutable `protocolVersion: 3`, capabilities, `validateResource`, `acquire` and `close`. Each request has unique `requestId` and token; each confirmed grant has `notAfter` and identity-bound `release`. Tokens are not server-side terminal replay barriers. No renew, validate-and-release or cancel-acquire protocol exists. Wait policies are `unbounded` for ordinary acquisition, `single` for omitted/zero try waits, and `bounded` with a monotonic deadline for positive try waits. Version 2 adapters are rejected rather than silently shortening ordinary waits; adapters must negotiate version 3. The resource-key encoding remains version 2 and does not change with this session-protocol revision.
+The public backend has `openSession(context)` and `close()`. The initial protocol is fixed at `protocolVersion: 1` while this library is unpublished; draft revisions are not released protocol versions. A session provides immutable capabilities, `validateResource`, `acquire` and `close`. Each request has unique `requestId` and token; each confirmed grant has `notAfter` and identity-bound `release`. Wait policies are `unbounded` for ordinary acquisition, `single` for omitted/zero try waits, and `bounded` with a monotonic deadline for positive try waits. Other protocol versions are rejected explicitly. Tokens are not server-side terminal replay barriers. No renew, validate-and-release or cancel-acquire protocol exists. Resource-key encoding is versioned independently of the session protocol.
 
 Competition uses the exact `(namespace, kind, name)` tuple, without trimming or Unicode/case normalization. Lock and same-name executor share `kind: 'lock'`; semaphore is a separate kind. `encodeResourceKey` returns `nb-concurrency:v2:` plus base64url UTF-8 of `JSON.stringify([namespace, name])`; Redis libraries add their own `mutex:`/`semaphore:` kind prefix. Local adapters must preserve the same tuple identity. Changing the encoding requires draining and migrating all participants.
 

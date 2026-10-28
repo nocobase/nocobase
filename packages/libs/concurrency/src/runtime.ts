@@ -548,7 +548,7 @@ export async function createConcurrentRuntime(
       'defaultAcquireTimeoutMs is unsupported; only try methods have acquisition deadlines',
     );
   const context: BackendContext = Object.freeze({
-    protocolVersion: 3,
+    protocolVersion: 1,
     managerId: randomUUID(),
     namespace: options.namespace,
     operationTimeoutMs: milliseconds(
@@ -565,7 +565,7 @@ export async function createConcurrentRuntime(
   const session = await options.backend.openSession(context);
   const caps = session.capabilities;
   if (
-    session.protocolVersion !== 3 ||
+    session.protocolVersion !== 1 ||
     !caps ||
     typeof caps.lock !== 'boolean' ||
     typeof caps.executor !== 'boolean' ||

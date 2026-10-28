@@ -57,12 +57,12 @@ export async function consumer(backend: ConcurrentBackend): Promise<void> {
   await runtime.close();
 }
 export function extension(context: BackendContext): void {
-  const version: 3 = context.protocolVersion;
+  const version: 1 = context.protocolVersion;
   void version;
-  // @ts-expect-error Protocol v2 cannot express ordinary unbounded waits.
-  const oldVersion: 2 = context.protocolVersion;
-  void oldVersion;
-  // @ts-expect-error Protocol v1 operations must not return.
+  // @ts-expect-error Only the initial protocol version is supported.
+  const unsupportedVersion: 2 = context.protocolVersion;
+  void unsupportedVersion;
+  // @ts-expect-error Historical low-level operations are not public.
   context.cancelAcquire();
 }
 void runBackendContract;

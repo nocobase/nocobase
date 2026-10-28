@@ -29,7 +29,7 @@ export interface BackendGrant {
   release(): Promise<void>;
 }
 export interface BackendContext {
-  readonly protocolVersion: 3;
+  readonly protocolVersion: 1;
   readonly managerId: string;
   readonly namespace: string;
   readonly operationTimeoutMs: number;
@@ -38,7 +38,7 @@ export interface BackendContext {
   readonly scheduler: Scheduler;
 }
 export interface ConcurrentBackendSession {
-  readonly protocolVersion: 3;
+  readonly protocolVersion: 1;
   readonly capabilities: ConcurrentCapabilities;
   validateResource(resource: ResourceSpec): Promise<void>;
   acquire(request: BackendAcquireRequest): Promise<BackendGrant | undefined>;
