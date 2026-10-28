@@ -149,8 +149,19 @@ import {
 import { insertRunRequest, runRequestsRepo } from './run-requests.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
-/** Queued runs looked at per claim, oldest first by priority. */
+/** Ordinary queued runs per page, oldest first by priority. */
 const CANDIDATES = 50;
+/** The initial page plus at most two further pages per claim request, shared by all free slots. */
+const CANDIDATE_PAGES = 3;
+
+/** Request-local read budget, also shared by a long poll's post-wait check. */
+export interface ClaimScan {
+  remainingPages: number;
+}
+
+export function createClaimScan(): ClaimScan {
+  return { remainingPages: CANDIDATE_PAGES };
+}
 
 export interface ClaimService {
   reconcileCommentConsent(unit: Tx, runId: string): Promise<void>;
@@ -166,11 +177,13 @@ export interface ClaimService {
   /**
    * Up to `free` runs for `runner`, each with its payload; empty when nothing fits. `tools` is what the runner said it
    * can take of each coding tool it keeps a limit for (`ClaimRequest.tools`); a tool left out is bounded by `free`.
+   * A request-local `scan` shares the page cap with a long poll's post-wait check.
    */
   claim(
     runner: Runner,
     free: number,
     tools?: Readonly<Partial<Record<AgentTool, number>>>,
+    scan?: ClaimScan,
   ): Promise<RunPayload[]>;
   /** The skills a run gets, worked out the way its claim works them out. The caller checks who holds the run. */
   runSkills(runner: Runner, runId: string): Promise<RunSkill[]>;
@@ -1958,25 +1971,41 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   }
 
   /** Queued runs that may be claimed now, in claim order. */
-  async function candidates(runner: Runner): Promise<RunRecord[]> {
+  async function* candidates(
+    runner: Runner,
+    scan: ClaimScan,
+  ): AsyncGenerator<RunRecord[]> {
+    if (scan.remainingPages <= 0) return;
     const now = clock.now();
-    const ordinary = await runsRepo(tx.read()).findMany({
-      filter: (f) =>
-        f.and([
-          f.string('status').eq('queued'),
-          f.or([
-            f.date('availableAt').empty(),
-            f.date('availableAt').notAfter(now),
+    const ordinaryPage = (after?: RunRecord) =>
+      runsRepo(tx.read()).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('status').eq('queued'),
+            f.or([
+              f.date('availableAt').empty(),
+              f.date('availableAt').notAfter(now),
+            ]),
           ]),
-        ]),
-      sort: (sort) => [
-        sort.field('priority').asc(),
-        sort.field('createdAt').asc(),
-        sort.field('id').asc(),
-      ],
-      limit: CANDIDATES,
-    });
-    if (ordinary.length === 0) return [];
+        sort: (sort) => [
+          sort.field('priority').asc(),
+          sort.field('createdAt').asc(),
+          sort.field('id').asc(),
+        ],
+        ...(after
+          ? {
+              cursor: {
+                priority: after.priority,
+                createdAt: after.createdAt,
+                id: after.id,
+              },
+            }
+          : {}),
+        limit: CANDIDATES,
+      });
+    scan.remainingPages -= 1;
+    const ordinary = await ordinaryPage();
+    if (ordinary.length === 0) return;
     // A separate scan prevents ordinary candidate pages from hiding upgrade resumptions.
     const recovery: RunRecord[] = [];
     for (let offset = 0; ; offset += CANDIDATES) {
@@ -2008,11 +2037,20 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       );
       if (page.length < CANDIDATES || recovery.length >= CANDIDATES) break;
     }
-    return [
+    yield [
       ...new Map(
         [...recovery, ...ordinary].map((run) => [run.id, run]),
       ).values(),
     ];
+    let page = ordinary;
+    while (scan.remainingPages > 0 && page.length === CANDIDATES) {
+      const after = page.at(-1)!;
+      // Advance by the full claim order: concurrent removals must not shift an offset past queued work.
+      scan.remainingPages -= 1;
+      page = await ordinaryPage(after);
+      if (page.length === 0) return;
+      yield page;
+    }
   }
 
   /** One batch for locations, one for machines, and occupancy batches only when a preference exists. */
@@ -2250,14 +2288,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     return true;
   }
 
-  async function claimOne(
+  /** False stops the whole request when a transactional capacity check finds the runner full. */
+  async function claimPage(
     runner: Runner,
     seen: Set<string>,
     reported: ToolRoom,
-  ): Promise<RunPayload | null> {
-    if (runner.draining) return null;
+    queued: readonly RunRecord[],
+    full: Set<string>,
+  ): Promise<RunPayload | false | null> {
     const conn = tx.read();
-    const queued = await candidates(runner);
     const affinity = await affinityBatch(queued, runner);
     const agents = await findAgents(
       conn,
@@ -2271,7 +2310,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       (inventoryRead ??= deps.runners
         ? deps.runners.all(conn)
         : Promise.resolve([runner]));
-    const full = new Set<string>();
     for (const candidate of queued) {
       if (seen.has(candidate.id) || full.has(candidate.agentId)) continue;
       seen.add(candidate.id);
@@ -2322,7 +2360,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const result = await attempt(runner, agent, candidate, reported);
         if (result.kind === 'claimed') return result.payload;
         if (result.kind === 'full') {
-          if (result.scope === 'runner') return null;
+          if (result.scope === 'runner') return false;
           // Seen candidates are passed over for good in this claim; unvisited ones stay eligible for the next pass.
           seen.delete(candidate.id);
           full.add(candidate.agentId);
@@ -2382,16 +2420,34 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const agent = await findAgent(conn, run.agentId);
       return agent ? selectionFacts(conn, toRun(run), agent, false) : null;
     },
-    async claim(runner, free, tools) {
-      if (runner.status !== 'online' || runnerLowOnDisk(runner)) return [];
+    async claim(runner, free, tools, scan = createClaimScan()) {
+      if (
+        scan.remainingPages <= 0 ||
+        runner.status !== 'online' ||
+        runner.draining ||
+        runnerLowOnDisk(runner)
+      )
+        return [];
       const payloads: RunPayload[] = [];
       const seen = new Set<string>();
       const limit = Math.min(free, runner.slots);
       const reported = toolRoom(tools);
+      const pages = candidates(runner, scan);
+      let queued: readonly RunRecord[] = [];
       while (payloads.length < limit) {
         if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots) break;
-        const payload = await claimOne(runner, seen, reported);
-        if (!payload) break;
+        const full = new Set<string>();
+        let payload: RunPayload | false | null;
+        do {
+          if (queued.length === 0) {
+            const page = await pages.next();
+            if (page.done) return payloads;
+            queued = page.value;
+          }
+          payload = await claimPage(runner, seen, reported, queued, full);
+          if (payload === false) return payloads;
+          if (!payload) queued = [];
+        } while (!payload);
         payloads.push(payload);
         reported.take(payload.tool.kind);
       }

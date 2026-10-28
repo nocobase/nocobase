@@ -228,6 +228,14 @@ export async function uploadProjectAttachment(
 
 - Authentication uses the application's existing integration. Having the client does not bypass the server's authentication, authorization or the endpoint's own requirements.
 
+### Data invalidation boundaries
+
+Define retention separately for query results, navigation/facets, form drafts and authorization-sensitive data. Sharing one response does not mean all fields have the same lifetime: a category switch may invalidate rows while its navigation remains useful. Preserve navigation only within its valid scope; do not keep query-specific counts as if they were current.
+
+During a same-resource refresh, retain still-authorized content with a visible refresh indicator. For a changed query, clear the result area or explicitly identify retained rows as previous results while loading; never label old tasks as results of the new category. Discard late responses from superseded requests. User, tenant or permission changes invalidate protected data and drafts according to the application contract, even if this requires unmounting. Retention must not bypass a 401/403 or expose a previous identity's content.
+
+Reset record-specific content when the record changes, inside a stable overlay where practical. A request key identifies a fetch; it is not automatically the React key of the overlay or form. See [overlay lifecycle](overlay.md#asynchronous-overlay-lifecycle) and [transition tests](testing.md#asynchronous-transitions).
+
 ## Loading data in a component
 
 For live updates, read the installed `nocobase-realtime` Skill in `.agents/skills/` for server authorization, snapshot recovery, retries, distributed delivery and polling decisions.

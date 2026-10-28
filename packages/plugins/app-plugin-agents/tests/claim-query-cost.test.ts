@@ -317,7 +317,8 @@ describe('claim query cost', () => {
           counts,
         );
         expect(counts).toMatchObject({
-          select: 13,
+          // A full excluded page needs one empty cursor read to establish exhaustion.
+          select: count === 50 ? 14 : 13,
           insert: 0,
           update: 0,
           delete: 0,
