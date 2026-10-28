@@ -1,3 +1,4 @@
+import SubmissionProvider from './submission.js';
 import type { ApplicationServiceProviderConstructor } from '@nocobase/app-server/application';
 
 import WorkflowManagementProvider from './workflow-management.js';
@@ -16,6 +17,7 @@ export {
 } from './app-example.js';
 
 const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
+  SubmissionProvider,
   AppExampleProvider,
   AIFormFillProvider,
   WorkflowManagementProvider,

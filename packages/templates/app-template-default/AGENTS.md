@@ -28,6 +28,8 @@ For creating or maintaining a plugin in this App, read [the project plugin devel
 
 `.agents/skills/nocobase-app-upgrade/` is a separate Skill for a separate job: merging a newer release of the template this application was generated from. Read it when the task is upgrading the template rather than building a feature — including when the user asks to upgrade NocoBase or its core version, because a newer template release is how this application moves to a newer NocoBase — and read it before touching anything — an upgrade done by copying the newest template over this application destroys the work that made it this application.
 
+When upgrading from an older installed Skill, also read the target template package’s `AGENTS.md` and `README.MD` and fetch its declared `@nocobase/app-skills` package before editing. Follow the target’s upgrade requirements in the same upgrade, including application-owned lists and installed Registry copies. Confirm the target baseline only after conflicts are resolved and dependency, source, behavior and retained-data checks pass; see the [upgrade Skill](.agents/skills/nocobase-app-upgrade/SKILL.md).
+
 `.agents/skills/nocobase-deployment/` covers moving this application from source to a production server: building for the target platform, what the archive does and does not carry, migrations and business data, production configuration, and what to verify afterwards. Read it before building for deployment, and when an application starts in production but does not work.
 
 ## Where things go
@@ -93,7 +95,7 @@ Put a package your **server** code (`server/`, `database/`, `cli/`) imports in `
 
 ### Plugins
 
-**Read a plugin's Skill before building what it already does.** Building a permission system, a notification sender, or a job scheduler by hand when a registered plugin already provides one is the most expensive mistake available here. Register and update plugins with `pnpm nocobase plugin register` and `pnpm nocobase plugin update`; customize a plugin's page through its options, a source extension or `client/route-overrides.ts`, never by redeclaring its route. `.agents/skills/` is generated output; never edit a file there. See [plugins](.agents/skills/nocobase-app-development/references/plugins.md).
+**Read a plugin's Skill before building what it already does.** Building a permission system, a notification sender, or a job scheduler by hand when a registered plugin already provides one is the most expensive mistake available here. Register and update plugins with `pnpm nocobase plugin register` and `pnpm nocobase plugin update`; customize a plugin's page through its options or an explicitly registered route component override, never by redeclaring its route. `.agents/skills/` is generated output; never edit a file there. See [plugins](.agents/skills/nocobase-app-development/references/plugins.md).
 
 ### Running the application
 
@@ -117,6 +119,10 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 
 - Comment what you changed and why the built-in path did not fit. On upgrade, an agent reconciling the template's version needs to know whether your change is still needed.
 - Record what the next agent needs to know in the matching `.agents/rules/` file, or a new one linked from the index below, so the guidance describes the application as it actually is without growing this file. If the framework's shared guidance is wrong for every application, update the source `@nocobase/app-skills` package instead of editing its synchronized copy.
+
+## Standard submissions
+
+Standard Repository writes require an operation key through the registered submission provider. Forms share `useSubmission` across all entries before asynchronous validation; custom effectful APIs explicitly join the receipt transaction. Follow [submission protection](.agents/skills/nocobase-app-development/references/submission.md) and [source upgrades](.agents/skills/nocobase-app-upgrade/references/submission-upgrade.md). Merge copied source and verify retained customizations on upgrade.
 
 ## Index
 

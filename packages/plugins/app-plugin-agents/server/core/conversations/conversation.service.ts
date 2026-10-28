@@ -2262,7 +2262,7 @@ export function createConversationService(
       return detail(userId, id);
     },
 
-    async askOwnerFromRun(run, question) {
+    async askOwnerFromRun(run, question, issue) {
       const text = question.trim();
       if (text === '' || [...text].length > QUESTION_MAX)
         throw invalid(`question must be 1 to ${QUESTION_MAX} characters.`, {
@@ -2280,12 +2280,47 @@ export function createConversationService(
             needsYou: 'confirm',
             needsYouSeq: Number(record.lastSeq),
             needsYouText: text,
+            metadata: asJson({
+              ...jsonObject(record.metadata),
+              ownerQuestion: issue ? { issue, askedAt: now() } : null,
+            }),
           },
         });
         changed(unit, record);
         return record;
       });
       return detail(conversation.userId, conversation.id);
+    },
+
+    async settleOwnerQuestion(id, issue, resumedAt) {
+      const resumed = Date.parse(resumedAt);
+      const matches = (record: ConversationRecord | null) => {
+        if (!record || record.needsYou !== 'confirm') return false;
+        const question = jsonObject(jsonObject(record.metadata).ownerQuestion);
+        return (
+          question.issue === issue &&
+          typeof question.askedAt === 'string' &&
+          Date.parse(question.askedAt) < resumed
+        );
+      };
+      // Filter before taking the existing conversation write boundary, then recheck under it.
+      if (!matches(await findConversation(tx.read(), id))) return false;
+      return tx.run(async (unit) => {
+        const record = await lockConversation(unit.conn, id, now());
+        if (!record || !matches(record)) return false;
+        await conversationsRepo(unit.conn).updateMany({
+          filter: { id },
+          values: {
+            ...SETTLED,
+            metadata: asJson({
+              ...jsonObject(record.metadata),
+              ownerQuestion: null,
+            }),
+          },
+        });
+        changed(unit, record);
+        return true;
+      });
     },
 
     async ofRunId(runId) {

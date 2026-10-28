@@ -19,12 +19,15 @@ import {
 import { DatabaseProvider } from '@nocobase/app-server/database';
 import { CachingProvider } from '@nocobase/app-server/caching';
 import { IdGeneratorProvider } from '@nocobase/app-server/id-generator';
+import { I18nProvider, i18nHttpMiddleware } from '@nocobase/app-server/i18n';
 
 function createApp(runtime: AppRuntimeContext): Application {
   const app = createAppFromRuntime(runtime);
   app.addServiceProvider(DatabaseProvider);
+  app.addServiceProvider(I18nProvider);
   app.addServiceProvider(CachingProvider);
   app.addServiceProvider(IdGeneratorProvider);
+  app.addHttpMiddleware(i18nHttpMiddleware);
   app.addRuntimeContributions(runtime);
   return app;
 }

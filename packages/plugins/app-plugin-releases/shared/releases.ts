@@ -769,6 +769,6 @@ export interface InitialAdminView {
   readonly username: string;
   readonly email: string;
   readonly password: string;
-  /** When it is deleted; null when it is kept until the App goes (a preview App's). */
+  /** Always null; kept until someone dismisses it or the App is removed. */
   readonly expiresAt: string | null;
 }

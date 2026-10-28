@@ -54,6 +54,10 @@ After resolving the conflict, rerun `pnpm nocobase skills sync` and all Finish c
 
 When the application owns `packages/`, preserve those directories and their `workspace:` dependency ranges while reconciling the root template. Preserve custom `packages` patterns and installation settings in `pnpm-workspace.yaml`; add `packages/*` only when internal packages need it and no existing pattern includes them. Keep a single root lockfile. New template check scripts may delegate to internal packages, so ensure those packages provide their own checks and run them as well as the application checks. See the development Skill's [internal workspace package contract](../../nocobase-app-development/references/dependencies.md#internal-workspace-packages).
 
+## Optional client route overrides and source extensions
+
+When the target removes `client/route-overrides.ts` and `client/source-extensions.ts`, inspect the application before accepting those deletions. Remove an unchanged empty override module and its `client/runtime.ts` import and option together. Remove the default source-extension loader and its runtime wiring only when its glob matches no `client/extensions/*/extension.ts` declarations and the loader has no application customizations. Preserve non-empty overrides, existing extension declarations and their runtime registration; the framework still supports them. UI Library components imported directly from `client/extensions/` do not depend on this loader, so keep their source and imports.
+
 ## Generated configuration and committed examples
 
 `config.yml` holds real settings and generated secrets. A template may also generate `.env` for build-time deployment facts. These live files are gitignored, were written by `pnpm nocobase config init` and the generator rather than copied from the template, and are absent from the release diff. Never print or replace them as part of the merge. `config init` refuses to overwrite an existing configuration, so it is safe to run during an upgrade; `--force` replaces one and is never part of a merge.

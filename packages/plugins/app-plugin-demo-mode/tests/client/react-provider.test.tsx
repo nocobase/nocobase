@@ -1,4 +1,5 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { renderDemo } from '../helpers/render-demo.js';
+import { answerApi } from '@nocobase/app-testing/client';
 import { act, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -22,13 +23,7 @@ class FakePerformanceObserver {
   }
 }
 
-const statusApi = (enabled: boolean) =>
-  answerApi((call) => {
-    if (call.method === 'GET' && call.path === 'demoMode/status') {
-      return { data: { enabled } };
-    }
-    return new Response(null, { status: 404 });
-  });
+const unavailableApi = answerApi(() => new Response(null, { status: 404 }));
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -38,9 +33,9 @@ afterEach(() => {
 describe('demo mode notice', () => {
   it('tells visitors of a demo when a change is refused', async () => {
     vi.stubGlobal('PerformanceObserver', FakePerformanceObserver);
-    const rendered = await renderWithApp(<p>page</p>, {
+    const rendered = await renderDemo(<p>page</p>, {
       plugins: [demoMode()],
-      fetch: statusApi(true),
+      fetch: unavailableApi,
       locale: 'zh-CN',
     });
 
@@ -61,13 +56,14 @@ describe('demo mode notice', () => {
 
   it('stays out of the way when the application is not a demo', async () => {
     vi.stubGlobal('PerformanceObserver', FakePerformanceObserver);
-    const fetch = vi.fn(statusApi(false));
-    await renderWithApp(<p>page</p>, {
+    const fetch = vi.fn(unavailableApi);
+    await renderDemo(<p>page</p>, {
       plugins: [demoMode()],
       fetch,
+      demoModeEnabled: false,
     });
 
-    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(fetch).not.toHaveBeenCalled();
     expect(await screen.findByText('page')).toBeInTheDocument();
     expect(FakePerformanceObserver.instances).toEqual([]);
   });

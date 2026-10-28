@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.67",
+  "version": "1.0.0-beta.68",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.67",
+    "defaultTemplateVersion": "1.0.0-beta.68",
     "cli": {
       "bin": "nocobase-examples",
       "displayName": "NocoBase Examples",
@@ -94,7 +94,8 @@
     "tar": "catalog:",
     "@xyflow/react": "^12.11.5",
     "elkjs": "^0.10.2",
-    "@types/jsdom": "catalog:"
+    "@types/jsdom": "catalog:",
+    "@noble/hashes": "2.3.0"
   },
   "files": [
     ".prettierignore",
@@ -131,7 +132,8 @@
     ".agents/rules",
     "CLAUDE.md",
     "playwright.config.ts",
-    "scripts/check-packages.mjs"
+    "scripts/check-packages.mjs",
+    "docs/ui/pages/skill-projects.md"
   ],
   "publishConfig": {
     "access": "public"

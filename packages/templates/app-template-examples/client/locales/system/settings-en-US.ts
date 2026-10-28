@@ -1,4 +1,5 @@
 const settings = {
+  listChanged: 'The list has changed. Please retry.',
   setup: {
     title: 'Feature prerequisites',
     checking: 'Checking current configuration…',
@@ -207,6 +208,13 @@ const settings = {
   configurationPermissionsHint:
     'Control access and actions for system settings, user management and business configuration. Only actual application features are shown.',
   permissionSearch: 'Search categories, groups or permissions',
+  permissionAll: 'All',
+  permissionGranted: 'Granted',
+  permissionUngranted: 'Ungranted',
+  permissionStatus: 'Authorization status',
+  permissionClearSearch: 'Clear search',
+  permissionCollapseAll: 'Collapse all',
+  permissionExpandAll: 'Expand all',
   enabledOnly: 'Enabled only',
   noPermissions: 'No permissions to configure',
   permissionEmptyHint:

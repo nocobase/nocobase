@@ -26,6 +26,7 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   list: {
     panelEmpty: 'Keine Unterhaltungen',
+    fold: 'Sitzungen ausblenden',
     expand: 'Sitzungen anzeigen',
     label: 'Sitzungen',
     title: 'Meine Agenten',

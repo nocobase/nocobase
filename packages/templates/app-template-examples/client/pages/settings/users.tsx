@@ -1,3 +1,4 @@
+import { useListLocation } from '#hooks/use-list-location';
 import { RecordLink } from '#components/record-link';
 import { BackButton } from '#components/back-button';
 import { safeReturnTo } from '../../lib/return-to.js';
@@ -8,7 +9,7 @@ import {
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useSettingsData, useUserPermission } from './hooks.js';
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import { useApiClient, useSubmission, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   UsersClient,
@@ -23,19 +24,14 @@ import {
   useEffect,
   type ReactElement,
 } from 'react';
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useSearchParams,
-  useResolvedPath,
-} from 'react-router';
+import { Link, Outlet, useLocation, useResolvedPath } from 'react-router';
 import { PlusIcon, UsersIcon } from 'lucide-react';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { StatusBadge } from '#components/status-badge';
+import { Spinner } from '#components/ui/spinner';
 import {
   Select,
   SelectTrigger,
@@ -51,6 +47,25 @@ import {
   EmptyContent,
 } from '#components/ui/empty';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+
+function UsersRefreshing(): ReactElement | null {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    // Fast background reads should not flash feedback on overlay close.
+    const timer = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  return visible ? (
+    <span
+      role='status'
+      className='flex items-center gap-2 text-sm text-muted-foreground'
+    >
+      <Spinner aria-hidden='true' className='size-4' />
+      {t('settings.loading')}
+    </span>
+  ) : null;
+}
 
 function UserName({ user }: { readonly user: ManagedUser }): ReactElement {
   const canUpdate = useUserPermission('update', user.id);
@@ -82,14 +97,21 @@ function UserActions({
   const [action, setAction] = useState<
     'disable' | 'enable' | 'revokeSessions'
   >();
-  const [busy, setBusy] = useState(false);
+  const [requestBusy, setRequestBusy] = useState(false);
   const [error, setError] = useState<unknown>();
+  const submission = useSubmission();
+  const busy = requestBusy || submission.submitting;
   const run = async () => {
     if (!action) return;
-    setBusy(true);
+    setRequestBusy(true);
     setError(undefined);
     try {
-      const updated = await client[action](user.id);
+      const outcome = await submission.run(
+        { action, id: user.id },
+        async (key) => ({ updated: await client[action](user.id, key) }),
+      );
+      if (!outcome) return;
+      const updated = outcome.updated;
       toaster.show({
         type: 'success',
         title: t(`settings.userActionSaved.${action}`, { name: user.name }),
@@ -99,7 +121,7 @@ function UserActions({
     } catch (next) {
       setError(next);
     } finally {
-      setBusy(false);
+      setRequestBusy(false);
     }
   };
   if (!canRevoke && !(user.disabledAt ? canEnable : canDisable)) return <></>;
@@ -159,7 +181,7 @@ function UserActions({
 
 export default function UsersPage(): ReactElement {
   const { t } = useTranslation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const location = useLocation();
   const listPath = useResolvedPath('.').pathname;
   const searchRef = useRef<HTMLInputElement>(null);
@@ -274,8 +296,10 @@ export default function UsersPage(): ReactElement {
   const request = useSettingsData<{
     data: readonly ManagedUser[];
     meta: { total: number };
-  }>(`users?${remote}`, true);
+  }>(`users?${remote}`, { keepPreviousData: true, active });
   const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
     defaultPageSize: 20,
     pageSizeOptions: [20, 50, 100],
     sortColumns: ['name'],
@@ -473,22 +497,24 @@ export default function UsersPage(): ReactElement {
               {t('settings.clear')}
             </Button>
           )}
+          <div className='ml-auto flex h-8 w-28 items-center justify-end'>
+            {active && request.data && request.loading && <UsersRefreshing />}
+          </div>
         </div>
-        {request.data && request.loading && (
-          <span role='status' className='text-sm text-muted-foreground'>
-            {t('settings.loading')}
-          </span>
-        )}
         {Boolean(roleScope) !== Boolean(role) && (
           <p role='alert' className='text-sm text-destructive'>
             {t('settings.roleFilterIncomplete')}
           </p>
         )}
         <SettingsError error={options.error} retry={options.reload} />
-        <SettingsError error={request.error} retry={request.reload} />
+        <SettingsError
+          error={tableState.error ?? request.error}
+          retry={request.reload}
+        />
         {request.loading && !request.data ? (
           <SettingsLoading />
         ) : (
+          !tableState.error &&
           !request.error &&
           (rows.length ? (
             <DataTable<ManagedUser>

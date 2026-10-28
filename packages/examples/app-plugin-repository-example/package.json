@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-repository-example",
   "displayName": "Repository Example App Plugin",
   "description": "CRM and order management demonstrating relational Repository HTTP APIs.",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0-beta.4",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -82,7 +82,8 @@
     "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-router": "^7.0.2"
+    "react-router": "^7.0.2",
+    "@nocobase/api-client": "workspace:^"
   },
   "devDependencies": {
     "@nocobase/api-client": "workspace:*",

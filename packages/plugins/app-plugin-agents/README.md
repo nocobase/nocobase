@@ -122,18 +122,9 @@ The gateway serves the application's own model calls, each naming who asks (`sou
 
 Server integrations may explicitly call `embed({ model, values, source, allowUnlistedModel: true })` to use a fixed Embedding model ID absent from the service catalog. Default gateway calls remain catalog-restricted. This opt-in applies only to Embedding and still requires an enabled, Embedding-capable provider and valid credentials; a model explicitly registered as another kind is rejected. For an unlisted ID no dimensions are requested, so the response reports the provider's default vector size. Usage is recorded normally and the service's model list is not modified. No HTTP endpoint exposes this opt-in flag.
 
-## Vectors
+## Migrating from legacy vector collections
 
-`server/vectors` keeps vector collections for the application: items of text it names (`id`, `text`, `metadata`), embedded with the embedding model it chooses and searched by meaning, so a feature such as a knowledge base adds semantic search without knowing where vectors live. It is generic: the plugin knows no domain of what it embeds.
-
-- **Stores.** A `VectorStore` (`createIndex` with a name, dimension, metric and the metadata keys filters use; `upsert`, `update` of metadata, `query` with `topK` and a filter applied before the limit, `delete` by ids or filter, `dropIndex`; `target`, where it points with no secret) is one type of a registry (`vectors.stores.register`), like the model providers. The store is configured in `agents.vectors`, apart from the application's database, and two are built in:
-  - `sqlite-vec`, the default: a SQLite file of its own (`path`, `storage/vectors.sqlite` by default) opened with `better-sqlite3` and the [sqlite-vec](https://github.com/asg017/sqlite-vec) extension, so vectors work with nothing to run. One table per index (`agv_<index>`: the vector as a float32 blob, `metadata` as JSON text, an index on each filterable key) searched exactly: the filter in the WHERE clause, then sqlite-vec's distance and the limit. It is local to the instance, so an application running several instances uses pgvector. The extension ships as prebuilt platform packages (`sqlite-vec-<os>-<arch>`: macOS, Linux glibc and Windows on x64, macOS and Linux on arm64); where there is none, such as Alpine (musl), the store reports `SQLITE_VEC_UNSUPPORTED`.
-  - `pgvector`: a PostgreSQL database of its own with the `vector` extension (created when missing), reached with its own connection settings (`url`, or `host`, `port`, `database`, `user`, `password`; `ssl`), never the application's database connection: one table per index (`agv_<index>`: `vector(<dimension>)`, `halfvec` from 2001 to 4000 dimensions, `metadata` jsonb), an HNSW index with the metric's operator class, a btree index per filterable key, and queries filtered in their WHERE clause with pgvector's iterative index scans on (0.8 and later), so a selective filter still returns `topK`. A large delete vacuums the table so the HNSW graph forgets the rows.
-
-  A store that cannot be used reports why as a code (`VectorUnavailableCode`: `VECTORS_OFF`, `VECTOR_STORE_UNKNOWN`, `SQLITE_VEC_UNSUPPORTED`, `SQLITE_VEC_OPEN_FAILED`, `PGVECTOR_NOT_CONFIGURED`, `PGVECTOR_CONNECTION_FAILED`, `PGVECTOR_EXTENSION_MISSING`, `VECTOR_STORE_FAILED`) with an English message for the logs; then vectors queue nothing and search answers null, and the caller keeps its keyword search. `vectors.status()` answers availability, the store's type and target, and the reason.
-
-- **Collections.** `vectors.collection(spec)` names a collection (`name`, the usage `source` of its embedding calls, `model()` answering its embedding model or null, `items()` listing every item for a rebuild, its `filterable` keys and metric, and optionally `prepare`, which rewrites the texts before they are embedded, such as with a context sentence). An index is the collection embedded with one model at one dimension in one store (`agVectorIndexes`, which records the store's type and target), the model's configured dimension or what a probe embedding answers. The index registry and the queue stay in the application's database, so they change in the same transactions as the writes they follow; only the vectors live in the store. Only the indexes of the store configured now are used: pointing the store elsewhere retires the others and builds the index again there in the background. `sync()` builds the index of the model now when it is not there, queuing every item while the ready index keeps serving; once nothing is pending it becomes ready and the older index is retired and dropped. `upsert` and `replace` (the items of a metadata scope) write to the ready index and the one being built: an item whose text hash is unchanged only has its metadata updated; `remove` takes ids or a filter. `search` embeds the query with the ready index's model and answers the closest items with a similarity score, or null when there is no store, no model or no ready index yet. `status()` answers availability, the store and the reason it is unavailable, the model, the active and building index with their progress (`indexed` of `total` items), and how many items are pending or failed.
-- **The queue.** Entries (`agVectorEntries`) keep each item's text hash and, until it is embedded, its text. Each instance's worker (`vectors.start()`, woken by writes and polling every three seconds) takes due entries with a lease, so two instances never embed the same one, at most 64 of one index per embedding call; a failure backs off from five seconds, doubling up to ten minutes, and after five attempts the entry is `failed` until the item is written again.
+Agents 2 removes the legacy vector collection service. Model services, Embedding, reranking and usage recording remain available; Knowledge keeps its independent indexing backends. Read the [migration guide](docs/vectors-migration.md) before upgrading an application that uses the old API or configuration.
 
 ## Layout
 
@@ -142,7 +133,6 @@ Server integrations may explicitly call `embed({ model, values, source, allowUnl
 | `server/kernel`                                        | Clock, ids, transactions, events, credentials and secret sealing, scopes, redaction, HTTP helpers                                                                 |
 | `server/core`                                          | Agents, runs and the queue (claims, lifecycle, sweeper), briefs, conversations, the custom command registry, usage, prices and reports, skills, variables         |
 | `server/online`                                        | The model services, the providers, the model gateway, and the model endpoints of the admin API                                                                    |
-| `server/vectors`                                       | Vector collections, their embedding queue, the vector store registry, and the `sqlite-vec` and `pgvector` stores                                                  |
 | `server/runners`, `server/jobs`, `server/distribution` | The runners (registration, keys, heartbeats, slots, the sweeper), the build jobs, and the runner and CLI tarballs                                                 |
 | `server/routes/runners`                                | The runner protocol (with a run's `runs/:runId/*` endpoints), the tarballs, the install script and the runners' admin API                                         |
 | `server/routes`                                        | The admin, chat and CLI endpoints, and where every endpoint is mounted (`index.ts`)                                                                               |
@@ -286,13 +276,6 @@ agents:
     npm: # optional; a product with no tarball in dir is named on npm instead, to callers that understand it
       nocobase-runner: { package: '@nocobase/agent-runner', version: 1.0.0 } # an exact version, never a range
 
-  vectors: # optional; vector collections, apart from the application's database
-    store: sqlite-vec # the default; pgvector, or false to turn vectors off
-    path: storage/vectors.sqlite # sqlite-vec's file, relative to the application root
-    # pgvector takes its own PostgreSQL, never the application's connection:
-    # store: pgvector
-    # url: postgres://vectors:secret@db.internal:5432/vectors # or host, port, database, user, password
-    # ssl: true
   skills: # optional; the skill library
     disk: s3 # the Drive disk skills' file contents go to; drive.default by default
 ```
@@ -348,6 +331,8 @@ Studio publishes `agents.runs.retentionDays` through its existing public configu
 ## Conversations while the agent works
 
 A Runner conversation takes a message while its agent works: `POST /api/agents/conversations/{conversationId}/queue` (`OnlineAgent.queue`) joins it to the run at work, steered into the running turn where the coding tool can take it, else taken as the next turn; `POST …/messages/{messageId}/withdraw` takes it back until a runner has it (`400 CONVERSATION_CONFLICT`, `messageTaken`, after). Delivery and withdrawal are conditional updates of the input row on an empty `deliveredAt` and `handledAt`, so a message is never both withdrawn and delivered. `POST …/markSeen { seq }` moves the owner's read position, `GET /api/agents/conversationAttention` answers the badge counts, and `GET …/usage` sums tokens, cost and the latest context window over the conversation's runs.
+
+A run can ask its conversation owner with `conversation ask-owner "Proceed with the plan?" --issue PM-721`. The optional `issue` identifier is saved with the question and its server timestamp in conversation metadata. Without it, behavior is unchanged. Applications can call `conversations.settleOwnerQuestion(id, issue, resumedAt)` with the actual task transition timestamp to settle only a matching earlier question; it emits `conversation.changed` without changing read positions, unread replies or waking a run. The application owns task visibility, links and resumption rules.
 
 ## Deleting conversations and archived retention
 

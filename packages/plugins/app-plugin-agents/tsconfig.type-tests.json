@@ -10,6 +10,7 @@
     "tests/ui-message.test.ts",
     "tests/online-agent-json.type-test.ts",
     "tests/ai-form.type-test.tsx",
-    "tests/online-agent-backend.type-test.ts"
+    "tests/online-agent-backend.type-test.ts",
+    "tests/vectors-removal.type-test.ts"
   ]
 }

@@ -1,4 +1,5 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { renderSettingsClient as renderWithApp } from '../helpers/settings-client.js';
+import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import {
   AuthorizationClient,
@@ -9,7 +10,7 @@ import {
   defineAppRoutes,
   defineClientPlugin,
 } from '@nocobase/app-client/plugins';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
@@ -138,12 +139,36 @@ describe('user permission configuration', () => {
       expect(
         screen.getByRole('heading', { name: words.roleAssignment }),
       ).toBeVisible();
-      expect(screen.getAllByRole('checkbox')).toHaveLength(8);
+      const permissionNames = [
+        words.readUsers,
+        words.createUsers,
+        words.updateUsers,
+        words.disable,
+        words.enable,
+        words.revokeSessions,
+        words.assignRole,
+      ];
+      const permissionCheckboxes = permissionNames.map((name) =>
+        screen.getByRole('checkbox', { name, exact: true }),
+      );
+      expect(screen.getAllByRole('checkbox')).toHaveLength(
+        permissionNames.length,
+      );
       expect(
         screen.queryByRole('checkbox', { name: words.inviteUsers }),
       ).not.toBeInTheDocument();
-      const rowIds = screen.getAllByRole('checkbox').map((node) => node.id);
-      expect(new Set(rowIds).size).toBe(8);
+      const rowIds = permissionCheckboxes.map((node) => node.id);
+      expect(rowIds).not.toContain('');
+      expect(new Set(rowIds).size).toBe(permissionNames.length);
+      const status = within(
+        screen.getByRole('tablist', { name: words.permissionStatus }),
+      );
+      expect(status.getAllByRole('tab')).toHaveLength(3);
+      expect(
+        status.getByRole('tab', { name: words.permissionAll, exact: true }),
+      ).toHaveAttribute('aria-selected', 'true');
+      for (const name of [words.permissionGranted, words.permissionUngranted])
+        expect(status.getByRole('tab', { name, exact: true })).toBeVisible();
       await user.click(
         screen.getByRole('button', { name: words.save, exact: true }),
       );

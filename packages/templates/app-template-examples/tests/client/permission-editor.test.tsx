@@ -60,13 +60,7 @@ describe('application-owned permission workspace', () => {
         onLevelChange={vi.fn()}
       />,
     );
-    const checkboxes = screen
-      .getAllByRole('checkbox')
-      .filter(
-        (item) =>
-          item.getAttribute('aria-label') !== 'Enabled only' &&
-          item.id !== screen.getByRole('checkbox', { name: 'Enabled only' }).id,
-      );
+    const checkboxes = screen.getAllByRole('checkbox');
     expect(checkboxes.map((item) => item.textContent)).toHaveLength(2);
     expect(checkboxes[0]).toHaveAccessibleName('Approve order');
     expect(checkboxes[1]).toHaveAccessibleName('Withdraw order');
@@ -74,7 +68,7 @@ describe('application-owned permission workspace', () => {
       screen.queryByRole('checkbox', { name: 'Configure numbering' }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('navigation', { name: 'Permission categories' }),
+      screen.getByRole('tablist', { name: 'Permission categories' }),
     ).toBeVisible();
     expect(
       screen.getByText('Confirm the order and reserve stock.'),
@@ -99,7 +93,7 @@ describe('application-owned permission workspace', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Ask the application developer',
     );
-    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
   });
 
@@ -149,11 +143,11 @@ describe('application-owned permission workspace', () => {
         onLevelChange={vi.fn()}
       />,
     );
-    const category = screen.getByRole('button', {
+    const category = screen.getByRole('tab', {
       name: 'Application configuration',
     });
     await user.click(category);
-    expect(category).toHaveAttribute('aria-current', 'page');
+    expect(category).toHaveAttribute('aria-selected', 'true');
     expect(
       screen.getByRole('checkbox', { name: 'Configure numbering' }),
     ).toBeVisible();
@@ -168,9 +162,9 @@ describe('application-owned permission workspace', () => {
     expect(
       screen.getByRole('checkbox', { name: 'Configure numbering' }),
     ).toBeVisible();
-    expect(category).toHaveAttribute('aria-current', 'page');
+    expect(category).toHaveAttribute('aria-selected', 'true');
     await user.type(screen.getByRole('textbox'), 'missing');
-    await user.click(screen.getByRole('button', { name: 'Business actions' }));
+    await user.click(screen.getByRole('tab', { name: 'Business actions' }));
     expect(screen.getByRole('textbox')).toHaveValue('');
     expect(
       screen.getByRole('checkbox', { name: 'Approve order' }),
@@ -233,7 +227,7 @@ describe('application-owned permission workspace', () => {
       );
     }
     render(<Draft />);
-    await user.click(screen.getByRole('checkbox', { name: 'Enabled only' }));
+    await user.click(screen.getByRole('tab', { name: 'Granted' }));
     await user.click(screen.getByRole('checkbox', { name: 'Approve' }));
     expect(screen.getByRole('textbox')).toHaveFocus();
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -321,13 +315,13 @@ describe('application-owned permission workspace', () => {
     await user.keyboard(' ');
     expect(change).toHaveBeenCalledTimes(2);
     expect(change).toHaveBeenLastCalledWith('withdraw', true);
-    screen.getAllByRole('checkbox', { name: 'Enabled only' })[0]!.focus();
+    screen.getAllByRole('tab', { name: 'Granted' })[0]!.focus();
     await user.keyboard(' ');
     expect(change).toHaveBeenCalledTimes(2);
     await user.type(screen.getAllByRole('textbox')[0]!, 'missing');
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     await user.click(
-      screen.getAllByRole('button', { name: 'Application configuration' })[0]!,
+      screen.getAllByRole('tab', { name: 'Application configuration' })[0]!,
     );
     screen.getByRole('checkbox', { name: 'Configure numbering' }).focus();
     await user.keyboard(' ');
@@ -543,7 +537,12 @@ const treeSection: PermissionEditorSection = {
           label: 'Catalog',
           rowId: 'catalog',
           children: [
-            { id: 'books-node', label: 'Books', rowId: 'books' },
+            {
+              id: 'books-node',
+              label: 'Books',
+              rowId: 'books',
+              path: '/library/books',
+            },
             {
               id: 'review-group',
               label: 'Approvals',
@@ -684,7 +683,7 @@ describe('application-owned page navigation', () => {
       );
     }
     render(<ControlledTree />);
-    await user.click(screen.getByRole('checkbox', { name: 'Enabled only' }));
+    await user.click(screen.getByRole('tab', { name: 'Granted' }));
     expect(screen.getByText('Library')).toBeVisible();
     expect(screen.getByText('Catalog')).toBeVisible();
     expect(screen.queryByText('Approvals')).not.toBeInTheDocument();
@@ -711,9 +710,7 @@ describe('application-owned page navigation', () => {
       />,
     );
     expect(screen.getAllByRole('list')).toHaveLength(1);
-    expect(
-      screen.queryByRole('button', { name: /Collapse|Expand/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Collapse all' })).toBeDisabled();
     rerender(
       <PermissionEditor
         sections={[treeSection]}
@@ -735,6 +732,179 @@ describe('application-owned page navigation', () => {
     expect(
       screen.getByRole('button', { name: 'Expand Library' }),
     ).toBeEnabled();
+    expect(change).not.toHaveBeenCalled();
+  });
+});
+
+describe('compact permission controls', () => {
+  const leaves: PermissionEditorSection = {
+    id: 'pages',
+    title: 'Pages',
+    groups: [
+      {
+        id: 'borrowing',
+        title: 'Borrowing',
+        accessOnly: true,
+        rows: [{ id: 'borrow', label: 'Access', enabled: true }],
+      },
+      {
+        id: 'catalog',
+        title: 'Catalog',
+        accessOnly: true,
+        rows: [{ id: 'browse', label: 'Access', enabled: false }],
+      },
+    ],
+  };
+
+  it('keeps an all-leaf section visible and excludes its rows from bulk disclosure', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[leaves]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    const collapse = screen.getByRole('button', { name: 'Collapse all' });
+    expect(collapse).toBeDisabled();
+    await user.click(collapse);
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Catalog' })).not.toBeChecked();
+    expect(
+      screen.queryByRole('button', { name: 'Expand all' }),
+    ).not.toBeInTheDocument();
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it('collapses only titled groups in a mixed section while leaves stay reachable and unchanged', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[
+          { ...leaves, groups: [...leaves.groups, ...sections[0]!.groups] },
+        ]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    for (const action of ['Collapse all', 'Expand all']) {
+      await user.click(screen.getByRole('button', { name: action }));
+      for (const name of ['Borrowing', 'Catalog']) {
+        const checkbox = screen.getByRole('checkbox', { name });
+        expect(checkbox).toBeVisible();
+        checkbox.focus();
+        expect(checkbox).toHaveFocus();
+      }
+      expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+      expect(
+        screen.getByRole('checkbox', { name: 'Catalog' }),
+      ).not.toBeChecked();
+      if (action === 'Collapse all') {
+        expect(
+          screen.getByRole('button', { name: 'Expand Orders' }),
+        ).toBeVisible();
+        expect(
+          screen.queryByRole('checkbox', { name: 'Approve order' }),
+        ).not.toBeInTheDocument();
+      } else {
+        expect(
+          screen.getByRole('checkbox', { name: 'Approve order' }),
+        ).toBeChecked();
+        expect(
+          screen.getByRole('checkbox', { name: 'Withdraw order' }),
+        ).not.toBeChecked();
+      }
+    }
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it('ignores an existing collapsed key when a group becomes an access-only leaf', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    const props = { onEnabledChange: change, onLevelChange: vi.fn() };
+    const { rerender } = render(
+      <PermissionEditor
+        {...props}
+        sections={[
+          {
+            ...leaves,
+            groups: leaves.groups.map((group) => ({
+              ...group,
+              accessOnly: false,
+            })),
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Collapse all' }));
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    rerender(<PermissionEditor {...props} sections={[leaves]} />);
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Catalog' })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Collapse all' })).toBeDisabled();
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it('filters ungranted rows globally, resets without editing, and searches actual routes', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[treeSection, ...sections]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'Ungranted' }));
+    expect(
+      screen.getByRole('checkbox', { name: 'Review loans' }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: 'Configure numbering' }),
+    ).not.toBeChecked();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Books' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('2 of 4 enabled')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await user.type(screen.getByRole('textbox'), '/library/books');
+    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
+    expect(screen.getByText('/library/books')).toBeVisible();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Review loans' }),
+    ).not.toBeInTheDocument();
+    expect(change).not.toHaveBeenCalled();
+  });
+  it('collapses resources without mutating grants and restores disclosure after search', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={sections}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Collapse all' }));
+    expect(
+      screen.queryByRole('checkbox', { name: 'Approve order' }),
+    ).not.toBeInTheDocument();
+    await user.type(screen.getByRole('textbox'), 'reserve');
+    expect(
+      screen.getByRole('checkbox', { name: 'Approve order' }),
+    ).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(
+      screen.queryByRole('checkbox', { name: 'Approve order' }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Expand all' }));
+    expect(
+      screen.getByRole('checkbox', { name: 'Approve order' }),
+    ).toBeChecked();
     expect(change).not.toHaveBeenCalled();
   });
 });

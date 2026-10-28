@@ -6,6 +6,10 @@ Forms use react-hook-form, zod 4 and `@hookform/resolvers/zod`, the `Field` fami
 - Put the form component in the feature folder (`client/pages/<feature>/<feature>-form.tsx`); move it to `client/components/` only when several features use it.
 - `client/components/ui/` does not have shadcn's old `form` component (`FormField`, `FormItem`, `FormMessage`). Do not add it; use the `Field` family throughout.
 
+## Shared submission lock and retry identity
+
+All submission entries use one `useSubmission` controller before async validation. Pass its key to the standard Repository mutation or a custom action that explicitly implements the transaction receipt adapter. Keep uncertain operations across retries and distinguish a deliberate new operation after success. Follow [submission protection](../../submission.md) for the complete protocol and upgrade boundary; button disabling and `isSubmitting` alone do not provide this contract.
+
 ## Shared failure feedback
 
 Use `FeedbackForm` from `#components/feedback-form` in place of a native `<form>`. Both templates preinstall this UI Library source and merge its English/Chinese resources. When installing it in another application, add the translation keys listed in the registry item’s docs and component README to the application locale resources; standalone device-approval includes them in its locale exports. It preserves the caller's input and upload state, renders safe field and form errors, and scrolls/focuses the first editable error in actual layout order. Native controls declare the exact submitted `name`; custom triggers declare `data-field-path`. Keep the editor mounted on failure. Return asynchronous submission promises to the boundary, or pass the caught request error through its `error` prop. Preserve trusted application error copy/actions through `errorContent` and remove the former separate submission alert, so assistive technology hears one form-level message for an unmapped failure. Never pass raw server content to that prop or render an `Error.message`, server violation description or stack as user copy.
@@ -98,7 +102,7 @@ Use `z.string().trim()` in the schema and an empty string as the default (`proje
 
 - `form.handleSubmit(async (values) => { ... })` validates every field first and calls the callback only if they pass; if they do not, FeedbackForm shows the errors and moves focus in layout order.
 - `<form noValidate onSubmit={(event) => void onSubmit(event)}>`: `noValidate` turns off the browser's built-in validation bubbles; `void` means the returned Promise is not awaited (ESLint requires it).
-- While submitting: when the button is outside the form, hand the state to the container with `onSubmittingChange` (see "Inside a RouteDialog"); when the button is inside the `<form>`, use `form.formState.isSubmitting` directly (see the members card in "Array fields").
+- While submitting: when the button is outside the form, hand the state to the container with `onSubmittingChange` (see "Inside a RouteDialog"); when the button is inside the `<form>`, use the shared controller's `submitting` state (see the members card in "Array fields").
 - Label the submit button with the specific action: "Create", "Save", not "OK" or "Submit" (guideline T3.4).
 
 ### Server errors

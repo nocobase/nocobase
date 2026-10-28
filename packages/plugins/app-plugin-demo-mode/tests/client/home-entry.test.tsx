@@ -1,4 +1,5 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { renderDemo } from '../helpers/render-demo.js';
+import { answerApi } from '@nocobase/app-testing/client';
 import { screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
@@ -14,13 +15,13 @@ it('enters Super Admin before rendering the home page and preserves the applicat
     complete = resolve;
   });
   const calls: string[] = [];
-  await renderWithApp(<p>Protected home page</p>, {
+  await renderDemo(<p>Protected home page</p>, {
     plugins: [demoMode()],
     server: {
       publicBasePath: '/main',
       fetch: answerApi((call) => {
         calls.push(`${call.method} ${call.path}`);
-        if (call.path === 'demoMode/status') return { data: { enabled: true } };
+
         if (call.path === 'demoMode/accounts/signInDefault') return session;
         if (call.method === 'GET' && call.path === 'auth/get-session')
           return { user: { id: 'admin' } };
@@ -46,10 +47,9 @@ it('enters Super Admin before rendering the home page and preserves the applicat
 it.each([false, 'failure'])(
   'opens the normal home page when sign-in returns %s',
   async (result) => {
-    await renderWithApp(<p>Normal home page</p>, {
+    await renderDemo(<p>Normal home page</p>, {
       plugins: [demoMode()],
-      fetch: answerApi((call) => {
-        if (call.path === 'demoMode/status') return { data: { enabled: true } };
+      fetch: answerApi(() => {
         if (result === 'failure') return new Response(null, { status: 500 });
         return { data: { signedIn: result } };
       }),
@@ -67,16 +67,17 @@ it.each([
   'keeps normal entry at $route when Demo Mode is $enabled',
   async ({ route, enabled }) => {
     const calls: string[] = [];
-    await renderWithApp(<p>Application page</p>, {
+    await renderDemo(<p>Application page</p>, {
       plugins: [demoMode()],
       route,
+      demoModeEnabled: enabled,
       fetch: answerApi((call) => {
         calls.push(call.path);
         return { data: { enabled } };
       }),
     });
     expect(await screen.findByText('Application page')).toBeVisible();
-    await waitFor(() => expect(calls).toContain('demoMode/status'));
+    expect(calls).not.toContain('demoMode/status');
     expect(calls).not.toContain('demoMode/accounts/signInDefault');
   },
 );
@@ -87,11 +88,11 @@ it.each(['missing', 'failure'])(
     const replace = vi.fn();
     vi.stubGlobal('location', { origin: 'http://localhost', replace });
     const calls: string[] = [];
-    await renderWithApp(<p>Normal home page</p>, {
+    await renderDemo(<p>Normal home page</p>, {
       plugins: [demoMode()],
       fetch: answerApi((call) => {
         calls.push(`${call.method} ${call.path}`);
-        if (call.path === 'demoMode/status') return { data: { enabled: true } };
+
         if (
           call.method === 'POST' &&
           call.path === 'demoMode/accounts/signInDefault'

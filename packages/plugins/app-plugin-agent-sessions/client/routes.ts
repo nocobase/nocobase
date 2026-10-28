@@ -44,6 +44,9 @@ export function agentSessionsRoute(
         linkPanels: options.linkPanels ?? {},
         ...(options.sessionMarks ? { sessionMarks: options.sessionMarks } : {}),
         ...(options.listHeading ? { listHeading: options.listHeading } : {}),
+        ...(options.layoutStoragePrefix
+          ? { layoutStoragePrefix: options.layoutStoragePrefix }
+          : {}),
       };
       const Configured = (): ReactElement =>
         createElement(

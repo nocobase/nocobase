@@ -1,4 +1,5 @@
-import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { renderDemo } from '../helpers/render-demo.js';
+import { answerApi } from '@nocobase/app-testing/client';
 import {
   act,
   fireEvent,
@@ -28,17 +29,13 @@ function Header() {
 }
 
 function api({
-  enabled = true,
   accounts = [ann, bob],
   signIn = () => ({ data: bob }),
 }: {
-  enabled?: boolean;
   accounts?: object[];
   signIn?: (username: string) => unknown;
 } = {}) {
   return answerApi((call) => {
-    if (call.method === 'GET' && call.path === 'demoMode/status')
-      return { data: { enabled } };
     if (call.method === 'GET' && call.path === 'demoMode/accounts')
       return { data: accounts };
     const match = /^demoMode\/accounts\/([^/]+)\/signIn$/u.exec(call.path);
@@ -50,7 +47,7 @@ function api({
 
 it('shows the demo notice and checked account together in a standalone header menu', async () => {
   const signIns: string[] = [];
-  await renderWithApp(<Header />, {
+  await renderDemo(<Header />, {
     plugins: [demoMode()],
     route: '/projects?state=open#today',
     locale: 'zh-CN',
@@ -85,7 +82,7 @@ it('shows the demo notice and checked account together in a standalone header me
 it('prevents repeated switches while pending and lets a failed switch be retried', async () => {
   const pending = Promise.withResolvers<Response>();
   const signIns: string[] = [];
-  const rendered = await renderWithApp(<Header />, {
+  const rendered = await renderDemo(<Header />, {
     plugins: [demoMode()],
     route: '/projects',
     fetch: api({
@@ -121,13 +118,44 @@ it('prevents repeated switches while pending and lets a failed switch be retried
   await waitFor(() => expect(signIns).toEqual(['bob', 'bob']));
 });
 
+it('shows an existing administrator with its localized role label', async () => {
+  await renderDemo(<Header />, {
+    plugins: [demoMode()],
+    locale: 'zh-CN',
+    fetch: api({
+      accounts: [
+        {
+          username: 'owner',
+          name: 'Super Admin',
+          role: '系统管理员',
+          current: true,
+        },
+      ],
+    }),
+  });
+  fireEvent.click(
+    await screen.findByRole('button', { name: '演示模式 · 切换账户' }),
+  );
+  const administrator = await screen.findByRole('menuitemradio', {
+    name: /Super Admin/u,
+  });
+  expect(administrator).toHaveAttribute('aria-checked', 'true');
+  expect(within(administrator).getByText('系统管理员')).toBeVisible();
+});
+
 it('keeps the environment notice available when quick sign-in offers no accounts', async () => {
-  await renderWithApp(<Header />, {
+  await renderDemo(<Header />, {
     plugins: [demoMode()],
     route: '/projects',
     fetch: api({ accounts: [] }),
   });
-  fireEvent.click(await screen.findByRole('button', { name: 'Demo mode' }));
+  // The label is also present during mounting; wait for the menu trigger's interaction state.
+  const trigger = await screen.findByRole('button', {
+    name: 'Demo mode',
+    expanded: false,
+  });
+  fireEvent.click(trigger);
+  expect(trigger).toHaveAttribute('aria-expanded', 'true');
   expect(
     await screen.findByText('No accounts can be entered right now.'),
   ).toBeVisible();
@@ -135,8 +163,47 @@ it('keeps the environment notice available when quick sign-in offers no accounts
   expect(screen.queryByRole('menuitemradio')).not.toBeInTheDocument();
 });
 
+it.each([
+  ['empty', []],
+  ['available', [ann, bob]],
+] as const)(
+  'keeps the loading menu open when accounts become %s',
+  async (_, accounts) => {
+    const pending = Promise.withResolvers<{ data: readonly object[] }>();
+    await renderDemo(<Header />, {
+      plugins: [demoMode()],
+      route: '/projects',
+      fetch: answerApi((call) => {
+        if (call.path === 'demoMode/accounts') return pending.promise;
+        return new Response(null, { status: 404 });
+      }),
+    });
+    const trigger = await screen.findByRole('button', {
+      name: 'Demo mode',
+      expanded: false,
+    });
+    fireEvent.click(trigger);
+    expect(await screen.findByText('Loading accounts…')).toBeVisible();
+    expect(screen.getByText('This is a demo environment')).toBeVisible();
+    await act(async () => pending.resolve({ data: accounts }));
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByText('Loading accounts…')).not.toBeInTheDocument();
+    if (accounts.length) {
+      expect(
+        screen.getByRole('menuitemradio', { name: /Ann/u }),
+      ).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getAllByRole('menuitemradio')).toHaveLength(2);
+    } else {
+      expect(
+        screen.getByText('No accounts can be entered right now.'),
+      ).toBeVisible();
+      expect(screen.queryByRole('menuitemradio')).not.toBeInTheDocument();
+    }
+  },
+);
+
 it('offers the same header entry to signed-out visitors', async () => {
-  await renderWithApp(<Header />, {
+  await renderDemo(<Header />, {
     plugins: [demoMode()],
     route: '/sign-in',
     fetch: api({ accounts: [{ ...ann, current: false }, bob] }),
@@ -154,10 +221,11 @@ it('offers the same header entry to signed-out visitors', async () => {
 });
 
 it('hides the header entry outside Demo Mode', async () => {
-  await renderWithApp(<Header />, {
+  await renderDemo(<Header />, {
     plugins: [demoMode()],
     route: '/projects',
-    fetch: api({ enabled: false }),
+    demoModeEnabled: false,
+    fetch: api(),
   });
   expect(screen.getByText('Application content')).toBeVisible();
   expect(
@@ -168,12 +236,12 @@ it('hides the header entry outside Demo Mode', async () => {
 
 it('leaves entry placement to the application when the plugin is registered', async () => {
   const paths: string[] = [];
-  await renderWithApp(<p>Application content</p>, {
+  await renderDemo(<p>Application content</p>, {
     plugins: [demoMode()],
     route: '/projects',
     fetch: answerApi((call) => {
       paths.push(call.path);
-      if (call.path === 'demoMode/status') return { data: { enabled: true } };
+
       if (call.path === 'demoMode/accounts') return { data: [ann, bob] };
       return new Response(null, { status: 404 });
     }),

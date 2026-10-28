@@ -18,6 +18,7 @@ const enUS = {
   },
   list: {
     panelEmpty: 'No conversations',
+    fold: 'Hide sessions',
     expand: 'Show sessions',
     label: 'Sessions',
     title: 'My agents',

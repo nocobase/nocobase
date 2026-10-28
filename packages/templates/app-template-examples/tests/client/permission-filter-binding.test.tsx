@@ -127,7 +127,7 @@ it('collects native custom filter parameters before changing the draft, then sav
     );
   }
   render(<Role />);
-  await user.click(screen.getByRole('button', { name: 'Configuration' }));
+  await user.click(screen.getByRole('tab', { name: 'Configuration' }));
   const scope = screen.getByRole('combobox', {
     name: 'How far View · Records reaches',
   });

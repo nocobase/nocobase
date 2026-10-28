@@ -151,6 +151,13 @@ describe('page permission navigation projection', () => {
     ]);
     expect(result[0]?.children?.[1]?.children?.[0]?.label).toBe('Warehouses');
     expect(result[1]?.rowId).toBe('["page","legacy-loans","access"]');
+    expect(result[1]?.path).toBe('/loans');
+    expect(result[0]?.children?.[0]?.path).toBe('/materials');
+    expect(
+      flatten(result).find(
+        (node) => node.rowId === '["page","legacy-audit","access"]',
+      )?.path,
+    ).toBe('/loans/audit');
     expect(result[1]?.children?.[0]?.rowId).toBe(
       '["page","legacy-reviews","access"]',
     );
@@ -185,6 +192,7 @@ describe('page permission navigation projection', () => {
       {
         id: 'page:legacy-audit',
         label: 'Audit details',
+        path: '/loans/audit',
         rowId: '["page","legacy-audit","access"]',
       },
     ]);

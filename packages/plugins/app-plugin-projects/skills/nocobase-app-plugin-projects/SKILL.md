@@ -98,6 +98,8 @@ grants from before roles moved to the App; the App converts them (for example, `
 
 ## Verification
 
+Server integrations can pass `message: { type, params }` in `projects.comments.post` options. The framework accepts application-defined names matching `^[a-z][a-z0-9-]*(\.[a-zA-Z][a-zA-Z0-9]*)+$`, at most 100 characters, and at most 10 parameters whose values are strings (up to 500 characters), finite numbers or booleans. It does not coerce or trim values. Define and validate specific message names and parameters in the application, translate known types there, and retain safe fallback Markdown for unknown types. Only this public envelope is projected from origin; other provenance stays private, deleted comments omit the message, and ordinary comment create/edit APIs cannot supply it. A new application message does not require changing the framework.
+
 `statusEvents.fire` accepts optional `needsYou` and `next`, validated with the same progress rules as an issue update. Include the target in the event's `from` list to refresh these fields when an issue already has that status; this updates progress without replaying status activities or entry actions and returns `ignored/noTransition`. An event moving to a different status still records the provided actor and runs the normal transition.
 
 Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnblocked` and `onSubtasksFinished`, including `actor.trace.runId` when supplied. A status event moves as the system but records the actor it was fired with; pass the real actor when firing one, since an omitted actor defaults to the system.

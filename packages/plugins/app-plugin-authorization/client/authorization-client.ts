@@ -356,25 +356,41 @@ export class AuthorizationClient {
     return this.get(`authorization/permissionSets/${encodeURIComponent(key)}`);
   }
 
-  createPermissionSet(input: PermissionSetInput): Promise<PermissionSet> {
-    return this.send('authorization/permissionSets', 'POST', input);
+  createPermissionSet(
+    input: PermissionSetInput,
+    idempotencyKey?: string,
+  ): Promise<PermissionSet> {
+    return this.send(
+      'authorization/permissionSets',
+      'POST',
+      input,
+      idempotencyKey,
+    );
   }
 
   updatePermissionSet(
     key: string,
     input: PermissionSetInput,
+    idempotencyKey?: string,
   ): Promise<PermissionSet> {
     return this.send(
       `authorization/permissionSets/${encodeURIComponent(key)}`,
       'PATCH',
       input,
+      idempotencyKey,
     );
   }
 
-  async deletePermissionSet(key: string): Promise<void> {
+  async deletePermissionSet(
+    key: string,
+    idempotencyKey?: string,
+  ): Promise<void> {
     await this.api.request({
       path: `authorization/permissionSets/${encodeURIComponent(key)}`,
       method: 'DELETE',
+      ...(idempotencyKey
+        ? { headers: { 'Idempotency-Key': idempotencyKey } }
+        : {}),
     });
   }
 
@@ -499,9 +515,17 @@ export class AuthorizationClient {
     path: string,
     method: 'POST' | 'PATCH',
     value: unknown,
+    idempotencyKey?: string,
   ): Promise<T> {
     return this.api
-      .request<DataResponse<T>>({ path, method, json: value })
+      .request<DataResponse<T>>({
+        path,
+        method,
+        json: value,
+        ...(idempotencyKey
+          ? { headers: { 'Idempotency-Key': idempotencyKey } }
+          : {}),
+      })
       .then((response) => response.data);
   }
 }

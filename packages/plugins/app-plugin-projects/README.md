@@ -71,6 +71,9 @@ issueId)` says where firing it would take one issue without moving it (for a con
   `projects.comments.post` (`CommentWriter`) and reacts to new comments through `projectsTriggersToken`
   (`IssueTriggers.onCommentCreated`, answering whom it woke). Writing a comment touches the issue's last activity
   without changing its `revision`, so an open edit of the issue does not conflict.
+
+Server writers may pass an application-defined `message: { type, params }` alongside `origin` in `projects.comments.post` options. The namespaced type must match `^[a-z][a-z0-9-]*(\.[a-zA-Z][a-zA-Z0-9]*)+$` and be at most 100 characters. Parameters have at most 10 keys, with string, finite number or boolean values only; each string is at most 500 characters. Values are preserved without coercion or trimming. The writer validates and stores this generic envelope in the existing origin JSON. Reads expose only its type and public parameters as optional `IssueComment.message`, never other provenance, and omit it after deletion. Ordinary HTTP create/edit bodies reject this field. Applications define and validate their own message names and parameter contracts before writing, translate recognized types, and keep safe fallback Markdown in `content` for unknown types. Adding an application message needs no framework change, migration or additional read/write.
+
 - **Attachments** (`shared/attachments.ts`, `server/domains/attachments/`): files on an issue (its own) or sent with a
   comment, any type, up to 20 MiB each, stored through the file plugin (`@nocobase/app-plugin-file`) on the App's
   default Drive disk. A file starts as an upload of its uploader's attached to nothing (a person, or an agent working
