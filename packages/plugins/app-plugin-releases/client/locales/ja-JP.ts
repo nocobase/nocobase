@@ -532,8 +532,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: '初代管理者',
-      expires:
-        '最初の展開用に生成されます。今すぐ保存してください。{{hours}} h で削除されます。',
       kept: '最初の展開用に生成されます。アプリが削除されるまで保持されます。',
       username: 'ユーザー名',
       email: 'メール',
