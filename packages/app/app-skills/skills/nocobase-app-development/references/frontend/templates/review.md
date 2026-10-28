@@ -1,10 +1,10 @@
 # [Design review / Acceptance review]
 
-| Item             | Details                                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Under review     | `storage/ui-workflow/<feature>/design.md` (for the acceptance review, add: the page implementation and screenshots) |
-| Reviewed against | [`ui-guidelines.md`](../ui-guidelines.md), design.md (for the acceptance review, add: the run record)               |
-| Review method    | Independent subagent / Non-independent review (state why)                                                           |
+| Item             | Details                                                                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Under review     | `storage/ui-workflow/<feature>/design.md` (for the acceptance review, add: the page implementation and screenshots)                                                        |
+| Reviewed against | Original references and their modes, system/page records, authorized exceptions, [`ui-guidelines.md`](../ui-guidelines.md), design.md (for acceptance, add the run record) |
+| Review method    | Independent subagent / Non-independent review (state why)                                                                                                                  |
 
 ## Issues
 
@@ -17,17 +17,33 @@ Types:
 - Design review: Blocking / Suggestion
 - Acceptance review: B Blocking / D Design mismatch / G Guideline violation / S Suggestion
 
-For Basis, give a guideline ID (such as T1.4), an acceptance criterion ID (such as D3) or the run record.
+For Basis, give an original reference requirement (V ID), its authorized exception when relevant, a guideline ID (such as T1.4), an acceptance criterion ID (such as D3) or the run record.
 
-Verdict: Pass / Fail
+Verdict: Pass / Fail / Incomplete (required evidence unavailable)
 
 ## Review checklist
 
-One row for every line of the "Review checklist" at the end of [`ui-guidelines.md`](../ui-guidelines.md), in its order, with none left out, in a non-independent review too. A line that fails is also an issue above; a line the page cannot trigger says why it does not apply.
+One row for every line of the "Review checklist" at the end of [`ui-guidelines.md`](../ui-guidelines.md), in its order, with none left out, in a non-independent review too. Apply the design contract first and attach authorization and replacement evidence for any overridden default. Include relevant shared acceptance checks and original reference comparisons. A line that fails is also an issue above; a line the page cannot trigger says why it does not apply.
 
-| Checklist item                                | Result                                        | Evidence                                              |
-| --------------------------------------------- | --------------------------------------------- | ----------------------------------------------------- |
-| Page template and overlay choices (T1–T5, I1) | Pass / Fail (issue ID) / Not applicable (why) | Design section, screenshot file name or code location |
+| Checklist item                                | Result                                            | Evidence                                              |
+| --------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------- |
+| Page template and overlay choices (T1–T5, I1) | Pass / Fail / Not verified / Not applicable (why) | Design section, screenshot file name or code location |
+
+## Component source review
+
+| Interaction / wrapper | Actual source and underlying primitive | Matches selection order?   | Custom/native justification and behavior evidence |
+| --------------------- | -------------------------------------- | -------------------------- | ------------------------------------------------- |
+|                       |                                        | Pass / Fail / Not verified |                                                   |
+
+At design review, verify the planned sources and custom gaps. At acceptance, inspect the actual imports and wrapper source, record the checker scope/result, and review its exceptions and undetected cases. Do not equate an uppercase component name or a clean scan with shadcn reuse.
+
+## Reference comparison
+
+| Reference requirement | Mode and viewport/state | Result                     | Evidence or authorized difference |
+| --------------------- | ----------------------- | -------------------------- | --------------------------------- |
+| V1                    |                         | Pass / Fail / Not verified |                                   |
+
+If no reference was supplied, say so. A missing original reference or browser/host session is a validation limit, not a pass.
 
 ## Acceptance criteria check (filled in for the acceptance review)
 

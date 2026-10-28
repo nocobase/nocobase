@@ -37,6 +37,10 @@ test('stacked v3 targets receive PR checks without widening direct-branch trigge
     '*/v3-*',
   ]);
   assert.deepEqual(triggerBranches(guard, 'pull_request'), ['v3-main']);
+  assert.deepEqual(
+    triggerBranches(workflow('pr-description'), 'pull_request'),
+    ['v3-main', 'v3-develop', '*/v3-*'],
+  );
 
   const workflowPattern = '*/v3-*';
   const botPattern = /^[^/]+\/v3-[^/]+$/u;

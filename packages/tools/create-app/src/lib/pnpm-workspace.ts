@@ -83,6 +83,13 @@ export const WORKSPACE_SETTINGS: readonly {
 }[] = [
   {
     comment: [
+      '# The application stays at the workspace root; reusable internal packages live below packages/.',
+    ],
+    key: 'packages',
+    value: "['packages/*']",
+  },
+  {
+    comment: [
       '# Use msgpackr without its optional native accelerator or platform binary packages.',
     ],
     key: 'ignoredOptionalDependencies',

@@ -29,6 +29,9 @@ export {
   type ResolvedRef,
 } from './page-context.js';
 export type {
+  ConversationLinkKind,
+  ConversationLinks,
+  ConversationLinkTarget,
   ConversationNews,
   ConversationRef,
   ConversationRuleLines,

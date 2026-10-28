@@ -1,5 +1,11 @@
 # @nocobase/app-installer
 
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- 7cb71ea: Wait for timed-out or interrupted command process groups to stop before returning, retaining forced termination for descendants that ignore SIGTERM and distinguishing zombies from processes that can still write.
+
 ## 0.1.0-beta.9
 
 ### Patch Changes

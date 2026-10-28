@@ -1,5 +1,84 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.14
+
+### Patch Changes
+
+- 22748f7: Describe the fields of the indexing settings, rebuild and retry requests, so the API document and the CLI flags derived from it say what each one is.
+- Updated dependencies [451bf75]
+- Updated dependencies [22748f7]
+- Updated dependencies [5782713]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [cc0b521]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-plugin-agents@1.0.0-beta.28
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
+## 0.1.0-beta.13
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+- Updated dependencies [05f800a]
+  - @nocobase/app-plugin-agents@1.0.0-beta.27
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
+## 0.1.0-beta.12
+
+### Minor Changes
+
+- 2e5823a: Add permission-filtered all-space Knowledge search and person-only search/read CLI commands for native OnlineAgent credentials. Register optional global Knowledge instructions with on-demand and always retrieval policies through existing context variables, preserving session snapshots and scoped credential restrictions.
+
+  Export the existing native credential type for optional plugin integration.
+
+- 354db9b: Allow applications to disable knowledge proposals while retaining authorized direct editing and historical records. Remove disabled proposal routes, reject proposal and ticket creation in the service, and hide proposal navigation and creation controls using the capabilities endpoint.
+
+### Patch Changes
+
+- 2e5823a: Use the OpenAI-compatible SDK for Alibaba Qwen embeddings while preserving its existing chat SDK, service base URL, credentials, and dimension selection. Version Alibaba Knowledge embedding identities so generations created with the former native transport require an explicit rebuild instead of silently reusing vectors across the protocol change.
+- 2e5823a: Allow Knowledge indexing to use a manually entered fixed Embedding model ID as well as catalog suggestions, including services with empty model lists. Keep unlisted models behind an explicit server-only gateway opt-in, preserve service and model-kind checks, and learn unknown vector dimensions from indexing responses without probing on edit or save. Rename the Chinese settings title and remove duplicate dialog close controls and standalone configuration headings.
+
+  Show deployment guidance whenever no indexing instances are configured, including when earlier settings remain saved. Preserve those settings without presenting a stale form or old progress as configurable.
+
+  Simplify zero-instance guidance and localize a clearer Agent configuration prompt: inspect supported indexing types, let the user choose, and edit knowledge.indexing in the actual config.yaml or existing config.yml without assuming a vector backend.
+
+- 2e5823a: Add Knowledge-owned global indexing with durable generations, transactional document work, authorized vector retrieval, and sqlite-vec and pgvector backends. Keep database connections and index storage in deployment configuration, support safe rebuild and recovery, and preserve text search when indexing is unavailable.
+- 2e5823a: Add shared dialog and standalone Knowledge indexing settings with type-owned forms, on-demand Embedding catalogs, per-instance drafts and zero-configuration guidance. Move the pgvector generation table prefix into deployment configuration and prevent browser options from overriding it. Add a permission-protected Examples settings page and synchronize deployment examples in both templates. Separate index enablement into a dedicated switch, retain rendered forms and drafts across toggles, show document progress with hover-only failure counts, and place rebuild controls in the footer. Display the selected instance type beside its selector. Keep settings fields, progress and footer vertically stacked in both standalone and dialog layouts. Remove duplicate standalone back navigation and scope labels. Make indexing entry placement application-owned: add a generic title-action slot and remove built-in page/back navigation from the reusable settings components. Add an Examples Knowledge indexing menu immediately below Knowledge.
+
+  Explain the sqlite-vec and pgvector vector database options in two setup cards, followed by concrete configuration-file, restart and enablement steps. Provide a separate localized Agent prompt that checks available types, waits for the user’s choice and confirms configuration changes and paid operations.
+
+- 3eb340c: Hide Search test and Section settings when no knowledge indexer is registered, expose semantic search availability, and reject unavailable semantic tool requests while keeping keyword search available.
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [671e1b3]
+- Updated dependencies [e5d61bd]
+- Updated dependencies [7fbcda4]
+- Updated dependencies [7fbcda4]
+  - @nocobase/app-plugin-agents@1.0.0-beta.25
+
 ## 0.1.0-beta.11
 
 ### Patch Changes

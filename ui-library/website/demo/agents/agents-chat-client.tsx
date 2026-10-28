@@ -1631,6 +1631,19 @@ export const useConversationActions: typeof Chat.useConversationActions =
         execution: { status: 'idle', outcome: 'cancelled' },
       }));
     }),
+    remove: mutation<string>((id) => {
+      stopReplies.get(id)?.();
+      void chats.get(id)?.stop();
+      chats.delete(id);
+      demoWatermarks.delete(id);
+      update((current) => ({
+        ...current,
+        conversations: current.conversations.filter((item) => item.id !== id),
+        messages: Object.fromEntries(
+          Object.entries(current.messages).filter(([key]) => key !== id),
+        ),
+      }));
+    }),
     markRead: (id: string) => {
       if (store.conversations.find((item) => item.id === id)?.read === false)
         patchConversation(id, (item) => ({ ...item, read: true }));

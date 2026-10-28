@@ -40,6 +40,11 @@
     "collapsed": true
   },
   {
+    "type": "file",
+    "name": "task-center",
+    "label": "待办中心"
+  },
+  {
     "type": "dir",
     "name": "file",
     "label": "文件",

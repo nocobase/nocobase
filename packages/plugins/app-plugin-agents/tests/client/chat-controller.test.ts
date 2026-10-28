@@ -64,6 +64,60 @@ it.each(['Answer', 'Over-redacted preview'])(
     ).toEqual(f.state.detail);
   },
 );
+it('keeps a live runner response while reconciling an older saved snapshot', async () => {
+  const f = fixture(),
+    output = f.output();
+  f.state.detail = {
+    ...f.state.detail,
+    mode: 'runner',
+    execution: { status: 'running' },
+  };
+  f.state.messages = [
+    {
+      id: 'answer',
+      role: 'assistant',
+      metadata: { ...metadata, seq: 2 },
+      parts: [{ type: 'text', text: 'Opening', state: 'done' }],
+    },
+  ];
+  await f.controller.loadHistory('c1');
+  f.controller.receive('c1', f.state.detail);
+  await vi.waitFor(() => expect(output.attached).toBe(true));
+  output.emit({
+    type: 'start',
+    messageId: 'answer',
+    messageMetadata: { ...metadata, seq: 2 },
+  });
+  output.emit({ type: 'text-start', id: 'part' });
+  output.emit({ type: 'text-delta', id: 'part', delta: 'Live answer' });
+  await vi.waitFor(() =>
+    expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+      'Live answer',
+    ),
+  );
+  await f.controller.refresh('c1');
+  expect(f.controller.chat('c1').status).toBe('streaming');
+  expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+    'Live answer',
+  );
+  f.state.messages = [
+    {
+      ...f.state.messages[0],
+      metadata: { ...metadata, seq: 2, revision: 1 },
+      parts: [{ type: 'text', text: 'Saved answer', state: 'done' }],
+    },
+  ];
+  f.state.detail = { ...f.state.detail, execution: { status: 'idle' } };
+  output.emit({ type: 'text-end', id: 'part' });
+  output.emit({ type: 'finish' });
+  output.close();
+  await vi.waitFor(() => expect(f.controller.chat('c1').status).toBe('ready'));
+  await f.controller.refresh('c1');
+  expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+    'Saved answer',
+  );
+});
+
 it('appends SDK deltas in place and protects the active message against an older history snapshot', async () => {
   const f = fixture(),
     output = f.output();
@@ -134,13 +188,13 @@ it('retains interrupted output and explicitly resumes through SDK without resend
   expect(
     f.stream.mock.calls.map((call) => (call[0] as { method: string }).method),
   ).toEqual(['GET', 'GET']);
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')?.error).toBeUndefined();
 });
 it('keeps business occupancy after SDK finish and after missing transport, including approval waiting', async () => {
   const f = fixture();
   await f.controller.resume('c1');
   expect(f.controller.state('c1')?.status).toBe('ready');
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')?.error).toBeUndefined();
   f.state.detail = {
     ...f.state.detail,
     execution: { status: 'running', waitingApproval: true },
@@ -190,6 +244,46 @@ it('does not let a stale idle detail overwrite a newer command or clear an inter
     f.state.detail,
   );
 });
+it.each(['detail', 'reconcile'])(
+  'reads new messages when a newer detail query supersedes refresh during %s',
+  async (phase) => {
+    const f = fixture();
+    f.state.detail = { ...f.state.detail, execution: { status: 'idle' } };
+    f.state.messages = [uiMessage(1)];
+    await f.controller.loadHistory('c1');
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const held =
+      phase === 'detail'
+        ? vi.spyOn(f.api, 'conversation').mockImplementationOnce(async () => {
+            await gate;
+            return f.state.detail;
+          })
+        : vi.spyOn(f.api, 'messages').mockImplementationOnce(async () => {
+            await gate;
+            return f.api.messages('c1', { ids: 'm1' });
+          });
+    const refreshing = f.controller.refresh('c1');
+    await vi.waitFor(() => expect(held).toHaveBeenCalledOnce());
+    // Ordinary detail queries advance the version without requesting messages.
+    const current = f.controller.detailRequest('c1');
+    const newer = { ...f.state.detail, title: 'Newer detail' };
+    expect(current()).toBe(true);
+    agentsQueryClient().setQueryData(chatKeys.conversation('c1'), newer);
+    f.state.messages.push(uiMessage(2, 'system', 'Task completed'));
+    release();
+    await refreshing;
+    expect(f.controller.chat('c1').messages.map((m) => m.id)).toEqual([
+      'm1',
+      'm2',
+    ]);
+    expect(
+      agentsQueryClient().getQueryData(chatKeys.conversation('c1')),
+    ).toEqual(newer);
+  },
+);
 it.each([false, true])(
   'keeps Stop pending until terminal confirmation and clears identity lifetimes (historical=%s)',
   async (historical) => {
@@ -518,7 +612,8 @@ it('retains an interrupted unsaved tool input when shared recovery has no stream
   expect(f.controller.chat('c1').messages[0].parts[0].type).toBe(
     'tool-business',
   );
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')).toMatchObject({ recovery: 'history' });
+  expect(f.controller.state('c1')?.error).toBeUndefined();
   expect(
     f.stream.mock.calls.map((call) => (call[0] as { method: string }).method),
   ).toEqual(['GET', 'GET']);

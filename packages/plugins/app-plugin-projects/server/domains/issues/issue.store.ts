@@ -446,12 +446,14 @@ export async function findIssues(
 export async function liveChildren(
   conn: DatabaseConnection,
   parentIds: readonly string[],
+  readableIds?: ReadonlySet<string>,
 ): Promise<Issue[]> {
   if (parentIds.length === 0) return [];
   const rows = await issues(conn).findMany({
     filter: (f) =>
       f.and([
         oneOf(f, 'parentIssueId', [...new Set(parentIds)]),
+        ...(readableIds ? [oneOf(f, 'id', [...readableIds])] : []),
         f.date('deletedAt').empty(),
       ]),
     select: (select) => select.fields(...FIELDS),
@@ -464,11 +466,13 @@ export async function liveChildren(
 export async function unfinishedStagedChildren(
   conn: DatabaseConnection,
   finishedKeys: readonly string[],
+  parentIds?: readonly string[],
 ): Promise<Issue[]> {
   const rows = await issues(conn).findMany({
     filter: (f) =>
       f.and([
         f.string('parentIssueId').ne(null),
+        ...(parentIds ? [oneOf(f, 'parentIssueId', parentIds)] : []),
         f.number('stage').ne(null),
         f.date('deletedAt').empty(),
         ...finishedKeys.map((key) => f.string('statusKey').ne(key)),

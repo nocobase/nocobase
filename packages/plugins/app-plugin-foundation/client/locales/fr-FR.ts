@@ -6,6 +6,7 @@ const frFR: FoundationResource = {
     foundation: 'Socle de l’application',
   },
   page: {
+    identified: 'Identifiés : {{value}}',
     counted: 'Comptabilisé : {{value}}',
     partial: 'Certaines données attendent une mise à jour',
     title: 'Socle de l’application',
@@ -38,6 +39,7 @@ const frFR: FoundationResource = {
     successPath: 'Requête API réussie : {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Base de données disponible',
+      authorizationIdentityResolved: 'Identité d’autorisation résolue',
       authenticated: 'Authentification acceptée',
       bodyWithinLimit: 'Corps de la requête dans la limite de taille',
       validInput: 'Validation des entrées réussie',
@@ -133,9 +135,9 @@ const frFR: FoundationResource = {
     collectionResults: '{{count}} collections correspondantes',
     previousPage: 'Précédent',
     nextPage: 'Suivant',
-    countRecords: 'Compter les enregistrements métier',
+    countRecords: 'Compter les enregistrements',
     recordsOnDemand:
-      'Les enregistrements métier sont comptés à la demande. Les grandes bases de données peuvent prendre plus de temps.',
+      'Compte à la demande les tables identifiées, hors tables système connues. Les grandes bases peuvent prendre plus de temps.',
     recordsCountedAt: 'Enregistrements comptés {{time}}',
 
     businessModules: 'Modules métier associés',
@@ -289,12 +291,12 @@ const frFR: FoundationResource = {
     fileCollectionsPartial:
       'Collections de fichiers comptabilisées : {{count}} : {{names}}.',
     collectionOwnershipUnknown:
-      'Une extension active non classée a été trouvée. L’appartenance des collections est incertaine ; les chiffres métier sont masqués.',
-    noApplicationCollections:
-      'La couche de données fonctionne, sans collection propre à l’application pour le moment.',
+      'Les tables système NocoBase connues sont exclues. L’appartenance des autres tables reste à identifier ; ces observations ne constituent pas un total métier ou de toute l’application.',
+    noApplicationCollections: 'Aucune autre table de données identifiée.',
     applicationCollectionsPreview:
-      'Cette application possède {{count}} collections, dont {{names}}.',
-    applicationCollections: '{{count}} collections propres : {{names}}.',
+      '{{count}} tables de données identifiées, dont {{names}}.',
+    applicationCollections:
+      '{{count}} tables de données identifiées : {{names}}.',
     relations: '{{count}} relations les relient.',
     fileCollections: '{{count}} collections de fichiers : {{names}}.',
     accounts: '{{count}} comptes utilisent l’authentification NocoBase.',
@@ -342,8 +344,8 @@ const frFR: FoundationResource = {
     caching: 'Cache',
   },
   metrics: {
-    businessRecords: 'enregistrements métier',
-    businessCollections: 'collections métier',
+    businessRecords: 'enregistrements',
+    businessCollections: 'tables de données',
     views: 'vues',
     fields: 'champs',
     relations: 'relations',

@@ -6,6 +6,7 @@ const jaJP: FoundationResource = {
     foundation: 'アプリ基盤',
   },
   page: {
+    identified: '識別済み {{value}}',
     counted: '集計済み {{value}}',
     partial: '一部のデータは更新待ちです',
     title: 'アプリ基盤',
@@ -36,6 +37,7 @@ const jaJP: FoundationResource = {
     successPath: '成功する API リクエスト：{{method}} {{path}}',
     conditions: {
       databaseAvailable: 'データベースが利用可能',
+      authorizationIdentityResolved: '認可の識別情報を解決済み',
       authenticated: '認証が成功',
       bodyWithinLimit: 'リクエスト本文がサイズ制限内',
       validInput: '入力検証が成功',
@@ -129,9 +131,9 @@ const jaJP: FoundationResource = {
     collectionResults: '一致するコレクション：{{count}}',
     previousPage: '前へ',
     nextPage: '次へ',
-    countRecords: '業務レコード数を集計',
+    countRecords: 'レコードを集計',
     recordsOnDemand:
-      '業務レコード数は必要時に集計します。大規模なデータベースでは時間がかかる場合があります。',
+      '既知のシステムテーブルを除く識別済みテーブルを必要時に集計します。大規模なデータベースでは時間がかかる場合があります。',
     recordsCountedAt: 'レコード集計日時：{{time}}',
 
     businessModules: '関連する業務モジュール',
@@ -277,13 +279,12 @@ const jaJP: FoundationResource = {
     fileCollectionsPartial:
       '集計済みのファイルコレクション {{count}} 件：{{names}}。',
     collectionOwnershipUnknown:
-      '未分類の実行時拡張があるためコレクションの所有元が不明です。業務統計は表示しません。',
-    noApplicationCollections:
-      'データ基盤は稼働中ですがアプリ固有のコレクションはまだありません。',
+      '既知の NocoBase システムテーブルは除外されます。その他のテーブルの所有元は未確認です。実際の読み取り結果であり、業務専用またはアプリ全体の合計ではありません。',
+    noApplicationCollections: '追加のデータテーブルはまだ識別されていません。',
     applicationCollectionsPreview:
-      'このアプリには {{count}} 個のコレクションがあります。例：{{names}}。',
+      '{{count}} 個のデータテーブルを識別済み（{{names}} など）。',
     applicationCollections:
-      'アプリ固有のコレクション {{count}} 件：{{names}}。',
+      '{{count}} 個のデータテーブルを識別済み：{{names}}。',
     relations: '関連 {{count}} 件。',
     fileCollections: 'ファイル用コレクション {{count}} 件：{{names}}。',
     accounts: 'NocoBase 認証でログインするアカウント {{count}} 件。',
@@ -329,8 +330,8 @@ const jaJP: FoundationResource = {
     caching: 'キャッシュ',
   },
   metrics: {
-    businessRecords: '業務レコード',
-    businessCollections: '業務コレクション',
+    businessRecords: 'レコード',
+    businessCollections: 'データテーブル',
     views: 'ビュー',
     fields: 'フィールド',
     relations: '関連',

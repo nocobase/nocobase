@@ -1,5 +1,40 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+- Updated dependencies [7770b46]
+- Updated dependencies [7770b46]
+  - @nocobase/app-cli@1.0.0-beta.28
+
+## 0.1.0-beta.8
+
+### Patch Changes
+
+- d61fff2: Recognize proven official authorization identity continuation and pure local documentation factories when collecting API dependencies. Keep unknown extensions, authority escapes and terminating paths conservative. Add the identity-resolution success condition to version-1 manifests; builders and readers must be upgraded and rolled back together because earlier readers reject this condition.
+
+## 0.1.0-beta.7
+
+### Patch Changes
+
+- 9de4995: Keep observed statistics visible when registered extensions await recognition. Show identified tables and counted results without asserting business ownership or exhaustive coverage, omit metrics without a reliable value, and preserve real zero, dated history and genuine read failures.
+
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- b51bc80: Reuse validated compiled page associations within each application instance while refreshing dynamic evidence normally. Show a lightweight initial collecting placeholder, retain known counts during refresh, and group the Examples Foundation menu with system management.
+- b51bc80: Preserve proven normal-success API dependencies with explicit database and framework middleware conditions in Foundation details and source-free builds. Retain unknown and terminating path barriers, and cover the Examples Articles build and request rejection behavior.
+- b51bc80: Verify resolved import provenance before applying framework success-path contracts, keeping local overrides and unresolved local aliases from creating false capability associations.
+- b51bc80: Keep reliable Foundation observations with their original dates when reads fail, show pending information instead of unsupported negative conclusions, and distinguish partial file statistics from complete totals. Use the top Refresh button for capability updates and retain page retry when the initial overview request fails.
+
 ## 0.1.0-beta.5
 
 ### Patch Changes

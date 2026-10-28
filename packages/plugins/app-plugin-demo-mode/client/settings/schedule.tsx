@@ -28,7 +28,7 @@ export function ScheduleCard({
       </CardHeader>
       <CardContent className='flex flex-col gap-4'>
         {schedule ? (
-          <dl className='grid gap-4 rounded-lg border p-4 sm:grid-cols-2'>
+          <dl className='grid gap-4 rounded-lg border p-4 sm:grid-cols-3'>
             <div className='flex flex-col gap-2'>
               <dt className='text-sm font-medium'>{t('schedule.time')}</dt>
               <dd className='text-sm tabular-nums'>
@@ -39,7 +39,7 @@ export function ScheduleCard({
               <dt className='text-sm font-medium'>{t('schedule.language')}</dt>
               <dd className='text-sm'>{languageName(schedule.language)}</dd>
             </div>
-            <div className='flex flex-col gap-2 sm:col-span-2'>
+            <div className='flex flex-col gap-2'>
               <dt className='text-sm font-medium'>{t('schedule.timezone')}</dt>
               <dd className='text-sm'>{schedule.timezone}</dd>
             </div>

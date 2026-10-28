@@ -25,6 +25,7 @@ const idID: LocaleResource<typeof enUS> = {
   },
   list: {
     panelEmpty: 'Belum ada percakapan',
+    fold: 'Sembunyikan sesi',
     expand: 'Tampilkan sesi',
     label: 'Sesi',
     title: 'Agen saya',

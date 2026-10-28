@@ -532,8 +532,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: '初代管理者',
-      expires:
-        '最初の展開用に生成されます。今すぐ保存してください。{{hours}} h で削除されます。',
       kept: '最初の展開用に生成されます。アプリが削除されるまで保持されます。',
       username: 'ユーザー名',
       email: 'メール',
@@ -780,6 +778,11 @@ const jaJP: LocaleResource<typeof enUS> = {
       name: '名前',
       driver: 'ドライバー',
       runsOn: 'で実行します',
+      appCount: 'アプリ数',
+      purpose: '用途',
+      purposeHint:
+        '各環境の用途は一つです：プルリクエストのプレビュー、またはリリースのテスト。',
+      purposes: { preview: 'プレビュー', test: 'テスト' },
       policy: 'ポリシー',
       publicUrl: '公開 URL パターン',
       config: '設定(JSON)',

@@ -33,7 +33,13 @@ export type DemoSettingsComponents = {
   readonly [K in keyof Primitives]?: ComponentType<
     ComponentProps<Primitives[K]>
   >;
-} & { readonly Header?: ComponentType<DemoSettingsHeaderProps> };
+} & {
+  readonly Header?: ComponentType<DemoSettingsHeaderProps>;
+  /** @deprecated The read-only page no longer renders card actions. */
+  readonly CardAction?: ComponentType<ComponentProps<'div'>>;
+  /** @deprecated The read-only page no longer renders card footers. */
+  readonly CardFooter?: ComponentType<ComponentProps<'div'>>;
+};
 
 export function Button(
   props: ComponentProps<Primitives['Button']>,
@@ -73,27 +79,11 @@ export function CardDescription(
   return <Component {...props} />;
 }
 
-export function CardAction(
-  props: ComponentProps<Primitives['CardAction']>,
-): ReactElement {
-  const { components } = useContext(DemoSettingsContext);
-  const Component = components?.CardAction ?? defaults.CardAction;
-  return <Component {...props} />;
-}
-
 export function CardContent(
   props: ComponentProps<Primitives['CardContent']>,
 ): ReactElement {
   const { components } = useContext(DemoSettingsContext);
   const Component = components?.CardContent ?? defaults.CardContent;
-  return <Component {...props} />;
-}
-
-export function CardFooter(
-  props: ComponentProps<Primitives['CardFooter']>,
-): ReactElement {
-  const { components } = useContext(DemoSettingsContext);
-  const Component = components?.CardFooter ?? defaults.CardFooter;
   return <Component {...props} />;
 }
 

@@ -294,7 +294,8 @@ it.each(['codex', 'claude'] as const)(
       (segment) => segment.message.role === 'assistant',
     );
     expect(answers).toHaveLength(1);
-    expect(answers[0].partIndexes).toEqual([0, 1]);
+    // Its two blocks, then the turn's footer.
+    expect(answers[0].partIndexes).toEqual([0, 1, 2]);
     const savedPage = await reloaded.messages!({ limit: 1 });
     expect(
       chatMessageSegments(savedPage.items).filter(

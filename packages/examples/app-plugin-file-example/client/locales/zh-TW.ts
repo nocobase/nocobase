@@ -3,6 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
+  retrySubmission: '重試原操作',
+
   officePreviewTitle: '本地辦公室預覽',
   officePreviewDescription:
     '上傳下面的 DOCX、XLSX 或 PPTX 檔案，然後選擇「預覽」。檔案以瀏覽器呈現，無需 Office Online 或外部預覽服務。訂單附件使用相同的預覽。',

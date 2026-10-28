@@ -536,8 +536,6 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Người quản trị đầu tiên',
-      expires:
-        'Được tạo cho lần triển khai đầu tiên. Hãy lưu ngay: thông tin này sẽ bị xóa sau {{hours}} giờ.',
       kept: 'Được tạo cho lần triển khai đầu tiên; nó được giữ cho đến khi ứng dụng bị xóa.',
       username: 'Tên người dùng',
       email: 'Email',
@@ -792,6 +790,11 @@ const viVN: LocaleResource<typeof enUS> = {
       name: 'Tên',
       driver: 'Lái xe',
       runsOn: 'Chạy tiếp',
+      appCount: 'Ứng dụng',
+      purpose: 'Mục đích',
+      purposeHint:
+        'Mỗi môi trường chỉ dùng cho một việc: xem trước pull request, hoặc kiểm thử bản phát hành.',
+      purposes: { preview: 'Xem trước', test: 'Kiểm thử' },
       policy: 'Chính sách',
       publicUrl: 'Mẫu URL công khai',
       config: 'Cài đặt (JSON)',

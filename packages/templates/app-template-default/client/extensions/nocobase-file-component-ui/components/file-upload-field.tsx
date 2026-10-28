@@ -10,10 +10,10 @@ import {
   type ReactElement,
 } from 'react';
 
-import type { FileRecord, FileUploadFieldProps } from '../types';
+import type { FileRecord, FileUploadFieldProps } from '../types.js';
 import { Button } from '#components/ui/button';
 import { Spinner } from '#components/ui/spinner';
-import { FileThumbnail } from './file-thumbnail';
+import { FileThumbnail } from './file-thumbnail.js';
 
 type UploadItem = {
   readonly key: string;
@@ -40,7 +40,7 @@ function accepts(file: File, rules: readonly string[]): boolean {
 export function FileUploadField(
   inputProps: FileUploadFieldProps,
 ): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const {
     repository,
     value,
@@ -69,12 +69,12 @@ export function FileUploadField(
   const chooseLabel =
     labels?.choose ??
     (multiple
-      ? t('files.chooseMany', { defaultValue: 'Choose files' })
-      : t('files.chooseOne', { defaultValue: 'Choose file' }));
+      ? t('fileUi.files.chooseMany', { defaultValue: 'Choose files' })
+      : t('fileUi.files.chooseOne', { defaultValue: 'Choose file' }));
   const removeLabel =
-    labels?.remove ?? t('files.remove', { defaultValue: 'Remove' });
+    labels?.remove ?? t('fileUi.files.remove', { defaultValue: 'Remove' });
   const retryLabel =
-    labels?.retry ?? t('files.retry', { defaultValue: 'Retry' });
+    labels?.retry ?? t('fileUi.files.retry', { defaultValue: 'Retry' });
 
   useEffect(() => {
     valueRef.current = value;
@@ -170,7 +170,7 @@ export function FileUploadField(
     if (files.length + (multiple ? value.length : 0) + items.length > maximum) {
       onError?.(
         new Error(
-          t('fileLimitReached', {
+          t('fileUi.fileLimitReached', {
             defaultValue: 'The maximum number of files has been reached.',
           }),
         ),
@@ -181,7 +181,7 @@ export function FileUploadField(
       if (maxSize !== undefined && file.size > maxSize) {
         onError?.(
           new Error(
-            t('fileTooLarge', {
+            t('fileUi.fileTooLarge', {
               defaultValue: 'File exceeds the maximum size.',
             }),
           ),
@@ -191,7 +191,7 @@ export function FileUploadField(
       if (!accepts(file, accept)) {
         onError?.(
           new Error(
-            t('fileTypeNotAllowed', {
+            t('fileUi.fileTypeNotAllowed', {
               defaultValue: 'File type is not allowed.',
             }),
           ),
@@ -218,7 +218,7 @@ export function FileUploadField(
           error instanceof Error
             ? error
             : new Error(
-                t('removalFailed', {
+                t('fileUi.removalFailed', {
                   defaultValue: 'File removal failed.',
                 }),
               ),
@@ -272,7 +272,7 @@ export function FileUploadField(
               {record.filename}
             </div>
             <div className='text-xs text-muted-foreground'>
-              {t('files.done', { defaultValue: 'Done' })}
+              {t('fileUi.files.done', { defaultValue: 'Done' })}
             </div>
             <Button
               type='button'
@@ -291,7 +291,7 @@ export function FileUploadField(
             <div className='flex h-20 items-center justify-center overflow-hidden rounded-sm bg-muted/30'>
               {item.status === 'uploading' ? (
                 <Spinner
-                  aria-label={t('files.uploading', {
+                  aria-label={t('fileUi.files.uploading', {
                     defaultValue: 'Uploading',
                   })}
                 />
@@ -309,10 +309,10 @@ export function FileUploadField(
                         defaultValue: item.error.message,
                       })
                     : undefined) ??
-                  t('files.failed', { defaultValue: 'Failed' }))
+                  t('fileUi.files.failed', { defaultValue: 'Failed' }))
                 : item.status === 'uploading'
-                  ? t('files.uploading', { defaultValue: 'Uploading' })
-                  : t('files.pending', { defaultValue: 'Pending' })}
+                  ? t('fileUi.files.uploading', { defaultValue: 'Uploading' })
+                  : t('fileUi.files.pending', { defaultValue: 'Pending' })}
             </div>
             <div className='mt-2 flex gap-1'>
               {item.status === 'error' ? (
@@ -331,7 +331,7 @@ export function FileUploadField(
                 type='button'
                 size='icon'
                 variant='ghost'
-                aria-label={t('files.cancelFile', {
+                aria-label={t('fileUi.files.cancelFile', {
                   filename: item.file.name,
                   defaultValue: `Cancel ${item.file.name}`,
                 })}
@@ -373,11 +373,11 @@ export function FileUploadField(
         {[
           ...value.map(
             (record) =>
-              `${record.filename}: ${t('files.done', { defaultValue: 'done' })}`,
+              `${record.filename}: ${t('fileUi.files.done', { defaultValue: 'done' })}`,
           ),
           ...items.map(
             (item) =>
-              `${item.file.name}: ${t(`files.status.${item.status}`, { defaultValue: item.status })}`,
+              `${item.file.name}: ${t(`fileUi.files.status.${item.status}`, { defaultValue: item.status })}`,
           ),
         ].join('. ')}
       </div>

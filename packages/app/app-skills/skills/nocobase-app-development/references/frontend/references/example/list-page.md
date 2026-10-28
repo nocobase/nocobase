@@ -1,6 +1,6 @@
 # List page: `index.tsx`
 
-Part of the [projects worked example](../example.md).
+Part of the [projects worked example](../example.md). For the runnable, continuously tested core, start with the [executable list and edit example](../executable-list-edit.md).
 
 **Depends on**: [delete dialog](delete-dialog.md), [status badge](../i18n.md#dynamic-keys), [session alert](session-expired-alert.md), [types](types.md), [search hook](url-search.md), [copy](copy.md); the `projects` route in [section 1 of `page.md`](../page.md#1-declare-the-route).
 
@@ -10,44 +10,36 @@ Part of the [projects worked example](../example.md).
 
 **Without detail and delete** (a list with only a create dialog), remove: the `actions` column and its row menu, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
 
-Rules: sections [3](../table.md#3-known-datatable-behavior), [5](../table.md#5-writing-search-and-filters-to-the-url), [6](../table.md#6-loading-the-list), [7](../table.md#7-the-four-list-states), [8](../table.md#8-column-definitions-and-row-actions) and [9](../table.md#9-child-routes-and-refreshing-the-list) of `table.md`.
+Use the application's existing authorization hook to resolve create permission before rendering the page-level action. Put the standard create action only in the page header, including for a successful empty query; never wire it through the empty state's `emptyAction`. Let `DataTable` render each built-in state with its matching icon and one short line, and keep clear, retry and sign-in actions in the existing toolbar or authentication flow. Follow [shared list feedback](../list-feedback.md) for the state and request contract.
+
+Rules: sections [3](../table.md#3-known-datatable-behavior), [5](../table.md#5-writing-search-and-filters-to-the-url), [6](../table.md#6-loading-the-list), [7](../table.md#7-list-feedback-states), [8](../table.md#8-column-definitions-and-row-actions) and [9](../table.md#9-child-routes-and-refreshing-the-list) of `table.md`.
+
+For deletion recovery and URL-backed pagination use the shared hooks in [delete and recover a list](../table.md#delete-and-recover-a-list), with the integration in [the server table example](server-table.md). The capped client example below corrects local pages only while the response is complete; use server pagination when the cap is exceeded. For complete client data pass the filtered row count to the same URL hook and keep `manualPagination` off. Child delete callbacks must use the shared `reload` from their parent, including on return from detail; batch callbacks refresh only after all outcomes settle.
 
 ```tsx
 // client/pages/projects/index.tsx
-import { ApiClientError, useApiClient } from '@nocobase/app-client';
+import { listStateShowsData, resolveListState } from '@nocobase/app-client';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
-  AlertCircleIcon,
-  FolderKanbanIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
   SearchIcon,
   Trash2Icon,
 } from 'lucide-react';
-import {
-  type ReactElement,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
 import { DataTable } from '#components/data-table';
 import { DataTableColumnHeader } from '#components/data-table/column-header';
 import { useUrlSearch } from '#hooks/use-url-search';
+import { useListData } from '#hooks/use-list-data';
+import { useListLocation } from '#hooks/use-list-location';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { SessionExpiredAlert } from '#components/session-expired-alert';
-import {
-  Alert,
-  AlertAction,
-  AlertDescription,
-  AlertTitle,
-} from '#components/ui/alert';
 import { Button } from '#components/ui/button';
 import {
   DropdownMenu,
@@ -57,14 +49,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '#components/ui/empty';
 import {
   InputGroup,
   InputGroupAddon,
@@ -78,7 +62,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#components/ui/select';
-import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 
 import { ProjectDeleteDialog } from './project-delete-dialog.js';
@@ -104,14 +87,17 @@ function isProjectStatus(value: string | null): value is ProjectStatus {
 export default function ProjectsPage(): ReactElement {
   const { t } = useTranslation();
   const { locale } = useLocale();
-  const api = useApiClient();
+  const createPermission = useCan({
+    resource: { type: 'project', id: '*' },
+    action: 'create',
+  });
   const location = useLocation();
   const searchRef = useRef<HTMLInputElement>(null);
 
   // The search term lives in the URL behind a search box that keeps its own text (url-search.md): typing, input
   // methods, back and forward all stay in step. The status filter is read from the same parameters.
   const { searchParams, search, text, inputProps, updateParams, clear } =
-    useUrlSearch();
+    useUrlSearch({ resetParams: ['page'] });
   const statusParam = searchParams.get('status');
   // Treat an unrecognized value as no filter.
   const status = isProjectStatus(statusParam) ? statusParam : undefined;
@@ -120,6 +106,7 @@ export default function ProjectsPage(): ReactElement {
     updateParams((params) => {
       if (value && value !== 'all') params.set('status', value);
       else params.delete('status');
+      params.delete('page');
     });
   }
 
@@ -132,59 +119,54 @@ export default function ProjectsPage(): ReactElement {
     searchRef.current?.focus();
   }
 
-  // Load the list. An effect must not call setState synchronously: store the result only in the request callbacks,
-  // and derive "loading" from whether the result belongs to the current request.
-  // Each reload() call increments the count, and the effect requests again.
-  const [reloadCount, reload] = useReducer((count: number) => count + 1, 0);
-  const requestKey = JSON.stringify([search, status ?? null, reloadCount]);
-  const [result, setResult] = useState<{
-    readonly key: string;
-    readonly rows?: Project[];
-    /** Whether this batch was fetched with filters; tells "empty" apart from "no results". */
-    readonly filtered?: boolean;
-    readonly error?: unknown;
-    /** The number of matching records on all pages; more than rows.length when the page cap cut the list. */
-    readonly total?: number;
-  }>();
-
-  useEffect(() => {
-    // Abort the request when the filters change or the component unmounts, so an old result never overwrites a new one.
-    const controller = new AbortController();
-    const key = JSON.stringify([search, status ?? null, reloadCount]);
-    api
-      .request<ProjectList>({
-        path: 'projects',
-        query: { q: search || undefined, status, pageSize: PAGE_SIZE },
-        signal: controller.signal,
-      })
-      .then(
-        ({ data, meta }) => {
-          if (!controller.signal.aborted) {
-            setResult({
-              key,
-              rows: data,
-              total: meta.total,
-              filtered: search !== '' || status !== undefined,
-            });
-          }
-        },
-        (error: unknown) => {
-          // Keep the previous batch on failure: after "Retry", show the old data and a small Spinner, not the skeleton.
-          if (!controller.signal.aborted) {
-            setResult((previous) => ({ ...previous, key, error }));
-          }
-        },
-      );
-    return () => controller.abort();
-  }, [api, search, status, reloadCount]);
-
-  const loading = result?.key !== requestKey;
-  const error = loading ? undefined : result?.error;
-  // While reloading, rows is still the previous batch.
-  const rows = result?.rows;
-  // Decide by the filters the displayed data was fetched with, not by the current filters:
-  // right after "Clear filters" is clicked, the screen still shows the old filtered result.
-  const rowsFiltered = result?.filtered ?? false;
+  const { active } = useListLocation();
+  const remote = new URLSearchParams({
+    q: search,
+    ...(status ? { status } : {}),
+    pageSize: String(PAGE_SIZE),
+  });
+  const requestPath = `projects?${remote}`;
+  const request = useListData<ProjectList>(requestPath, {
+    active,
+    keepPreviousData: true,
+  });
+  const hasCurrentResponse = request.path === requestPath;
+  const response = hasCurrentResponse ? request.data : undefined;
+  const responseRows = response?.data;
+  const result = response ? { total: response.meta.total } : undefined;
+  const loading = request.loading;
+  const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
+    sortColumns: ['name', 'updatedAt'],
+    // Only a complete filtered dataset supports local last-page recovery.
+    rowCount:
+      hasCurrentResponse &&
+      !loading &&
+      !request.error &&
+      responseRows?.length === result?.total
+        ? result?.total
+        : undefined,
+  });
+  const reload = request.reload;
+  const error = tableState.error ?? request.error;
+  const displayedQuery = new URLSearchParams(requestPath.split('?')[1]);
+  const rowsFiltered = Boolean(
+    displayedQuery.get('q') || displayedQuery.get('status'),
+  );
+  const listState = resolveListState(
+    { data: response, error, isPending: loading && !hasCurrentResponse },
+    responseRows?.length ?? 0,
+    rowsFiltered,
+  );
+  const rows = listStateShowsData(listState) ? responseRows : undefined;
+  const canShowCreate =
+    createPermission.can &&
+    !createPermission.isPending &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
 
   // After a record is deleted in the drawer, its row and the link that opened the drawer disappear once the list refreshes:
   // wait for the refresh to finish, then move focus to the search box (guideline A6).
@@ -350,92 +332,28 @@ export default function ProjectsPage(): ReactElement {
     [collator, dateFormat, location.search, t],
   );
 
-  // Check in the order "failed → first load → empty → data or no results".
-  let content: ReactElement;
-  if (error instanceof ApiClientError && error.status === 401) {
-    // The session ended; signing in again is the only way forward (guideline S4).
-    content = <SessionExpiredAlert />;
-  } else if (error) {
-    // Retrying cannot succeed without permission, so offer no "Retry" (guideline S4).
-    const forbidden = error instanceof ApiClientError && error.status === 403;
-    content = (
-      <Alert variant='destructive'>
-        <AlertCircleIcon />
-        <AlertTitle>{t('projects.error.title')}</AlertTitle>
-        <AlertDescription>
-          {forbidden
-            ? t('projects.error.forbidden')
-            : t('projects.error.requestFailed')}
-        </AlertDescription>
-        {forbidden ? null : (
-          <AlertAction>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => {
-                reload();
-                // This button disappears after a retry; move focus to the search box (guideline A6).
-                searchRef.current?.focus();
-              }}
-            >
-              {t('status.retry')}
-            </Button>
-          </AlertAction>
-        )}
-      </Alert>
-    );
-  } else if (rows === undefined) {
-    content = <TableSkeleton label={t('status.loading')} />;
-  } else if (rows.length === 0 && !rowsFiltered) {
-    content = (
-      <Empty className='min-h-48 border border-dashed'>
-        <EmptyHeader>
-          <EmptyMedia variant='icon'>
-            <FolderKanbanIcon />
-          </EmptyMedia>
-          <EmptyTitle>{t('projects.empty.title')}</EmptyTitle>
-          <EmptyDescription>{t('projects.empty.description')}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          {/* While the list is empty the primary action is only here; the page header leaves it out (guideline L7). */}
-          <Button
-            render={<Link to={{ pathname: 'new', search: location.search }} />}
-            nativeButton={false}
-          >
-            <PlusIcon data-icon='inline-start' />
-            {t('projects.create.action')}
-          </Button>
-        </EmptyContent>
-      </Empty>
-    );
-  } else {
-    const capped = (result?.total ?? 0) > rows.length;
-    content = (
-      <>
-        {/* Information, not an error (guideline A8): a plain paragraph, not an alert. */}
-        {capped ? (
-          <p className='text-sm text-muted-foreground'>
-            {t('projects.capNotice', { count: rows.length })}
-          </p>
-        ) : null}
-        <DataTable
-          columns={columns}
-          data={rows}
-          getRowId={(row) => row.id}
-          // No row selection on this page, so no "0 of N row(s) selected" summary.
-          showSelectedCount={false}
-          emptyMessage={
-            <div className='flex flex-col items-center gap-2'>
-              <span>{t('projects.empty.noResults')}</span>
-              <Button variant='link' size='sm' onClick={clearFilters}>
-                {t('projects.filters.clear')}
-              </Button>
-            </div>
-          }
-        />
-      </>
-    );
-  }
+  const capped = (result?.total ?? 0) > (rows?.length ?? 0);
+  const content = (
+    <>
+      {rows && capped ? (
+        <p className='text-sm text-muted-foreground'>
+          {t('projects.capNotice', { count: rows.length })}
+        </p>
+      ) : null}
+      <DataTable
+        {...tableState}
+        columns={columns}
+        data={rows ?? []}
+        getRowId={(row) => row.id}
+        listState={listState}
+        loading={loading}
+        onRetry={reload}
+        onClearFilters={clearFilters}
+        // No row selection on this page, so no "0 of N row(s) selected" summary.
+        showSelectedCount={false}
+      />
+    </>
+  );
 
   return (
     <PageContainer>
@@ -443,8 +361,7 @@ export default function ProjectsPage(): ReactElement {
         title={t('projects.title')}
         description={t('projects.description')}
         actions={
-          // Decided from loaded data: no action while loading, and none while the empty state carries it (guideline L7).
-          rows !== undefined && (rows.length > 0 || rowsFiltered) ? (
+          canShowCreate ? (
             <Button
               render={
                 <Link to={{ pathname: 'new', search: location.search }} />
@@ -490,19 +407,22 @@ export default function ProjectsPage(): ReactElement {
             </SelectGroup>
           </SelectContent>
         </Select>
-        {hasFilters ? (
+        {hasFilters && listState !== 'no-results' ? (
           <Button variant='ghost' onClick={clearFilters}>
             {t('projects.filters.clear')}
           </Button>
         ) : null}
-        {/* Reloading keeps the old data and shows only a small Spinner here. */}
-        {loading && rows !== undefined ? (
-          <Spinner className='text-muted-foreground' />
-        ) : null}
+        {/* Reserve space even when a fast refresh finishes before feedback appears. */}
+        <div className='ml-auto flex h-8 w-8 shrink-0 items-center justify-center'>
+          {active && loading && rows !== undefined ? (
+            <RefreshIndicator />
+          ) : null}
+        </div>
       </div>
       {content}
 
       <ProjectDeleteDialog
+        onUncertain={reload}
         open={deletion.open}
         onOpenChange={(open) =>
           setDeletion((current) => ({ ...current, open }))
@@ -521,25 +441,13 @@ export default function ProjectsPage(): ReactElement {
   );
 }
 
-function TableSkeleton({ label }: { readonly label: string }): ReactElement {
-  return (
-    <div
-      role='status'
-      aria-label={label}
-      className='overflow-hidden rounded-lg border'
-    >
-      {Array.from({ length: 5 }, (_, index) => (
-        <div
-          key={index}
-          className='flex items-center gap-4 border-b px-4 py-3 last:border-b-0'
-        >
-          <Skeleton className='h-4 w-40' />
-          <Skeleton className='h-4 w-24' />
-          <Skeleton className='h-5 w-16 rounded-full' />
-          <Skeleton className='ml-auto h-4 w-28' />
-        </div>
-      ))}
-    </div>
-  );
+function RefreshIndicator(): ReactElement | null {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    // Unmounting on completion or while covered cancels pending feedback.
+    const timer = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  return visible ? <Spinner className='text-muted-foreground' /> : null;
 }
 ```

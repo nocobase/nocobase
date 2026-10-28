@@ -29,7 +29,7 @@ When ordinary sample installation uses the same story, share an application-owne
 
 ## Visitor accounts
 
-Keep `accounts(language)` and `createAccount()` on one shared definition with explicit passwords satisfying the host's authentication policy. Use `createPermissionSet`, `createAccount` and `assignPermissionSet` for identities and grants. All enabled person accounts are publicly enterable while quick sign-in is enabled, including accounts created outside the dataset. The dataset list supplies optional role labels; quick sign-in does not read its passwords or require dataset ownership.
+Keep `accounts(language)` and `createAccount()` on one shared definition with explicit passwords satisfying the host's authentication policy. Use `createPermissionSet`, `createAccount` and `assignPermissionSet` for identities and grants. All enabled person accounts are publicly enterable while quick sign-in is enabled, including accounts created outside the dataset. The dataset list supplies optional role labels; missing labels fall back to localized names of directly assigned visible Permission Sets, preferring unrestricted administrator sets when assigned. Quick sign-in does not read dataset passwords or require dataset ownership.
 
 Create demo-owned Permission Sets rather than assigning a built-in administrator role, whose last active assignment may prevent account cleanup. Supply any `roleScopes` marked `requiredOnCreate`. Assign a Permission Set through either `permissionSets` or its role scope, not both.
 

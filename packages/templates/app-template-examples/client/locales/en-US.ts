@@ -1,3 +1,4 @@
+import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
 import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
@@ -5,6 +6,7 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  skillProjects: skillProjectsenUS,
   knowledge: {
     indexing: 'Knowledge indexing',
     title: 'Knowledge base',
@@ -327,9 +329,6 @@ const enUS = {
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {{page}} · {{total}} executions',
-    noDefinitions: 'No workflow definitions.',
-    noExecutions: 'No executions yet. Start a workflow from its example page.',
-    noResults: 'No executions for this workflow.',
     loading: 'Loading workflows',
     failed: 'Could not load workflows. Please try again.',
     forbidden: 'You do not have access to this workflow.',
@@ -603,7 +602,6 @@ const enUS = {
     error:
       'Unable to load numeric examples. Check your connection and sign-in status, then retry.',
     retry: 'Try again',
-    empty: 'No rows in this selection. Aggregate results are shown below.',
     rows: 'Stored values',
     aggregates: 'Aggregate results',
     field: 'Field / type',
@@ -726,11 +724,6 @@ const enUS = {
     archived: 'Archived',
     filter: 'Filter by status',
     search: 'Search titles…',
-    loading: 'Loading articles…',
-    loadError: 'Unable to load articles. Check your connection and try again.',
-    retry: 'Try again',
-    empty: 'No matching articles',
-    emptyHint: 'Try another search or create your first article.',
     noSummary: 'No summary yet.',
     read: 'Read article',
     total: '{{count}} articles',
@@ -765,7 +758,7 @@ const enUS = {
     loadError:
       'Unable to load orders. Check that you are signed in and that the external CRM database is reachable.',
     retry: 'Retry',
-    empty: 'No matching orders',
+    empty: 'No orders yet.',
     emptyHint:
       'The SQLite stand-in is filled with sample orders on startup; a real CRM shows whatever it holds.',
     columns: {

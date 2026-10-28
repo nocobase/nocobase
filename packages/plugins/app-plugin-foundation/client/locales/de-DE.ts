@@ -6,6 +6,7 @@ const deDE: FoundationResource = {
     foundation: 'Anwendungsbasis',
   },
   page: {
+    identified: 'Erkannt: {{value}}',
     counted: 'Erfasst: {{value}}',
     partial: 'Einige Daten warten auf Aktualisierung',
     title: 'Anwendungsbasis',
@@ -37,6 +38,7 @@ const deDE: FoundationResource = {
     successPath: 'Erfolgreiche API-Anfrage: {{method}} {{path}}',
     conditions: {
       databaseAvailable: 'Datenbank ist verfügbar',
+      authorizationIdentityResolved: 'Autorisierungsidentität wurde ermittelt',
       authenticated: 'Authentifizierung akzeptiert',
       bodyWithinLimit: 'Anfragetext liegt innerhalb des Größenlimits',
       validInput: 'Eingabeprüfung erfolgreich',
@@ -133,9 +135,9 @@ const deDE: FoundationResource = {
     collectionResults: '{{count}} passende Sammlungen',
     previousPage: 'Zurück',
     nextPage: 'Weiter',
-    countRecords: 'Geschäftsdatensätze zählen',
+    countRecords: 'Datensätze zählen',
     recordsOnDemand:
-      'Geschäftsdatensätze werden bei Bedarf gezählt. Große Datenbanken können länger brauchen.',
+      'Zählt bei Bedarf die erkannten Tabellen ohne bekannte Systemtabellen. Große Datenbanken können länger dauern.',
     recordsCountedAt: 'Datensätze gezählt {{time}}',
 
     businessModules: 'Verknüpfte Geschäftsmodule',
@@ -289,12 +291,11 @@ const deDE: FoundationResource = {
   facts: {
     fileCollectionsPartial: '{{count}} Dateisammlungen erfasst: {{names}}.',
     collectionOwnershipUnknown:
-      'Nicht zugeordnete Laufzeiterweiterung gefunden. Die Zugehörigkeit von Sammlungen ist unklar; Geschäftszahlen werden ausgeblendet.',
-    noApplicationCollections:
-      'Die Datenschicht läuft, die Anwendung hat noch keine eigenen Sammlungen.',
+      'Bekannte NocoBase-Systemtabellen sind ausgeschlossen. Die Zuordnung weiterer Tabellen ist noch offen; die gelesenen Werte sind keine rein geschäftliche oder anwendungsweite Gesamtsumme.',
+    noApplicationCollections: 'Noch keine weiteren Datentabellen erkannt.',
     applicationCollectionsPreview:
-      'Diese Anwendung hat {{count}} Sammlungen, darunter {{names}}.',
-    applicationCollections: '{{count}} eigene Sammlungen: {{names}}.',
+      '{{count}} Datentabellen erkannt, darunter {{names}}.',
+    applicationCollections: '{{count}} Datentabellen erkannt: {{names}}.',
     relations: '{{count}} Beziehungen verbinden sie.',
     fileCollections: '{{count}} Dateisammlungen: {{names}}.',
     accounts: '{{count}} Konten verwenden die NocoBase-Anmeldung.',
@@ -343,8 +344,8 @@ const deDE: FoundationResource = {
     caching: 'Cache',
   },
   metrics: {
-    businessRecords: 'Geschäftsdatensätze',
-    businessCollections: 'Geschäftssammlungen',
+    businessRecords: 'Datensätze',
+    businessCollections: 'Datentabellen',
     views: 'Ansichten',
     fields: 'Felder',
     relations: 'Beziehungen',

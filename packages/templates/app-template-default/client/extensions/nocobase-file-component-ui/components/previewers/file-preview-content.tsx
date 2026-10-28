@@ -1,6 +1,6 @@
 import { messageKey } from '../../lib/message-key.js';
 import { useTranslation } from '@nocobase/i18n/client';
-import type { FileRecord } from '../../types';
+import type { FileRecord } from '../../types.js';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,12 +9,12 @@ import {
   resolveOfficeEmbedUrl,
   resolveOfficeOpenXmlFormat,
   type FilePreviewKind,
-} from '../../lib/file-preview';
+} from '../../lib/file-preview.js';
 import { Button } from '#components/ui/button';
-import { resolveSafeFileUrl } from '../../lib/file-url';
-import { FileThumbnail } from '../file-thumbnail';
+import { resolveSafeFileUrl } from '../../lib/file-url.js';
+import { FileThumbnail } from '../file-thumbnail.js';
 
-import { OfficeOpenXmlPreview } from './office-open-xml-preview';
+import { OfficeOpenXmlPreview } from './office-open-xml-preview.js';
 
 const OFFICE_PREVIEW_TIMEOUT_MS = 15_000;
 
@@ -30,7 +30,7 @@ export interface FilePreviewContentProps {
 export function FilePreviewContent(
   inputProps: FilePreviewContentProps,
 ): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const { file, kind, url, text, error, onDownload } = inputProps;
 
   const format =
@@ -67,7 +67,9 @@ export function FilePreviewContent(
       <DownloadFallback file={file} onDownload={onDownload} />
     ) : (
       <div role='status'>
-        {t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
+        {t('fileUi.files.loadingPreview', {
+          defaultValue: 'Loading preview...',
+        })}
       </div>
     );
   switch (kind) {
@@ -87,7 +89,9 @@ export function FilePreviewContent(
       return (
         <pre className='max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-sm'>
           {text ??
-            t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
+            t('fileUi.files.loadingPreview', {
+              defaultValue: 'Loading preview...',
+            })}
         </pre>
       );
     default:
@@ -96,13 +100,15 @@ export function FilePreviewContent(
 }
 
 function MarkdownPreview(inputProps: { readonly text?: string }): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const { text } = inputProps;
 
   if (text === undefined)
     return (
       <div role='status'>
-        {t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
+        {t('fileUi.files.loadingPreview', {
+          defaultValue: 'Loading preview...',
+        })}
       </div>
     );
   return (
@@ -129,7 +135,7 @@ function ImagePreview(inputProps: {
   readonly url: string;
   readonly onDownload?: () => void;
 }): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const { file, url, onDownload } = inputProps;
 
   // The browser decodes the image itself, so its error event is the only signal
@@ -140,7 +146,7 @@ function ImagePreview(inputProps: {
     return (
       <DownloadFallback
         file={file}
-        message={t('files.imageFailed', {
+        message={t('fileUi.files.imageFailed', {
           defaultValue:
             'This image could not be displayed. It may be corrupted or in an unsupported format.',
         })}
@@ -164,7 +170,7 @@ function OfficePreview(inputProps: {
   readonly error?: string;
   readonly onDownload?: () => void;
 }): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const { file, url, error, onDownload } = inputProps;
 
   const [failed, setFailed] = useState(false);
@@ -189,7 +195,9 @@ function OfficePreview(inputProps: {
   if (!url && !error)
     return (
       <div role='status'>
-        {t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
+        {t('fileUi.files.loadingPreview', {
+          defaultValue: 'Loading preview...',
+        })}
       </div>
     );
   if (!embedUrl || failed) {
@@ -199,10 +207,10 @@ function OfficePreview(inputProps: {
         message={
           (error ? t(messageKey(error), { defaultValue: error }) : undefined) ??
           (failed
-            ? t('files.officeFailed', {
+            ? t('fileUi.files.officeFailed', {
                 defaultValue: 'Office Online could not load this file.',
               })
-            : t('files.officeUrl', {
+            : t('fileUi.files.officeUrl', {
                 defaultValue:
                   'Office Online requires an internet-accessible absolute file URL.',
               }))
@@ -228,10 +236,10 @@ function DownloadFallback(inputProps: {
   readonly thumbnailIconOnly?: boolean;
   readonly onDownload?: () => void;
 }): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const {
     file,
-    message = t('files.previewUnavailable', {
+    message = t('fileUi.files.previewUnavailable', {
       defaultValue: 'Preview is unavailable for this file type.',
     }),
     thumbnailIconOnly = false,
@@ -247,7 +255,7 @@ function DownloadFallback(inputProps: {
       <p>{message}</p>
       {onDownload ? (
         <Button type='button' onClick={onDownload}>
-          {t('files.downloadFile', { defaultValue: 'Download file' })}
+          {t('fileUi.files.downloadFile', { defaultValue: 'Download file' })}
         </Button>
       ) : null}
     </div>

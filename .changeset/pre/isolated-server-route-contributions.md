@@ -12,7 +12,6 @@
 '@nocobase/app-plugin-queue-example': patch
 '@nocobase/app-plugin-realtime-example': patch
 '@nocobase/app-plugin-routes-example': patch
-'@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-plugin-service-provider-example': patch
 ---
 

@@ -1,5 +1,32 @@
 # @nocobase/app-plugin-authz-default-access
 
+## 1.0.0-beta.17
+
+### Patch Changes
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+- Updated dependencies [451bf75]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
 ## 1.0.0-beta.15
 
 ### Patch Changes

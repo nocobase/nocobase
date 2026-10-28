@@ -8,6 +8,7 @@ import type {
   FoundationApiEvidence,
 } from '../shared/foundation.js';
 import type { RuntimeProviderEvidence } from './provider-inventory.js';
+import { authorizationProgram } from './authorization-evidence.js';
 import { SourceEvidence } from './source-evidence.js';
 import { readModuleManifest } from './module-manifest.js';
 import { apiDependencies as analyzeApiDependencies } from './api-evidence.js';
@@ -262,6 +263,29 @@ class SourceGraph {
         backendComplete &&= graph.complete;
       }
     }
+    const identityEntries = {
+      providers: providerEntries[0],
+      runtime: await this.conventionalEntry('server/runtime.js'),
+      plugins: await this.conventionalEntry('server/plugins.js'),
+      authorization: await this.conventionalEntry(
+        'server/config/authorization.js',
+      ),
+    };
+    const identitySources = new Map<string, Source>();
+    let identityComplete = true;
+    for (const entry of [
+      ...Object.values(identityEntries),
+      await this.conventionalEntry('server/app.js'),
+      await this.conventionalEntry('server/standalone.js'),
+      await this.conventionalEntry('server/embedded.js'),
+    ]) {
+      if (!entry) continue;
+      const graph = await this.walk(entry, true);
+      identityComplete &&= graph.complete;
+      graph.sources.forEach((source) =>
+        identitySources.set(source.file, source),
+      );
+    }
     // Read backend declarations before lazy page graphs can exhaust the shared source budget.
     await this.walk(entry, true);
     const resolutions = new Map<string, string>();
@@ -283,6 +307,13 @@ class SourceGraph {
       (specifier) => this.isLocal(specifier),
     );
     this.analysis.registerServices(providerEntries);
+    this.analysis.authorizationIdentityResolved =
+      identityComplete &&
+      authorizationProgram(
+        this.analysis,
+        [...identitySources.values()],
+        identityEntries,
+      );
     return backendComplete;
   }
 

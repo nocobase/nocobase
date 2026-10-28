@@ -539,8 +539,6 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Erster Administrator',
-      expires:
-        'Wird für die erste Bereitstellung generiert. Speichern Sie es jetzt: Es wird in {{hours}} h gelöscht.',
       kept: 'Wird für die erste Bereitstellung generiert; Es bleibt erhalten, bis die App entfernt wird.',
       username: 'Benutzername',
       email: 'E-Mail',
@@ -811,6 +809,11 @@ const deDE: LocaleResource<typeof enUS> = {
       name: 'Name',
       driver: 'Fahrer',
       runsOn: 'Läuft weiter',
+      appCount: 'Apps',
+      purpose: 'Zweck',
+      purposeHint:
+        'Jede Umgebung dient einem Zweck: Pull-Request-Vorschauen oder das Testen von Releases.',
+      purposes: { preview: 'Vorschauen', test: 'Test' },
       policy: 'Richtlinie',
       publicUrl: 'Öffentliches URL-Muster',
       config: 'Einstellungen (JSON)',

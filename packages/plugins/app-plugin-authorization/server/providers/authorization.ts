@@ -1,3 +1,4 @@
+import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { databaseManagerToken } from '@nocobase/db';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -41,6 +42,7 @@ export class AuthorizationProvider<
     readonly type: 'permissions-changed';
   }>;
   private removeApiRoutes?: () => void;
+  private removeUserInitializer?: () => void;
 
   public override register(): void {
     this.app.container.singleton(authorizationToken, (container) =>
@@ -97,6 +99,21 @@ export class AuthorizationProvider<
   }
 
   public override boot(): Promise<void> {
+    if (this.app.container.has(authenticationToken)) {
+      this.removeUserInitializer?.();
+      this.removeUserInitializer = this.app.container
+        .resolve(authenticationToken)
+        .addUserInitializer(async (user, connection) => {
+          if (user.kind === 'service') return;
+          const sets = this.app.container
+            .resolve(authorizationToken)
+            .permissionSets.withTransaction(connection);
+          await sets.assign({
+            subject: { type: 'user', id: String(user.id) },
+            permissionSet: 'member',
+          });
+        });
+    }
     // The settings routes sit behind the `/api/authorization` dispatcher, where the document generator cannot see them,
     // so every `authz.routes` registration is registered with the API documentation: each router forwarded to, and each
     // plain function as an undeclared route the API document check reports. Every rule plugin registers its routes
@@ -156,6 +173,8 @@ export class AuthorizationProvider<
   }
 
   public override shutdown(): Promise<void> {
+    this.removeUserInitializer?.();
+    this.removeUserInitializer = undefined;
     this.removeApiRoutes?.();
     this.removeApiRoutes = undefined;
     this.permissionsChangedTopic?.close();

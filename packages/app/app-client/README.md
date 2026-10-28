@@ -47,7 +47,6 @@ import { defineAppRuntime } from '@nocobase/app-client/runtime';
 
 import locales from './locales/index.js';
 import plugins from './plugins.js';
-import routeComponentOverrides from './route-overrides.js';
 import serviceProviders from './providers/index.js';
 import reactProviders from './react-providers/index.js';
 import routes from './routes.js';
@@ -60,13 +59,10 @@ export default defineAppRuntime({
   routes,
   locales,
   plugins,
-  routeComponentOverrides,
 });
 ```
 
-`plugins` is the complete value returned by `defineClientPlugins()`. Runtime
-resolution collects its route component overrides automatically;
-`routeComponentOverrides` contains only overrides owned by the application.
+`plugins` is the complete value returned by `defineClientPlugins()`. Runtime resolution collects its route component overrides automatically. An application can explicitly pass `routeComponentOverrides` when it needs to replace an existing route's component; omit the option when no replacements are needed. The templates do not include empty route-override or source-extension entry files. UI Library source assets under `client/extensions/` are imported by the application where needed, without automatic extension discovery.
 
 Static import makes the composition plan available to runtime resolution. It does not register a service, execute lifecycle hooks, render a React component, load a route page, or load locale messages. Declaration modules must therefore remain side-effect-free.
 
@@ -419,3 +415,9 @@ The host's client also exposes `watch(topic, callbacks)`, which returns a handle
 ## Inspecting registered plugins
 
 `runtime.registeredPlugins` is a frozen list of explicit Client plugin package names, including plugins that contribute only locales or services. It contains no plugin options or executable contributions. It describes registration, not configuration or actual use; older hand-composed runtimes may omit it.
+
+## Form failure feedback
+
+`FormFeedback` owns transient errors for one mounted form; it never changes input, attachments or navigation. Register stable field descriptors with live path/value/access getters and layout anchors. Capture `begin()` at submission, pass that attempt to `invalid()` or `failure()`, and call `focus(summaryElement)` after rendering the result. `clear(id)` clears an edited field; `clear()` invalidates pending attempts after success. `formFeedbackErrors()` adapts nested React Hook Form errors without adding a dependency on that library.
+
+The templates' copied `FeedbackForm` component supplies native field discovery, a keyboard-accessible summary, inline errors and preserved `aria-describedby` help associations. Register explicit descriptors for unmounted tabs, collapses, repeated rows and extension controls; `reveal()` must resolve after controls mount, and access/editability are checked again before focus. Permissions/business hiding must be distinct from inactive layout. Server violations map by submitted path to stable identity and unchanged value, and only trusted application error mappings supply user copy. See the application Skills' form reference and form-feedback source-upgrade checklist for integration and compatibility.

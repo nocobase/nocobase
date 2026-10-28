@@ -1,33 +1,30 @@
+import { useListLocation } from '#hooks/use-list-location';
 import { useSettingsData, useRolePermission } from './hooks.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type {
   PermissionSet,
   LocalizedText,
 } from '@nocobase/app-plugin-authorization/client';
+import { resolveListState } from '@nocobase/app-client';
 import { type ReactElement } from 'react';
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
-import { ShieldCheckIcon, PlusIcon } from 'lucide-react';
+import { Link, Outlet, useLocation } from 'react-router';
+import { PlusIcon } from 'lucide-react';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { RoleList } from '#components/role-list';
-import {
-  Empty,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-  EmptyMedia,
-} from '#components/ui/empty';
-import { SettingsError, SettingsLoading } from './shared.js';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 
 export default function RolesPage(): ReactElement {
   const { t, i18n } = useTranslation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const location = useLocation();
   const search = params.get('q') ?? '';
   const request = useSettingsData<{ data: readonly PermissionSet[] }>(
     'authorization/permissionSets',
+    { active },
   );
   const canCreate = useRolePermission('create');
   const text = (value: LocalizedText): string =>
@@ -50,12 +47,39 @@ export default function RolesPage(): ReactElement {
       ),
     );
   const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
     sortColumns: ['title', 'key'],
     rowCount:
       request.data && !request.loading && !request.error
         ? rows.length
         : undefined,
   });
+  const listState = resolveListState(
+    {
+      data: request.data,
+      error: tableState.error ?? request.error,
+      isPending: request.loading && !request.data,
+    },
+    rows.length,
+    Boolean(search.trim()),
+  );
+  const canShowCreate =
+    canCreate &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
+  const clearSearch = () =>
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old);
+        next.delete('q');
+        next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
   const create = canCreate ? (
     <Button
       nativeButton={false}
@@ -69,7 +93,7 @@ export default function RolesPage(): ReactElement {
     <>
       <PermissionManagementPage
         tab='roles'
-        actions={rows.length || search ? create : undefined}
+        actions={canShowCreate ? create : undefined}
       >
         <div className='flex items-center gap-3'>
           <Input
@@ -90,93 +114,43 @@ export default function RolesPage(): ReactElement {
               );
             }}
           />
-          {search && (
-            <Button
-              variant='ghost'
-              onClick={() => {
-                setParams(
-                  (old) => {
-                    const next = new URLSearchParams(old);
-                    next.delete('q');
-                    next.delete('page');
-                    return next;
-                  },
-                  { replace: true },
-                );
-              }}
-            >
+          {search && listState !== 'no-results' && (
+            <Button variant='ghost' onClick={clearSearch}>
               {t('settings.clear')}
             </Button>
           )}
+          <ListFeedbackActions
+            state={listState}
+            onClear={clearSearch}
+            onRetry={request.reload}
+            busy={request.loading}
+          />
+          {active && request.loading && request.data ? (
+            <Spinner className='text-muted-foreground' />
+          ) : null}
         </div>
-        <SettingsError error={request.error} retry={request.reload} />
-        {request.loading && !request.data ? (
-          <SettingsLoading />
-        ) : (
-          !request.error &&
-          (rows.length ? (
-            <RoleList
-              tableState={tableState}
-              ariaLabel={t('settings.roles')}
-              roles={rows.map((role) => ({
-                key: role.key,
-                title: text(role.title ?? role.key),
-                to: {
-                  pathname: `${encodeURIComponent(role.key)}/edit`,
-                  search: location.search,
-                },
-                protected: Boolean(role.protection),
-              }))}
-              labels={{
-                name: t('settings.roleName'),
-                key: t('settings.key'),
-                type: t('settings.roleType'),
-                protected: t('settings.protected'),
-                custom: t('settings.custom'),
-              }}
-            />
-          ) : (
-            <Empty className='min-h-48 border border-dashed'>
-              <EmptyMedia variant='icon'>
-                <ShieldCheckIcon />
-              </EmptyMedia>
-              <EmptyTitle>
-                {t(search ? 'settings.noResults' : 'settings.noRoles')}
-              </EmptyTitle>
-              <EmptyDescription>
-                {t(
-                  search
-                    ? 'settings.clearHint'
-                    : canCreate
-                      ? 'settings.rolesDescription'
-                      : 'settings.rolesReadOnlyEmpty',
-                )}
-              </EmptyDescription>
-              <EmptyContent>
-                {search ? (
-                  <Button
-                    variant='outline'
-                    onClick={() => {
-                      setParams(
-                        (old) => {
-                          const next = new URLSearchParams(old);
-                          next.delete('q');
-                          next.delete('page');
-                          return next;
-                        },
-                        { replace: true },
-                      );
-                    }}
-                  >
-                    {t('settings.clear')}
-                  </Button>
-                ) : (
-                  create
-                )}
-              </EmptyContent>
-            </Empty>
-          ))
-        )}
+        <ListFeedback state={listState}>
+          <RoleList
+            tableState={tableState}
+            ariaLabel={t('settings.roles')}
+            roles={rows.map((role) => ({
+              key: role.key,
+              title: text(role.title ?? role.key),
+              to: {
+                pathname: `${encodeURIComponent(role.key)}/edit`,
+                search: location.search,
+              },
+              protected: Boolean(role.protection),
+            }))}
+            labels={{
+              name: t('settings.roleName'),
+              key: t('settings.key'),
+              type: t('settings.roleType'),
+              protected: t('settings.protected'),
+              custom: t('settings.custom'),
+            }}
+          />
+        </ListFeedback>
       </PermissionManagementPage>
       <Outlet context={{ reload: request.reload }} />
     </>

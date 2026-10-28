@@ -1,3 +1,6 @@
+import { FeedbackForm } from '#components/feedback-form';
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
+import { useSubmission } from '@nocobase/app-client';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import {
   useCan,
@@ -60,7 +63,12 @@ function DefaultAccessFormBody(): ReactElement {
     action: creating ? 'create' : 'update',
   }).can;
   const [draft, setDraft] = useState<DefaultAccessRule>();
-  const [busy, setBusy] = useState(false);
+  const { session } = useAuthentication();
+  const submission = useSubmission({
+    scope: `${session?.user.id}:settings:default-access:${key}`,
+  });
+  const [requestBusy, setRequestBusy] = useState(false);
+  const busy = requestBusy || submission.submitting;
   const [error, setError] = useState<unknown>();
   const [message, setMessage] = useState<string>();
   const [submitted, setSubmitted] = useState(false);
@@ -245,28 +253,36 @@ function DefaultAccessFormBody(): ReactElement {
       );
       return;
     }
-    setBusy(true);
+    setRequestBusy(true);
     try {
-      const latest = await api.request<{ data: readonly DefaultAccessRule[] }>({
-        path: 'authorization/defaultAccess',
-      });
-      if (
-        !creating &&
-        JSON.stringify(latest.data.find((rule) => rule.key === key)) !==
-          JSON.stringify(initial)
-      ) {
-        setMessage(t('settings.defaultAccess.changed'));
-        return;
-      }
-      const saved = await api.request<{ data: DefaultAccessRule }>({
-        path: creating
-          ? 'authorization/defaultAccess'
-          : `authorization/defaultAccess/${encodeURIComponent(key ?? '')}`,
-        method: creating ? 'POST' : 'PATCH',
-        json: creating
-          ? { ...value, key: value.key.trim() }
-          : { actions: value.actions },
-      });
+      const saved = await submission.run(
+        { creating, key, value },
+        async (idempotencyKey, _signal, _snapshot, recovering) => {
+          if (!creating && !recovering) {
+            const latest = await api.request<{
+              data: readonly DefaultAccessRule[];
+            }>({ path: 'authorization/defaultAccess' });
+            if (
+              JSON.stringify(latest.data.find((rule) => rule.key === key)) !==
+              JSON.stringify(initial)
+            ) {
+              setMessage(t('settings.defaultAccess.changed'));
+              return undefined;
+            }
+          }
+          return api.request<{ data: DefaultAccessRule }>({
+            path: creating
+              ? 'authorization/defaultAccess'
+              : `authorization/defaultAccess/${encodeURIComponent(key ?? '')}`,
+            headers: { 'Idempotency-Key': idempotencyKey },
+            method: creating ? 'POST' : 'PATCH',
+            json: creating
+              ? { ...value, key: value.key.trim() }
+              : { actions: value.actions },
+          });
+        },
+      );
+      if (!saved) return;
       toaster.show({
         type: 'success',
         title: t('settings.defaultAccess.saved', { name: value.key }),
@@ -331,7 +347,7 @@ function DefaultAccessFormBody(): ReactElement {
         setMessage(t('settings.defaultAccess.invalid'));
       else setError(next);
     } finally {
-      setBusy(false);
+      setRequestBusy(false);
     }
   };
   return (
@@ -360,7 +376,10 @@ function DefaultAccessFormBody(): ReactElement {
             {!creating && !initial ? (
               <p role='status'>{t('settings.missing')}</p>
             ) : (
-              <form
+              <FeedbackForm
+                submitting={busy}
+                error={error}
+                errorContent={<SettingsError error={error} inline />}
                 ref={formRef}
                 noValidate
                 className='flex flex-col gap-6'
@@ -369,7 +388,6 @@ function DefaultAccessFormBody(): ReactElement {
                   void save();
                 }}
               >
-                <SettingsError error={error} />
                 {message && (
                   <Alert variant='destructive'>
                     <AlertDescription>
@@ -487,7 +505,7 @@ function DefaultAccessFormBody(): ReactElement {
                     </Button>
                   )}
                 </div>
-              </form>
+              </FeedbackForm>
             )}
             {!creating && !initial && (
               <Button variant='outline' onClick={close}>

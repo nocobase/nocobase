@@ -6,6 +6,49 @@ Forms use react-hook-form, zod 4 and `@hookform/resolvers/zod`, the `Field` fami
 - Put the form component in the feature folder (`client/pages/<feature>/<feature>-form.tsx`); move it to `client/components/` only when several features use it.
 - `client/components/ui/` does not have shadcn's old `form` component (`FormField`, `FormItem`, `FormMessage`). Do not add it; use the `Field` family throughout.
 
+## Shared submission lock and retry identity
+
+All submission entries use one `useSubmission` controller before async validation. Pass its key to the standard Repository mutation or a custom action that explicitly implements the transaction receipt adapter. Keep uncertain operations across retries and distinguish a deliberate new operation after success. Follow [submission protection](../../submission.md) for the complete protocol and upgrade boundary; button disabling and `isSubmitting` alone do not provide this contract.
+
+## Shared failure feedback
+
+Use `FeedbackForm` from `#components/feedback-form` in place of a native `<form>`. Both templates preinstall this UI Library source and merge its English/Chinese resources. When installing it in another application, add the translation keys listed in the registry item’s docs and component README to the application locale resources; standalone device-approval includes them in its locale exports. It preserves the caller's input and upload state, renders safe field and form errors, and scrolls/focuses the first editable error in actual layout order. Native controls declare the exact submitted `name`; custom triggers declare `data-field-path`. Keep the editor mounted on failure. Return asynchronous submission promises to the boundary, or pass the caught request error through its `error` prop. Preserve trusted application error copy/actions through `errorContent` and remove the former separate submission alert, so assistive technology hears one form-level message for an unmapped failure. Never pass raw server content to that prop or render an `Error.message`, server violation description or stack as user copy.
+
+With React Hook Form, set `shouldFocusError: false`, pass `submitting={form.formState.isSubmitting}` and `validationErrors={form.formState.errors}` and keep the existing resolver, `Controller`, validation messages and default values. This replaces registration-order focus without replacing RHF state. `formFeedbackErrors()` adapts nested errors for a custom headless consumer. Keep field refs on the real focusable control. Existing business error mappings may continue to set trusted field errors; structured request failures can be thrown to `FeedbackForm` or passed through `error`. `fieldMessage(violation, error)` maps known `reason`/`domain` to trusted translated copy; unknown violations use safe generic copy.
+
+For unmounted tabs, nested collapses, virtualized/repeated rows and extension components, create one `FormFeedback` controller per mounted form and pass it as `feedback`. Register descriptors from an always-mounted layout owner, outside conditionally mounted editors. A descriptor supplies a stable `id`, current submitted `path()`, `value()`, persistent layout `anchor()`, real focusable `control()`, optional trusted `label()`, `accessible()` and `editable()`. `accessible` expresses current permission/business visibility, independently of collapsed layout. `reveal()` opens enclosing regions from outside in and resolves only after the editor mounts. The controller then checks access again and focuses once. A field with no usable focus target falls back to the keyboard-accessible safe form message.
+
+```tsx
+const [feedback] = useState(() => new FormFeedback({ messages }));
+// Register from the layout owner; refs/getters read the latest committed row and access.
+useEffect(
+  () =>
+    feedback.register({
+      id: rowKey,
+      path: () =>
+        `items.${rowsRef.current.findIndex((row) => row.key === rowKey)}.name`,
+      value: () => rowsRef.current.find((row) => row.key === rowKey)?.name,
+      label: () => t('equipment.name'),
+      anchor: () => rowAnchor.current,
+      control: () => nameInput.current,
+      accessible: () =>
+        accessRef.current.canEditEquipment && !visibilityRef.current.hidden,
+      editable: () => !pendingRef.current,
+      reveal: async () => {
+        await openTab();
+        await openSectionAndWaitForMount();
+      },
+    }),
+  [feedback, rowKey, t],
+);
+```
+
+Keep descriptors stable while requests are pending; getters read live data. Use a stable row key, never the current array index as identity. `FeedbackForm` automatically captures a submission attempt. A headless form instead calls `begin()` immediately before validation/request and passes that attempt to `invalid()` or `failure()`, then `focus(messageRef.current)`. Bracket/dot paths are normalized and mapped through the submitted snapshot, so reordering does not move an error to another row. Deleted rows, replaced descriptors, changed values and superseded responses cannot receive old field errors. Call `clear(fieldId)` on custom value changes, or let bubbled input/change events clear the registered control; call `clear()` after success if the form stays open. The controller never resets values, uploads, navigation or business rules.
+
+Do not register permission-hidden fields as accessible. Use explicit descriptors for collapsed/unmounted editors; native discovery excludes permission/business-hidden DOM and does not guess which tab or permission to open. No new request, persistence or server protocol is needed. The error state exists only while the form is mounted. Existing applications must follow the [source upgrade checklist](../../../../nocobase-app-upgrade/references/form-feedback-upgrade.md); dependency updates do not rewrite their copied forms.
+
+Show mapped errors only beside their field or group entry, without a top instruction or navigation list. Give group entries an accessible name using `aria-labelledby`. Keep validator copy actionable and map server reasons through `fieldMessage` or an explicitly associated application error node. Unknown and inaccessible paths keep safe form-level copy. If no editable error can accept focus, show a focusable safe fallback; headless consumers can use the optional third `focus` callback to mount that message.
+
 ## Complete example: one form for creating and editing
 
 `client/pages/projects/project-form.tsx` is the form create and edit share: name (required), owner (optional) and status (a Select). Passing `project` means editing (`PATCH`); omitting it means creating (`POST`). It renders no buttons: the container puts the submit button outside the `<form>` and links it through `formId`. Its complete code and props table are [`example/project-form.md`](example/project-form.md); the key points below explain what it does and why.
@@ -57,16 +100,16 @@ Use `z.string().trim()` in the schema and an empty string as the default (`proje
 
 ### Submitting
 
-- `form.handleSubmit(async (values) => { ... })` validates every field first and calls the callback only if they pass; if they do not, it shows the errors and moves focus to the first field with an error.
+- `form.handleSubmit(async (values) => { ... })` validates every field first and calls the callback only if they pass; if they do not, FeedbackForm shows the errors and moves focus in layout order.
 - `<form noValidate onSubmit={(event) => void onSubmit(event)}>`: `noValidate` turns off the browser's built-in validation bubbles; `void` means the returned Promise is not awaited (ESLint requires it).
-- While submitting: when the button is outside the form, hand the state to the container with `onSubmittingChange` (see "Inside a RouteDialog"); when the button is inside the `<form>`, use `form.formState.isSubmitting` directly (see the members card in "Array fields").
+- While submitting: when the button is outside the form, hand the state to the container with `onSubmittingChange` (see "Inside a RouteDialog"); when the button is inside the `<form>`, use the shared controller's `submitting` state (see the members card in "Array fields").
 - Label the submit button with the specific action: "Create", "Save", not "OK" or "Submit" (guideline T3.4).
 
 ### Server errors
 
-- Map business errors defined by the backend to the specific field: `form.setError('name', { message }, { shouldFocus: true })` shows the error below the field and moves focus there. Once the user changes that field and it passes validation again, the error disappears automatically.
+- Map business errors defined by the backend to the specific field: `form.setError('name', { message })` shows the error below the field and moves focus there. Once the user changes that field and it passes validation again, the error disappears automatically.
 - A 404 while editing means the record has been deleted. Call `onNotFound`; the container explains what happened, keeps only "Close" and refreshes the list, so the user does not submit again (guideline R3).
-- Write every other error to `form.setError('root', { message })` and show it in an `Alert` at the top of the form, with the message ["Handling each kind of error" in `api.md`](api.md#handling-each-kind-of-error) gives for its status; a 401 sets `{ type: 'sessionExpired' }` and renders `SessionExpiredAlert` there instead, keeping the input. The `root` error is cleared automatically on the next submission.
+- Pass other caught request errors through `FeedbackForm.error`. Put trusted status-specific copy and a session-expired sign-in action in `errorContent`, following ["Handling each kind of error" in `api.md`](api.md#handling-each-kind-of-error); keep a single form-level message for an unmapped failure and retain the input. Clear the caller-owned error on the next submission.
 - On failure, do not close the dialog, and keep what the user has entered (guideline T3.6).
 
 ### Success
@@ -94,6 +137,7 @@ The form reports the result with a `success` toast, including the record name (`
 | `Switch`                       | `z.boolean()`, `false`                                   | `checked`, `onCheckedChange`, `ref`, `onBlur`                                              | `Switch`               | `Field orientation='horizontal'`; `FieldContent` holds the label and description, control on the right |
 | Number (`Input type='number'`) | `z.string().trim()` with a `refine` that parses it, `''` | Spread `{...field}`; convert with `Number(…)` on submit                                    | `Input`                | `Field`; see "Numbers"                                                                                 |
 | Related record (`Combobox`)    | `z.string()`, the id as a string, `''`                   | `value`, `onChange`, `onBlur` passed to a picker component                                 | The picker's input     | `Field`; see "Choosing a related record"                                                               |
+| Files (`FileUploadField`)      | uploaded `FileRecord[]`, `[]`                            | `repository`, `value`, `onChange`; upload state through `onStatusChange`                   | None                   | `Field`; see "File uploads and attachments"                                                            |
 
 The demo form `client/pages/projects/project-settings-form.tsx` ([`example/settings-form.md`](example/settings-form.md)) uses every control in the table except `Input` and `Select`, grouped with `FieldSet`. For calling the endpoint, the submitting state and server errors, follow `ProjectForm`. The subsections below explain each control.
 
@@ -143,6 +187,16 @@ A field that points at another record, such as the project's customer, stores th
 - In the form: schema `z.string().min(1, t('projects.form.customerRequired'))` for a required relation (plain `z.string()` for an optional one), default `project?.customerId ?? ''`, `<CustomerPicker id={…} value={field.value} onChange={field.onChange} onBlur={field.onBlur} invalid={fieldState.invalid} />` inside `Controller`, and `customerId: values.customerId === '' ? null : values.customerId` on submit; ids are strings, so the value needs no conversion.
 - It loads one page of at most 100 records (`pageSize: 100`, the endpoint's cap) and filters them in the browser. When the related collection is larger, send the typed text to the endpoint instead: keep the input text in state, debounce it by about 300ms as the list search does ([section 5 of `table.md`](table.md#5-writing-search-and-filters-to-the-url)), request with it, and keep the currently selected record in the items so an edit form still shows its name.
 - A small fixed set (fewer than about 15 records) can use `Select` with the same loaded `items` instead.
+
+### File uploads and attachments
+
+A file field is the preinstalled `file-component-ui` block under `client/extensions/nocobase-file-component-ui/`, not a native `<input type='file'>` and not a control composed by hand. [`ui-library.md`](ui-library.md) lists the block and the alternatives (`attachment-list` when a record or message shows files outside a form). `FileUploadField` already handles choosing, dropping, progress, retry, cancel, remove and the file-type and size limits; `FileList`, `FilePreviewField`, `FilePreviewDialog` and `FileThumbnail` show the stored files in a detail view and in forms. Read [`styling.md` section 4](styling.md#4-customize-template-and-registry-components) before changing any of them.
+
+- The block uploads through a `ClientFileRepository`: `const fileManager = useService(clientFileRepositoryManagerToken)`, importing `useService` from `@nocobase/app-client` and the token from `@nocobase/app-plugin-file/client`, then `useMemo(() => fileManager.repository('<resource>'), [fileManager])`, where `<resource>` is the business endpoint that exposes `uploadOne` (for example `expenseAttachments` for `/api/expenseAttachments/uploadOne`). The application registers the file plugin in `client/plugins.ts`; a test that renders this field passes it too: `plugins: [file()]`.
+- Keep the uploaded records in form state and submit their ids: `<FileUploadField repository={repository} value={files} onChange={setFiles} multiple maxFiles={10} maxSize={10 * 1024 * 1024} accept={['application/pdf', 'image/png', 'image/jpeg']} />`. `accept` takes MIME types or extensions. Follow the server's own limits rather than inventing them.
+- Uploads happen before form submission. Use `onStatusChange={(status) => setUploadBlocked(status !== 'idle')}` and disable submission with `pending || uploadBlocked` until uploads finish and failed items are retried successfully or removed. The block reports `error` when any item fails, even while others are uploading. Keep upload busy state separate from form dirty state: uploading or removing an attachment changes the unsaved form; clear its dirty guard only after the business form saves successfully or the user confirms discarding changes.
+- Pass the server-returned `contentUrl` to preview components; a raw storage key is not a URL. If a detail endpoint omits it, populate it in the data access layer using the file exposure's configured `accessPath`, encoded record id and optional extension, and application base path. Do not assume the default `/uploads/<collection>/` path. The file plugin's content route is public to anyone holding the URL and is not protected by the resource Policy; applications requiring authenticated content access must provide a route that enforces it. Without `contentUrl`, the item cannot preview.
+- Errors from uploads and previews arrive through `onError`; show them as the form's own localized message instead of the block's. The block's own words come from `labels` and the locale resources the template merges.
 
 ### Grouping and layout
 

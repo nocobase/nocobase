@@ -8,14 +8,14 @@ import { ErrorAlert } from '../../client/settings/shared.js';
 
 it('renders the standard localized API message and falls back for malformed messages', async () => {
   for (const localizedMessage of [
-    { locale: 'en-US', message: 'Invalid collection' },
+    { locale: 'en-US', message: 'Could not read demo data' },
     { locale: 'en-US', message: { unexpected: true } },
   ]) {
     const error = new ApiClientError('Internal diagnostic', {
-      status: 400,
-      reason: 'DEMO_CONFIGURATION_INVALID',
-      method: 'PUT',
-      url: '/demoMode/configuration/collections',
+      status: 500,
+      reason: 'INTERNAL_ERROR',
+      method: 'GET',
+      url: '/demoMode/data',
       payload: { error: { localizedMessage } },
     });
     const view = await renderWithApp(<ErrorAlert error={error} />, {
@@ -24,7 +24,7 @@ it('renders the standard localized API message and falls back for malformed mess
     });
     expect(await screen.findByRole('alert')).toHaveTextContent(
       typeof localizedMessage.message === 'string'
-        ? 'Invalid collection'
+        ? 'Could not read demo data'
         : 'The request did not complete. Try again.',
     );
     expect(screen.queryByText('Internal diagnostic')).not.toBeInTheDocument();

@@ -25,6 +25,7 @@ const esES: LocaleResource<typeof enUS> = {
   },
   list: {
     panelEmpty: 'No hay conversaciones',
+    fold: 'Ocultar sesiones',
     expand: 'Mostrar sesiones',
     label: 'Sesiones',
     title: 'Mis agentes',

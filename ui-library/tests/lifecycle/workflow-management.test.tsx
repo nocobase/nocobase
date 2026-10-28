@@ -382,7 +382,7 @@ it('does not show a no-results message while an execution page is loading', () =
     onNext: () => {},
   };
   const view = render(<WorkflowExecutionList {...props} />);
-  expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+  expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
   expect(screen.queryByText('No results.')).not.toBeInTheDocument();
   expect(screen.queryByText('No executions yet')).not.toBeInTheDocument();
   view.rerender(<WorkflowExecutionList {...props} loaded loading={false} />);

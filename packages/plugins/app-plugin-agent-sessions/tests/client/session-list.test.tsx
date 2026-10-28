@@ -13,16 +13,18 @@ describe('session list archive navigation', () => {
       archived: 'Archived',
       title: 'My agents',
       computers: 'My computers',
+      back: 'Back to sessions',
     },
     {
       locale: 'zh-CN',
       archived: '已归档',
       title: '我的 Agent',
       computers: '我的电脑',
+      back: '返回会话',
     },
   ])(
     'names the archived list and toggles it from the footer in $locale',
-    async ({ locale, archived, title, computers }) => {
+    async ({ locale, archived, title, computers, back }) => {
       await renderWithApp(
         <QueryClientProvider
           client={
@@ -56,7 +58,7 @@ describe('session list archive navigation', () => {
           .getByRole('button', { name: archived })
           .getAttribute('aria-pressed'),
       ).toBe('true');
-      fireEvent.click(archive);
+      fireEvent.click(screen.getByRole('button', { name: back }));
       expect(screen.getByRole('heading', { name: title })).toBeTruthy();
       expect(archive).toHaveAttribute('aria-pressed', 'false');
     },
@@ -122,20 +124,25 @@ it('keeps standalone search and status filters above a plain empty list and a ne
   const create = within(list).getByRole('button', { name: 'New session' });
   expect(create).toHaveAttribute('href', '/agent-sessions?new');
   expect(create).not.toHaveTextContent('New session');
-  expect(await within(list).findByText('No conversations')).toBeVisible();
+  expect(
+    await within(list).findByText(
+      'No sessions yet. Start one to talk with an agent on your computer.',
+    ),
+  ).toBeVisible();
   fireEvent.change(
     within(list).getByRole('textbox', { name: 'Search sessions' }),
     { target: { value: 'no match' } },
   );
   fireEvent.click(within(list).getByRole('button', { name: 'Needs me 0' }));
-  expect(within(list).getByText('No conversations')).toBeVisible();
+  expect(
+    within(list).getByText(
+      'No sessions yet. Start one to talk with an agent on your computer.',
+    ),
+  ).toBeVisible();
   fireEvent.click(
     within(list).getByRole('button', { name: 'Archived', exact: true }),
   );
-  expect(within(list).getByRole('group', { name: 'Show' })).toBeVisible();
-  expect(
-    within(list).getByRole('button', { name: 'Needs me 0' }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  expect(within(list).queryByRole('group', { name: 'Show' })).toBeNull();
   expect(
     within(list).getByRole('textbox', { name: 'Search sessions' }),
   ).toHaveValue('no match');
@@ -163,4 +170,35 @@ it('calls the new-session handler from the collapsed rail entry', async () => {
   expect(create).toHaveAttribute('href', '/agent-sessions?new');
   fireEvent.click(create);
   expect(onNewSession).toHaveBeenCalledOnce();
+});
+
+it('exposes fold, expand and overlay dismissal without moving the new-session entry', async () => {
+  const onFold = vi.fn();
+  const onExpand = vi.fn();
+  const renderList = (placement: 'column' | 'rail' | 'overlay') => (
+    <QueryClientProvider client={new QueryClient()}>
+      <SessionList
+        activeId={undefined}
+        placement={placement}
+        onFold={onFold}
+        onExpand={onExpand}
+      />
+    </QueryClientProvider>
+  );
+  const view = await renderWithApp(renderList('column'), {
+    locale: 'en-US',
+    namespace: '@nocobase/app-plugin-agent-sessions',
+    plugins: [plugin({ routes: false })],
+    fetch: answerApi(() => ({ data: [], meta: {} })),
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Hide sessions' }));
+  expect(onFold).toHaveBeenCalledOnce();
+  view.rerender(renderList('rail'));
+  fireEvent.click(screen.getByRole('button', { name: 'Show sessions' }));
+  expect(onExpand).toHaveBeenCalledOnce();
+  view.rerender(renderList('overlay'));
+  const show = screen.getByRole('button', { name: 'Show sessions' });
+  expect(show).toHaveAttribute('aria-expanded', 'true');
+  fireEvent.click(show);
+  expect(onFold).toHaveBeenCalledTimes(2);
 });

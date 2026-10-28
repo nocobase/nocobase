@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-projects",
   "displayName": "Projects",
   "description": "Projects, issues and collaboration for a NocoBase application.",
-  "version": "0.1.0-beta.19",
+  "version": "0.1.0-beta.21",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -291,6 +291,7 @@
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
+    "knex": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "shadcn": "catalog:",

@@ -149,8 +149,19 @@ import {
 import { insertRunRequest, runRequestsRepo } from './run-requests.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
-/** Queued runs looked at per claim, oldest first by priority. */
+/** Ordinary queued runs per page, oldest first by priority. */
 const CANDIDATES = 50;
+/** The initial page plus at most two further pages per claim request, shared by all free slots. */
+const CANDIDATE_PAGES = 3;
+
+/** Request-local read budget, also shared by a long poll's post-wait check. */
+export interface ClaimScan {
+  remainingPages: number;
+}
+
+export function createClaimScan(): ClaimScan {
+  return { remainingPages: CANDIDATE_PAGES };
+}
 
 export interface ClaimService {
   reconcileCommentConsent(unit: Tx, runId: string): Promise<void>;
@@ -166,11 +177,13 @@ export interface ClaimService {
   /**
    * Up to `free` runs for `runner`, each with its payload; empty when nothing fits. `tools` is what the runner said it
    * can take of each coding tool it keeps a limit for (`ClaimRequest.tools`); a tool left out is bounded by `free`.
+   * A request-local `scan` shares the page cap with a long poll's post-wait check.
    */
   claim(
     runner: Runner,
     free: number,
     tools?: Readonly<Partial<Record<AgentTool, number>>>,
+    scan?: ClaimScan,
   ): Promise<RunPayload[]>;
   /** The skills a run gets, worked out the way its claim works them out. The caller checks who holds the run. */
   runSkills(runner: Runner, runId: string): Promise<RunSkill[]>;
@@ -514,11 +527,10 @@ async function settleClaimInputs(
     pending.filter((input) => !ids.has(input.id)).map((input) => input.id),
     now,
   );
-  await markDelivered(
-    conn,
-    pending.filter((input) => ids.has(input.id)),
-    now,
-  );
+  const given = pending.filter((input) => ids.has(input.id));
+  const delivered = await markDelivered(conn, given, now);
+  // One was withdrawn while the claim assembled it: claim the run again, without it.
+  if (delivered.length !== given.length) throw new NotForThisRunner();
 }
 
 export function createClaimService(deps: ClaimDeps): ClaimService {
@@ -1067,7 +1079,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       cli: deps.cli.name,
       appName: deps.app.name,
     };
-    const assembly = await binding.context.assemble(
+    let assembly = await binding.context.assemble(
       conn,
       claim,
       prepared.get('subject'),
@@ -1174,19 +1186,21 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       filter: { runId: run.id },
       sort: (sort) => sort.field('seq').desc(),
     });
-    const brief = briefOf(
-      agent,
-      await withSections(
-        conn,
-        deps.sections,
-        effectiveClaim,
-        assembly,
-        prepared,
-      ),
-      skills,
-      deps.cli.name,
-      deps.app.name,
-    );
+    const render = async (): Promise<RenderedBrief> =>
+      briefOf(
+        agent,
+        await withSections(
+          conn,
+          deps.sections,
+          effectiveClaim,
+          assembly,
+          prepared,
+        ),
+        skills,
+        deps.cli.name,
+        deps.app.name,
+      );
+    let brief = await render();
     const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
     const resume =
       !run.freshSession &&
@@ -1194,6 +1208,28 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       session &&
       !session.poisoned &&
       session.fingerprint === briefFingerprint;
+    // A kept session that cannot be resumed: the new one is told what came before, as a first one is. The history
+    // is outside the fingerprint, so it does not change.
+    let recoveryContext: string | undefined;
+    if (session) {
+      const fresh = await binding.context.assemble(
+        conn,
+        { ...claim, freshSession: true },
+        prepared.get('subject'),
+      );
+      if (resume) {
+        // Should the kept session be gone on the runner, the new one hears what came before from this.
+        const kept = assembly;
+        assembly = fresh;
+        const context = (await render()).layers.context;
+        assembly = kept;
+        if (context.trim() && context !== brief.layers.context)
+          recoveryContext = context;
+      } else {
+        assembly = fresh;
+        brief = await render();
+      }
+    }
     // Mounts only for a runner that places them; their hashes stay out of the fingerprint, and a resumed session
     // hears what changed in them in its turn instead.
     const { mounts, resumeNotes } = runner.features.includes('mounts')
@@ -1263,6 +1299,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         turn,
         session: resume ? 'resume' : 'fresh',
         ...(resume ? { resumeSessionId: session.sessionId } : {}),
+        ...(resume && recoveryContext ? { recoveryContext } : {}),
       },
       inputs,
       workspace: {
@@ -1596,6 +1633,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     return false;
   }
 
+  /** Whether `runner` may take the run as its subject binds work to runners. */
+  async function pinnedTo(
+    conn: DatabaseConnection,
+    run: RunRecord,
+    runner: Runner,
+  ): Promise<boolean> {
+    const pin = deps.subjects.get(run.subjectKind)?.runnerPin;
+    if (!pin) return true;
+    const pinned = await pin.runnerOf(conn, toRun(run));
+    return pinned === null || pinned === runner.id;
+  }
+
   async function attempt(
     runner: Runner,
     agent: Agent,
@@ -1680,6 +1729,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         await lockAgentForClaim(conn, agent.id, nowText);
         const queuedRun = await findRunRecord(conn, candidate.id);
         if (!queuedRun || queuedRun.status !== 'queued') return null;
+        if (!(await pinnedTo(conn, queuedRun, runner))) return null;
         const identity = await refreshQueuedIdentity(unit, deps, queuedRun);
         // Providers were prepared for the candidate's identity outside this transaction.
         if (!identity || identity.actorUserId !== candidate.actorUserId)
@@ -1795,6 +1845,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             error,
           );
         }
+        const pin = deps.subjects.get(run.subjectKind)?.runnerPin;
+        if (pin && !(await pin.pin(unit, toRun(run), runner)))
+          throw new NotForThisRunner();
         await settleClaimInputs(
           conn,
           pending,
@@ -1918,25 +1971,41 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   }
 
   /** Queued runs that may be claimed now, in claim order. */
-  async function candidates(runner: Runner): Promise<RunRecord[]> {
+  async function* candidates(
+    runner: Runner,
+    scan: ClaimScan,
+  ): AsyncGenerator<RunRecord[]> {
+    if (scan.remainingPages <= 0) return;
     const now = clock.now();
-    const ordinary = await runsRepo(tx.read()).findMany({
-      filter: (f) =>
-        f.and([
-          f.string('status').eq('queued'),
-          f.or([
-            f.date('availableAt').empty(),
-            f.date('availableAt').notAfter(now),
+    const ordinaryPage = (after?: RunRecord) =>
+      runsRepo(tx.read()).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('status').eq('queued'),
+            f.or([
+              f.date('availableAt').empty(),
+              f.date('availableAt').notAfter(now),
+            ]),
           ]),
-        ]),
-      sort: (sort) => [
-        sort.field('priority').asc(),
-        sort.field('createdAt').asc(),
-        sort.field('id').asc(),
-      ],
-      limit: CANDIDATES,
-    });
-    if (ordinary.length === 0) return [];
+        sort: (sort) => [
+          sort.field('priority').asc(),
+          sort.field('createdAt').asc(),
+          sort.field('id').asc(),
+        ],
+        ...(after
+          ? {
+              cursor: {
+                priority: after.priority,
+                createdAt: after.createdAt,
+                id: after.id,
+              },
+            }
+          : {}),
+        limit: CANDIDATES,
+      });
+    scan.remainingPages -= 1;
+    const ordinary = await ordinaryPage();
+    if (ordinary.length === 0) return;
     // A separate scan prevents ordinary candidate pages from hiding upgrade resumptions.
     const recovery: RunRecord[] = [];
     for (let offset = 0; ; offset += CANDIDATES) {
@@ -1968,11 +2037,20 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       );
       if (page.length < CANDIDATES || recovery.length >= CANDIDATES) break;
     }
-    return [
+    yield [
       ...new Map(
         [...recovery, ...ordinary].map((run) => [run.id, run]),
       ).values(),
     ];
+    let page = ordinary;
+    while (scan.remainingPages > 0 && page.length === CANDIDATES) {
+      const after = page.at(-1)!;
+      // Advance by the full claim order: concurrent removals must not shift an offset past queued work.
+      scan.remainingPages -= 1;
+      page = await ordinaryPage(after);
+      if (page.length === 0) return;
+      yield page;
+    }
   }
 
   /** One batch for locations, one for machines, and occupancy batches only when a preference exists. */
@@ -2210,14 +2288,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     return true;
   }
 
-  async function claimOne(
+  /** False stops the whole request when a transactional capacity check finds the runner full. */
+  async function claimPage(
     runner: Runner,
     seen: Set<string>,
     reported: ToolRoom,
-  ): Promise<RunPayload | null> {
-    if (runner.draining) return null;
+    queued: readonly RunRecord[],
+    full: Set<string>,
+  ): Promise<RunPayload | false | null> {
     const conn = tx.read();
-    const queued = await candidates(runner);
     const affinity = await affinityBatch(queued, runner);
     const agents = await findAgents(
       conn,
@@ -2231,7 +2310,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       (inventoryRead ??= deps.runners
         ? deps.runners.all(conn)
         : Promise.resolve([runner]));
-    const full = new Set<string>();
     for (const candidate of queued) {
       if (seen.has(candidate.id) || full.has(candidate.agentId)) continue;
       seen.add(candidate.id);
@@ -2248,9 +2326,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         clock.now().getTime(),
       );
       if (reserved && reserved !== runner.id) continue;
+      // Work bound to another runner waits for it; work bound here takes no other preference.
+      const pin = deps.subjects.get(candidate.subjectKind)?.runnerPin;
+      const pinned = pin ? await pin.runnerOf(conn, toRun(candidate)) : null;
+      if (pinned !== null && pinned !== runner.id) continue;
       const preferred = affinity.preferred.get(candidate.id);
       if (
         !reserved &&
+        pinned === null &&
         preferred &&
         preferred.id !== runner.id &&
         (await readyPreference(
@@ -2277,7 +2360,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const result = await attempt(runner, agent, candidate, reported);
         if (result.kind === 'claimed') return result.payload;
         if (result.kind === 'full') {
-          if (result.scope === 'runner') return null;
+          if (result.scope === 'runner') return false;
           // Seen candidates are passed over for good in this claim; unvisited ones stay eligible for the next pass.
           seen.delete(candidate.id);
           full.add(candidate.agentId);
@@ -2337,16 +2420,34 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const agent = await findAgent(conn, run.agentId);
       return agent ? selectionFacts(conn, toRun(run), agent, false) : null;
     },
-    async claim(runner, free, tools) {
-      if (runner.status !== 'online' || runnerLowOnDisk(runner)) return [];
+    async claim(runner, free, tools, scan = createClaimScan()) {
+      if (
+        scan.remainingPages <= 0 ||
+        runner.status !== 'online' ||
+        runner.draining ||
+        runnerLowOnDisk(runner)
+      )
+        return [];
       const payloads: RunPayload[] = [];
       const seen = new Set<string>();
       const limit = Math.min(free, runner.slots);
       const reported = toolRoom(tools);
+      const pages = candidates(runner, scan);
+      let queued: readonly RunRecord[] = [];
       while (payloads.length < limit) {
         if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots) break;
-        const payload = await claimOne(runner, seen, reported);
-        if (!payload) break;
+        const full = new Set<string>();
+        let payload: RunPayload | false | null;
+        do {
+          if (queued.length === 0) {
+            const page = await pages.next();
+            if (page.done) return payloads;
+            queued = page.value;
+          }
+          payload = await claimPage(runner, seen, reported, queued, full);
+          if (payload === false) return payloads;
+          if (!payload) queued = [];
+        } while (!payload);
         payloads.push(payload);
         reported.take(payload.tool.kind);
       }

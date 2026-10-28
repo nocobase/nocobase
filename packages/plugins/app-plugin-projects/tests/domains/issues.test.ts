@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createHarness, type Harness } from '../harness.js';
 
@@ -8,7 +8,10 @@ beforeEach(async () => {
   h = await createHarness();
   for (const id of ['admin', 'lead', 'alice', 'bob']) await h.addUser(id, id);
 });
-afterEach(() => h.close());
+afterEach(async () => {
+  vi.useRealTimers();
+  await h.close();
+});
 
 const alice = () => h.viewer('alice');
 const admin = () => h.viewer('admin', 'admin');
@@ -522,4 +525,52 @@ describe('sorting', () => {
     const [first] = (await h.services.issueQueries.page(admin, {})).data;
     expect(first).not.toHaveProperty('priorityRank');
   });
+});
+
+it('records status occurrence time independently of later edits and event delivery', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2030-01-01T00:00:00.000Z'));
+  const issue = await h.services.issues.create(alice(), {
+    title: 'Confirm a plan',
+  });
+  const blocked = await h.services.issues.update(alice(), issue.id, {
+    statusKey: 'blocked',
+    revision: issue.revision,
+  });
+  const changes: {
+    statusChangedAt?: string;
+    changes: { status?: { from: string; to: string } };
+  }[] = [];
+  const stop = h.services.events.on('issue.updated', (event) => {
+    changes.push(event);
+  });
+  vi.setSystemTime(new Date('2030-01-01T00:00:01.000Z'));
+  const resumed = await h.services.issues.update(alice(), issue.id, {
+    statusKey: 'in_progress',
+    revision: blocked.revision,
+  });
+  vi.setSystemTime(new Date('2030-01-01T00:00:03.000Z'));
+  const edited = await h.services.issues.update(alice(), issue.id, {
+    title: 'Edited later',
+    revision: resumed.revision,
+  });
+  stop();
+  expect(edited.updatedAt).toBe('2030-01-01T00:00:03.000Z');
+  expect(changes).toHaveLength(1);
+  expect(changes[0]).toMatchObject({
+    statusChangedAt: '2030-01-01T00:00:01.000Z',
+    changes: { status: { from: 'blocked', to: 'in_progress' } },
+  });
+  // Changes without a status transition must not fabricate a resumption time.
+  const ownerEvents: { statusChangedAt?: string }[] = [];
+  const stopOwner = h.services.events.on('issue.updated', (event) => {
+    ownerEvents.push(event);
+  });
+  await h.services.issues.update(alice(), issue.id, {
+    ownerUserId: 'bob',
+    revision: edited.revision,
+  });
+  stopOwner();
+  expect(ownerEvents).toHaveLength(1);
+  expect(ownerEvents[0]).not.toHaveProperty('statusChangedAt');
 });

@@ -6,6 +6,7 @@ Single components that pages are built from. Each is its own item, installs into
 | ------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `page-container`   | `page-container.tsx`                                                    | `PageContainer`                                                                                                                                                                                                                                                  |
 | `page-header`      | `page-header.tsx`                                                       | `PageHeader`                                                                                                                                                                                                                                                     |
+| `list-feedback`    | `list-feedback.tsx`                                                     | `ListFeedback`, `ListFeedbackActions`                                                                                                                                                                                                                            |
 | `route-dialog`     | `route-dialog.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts` | `RouteDialog`, `useRouteOverlay`                                                                                                                                                                                                                                 |
 | `route-drawer`     | `route-drawer.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts` | `RouteDrawer`, `useRouteOverlay`                                                                                                                                                                                                                                 |
 | `route-child-page` | `route-child-page.tsx`                                                  | `RouteChildPage`                                                                                                                                                                                                                                                 |
@@ -93,7 +94,7 @@ The shared DataTable and its column header and pagination controls use these key
 | `dataTable.sortAscending`  | Asc                                        | 升序                                 |
 | `dataTable.sortDescending` | Desc                                       | 降序                                 |
 | `dataTable.hideColumn`     | Hide                                       | 隐藏                                 |
-| `dataTable.noResults`      | No results.                                | 暂无结果。                           |
+| `dataTable.noResults`      | No results                                 | 无结果                               |
 | `dataTable.selectedCount`  | {{selected}} of {{total}} row(s) selected. | 已选择 {{selected}} / {{total}} 行。 |
 | `dataTable.rowsPerPage`    | Rows per page                              | 每页行数                             |
 | `dataTable.pageOf`         | Page {{page}} of {{pageCount}}             | 第 {{page}} 页，共 {{pageCount}} 页  |
@@ -135,6 +136,20 @@ The shared DataTable and its column header and pagination controls use these key
 | `flowDiagram.leavesTo`       | Leaves to                                    | 可转到                      |
 | `flowDiagram.arrivesFrom`    | Arrives from                                 | 来自                        |
 | `flowDiagram.otherRoutes`    | Other routes                                 | 其他流转                    |
+
+| Key                            | English                               | Chinese                |
+| ------------------------------ | ------------------------------------- | ---------------------- |
+| `listFeedback.loading`         | Loading                               | 加载中                 |
+| `listFeedback.empty`           | No data yet                           | 暂无数据               |
+| `listFeedback.noResults`       | No results                            | 无结果                 |
+| `listFeedback.forbidden`       | Access denied                         | 无权访问               |
+| `listFeedback.unauthenticated` | Session expired                       | 会话已过期             |
+| `listFeedback.failed`          | Unable to load list                   | 列表加载失败           |
+| `listFeedback.refreshFailed`   | Refresh failed; showing previous data | 刷新失败，仍显示旧数据 |
+| `listFeedback.retry`           | Retry                                 | 重试                   |
+| `listFeedback.retrying`        | Retrying…                             | 正在重试…              |
+| `listFeedback.clear`           | Clear filters                         | 清空筛选               |
+| `listFeedback.signIn`          | Sign in                               | 登录                   |
 
 ## In a plugin
 
@@ -236,3 +251,23 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 ## Record Link
 
 `RecordLink` renders a React Router link for clickable record names and identifiers. It uses foreground text with medium weight at rest, an underline on hover and a visible keyboard focus. Pass the destination as `to`, including the current list query in `to.search` when navigating to a child route. Native Link props and refs are preserved. It adds no translation keys and does not replace action buttons or menu items.
+
+## List feedback
+
+`ListFeedback` renders the state returned by `resolveListState` from `@nocobase/app-client`. Pass the original query snapshot, including `isPlaceholderData`; retry refetches the same query, and clear synchronizes the controls, applied filters and first page. `DataTable` accepts `listState`, `onRetry`, `onClearFilters` and `emptyAction`; its legacy `emptyMessage` remains business content for successful unfiltered emptiness. Gate creation with existing permissions. Installed sources need a three-way source merge, including request owners and translations, to upgrade.
+
+Default list states use a compact themed treatment with a neutral icon, a short title and standard actions. Refresh failures use a concise inline warning beside retained rows and keep the standard retry action available. Motion respects reduced-motion preferences. The shared Translations table includes every status and action key required for an installed copy.
+
+## Form failure feedback
+
+`FeedbackForm` preserves the caller’s form and upload state, renders mapped reasons only beside their fields/groups, and reveals/focuses editable errors in layout order. Unmapped failures and unavailable focus targets receive one safe, keyboard-accessible form message. Pure field errors have no top summary or navigation list. Native controls provide submitted `name` or `data-field-path`. Return submission promises or pass caught request errors through `error`; RHF consumers pass `submitting` and `validationErrors` and disable registration-order focus. Custom controls and unmounted regions register persistent `FormFeedback` descriptors from `@nocobase/app-client`, with stable row identities and explicit access, editability, region reveal and focus callbacks. The application development Skill documents the adapter and source upgrade contract.
+
+Add these keys to the application namespace. Device approval exports them with its block locales; installing the component itself does not merge application translations.
+
+| Key                    | English                                                                           | Chinese                                      |
+| ---------------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
+| `formFeedback.field`   | This value was rejected. Check it and try again.                                  | 此字段的值未通过校验，请检查并修改后重试。   |
+| `formFeedback.invalid` | Check the highlighted fields and try again.                                       | 请检查标记的字段后重试。                     |
+| `formFeedback.failed`  | Unable to save. Your input has been kept. Try again.                              | 保存失败，已保留您的输入，请重试。           |
+| `formFeedback.network` | Unable to connect. Check your connection and try again. Your input has been kept. | 无法连接，请检查网络后重试。已保留您的输入。 |
+| `formFeedback.denied`  | You cannot submit this form with your current access. Your input has been kept.   | 当前权限无法提交此表单。已保留您的输入。     |

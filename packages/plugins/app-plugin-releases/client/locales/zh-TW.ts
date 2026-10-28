@@ -496,7 +496,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: '第一管理員',
-      expires: '為首次部署產生。現在儲存：在{{hours}} h中刪除。',
       kept: '為第一次部署產生；它會一直保留到應用程式被刪除為止。',
       username: '使用者名',
       email: '電子郵件',
@@ -722,6 +721,10 @@ const zhTW: LocaleResource<typeof enUS> = {
       name: '名稱',
       driver: '驅動程式',
       runsOn: '執行於',
+      appCount: '應用數',
+      purpose: '用途',
+      purposeHint: '每個環境只做一件事：執行 PR 預覽，或測試版本。',
+      purposes: { preview: '預覽', test: '測試' },
       policy: '原則',
       publicUrl: '公共URL圖案',
       config: '設定 (JSON)',

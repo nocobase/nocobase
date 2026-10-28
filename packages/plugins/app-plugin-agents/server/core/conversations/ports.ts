@@ -13,6 +13,10 @@ import type { Agent } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
 import type {
   ChatAgent,
+  ConversationAttentionCounts,
+  ConversationUsage,
+  ConversationLink,
+  ConversationLinkView,
   ConversationNotice,
   ConversationDetail,
   ConversationListQuery,
@@ -60,6 +64,11 @@ export interface ConversationRuleLines {
   readonly rules?: readonly string[];
   /** Sections after the rules, each a list of lines (a heading line, then `- ` lines). */
   readonly sections?: readonly (readonly string[])[];
+  /**
+   * Sections added to every turn after its first line, each a list of lines: what is current now, such as the work the
+   * conversation drives. A resumed session does not read the system layer again, and these never stop it resuming.
+   */
+  readonly turn?: readonly (readonly string[])[];
 }
 
 /**
@@ -70,6 +79,67 @@ export type ConversationRules = (
   conn: DatabaseConnection,
   context: ConversationRulesContext,
 ) => Promise<ConversationRuleLines>;
+
+/** A kind of record conversations may be tied to (`ConversationLinks.registerKind`), such as an issue. */
+export interface ConversationLinkKind {
+  /** `CONVERSATION_LINK_KIND_PATTERN`; a key is registered once. */
+  readonly key: string;
+  readonly title?: I18nText;
+  /**
+   * How each of `targetIds` looks to `userId`, leaving out the ones they may not see. Database reads on `conn` only: it
+   * is also read in the claim's transaction, for the "Linked work" section of each turn. Without it the owner may tie
+   * any id of the kind, and its links show no view.
+   */
+  resolve?(
+    conn: DatabaseConnection,
+    userId: string,
+    targetIds: readonly string[],
+  ): Promise<ReadonlyMap<string, ConversationLinkView>>;
+}
+
+/** A record of a registered kind. */
+export interface ConversationLinkTarget {
+  readonly kind: string;
+  readonly targetId: string;
+}
+
+/** What conversations are tied to. A target is tied to a conversation once. */
+export interface ConversationLinks {
+  /** Returns what removes the kind. Links of a kind that is not registered stay stored but are not listed. */
+  registerKind(kind: ConversationLinkKind): () => void;
+  hasKind(key: string): boolean;
+  /** The conversation's links, oldest first, as its owner sees them. */
+  list(userId: string, conversationId: string): Promise<ConversationLink[]>;
+  /** The owner ties a target they may see; tying one again answers the existing link. */
+  add(
+    userId: string,
+    conversationId: string,
+    target: ConversationLinkTarget,
+  ): Promise<ConversationLink>;
+  /** 404 for a link the conversation does not have. */
+  remove(userId: string, conversationId: string, linkId: string): Promise<void>;
+  /**
+   * Trusted: ties a target without asking its kind whether anyone may see it, such as what the agent of a run on the
+   * conversation created (`ConversationService.ofRunId`). In `outer`'s transaction when given. False when the
+   * conversation is gone or already had the link.
+   */
+  attach(
+    conversationId: string,
+    target: ConversationLinkTarget,
+    options?: {
+      readonly origin?: 'agent' | 'application';
+      readonly outer?: Tx;
+    },
+  ): Promise<boolean>;
+  /**
+   * Trusted: every conversation tied to the target, whoever owns it, such as to deliver news to each
+   * (`ConversationService.deliver`). A person reads their own with `list` and `linkKind`, `linkTargetId`.
+   */
+  linkedTo(
+    conn: DatabaseConnection,
+    target: ConversationLinkTarget,
+  ): Promise<readonly ConversationRef[]>;
+}
 
 /** A place a conversation may be started from besides the panel (`StartConversationRequest.source`). */
 export interface ConversationSourceKind {
@@ -91,6 +161,11 @@ export interface ConversationNews {
   readonly notice: ConversationNotice;
   /** Handed to the agent as run input on the conversation's key, when the agent may still be woken. */
   readonly input?: NewInput;
+  /**
+   * A Runner OnlineAgent conversation hands `input` to its agent only when this is true: as a new run, or into the one
+   * that works on it now. Its owner sees that run's replies in the conversation like any other.
+   */
+  readonly wake?: boolean;
 }
 
 /** Which messages to read: the newest `limit`, those before a `seq` (older), or those after one (newer). */
@@ -143,16 +218,63 @@ export interface ConversationService {
       expectedConfig: OnlineAgentConfig;
       workContext?: ResolvedPageContext;
       business?: OnlineAgentJson;
+      /** Join the run already answering: the runner steers it into the turn or takes it as the next one. */
+      queue?: boolean;
     },
   ): Promise<{ readonly seq: number; readonly run: SendMessageResult['run'] }>;
+  /**
+   * Takes back a message queued while the agent worked (`queue`), while its runner has not taken it: it stays in the
+   * history, marked withdrawn, and the agent never sees it.
+   */
+  withdraw(userId: string, id: string, messageId: string): Promise<void>;
   /** A new conversation and its first message (`StartConversationRequest`): the application pages' buttons. */
   start(
     userId: string,
     request: StartConversationRequest,
   ): Promise<SendMessageResult>;
   markRead(userId: string, id: string): Promise<ConversationDetail>;
+  /**
+   * The owner saw the conversation up to message `seq`: a reply or failure waiting for them up to there is settled; a
+   * question (`confirm`) waits until they write.
+   */
+  markSeen(
+    userId: string,
+    id: string,
+    seq: number,
+  ): Promise<ConversationDetail>;
+  /** How many of the owner's open conversations are unread, and how many need them. */
+  attention(userId: string): Promise<ConversationAttentionCounts>;
+  /** What the conversation's runs used (`ConversationUsage`); owner only. */
+  usage(userId: string, id: string): Promise<ConversationUsage>;
+  /**
+   * The application told the owner of the conversation up to `seq` (a reminder, a push), so it tells them once; the
+   * highest one is kept.
+   */
+  markNoticed(conversationId: string, seq: number): Promise<void>;
+  /**
+   * Unbinds the conversation from its runner: the next run goes to whichever runner takes it first, which binds it,
+   * starting a fresh session with the conversation's history. The old directory is left to the runner's cleanup.
+   */
+  switchRunner(userId: string, id: string): Promise<ConversationDetail>;
+  /** Changes the agent of an idle Runner conversation, preserving history and links; its next message starts a fresh session. */
+  switchAgent(
+    userId: string,
+    id: string,
+    agentId: string,
+  ): Promise<ConversationDetail>;
   /** Cancels the conversation's open runs: a queued one at once, a working one is asked to stop. */
   stop(userId: string, id: string): Promise<ConversationDetail>;
+  /**
+   * Deletes the owner's conversation for good: its open runs are cancelled, its messages, files, links and kept
+   * sessions go, its inbox notices are settled, and runners remove its working directories and session files on
+   * their next report.
+   */
+  delete(userId: string, id: string): Promise<void>;
+  /**
+   * Deletes conversations archived more than `days` days before `now`, as `delete` does, in batches; answers how many
+   * it deleted.
+   */
+  purgeArchived(days: number, now?: Date): Promise<number>;
   /** Moves the conversation to the system default agent until `restore`; a new session. */
   fallback(userId: string, id: string): Promise<ConversationDetail>;
   /** Moves the conversation back to its own agent; a new session. */
@@ -166,6 +288,25 @@ export interface ConversationService {
     run: Pick<Run, 'subject' | 'actorUserId'>,
     title: string,
   ): Promise<ConversationDetail>;
+  /**
+   * The agent of a run on the conversation asks its owner something (`confirm`), which waits for them until they write.
+   * For the CLI command `conversation ask-owner`.
+   */
+  askOwnerFromRun(
+    run: Pick<Run, 'subject' | 'actorUserId'>,
+    question: string,
+    issue?: string,
+  ): Promise<ConversationDetail>;
+  /** Settles only a question about this issue asked before its recorded resumption. */
+  settleOwnerQuestion(
+    id: string,
+    issue: string,
+    resumedAt: string,
+  ): Promise<boolean>;
+  /** `homeOf` for a stored run, by id: the conversation what the run did goes back to, or null. */
+  ofRunId(runId: string): Promise<ConversationRef | null>;
+  /** Where the application registers what conversations may be tied to, and ties them. */
+  readonly links: ConversationLinks;
   /** The conversation a run works on, when it is one and the run acts for its owner; null otherwise. */
   ofRun(
     conn: DatabaseConnection,
@@ -184,8 +325,9 @@ export interface ConversationService {
   /**
    * In the caller's transaction: writes `news.notice` to the conversation and hands `news.input` to its agent (a new
    * run, or the open one), as a message would. Answers the run, or null when the agent was not woken (no input, or
-   * the agent can no longer be woken) or the conversation is gone. Native and Runner OnlineAgent bindings save
-   * the notice but ignore input for wake-up and return null; null can therefore mean a notice was saved.
+   * the agent can no longer be woken) or the conversation is gone. Native bindings save the notice but ignore input
+   * for wake-up and return null, as Runner OnlineAgent bindings do unless `news.wake`; null can therefore mean a notice
+   * was saved.
    */
   deliver(
     outer: Tx,

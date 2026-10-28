@@ -1,9 +1,11 @@
 import { demoConfigurationRuntimeToken } from '../configuration/runtime-token.js';
+import type { AppIdentityConfig } from '@nocobase/app-server/config';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
 
+import { registerDemoPreferences } from '../preferences.js';
 import { resolveDemoModeSettings } from '../config.js';
 import { DemoReadOnlyError } from '../errors.js';
 import {
@@ -29,6 +31,7 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-demo-mode';
   private guard: DemoWriteGuard | undefined;
   private connectionNames: readonly string[] | undefined;
+  private releasePreferences: (() => void) | undefined;
 
   public override register(): void {
     const settings = resolveDemoModeSettings(this.app.config);
@@ -39,6 +42,26 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
     const guard = new DemoWriteGuard();
     this.app.container.instance(demoWriteGuardToken, guard);
     if (!settings.enabled) return;
+
+    // Register defaults before Authentication's lazy service is created. Only HTTPS demos can use these cookies;
+    // ordinary deployments and HTTP development keep their existing policy. Deployment overrides still win.
+    if (
+      this.app.config
+        .get<AppIdentityConfig>('app')
+        ?.publicOrigin?.startsWith('https://')
+    ) {
+      this.app.config.mergeDefaults({
+        auth: {
+          advanced: {
+            defaultCookieAttributes: {
+              sameSite: 'none',
+              secure: true,
+              partitioned: true,
+            },
+          },
+        },
+      });
+    }
 
     this.guard = guard;
     // The root router runs this before every route, including those contributed later and the WebSocket upgrade.
@@ -60,6 +83,16 @@ export class DemoModeProvider extends ServiceProvider<AppPluginApplication> {
         },
       }),
     );
+  }
+
+  public override async boot(): Promise<void> {
+    if (resolveDemoModeSettings(this.app.config).enabled)
+      this.releasePreferences ??= registerDemoPreferences(this.app);
+  }
+
+  public override async shutdown(): Promise<void> {
+    this.releasePreferences?.();
+    this.releasePreferences = undefined;
   }
 
   /** Guards every connection and proves it with a probe write, refusing to start when a connection is not guarded. */

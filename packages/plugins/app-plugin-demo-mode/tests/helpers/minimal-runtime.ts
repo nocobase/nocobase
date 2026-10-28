@@ -80,6 +80,10 @@ const appRuntime: AppRuntimeDefinition = defineAppRuntime({
   ]),
   serviceProviders: [DemoProvider],
   routes: [demoProjectRoutes],
+  locales: {
+    'en-US': async () => ({ default: {} }),
+    'zh-CN': async () => ({ default: {} }),
+  },
 });
 
 export default appRuntime;

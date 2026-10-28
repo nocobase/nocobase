@@ -1,3 +1,6 @@
+import { ListFeedbackDemo } from './demo/components/list-feedback.js';
+import { FileComponentUiDemo } from './demo/file/file-component-ui.js';
+import { NotificationLogsUiDemo } from './demo/notification/notification-logs-ui.js';
 import { copyText } from '@nocobase/app-client';
 import {
   AlignLeft,
@@ -96,6 +99,7 @@ import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
 import { SetupReadinessDemo } from './demo/components/setup-readiness.js';
+import { FeedbackFormDemo } from './demo/components/feedback-form.js';
 import { RecordLinkDemo } from './demo/components/record-link.js';
 import { PageHeaderDemo } from './demo/components/page-header';
 import { DefaultAccessEditorDemo } from './demo/authorization/default-access-editor.js';
@@ -145,6 +149,11 @@ interface ItemPreview {
 
 // Items are not discovered: each one is wired here, and routed to its demo in `AppContent`.
 const itemPreviews: Record<string, ItemPreview> = {
+  'file-component-ui': { path: '/demo/file/file-component-ui', icon: Blocks },
+  'notification-logs-ui': {
+    path: '/demo/notification/notification-logs-ui',
+    icon: Blocks,
+  },
   'auth-centered-layout': {
     path: '/demo/auth/auth-centered-layout',
     icon: ShieldCheck,
@@ -160,8 +169,13 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/page-container',
     icon: LayoutTemplate,
   },
+  'feedback-form': {
+    path: '/demo/components/feedback-form',
+    icon: ClipboardList,
+  },
   'record-link': { path: '/demo/components/record-link', icon: Table2 },
   'page-header': { path: '/demo/components/page-header', icon: Heading },
+  'list-feedback': { path: '/demo/components/list-feedback', icon: ListChecks },
   'setup-readiness': {
     path: '/demo/components/setup-readiness',
     icon: ListChecks,
@@ -288,6 +302,10 @@ export function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { pathname } = window.location;
+  if (pathname.startsWith('/demo/file/file-component-ui'))
+    return <FileComponentUiDemo />;
+  if (pathname.startsWith('/demo/notification/notification-logs-ui'))
+    return <NotificationLogsUiDemo />;
   if (pathname.startsWith('/demo/auth/device-approval')) {
     return <DeviceApprovalDemo />;
   }
@@ -303,8 +321,12 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
   }
+  if (pathname.startsWith('/demo/components/list-feedback'))
+    return <ListFeedbackDemo />;
   if (pathname.startsWith('/demo/components/setup-readiness'))
     return <SetupReadinessDemo />;
+  if (pathname.startsWith('/demo/components/feedback-form'))
+    return <FeedbackFormDemo />;
   if (pathname.startsWith('/demo/components/record-link'))
     return <RecordLinkDemo />;
   if (pathname.startsWith('/demo/components/page-header')) {

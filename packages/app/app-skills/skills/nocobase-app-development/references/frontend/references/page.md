@@ -208,7 +208,7 @@ A page and the endpoints it calls must agree: the example's `/api/projects` is o
 
 Every application route that resolves to a `page` permission needs a non-empty, translated display name, including URL-addressable forms, dialogs, drawers and detail pages. Navigation/breadcrumb titles provide it where already appropriate. For a page that intentionally has neither (especially an overlay), add its existing application route `name` and a static application translation key to `client/pages/settings/page-permission-titles.ts`. This mapping labels permissions only; do not add a menu/breadcrumb or change a route name, `authz.resource.id`, inheritance, `'skip'` or stored grants to repair copy. Plugin routes retain their owning namespace and are not overridden by an application's same-named route.
 
-Provide English and Chinese text without unresolved interpolation placeholders. The permission catalog uses `pagePermissionResources()` and a localized unnamed-page/path fallback instead of exposing technical ids. That fallback is a diagnostic, not successful delivery: `tests/logic/page-permission-titles.test.ts` must pass against the application's actual resolved routes and locales; it rejects missing labels, stale mapping keys and untranslated keys. When fixing an existing app, preserve the complete resource/action identity list and grants, and verify display labels without rewriting authorization data.
+Provide English and Chinese text without unresolved interpolation placeholders. The permission catalog uses `pagePermissionResources()` and a localized unnamed-page/path fallback instead of exposing technical ids. That fallback is a diagnostic, not successful delivery: `tests/client/page-permission-titles.test.ts` must pass against the application's actual resolved routes and locales; it rejects missing labels, stale mapping keys and untranslated keys. When fixing an existing app, preserve the complete resource/action identity list and grants, and verify display labels without rewriting authorization data.
 
 ## 5. Settings pages
 
@@ -279,7 +279,7 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 - **A path with a parameter (`:projectId`) cannot have `navigation`**; registration raises an error, because a menu entry must point to a fixed URL (wildcards are rejected on every route, [section 1](#1-declare-the-route)).
 - Navigation group: write only `name`, `navigation` and `children`, without `componentLoader`. For groups and clickable parents, see [`child-routes.md`](child-routes.md).
 - Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry; the home page entry is declared in the routes as well.
-- A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/logic/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
+- A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/client/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
 
 ### A count beside an entry
 
@@ -308,8 +308,8 @@ The shell header shows the current page's breadcrumb after the sidebar toggle, o
 `BackButton` (`#components/back-button`) is a component of its own: the page places it inside `PageContainer`, above `PageHeader`, and it needs nothing from the header. [Section 5 of `child-routes.md`](child-routes.md#5-covering-child-pages-routechildpage) has the complete example, a covering child page.
 
 - It is a muted text link with an arrow and "Back" (`navigation.back`), turning to the foreground on hover.
-- By default it leads to the parent route and keeps the query string, as closing an overlay does: from `/projects/import?status=active` it returns to `/projects?status=active`, and the list keeps its search and filters. The parent is found by route, not by path segment, so a child route with a two-segment path returns to its parent too.
-- **The query string it keeps is the current one.** The page it returns to gets its search and filters back only if every link on the way down carried them: a link into a page below another one forwards `location.search` whole, never a selection of it. Whatever the page being left wrote there goes back too, unless the page removes it: a page that writes parameters of its own, itself or in its tabs (the Orders tab's `ordersQ`), passes `to` with those parameters removed — `<BackButton to={{ pathname: '..', search: withoutParams(location.search, CUSTOMER_PAGE_PARAMS) }} />`, with `withoutParams` from [`example/url-search.md`](example/url-search.md) — so the list gets exactly its own back, and the next customer does not open with the previous one's order search. `..` still follows the parent route the page was opened from.
+- By default the back link leads to the parent route with its recorded query. The parent is resolved by route, not by path segment, so a two-segment detail route returns to its real list too.
+- Without a recorded parent visit, including a directly opened detail or reload, the back link uses the default parent with an empty query. For a deliberate deep-link contract that forwards known list parameters, supply an explicit `to` with an allowlisted query; never borrow arbitrary detail parameters.
 - `to` sends it elsewhere, for a page that belongs to exactly one parent, such as a record page declared beside its list: `<BackButton to={{ pathname: '/customers', search: location.search }} />`. For a module reused under several parents — a record's page opened from another page as well (["The same detail page over another page" in `child-routes.md`](child-routes.md#the-same-detail-page-over-another-page)) — omit it, or keep `..` as its `pathname` when only the query string changes, as the previous point does, so the back button follows the parent route it was opened from; a hard-coded path sends a user who came from elsewhere to a page they were not on. `children` replaces the label; keep "Back" unless the destination needs naming.
 - It navigates rather than going back in the browser history, which a page opened from a link or a refresh does not have, and it replaces the history entry, as closing an overlay does: the browser's Back then does not reopen the page just left, such as a form that would come back empty.
 
@@ -321,7 +321,7 @@ By default the trail is generated from the matched route levels:
 
 - A route with `breadcrumb` is a level, titled by it; a menu page (`navigation` with a component) without one is a level titled by its `navigation.title`. Tab, dialog and drawer routes declare neither and add no level, so an overlay leaves the page beneath as the current level.
 - A level the viewer may not open is left out, so a denied page's title never shows.
-- Earlier page levels link to their actual URLs, without query string; a group without a component is plain text. The last level is the current page and is not a link.
+- Earlier page levels link to their actual URLs with the query recorded when that ancestor was last visited in the current route ancestry. This restores its search, filters and page without copying detail-only parameters. An ancestor never visited in this mounted shell (for example, a direct detail URL or a reload) links without a query; use an explicit `usePageBreadcrumb` destination when a deep link must carry a known parent query. A group without a component is plain text. The last level is the current page and is not a link.
 - `breadcrumb.title` is a static translation key and names the kind of page ("Project details"), so it can sit on a path with parameters and is known before anything loads.
 
 A page whose trail names records, or should lead back with the parent's search, declares its whole trail with `usePageBreadcrumb` from `@nocobase/app-client`, the page itself last:
@@ -425,14 +425,15 @@ When the user asks to disable or hide a feature, make it reversible by default:
 Do not declare a plugin's own page route a second time: registering another `/install` is a conflict, not a customization. Pick one of these, in order of preference:
 
 1. **Plugin options**: when the plugin supports them, pass options where the plugin is registered in `client/plugins.ts`; the plugin's README lists the options it accepts.
-2. **Source extension**: create `client/extensions/<name>/extension.ts`; it is discovered automatically.
-3. **Route override**: add an entry to `client/route-overrides.ts`; its `routeId` is `<plugin-package>:<route-name>`.
+2. **Route override**: explicitly pass `routeComponentOverrides` to `defineAppRuntime()` in `client/runtime.ts`; its `routeId` is `<plugin-package>:<route-name>`. Create a separate override module only when needed, as shown below.
 
 - An override replaces only `componentLoader`. The route identity, path, `auth` and owning plugin stay the same.
-- Source extensions and route overrides apply to App routes, the only kind of client route.
+- Route overrides can target registered application or plugin routes.
 - Keep the replacement page lazy, declare `componentEntry` so tools can find the source file, and default-export the component. `componentEntry` is the replacement module's path from the application root, without an extension.
 
-A route override replacing the scheduler plugin's schedule detail page (an App route; its id is the package name and the route name):
+The templates omit `route-overrides.ts` and `source-extensions.ts`. UI Library assets under `client/extensions/` are imported and composed like other application source; adding a file there does not register an extension automatically.
+
+For example, to replace the registered App Foundation page with an application-owned page, create the following optional module:
 
 ```ts
 // client/route-overrides.ts
@@ -444,41 +445,28 @@ import {
 export const routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[] =
   defineClientRouteComponentOverrides([
     {
-      routeId: '@nocobase/app-plugin-scheduler:schedule-detail',
-      componentEntry: './client/pages/schedule-detail/index',
-      componentLoader: () => import('./pages/schedule-detail/index.js'),
+      routeId: '@nocobase/app-plugin-foundation:foundation',
+      componentEntry: './client/pages/foundation/index',
+      componentLoader: () => import('./pages/foundation/index.js'),
     },
   ]);
 
 export default routeComponentOverrides;
 ```
 
-Or, instead of that entry (one override per route), a source extension, which keeps the override together with its own files under one folder; `client/source-extensions.ts` loads every `client/extensions/*/extension.ts`:
+Then explicitly import it in the existing `client/runtime.ts` and add it to the existing declaration, keeping all other runtime options:
 
 ```ts
-// client/extensions/schedule-ui/extension.ts
-import {
-  defineClientRouteComponentOverrides,
-  defineClientSourceExtension,
-  type AppClientSourceExtension,
-} from '@nocobase/app-client/plugins';
+import routeComponentOverrides from './route-overrides.js';
 
-const scheduleUiExtension: AppClientSourceExtension =
-  defineClientSourceExtension({
-    name: 'schedule-ui',
-    routeComponentOverrides: defineClientRouteComponentOverrides([
-      {
-        routeId: '@nocobase/app-plugin-scheduler:schedule-detail',
-        componentEntry: './client/extensions/schedule-ui/pages/schedule-detail',
-        componentLoader: () => import('./pages/schedule-detail.js'),
-      },
-    ]),
-  });
-
-export default scheduleUiExtension;
+// Existing imports and runtime options remain in place.
+const appRuntime = defineAppRuntime({
+  // …
+  routeComponentOverrides,
+});
 ```
 
-- **A route can be overridden only once across the three mechanisms**; a second override raises an error that names the route id. Pick one; do not stack them.
+- **A route can be overridden only once across all sources**, including plugin options and any explicitly configured source extensions; a second override raises an error that names the route id.
 - Sign-in, registration, forgot password and reset password are the application's own routes, not the plugin's: edit the matching page in `client/pages/auth/` directly, and do not add another mechanism.
 
 ## 11. Where rendering happens
@@ -491,13 +479,13 @@ When customizing the shell, keep the behaviors listed in [section 1 of `shell.md
 
 ## 12. Update the route test
 
-`tests/logic/client-routes.test.ts` checks the application's routes:
+`tests/client/client-routes.test.ts` checks the application's routes:
 
 - `keeps the landing page and the authentication pages`: the home page and the four authentication pages still exist. Adding a page does not require changing it.
 - `loads every page component`: calls every page's `componentLoader` in turn (including child routes at every level) and confirms that the module default-exports a component. Adding a page does not require changing it; it fails when a page file has no default export. An entry with `parent` pointing at another package's group is the exception: register that package's routes in `resolveRoutes()` first.
 - `pins the page authorization of every signed-in page`: lists, in depth-first order, every page in the app routes that requires sign-in, including child routes. **When you add a page with `auth: 'required'`, including its child routes, add it here, or the comparison fails**: `authorizedAs` is `null` for a page whose resolved `authz` is `'skip'`, `'unrestricted'` for an unrestricted-only page, the resource id for a page that checks page access (`'projects'`), and `type:id` for any other resource (`'composite:project-reports'`); a nested page that omits `authz` shows its parent's value. The example's projects routes add `projects`, `project-new`, `project-edit`, `project-detail` and `project-detail-edit`, all `null`, in that order; a page that declares the drawer under itself adds its own pair, such as `project-dashboard-detail` and `project-dashboard-detail-edit`. A page with tabs whose header opens overlays adds a route per tab and per overlay under each tab: `customerDetailRoutes('customer')` adds `customer-detail`, `customer-detail-overview`, `customer-detail-overview-edit`, `customer-detail-orders` and `customer-detail-orders-edit`, every other page that declares it adds the same set under its own owner, and a helper in the test spells one set out (["The route test" in `example/detail-page-tabs.md`](example/detail-page-tabs.md#the-route-test)). Stored page grants reference the resource id, and changing one requires migrating existing grants, so this list is deliberately pinned.
 
-After the change, run `pnpm exec vitest run tests/logic/client-routes.test.ts`.
+After the change, run `pnpm exec vitest run tests/client/client-routes.test.ts`.
 
 ## 13. Verify
 
@@ -520,4 +508,8 @@ Root holds every grant, so a hidden page, a denied tab or a read-only settings c
 4. Ask the user to sign in as the test account into a second session file, `capture.mjs login --state storage/ui-workflow/auth-limited.json` ([`../scripts/capture.md`](../scripts/capture.md)), and take the permission shots with `"state": "storage/ui-workflow/auth-limited.json"` in their configuration. The same session calls the endpoints "as an ordinary user".
 5. Afterwards delete the permission set and ask the user to remove the account, or list both in the report; delete `auth-limited.json` with the other records.
 
-The pending and failed outcomes of `useCan` cannot be produced this way: cover them in a test, setting `permission.isPending` or `permission.error`, which the `useCan` mock of `tests/components/page-harness.test.tsx` returns.
+The pending and failed outcomes of `useCan` cannot be produced this way: cover them in a test, setting `permission.isPending` or `permission.error`, which the `useCan` mock of `tests/client/page-harness.test.tsx` returns.
+
+### List context and default return
+
+The standard `BackButton` and route breadcrumbs restore the recorded query of the visited ancestor list. Without a source visit, both use the default ancestor list with an empty query; they do not interpret a detail's parameters as list conditions. An explicit `to` remains an application-owned override. For tabbed lists, preserve the actual tab route as the source and follow [list-tab breadcrumbs](child-routes.md#list-tab-breadcrumbs-and-private-conditions). Sorting, page size and pagination use the [same normalized state](table.md#restore-list-position) for the controls and the request.
