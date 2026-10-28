@@ -64,6 +64,24 @@ function rejection(
   );
 }
 describe('public core', () => {
+  it('exposes only implemented factories and a lock-only backend contract', async () => {
+    const f = await fixture();
+    expect(f.runtime.manager).not.toHaveProperty('createSemaphore');
+    expect(f.runtime.manager).not.toHaveProperty('createReadWriteLock');
+    expect(f.runtime).not.toHaveProperty('capabilities');
+    const session = await f.backend.openSession(f.backend.contexts[0]);
+    expect(session).not.toHaveProperty('capabilities');
+    const lease = await f.lock.lock();
+    expect(f.backend.requests[0].resource).toEqual({
+      namespace: 'test',
+      kind: 'lock',
+      name: 'resource',
+      ttl: 30000,
+    });
+    await lease.release();
+    await session.close();
+    await f.runtime.close();
+  });
   it('rearms early lease timers and ignores cancelled callbacks', async () => {
     const time = new ManualTime();
     const callbacks: (() => void)[] = [];
@@ -272,28 +290,29 @@ describe('public core', () => {
       await f.runtime.close();
     },
   );
-  it('rejects unsupported JavaScript parameters, protocol and capabilities', async () => {
+  it('rejects unknown JavaScript options and invalid protocols before backend effects', async () => {
     const f = await fixture();
-    for (const options of [
+    for (const extra of [
       { priority: 0 },
       { owner: '' },
       { autoRenew: true },
+      { autoRenew: false },
+      { autoRenew: undefined },
+      { future: true },
     ]) {
+      const options = { ttl: 30000, ...extra };
       await expect(
         f.runtime.manager.createSynchronous('r', options),
       ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
+      await expect(
+        f.runtime.manager.createLock('r', options),
+      ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
     }
-    await expect(
-      f.runtime.manager.createSemaphore('r', 1),
-    ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
+    expect(f.backend.requests).toHaveLength(0);
     const session = await f.backend.openSession(f.backend.contexts[0]);
     for (const bad of [
       { ...session, protocolVersion: 0 },
       { ...session, protocolVersion: 2 },
-      {
-        ...session,
-        capabilities: { ...session.capabilities, autoRenew: true },
-      },
     ]) {
       const backend = { openSession: async () => bad, close: async () => {} };
       // Deliberately invalid extension input from JavaScript, not a declaration suppression.

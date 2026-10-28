@@ -1,8 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { performance } from 'node:perf_hooks';
-import type { ConcurrentCapabilities } from '../types.ts';
 export * from '../errors.ts';
-export type { ConcurrentCapabilities } from '../types.ts';
 
 export interface Clock {
   now(): number;
@@ -10,9 +8,12 @@ export interface Clock {
 export interface Scheduler {
   setTimer(callback: () => void, delayMs: number): () => void;
 }
-export type ResourceSpec = { namespace: string; name: string; ttl: number } & (
-  { kind: 'lock' } | { kind: 'semaphore'; permits: number }
-);
+export interface ResourceSpec {
+  namespace: string;
+  name: string;
+  ttl: number;
+  kind: 'lock';
+}
 export type WaitPolicy =
   | { kind: 'single' }
   | { kind: 'bounded'; deadline: number }
@@ -39,7 +40,6 @@ export interface BackendContext {
 }
 export interface ConcurrentBackendSession {
   readonly protocolVersion: 1;
-  readonly capabilities: ConcurrentCapabilities;
   validateResource(resource: ResourceSpec): Promise<void>;
   acquire(request: BackendAcquireRequest): Promise<BackendGrant | undefined>;
   close(): Promise<void>;
@@ -57,7 +57,7 @@ export const defaultScheduler: Scheduler = Object.freeze({
     return () => clearTimeout(timer);
   },
 });
-/** The native library adds mutex: or semaphore:. Kind is deliberately not encoded twice. */
+/** The native mutex library adds its own prefix; the lock kind is not encoded twice. */
 export function encodeResourceKey(
   resource: Pick<ResourceSpec, 'namespace' | 'name'>,
 ): string {

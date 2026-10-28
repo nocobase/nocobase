@@ -92,6 +92,9 @@ const result = await testing.runBackendContract({ createBackend: () => new testi
 assert.equal(held.size, 0);
 const backend = new testing.ControlledBackend({ acquire: async (request, context) => ({ notAfter: context.clock.now()+request.resource.ttl, release: async () => {} }) });
 const runtime = await core.createConcurrentRuntime({ backend, namespace: 'example' });
+assert.equal('createSemaphore' in runtime.manager,false);
+assert.equal('createReadWriteLock' in runtime.manager,false);
+assert.equal('capabilities' in runtime,false);
 assert.equal(await (await runtime.manager.createSynchronous('report')).run(({signal}) => { signal.throwIfAborted(); return 42; }), 42);
 await runtime.close(); await backend.close();
 console.log(JSON.stringify({ backend: result, faults: await testing.runCoreFaultContract() }));

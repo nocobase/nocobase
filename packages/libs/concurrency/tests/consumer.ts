@@ -6,6 +6,8 @@ import {
 import type {
   ConcurrentBackend,
   BackendContext,
+  ResourceSpec,
+  ConcurrentBackendSession,
 } from '../src/backend/index.ts';
 import { runBackendContract, ControlledBackend } from '../src/testing/index.ts';
 
@@ -45,9 +47,12 @@ export async function consumer(backend: ConcurrentBackend): Promise<void> {
   await lock.lock({ timeoutMs: 10 });
   // @ts-expect-error Ordinary run has no acquisition timeout.
   await executor.run(() => 1, { timeoutMs: 10 });
-  const semaphore = await runtime.manager.createSemaphore('s', 2);
-  // @ts-expect-error Ordinary acquire has no acquisition timeout.
-  await semaphore.acquire({ timeoutMs: 10 });
+  // @ts-expect-error Unimplemented factories are not public APIs.
+  runtime.manager.createSemaphore('s', 2);
+  // @ts-expect-error No capability negotiation for placeholder features.
+  runtime.capabilities;
+  // @ts-expect-error Automatic renewal is not a public option, even false.
+  await runtime.manager.createSynchronous('r', { autoRenew: false });
   await createConcurrentRuntime({
     backend,
     namespace: 'n',
@@ -67,3 +72,24 @@ export function extension(context: BackendContext): void {
 }
 void runBackendContract;
 void ControlledBackend;
+
+// @ts-expect-error Unimplemented semaphore types are not exported.
+export type RemovedSemaphore = import('../src/index.ts').Semaphore;
+// @ts-expect-error There is no reserved executor-options extension.
+export type RemovedExecutorOptions = import('../src/index.ts').ExecutorOptions;
+// @ts-expect-error No placeholder capability type is exported.
+export type NoCaps = import('../src/index.ts').ConcurrentCapabilities;
+
+export function backendSurface(
+  resource: ResourceSpec,
+  session: ConcurrentBackendSession,
+): void {
+  const kind: 'lock' = resource.kind;
+  void kind;
+  // @ts-expect-error No reserved semaphore resource kind exists.
+  resource.kind = 'semaphore';
+  // @ts-expect-error No reserved capacity field exists.
+  resource.permits;
+  // @ts-expect-error Backend sessions have no placeholder capability map.
+  session.capabilities;
+}

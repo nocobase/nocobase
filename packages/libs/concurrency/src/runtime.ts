@@ -19,12 +19,9 @@ import type {
   ConcurrentRuntimeOptions,
   ConcurrentRuntime,
   ConcurrentManager,
-  ConcurrentCapabilities,
   ConcurrentDiagnostic,
   ConcurrentOptions,
-  ExecutorOptions,
   Lock,
-  Semaphore,
   SynchronousExecutor,
   Lease,
   ExecutorContext,
@@ -53,17 +50,10 @@ function nonempty(value: string, name: string): void {
   if (typeof value !== 'string' || value.length === 0)
     throw new ConcurrentConfigurationError(`${name} must be nonempty`);
 }
-function supported(options: object): void {
-  if (
-    ('owner' in options && options.owner !== undefined) ||
-    ('priority' in options && options.priority !== undefined) ||
-    ('autoRenew' in options &&
-      options.autoRenew !== undefined &&
-      options.autoRenew !== false)
-  ) {
-    throw new ConcurrentConfigurationError(
-      'Owner, priority and automatic renewal are unsupported',
-    );
+function validateOptions(options: object, allowed: readonly string[]): void {
+  for (const key of Reflect.ownKeys(options)) {
+    if (typeof key !== 'string' || !allowed.includes(key))
+      throw new ConcurrentConfigurationError(`Unknown option: ${String(key)}`);
   }
 }
 function related(value: unknown, reason: unknown): boolean {
@@ -152,7 +142,6 @@ class ManagedLease implements Lease {
 
 class Runtime implements ConcurrentRuntime, ConcurrentManager {
   readonly manager: ConcurrentManager = this;
-  readonly capabilities: ConcurrentCapabilities;
   readonly leases = new Set<ManagedLease>();
   readonly abandoned = new Set<ManagedLease>();
   private readonly operations = new Set<Promise<unknown>>();
@@ -165,9 +154,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
     readonly context: BackendContext,
     private readonly session: ConcurrentBackendSession,
     private readonly options: ConcurrentRuntimeOptions,
-  ) {
-    this.capabilities = Object.freeze({ ...session.capabilities });
-  }
+  ) {}
   changed(): void {
     for (const notify of [...this.observers]) notify();
   }
@@ -200,7 +187,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
   }
   private resource(name: string, options: ConcurrentOptions): ResourceSpec {
     this.requireOpen();
-    supported(options);
+    validateOptions(options, ['ttl']);
     nonempty(name, 'name');
     return Object.freeze({
       namespace: this.context.namespace,
@@ -212,10 +199,6 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
   createLock(name: string, options: ConcurrentOptions = {}): Promise<Lock> {
     return this.track(async () => {
       const resource = this.resource(name, options);
-      if (!this.capabilities.lock)
-        throw new ConcurrentConfigurationError(
-          'Lock capability is unavailable',
-        );
       await this.session.validateResource(resource);
       this.requireOpen();
       return new ManagedLock(this, resource);
@@ -223,29 +206,14 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
   }
   createSynchronous(
     name: string,
-    options: ExecutorOptions = {},
+    options: ConcurrentOptions = {},
   ): Promise<SynchronousExecutor> {
     return this.track(async () => {
       const resource = this.resource(name, options);
-      if (!this.capabilities.executor)
-        throw new ConcurrentConfigurationError(
-          'Executor capability is unavailable',
-        );
       await this.session.validateResource(resource);
       this.requireOpen();
       return new ManagedExecutor(this, resource);
     });
-  }
-  createSemaphore(
-    _name: string,
-    _permits: number,
-    _options: ConcurrentOptions = {},
-  ): Promise<Semaphore> {
-    return Promise.reject(
-      new ConcurrentConfigurationError(
-        'Semaphore capability is unavailable in this protocol implementation',
-      ),
-    );
   }
   acquire<T>(
     resource: ResourceSpec,
@@ -258,11 +226,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
     const start = this.context.clock.now();
     return this.track(async () => {
       this.requireOpen();
-      supported(options);
-      if ('timeoutMs' in options)
-        throw new ConcurrentConfigurationError(
-          'Pass timeoutMs only as the positional argument of a try method',
-        );
+      validateOptions(options, ['signal']);
       const timeout = trying
         ? milliseconds(timeoutMs ?? 0, 'timeoutMs', true)
         : 0;
@@ -543,10 +507,15 @@ export async function createConcurrentRuntime(
   options: ConcurrentRuntimeOptions,
 ): Promise<ConcurrentRuntime> {
   nonempty(options.namespace, 'namespace');
-  if ('defaultAcquireTimeoutMs' in options)
-    throw new ConcurrentConfigurationError(
-      'defaultAcquireTimeoutMs is unsupported; only try methods have acquisition deadlines',
-    );
+  validateOptions(options, [
+    'backend',
+    'namespace',
+    'operationTimeoutMs',
+    'cleanupTimeoutMs',
+    'clock',
+    'scheduler',
+    'logger',
+  ]);
   const context: BackendContext = Object.freeze({
     protocolVersion: 1,
     managerId: randomUUID(),
@@ -563,23 +532,13 @@ export async function createConcurrentRuntime(
     scheduler: options.scheduler ?? defaultScheduler,
   });
   const session = await options.backend.openSession(context);
-  const caps = session.capabilities;
-  if (
-    session.protocolVersion !== 1 ||
-    !caps ||
-    typeof caps.lock !== 'boolean' ||
-    typeof caps.executor !== 'boolean' ||
-    caps.semaphore !== false ||
-    caps.autoRenew !== false
-  ) {
+  if (session.protocolVersion !== 1) {
     try {
       await session.close();
     } catch {
       /* Preserve the incompatible protocol error. */
     }
-    throw new ConcurrentConfigurationError(
-      'Unsupported backend protocol or capabilities',
-    );
+    throw new ConcurrentConfigurationError('Unsupported backend protocol');
   }
   return new Runtime(context, session, { ...options });
 }

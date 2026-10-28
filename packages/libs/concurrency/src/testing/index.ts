@@ -3,7 +3,6 @@ import {
   createConcurrentRuntime,
   ConcurrentAbortError,
   ConcurrentAcquireError,
-  ConcurrentConfigurationError,
 } from '../index.ts';
 import type {
   ConcurrentBackend,
@@ -83,12 +82,6 @@ export class ControlledBackend implements ConcurrentBackend {
     this.contexts.push(context);
     return {
       protocolVersion: 1,
-      capabilities: {
-        lock: true,
-        executor: true,
-        semaphore: false,
-        autoRenew: false,
-      },
       validateResource: async (resource) => {
         await this.hooks.validateResource?.(resource);
       },
@@ -190,19 +183,7 @@ export async function runBackendContract(
     const next = await contender.tryLock();
     check(next !== undefined, 'executor cleanup');
     await next?.release();
-    await rejects(
-      () => a.manager.createSemaphore('s', 2),
-      ConcurrentConfigurationError,
-    );
-    await rejects(
-      () => a.manager.createSynchronous('r', { autoRenew: true }),
-      ConcurrentConfigurationError,
-    );
-    cases.push(
-      'executor result and cleanup',
-      'business identity',
-      'capability rejection',
-    );
+    cases.push('executor result and cleanup', 'business identity');
   } finally {
     await a.close();
     await b.close();
