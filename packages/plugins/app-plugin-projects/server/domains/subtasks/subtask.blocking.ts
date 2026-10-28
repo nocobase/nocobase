@@ -187,6 +187,7 @@ export async function blockedCounts(
     const siblings = await liveChildren(
       conn,
       staged.map((issue) => issue.parentIssueId as string),
+      readableIds,
     );
     for (const issue of staged)
       for (const sibling of earlierSiblings(issue, siblings))
@@ -214,7 +215,7 @@ export async function blockedAmong(
   const finished = catalog.statuses
     .filter((status) => isTerminal(catalog, status.key))
     .map((status) => status.key);
-  for (const edge of await unfinishedBlockedBy(conn, finished))
+  for (const edge of await unfinishedBlockedBy(conn, finished, [...ids]))
     if (ids.has(edge.issueId) && edge.dependsOnIssueId !== edge.issueId)
       blocked.add(edge.issueId);
   const staged = issues.filter(
@@ -222,7 +223,9 @@ export async function blockedAmong(
       issue.parentIssueId && issue.stage !== null && !blocked.has(issue.id),
   );
   if (staged.length === 0) return blocked;
-  const open = await unfinishedStagedChildren(conn, finished);
+  const open = await unfinishedStagedChildren(conn, finished, [
+    ...new Set(staged.map((issue) => issue.parentIssueId!)),
+  ]);
   for (const issue of staged)
     if (earlierSiblings(issue, open).length > 0) blocked.add(issue.id);
   return blocked;
