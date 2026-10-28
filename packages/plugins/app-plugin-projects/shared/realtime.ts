@@ -21,9 +21,7 @@ export interface PmChangeEvent {
 }
 
 /** Only accept a well-formed, explicitly classified issue announcement. */
-export function isDiscussionOnly(
-  payload: unknown,
-): payload is PmChangeEvent & {
+export function isDiscussionOnly(payload: unknown): payload is PmChangeEvent & {
   readonly discussionOnly: true;
   readonly issueIds: readonly string[];
 } {
