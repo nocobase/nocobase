@@ -528,7 +528,10 @@ describe('workflow management pages', () => {
         query ? enUS.listFeedback.noResults : enUS.listFeedback.empty,
       );
       expect(empty.closest('[role=status]')).toBeInTheDocument();
-      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+      const table = screen.getByRole('table');
+      expect(table).toContainElement(empty);
+      expect(empty.closest('tbody')).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader').length).toBeGreaterThan(0);
       expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
     },
