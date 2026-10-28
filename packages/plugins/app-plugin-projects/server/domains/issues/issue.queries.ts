@@ -65,7 +65,7 @@ export interface IssueQueries {
   /** The fixed statuses, in order. */
   statuses(): StatusDefinition[];
   page(viewer: Viewer, query: IssueListQuery): Promise<IssuePage>;
-  /** Complete live authorized hierarchy and filter matches; no list-page or matching cap. */
+  /** Complete authorized hierarchy by default; optionally unfinished records, explicit inclusions and visible ancestors. */
   hierarchy(
     viewer: Viewer,
     query: IssueListQuery,
