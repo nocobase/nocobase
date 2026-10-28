@@ -104,7 +104,8 @@ export function createChangeAnnouncer(
           event.type === 'notice.planned' &&
           event.notice?.kind === 'info' &&
           event.notice.type === 'commented' &&
-          event.notice.actor?.type !== 'user'
+          typeof event.notice.actor?.type === 'string' &&
+          event.notice.actor.type !== 'user'
         ))
           discussionOnly = false;
         if (!timer) {
