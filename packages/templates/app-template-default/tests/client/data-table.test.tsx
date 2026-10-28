@@ -114,13 +114,14 @@ describe('standard DataTable', () => {
     expect(screen.getByText('Page 4 of 6')).toBeVisible();
     expect(screen.getByText('row-0')).toBeVisible();
   });
-  it('localizes successful emptiness and hides irrelevant paging controls', async () => {
+  it('localizes successful emptiness and keeps the table headers without paging controls', async () => {
     await renderWithApp(
       <DataTable columns={columns} data={[]} showSelectedCount={false} />,
       { namespace, namespaces, locale: 'zh-CN' },
     );
     expect(screen.getByText(zhCN.listFeedback.empty)).toBeVisible();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeVisible();
+    expect(screen.getByRole('columnheader', { name: 'ID' })).toBeVisible();
     expect(
       screen.queryByText(zhCN.dataTable.noResults),
     ).not.toBeInTheDocument();
