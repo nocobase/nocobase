@@ -1,5 +1,5 @@
 import { MemoryRouter, Route, Routes } from 'react-router';
-import type { ApiClient } from '@nocobase/app-client';
+import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
 import {
@@ -13,7 +13,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFixture } from './helpers.js';
 import locales from '../client/locales/index.js';
-import { repository } from '../client/model.js';
+import { repository, type ExampleRecord } from '../client/model.js';
 
 const state = vi.hoisted(() => ({ api: undefined as ApiClient | undefined }));
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
@@ -33,12 +33,14 @@ describe('Repository pages with real HTTP and SQLite', () => {
   });
   afterEach(async () => {
     cleanup();
+    vi.restoreAllMocks();
     await f?.database.destroy();
   });
   async function show(
     page: 'crm' | 'orders' | 'items' | 'contacts',
     locale: 'en-US' | 'zh-CN' = 'en-US',
     recordId?: string,
+    waitForEmpty = true,
   ) {
     const runtime = new I18nRuntime({
       defaultLocale: 'en-US',
@@ -86,7 +88,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
         </MemoryRouter>
       </I18nProvider>,
     );
-    if (recordId) return;
+    if (recordId || !waitForEmpty) return;
     await screen.findByText(
       locale === 'zh-CN'
         ? '暂无记录，新增第一条记录开始体验。'
@@ -179,6 +181,191 @@ describe('Repository pages with real HTTP and SQLite', () => {
         'deleteOne',
       ]),
     );
+  });
+  it('keeps table headings visible and separates loading from an empty result', async () => {
+    let resolveRows!: (rows: ExampleRecord[]) => void;
+    const rowsPending = new Promise<ExampleRecord[]>((resolve) => {
+      resolveRows = resolve;
+    });
+    const customerRepository = repository(f.api, 'customers');
+    const findMany = vi.fn(() => rowsPending);
+    vi.spyOn(f.api, 'repository').mockReturnValue({
+      ...customerRepository,
+      findMany,
+    });
+
+    await show('crm', 'en-US', undefined, false);
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toBeVisible();
+    expect(await screen.findByRole('status')).toHaveTextContent('Loading');
+    expect(screen.queryByText('No data yet')).not.toBeInTheDocument();
+
+    resolveRows([]);
+    expect(await screen.findByText('No data yet')).toBeVisible();
+    expect(
+      screen.getByText(
+        'No records yet. Create the first record to get started.',
+      ),
+    ).toBeVisible();
+  });
+  it('commits search, clears it with page reset, and reloads the real unfiltered rows', async () => {
+    const customers = repository(f.api, 'customers');
+    for (let index = 0; index < 12; index += 1) {
+      await customers.createOne({
+        values: {
+          id: `customer-${String(index).padStart(2, '0')}`,
+          name: `Customer ${String(index).padStart(2, '0')}`,
+          company: 'Example Co',
+          email: `customer-${index}@example.test`,
+          status: 'active',
+        },
+      });
+    }
+    await show('crm', 'en-US', undefined, false);
+    expect(await screen.findByText('Customer 00')).toBeVisible();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByText('Customer 10')).toBeVisible();
+    const search = screen.getByRole('textbox', {
+      name: 'Search by name / number / ID',
+    });
+    await user.type(search, 'does-not-match');
+    await user.click(
+      screen.getByRole('button', { name: 'Search', exact: true }),
+    );
+    expect(await screen.findByText('No results')).toBeVisible();
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toBeVisible();
+    expect(screen.getByText('Page 1')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await waitFor(() => expect(search).toHaveValue(''));
+    expect(await screen.findByText('Customer 00')).toBeVisible();
+    expect(screen.getByText('Page 1')).toBeVisible();
+    expect(
+      f.requests.some(
+        (request) =>
+          request.path.endsWith('repositoryExampleCustomers/findMany') &&
+          (request.body as { offset?: number; filter?: unknown }).offset ===
+            0 &&
+          !(request.body as { filter?: unknown }).filter,
+      ),
+    ).toBe(true);
+  });
+  it('shows explicit denial and sends expired sessions through sign-in', async () => {
+    const customerRepository = repository(f.api, 'customers');
+    const forbidden = vi.spyOn(f.api, 'repository').mockReturnValueOnce({
+      ...customerRepository,
+      findMany: () =>
+        Promise.reject(
+          new ApiClientError('Forbidden', {
+            status: 403,
+            method: 'POST',
+            url: '/repositoryExampleCustomers/findMany',
+          }),
+        ),
+    });
+    await show('crm', 'en-US', undefined, false);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Access denied');
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toBeVisible();
+    expect(screen.queryByText('No data yet')).not.toBeInTheDocument();
+
+    cleanup();
+    forbidden.mockRestore();
+    vi.spyOn(f.api, 'repository').mockReturnValue({
+      ...customerRepository,
+      findMany: () =>
+        Promise.reject(
+          new ApiClientError('Expired', {
+            status: 401,
+            method: 'POST',
+            url: '/repositoryExampleCustomers/findMany',
+          }),
+        ),
+    });
+    await show('crm', 'en-US', undefined, false);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Session expired',
+    );
+    expect(screen.getByRole('button', { name: 'Sign in' })).toHaveAttribute(
+      'href',
+      '/login',
+    );
+  });
+  it('retries the same filtered page and preserves old rows after a refresh failure', async () => {
+    const customers = repository(f.api, 'customers');
+    for (let index = 0; index < 12; index += 1) {
+      await customers.createOne({
+        values: {
+          id: `customer-${String(index).padStart(2, '0')}`,
+          name: `Customer ${String(index).padStart(2, '0')}`,
+          company: 'Example Co',
+          email: `customer-${index}@example.test`,
+          status: 'active',
+        },
+      });
+    }
+    const customerRepository = repository(f.api, 'customers');
+    const findMany = vi
+      .fn(customerRepository.findMany.bind(customerRepository))
+      .mockRejectedValueOnce(new Error('Connection failed'));
+    vi.spyOn(f.api, 'repository').mockReturnValue({
+      ...customerRepository,
+      findMany,
+    });
+
+    await show('crm', 'en-US', undefined, false);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to load list',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Customer 00')).toBeVisible();
+
+    const user = userEvent.setup();
+    const search = screen.getByRole('textbox', {
+      name: 'Search by name / number / ID',
+    });
+    await user.type(search, 'Customer');
+    await user.click(
+      screen.getByRole('button', { name: 'Search', exact: true }),
+    );
+    expect(await screen.findByText('Customer 00')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled(),
+    );
+    findMany.mockRejectedValueOnce(new Error('Page load failed'));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to load list',
+    );
+    expect(screen.getByText('Page 2')).toBeVisible();
+    expect(search).toHaveValue('Customer');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Customer 10')).toBeVisible();
+    expect(
+      findMany.mock.calls.some(
+        ([options]) =>
+          (
+            options as {
+              offset?: number;
+              filter?: { root?: { items?: { value?: string }[] } };
+            }
+          ).offset === 10 &&
+          (options as { filter?: { root?: { items?: { value?: string }[] } } })
+            .filter?.root?.items?.[0]?.value === 'Customer',
+      ),
+    ).toBe(true);
+
+    findMany.mockRejectedValueOnce(new Error('Refresh timed out'));
+    await user.click(screen.getByRole('button', { name: 'Refresh' }));
+    expect(
+      await screen.findByText('Refresh failed; showing previous data'),
+    ).toBeVisible();
+    expect(screen.getByText('Customer 10')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Refresh failed; showing previous data'),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText('Customer 10')).toBeVisible();
   });
   it('creates an order and a product-linked item through relation selectors', async () => {
     await repository(f.api, 'customers').createOne({

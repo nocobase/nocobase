@@ -328,6 +328,20 @@ const deDE: LocaleResource<typeof enUS> = {
   empty:
     'Noch keine Aufzeichnungen. Erstellen Sie zunächst den ersten Datensatz.',
   loading: 'Wird geladen…',
+  listFeedback: {
+    loading: 'Wird geladen',
+    empty: 'Keine Daten vorhanden',
+    noResults: 'Keine Ergebnisse',
+    forbidden: 'Zugriff verweigert',
+    unauthenticated: 'Sitzung abgelaufen',
+    failed: 'Liste konnte nicht geladen werden',
+    refreshFailed:
+      'Aktualisierung fehlgeschlagen; vorherige Daten werden angezeigt',
+    retry: 'Erneut versuchen',
+    retrying: 'Wird erneut versucht…',
+    clear: 'Filter löschen',
+    signIn: 'Anmelden',
+  },
   select: 'Wählen Sie einen Datensatz aus',
   createTitle: 'Erstellen Sie {{entity}}',
   editTitle: '{{entity}} bearbeiten',
