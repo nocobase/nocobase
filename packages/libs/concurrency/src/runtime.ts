@@ -250,16 +250,27 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
         );
       options.signal?.addEventListener('abort', onAbort, { once: true });
       this.waiting.add(controller);
-      const cancelDeadline =
-        wait.kind === 'bounded'
-          ? this.context.scheduler.setTimer(
-              () =>
-                controller.abort(
-                  new ConcurrentAcquireError('Acquisition deadline elapsed'),
-                ),
-              Math.max(0, wait.deadline - this.context.clock.now()),
-            )
-          : () => {};
+      let cancelDeadline = (): void => {};
+      let deadlineVersion = 0;
+      const armDeadline = (): void => {
+        if (wait.kind !== 'bounded' || controller.signal.aborted) return;
+        const version = ++deadlineVersion;
+        cancelDeadline();
+        cancelDeadline = this.context.scheduler.setTimer(
+          () => {
+            if (version !== deadlineVersion || controller.signal.aborted)
+              return;
+            if (this.context.clock.now() < wait.deadline) {
+              armDeadline();
+              return;
+            }
+            controller.abort(
+              new ConcurrentAcquireError('Acquisition deadline elapsed'),
+            );
+          },
+          Math.max(0, Math.ceil(wait.deadline - this.context.clock.now())),
+        );
+      };
       const deliveryError = (grant?: BackendGrant): Error | undefined => {
         if (options.signal?.aborted || this.state !== 'open')
           return new ConcurrentAbortError(
@@ -279,8 +290,11 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
         return undefined;
       };
       try {
+        armDeadline();
         const early = deliveryError();
-        if (early) throw early;
+        if (early instanceof ConcurrentAbortError) throw early;
+        // No backend call has started, so an elapsed wait is a normal miss.
+        if (early) return undefined;
         let grant: BackendGrant | undefined;
         try {
           grant = await this.session.acquire({
@@ -320,6 +334,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
         // No await or external scheduler call between this check and delivery.
         return deliver(lease);
       } finally {
+        deadlineVersion++;
         cancelDeadline();
         options.signal?.removeEventListener('abort', onAbort);
         this.waiting.delete(controller);
