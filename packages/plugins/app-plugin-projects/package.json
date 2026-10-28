@@ -291,6 +291,7 @@
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
+    "knex": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "shadcn": "catalog:",

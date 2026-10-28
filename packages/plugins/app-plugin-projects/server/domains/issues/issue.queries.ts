@@ -2,6 +2,10 @@
  * Issue reads for the browser: a page of the list, the board, one issue in detail, and older activities. Everything is
  * limited to what the viewer may see (`issue.access.ts`).
  */
+import {
+  hierarchySource,
+  type IssueHierarchySource,
+} from './issue.hierarchy-source.js';
 import type {
   DatabaseConnection,
   FilterBuilder,
@@ -53,11 +57,23 @@ import { FIXED_STATUSES } from '../../../shared/statuses.js';
 import { oneOf } from '../../kernel/db.js';
 
 export interface IssueQueries {
+  /** Authorized relations for database-side tree grouping and exact statistics. */
+  hierarchySource(
+    viewer: Viewer,
+    query: IssueListQuery,
+  ): Promise<IssueHierarchySource>;
   /** The fixed statuses, in order. */
   statuses(): StatusDefinition[];
   page(viewer: Viewer, query: IssueListQuery): Promise<IssuePage>;
   /** Complete live authorized hierarchy and filter matches; no list-page or matching cap. */
-  hierarchy(viewer: Viewer, query: IssueListQuery): Promise<IssueHierarchy>;
+  hierarchy(
+    viewer: Viewer,
+    query: IssueListQuery,
+    options?: {
+      readonly unfinishedOnly?: boolean;
+      readonly includeIds?: readonly string[];
+    },
+  ): Promise<IssueHierarchy>;
   /**
    * Hydrates a bounded set of IDs (at most `HIERARCHY_ITEMS_MAX`) after independently rechecking visibility, in a fixed
    * number of queries. `readableIds`, the ids `hierarchy` answered for the same viewer, saves reading them again for the
@@ -351,17 +367,63 @@ function unknownStatus(key: string): StatusDefinition {
 
 export function createIssueQueries(deps: QueryDeps): IssueQueries {
   return {
-    async hierarchy(viewer, query) {
+    hierarchySource: (viewer, query) =>
+      hierarchySource(deps.tx.read(), viewer, query),
+    async hierarchy(viewer, query, options) {
       const conn = deps.tx.read();
       const issues = await hierarchyRecords(conn, (f) =>
-        visibleIssues(f, viewer),
+        f.and([
+          visibleIssues(f, viewer),
+          ...(options?.unfinishedOnly
+            ? [
+                f.or([
+                  f.and(
+                    FINISHED_KEYS.map((key) => f.string('statusKey').ne(key)),
+                  ),
+                  oneOf(f, 'id', options.includeIds ?? []),
+                ]),
+              ]
+            : []),
+        ]),
       );
+      if (options?.unfinishedOnly) {
+        const known = new Set(issues.map((issue) => issue.id));
+        let layer = issues;
+        while (layer.length) {
+          const parents = [
+            ...new Set(
+              layer.flatMap((issue) =>
+                issue.parentIssueId && !known.has(issue.parentIssueId)
+                  ? [issue.parentIssueId]
+                  : [],
+              ),
+            ),
+          ];
+          if (!parents.length) break;
+          // Cut a path at an invisible parent, as the complete authorized hierarchy does.
+          layer = await hierarchyRecords(conn, (f) =>
+            f.and([visibleIssues(f, viewer), oneOf(f, 'id', parents)]),
+          );
+          for (const issue of layer) known.add(issue.id);
+          issues.push(...layer);
+        }
+      }
       const exact = exactMatcher(query);
       const matches = exact
         ? issues.filter(exact)
-        : await hierarchyRecords(
-            conn,
-            listFilter(viewer, { ...query, deleted: false }),
+        : await hierarchyRecords(conn, (f) =>
+            f.and([
+              listFilter(viewer, { ...query, deleted: false })(f),
+              ...(options?.unfinishedOnly
+                ? [
+                    oneOf(
+                      f,
+                      'id',
+                      issues.map((issue) => issue.id),
+                    ),
+                  ]
+                : []),
+            ]),
           );
       return {
         issues,

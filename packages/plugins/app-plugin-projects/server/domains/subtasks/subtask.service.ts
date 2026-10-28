@@ -576,7 +576,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
           ? new Map<string, number>()
           : await childCounts(conn, ids);
         if (readableIds) {
-          for (const child of await liveChildren(conn, ids)) {
+          for (const child of await liveChildren(conn, ids, readableIds)) {
             if (readableIds.has(child.id) && child.parentIssueId)
               children.set(
                 child.parentIssueId,
