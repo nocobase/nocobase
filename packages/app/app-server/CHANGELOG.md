@@ -1,5 +1,24 @@
 # @nocobase/app-server
 
+## 3.0.0-beta.4
+
+### Minor Changes
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+### Patch Changes
+
+- 22748f7: Leave a response's `connection` and `keep-alive` headers to Node's HTTP server. The AI SDK's message streams say `connection: keep-alive` themselves, so a stream answering a request that asked to close its connection still announced keep-alive while Node closed it; a client reusing that connection had its next request refused with a bare 400 that never reached the application.
+- Updated dependencies [e3d9a52]
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
 ## 3.0.0-beta.3
 
 ### Patch Changes

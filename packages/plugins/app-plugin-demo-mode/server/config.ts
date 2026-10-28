@@ -63,6 +63,7 @@ export function defineDemoModeConfig(): AppConfigFactory<DemoModeConfig> {
         {
           description:
             'Comma-separated logical collections writable in demo mode.',
+          required: false,
         },
       ),
       NOCOBASE_DEMO_RESET_HOUR: envInteger('dailyReset.hour', {
