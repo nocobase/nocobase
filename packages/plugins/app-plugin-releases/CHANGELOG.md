@@ -1,5 +1,28 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.14
+
+### Minor Changes
+
+- 07b14c0: Allow applications to initialize their own App-linked records atomically during App creation.
+
+  Environments have a `purpose`, `preview` or `test`, chosen when one is created and editable later; the migration `202611020001_rel_environment_purpose` sets it for existing environments, `preview` for those holding pull request preview Apps (`previewOf`). The environments list and an environment's page show it, and `EnvironmentsSettings` takes an optional `title` and `description`.
+
+- 07b14c0: The environments list answers each environment's `appCount`, and the Environments page shows it in an Apps column.
+- 07b14c0: Download an archive release's `.tar.gz` with `GET /api/releases/apps/:appId/releases/:releaseId/archive` (`release download`), and read several Apps' summaries in one batched read with `releases.summarizeApps(appIds)`.
+
+### Patch Changes
+
+- 07b14c0: Downloading a release whose archive is missing from the artifact storage answers `404` with reason `RELEASE_ARCHIVE_NOT_FOUND` before any response headers are sent, instead of failing the stream mid-response. `EnvironmentsSettings` takes any `ReactNode` as its `title` and `description`.
+- Updated dependencies [451bf75]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+
 ## 0.1.0-beta.13
 
 ### Patch Changes

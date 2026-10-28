@@ -1,5 +1,28 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.21
+
+### Minor Changes
+
+- 22748f7: A message sent while a runner conversation's agent works is no longer refused as busy: `POST /api/agents/conversations/{conversationId}/queue` (`conversation message queue`) joins it to the run at work, which the runner steers into the running turn when its tool can and takes as the next turn otherwise, and `POST /api/agents/conversations/{conversationId}/messages/{messageId}/withdraw` takes it back while its runner has not taken it. A queued message carries `metadata.queue` (`queued`, `withdrawn` or `unanswered`), and the answer to it is its own response. The agent's todo list shows as a `data-plan` part, from Codex's `turn/plan/updated` and ACP plan updates; conversation usage adds `costUsd` from the cost Claude Code, Pi and OpenCode report. A live runner response opens at once and says where it stands before its first output (`data-phase`: `waiting`, `starting`, `thinking`).
+
+  Runs respond faster. Claude Code starts with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` unless the runner is started with `NOCOBASE_RUNNER_CLAUDE_NONESSENTIAL_TRAFFIC=1` or the run sets the variable itself. The events answer carries input that arrived for the run (`EventsResponse.inputs`, absent from older servers), so it reaches the agent with the next events rather than the next status poll, and tool steps, input, status, usage and error events are sent as they happen instead of at the next spool interval.
+
+- 22748f7: Runners report how full the context window is after a turn, as a `status` event `context` with `{ used, size }`: Claude Code from the turn's per-model context window and the main thread's latest request, Codex from `thread/tokenUsage/updated` when it names the model's window, and ACP agents from their `usage_update`. OpenCode and Pi report none. A runner conversation's response ends with a `data-turn` part once its run has ended (how long the turn took, its input, cached and output tokens, and whether it completed, failed or was cancelled), and `GET /api/agents/conversations/{conversationId}/usage` (`conversation usage`) sums the tokens of a conversation's runs and returns its latest context window.
+
+### Patch Changes
+
+- 22748f7: Show a conversation's new messages and replies sooner. An accepted message is announced with its `seq`, so every page that shows the conversation reads it at once instead of waiting for the run's next announcement. The chat reads lists and details once per burst of announcements instead of once per announcement. The runner sends the first words of a reply preview after 50 ms and later text every 200 ms, instead of holding text for up to a second.
+- 22748f7: A conversation no longer loses its context when its kept tool session cannot be resumed. When the brief changed since the session was kept, the claim starts a new session with the conversation's recent history, as a first one gets; when it resumes, the payload carries `prompt.recoveryContext` (that history), which the runner gives a new session should the kept one be gone on its machine. A subject's per-turn rules can now change without ending the kept session (`ConversationRuleLines.turn`).
+
+  `DELETE /api/agents/conversations/{conversationId}` (`conversation delete`) deletes the owner's conversation for good: its open runs are cancelled, its messages, files (and their stored bytes), links and kept sessions are deleted, its inbox notices are settled, and runners remove its working directories and session files on their next workspace report. Conversations archived longer than `agents.conversations.archivedRetentionDays` (30 by default, 0 keeps them) are deleted the same way by a daily cleanup.
+
+- 22748f7: A runner conversation's responses now carry the agent's tool calls and their results as SDK `dynamic-tool` parts, live while the run streams (`tool-input-available`, then `tool-output-available` or `tool-output-error`) and in history replay, ordered among the response's reasoning and texts by the run's events. Inputs and outputs are bounded in the message; the run's transcript keeps them whole. The runner sends a conversation's tool steps as soon as they happen rather than at its next event interval.
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+  - @nocobase/agent-protocol@0.1.0-beta.16
+  - @nocobase/app-cli-client@0.1.0-beta.17
+
 ## 0.1.0-beta.20
 
 ### Patch Changes

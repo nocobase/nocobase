@@ -1,5 +1,36 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.4
+
+### Patch Changes
+
+- 4ccf1c8: Keep language, theme mode and color preset choices made through the Users preference API independent per demo visitor session and application, including when sharing or switching accounts. Return site defaults for new visitors while preserving the existing API protections and ordinary account preferences.
+- Updated dependencies [07b14c0]
+- Updated dependencies [451bf75]
+- Updated dependencies [22748f7]
+- Updated dependencies [5782713]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [cc0b521]
+  - @nocobase/app-cli@1.0.0-beta.30
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-plugin-agents@1.0.0-beta.28
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+
 ## 0.2.0-beta.3
 
 ### Patch Changes

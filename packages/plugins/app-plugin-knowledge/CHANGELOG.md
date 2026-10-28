@@ -1,5 +1,34 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.14
+
+### Patch Changes
+
+- 22748f7: Describe the fields of the indexing settings, rebuild and retry requests, so the API document and the CLI flags derived from it say what each one is.
+- Updated dependencies [451bf75]
+- Updated dependencies [22748f7]
+- Updated dependencies [5782713]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [cc0b521]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-plugin-agents@1.0.0-beta.28
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
 ## 0.1.0-beta.13
 
 ### Patch Changes

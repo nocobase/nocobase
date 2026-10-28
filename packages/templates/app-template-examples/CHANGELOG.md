@@ -1,5 +1,53 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.68
+
+### Minor Changes
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+### Patch Changes
+
+- 07b14c0: `pnpm build --tar` also packs the application's `Dockerfile` and `Dockerfile.dockerignore` when it has them, so a server builds the image from the release archive alone with `docker build --build-arg DIST=prebuilt .` in the extracted directory, without the sources or a registry.
+- 451bf75: Locate editable validation errors in form layout order, preserve input on failed submissions, and provide accessible field feedback with a source reconciliation guide for existing applications.
+
+  Show validation reasons beside their fields or groups without a top summary, preserve automatic error focus, and retain safe form messages for unmapped failures or unavailable focus targets.
+
+- 809ec42: Use standard top tabs, compact checkbox groups, menu routes and global grant-status filtering in the role permission editor while preserving independent scope drafts and save behavior.
+- 4beef1b: Allow App-local plugins for code reuse and modular organization without requiring publication, and fix the plugin Skill's CLI testing example when using published npm dependencies.
+- 2b26601: Recover invalid list pages after deletions while preserving filters and ordering, isolate stale reads, and document source upgrades for customized applications.
+- abeba35: Keep list sorting, page size and source tabs consistent when returning from details, reset invalid browsing state safely, and document source reconciliation for customized applications.
+- 94b6e75: Keep workflow node configuration controls icon-only with accessible labels and hover hints, preserving space for node titles and clarifying workflow UI guidance.
+- Updated dependencies [07b14c0]
+- Updated dependencies [22748f7]
+- Updated dependencies [5782713]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [cc0b521]
+  - @nocobase/app-cli@1.0.0-beta.30
+  - @nocobase/app-plugin-agents@1.0.0-beta.28
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.14
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.17
+  - @nocobase/app-plugin-file-example@1.0.0-beta.23
+  - @nocobase/db@1.0.0-beta.23
+
 ## 1.0.0-beta.67
 
 ### Patch Changes
