@@ -8,6 +8,7 @@ import { numericExamplesRoutes } from '../../server/routes/numeric-examples.ts';
 import { structuredExtractionRoutes } from '../../server/routes/structured-extraction.ts';
 import { aiTranslationRoutes } from '../../server/routes/ai-translation.ts';
 import { knowledgeDirectoryRoutes } from '../../server/routes/knowledge-directory.js';
+import { skillProjectsRoutes } from '../../server/routes/skill-projects.js';
 import AIFormFillProvider from '../../server/providers/ai-form-fill.js';
 import KnowledgeChatProvider from '../../server/providers/knowledge-chat.js';
 
@@ -339,7 +340,7 @@ describe('app server', () => {
       {
         ...appRuntime,
         plugins: defineServerPlugins<AppConfig>([]),
-        // This composition fixture omits business plugins and their dependent provider.
+        // This composition fixture omits business plugins and their dependent routes and providers.
         routes: appRuntime.routes.filter(
           (route) =>
             route !== workflowRoutes &&
@@ -349,6 +350,7 @@ describe('app server', () => {
             route !== numericExamplesRoutes &&
             route !== structuredExtractionRoutes &&
             route !== knowledgeDirectoryRoutes &&
+            route !== skillProjectsRoutes &&
             route !== aiTranslationRoutes,
         ),
         serviceProviders: [

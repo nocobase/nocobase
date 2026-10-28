@@ -1,6 +1,6 @@
 # List page: `index.tsx`
 
-Part of the [projects worked example](../example.md).
+Part of the [projects worked example](../example.md). For the runnable, continuously tested core, start with the [executable list and edit example](../executable-list-edit.md).
 
 **Depends on**: [delete dialog](delete-dialog.md), [status badge](../i18n.md#dynamic-keys), [session alert](session-expired-alert.md), [types](types.md), [search hook](url-search.md), [copy](copy.md); the `projects` route in [section 1 of `page.md`](../page.md#1-declare-the-route).
 

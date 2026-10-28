@@ -1,3 +1,4 @@
+import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
 import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
@@ -5,6 +6,7 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  skillProjects: skillProjectsenUS,
   knowledge: {
     indexing: 'Knowledge indexing',
     title: 'Knowledge base',

@@ -1,3 +1,4 @@
+import { skillProjectsRoutes } from './skill-projects.js';
 import type { Application } from '@nocobase/app-server/application';
 import {
   apiErrorResponse,
@@ -85,6 +86,7 @@ export const rootRoutes: AppRootRouteContribution<Application> =
 
 const routes: readonly AppRouteContribution<Application>[] = [
   apiRoutes,
+  skillProjectsRoutes,
   rootRoutes,
   articlesRoutes,
   workflowRoutes,
