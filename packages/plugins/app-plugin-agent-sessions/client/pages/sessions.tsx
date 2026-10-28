@@ -20,10 +20,8 @@ import { useSessions } from '../api.js';
 
 import { NewSession } from '../components/new-session.js';
 import { SessionList } from '../components/session-list.js';
-import { useLinkPanels } from '../config.js';
-
-/** Below this width an open record's panel folds the session list to a rail, so the conversation keeps its room. */
-const ROOMY = '(min-width: 1600px)';
+import { useAgentSessionsConfig } from '../config.js';
+import { useSessionsLayout } from '../sessions-layout.js';
 
 function useMatches(query: string): boolean {
   const [matches, setMatches] = useState(
@@ -56,16 +54,23 @@ export default function AgentSessionsPage(): ReactElement {
     );
   }, [params, setParams]);
   const focused = Boolean(open) || params.has('new');
-  const linkPanels = useLinkPanels();
-  const roomy = useMatches(ROOMY);
+  const { linkPanels, layoutStoragePrefix } = useAgentSessionsConfig();
   const opened = Object.keys(linkPanels)
     .filter((kind) => params.has(kind))
     .map((kind) => `${kind}:${params.get(kind) ?? ''}`)
     .join(',');
   const panel = opened !== '';
-  // Unfolded by hand, it stays unfolded while that record is open; the next one folds it again.
-  const [expandedFor, setExpandedFor] = useState<string | null>(null);
-  const expanded = expandedFor === opened;
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setWidth(entry.contentRect.width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [element]);
+  const layout = useSessionsLayout(width, layoutStoragePrefix, panel);
   // Entering the page on a wide screen opens the latest session; a new one only when there is none, or when asked
   // (`?new`). While that read is pending, the new-session editor stays usable. A phone starts on the list.
   const wide = useMatches('(min-width: 768px)');
@@ -92,12 +97,17 @@ export default function AgentSessionsPage(): ReactElement {
       />
     );
   return (
-    <div className='flex h-full min-h-0'>
+    <div ref={setElement} className='relative flex h-full min-h-0'>
       <SessionList
         activeId={openId}
         className={cn(focused && 'hidden md:flex')}
-        rail={panel && !roomy && !expanded}
-        onExpand={() => setExpandedFor(opened)}
+        placement={wide ? layout.list : 'column'}
+        {...(wide
+          ? {
+              onFold: () => layout.setListUnfolded(false),
+              onExpand: () => layout.setListUnfolded(true),
+            }
+          : {})}
         archived={archived}
         onArchivedChange={setArchived}
         onNewSession={() => setArchived(false)}
