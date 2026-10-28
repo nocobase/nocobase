@@ -43,6 +43,33 @@ async function anIssue(viewer = alice()): Promise<Issue> {
 }
 
 describe('writing comments', () => {
+  it('marks only confirmed plain discussions and keeps mentions and waiting comments complete', async () => {
+    const issue = await anIssue();
+    const classifications: (true | undefined)[] = [];
+    const stop = h.services.events.on('comment.created', (event) => {
+      classifications.push(event.discussionOnly);
+    });
+    await h.services.comments.create(alice(), issue.id, {
+      content: '/note A plain discussion',
+    });
+    await h.services.comments.create(alice(), issue.id, {
+      content: 'A person may wake or settle work',
+    });
+    await h.services.comments.create(alice(), issue.id, {
+      content: `/note ${mention('bob')}`,
+    });
+    const current = await h.services.issueQueries.detail(alice(), issue.id);
+    await h.services.issues.update(alice(), issue.id, {
+      revision: current.revision,
+      statusKey: 'in_review',
+      needsYou: 'Please decide',
+    });
+    await h.services.comments.create(alice(), issue.id, {
+      content: '/note Keep the waiting snapshot current',
+    });
+    expect(classifications).toEqual([true, undefined, undefined, undefined]);
+    stop();
+  });
   it('returns the originating execution on comments and activities, and hides it when the comment is deleted', async () => {
     const issue = await anIssue();
     h.services.kinds.add({
