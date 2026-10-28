@@ -38,7 +38,7 @@ For a necessary native adapter, place a specific `ui-component-exception:` comme
 <input type='file' />;
 ```
 
-Inside a JavaScript expression, use a `// ui-component-exception: ...` comment instead. This is a marker example, not a complete directory-picker implementation. The script prints accepted exceptions for review and rejects stale, empty or placeholder markers. Do not add markers just to clear findings or move business controls into `components/ui/` to hide them.
+Inside a JavaScript expression, use a `// ui-component-exception: ...` comment instead. This is a marker example, not a complete directory-picker implementation. Only whitespace may separate the comment (or its JSX expression's closing brace) from the opening element on the next line; an intervening component, wrapper or expression makes the marker stale. Comment-like text rendered in JSX is not an exception marker. The script prints accepted exceptions for review and rejects stale, empty or placeholder markers. Do not add markers just to clear findings or move business controls into `components/ui/` to hide them.
 
 Exit codes are `0` for no unhandled findings, `1` for findings requiring correction or a justified exception, and `2` for an incomplete scan (missing dependency/path, invalid arguments or parse failure). Record the command, scanned scope, findings, exceptions and review outcome in the run record or quick-change report. A zero-file scan is not evidence for business code; a failed or unavailable scan is Not verified.
 

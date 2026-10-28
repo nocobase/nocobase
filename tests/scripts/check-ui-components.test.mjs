@@ -104,6 +104,17 @@ test('accepts an adjacent JavaScript comment for a narrowly scoped native adapte
   assert.deepEqual(result.findings, []);
 });
 
+test('accepts an adjacent multiline JSX comment expression', () => {
+  const result = inspect(`export const Page = () => <>{
+    /* ui-component-exception: Browser directory picker adapter */
+  }
+    <input type="file"/>
+  </>`);
+  assert.equal(result.accepted.length, 1);
+  assert.equal(result.accepted[0].tag, 'input');
+  assert.deepEqual(result.findings, []);
+});
+
 test('rejects empty, placeholder, stale and non-adjacent exception markers', () => {
   for (const reason of ['', 'TODO', 'N/A']) {
     const result = inspect(`export const Page = () => <>
@@ -142,6 +153,61 @@ test('preserves the boundary between JavaScript strings and real exception comme
   );
 });
 
+test('treats comment-like JSX text as display content, never as an exception', () => {
+  for (const marker of [
+    '// ui-component-exception: Browser directory picker adapter',
+    '/* ui-component-exception: Browser directory picker adapter */',
+  ]) {
+    for (const control of ['', '<button>Save</button>']) {
+      const result = inspect(`export const Help = () => <pre>
+        ${marker}
+        ${control}
+      </pre>`);
+      assert.deepEqual(result.accepted, []);
+      assert.deepEqual(
+        result.findings.map((item) => item.tag),
+        control ? ['button'] : [],
+      );
+    }
+  }
+});
+
+test('does not transfer a stale JSX exception to a later or nested control', () => {
+  for (const elements of [
+    '<Input/><button>Save</button>',
+    '<input type="hidden"/><button>Save</button>',
+    '<div><button>Save</button></div>',
+    '<><button>Save</button></>',
+    '{label}<button>Save</button>',
+    'Visible text<button>Save</button>',
+    '<Button render={<button/>}/><button>Save</button>',
+  ]) {
+    const result = inspect(`import { Button } from '#components/ui/button';
+      export const Page = () => <>
+        {/* ui-component-exception: Browser directory picker adapter */}
+        ${elements}
+      </>`);
+    assert.deepEqual(result.accepted, [], elements);
+    assert.deepEqual(
+      result.findings.map((item) => item.tag),
+      ['button', 'exception'],
+      elements,
+    );
+  }
+});
+
+test('does not transfer a JavaScript exception across intervening code', () => {
+  const result = inspect(`export function Page() {
+    // ui-component-exception: Browser directory picker adapter
+    const value = 1; return <button>{value}</button>;
+  }`);
+  assert.deepEqual(result.accepted, []);
+  assert.deepEqual(
+    result.findings.map((item) => item.tag),
+    ['button', 'exception'],
+  );
+});
+
 function fixture(t) {
   const directory = mkdtempSync(resolve(tmpdir(), 'nb-ui-components-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -166,6 +232,32 @@ function fixture(t) {
       }),
   };
 }
+
+test('CLI passes displayed markers but fails controls behind stale exceptions', (t) => {
+  const app = fixture(t);
+  app.write(
+    'client/help.tsx',
+    `export const Help = () => <pre>
+    // ui-component-exception: Browser directory picker adapter
+  </pre>`,
+  );
+  const help = app.run();
+  assert.equal(help.status, 0, help.stdout);
+  assert.match(help.stdout, /0 findings; 0 exceptions/);
+
+  app.write(
+    'client/adapter.tsx',
+    `export const Page = () => <>
+    {/* ui-component-exception: Browser directory picker adapter */}
+    <Input/><button>Save</button>
+  </>`,
+  );
+  const stale = app.run();
+  assert.equal(stale.status, 1, stale.stdout);
+  assert.match(stale.stdout, /<button>:/);
+  assert.match(stale.stdout, /<exception>:/);
+  assert.match(stale.stdout, /2 findings; 0 exceptions/);
+});
 
 test('CLI scans application and plugin business components while excluding primitives, tests and generated directories', (t) => {
   const app = fixture(t);

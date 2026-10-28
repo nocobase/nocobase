@@ -123,7 +123,7 @@ export function inspectSource(ts, text, file, root) {
   }
 
   const exceptions = new Map();
-  function rememberComment(start, end) {
+  function rememberComment(start, end, adjacentEnd = end) {
     const comment = text
       .slice(start, end)
       .replace(/^\/\/|^\/\*|\*\/$/g, '')
@@ -131,11 +131,15 @@ export function inspectSource(ts, text, file, root) {
     if (!comment.startsWith('ui-component-exception:')) return;
     exceptions.set(start, {
       line: source.getLineAndCharacterOfPosition(end).line,
+      nextLine: source.getLineAndCharacterOfPosition(adjacentEnd).line + 1,
+      end: adjacentEnd,
       reason: comment.slice('ui-component-exception:'.length).trim(),
       used: false,
     });
   }
   function collectComments(node) {
+    // Comment range scanning is context-free; JSX text is rendered content.
+    if (ts.isJsxText(node)) return;
     for (const comment of ts.getLeadingCommentRanges(
       text,
       node.getFullStart(),
@@ -147,7 +151,7 @@ export function inspectSource(ts, text, file, root) {
       const comment = /^\{\s*(\/\*[\s\S]*?\*\/)\s*\}$/.exec(contents);
       if (comment) {
         const start = node.getStart(source) + contents.indexOf('/*');
-        rememberComment(start, start + comment[1].length);
+        rememberComment(start, start + comment[1].length, node.end);
       }
     }
     ts.forEachChild(node, collectComments);
@@ -201,7 +205,10 @@ export function inspectSource(ts, text, file, root) {
             node.getStart(source),
           );
           const exception = [...exceptions.values()].find(
-            (item) => item.line === position.line - 1 && !item.used,
+            (item) =>
+              item.nextLine === position.line &&
+              !item.used &&
+              /^\s*$/.test(text.slice(item.end, node.getStart(source))),
           );
           const finding = {
             file,
