@@ -4,18 +4,20 @@ New Default and Examples applications register `SubmissionProvider`: standard Re
 
 ## One form, one operation
 
-Create one `useSubmission({ scope })` controller for a form, scoped by the server-authenticated identity, action, target and stable form instance. All entry points call its `run(snapshot, execute)` before asynchronous validation. `submitting` drives buttons, spinners and close guards. Validate inside `execute`; return without sending if invalid. Do not generate ids or timestamps afresh on a retry: derive them from the operation key or retain them in the original snapshot. Use a separate controller for an independent form.
+Create one `useSubmission({ scope })` controller for a form, scoped by the server-authenticated identity, action, target and stable form instance. All entry points call its `run(snapshot, execute)` before asynchronous validation. `submitting` drives buttons, spinners and close guards. Run `form.handleSubmit` inside `execute`; return without sending if invalid. Unlike `trigger()`, `handleSubmit` records a submission attempt, so React Hook Form revalidates corrected fields on change after a failed submission. Do not generate ids or timestamps afresh on a retry: derive them from the operation key or retain them in the original snapshot. Use a separate controller for an independent form.
 
 ```tsx
 const submission = useSubmission({ scope: `${userId}:orders:${formId}` });
 const submit = async () => {
   const snapshot = { name: form.getValues('name'), id: order?.id };
   try {
-    const saved = await submission.run(snapshot, async (key, signal) => {
-      if (!await form.trigger()) return;
-      const values = { name: snapshot.name.trim() };
-      return order
-        ? api.repository('orders').updateOne({ filter: { id: order.id }, values, idempotencyKey: key, signal })
+    const saved = await submission.run(snapshot, async (key, signal, input) => {
+      let valid = false;
+      await form.handleSubmit(() => { valid = true; })();
+      if (!valid) return;
+      const values = { name: input.name.trim() };
+      return input.id
+        ? api.repository('orders').updateOne({ filter: { id: input.id }, values, idempotencyKey: key, signal })
         : api.repository('orders').createOne({ values, idempotencyKey: key, signal });
     });
     if (!saved) return; // Another entry owns the lock, or validation failed.
