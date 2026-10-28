@@ -123,3 +123,38 @@ it('narrows a page to the issues named, within the other filters', async () => {
   });
   expect(backlog.data.map((issue) => issue.id)).toEqual([issues[0]!.id]);
 }, 60_000);
+
+it('checks issue visibility once when reading detail and still protects older activity pages', async () => {
+  const { h, issues } = await workload(1);
+  const issue = issues[0]!;
+  const viewer = h.viewer('admin', 'admin');
+  await h.services.issueQueries.detail(viewer, issue.id);
+  const client = await h.database.connection().client<Knex>();
+  const mark = Symbol('detail');
+  const statements: string[] = [];
+  const listener = ({ sql }: { sql: string }) => {
+    if (scope.getStore() === mark) statements.push(sql);
+  };
+  client.on('query', listener);
+  try {
+    const detail = await scope.run(mark, () =>
+      h.services.issueQueries.detail(viewer, issue.id),
+    );
+    expect(detail.activities.map((item) => item.action)).toContain(
+      'issue_created',
+    );
+    expect(
+      statements.filter(
+        (sql) =>
+          sql.includes('`pm_issues` as `repository_root`') &&
+          sql.includes('where (`repository_root`.`id` = ?)') &&
+          !sql.includes('__repository_relation_owner'),
+      ),
+    ).toHaveLength(1);
+  } finally {
+    client.removeListener('query', listener);
+  }
+  await expect(
+    h.services.issueQueries.activities(h.viewer('alice', 'none'), issue.id, {}),
+  ).rejects.toMatchObject({ kind: 'notFound' });
+});
