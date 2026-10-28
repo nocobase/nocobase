@@ -17,6 +17,9 @@ const resource: DemoModeResource = {
       'Passez à un compte ci-dessous pour voir ce qui est accessible à chaque rôle.',
     loading: 'Chargement des comptes…',
   },
+  status: {
+    loading: 'Chargement',
+  },
   accounts: {
     title: 'Comptes',
     description:

@@ -1,5 +1,4 @@
 import { useApiClient } from '@nocobase/app-client';
-import { useTranslation } from '@nocobase/i18n/client';
 import {
   useEffect,
   useRef,
@@ -9,14 +8,13 @@ import {
 } from 'react';
 import { useHref, useLocation } from 'react-router';
 
-import { DEMO_MODE_NAMESPACE } from '../namespace.js';
+import { Loading } from './loading.js';
 
 /** Resolve the visitor's session before the application's home route can redirect to its login page. */
 export function DemoHomeEntry({ children }: PropsWithChildren): ReactElement {
   const api = useApiClient();
   const root = useHref('/');
   const { search, hash } = useLocation();
-  const { t } = useTranslation(DEMO_MODE_NAMESPACE);
   const [ready, setReady] = useState(false);
   const pendingRef = useRef<Promise<boolean> | undefined>(undefined);
 
@@ -50,11 +48,5 @@ export function DemoHomeEntry({ children }: PropsWithChildren): ReactElement {
     };
   }, [api, root, search, hash]);
 
-  return ready ? (
-    <>{children}</>
-  ) : (
-    <p role='status' className='p-4 text-sm text-muted-foreground'>
-      {t('accounts.entering')}
-    </p>
-  );
+  return ready ? <>{children}</> : <Loading fullscreen />;
 }

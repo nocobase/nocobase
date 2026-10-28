@@ -16,6 +16,9 @@ const resource: DemoModeResource = {
       '以下のアカウントに切り替えて、各ロールで表示される内容を確認できます。',
     loading: 'アカウントを読み込み中…',
   },
+  status: {
+    loading: '読み込み中',
+  },
   accounts: {
     title: 'アカウント',
     description:

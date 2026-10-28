@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
 import { useDemoAccounts } from '../accounts.js';
+import { Loading } from '../components/loading.js';
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
 /**
@@ -44,6 +45,10 @@ export default function DemoSignInPage(): ReactElement {
   const refused = failed || Boolean(accounts && requested && !automatic);
   const entering = automatic !== null && !failed && pending === null;
 
+  if ((requested && accounts === null) || entering) {
+    return <Loading fullscreen />;
+  }
+
   return (
     <main className='flex min-h-svh items-center justify-center bg-background p-4 text-foreground'>
       <section className='w-full max-w-md space-y-4'>
@@ -58,9 +63,9 @@ export default function DemoSignInPage(): ReactElement {
             {t('accounts.failed')}
           </p>
         ) : null}
-        {accounts === null || entering ? (
-          <p className='text-sm text-muted-foreground'>
-            {t('accounts.entering')}
+        {accounts === null ? (
+          <p role='status' className='text-sm text-muted-foreground'>
+            {t('menu.loading')}
           </p>
         ) : accounts.length ? (
           <ul className='space-y-2'>

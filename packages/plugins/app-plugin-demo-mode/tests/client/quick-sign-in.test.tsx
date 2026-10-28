@@ -78,7 +78,9 @@ describe('demo sign-in page', () => {
     });
 
     await waitFor(() => expect(signIns).toEqual(['ann']));
-    expect(screen.getByText('正在进入…')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/^加载中$/u);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('lists the accounts when the named one cannot be entered', async () => {

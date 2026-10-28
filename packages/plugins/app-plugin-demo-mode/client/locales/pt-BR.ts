@@ -17,6 +17,9 @@ const resource: DemoModeResource = {
       'Troque para uma das contas abaixo para ver o que cada perfil pode acessar.',
     loading: 'Carregando contas…',
   },
+  status: {
+    loading: 'Carregando',
+  },
   accounts: {
     title: 'Contas',
     description:

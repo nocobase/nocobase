@@ -17,6 +17,9 @@ const resource: DemoModeResource = {
       'Cambia a una de las cuentas siguientes para ver a qué puede acceder cada rol.',
     loading: 'Cargando cuentas…',
   },
+  status: {
+    loading: 'Cargando',
+  },
   accounts: {
     title: 'Cuentas',
     description:
