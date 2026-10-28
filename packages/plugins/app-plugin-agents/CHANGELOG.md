@@ -1,5 +1,12 @@
 # @nocobase/app-plugin-agents
 
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- f9ada4a: Keep conversation message catch-up when a newer detail read supersedes a refresh.
+  Preserve live runner replies while reconciling saved conversation history.
+
 ## 1.0.0-beta.28
 
 ### Minor Changes
