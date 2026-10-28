@@ -138,7 +138,7 @@ Stacking rules: a drawer can open a dialog (for example, to edit from the detail
 
 Do not show raw backend error messages (untranslated exception messages, stack traces, SQL) to the user.
 
-**I4 [Must] Loading indicators**: the first load shows a skeleton (S1); an action triggered by a button shows its loading state on that button; a reload (search, refresh) keeps the old data and shows a lightweight loading indicator instead of replacing the whole block with a skeleton.
+**I4 [Must] Loading indicators**: the first load shows a skeleton (S1); an action triggered by a button shows its loading state on that button; a refresh of the same resource keeps still-authorized data and shows a lightweight loading indicator instead of replacing the whole block with a skeleton. Search or category changes must not present previous results as the new query's results; follow the [data invalidation boundaries](references/api.md#data-invalidation-boundaries).
 
 **I5 [Should]** The search box searches automatically as the user types (debounced by about 300ms), without the user pressing Enter.
 
@@ -178,6 +178,7 @@ Do not show raw backend error messages (untranslated exception messages, stack t
 - **S4 [Must] Load failed**: show a destructive-style Alert in the page that explains the situation according to the error type. For temporary problems such as network errors and server errors, offer "Retry"; for problems a retry cannot fix, such as missing permission or a record that does not exist, explain the situation and the next step without offering "Retry" (for a missing record, see R3). An ended session (401) says so and offers "Sign in again" instead.
 - **S5 [Must] Submitting, deleting**: see T3.5 and I2; the button shows a loading state and is disabled.
 - **S6 [Must] No access**: the application shell handles a whole page the user cannot access, so the page needs no design of its own for that case; when the user may not view one block of data on a page, show an explanation there instead of leaving it blank.
+- **S7 [Must] Continuous transitions**: loading, failure, retry and route resolution do not unnecessarily remove navigation, shift the surrounding layout, erase drafts, jump focus or scroll, or replay an overlay's entrance during one opening. Preserve what still belongs to the current resource and authorization scope; reset when identity or permissions require it. Prefer changing content inside a stable overlay; necessary replacements explicitly hand over presentation and focus ([overlay lifecycle](references/overlay.md#asynchronous-overlay-lifecycle)). Do not hide loading feedback, disable animations globally or add fixed delays to conceal a discontinuity.
 
 ## C Copy
 
@@ -209,7 +210,7 @@ The design review and the acceptance review both go through this checklist item 
 - [ ] The page template and overlay choices are correct, and stacking follows the rules (T1–T5, I1)
 - [ ] Page structure: PageContainer, PageHeader, one primary button per view, actions in the right places, a back button on a page below another one, which returns to that other page with its search and filters unchanged, and the primary action in exactly one place: the empty state while the list is empty, the header once it has rows (L1, L2, L5, L6, L7)
 - [ ] Navigation is consistent: entries in one group all carry an icon or none does, a group's own icon does not repeat its first child's, and a count beside an entry is only what waits on the viewer (`page.md` §6, L8)
-- [ ] All states are covered: loading, empty, no results, load failed, submitting, a block the user may not see; whether a failure offers a retry follows S4 (S1–S6)
+- [ ] All states are covered: loading, empty, no results, load failed, submitting, a block the user may not see; whether a failure offers a retry follows S4 (S1–S7); affected transitions follow S7
 - [ ] List: search placeholder, filters and clearing them, first column, enum Badges, row actions, formatting, date and number columns sortable, all four states, result cap notice, a cut-off cell ending in an ellipsis with its full content on hover (T1.1–T1.6, T1.8–T1.11)
 - [ ] Detail view: drawer or page, record name and grouped actions, opens by URL, label–value layout with "—" for empty values (T2.1–T2.4)
 - [ ] Form: container, labels and required marks, validation timing, button order and copy, submitting, failure, success, loading the latest data before editing (T3.1–T3.8)

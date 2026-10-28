@@ -119,6 +119,16 @@ What the components already do:
 - **Focus**: on open, focus moves into the overlay; when the focused element inside the overlay disappears (for example, a button is replaced by a skeleton after clicking "Retry"), focus returns to the overlay panel; after closing, focus returns to the element that had focus before opening (usually the link that opened it; for a row menu's "Edit", the menu's trigger). When a nested overlay closes, focus returns to the element in the parent layer that opened it, or to the parent layer's panel if that element is gone; when `/projects/12/edit` is opened directly, both layers mount at once, and after the dialog closes, focus is on the drawer panel.
 - When the element that focus should return to is no longer on the page after closing (for example, the list row disappears after a delete), the component cannot handle it. Move focus to a stable place yourself; see `afterDelete` above (guideline A6).
 
+#### Asynchronous overlay lifecycle
+
+For one opening, identify the owner of the overlay container through route fallback, lazy module loading, data loading, failure/retry and ready content. Prefer one stable `RouteDrawer` or `RouteDialog` with state-specific children. For example, keep the drawer outside the conditional that chooses loading, error or detail content; on a record change, key the record-specific child by its id when its draft must reset. Do not key the container by loading state, request count or data version.
+
+React preserves identity by component type, position and key. A loading branch returning a drawer and a ready branch returning a business component that creates another drawer can remount even when both look identical. Components defined inside render can also acquire a new type on each render. Inspect the rendered hierarchy, not just JSX names.
+
+When route resolution or navigation must replace the container, define the handoff across module loading: avoid an unexplained blank interval, a second entrance for the same opening, duplicate backdrops or competing focus restoration. Preserve close/back behavior and unsaved-change protection. Use the actual overlay API or local composition; do not assume a universal navigation-state flag exists. This is not a single-instance requirement: a normal new opening and a nested edit dialog each retain their own entrance, backdrop, focus and closing lifecycle.
+
+Verify the transition with pending requests and in the actual application browser; see [asynchronous transitions](testing.md#asynchronous-transitions).
+
 ### 2.4 Close with useRouteOverlay
 
 `useRouteOverlay()` returns `{ close, isClosing }`:

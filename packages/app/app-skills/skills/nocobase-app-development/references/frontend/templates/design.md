@@ -2,12 +2,11 @@
 
 | Item          | Details                                                                                                                                                                                                                                                                                                                                   |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status        | Draft / Pending review / Confirmed                                                                                                                                                                                                                                                                                                        |
+| Status        | Draft / Pending review / Ready for implementation                                                                                                                                                                                                                                                                                         |
 | Routes        | `/<path>`; child routes: `/<path>/:id` (detail drawer), and on a page with tabs `/<path>/:id/<tab>/edit` under every tab for each overlay its header opens …                                                                                                                                                                              |
 | Navigation    | Sidebar menu "[name]", icon `<LucideIcon>`; or: not shown in navigation                                                                                                                                                                                                                                                                   |
 | Permissions   | All signed-in users (`authz: 'skip'`) / App page: the page grant `page:<id>`, and the business action `composite:<id>` `<action>` its endpoints check (a page grant authorizes no endpoint) / settings page: the settings item `settings:<id>` (`read`; writes check `update`), registered on the server and checked by its endpoints too |
 | Page template | [`ui-guidelines.md`](../ui-guidelines.md) T1 list page / T2 detail view / T3 form / T4 settings page / T5 dashboard                                                                                                                                                                                                                       |
-| Confirmation  | Confirmed by the user on [date] / the user authorized skipping confirmation in advance                                                                                                                                                                                                                                                    |
 
 ## 1. Goals
 
@@ -100,15 +99,15 @@ Every route, navigation entry (including its icon), permission, component and st
 
 ## 10. Open questions
 
-Points the user needs to decide; if there are none, write "None".
+Record assumptions and any blocking decisions that require user input; if there are none, write "None". Routine design choices do not require confirmation.
 
 ## 11. Change log
 
-Record here any changes made after the design was confirmed.
+Record changes made after the design review.
 
-| Date | Change | Reason | Affected acceptance criteria | Confirmed by the user |
-| ---- | ------ | ------ | ---------------------------- | --------------------- |
-|      |        |        |                              |                       |
+| Date | Change | Reason | Affected acceptance criteria | Decision / handling |
+| ---- | ------ | ------ | ---------------------------- | ------------------- |
+|      |        |        |                              |                     |
 
 ## 12. Guideline trade-offs
 
@@ -120,7 +119,7 @@ Give a reason for each Should guideline you do not adopt; where a Must guideline
 
 ## 13. Review responses
 
-Record how each comment from the design review (`review-design.md`) was handled, and cover them when you ask the user to confirm the design.
+Record how each comment from the design review (`review-design.md`) was handled, and summarize the resolutions when presenting the design.
 
 | ID  | Type                  | Handling                                                | Where changed |
 | --- | --------------------- | ------------------------------------------------------- | ------------- |
