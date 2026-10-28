@@ -1315,7 +1315,7 @@ export function createReleasesApi(
         ...apiErrorResponses,
         404: apiErrorResponse(
           404,
-          'Nothing to show: it was saved or expired, or none was generated (`INITIAL_ADMIN_UNAVAILABLE`).',
+          'Nothing to show: it was saved or none was generated (`INITIAL_ADMIN_UNAVAILABLE`).',
         ),
       },
     }),

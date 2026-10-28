@@ -243,7 +243,7 @@ export interface DeploymentRecord {
   /** The variables it runs with, sealed; null for one made before variables, or with none. */
   readonly env: string | null;
   readonly variablesFingerprint: string | null;
-  /** The first administrator it generated, sealed; cleared once saved or expired. */
+  /** The first administrator it generated, sealed; cleared once saved. */
   readonly initialAdmin: string | null;
   readonly initialAdminSavedBy: string | null;
   readonly initialAdminSavedAt: Date | null;
