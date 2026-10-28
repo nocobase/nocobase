@@ -148,3 +148,64 @@ test('persists validated projects, replays receipts and gates reads and writes w
     expect(ids).toEqual([...ids].sort());
   }
 });
+
+test('reconciles deleted projects through positive and negative receipts without repeating a write', async ({
+  testApp,
+}) => {
+  const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  const created = await admin.fetch('/skillProjects', write('Original'));
+  const { data: project } = (await created.json()) as { data: { id: string } };
+  const path = `/skillProjects/${project.id}`;
+  const committedKey = key();
+  // Discard the successful response, as if it were lost before the client saw it.
+  expect(
+    (await admin.fetch(path, write('Committed', 'PATCH', committedKey))).status,
+  ).toBe(200);
+  await testApp.connection
+    .repository('skillProjects')
+    .deleteOne({ filter: { id: project.id } });
+  const committed = await admin.fetch(
+    path,
+    write('Committed', 'PATCH', committedKey),
+  );
+  expect(committed.status).toBe(404);
+  expect(committed.headers.get('Idempotency-Replayed')).toBe('true');
+  expect(await committed.json()).toMatchObject({
+    error: { reason: 'PROJECT_UPDATE_COMMITTED_RECORD_MISSING' },
+  });
+  expect(
+    await testApp.connection
+      .repository('skillProjects')
+      .findOne({ filter: { id: project.id } }),
+  ).toBeUndefined();
+
+  const notAppliedKey = key();
+  const notApplied = await admin.fetch(
+    path,
+    write('Never applied', 'PATCH', notAppliedKey),
+  );
+  expect(notApplied.status).toBe(404);
+  expect(await notApplied.json()).toMatchObject({
+    error: { reason: 'PROJECT_UPDATE_NOT_APPLIED' },
+  });
+  // Reintroducing the same ID cannot make a delayed attempt with this key execute.
+  await testApp.connection
+    .repository('skillProjects')
+    .createOne({ values: { id: project.id, name: 'Replacement' } });
+  const delayed = await admin.fetch(
+    path,
+    write('Never applied', 'PATCH', notAppliedKey),
+  );
+  expect(delayed.status).toBe(404);
+  expect(delayed.headers.get('Idempotency-Replayed')).toBe('true');
+  expect(await delayed.json()).toMatchObject({
+    error: { reason: 'PROJECT_UPDATE_NOT_APPLIED' },
+  });
+  expect(await (await admin.fetch(path)).json()).toMatchObject({
+    data: { name: 'Replacement' },
+  });
+  expect(
+    (await admin.fetch(path, write('Changed payload', 'PATCH', notAppliedKey)))
+      .status,
+  ).toBe(409);
+});

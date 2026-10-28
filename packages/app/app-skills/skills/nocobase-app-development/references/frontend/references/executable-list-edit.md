@@ -5,7 +5,7 @@ Start here for the tested core list/create/edit interaction. The source runs as 
 ## Source
 
 - [List page](../../../assets/list-edit-example/client/pages/skill-projects/index.tsx): the real DataTable, preserved parent list, active request guard, cancellable 300 ms feedback and a permanently reserved feedback slot.
-- [Create/edit dialog](../../../assets/list-edit-example/client/pages/skill-projects/edit.tsx): fresh record read, FeedbackForm, validation inside the submission lock, corrected-field revalidation, retry and successful return to the list.
+- [Create/edit dialog](../../../assets/list-edit-example/client/pages/skill-projects/edit.tsx): fresh record read, FeedbackForm, validation inside the submission lock, corrected-field revalidation, retry, original-input recovery after reload, and successful return to the list.
 - [English and Chinese copy](../../../assets/list-edit-example/client/pages/skill-projects/locales.ts).
 - [Authenticated API](../../../assets/list-edit-example/server/routes/skill-projects.ts), [database service](../../../assets/list-edit-example/server/providers/skill-projects.ts) and [migration](../../../assets/list-edit-example/database/main/migrations/202611030001_create_skill_projects.ts): server validation, explicit page permission, transaction-bound writes and idempotency receipts. An existing App must already have the submission receipt migration and authentication/authorization providers; do not silently expose these routes without them. Give a copied migration a new, unused name and filename before its first application.
 - [Client regression tests](../../../assets/list-edit-example/tests/client/skill-projects.test.tsx), [actual application/API tests](../../../assets/list-edit-example/tests/server/skill-projects.test.ts) and [migration reversal test](../../../assets/list-edit-example/tests/database/skill-projects-migration.test.ts).
@@ -31,3 +31,9 @@ Client tests use the real application client and controlled HTTP responses to ex
 In the source repository, edit the Examples implementation and its tests first. Run `node scripts/sync-app-skill-examples.mjs` from the repository root to refresh the published resources. `node scripts/sync-app-skill-examples.mjs --check` rejects missing, changed or obsolete copies. The root script test suite runs that check, while the existing Examples `test`, `typecheck` and `build` commands exercise the actual implementation in CI. Do not edit a generated resource alone or remove a failing assertion to make documentation drift pass.
 
 The [expanded worked example](example.md) covers further patterns such as detail drawers, delete recovery and server pagination. Those additional Markdown examples are not included in this first executable contract.
+
+## Recovery boundaries
+
+Only the operation key and input digest survive a reload; this example does not persist project names. A restored uncertain form permits entering the original name exactly (including whitespace), rejects a mismatch before sending a request, and retries with the original key. Within the same mount, the original snapshot remains locked.
+
+A missing row alone does not prove whether an earlier update committed. The update endpoint resolves its same-key receipt first: it either confirms the earlier save and reports that the row was subsequently removed, or commits a terminal no-update receipt under the unique claim before reporting that nothing was applied. The client acknowledges only these explicit outcomes. A generic recovery 404 keeps the operation retryable. These terminal receipts rely on this example having one database update and no external side effects; retain application-specific reconciliation when adapting the example.

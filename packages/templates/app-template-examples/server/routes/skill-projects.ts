@@ -12,6 +12,7 @@ import {
   ApiError,
   apiErrorHandler,
   apiErrorResponses,
+  apiErrorResponse,
   apiValidator,
   dataResponse,
   defineApiRoutes,
@@ -123,8 +124,15 @@ export const skillProjectsRoutes = defineApiRoutes(async (app: Application) => {
       operationId: 'skillProjectsUpdate',
       summary: 'Rename a project',
       description:
-        'Requires page access and an Idempotency-Key. Commits the record and receipt atomically.',
-      responses: { 200: dataResponse(Project), ...apiErrorResponses },
+        'Requires page access and an Idempotency-Key. Commits the record and receipt atomically. A missing-record outcome is also recorded to fence delayed attempts with the same key.',
+      responses: {
+        200: dataResponse(Project),
+        ...apiErrorResponses,
+        404: apiErrorResponse(
+          404,
+          'PROJECT_UPDATE_NOT_APPLIED confirms a terminal receipt without an update. PROJECT_UPDATE_COMMITTED_RECORD_MISSING confirms a saved receipt whose project has since been removed.',
+        ),
+      },
     }),
     apiValidator('param', Params),
     apiValidator('header', Header),
@@ -141,13 +149,54 @@ export const skillProjectsRoutes = defineApiRoutes(async (app: Application) => {
           await c.get('authz').require(access);
         },
         authorizeReplay: async () => {
+          // The page grant controls this entire dataset, including its receipts.
+          // Current row existence is checked after resolving the original outcome.
           await c.get('authz').require(access);
-          await service.get(id);
         },
-        execute: (transaction) =>
-          new SkillProjectsService(transaction).save(c.req.valid('json'), id),
+        execute: async (transaction) => {
+          try {
+            return await new SkillProjectsService(transaction).save(
+              c.req.valid('json'),
+              id,
+            );
+          } catch (error) {
+            if (
+              !(error instanceof ApiError) ||
+              error.reason !== 'PROJECT_NOT_FOUND'
+            )
+              throw error;
+            // Commit the negative result under the same unique receipt claim.
+            // A delayed original attempt can now only replay this outcome.
+            return { notApplied: true as const };
+          }
+        },
       });
       c.header('Idempotency-Replayed', String(result.replayed));
+      if ('notApplied' in result.data) {
+        throw new ApiError({
+          status: 'NOT_FOUND',
+          reason: 'PROJECT_UPDATE_NOT_APPLIED',
+          domain: 'examples',
+          message:
+            'The project was removed before this update could be applied.',
+        });
+      }
+      try {
+        await service.get(id);
+      } catch (error) {
+        if (
+          !(error instanceof ApiError) ||
+          error.reason !== 'PROJECT_NOT_FOUND'
+        )
+          throw error;
+        throw new ApiError({
+          status: 'NOT_FOUND',
+          reason: 'PROJECT_UPDATE_COMMITTED_RECORD_MISSING',
+          domain: 'examples',
+          message:
+            'The update committed, but the project has since been removed.',
+        });
+      }
       return c.json({ data: result.data });
     },
   );

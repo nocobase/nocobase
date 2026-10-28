@@ -553,3 +553,183 @@ it.each([
     }
   },
 );
+
+it.each(['create', 'edit'])(
+  'restores an uncertain %s after remount by matching the original input and key',
+  async (operation) => {
+    const create = operation === 'create';
+    const route = create ? '/skill-projects/new' : '/skill-projects/abc/edit';
+    const method = create ? 'POST' : 'PATCH';
+    const action = create ? 'Create' : 'Save';
+    const keys: (string | null)[] = [];
+    let writes = 0;
+    const transport = answerApi(({ path, method: verb, json }) => {
+      if (verb === method) {
+        expect(json).toEqual({ name: 'Pending project' });
+        if (++writes === 1)
+          return Response.json(
+            {
+              error: {
+                status: 'INTERNAL',
+                reason: 'LOST_RESPONSE',
+                message: 'Unavailable',
+              },
+            },
+            { status: 500 },
+          );
+        return { data: { ...original, name: 'Pending project' } };
+      }
+      return path === 'skillProjects' ? list() : { data: original };
+    });
+    const fetch = ((request: Request) => {
+      if (request.method === method)
+        keys.push(request.headers.get('Idempotency-Key'));
+      return transport(request);
+    }) as typeof globalThis.fetch;
+    const first = await mount(fetch, route);
+    const name = await screen.findByRole('textbox', { name: 'Name' });
+    await userEvent.clear(name);
+    await userEvent.type(name, ' Pending project ');
+    await userEvent.click(
+      screen.getByRole('button', { name: action, exact: true }),
+    );
+    await screen.findByText(enUS.skillProjects.uncertain);
+    expect(name).toBeDisabled();
+    first.unmount();
+    await mount(fetch, route);
+    const restored = await screen.findByRole('textbox', { name: 'Name' });
+    await screen.findByText(enUS.skillProjects.restoreInput);
+    expect(restored).toBeEnabled();
+    // Neither the controller nor this feature stores form values in the session.
+    expect(JSON.stringify(window.sessionStorage)).not.toContain(
+      'Pending project',
+    );
+    await userEvent.clear(restored);
+    await userEvent.type(restored, 'Different project');
+    await userEvent.click(
+      screen.getByRole('button', { name: action, exact: true }),
+    );
+    await screen.findByText(enUS.skillProjects.restoreInput);
+    expect(writes).toBe(1);
+    expect(restored).toBeEnabled();
+    await userEvent.clear(restored);
+    await userEvent.type(restored, ' Pending project ');
+    await userEvent.click(
+      screen.getByRole('button', { name: action, exact: true }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(writes).toBe(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+  },
+);
+
+it.each([
+  ['PROJECT_UPDATE_NOT_APPLIED', enUS.skillProjects.notAppliedGone],
+  ['PROJECT_UPDATE_COMMITTED_RECORD_MISSING', enUS.skillProjects.committedGone],
+])(
+  'releases a pending edit only after the server confirms %s',
+  async (reason, message) => {
+    let writes = 0;
+    await mount(
+      answerApi(({ path, method }) => {
+        if (method === 'PATCH') {
+          const status = ++writes === 1 ? 500 : 404;
+          return Response.json(
+            {
+              error: {
+                status: status === 500 ? 'INTERNAL' : 'NOT_FOUND',
+                reason: status === 500 ? 'LOST_RESPONSE' : reason,
+                message: 'Unavailable',
+              },
+            },
+            { status },
+          );
+        }
+        return path === 'skillProjects'
+          ? { data: [], meta: { total: 0 } }
+          : { data: original };
+      }),
+      '/skill-projects/abc/edit',
+    );
+    const name = await screen.findByRole('textbox', { name: 'Name' });
+    await userEvent.type(name, ' changed');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Save', exact: true }),
+    );
+    await screen.findByText(enUS.skillProjects.uncertain);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Save', exact: true }),
+    );
+    await screen.findByText(message);
+    expect(
+      screen.getByRole('button', { name: 'Save', exact: true }),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+    expect(
+      Object.keys(window.sessionStorage).filter((key) =>
+        key.startsWith('nocobase:submission:'),
+      ),
+    ).toEqual([]);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText(enUS.skillProjects.empty)).toBeVisible();
+    expect(writes).toBe(2);
+  },
+);
+
+it('keeps a retryable pending operation after an ordinary recovery 404 without claiming an outcome', async () => {
+  let writes = 0;
+  await mount(
+    answerApi(({ path, method }) => {
+      if (method === 'PATCH') {
+        if (++writes === 3) return { data: original };
+        const status = writes === 1 ? 500 : 404;
+        return Response.json(
+          {
+            error: {
+              status: status === 500 ? 'INTERNAL' : 'NOT_FOUND',
+              reason: status === 500 ? 'LOST_RESPONSE' : 'PROJECT_NOT_FOUND',
+              message: 'Unavailable',
+            },
+          },
+          { status },
+        );
+      }
+      return path === 'skillProjects' ? list() : { data: original };
+    }),
+    '/skill-projects/abc/edit',
+  );
+  await screen.findByRole('textbox', { name: 'Name' });
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Save', exact: true }),
+  );
+  await screen.findByText(enUS.skillProjects.uncertain);
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Save', exact: true }),
+  );
+  await waitFor(() => expect(writes).toBe(2));
+  expect(screen.queryByText(enUS.skillProjects.gone)).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Save', exact: true }),
+    ).toBeEnabled(),
+  );
+  expect(
+    Object.keys(window.sessionStorage).some((key) =>
+      key.startsWith('nocobase:submission:'),
+    ),
+  ).toBe(true);
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Save', exact: true }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+  expect(writes).toBe(3);
+});

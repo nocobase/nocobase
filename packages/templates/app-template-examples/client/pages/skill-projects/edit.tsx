@@ -138,6 +138,11 @@ function ProjectEditor({
   const [error, setError] = useState<unknown>();
   const [gone, setGone] = useState(false);
   const busyRef = useRef(false);
+  const [attempted, setAttempted] = useState(false);
+  const restoringInput = submission.pending && !attempted;
+  const [confirmedMissing, setConfirmedMissing] = useState<
+    'committed' | 'not-committed'
+  >();
   const savedRef = useRef(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const discardRef = useRef<{
@@ -180,6 +185,7 @@ function ProjectEditor({
   const submit = async () => {
     if (!session || busyRef.current) return;
     busyRef.current = true;
+    const recovering = submission.pending;
     const snapshot = { name: form.getValues('name'), id: project?.id };
     let saved: { data: SkillProject } | undefined;
     try {
@@ -190,6 +196,7 @@ function ProjectEditor({
           valid = true;
         })();
         if (!valid) return;
+        setAttempted(true);
         return api.request<{ data: SkillProject }>({
           path: input.id
             ? `skillProjects/${encodeURIComponent(input.id)}`
@@ -203,7 +210,23 @@ function ProjectEditor({
     } catch (failure) {
       setError(failure);
       if (failure instanceof ApiClientError && failure.status === 404) {
-        setGone(true);
+        // Only these application-specific responses attest to a committed
+        // receipt. An ordinary 404 during recovery proves no prior outcome.
+        const outcome =
+          failure.reason === 'PROJECT_UPDATE_NOT_APPLIED'
+            ? 'not-committed'
+            : failure.reason === 'PROJECT_UPDATE_COMMITTED_RECORD_MISSING'
+              ? 'committed'
+              : undefined;
+        if (outcome) {
+          submission.acknowledgeOutcome(outcome);
+          setConfirmedMissing(outcome);
+        }
+        if (outcome || !recovering) {
+          setGone(true);
+          savedRef.current = true;
+          form.reset(form.getValues());
+        }
         reload();
       }
     } finally {
@@ -273,15 +296,28 @@ function ProjectEditor({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {restoringInput && !error ? (
+        <Alert>
+          <AlertDescription>{t('skillProjects.restoreInput')}</AlertDescription>
+        </Alert>
+      ) : null}
       <FeedbackForm
         id={formId}
         error={error}
         errorContent={
-          gone
-            ? t('skillProjects.gone')
-            : submission.pending
-              ? t('skillProjects.uncertain')
-              : undefined
+          confirmedMissing
+            ? t(
+                confirmedMissing === 'committed'
+                  ? 'skillProjects.committedGone'
+                  : 'skillProjects.notAppliedGone',
+              )
+            : gone
+              ? t('skillProjects.gone')
+              : restoringInput
+                ? t('skillProjects.restoreInput')
+                : submission.pending
+                  ? t('skillProjects.uncertain')
+                  : undefined
         }
         validationErrors={form.formState.errors}
         submitting={submission.submitting}
@@ -291,7 +327,11 @@ function ProjectEditor({
         }}
       >
         <fieldset
-          disabled={submission.submitting || submission.pending || gone}
+          disabled={
+            submission.submitting ||
+            (submission.pending && !restoringInput) ||
+            gone
+          }
           className='flex flex-col gap-2'
         >
           <Label htmlFor={`${formId}-name`}>

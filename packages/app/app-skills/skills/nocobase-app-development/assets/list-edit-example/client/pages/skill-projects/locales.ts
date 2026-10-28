@@ -6,6 +6,12 @@ export const enUS = {
   editAction: 'Edit',
   uncertain:
     'The save result is unknown. Keep this form open and retry with the original name to confirm it.',
+  restoreInput:
+    'A previous submission is unresolved. Re-enter its original name exactly, including spaces, then retry. A different name will not be sent.',
+  committedGone:
+    'The previous save succeeded, but this project has since been removed. Close this dialog to refresh the list.',
+  notAppliedGone:
+    'The project was removed before this save could be applied. Close this dialog to refresh the list.',
   title: 'Projects',
   description: 'Create and rename projects.',
   name: 'Name',
@@ -41,6 +47,10 @@ export const zhCN = {
   createAction: '创建',
   editAction: '编辑',
   uncertain: '保存结果尚未确定，请保留此表单并使用原名称再次保存，以确认结果。',
+  restoreInput:
+    '上次提交的结果尚未确认。请重新输入上次提交的原名称（包括空格）再重试；名称不一致时不会发送请求。',
+  committedGone: '上次保存已成功，但项目随后被删除。请关闭弹窗刷新列表。',
+  notAppliedGone: '项目在本次保存生效前已被删除。请关闭弹窗刷新列表。',
   title: '项目',
   description: '创建项目并修改名称。',
   name: '名称',
