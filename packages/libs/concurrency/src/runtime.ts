@@ -86,19 +86,35 @@ class ManagedLease implements Lease {
   constructor(
     private readonly runtime: Runtime,
     private readonly grant: BackendGrant,
-  ) {
+  ) {}
+  start(): void {
     this.armLossTimer();
   }
   private armLossTimer(): void {
     const version = ++this.timerVersion;
+    const previous = this.cancelTimer;
+    this.cancelTimer = () => {};
+    this.runtime.cancelTimer(previous);
     const remaining = this.grant.notAfter - this.runtime.context.clock.now();
-    this.cancelTimer = this.runtime.context.scheduler.setTimer(
+    const cancel = this.runtime.context.scheduler.setTimer(
       () => {
         if (version !== this.timerVersion) return;
-        if (!this.checkLoss()) this.armLossTimer();
+        try {
+          if (!this.checkLoss()) this.armLossTimer();
+        } catch (cause) {
+          this.timerVersion++;
+          this.loss ??= new ConcurrentLeaseLostError(
+            'Lease monitoring failed',
+            { cause },
+          );
+          this.controller.abort(this.loss);
+          this.runtime.diagnostic('cleanup', cause);
+        }
       },
       Number.isFinite(remaining) ? Math.max(0, Math.ceil(remaining)) : 0,
     );
+    if (version !== this.timerVersion) this.runtime.cancelTimer(cancel);
+    else this.cancelTimer = cancel;
   }
   checkLoss(): ConcurrentLeaseLostError | undefined {
     if (!this.loss && this.runtime.context.clock.now() >= this.grant.notAfter) {
@@ -113,7 +129,8 @@ class ManagedLease implements Lease {
     if (this.inFlight) return this.inFlight;
     if (this.released) return Promise.resolve();
     this.timerVersion++;
-    this.cancelTimer();
+    const cancel = this.cancelTimer;
+    this.cancelTimer = () => {};
     const work = this.runtime.track(async () => {
       try {
         await this.grant.release();
@@ -137,6 +154,7 @@ class ManagedLease implements Lease {
         this.inFlight = undefined;
       },
     );
+    this.runtime.cancelTimer(cancel);
     return work;
   }
 }
@@ -165,6 +183,13 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
       this.options.logger?.({ phase, error });
     } catch {
       /* Diagnostics are never control flow. */
+    }
+  }
+  cancelTimer(cancel: () => void): void {
+    try {
+      cancel();
+    } catch (error) {
+      this.diagnostic('cleanup', error);
     }
   }
   track<T>(operation: () => Promise<T>): Promise<T> {
@@ -257,7 +282,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
       const armDeadline = (): void => {
         if (wait.kind !== 'bounded' || controller.signal.aborted) return;
         const version = ++deadlineVersion;
-        cancelDeadline();
+        this.cancelTimer(cancelDeadline);
         cancelDeadline = this.context.scheduler.setTimer(
           () => {
             if (version !== deadlineVersion || controller.signal.aborted)
@@ -323,7 +348,21 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
         }
         const lease = new ManagedLease(this, grant);
         this.leases.add(lease);
-        const error = deliveryError(grant);
+        let error: Error | undefined;
+        try {
+          lease.start();
+          error = deliveryError(grant);
+        } catch (cause) {
+          error =
+            options.signal?.aborted || this.state !== 'open'
+              ? new ConcurrentAbortError(
+                  'Acquisition cancelled before delivery',
+                  { cause },
+                )
+              : new ConcurrentAcquireError('Lease monitoring could not start', {
+                  cause,
+                });
+        }
         if (error) {
           this.abandoned.add(lease);
           try {
@@ -337,7 +376,7 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
         return deliver(lease);
       } finally {
         deadlineVersion++;
-        cancelDeadline();
+        this.cancelTimer(cancelDeadline);
         options.signal?.removeEventListener('abort', onAbort);
         this.waiting.delete(controller);
         this.changed();
@@ -385,25 +424,31 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
   close(options: CloseOptions = {}): Promise<void> {
     const timeout = milliseconds(options.timeoutMs ?? 30000, 'close timeoutMs');
     if (this.state === 'closed') return Promise.resolve();
+    const deadline = this.context.clock.now() + timeout;
+    if (!Number.isFinite(deadline))
+      throw new ConcurrentConfigurationError('Invalid close deadline');
     const previousBackendCloseError = this.backendCloseError;
     this.state = 'closing';
     for (const controller of this.waiting)
       controller.abort(new ConcurrentAbortError('Runtime is closing'));
-    // Only abandoned executor/late-grant cleanup is retried. Never release a live manual Lease.
+    // Retry only undelivered/abandoned cleanup, never a live manual Lease.
     for (const lease of this.abandoned)
       void lease.release().catch((error) => this.diagnostic('cleanup', error));
     return new Promise<void>((resolve, reject) => {
       let settled = false;
+      let timerVersion = 0;
       let cancelTimer = (): void => {};
       const finish = (error?: ConcurrentCloseError): void => {
         if (settled) return;
         settled = true;
-        cancelTimer();
+        timerVersion++;
         this.observers.delete(check);
+        this.cancelTimer(cancelTimer);
         if (error) reject(error);
         else resolve();
       };
       const check = (): void => {
+        if (settled) return;
         if (this.state === 'closed') {
           finish();
           return;
@@ -441,17 +486,38 @@ class Runtime implements ConcurrentRuntime, ConcurrentManager {
           );
         }
       };
-      this.observers.add(check);
-      cancelTimer = this.context.scheduler.setTimer(
-        () =>
+      const armTimeout = (): void => {
+        if (settled) return;
+        const version = ++timerVersion;
+        const previous = cancelTimer;
+        cancelTimer = () => {};
+        this.cancelTimer(previous);
+        try {
+          const remaining = deadline - this.context.clock.now();
+          if (!Number.isFinite(remaining))
+            throw new ConcurrentConfigurationError('Invalid close deadline');
+          if (remaining <= 0) {
+            finish(
+              new ConcurrentCloseError(
+                'Close wait elapsed; runtime remains closing',
+              ),
+            );
+            return;
+          }
+          const cancel = this.context.scheduler.setTimer(() => {
+            if (!settled && version === timerVersion) armTimeout();
+          }, Math.ceil(remaining));
+          if (settled || version !== timerVersion) this.cancelTimer(cancel);
+          else cancelTimer = cancel;
+        } catch (cause) {
           finish(
-            new ConcurrentCloseError(
-              'Close wait elapsed; runtime remains closing',
-            ),
-          ),
-        timeout,
-      );
-      check();
+            new ConcurrentCloseError('Close wait timer failed', { cause }),
+          );
+        }
+      };
+      this.observers.add(check);
+      armTimeout();
+      if (!settled) check();
     });
   }
 }

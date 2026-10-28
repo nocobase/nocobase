@@ -113,6 +113,30 @@ const startupBackend={protocolVersion:1,initialize:async()=>{throw initializatio
 await assert.rejects(core.createConcurrentRuntime({backend:startupBackend,namespace:'failed'}),error=>error===initializationError);
 assert.equal(startupCleanups,1);
 console.log(JSON.stringify({ownedBackendCloseCalls:closeCalls,concurrentCloseFailureWaiters:closing.length,startupCleanups}));
+const flush=async()=>{for(let i=0;i<50;i++)await Promise.resolve();};
+for(const releaseFails of [false,true]){
+  const time=new testing.ManualTime();const cause=new Error('Lease timer registration failed');let registrations=0;let releases=0;
+  const scheduler={setTimer(notify,delay){if(++registrations===1)throw cause;return time.setTimer(notify,delay);}};
+  const backend=new testing.ControlledBackend({acquire:async()=>({notAfter:100,release:async()=>{if(++releases===1&&releaseFails)throw new Error('Retry release');}})});
+  const runtime=await core.createConcurrentRuntime({backend,namespace:'grant-timer',clock:time,scheduler});
+  const lock=await runtime.manager.createLock('r');await assert.rejects(lock.lock(),error=>error instanceof core.ConcurrentAcquireError&&error.cause===cause);
+  assert.equal(releases,1);await runtime.close();await runtime.close();assert.equal(releases,releaseFails?2:1);assert.equal(time.pendingTimers,0);
+}
+for(const outcome of ['complete','timeout']){
+  const time=new testing.ManualTime();const callbacks=[];const gate=testing.deferred();
+  const runtime=await core.createConcurrentRuntime({backend:new testing.ControlledBackend({acquire:async()=>undefined,close:()=>gate.promise}),namespace:'close-deadline',clock:time,scheduler:{setTimer(notify,delay){callbacks.push({notify,delay});return time.setTimer(notify,delay);}}});
+  let settled=false;const closing=runtime.close({timeoutMs:10}).then(()=>{settled=true;},error=>{settled=true;return error;});
+  await flush();time.advance(9.25);callbacks[0].notify();await flush();assert.equal(settled,false);assert.equal(callbacks[1].delay,1);callbacks[0].notify();assert.equal(callbacks.length,2);
+  if(outcome==='complete'){gate.resolve();assert.equal(await closing,undefined);}else{time.advance(0.75);callbacks[1].notify();assert.ok(await closing instanceof core.ConcurrentCloseError);gate.resolve();await flush();await runtime.close();}
+  const count=callbacks.length;for(const callback of callbacks)callback.notify();assert.equal(callbacks.length,count);assert.equal(time.pendingTimers,0);
+}
+const closeMargins=[];
+for(let i=0;i<200;i++){
+  const gate=testing.deferred();const runtime=await core.createConcurrentRuntime({backend:new testing.ControlledBackend({acquire:async()=>undefined,close:()=>gate.promise}),namespace:'real-close'});
+  const start=port.defaultClock.now();await assert.rejects(runtime.close({timeoutMs:3}),core.ConcurrentCloseError);closeMargins.push(port.defaultClock.now()-start-3);gate.resolve();await runtime.close();
+}
+assert.equal(closeMargins.length,200);assert.ok(Math.min(...closeMargins)>=0);
+console.log(JSON.stringify({closeSchedulerSamples:200,earlyCloseWaits:closeMargins.filter(value=>value<0).length,minCloseMarginMs:Math.min(...closeMargins)}));
 const preTime = new testing.ManualTime();
 const preBackend = new testing.ControlledBackend({acquire:async()=>{throw new Error('Must not acquire');}});
 const preRuntime = await core.createConcurrentRuntime({backend:preBackend,namespace:'queued',clock:preTime,scheduler:preTime});
