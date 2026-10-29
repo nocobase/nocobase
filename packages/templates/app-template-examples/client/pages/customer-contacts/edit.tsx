@@ -99,6 +99,7 @@ function Editor({
     },
     mode: 'onSubmit',
     reValidateMode: 'onChange',
+    shouldFocusError: false,
   });
   const ready = creating || Boolean(row && !read.error);
   const { setFocus } = form;
@@ -109,17 +110,24 @@ function Editor({
   const submit = async () => {
     if (!lock.acquire()) return;
     setError(undefined);
+    let focusField: keyof typeof fields | 'relation' | undefined;
     try {
       let valid = false;
-      await form.handleSubmit(() => {
-        valid = true;
-      })();
+      await form.handleSubmit(
+        () => {
+          valid = true;
+        },
+        (errors) => {
+          focusField = Object.keys(errors)[0] as
+            keyof typeof fields | undefined;
+        },
+      )();
       const association = kind === 'contact' ? 'customerId' : 'ownerId';
       if ((kind === 'contact' || effectiveMode === 'owner') && !relationValid) {
         form.setError(association, {
           message: t('customerContacts.invalidRelation'),
         });
-        if (valid) relationRef.current?.focus();
+        if (valid) focusField = 'relation';
         valid = false;
       }
       if (!valid) return;
@@ -187,7 +195,8 @@ function Editor({
                 : field === 'email'
                   ? t('customerContacts.invalidEmail')
                   : t('customerContacts.invalid');
-            form.setError(name, { message }, { shouldFocus: first });
+            form.setError(name, { message });
+            if (first) focusField = name;
             first = false;
           }
         }
@@ -195,6 +204,12 @@ function Editor({
       setError(failure);
     } finally {
       lock.release();
+      // Focus only after the submission lock's disabled controls are enabled again.
+      if (focusField)
+        requestAnimationFrame(() => {
+          if (focusField === 'relation') relationRef.current?.focus();
+          else if (focusField) form.setFocus(focusField);
+        });
     }
   };
   const input = (name: 'name' | 'email' | 'phone' | 'title', label: string) => (

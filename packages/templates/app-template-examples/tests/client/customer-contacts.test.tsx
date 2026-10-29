@@ -382,7 +382,7 @@ it('keeps delete failure feedback inside its open confirmation', async () => {
     }),
   );
   await userEvent.click(
-    screen.getByRole('menuitem', { name: 'Delete', exact: true }),
+    await screen.findByRole('menuitem', { name: 'Delete', exact: true }),
   );
   const dialog = await screen.findByRole('alertdialog');
   await userEvent.click(

@@ -63,12 +63,10 @@ export default defineSeed({
         })
         .grant(
           customerResource.reference().grant(actions),
-          contactResource
-            .reference()
-            .grant({
-              view: { contacts: scope },
-              edit: { contacts: scope, customers: scope },
-            }),
+          contactResource.reference().grant({
+            view: { contacts: scope },
+            edit: { contacts: scope, customers: scope },
+          }),
           repResource.reference().grant({ view: { salesReps: scope } }),
         )
         .build();
