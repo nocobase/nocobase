@@ -27,8 +27,6 @@ try {
 
 Each transport permits at most four original operations, with no queue. The 20-second deadline requests cancellation; capacity is released only when the original operation settles. SMTP owns each operation's socket, including implicit TLS and STARTTLS, and destroys it when cancelled. Resend uses an abortable fetch through the SDK's request boundary without its development error-body logging. `close()` stops admission, requests cancellation and waits at most five seconds. Uncooperative work can outlive this wait and retains its completion observer and capacity. The caller that creates a transport owns its shutdown.
 
-`createMailTransport(config, { reuseConnections: true })` (or `createSmtpTransport` with the same option) opts in to SMTP connection reuse. It keeps at most four connections, each with one active submission, and closes idle connections on shutdown. The pool never automatically requeues a failed or uncertain submission. Cancellation destroys only the operation's connection; a later explicit submission can establish a new one. Existing callers retain their per-operation connection behavior, and Resend keeps its existing SDK client reuse.
-
 `MailConfigError` preserves the validators' fixed messages and adds a relative `field` path so a caller can report a safe configuration error under its own section.
 
 `MailExecutions` supplies the same small admission/completion contract for wrappers around email callbacks. It does not store business payloads, retry work or schedule tasks. Callers must keep `completion` connected to the original callback rather than to a timeout result.

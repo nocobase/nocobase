@@ -316,7 +316,7 @@ it.each([false, true])(
 );
 
 it.each([false, true])(
-  'reuses one owned transport, strips email from Better Auth, and closes it (legacy %s)',
+  'creates one owned transport lazily, strips email from Better Auth, and closes it (legacy %s)',
   async (legacy) => {
     const fetch = vi
       .fn()

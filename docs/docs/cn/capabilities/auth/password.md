@@ -102,7 +102,7 @@ auth:
 
 已有的 `auth.emailAndPassword.sendResetPassword` 自定义函数优先，未设置找回密码开关时保持可用；显式关闭找回密码也会禁用自定义函数。`auth.passwordReset.template` 继续支持在 TypeScript 中自定义邮件。新配置不合法会报配置错误；发送失败或提交结果不确定时，不切换服务或自动补发。
 
-**旧应用迁移：** `auth.passwordReset.emailChannel` 已废弃，仅为旧应用保留。没有自定义函数和 `auth.email` 时，由认证插件兼容适配器解析旧渠道，默认 `system-email`；实际采用时在启动期提示迁移。将所用 SMTP 或 Resend 发件参数复制到 `auth.email`，移除显式旧入口，保留通知与邮箱自身配置。旧链路由认证插件持有并复用发件实例，无需注册 MailerProvider 或安装通知、邮箱插件；已显式开启且具有有效旧配置的应用现在可以正常找回密码。旧入口仍受支持，没有设定移除日期。
+**旧应用迁移：** `auth.passwordReset.emailChannel` 已废弃，仅为旧应用保留。没有自定义函数和 `auth.email` 时，由认证插件兼容适配器解析旧渠道，默认 `system-email`；实际采用时在启动期提示迁移。将所用 SMTP 或 Resend 发件参数复制到 `auth.email`，移除显式旧入口，保留通知与邮箱自身配置。旧链路由认证插件持有发件实例，无需注册 MailerProvider 或安装通知、邮箱插件；已显式开启且具有有效旧配置的应用现在可以正常找回密码。旧入口仍受支持，没有设定移除日期。
 
 ## 登录状态与停用账号
 

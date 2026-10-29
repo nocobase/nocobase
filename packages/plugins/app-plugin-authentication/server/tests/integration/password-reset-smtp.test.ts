@@ -13,7 +13,9 @@ import { mailerToken } from '@nocobase/app-server/mailer';
 async function receiver(stall = false) {
   const sockets = new Set<Socket>();
   const messages: string[] = [];
+  let connections = 0;
   const server = createServer((socket) => {
+    connections += 1;
     sockets.add(socket);
     socket.on('close', () => sockets.delete(socket));
     socket.write('220 local.test ESMTP\r\n');
@@ -52,7 +54,13 @@ async function receiver(stall = false) {
     for (const socket of sockets) socket.destroy();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   };
-  return { port: address.port, messages, sockets, close };
+  return {
+    port: address.port,
+    messages,
+    sockets,
+    connections: () => connections,
+    close,
+  };
 }
 
 it.each([
@@ -144,7 +152,10 @@ it.each([
         }),
       );
       await vi.waitFor(() => expect(smtp.messages).toHaveLength(2));
-      expect(smtp.sockets.size).toBe(1);
+      await expect(sends[1]).resolves.toMatchObject({ status: 'accepted' });
+      // Each submission opens its own connection and releases it when it ends.
+      expect(smtp.connections()).toBe(2);
+      await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
       const decoded = smtp.messages[1]!.replace(/=\r\n/gu, '').replace(
         /=([0-9A-F]{2})/gu,
         (_match, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)),

@@ -107,9 +107,7 @@ export class PasswordResetPolicy {
           );
           const sendOptions = { signal: request?.signal };
           // Lazily allocate once: transaction-bound administration instances never open an unused sender.
-          const transport = (this.transport ??= createMailTransport(selected!, {
-            reuseConnections: true,
-          }));
+          const transport = (this.transport ??= createMailTransport(selected!));
           const result = await transport.send(message, sendOptions);
           if (result.status !== 'accepted')
             services.report?.(result.error.category);

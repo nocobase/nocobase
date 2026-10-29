@@ -10,24 +10,11 @@ import type {
   MailTransport,
   MailSendOptions,
   SmtpProviderConfig,
-  MailTransportOptions,
 } from './types.js';
 
-export function createSmtpTransport(
-  config: SmtpProviderConfig,
-  transportOptions: MailTransportOptions = {},
-): MailTransport {
+export function createSmtpTransport(config: SmtpProviderConfig): MailTransport {
   validateSmtpProviderConfig(config);
   const executions = new MailExecutions();
-  // Each lane has at most one submission. Pool requeueing is disabled, including unknown DATA outcomes.
-  const lanes: {
-    busy: boolean;
-    signal?: AbortSignal;
-    socket?: Socket;
-    transporter?: ReturnType<typeof nodemailer.createTransport>;
-  }[] = transportOptions.reuseConnections
-    ? Array.from({ length: 4 }, () => ({ busy: false }))
-    : [];
   return {
     async send(
       message: EmailMessage,
@@ -38,99 +25,67 @@ export function createSmtpTransport(
           const signal = options.signal
             ? AbortSignal.any([deadline, options.signal])
             : deadline;
-          const lane = transportOptions.reuseConnections
-            ? lanes.find((item) => !item.busy)
-            : undefined;
-          if (lane) {
-            lane.busy = true;
-            lane.signal = signal;
-          }
           let socket: Socket | undefined;
-          const activeSocket = (): Socket | undefined => lane?.socket ?? socket;
           const cancel = (): void => {
-            activeSocket()?.destroy(new Error('Mail submission cancelled.'));
+            socket?.destroy(new Error('Mail submission cancelled.'));
           };
           signal.addEventListener('abort', cancel, { once: true });
-          const transporter =
-            lane?.transporter ??
-            nodemailer.createTransport({
-              ...(lane
-                ? {
-                    pool: true,
-                    maxConnections: 1,
-                    maxMessages: Infinity,
-                    maxRequeues: 0,
-                  }
-                : {}),
-              host: config.host,
-              port: config.port,
-              secure: config.secure,
-              auth: config.auth,
-              connectionTimeout: 10_000,
-              greetingTimeout: 10_000,
-              socketTimeout: 20_000,
-              logger: false,
-              debug: false,
-              getSocket(
-                _options: unknown,
-                callback: (
-                  error: Error | null,
-                  options: { connection: Socket; secured: boolean } | undefined,
-                ) => void,
-              ) {
-                const connectSignal = lane?.signal ?? signal;
-                if (connectSignal.aborted) {
-                  callback(new Error('Mail submission cancelled.'), undefined);
-                  return;
-                }
-                let supplied = false;
-                const connected = (): void => {
-                  supplied = true;
-                  callback(null, {
-                    connection: socket!,
-                    secured: config.secure === true,
-                  });
-                };
-                socket = config.secure
-                  ? connectTls(
-                      {
-                        host: config.host,
-                        port: config.port,
-                        servername: config.host,
-                      },
-                      connected,
-                    )
-                  : connect(
-                      { host: config.host, port: config.port },
-                      connected,
-                    );
-                if (lane) lane.socket = socket;
-                socket.once('error', (error) => {
-                  if (!supplied) {
-                    supplied = true;
-                    callback(error, undefined);
-                  }
+          const transporter = nodemailer.createTransport({
+            host: config.host,
+            port: config.port,
+            secure: config.secure,
+            auth: config.auth,
+            connectionTimeout: 10_000,
+            greetingTimeout: 10_000,
+            socketTimeout: 20_000,
+            logger: false,
+            debug: false,
+            getSocket(
+              _options: unknown,
+              callback: (
+                error: Error | null,
+                options: { connection: Socket; secured: boolean } | undefined,
+              ) => void,
+            ) {
+              if (signal.aborted) {
+                callback(new Error('Mail submission cancelled.'), undefined);
+                return;
+              }
+              let supplied = false;
+              const connected = (): void => {
+                supplied = true;
+                callback(null, {
+                  connection: socket!,
+                  secured: config.secure === true,
                 });
-                socket.setTimeout(10_000, () =>
-                  socket?.destroy(
-                    Object.assign(new Error('Mail connection timed out.'), {
-                      code: 'ETIMEDOUT',
-                    }),
-                  ),
-                );
-                if (connectSignal.aborted) cancel();
-              },
-            });
-          if (lane) lane.transporter = transporter;
-          try {
-            if (signal.aborted)
-              return {
-                status: 'submission_unknown',
-                error: {
-                  category: 'timeout',
-                  message: 'Mail submission cancelled.',
-                },
               };
+              socket = config.secure
+                ? connectTls(
+                    {
+                      host: config.host,
+                      port: config.port,
+                      servername: config.host,
+                    },
+                    connected,
+                  )
+                : connect({ host: config.host, port: config.port }, connected);
+              socket.once('error', (error) => {
+                if (!supplied) {
+                  supplied = true;
+                  callback(error, undefined);
+                }
+              });
+              socket.setTimeout(10_000, () =>
+                socket?.destroy(
+                  Object.assign(new Error('Mail connection timed out.'), {
+                    code: 'ETIMEDOUT',
+                  }),
+                ),
+              );
+              if (signal.aborted) cancel();
+            },
+          });
+          try {
             const info = await transporter.sendMail({
               from: message.from ?? config.from,
               to: typeof message.to === 'string' ? message.to : [...message.to],
@@ -160,11 +115,8 @@ export function createSmtpTransport(
             };
           } finally {
             signal.removeEventListener('abort', cancel);
-            if (lane) lane.busy = false;
-            else {
-              socket?.destroy();
-              transporter.close();
-            }
+            socket?.destroy();
+            transporter.close();
           }
         },
       );
@@ -179,13 +131,7 @@ export function createSmtpTransport(
             },
           };
     },
-    async close() {
-      await executions.close();
-      for (const lane of lanes) {
-        lane.socket?.destroy();
-        lane.transporter?.close();
-      }
-    },
+    close: () => executions.close(),
   };
 }
 

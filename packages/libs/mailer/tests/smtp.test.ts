@@ -58,9 +58,6 @@ async function receiver(stall = false, rejectRecipient = false) {
     messages,
     sockets,
     connections: () => connections,
-    resume: () => {
-      stall = false;
-    },
   };
 }
 
@@ -83,55 +80,40 @@ it('submits a real local SMTP message and closes its socket', async () => {
   await transport.close();
 });
 
-it.each([false, true])(
-  'ends a stalled DATA operation without resubmission (reuse %s)',
-  async (reuseConnections) => {
-    const smtp = await receiver(true);
-    const transport = createSmtpTransport(
-      {
-        provider: 'smtp',
-        host: '127.0.0.1',
-        port: smtp.port,
-        from: 'sender@example.test',
-      },
-      { reuseConnections },
-    );
-    const cancel = new AbortController();
-    const completion = transport.send(
-      {
-        to: 'recipient@example.test',
-        subject: 'Synthetic message',
-        text: 'Synthetic text',
-      },
-      { signal: cancel.signal },
-    );
-    await import('vitest').then(({ vi }) =>
-      vi.waitFor(() => expect(smtp.messages).toHaveLength(1)),
-    );
-    cancel.abort();
-    expect((await completion).status).toBe('submission_unknown');
-    await import('vitest').then(({ vi }) =>
-      vi.waitFor(() => expect(smtp.sockets.size).toBe(0)),
-    );
-    expect(smtp.connections()).toBe(1);
-    expect(smtp.messages).toHaveLength(1);
-    await transport.close();
-  },
-);
+const config = (port: number) =>
+  ({
+    provider: 'smtp',
+    host: '127.0.0.1',
+    port,
+    from: 'sender@example.test',
+  }) as const;
 
-it('reuses an SMTP connection for sequential submissions and closes idle sockets', async () => {
-  const smtp = await receiver();
-  const transport = createSmtpTransport(
+it('ends a stalled DATA operation after cancellation and reports an unknown submission', async () => {
+  const smtp = await receiver(true);
+  const transport = createSmtpTransport(config(smtp.port));
+  const cancel = new AbortController();
+  const completion = transport.send(
     {
-      provider: 'smtp',
-      host: '127.0.0.1',
-      port: smtp.port,
-      from: 'sender@example.test',
+      to: 'recipient@example.test',
+      subject: 'Synthetic message',
+      text: 'Synthetic text',
     },
-    { reuseConnections: true },
+    { signal: cancel.signal },
   );
+  await vi.waitFor(() => expect(smtp.messages).toHaveLength(1));
+  cancel.abort();
+  expect((await completion).status).toBe('submission_unknown');
+  await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
+  expect(smtp.connections()).toBe(1);
+  expect(smtp.messages).toHaveLength(1);
+  await transport.close();
+});
+
+it('opens a separate connection for each submission and releases it when the submission ends', async () => {
+  const smtp = await receiver();
+  const transport = createSmtpTransport(config(smtp.port));
   try {
-    for (let i = 0; i < 2; i++)
+    for (let i = 0; i < 2; i++) {
       expect(
         (
           await transport.send({
@@ -141,30 +123,23 @@ it('reuses an SMTP connection for sequential submissions and closes idle sockets
           })
         ).status,
       ).toBe('accepted');
+      expect(smtp.connections()).toBe(i + 1);
+      await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
+    }
     expect(smtp.messages).toHaveLength(2);
-    expect(smtp.connections()).toBe(1);
   } finally {
     await transport.close();
   }
-  await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
   expect(
     (await transport.send({ to: 'recipient@example.test', subject: 'Closed' }))
       .status,
   ).toBe('failed');
-  expect(smtp.messages).toHaveLength(2);
+  expect(smtp.connections()).toBe(2);
 });
 
-it('does not retry or requeue an SMTP provider refusal with connection reuse', async () => {
+it('does not retry an SMTP provider refusal', async () => {
   const smtp = await receiver(false, true);
-  const transport = createSmtpTransport(
-    {
-      provider: 'smtp',
-      host: '127.0.0.1',
-      port: smtp.port,
-      from: 'sender@example.test',
-    },
-    { reuseConnections: true },
-  );
+  const transport = createSmtpTransport(config(smtp.port));
   try {
     expect(
       await transport.send({
@@ -183,17 +158,9 @@ it('does not retry or requeue an SMTP provider refusal with connection reuse', a
   }
 });
 
-it('cancels a stalled pooled SMTP submission on close and never requeues it', async () => {
+it('cancels a stalled SMTP submission on close and never resubmits it', async () => {
   const smtp = await receiver(true);
-  const transport = createSmtpTransport(
-    {
-      provider: 'smtp',
-      host: '127.0.0.1',
-      port: smtp.port,
-      from: 'sender@example.test',
-    },
-    { reuseConnections: true },
-  );
+  const transport = createSmtpTransport(config(smtp.port));
   const sending = transport.send({
     to: 'recipient@example.test',
     subject: 'Synthetic',
@@ -204,41 +171,4 @@ it('cancels a stalled pooled SMTP submission on close and never requeues it', as
   await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
   expect(smtp.messages).toHaveLength(1);
   expect(smtp.connections()).toBe(1);
-});
-
-it('opens a fresh connection only for a later explicit submission after cancellation', async () => {
-  const smtp = await receiver(true);
-  const transport = createSmtpTransport(
-    {
-      provider: 'smtp',
-      host: '127.0.0.1',
-      port: smtp.port,
-      from: 'sender@example.test',
-    },
-    { reuseConnections: true },
-  );
-  try {
-    const cancel = new AbortController();
-    const first = transport.send(
-      { to: 'recipient@example.test', subject: 'First' },
-      { signal: cancel.signal },
-    );
-    await vi.waitFor(() => expect(smtp.messages).toHaveLength(1));
-    cancel.abort();
-    expect((await first).status).toBe('submission_unknown');
-    expect(smtp.connections()).toBe(1);
-    smtp.resume();
-    expect(
-      (
-        await transport.send({
-          to: 'recipient@example.test',
-          subject: 'Second',
-        })
-      ).status,
-    ).toBe('accepted');
-    expect(smtp.messages).toHaveLength(2);
-    expect(smtp.connections()).toBe(2);
-  } finally {
-    await transport.close();
-  }
 });
