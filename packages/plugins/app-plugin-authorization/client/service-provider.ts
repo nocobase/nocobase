@@ -17,7 +17,7 @@ export class AuthorizationServiceProvider extends ServiceProvider<ClientApplicat
   public readonly name: string = '@nocobase/app-plugin-authorization/client';
   private unsubscribePermissionsChanged?: () => void;
   private unsubscribeGlobalPermissionsChanged?: () => void;
-  private unsubscribeRealtimeOpen?: () => void;
+  private releaseReadiness?: () => void;
 
   public override register(): void {
     this.app.container.singleton(
@@ -27,19 +27,53 @@ export class AuthorizationServiceProvider extends ServiceProvider<ClientApplicat
   }
 
   public override boot(): Promise<void> {
+    if (this.unsubscribePermissionsChanged) return Promise.resolve();
     const authz = this.app.container.resolve(authorizationClientToken);
     const realtime = this.app.container.resolve(realtimeClientToken);
-    this.unsubscribePermissionsChanged = realtime.watch(
+    const ready = new Set<string>();
+    const topics = [
       AUTHORIZATION_PERMISSIONS_CHANGED_TOPIC,
-      { onEvent: () => authz.invalidate(), onReady: () => authz.invalidate() },
-    ).close;
-    this.unsubscribeGlobalPermissionsChanged = realtime.watch(
       AUTHORIZATION_GLOBAL_PERMISSIONS_CHANGED_TOPIC,
-      { onEvent: () => authz.invalidate(), onReady: () => authz.invalidate() },
-    ).close;
-    this.unsubscribeRealtimeOpen = realtime.onOpen(() => {
-      authz.invalidate();
+    ];
+    let resolve: () => void;
+    const initial = new Promise<void>((done) => {
+      resolve = done;
     });
+    authz.waitForRealtime(() => initial);
+    let fallback = false;
+    let settled = false;
+    // A refused or unavailable socket must not prevent HTTP authorization.
+    const timer = setTimeout(() => {
+      fallback = true;
+      resolve();
+    }, 1000);
+    this.releaseReadiness = () => {
+      clearTimeout(timer);
+      resolve();
+      authz.waitForRealtime(() => Promise.resolve());
+    };
+    const watch = (topic: string) =>
+      realtime.watch(topic, {
+        onEvent: () => authz.invalidate(),
+        onReady: () => {
+          ready.add(topic);
+          if (ready.size !== topics.length) return;
+          if (settled || fallback) authz.invalidate();
+          settled = true;
+          clearTimeout(timer);
+          resolve();
+        },
+        onStateChange: (state) => {
+          if (state !== 'subscribed') ready.delete(topic);
+        },
+        onError: () => {
+          fallback = true;
+          clearTimeout(timer);
+          resolve();
+        },
+      });
+    this.unsubscribePermissionsChanged = watch(topics[0]!).close;
+    this.unsubscribeGlobalPermissionsChanged = watch(topics[1]!).close;
     return Promise.resolve();
   }
 
@@ -48,8 +82,8 @@ export class AuthorizationServiceProvider extends ServiceProvider<ClientApplicat
     this.unsubscribePermissionsChanged = undefined;
     this.unsubscribeGlobalPermissionsChanged?.();
     this.unsubscribeGlobalPermissionsChanged = undefined;
-    this.unsubscribeRealtimeOpen?.();
-    this.unsubscribeRealtimeOpen = undefined;
+    this.releaseReadiness?.();
+    this.releaseReadiness = undefined;
     return Promise.resolve();
   }
 }

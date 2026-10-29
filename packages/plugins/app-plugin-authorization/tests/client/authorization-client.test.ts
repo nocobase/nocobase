@@ -88,7 +88,14 @@ describe('@nocobase/app-plugin-authorization client', () => {
       AuthorizationClient,
     );
     expect(realtime.watch).toHaveBeenCalledTimes(2);
-    expect(realtime.onOpen).toHaveBeenCalledOnce();
+    expect(realtime.onOpen).not.toHaveBeenCalled();
+    await provider.boot();
+    expect(realtime.watch).toHaveBeenCalledTimes(2);
+    for (const [, options] of realtime.watch.mock.calls as unknown as [
+      string,
+      { onReady: () => void },
+    ][])
+      options.onReady();
 
     const can = (check: AuthorizationCheck) =>
       container.resolve(clientToken).can(check);
@@ -114,6 +121,63 @@ describe('@nocobase/app-plugin-authorization client', () => {
       ],
     ] as const)
       expect(await can(check)).toBe(expected);
+    await provider.shutdown();
+  });
+
+  it('waits for both acknowledgements, recovers after reconnect, and falls back on refusal', async () => {
+    const container = new ServiceContainer();
+    const request = vi.fn().mockResolvedValue({ data: { permissions: [] } });
+    const watches: {
+      onReady: () => void;
+      onEvent: () => void;
+      onError: () => void;
+      onStateChange: (state: string) => void;
+    }[] = [];
+    const close = vi.fn();
+    container.instance(apiClientToken, { request } as unknown as ApiClient);
+    container.instance(realtimeClientToken, {
+      watch: (_topic: string, options: (typeof watches)[number]) => {
+        watches.push(options);
+        return { close };
+      },
+    } as unknown as RealtimeClient);
+    const provider = new AuthorizationServiceProvider({ container } as never);
+    provider.register();
+    await provider.boot();
+    const authz = container.resolve(authorizationClientToken);
+    const first = authz.snapshot();
+    watches[0]!.onReady();
+    await Promise.resolve();
+    expect(request).not.toHaveBeenCalled();
+    watches[1]!.onReady();
+    await first;
+    expect(request).toHaveBeenCalledOnce();
+    watches.forEach((watch) => watch.onStateChange('pending'));
+    watches[0]!.onReady();
+    expect(authz.revision()).toBe(0);
+    watches[1]!.onReady();
+    await authz.snapshot();
+    expect(request).toHaveBeenCalledTimes(2);
+    const slow = Promise.withResolvers<{ data: { permissions: [] } }>();
+    request.mockReturnValueOnce(slow.promise);
+    watches[0]!.onEvent();
+    const old = authz.snapshot();
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(3));
+    watches[1]!.onEvent();
+    const tail = authz.snapshot();
+    await Promise.resolve();
+    expect(request).toHaveBeenCalledTimes(3);
+    slow.resolve({ data: { permissions: [] } });
+    await Promise.all([old, tail]);
+    expect(request).toHaveBeenCalledTimes(4);
+    await provider.shutdown();
+    expect(close).toHaveBeenCalledTimes(2);
+    await provider.boot();
+    authz.invalidate();
+    const offline = authz.snapshot();
+    watches[2]!.onError();
+    await offline;
+    expect(request).toHaveBeenCalledTimes(5);
     await provider.shutdown();
   });
 
@@ -197,10 +261,12 @@ describe('permission snapshot lifecycle', () => {
         .mockResolvedValueOnce(denied);
       const client = new AuthorizationClient({ request } as never);
       const oldCheck = client.can({ resource, action: 'access' });
+      await vi.waitFor(() => expect(request).toHaveBeenCalledOnce());
       client.invalidate();
-      expect(await client.can({ resource, action: 'access' })).toBe(false);
+      const nextCheck = client.can({ resource, action: 'access' });
       if (outcome === 'resolve') old.resolve(granted);
       else old.reject(new Error('Previous session expired'));
+      expect(await nextCheck).toBe(false);
       expect(await oldCheck).toBe(false);
       expect(await client.can({ resource, action: 'access' })).toBe(false);
       expect(request).toHaveBeenCalledTimes(2);
