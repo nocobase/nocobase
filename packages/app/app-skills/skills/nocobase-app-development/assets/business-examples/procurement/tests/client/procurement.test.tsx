@@ -238,7 +238,7 @@ it.each(['save', 'conflict'] as const)(
           screen.getByRole('button', { name: 'Submit', exact: true }),
         );
         const conflict = 'The request changed. Reload before trying again.';
-        expect(await screen.findByText(conflict)).toBeVisible();
+        await waitFor(() => expect(screen.getByText(conflict)).toBeVisible());
         await waitFor(() =>
           expect(
             screen.getByRole('button', { name: 'Submit', exact: true }),
