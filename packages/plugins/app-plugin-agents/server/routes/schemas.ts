@@ -302,16 +302,18 @@ export const RunListQuery: z.ZodType<
     readonly subjectKind?: string | undefined;
     readonly subjectId?: string | undefined;
     readonly agentId?: string | undefined;
-    readonly status?: RunStatus | undefined;
+    readonly status?: RunStatus[] | undefined;
   }
 > = z.object({
   subjectKind: id.optional().describe('The kind of subject.'),
   subjectId: id.optional().describe('The subject identifier.'),
   agentId: id.optional().describe('The agent identifier.'),
   status: z
-    .enum(RUN_STATUSES)
+    .string()
+    .transform((value) => [...new Set(value.split(','))])
+    .pipe(z.array(z.enum(RUN_STATUSES)).min(1).max(RUN_STATUSES.length))
     .optional()
-    .describe('The status to set or filter by.'),
+    .describe('One status or a comma-separated list of statuses to filter by.'),
   pageSize: pageSize(50, 100).describe(
     'The maximum number of records to return.',
   ),
