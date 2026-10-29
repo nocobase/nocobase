@@ -126,31 +126,8 @@ export class SourceEvidence {
     const definitelyTerminates = (
       node: ts.Node,
       bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-    ): boolean => {
-      if (ts.isReturnStatement(node) || ts.isThrowStatement(node)) return true;
-      if (ts.isBlock(node)) {
-        for (const statement of node.statements)
-          if (definitelyTerminates(statement, bindings)) return true;
-        return false;
-      }
-      if (ts.isIfStatement(node)) {
-        const branches = new StaticValues(this, bindings, captures).booleans(
-          node.expression,
-        );
-        if (branches.length === 1)
-          return branches[0]
-            ? definitelyTerminates(node.thenStatement, bindings)
-            : node.elseStatement
-              ? definitelyTerminates(node.elseStatement, bindings)
-              : false;
-        return Boolean(
-          node.elseStatement &&
-          definitelyTerminates(node.thenStatement, bindings) &&
-          definitelyTerminates(node.elseStatement, bindings),
-        );
-      }
-      return false;
-    };
+    ): boolean =>
+      new StaticValues(this, bindings, captures).definitelyTerminates(node);
     const capability = (
       node: ts.Node,
       bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
