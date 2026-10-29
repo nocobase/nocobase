@@ -1,3 +1,4 @@
+import { watchReadiness } from './realtime-readiness.js';
 import {
   useCallback,
   useEffect,
@@ -86,43 +87,11 @@ export function useRealtimeReadiness(
   }>();
   useEffect(() => {
     if (!identity) return;
-    const names = identity.split('\n');
-    const acknowledged = new Set<string>();
-    let ready = false;
-    let fallback = false;
-    let closed = false;
-    const open = () => {
-      if (!closed) setPrepared({ realtime, identity });
-    };
-    const timer = setTimeout(() => {
-      fallback = true;
-      open();
-    }, 1000);
-    const watches = names.map((topic) =>
-      realtime.watch(topic, {
-        onReady: () => {
-          acknowledged.add(topic);
-          if (acknowledged.size !== names.length) return;
-          clearTimeout(timer);
-          if (ready || fallback) recoveryRef.current?.();
-          ready = true;
-          open();
-        },
-        onError: () => {
-          fallback = true;
-          clearTimeout(timer);
-          open();
-        },
-        onStateChange: (state) => {
-          if (state !== 'subscribed') acknowledged.delete(topic);
-        },
-      }),
-    );
-    return () => {
-      closed = true;
-      clearTimeout(timer);
-      watches.forEach((watch) => watch.close());
-    };
+    const barrier = watchReadiness(realtime, identity.split('\n'), {
+      onOpen: () => setPrepared({ realtime, identity }),
+      onRecovery: () => recoveryRef.current?.(),
+    });
+    return barrier.close;
   }, [realtime, identity]);
   return (
     identity.length === 0 ||

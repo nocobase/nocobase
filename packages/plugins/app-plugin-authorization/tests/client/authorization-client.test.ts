@@ -157,9 +157,11 @@ describe('@nocobase/app-plugin-authorization client', () => {
     await Promise.resolve();
     expect(request).toHaveBeenCalledOnce();
     watches[0]!.onReady();
-    expect(authz.revision()).toBe(1);
+    expect(authz.revision()).toBe(0);
     watches[1]!.onReady();
     await reconnecting;
+    await authz.snapshot();
+    expect(authz.revision()).toBe(1);
     expect(request).toHaveBeenCalledTimes(2);
     const slow = Promise.withResolvers<{ data: { permissions: [] } }>();
     request.mockReturnValueOnce(slow.promise);

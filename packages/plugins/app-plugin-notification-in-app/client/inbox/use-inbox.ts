@@ -8,6 +8,7 @@ import {
   createRealtimeRefresh,
   refreshRealtimeQueries,
   useRealtimeReadiness,
+  watchReadiness,
   useApiClient,
   useService,
 } from '@nocobase/app-client';
@@ -252,38 +253,23 @@ export function useInboxRefresh(extraTopics: readonly string[] = []): void {
           signal,
         ),
       );
-      const names = topics.split('\n');
-      const ready = new Set<string>();
-      let acknowledged = false;
-      let fallback = false;
-      const timer = setTimeout(() => {
-        fallback = true;
-      }, 1000);
-      const subscriptions = names.map((topic) =>
-        realtime.watch(topic, {
-          onEvent: scheduled.request,
-          onReady: () => {
-            ready.add(topic);
-            if (ready.size !== names.length) return;
-            clearTimeout(timer);
-            if (acknowledged || fallback) scheduled.retry();
-            acknowledged = true;
-          },
-          onStateChange: (state) => {
-            if (state !== 'subscribed') ready.delete(topic);
-          },
-          onError: () => {
-            fallback = true;
-          },
-        }),
-      );
+      const barrier = watchReadiness(realtime, topics.split('\n'), {
+        onRecovery: scheduled.retry,
+        onEvent: (topic, event) => {
+          if (
+            topic !== IN_APP_NOTIFICATION_REALTIME_TOPIC ||
+            (event.payload as { kind?: unknown } | null)?.kind ===
+              'inbox.changed'
+          )
+            scheduled.request();
+        },
+      });
       // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- The shared owner's close releases this listener after the last surface unmounts.
       window.addEventListener('focus', scheduled.request);
       shared = {
         count: 0,
         close: () => {
-          clearTimeout(timer);
-          subscriptions.forEach((subscription) => subscription.close());
+          barrier.close();
           window.removeEventListener('focus', scheduled.request);
           scheduled.close();
         },
