@@ -1,0 +1,65 @@
+name: V2 workflow entries
+
+# v3-develop carries one thin entry per manual (workflow_dispatch) workflow in this directory, with the same filename,
+# name and inputs, so those workflows stay runnable once v3-develop becomes the default branch. This check fails a
+# pull request that adds, removes or renames a manual workflow, or changes its name or inputs, while the entry on
+# v3-develop does not match. To change a manual workflow, update the entry on v3-develop first, then this branch.
+# A workflow that has never run can instead be added to EXCLUDED in scripts/check-v2-workflow-entries.mjs on v3-develop.
+# This workflow has no workflow_dispatch trigger, so it needs no entry itself.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-workflow-entries-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: V2 workflow entries
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out this pull request's workflows
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows
+
+      - name: Check out the entries on v3-develop
+        uses: actions/checkout@v4
+        with:
+          ref: v3-develop
+          path: v3-develop
+          persist-credentials: false
+          sparse-checkout: |
+            .github/workflows
+            scripts/check-v2-workflow-entries.mjs
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install yaml next to the script
+        run: |
+          script=v3-develop/scripts/check-v2-workflow-entries.mjs
+          if [ ! -f "$script" ]; then
+            echo "::error::$script does not exist on v3-develop. It is added there by the v3-v2-workflow-entries check; merge that first."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/check"
+          cp "$script" "$RUNNER_TEMP/check/"
+          npm install --prefix "$RUNNER_TEMP/check" --no-save --no-package-lock --no-audit --no-fund yaml@2.9.0
+
+      - name: Compare this pull request with the entries on v3-develop
+        run: >
+          node "$RUNNER_TEMP/check/check-v2-workflow-entries.mjs"
+          --main .github/workflows
+          --entries v3-develop/.github/workflows
+          --mismatch error
