@@ -16,7 +16,9 @@ import {
   type RunnerListItem,
   type ToolState,
 } from '../../../shared/runners.js';
-import { AgTag, type Tone } from '../../components/ag-tag.js';
+import { AgTag } from '../../components/ag-tag.js';
+import { TONE_CLASS, type Tone } from '../../components/ag-tag-tones.js';
+import { Badge } from '../../components/ui/badge.js';
 import { CommandLine } from '../../components/command-line.js';
 import {
   Popover,
@@ -78,7 +80,16 @@ export function RunnerStatusCell({
       ? t('runtimes.activity.offline', values)
       : t('runtimes.activity.offlineNever');
   else label = t(`runtimes.status.${activity}`);
-  const tag = (
+  const tag = badgeOnly ? (
+    <Badge
+      variant='secondary'
+      className={`tabular-nums ${TONE_CLASS[ACTIVITY_TONE[activity]]}`}
+      title={format.dateTime(runner.lastSeenAt)}
+    >
+      <span aria-hidden='true' className='size-1.5 rounded-full bg-current' />
+      {label}
+    </Badge>
+  ) : (
     <AgTag
       tone={ACTIVITY_TONE[activity]}
       dot

@@ -11,7 +11,8 @@ import {
 } from '../../lib/format.js';
 import { RUN_STATUS_TONE } from '../../lib/runs.js';
 import { Spinner } from '../../components/ui/spinner.js';
-import { AgTag } from '../../components/ag-tag.js';
+import { TONE_CLASS } from '../../components/ag-tag-tones.js';
+import { Badge } from '../../components/ui/badge.js';
 import { QuotaLabel } from '../../components/quota-status.js';
 import {
   Table,
@@ -88,12 +89,21 @@ export function RunnerRuns({
                 {run.title}
               </TableCell>
               <TableCell>
-                <AgTag tone={RUN_STATUS_TONE[run.status]} dot>
-                  {t(`runs.status.${run.status}`)}
-                </AgTag>
-                {run.failureReason === 'toolQuota' ? (
-                  <QuotaLabel usage />
-                ) : null}
+                <div className='flex flex-wrap items-center gap-1.5'>
+                  <Badge
+                    variant='secondary'
+                    className={TONE_CLASS[RUN_STATUS_TONE[run.status]]}
+                  >
+                    <span
+                      aria-hidden='true'
+                      className='size-1.5 rounded-full bg-current'
+                    />
+                    {t(`runs.status.${run.status}`)}
+                  </Badge>
+                  {run.failureReason === 'toolQuota' ? (
+                    <QuotaLabel usage warning />
+                  ) : null}
+                </div>
               </TableCell>
               <TableCell
                 className='text-xs text-muted-foreground'

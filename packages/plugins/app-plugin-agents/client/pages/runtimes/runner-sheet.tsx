@@ -156,12 +156,12 @@ function RunnerDetail({
             </>
           ) : null}
         </SheetDescription>
-        <div className='flex flex-wrap items-center gap-2'>
+        <div className='flex flex-wrap items-center gap-1.5'>
           <RunnerStatusCell runner={runner} badgeOnly />
           {marks.length ? (
             <Badge
               variant='secondary'
-              className='bg-destructive/10 text-destructive'
+              className='bg-amber-500/10 text-amber-700 dark:text-amber-300'
             >
               {t('runtimes.quota.marks', { count: marks.length })}
             </Badge>
