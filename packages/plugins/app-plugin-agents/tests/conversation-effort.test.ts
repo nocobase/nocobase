@@ -275,3 +275,37 @@ it('validates effort on the HTTP create and send boundaries without saving refus
       .items,
   ).toHaveLength(0);
 });
+
+it('saves the current default on an explicit reset and uses the new Agent default on a switch', async () => {
+  const { id, runner } = await fixture();
+  const reset = await h.services.onlineAgent.realtime(context, {
+    agentId: id,
+    effort: 'high',
+  });
+  await reset.send([{ role: 'user', content: 'Reset' }], { effort: null });
+  await (await reset.receive())!.cancel();
+  expect(
+    (await h.services.conversations.get('alice', reset.sessionId)).effort,
+  ).toBe('medium');
+  const nextId = await h.createAgent({
+    source: 'runner',
+    modelEntries: [{ tool: 'claude', model: 'test-model', effort: 'high' }],
+  });
+  const switched = await h.services.onlineAgent.realtime(context, {
+    agentId: id,
+    effort: 'low',
+  });
+  await switched.send(
+    [{ role: 'user', content: 'Use the new Agent default' }],
+    { agentId: nextId },
+  );
+  await (await switched.receive())!.cancel();
+  expect(
+    (await h.services.conversations.get('alice', switched.sessionId)).effort,
+  ).toBe('high');
+  const claims = await claim(h, runner, 2);
+  expect(claims.map((run) => run.tool.effort).sort()).toEqual([
+    'high',
+    'medium',
+  ]);
+});

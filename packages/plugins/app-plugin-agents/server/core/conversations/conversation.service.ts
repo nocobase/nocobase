@@ -596,9 +596,7 @@ export function createConversationService(
       );
     return (
       preference ??
-      (selected === undefined && effective && options.includes(effective)
-        ? effective
-        : null)
+      (effective && options.includes(effective) ? effective : null)
     );
   }
 
@@ -1563,6 +1561,11 @@ export function createConversationService(
   ): Promise<
     SendMessageResult | Awaited<ReturnType<ConversationService['sendRealtime']>>
   > {
+    if (request.effort !== undefined && !realtime)
+      throw invalid(
+        'Reasoning effort selection requires a Runner realtime message.',
+        { reason: 'EFFORT_UNSUPPORTED' },
+      );
     if (request.agentId !== undefined && (!realtime || !request.agentId.trim()))
       throw invalid('Agent selection requires a Runner realtime message.');
     const content = request.content;
