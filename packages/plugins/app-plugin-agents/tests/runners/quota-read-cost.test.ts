@@ -16,8 +16,8 @@ it.each([1, 10, 50])(
       ['/agents/chatAgents', 8],
       ['/agents/runners', 4],
       ['/agents/runners/:id', 5],
-      // Empty history probes dated and never-started ranges, plus the runner visibility read.
-      ['/agents/runners/:id/runs', 3],
+      // Empty history probes dated and never-started ranges, reads runner visibility, and counts all runs once.
+      ['/agents/runners/:id/runs', 4],
     ]);
     h = await createHarness();
     const models = Array.from({ length: n }, (_, index) => ({
@@ -69,6 +69,12 @@ it.each([1, 10, 50])(
         ).length;
         expect(writes).toBe(0);
         expect(reads).toBe(counts.get(name));
+        if (name === '/agents/runners/:id/runs') {
+          expect(result.body.meta.total).toBe(0);
+          expect(
+            sql.filter((query) => /count\(\*\)/i.test(query)),
+          ).toHaveLength(1);
+        }
       }
     }
   },
