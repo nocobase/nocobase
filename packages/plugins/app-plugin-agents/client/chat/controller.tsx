@@ -115,6 +115,7 @@ export class ChatController {
   private disposed = false;
   private generation = 0;
   private detailVersions = new Map<string, number>();
+  private receiptVersions = new Map<string, number>();
   private commandVersions = new Map<string, number>();
   constructor(readonly api: ChatApi) {
     this.submissions = new ChatSubmissions(
@@ -1292,9 +1293,18 @@ export class ChatController {
     void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
   }
   async markRead(id: string): Promise<ConversationDetail> {
-    const active = this.detailRequest(id);
+    const active = this.lifetime(),
+      commandVersion = this.commandVersions.get(id),
+      receiptVersion = (this.receiptVersions.get(id) ?? 0) + 1;
+    // Detail reads must not suppress the read transition needed by a viewed conversation.
+    this.receiptVersions.set(id, receiptVersion);
+    this.nextDetailVersion(id);
     const detail = await this.api.markRead(id);
-    if (active()) {
+    if (
+      active() &&
+      this.commandVersions.get(id) === commandVersion &&
+      this.receiptVersions.get(id) === receiptVersion
+    ) {
       // Read receipts do not change execution or invalidate pending history.
       this.nextDetailVersion(id);
       agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
@@ -1361,6 +1371,7 @@ export class ChatController {
     this.loads.clear();
     this.refreshAgain.clear();
     this.commandVersions.clear();
+    this.receiptVersions.clear();
     this.stopRequests.clear();
     this.approvalRequests.clear();
     this.recoveries.clear();
