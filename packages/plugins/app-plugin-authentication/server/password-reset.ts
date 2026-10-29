@@ -7,7 +7,11 @@ import {
   type MailTransport,
   type EmailMessage,
 } from '@nocobase/mailer';
-import type { Mailer } from '@nocobase/app-server/mailer';
+import { resolveChannelType } from '@nocobase/app-server/config';
+import {
+  isMailChannelConfig,
+  type EmailChannelConfig,
+} from '@nocobase/mailer/config';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   APIError,
@@ -30,7 +34,7 @@ export interface PasswordResetConfig {
 }
 
 export interface PasswordResetServices {
-  readonly mailer?: Mailer;
+  readonly legacyChannels?: Readonly<Record<string, unknown>>;
   readonly increment?: (key: string) => Promise<number>;
   readonly warning?: (message: string) => void;
   readonly report?: (category: string) => void;
@@ -62,12 +66,18 @@ export class PasswordResetPolicy {
     const configuredSender = options.emailAndPassword?.sendResetPassword;
     const custom =
       typeof configuredSender === 'function' ? configuredSender : undefined;
-    const channel = config.emailChannel ?? 'system-email';
+    const selected =
+      email ??
+      (!custom && config.enabled === true
+        ? legacyEmailConfig(
+            services.legacyChannels?.[config.emailChannel ?? 'system-email'],
+          )
+        : undefined);
     this.automatic =
       !custom &&
       config.enabled === true &&
       configuredResetOrigin(options.baseURL) &&
-      (email !== undefined || services.mailer?.available(channel) === true);
+      selected !== undefined;
     this.available =
       options.emailAndPassword?.enabled !== false &&
       config.enabled !== false &&
@@ -97,15 +107,10 @@ export class PasswordResetPolicy {
           );
           const sendOptions = { signal: request?.signal };
           // Lazily allocate once: transaction-bound administration instances never open an unused sender.
-          const transport =
-            email === undefined
-              ? undefined
-              : (this.transport ??= createMailTransport(email, {
-                  reuseConnections: true,
-                }));
-          const result = transport
-            ? await transport.send(message, sendOptions)
-            : await services.mailer!.send(channel, message, sendOptions);
+          const transport = (this.transport ??= createMailTransport(selected!, {
+            reuseConnections: true,
+          }));
+          const result = await transport.send(message, sendOptions);
           if (result.status !== 'accepted')
             services.report?.(result.error.category);
         }))
@@ -396,4 +401,22 @@ export function defaultPasswordResetEmail(
     text: `Reset your ${appName} password using this link:\n${data.url}\n\n请通过此链接重置密码。若非本人申请，请忽略此邮件。\nIf you did not request this, ignore this email.`,
     html: `<p>Reset your ${escape(appName)} password / 重置密码</p><p><a href="${escape(data.url)}">Reset password / 重置密码</a></p><p>If you did not request this, ignore this email. 若非本人申请，请忽略此邮件。</p>`,
   };
+}
+
+/** Preserve legacy channel aliases, validation and enablement without a host sending service. */
+function legacyEmailConfig(channel: unknown): EmailChannelConfig | undefined {
+  if (!channel || typeof channel !== 'object') return undefined;
+  try {
+    const type: unknown = Reflect.get(channel, 'type');
+    const provider: unknown = Reflect.get(channel, 'provider');
+    const normalized = {
+      ...channel,
+      provider: resolveChannelType({ type, provider }),
+    };
+    return isMailChannelConfig(normalized) && normalized.enabled !== false
+      ? normalized
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }

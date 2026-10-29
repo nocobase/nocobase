@@ -1,10 +1,14 @@
 // @vitest-environment node
 
 import { createServer, type Socket } from 'node:net';
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+import * as mailer from '@nocobase/mailer';
+
+afterEach(() => vi.restoreAllMocks());
 import { createTestApp } from '@nocobase/app-testing/server';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { authenticationToken } from '../../tokens.js';
+import { mailerToken } from '@nocobase/app-server/mailer';
 
 async function receiver(stall = false) {
   const sockets = new Set<Socket>();
@@ -64,6 +68,18 @@ it.each([
       body: JSON.stringify(body),
     });
     const smtp = await receiver();
+    const create = mailer.createMailTransport;
+    const sends: Promise<mailer.MailResult>[] = [];
+    vi.spyOn(mailer, 'createMailTransport').mockImplementation((...args) => {
+      const transport = create(...args);
+      const send = transport.send.bind(transport);
+      vi.spyOn(transport, 'send').mockImplementation((...sendArgs) => {
+        const completion = send(...sendArgs);
+        sends.push(completion);
+        return completion;
+      });
+      return transport;
+    });
     const app = await createTestApp({
       createServer: createStandaloneServer,
       config: {
@@ -94,6 +110,7 @@ it.each([
       },
     });
     try {
+      expect(app.application.container.has(mailerToken)).toBe(false);
       const capabilities = await app.request('/authentication/capabilities');
       expect(await capabilities.json()).toEqual({
         data: { passwordResetAvailable: true },
@@ -118,7 +135,17 @@ it.each([
       );
       expect(response.status).toBe(200);
       await vi.waitFor(() => expect(smtp.messages).toHaveLength(1));
-      const decoded = smtp.messages[0]!.replace(/=\r\n/gu, '').replace(
+      await expect(sends[0]).resolves.toMatchObject({ status: 'accepted' });
+      await app.request(
+        '/auth/request-password-reset',
+        json({
+          email: 'synthetic@example.test',
+          redirectTo: `${publicOrigin}/main/reset-password`,
+        }),
+      );
+      await vi.waitFor(() => expect(smtp.messages).toHaveLength(2));
+      expect(smtp.sockets.size).toBe(1);
+      const decoded = smtp.messages[1]!.replace(/=\r\n/gu, '').replace(
         /=([0-9A-F]{2})/gu,
         (_match, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)),
       );
@@ -172,6 +199,7 @@ it.each([
       ).toBeUndefined();
     } finally {
       await app.close();
+      await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
       await smtp.close();
     }
   },

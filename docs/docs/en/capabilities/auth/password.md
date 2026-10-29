@@ -98,7 +98,7 @@ For Resend, replace the entire `auth.email` block with `provider: resend`, `apiK
 
 Existing custom `auth.emailAndPassword.sendResetPassword` callbacks keep priority and work when the recovery switch is absent. Explicitly disabling recovery also disables custom callbacks. `auth.passwordReset.template` still supports TypeScript email customization. An invalid new sender is a configuration error; failed or uncertain delivery never switches senders or automatically resends.
 
-**Legacy migration:** `auth.passwordReset.emailChannel` is deprecated and supported only for old applications, defaulting to `system-email` through the existing host mailer when neither a custom callback nor `auth.email` is present. Startup prints a safe migration warning when that path is selected. Move its SMTP or Resend sender fields into `auth.email`, remove the explicit legacy entry, and keep notification and mailbox configuration unchanged. There is no scheduled removal date.
+**Legacy migration:** `auth.passwordReset.emailChannel` is deprecated and supported only for old applications, defaulting to `system-email` through Authentication’s own compatibility adapter when neither a custom callback nor `auth.email` is present. Startup prints a safe migration warning when that path is selected. Move its SMTP or Resend sender fields into `auth.email`, remove the explicit legacy entry, and keep notification and mailbox configuration unchanged. No MailerProvider or installed notification/mailbox plugin is required, including for opted-in applications that previously lacked that provider. There is no scheduled removal date.
 
 ## Sessions and disabled accounts
 

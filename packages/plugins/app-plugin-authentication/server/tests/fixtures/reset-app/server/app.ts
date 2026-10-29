@@ -1,6 +1,5 @@
 import { CachingProvider } from '@nocobase/app-server/caching';
 import { IdGeneratorProvider } from '@nocobase/app-server/id-generator';
-import { MailerProvider } from '@nocobase/app-server/mailer';
 import type { Application } from '@nocobase/app-server/application';
 import { DatabaseProvider } from '@nocobase/app-server/database';
 import {
@@ -13,10 +12,6 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addServiceProvider(DatabaseProvider);
   app.addServiceProvider(CachingProvider);
   app.addServiceProvider(IdGeneratorProvider);
-  // New authentication email tests have neither a host mailer nor notification/mail plugins.
-  // Only legacy compatibility tests register the original host mailer.
-  if (runtime.config.get('auth.email') === undefined)
-    app.addServiceProvider(MailerProvider);
   app.addRuntimeContributions(runtime);
   return app;
 }

@@ -1,4 +1,3 @@
-import { mailerToken } from '@nocobase/app-server/mailer';
 import {
   createAppCookieScope,
   joinBasePath,
@@ -190,9 +189,14 @@ export class AuthenticationProvider<
       appName: app.name,
       ...authConfig,
       passwordResetServices: {
-        mailer: container.has(mailerToken)
-          ? container.resolve(mailerToken)
-          : undefined,
+        legacyChannels:
+          authConfig.passwordReset?.enabled === true &&
+          !authConfig.emailAndPassword?.sendResetPassword &&
+          authConfig.email === undefined
+            ? this.app.config.get<{
+                channels?: Readonly<Record<string, unknown>>;
+              }>('notification')?.channels
+            : undefined,
         increment: (key) =>
           caching
             .getCounter({ namespace: 'password-reset-rate-limit' })
