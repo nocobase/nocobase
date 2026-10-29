@@ -2,8 +2,16 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import type { ProcurementDetail } from '../../shared/procurement.js';
 
 const applicationUrl = process.env.APP_URL;
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
 test.skip(
   !applicationUrl || !process.env.E2E_USERNAME || !process.env.E2E_PASSWORD,
   'Set an independent disposable APP_URL and synthetic E2E_USERNAME/E2E_PASSWORD.',
@@ -198,6 +206,9 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
     await expect(
       owner.getByRole('textbox', { name: 'Title', exact: true }),
     ).toBeDisabled();
+    await expect(
+      owner.locator('p').getByText('Submitted', { exact: true }),
+    ).toBeVisible();
     await reviewer.goto(detailUrl);
     console.info('Procurement submitted; reviewer opened the request.');
     await expect(
@@ -228,14 +239,110 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
     await expect(
       owner.getByRole('textbox', { name: 'Title', exact: true }),
     ).toBeEnabled();
+    const stale = (
+      await (
+        await actors.owner.context.request.get(app + '/api/procurement/' + id)
+      ).json()
+    ).data as ProcurementDetail;
+    const secondTabSave = await actors.owner.context.request.patch(
+      app + '/api/procurement/' + id,
+      {
+        headers: { origin, 'Idempotency-Key': `${Date.now()}.${randomUUID()}` },
+        data: {
+          title: stale.record.title,
+          supplierId: stale.record.supplierId,
+          reviewerId: stale.record.reviewerId,
+          totalMinor: stale.record.totalMinor,
+          version: stale.record.lifecycleVersion,
+          lines: stale.lines.map(({ id, materialId, quantity, unitPrice }) => ({
+            id,
+            materialId,
+            quantity,
+            unitPrice,
+          })),
+        },
+      },
+    );
+    expect(secondTabSave.status()).toBe(200);
+    const conflicted = owner.waitForResponse(
+      (response) => response.url() === app + '/api/procurement/' + id + '/fire',
+    );
+    const conflictRefresh = owner.waitForResponse(
+      (response) =>
+        response.url() === app + '/api/procurement/' + id &&
+        response.request().method() === 'GET',
+    );
+    await owner.getByRole('button', { name: 'Submit', exact: true }).click();
+    expect((await conflicted).status()).toBe(409);
+    await conflictRefresh;
+    await expect(
+      owner.getByRole('button', { name: 'Save draft', exact: true }),
+    ).toBeEnabled();
+    await expect(
+      owner.getByText('The request changed. Reload before trying again.', {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await snapshot(owner, 'procurement-conflict-retained.png');
+    const beforeSave = (
+      await (
+        await actors.owner.context.request.get(app + '/api/procurement/' + id)
+      ).json()
+    ).data as ProcurementDetail;
+    const refreshStarted = deferred();
+    const refreshGate = deferred();
+    const detailApi = app + '/api/procurement/' + id;
+    await owner.route(detailApi, async (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      const response = await route.fetch();
+      refreshStarted.resolve();
+      await refreshGate.promise;
+      await route.fulfill({ response });
+    });
     await owner
       .getByRole('textbox', { name: 'Quantity', exact: true })
       .fill('3');
-    await owner
-      .getByRole('button', { name: 'Save draft', exact: true })
-      .click();
+    try {
+      const saved = owner.waitForResponse(
+        (response) =>
+          response.url() === detailApi &&
+          response.request().method() === 'PATCH',
+      );
+      await owner
+        .getByRole('button', { name: 'Save draft', exact: true })
+        .click();
+      expect((await saved).status()).toBe(200);
+      await refreshStarted.promise;
+      await expect(
+        owner.getByRole('button', { name: 'Submit', exact: true }),
+      ).toBeDisabled();
+      await expect(
+        owner.getByRole('button', { name: 'Save draft', exact: true }),
+      ).toBeDisabled();
+      await snapshot(owner, 'procurement-save-refresh-locked.png');
+    } finally {
+      refreshGate.resolve();
+    }
+    await expect(
+      owner.getByRole('button', { name: 'Submit', exact: true }),
+    ).toBeEnabled();
+    await owner.unroute(detailApi);
     await expect(owner.getByLabel('Total (USD)')).toHaveText('30.75');
+    const resubmitted = owner.waitForResponse(
+      (response) =>
+        response.url() === detailApi + '/fire' &&
+        response.request().method() === 'POST',
+    );
     await owner.getByRole('button', { name: 'Submit', exact: true }).click();
+    const resubmission = await resubmitted;
+    expect(resubmission.status()).toBe(200);
+    expect(resubmission.request().postDataJSON().version).toBe(
+      beforeSave.record.lifecycleVersion + 1,
+    );
+    await expect(
+      owner.locator('p').getByText('Submitted', { exact: true }),
+    ).toBeVisible();
+    await snapshot(owner, 'procurement-resubmitted.png');
     await reviewer.reload();
     await reviewer
       .getByRole('button', { name: 'Approve', exact: true })
@@ -260,7 +367,8 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
           document.documentElement.clientWidth,
       ),
     ).toBe(true);
-    await reviewer.goto(app + '/procurement');
+    await reviewer.getByRole('button', { name: 'Close', exact: true }).click();
+    await reviewer.keyboard.press('Escape');
     await reviewer
       .getByRole('button', { name: 'Appearance', exact: true })
       .hover();
@@ -269,20 +377,21 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
       .getByText('Dark', { exact: true })
       .click();
     await reviewer.keyboard.press('Escape');
-    await reviewer.goto(detailUrl);
+    await reviewer.getByRole('link', { name: title, exact: true }).click();
     await expect(reviewer.locator('html')).toHaveClass(/dark/);
     await expect(
       reviewer.getByLabel('Quote minus catalog (USD/unit)'),
     ).toHaveText('-2.25');
     await snapshot(reviewer, 'procurement-quotes-dark-mobile.png');
-    await reviewer.goto(app + '/procurement');
+    await reviewer.getByRole('button', { name: 'Close', exact: true }).click();
+    await reviewer.keyboard.press('Escape');
     await reviewer.getByRole('button', { name: 'Open account menu' }).click();
     await reviewer.getByRole('menuitem', { name: /Language/ }).hover();
     await reviewer
       .getByRole('menuitemradio', { name: '中文', exact: true })
       .click();
     await expect(reviewer.locator('html')).toHaveAttribute('lang', 'zh-CN');
-    await reviewer.goto(detailUrl);
+    await reviewer.getByRole('link', { name: title, exact: true }).click();
     await expect(
       reviewer.getByRole('textbox', {
         name: '申请报价快照（美元/单位）',

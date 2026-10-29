@@ -31,6 +31,8 @@ import { Reference } from './reference.js';
 export default function ProcurementDetailPage() {
   const { id } = useParams();
   const { t } = useTranslation();
+  // Version changes remount the editor; operation feedback belongs to the route.
+  const [failure, setFailure] = useState<{ id?: string; error: unknown }>();
   const request = useListData<{ data: ProcurementDetail }>(
     `procurement/${id}`,
     { active: !!id },
@@ -49,15 +51,24 @@ export default function ProcurementDetailPage() {
       key={`${id ?? 'new'}:${request.data?.data.record.lifecycleVersion ?? 0}`}
       detail={request.data?.data}
       refresh={request.reload}
+      refreshing={!!id && request.loading}
+      error={failure?.id === id ? failure?.error : undefined}
+      setError={(error) => setFailure({ id, error })}
     />
   );
 }
 function Editor({
   detail,
   refresh,
+  refreshing,
+  error,
+  setError,
 }: {
   detail?: ProcurementDetail;
   refresh: () => void;
+  refreshing: boolean;
+  error: unknown;
+  setError: (error: unknown) => void;
 }) {
   const { t, i18n } = useTranslation();
   const api = useApiClient();
@@ -76,8 +87,9 @@ function Editor({
       quantityText: String(l.quantity),
     })),
   );
-  const [error, setError] = useState<unknown>();
-  const [busy, setBusy] = useState(false);
+  const [writing, setWriting] = useState(false);
+  // A write is usable only after the refreshed version and actions reach the editor.
+  const busy = writing || refreshing;
   const [dirty, setDirty] = useState(false);
   const [discard, setDiscard] = useState(false);
   const lockedRef = useRef(false);
@@ -113,9 +125,9 @@ function Editor({
     invalid = true;
   }
   const save = async () => {
-    if (lockedRef.current) return;
+    if (lockedRef.current || refreshing) return;
     lockedRef.current = true;
-    setBusy(true);
+    setWriting(true);
     setError(undefined);
     try {
       const result = await submission.run(
@@ -156,15 +168,16 @@ function Editor({
       }
     } catch (e) {
       setError(e);
+      if (e instanceof ApiClientError && e.status === 409) refresh();
     } finally {
-      setBusy(false);
+      setWriting(false);
       lockedRef.current = false;
     }
   };
   const fire = async (transition: 'submit' | 'approve' | 'reject') => {
-    if (!detail || lockedRef.current || dirty) return;
+    if (!detail || lockedRef.current || refreshing || dirty) return;
     lockedRef.current = true;
-    setBusy(true);
+    setWriting(true);
     setError(undefined);
     try {
       await api.request({
@@ -180,8 +193,9 @@ function Editor({
       refresh();
     } catch (e) {
       setError(e);
+      if (e instanceof ApiClientError && e.status === 409) refresh();
     } finally {
-      setBusy(false);
+      setWriting(false);
       lockedRef.current = false;
     }
   };
