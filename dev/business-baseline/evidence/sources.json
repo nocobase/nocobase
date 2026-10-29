@@ -1,0 +1,208 @@
+{
+  "verifiedAt": "2026-10-29",
+  "artifacts": [
+    {
+      "artifactId": "0bf981a4-3350-429a-840a-aa351d6c55ba",
+      "filename": "expenses-baseline-report.md",
+      "sha256": "a2171d522f1a428322160b38ecffb719c28e7a8df77c43209822b6f4e75bcb80",
+      "bytes": 5654,
+      "retrieval": "nb-studio issue attachment download 0bf981a4-3350-429a-840a-aa351d6c55ba"
+    },
+    {
+      "artifactId": "1032277a-caf6-4be3-afbc-485477f3feaa",
+      "filename": "onboarding-baseline-report.md",
+      "sha256": "164f3ea49813970afa194e10504720e65b5df402a28c3890abe2f6a061383948",
+      "bytes": 5346,
+      "retrieval": "nb-studio issue attachment download 1032277a-caf6-4be3-afbc-485477f3feaa"
+    },
+    {
+      "artifactId": "1075387b-3d7e-44aa-9881-3adcf1b10f6e",
+      "filename": "procurement-retry-01-evidence.tar.gz",
+      "sha256": "bf1a2c4f62b37e23223927d37e9d639538b80322cfe22f00259d0be270d30e8b",
+      "bytes": 13302187,
+      "retrieval": "nb-studio issue attachment download 1075387b-3d7e-44aa-9881-3adcf1b10f6e"
+    },
+    {
+      "artifactId": "2cc0de31-fd19-43c3-a973-b6dbd2f7b5e5",
+      "filename": "expenses-diagnostic.tar.gz.sha256",
+      "sha256": "cd8813ec9ae65b3f5fe85bb122523afa3ce8b7771ae32d0b788ec91491eb7a7b",
+      "bytes": 93,
+      "retrieval": "nb-studio issue attachment download 2cc0de31-fd19-43c3-a973-b6dbd2f7b5e5"
+    },
+    {
+      "artifactId": "2d29cbc6-ff0b-4c9c-8087-51202e3304ea",
+      "filename": "baseline-disposition.md",
+      "sha256": "3d72b69e281592d9e74a48bbb9c696a51190f95462aa488e0f70b926d59afffb",
+      "bytes": 3612,
+      "retrieval": "nb-studio issue attachment download 2d29cbc6-ff0b-4c9c-8087-51202e3304ea"
+    },
+    {
+      "artifactId": "2d7ea3a8-4f7c-4017-8103-635e32d811a9",
+      "filename": "customer-baseline-report.md",
+      "sha256": "b9009779a2a84cd23e8ca1a14a90bcfaa8091f4cf99843d45ed88bde85be8d9d",
+      "bytes": 4160,
+      "retrieval": "nb-studio issue attachment download 2d7ea3a8-4f7c-4017-8103-635e32d811a9"
+    },
+    {
+      "artifactId": "30befd7d-6fdf-4bb5-9cf2-dbc27c23b31f",
+      "filename": "expenses-diagnostic-report.md",
+      "sha256": "9cb346d119fe1a0a649353930b78f8a3d527ea9ae0b9ab566509a79ac998904c",
+      "bytes": 4921,
+      "retrieval": "nb-studio issue attachment download 30befd7d-6fdf-4bb5-9cf2-dbc27c23b31f"
+    },
+    {
+      "artifactId": "37794eb3-b9ef-4d72-838d-05a41c3ce891",
+      "filename": "procurement-retry-01-evidence.tar.gz.sha256",
+      "sha256": "3db18b68c4473ffe49b5837b28f67f206bfa8c582973fcab7e1c97aea1bf33fb",
+      "bytes": 103,
+      "retrieval": "nb-studio issue attachment download 37794eb3-b9ef-4d72-838d-05a41c3ce891"
+    },
+    {
+      "artifactId": "4035eebe-bd90-443a-bb24-2de12ec0d425",
+      "filename": "results.json",
+      "sha256": "eb5604b529b7bd4e7f36da59526d3b6f49cf7a4d4a587e4638cef8cf9621fd4d",
+      "bytes": 19839,
+      "retrieval": "nb-studio issue attachment download 4035eebe-bd90-443a-bb24-2de12ec0d425"
+    },
+    {
+      "artifactId": "4035eebe-bd90-443a-bb24-2de12ec0d425",
+      "filename": "results.json",
+      "sha256": "eb5604b529b7bd4e7f36da59526d3b6f49cf7a4d4a587e4638cef8cf9621fd4d",
+      "bytes": 19839,
+      "retrieval": "nb-studio issue attachment download 4035eebe-bd90-443a-bb24-2de12ec0d425"
+    },
+    {
+      "artifactId": "41b05983-aef9-441c-83f1-38e441d4a2c7",
+      "filename": "sealed-source.tar.gz",
+      "sha256": "30c572c67484eb15d762d76aa15f90708399247a24a0fb292e265bd07dbd9f5c",
+      "bytes": 804380,
+      "retrieval": "nb-studio issue attachment download 41b05983-aef9-441c-83f1-38e441d4a2c7"
+    },
+    {
+      "artifactId": "43fd6a27-d69d-4732-af9c-f168e906fafd",
+      "filename": "diagnostic-evidence.tar.gz",
+      "sha256": "0c5ffb5faa7fe51c4cc79354578bb6288f8133240f31265195c401bbfd034073",
+      "bytes": 537866,
+      "retrieval": "nb-studio issue attachment download 43fd6a27-d69d-4732-af9c-f168e906fafd"
+    },
+    {
+      "artifactId": "449d3d15-9015-40d4-9ec4-f9ba182810ee",
+      "filename": "diagnostic-report.md",
+      "sha256": "384a850b6f12a137b95de7b829009a6e23b27257ae5d334a3e683ed7723d2eb2",
+      "bytes": 4298,
+      "retrieval": "nb-studio issue attachment download 449d3d15-9015-40d4-9ec4-f9ba182810ee"
+    },
+    {
+      "artifactId": "5ff77c57-a978-4053-92e7-24f57e3990bc",
+      "filename": "onboarding-acceptance-evidence.tar.gz.sha256",
+      "sha256": "3763a8b6f705c94cdd0badc2351ae5fe3f0feb494dd4fd3da472e97acff0272b",
+      "bytes": 104,
+      "retrieval": "nb-studio issue attachment download 5ff77c57-a978-4053-92e7-24f57e3990bc"
+    },
+    {
+      "artifactId": "6e1ff126-eb0a-495d-a4d2-524a78ccf89f",
+      "filename": "results.json",
+      "sha256": "178be1ed25ccf0b515a9cf3f444c0cfd92e5d2569e804d4257ea4b73bb3d300b",
+      "bytes": 7558,
+      "retrieval": "nb-studio issue attachment download 6e1ff126-eb0a-495d-a4d2-524a78ccf89f"
+    },
+    {
+      "artifactId": "6e1ff126-eb0a-495d-a4d2-524a78ccf89f",
+      "filename": "results.json",
+      "sha256": "178be1ed25ccf0b515a9cf3f444c0cfd92e5d2569e804d4257ea4b73bb3d300b",
+      "bytes": 7558,
+      "retrieval": "nb-studio issue attachment download 6e1ff126-eb0a-495d-a4d2-524a78ccf89f"
+    },
+    {
+      "artifactId": "92458187-f4c9-4402-814b-e2adbb10a144",
+      "filename": "customer-acceptance-evidence.tar.gz",
+      "sha256": "ef85302c7d1841ea2de7483e39f4f32a1f0ade05d2bea917414ad906e4bde8f0",
+      "bytes": 10129929,
+      "retrieval": "nb-studio issue attachment download 92458187-f4c9-4402-814b-e2adbb10a144"
+    },
+    {
+      "artifactId": "953aa95c-30ef-42ff-a9b8-52e7164e65f0",
+      "filename": "retry-report.md",
+      "sha256": "af71045bbdb6cf97f21a80f1fd4411cc2503a0bd3b7c1f9853cbcfcdc4894c6c",
+      "bytes": 6114,
+      "retrieval": "nb-studio issue attachment download 953aa95c-30ef-42ff-a9b8-52e7164e65f0"
+    },
+    {
+      "artifactId": "996f60c0-5045-4dc7-a870-c1e28f120aa0",
+      "filename": "sealed-source.tar.gz",
+      "sha256": "ee19957fd109764c618287020fd79319cb61fe33e524342abd65234a6de4e345",
+      "bytes": 790312,
+      "retrieval": "nb-studio issue attachment download 996f60c0-5045-4dc7-a870-c1e28f120aa0"
+    },
+    {
+      "artifactId": "a1d90260-d932-4ead-a3dc-7d15ca06e987",
+      "filename": "onboarding-acceptance-evidence.tar.gz",
+      "sha256": "9d8ac81719c8818a95eb79833859fcc4846bed5343b8f26ba1e7cb64dc5bd260",
+      "bytes": 9042017,
+      "retrieval": "nb-studio issue attachment download a1d90260-d932-4ead-a3dc-7d15ca06e987"
+    },
+    {
+      "artifactId": "b0c447ac-a871-400d-9134-b68d756759d3",
+      "filename": "expenses-diagnostic.tar.gz",
+      "sha256": "90f96ed41cb243551a60cb47944709f2d5810221341b4ecbe421ba60df96f40f",
+      "bytes": 228742,
+      "retrieval": "nb-studio issue attachment download b0c447ac-a871-400d-9134-b68d756759d3"
+    },
+    {
+      "artifactId": "b13fb83c-ac0c-4da0-9d1a-5efc4c1bcbc5",
+      "filename": "sealed-source.tar.gz",
+      "sha256": "3eaecbba2a2c53a71a3c1a48d540b734efb8daf9768f74a22ac365a0137f29e5",
+      "bytes": 806145,
+      "retrieval": "nb-studio issue attachment download b13fb83c-ac0c-4da0-9d1a-5efc4c1bcbc5"
+    },
+    {
+      "artifactId": "d8e058c0-8955-49ad-b3cd-ffd18614ad62",
+      "filename": "approach.md",
+      "sha256": "2d18a00d3fac5f46ba2773358c5ed10a6540605c0d8600c2b4294e8a1fbcf32c",
+      "bytes": 7726,
+      "retrieval": "nb-studio issue attachment download d8e058c0-8955-49ad-b3cd-ffd18614ad62"
+    },
+    {
+      "artifactId": "e44a72ae-43ea-4a8f-99b5-d70a51417a20",
+      "filename": "customer-acceptance-report.md",
+      "sha256": "9337630501e94bf088899af023e00a48e312b0b4d2004435545e45b8fe89fc44",
+      "bytes": 5546,
+      "retrieval": "nb-studio issue attachment download e44a72ae-43ea-4a8f-99b5-d70a51417a20"
+    },
+    {
+      "artifactId": "ea17d867-7d9e-45e0-aab0-894e5af13700",
+      "filename": "results.json",
+      "sha256": "efa886fea27433fd043cf2a80bb723d700f6f4969f29575effc531b65044cd4a",
+      "bytes": 18941,
+      "retrieval": "nb-studio issue attachment download ea17d867-7d9e-45e0-aab0-894e5af13700"
+    },
+    {
+      "artifactId": "f6a233ae-77bf-435e-9553-183b7332b56e",
+      "filename": "onboarding-acceptance-report.md",
+      "sha256": "377f105b39b18a82349d781253a3e60d0735ab12ceabd99e5dc6d21dcbf0233f",
+      "bytes": 6614,
+      "retrieval": "nb-studio issue attachment download f6a233ae-77bf-435e-9553-183b7332b56e"
+    },
+    {
+      "artifactId": "fc87ca12-355a-4b2e-ac18-d9b2fa8538d1",
+      "filename": "sealed-source.tar.gz.sha256",
+      "sha256": "2544fdcb722202f68a94494994f871a76960d80f5a440ea0d49400aa359137f9",
+      "bytes": 87,
+      "retrieval": "nb-studio issue attachment download fc87ca12-355a-4b2e-ac18-d9b2fa8538d1"
+    },
+    {
+      "artifactId": "fe086e1f-038f-4f8a-ab2a-4862ebeb7163",
+      "filename": "results.json",
+      "sha256": "87e6bfdf8a7a4f42aad15812a21c19ab78fbbff5806f9b30f8f74557538fcb61",
+      "bytes": 15817,
+      "retrieval": "nb-studio issue attachment download fe086e1f-038f-4f8a-ab2a-4862ebeb7163"
+    },
+    {
+      "artifactId": "fe086e1f-038f-4f8a-ab2a-4862ebeb7163",
+      "filename": "results.json",
+      "sha256": "87e6bfdf8a7a4f42aad15812a21c19ab78fbbff5806f9b30f8f74557538fcb61",
+      "bytes": 15817,
+      "retrieval": "nb-studio issue attachment download fe086e1f-038f-4f8a-ab2a-4862ebeb7163"
+    }
+  ]
+}
