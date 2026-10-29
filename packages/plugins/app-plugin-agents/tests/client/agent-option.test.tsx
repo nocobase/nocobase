@@ -9,6 +9,7 @@ import {
   resetApi,
 } from './fake-client.js';
 import { agent } from './fixtures.js';
+import { createElement, type PropsWithChildren } from 'react';
 import { RUNNERS_TOPIC } from '../../shared/realtime.js';
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
@@ -46,4 +47,49 @@ it('reads a system candidate without listing discovered agents, and refreshes it
   expect(
     api.calls.filter((call) => call.path === 'agents/system-manager'),
   ).toHaveLength(2);
+});
+
+it('reads fresh viewer-scoped agent options when the same page switches identity', async () => {
+  const { ChatClientProvider } =
+    await import('../../client/chat/controller.js');
+  let viewer = 'admin';
+  let prepared = true;
+  resetApi({
+    'agents/system-manager': () =>
+      agent('system-manager', {
+        canEdit: viewer === 'admin',
+        quota:
+          viewer === 'admin'
+            ? [
+                {
+                  runnerId: 'private',
+                  runnerName: 'Admin computer',
+                  resetsAt: null,
+                },
+              ]
+            : [],
+      }),
+    'agents/vocabulary': () => ({}),
+  });
+  function Boundary({ children }: PropsWithChildren) {
+    return prepared
+      ? createElement(ChatClientProvider, { key: viewer }, children)
+      : null;
+  }
+  const hook = renderHook(() => useAgentOption('system-manager'), {
+    wrapper: Boundary,
+  });
+  await waitFor(() => expect(hook.result.current?.quota).toHaveLength(1));
+  // Authorization hides the old tree before mounting the prepared identity.
+  prepared = false;
+  hook.rerender();
+  viewer = 'operator';
+  prepared = true;
+  hook.rerender();
+  expect(hook.result.current).toBeNull();
+  await waitFor(() => expect(hook.result.current?.quota).toHaveLength(0));
+  expect(
+    agentsQueryClient().getQueryData(['agents', 'agent', 'system-manager']),
+  ).toMatchObject({ canEdit: false });
+  expect(callsTo('GET', 'agents/system-manager')).toHaveLength(2);
 });

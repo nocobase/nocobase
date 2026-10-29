@@ -39,6 +39,7 @@ import { ChatApi } from './api.js';
 import { chatIsRunning } from './feedback.js';
 import { ChatSubmissions, type SubmissionSend } from './submissions.js';
 import { agentsQueryClient } from '../query.js';
+import { agentsKeys } from '../api/keys.js';
 import { chatKeys } from './keys.js';
 import {
   EMPTY_MESSAGES,
@@ -1458,7 +1459,8 @@ export class ChatController {
     this.approvalRequests.clear();
     this.recoveries.clear();
     this.submissions.invalidate();
-    agentsQueryClient().removeQueries({ queryKey: chatKeys.all });
+    // All plugin snapshots are viewer-scoped, including fresh agent options.
+    agentsQueryClient().removeQueries({ queryKey: agentsKeys.all });
   }
   dispose(): void {
     this.invalidate();
