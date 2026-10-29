@@ -6,11 +6,16 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 export const CHAT_INVALIDATION_MS = 150;
 
+interface CoalescedInvalidation {
+  readonly add: (key: QueryKey) => void;
+  readonly stop: () => void;
+}
+
 /** Coalesce bursts and retain a trailing read for changes received during a snapshot. */
 export function coalescedInvalidation(
   client: QueryClient,
-  delay = CHAT_INVALIDATION_MS,
-) {
+  delay: number = CHAT_INVALIDATION_MS,
+): CoalescedInvalidation {
   const keys = new Map<string, QueryKey>();
   const scheduled = createRealtimeRefresh(
     async (signal) => {
@@ -34,7 +39,7 @@ export function coalescedInvalidation(
     { delayMs: delay },
   );
   return {
-    add(queryKey: QueryKey) {
+    add(queryKey: QueryKey): void {
       keys.set(JSON.stringify(queryKey), queryKey);
       scheduled.request();
     },
