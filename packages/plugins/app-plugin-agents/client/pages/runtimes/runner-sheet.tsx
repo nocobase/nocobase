@@ -161,6 +161,7 @@ function RunnerDetail({
           {marks.length ? (
             <Badge
               variant='secondary'
+              data-size='sm'
               className='bg-amber-500/10 text-amber-700 dark:text-amber-300'
             >
               {t('runtimes.quota.marks', { count: marks.length })}

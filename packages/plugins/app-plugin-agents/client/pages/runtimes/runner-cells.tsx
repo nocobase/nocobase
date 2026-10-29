@@ -83,6 +83,7 @@ export function RunnerStatusCell({
   const tag = badgeOnly ? (
     <Badge
       variant='secondary'
+      data-size='sm'
       className={`tabular-nums ${TONE_CLASS[ACTIVITY_TONE[activity]]}`}
       title={format.dateTime(runner.lastSeenAt)}
     >
