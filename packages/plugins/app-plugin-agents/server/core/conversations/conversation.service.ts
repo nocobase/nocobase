@@ -1916,7 +1916,12 @@ export function createConversationService(
           patch.projectId !== undefined &&
           patch.projectId !== (record.projectId ?? null)
         ) {
-          if (Number(record.lastSeq) > 0)
+          if (
+            Number(record.lastSeq) > 0 &&
+            (await messagesRepo(unit.conn).findOne({
+              filter: { conversationId: id, role: 'user' },
+            }))
+          )
             throw conflict(
               'Start a new conversation to choose another project.',
             );

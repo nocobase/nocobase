@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { createHarness, claim, type Harness } from './harness.js';
 
 let h: Harness;
@@ -72,8 +72,18 @@ it('retains the bound runner and takes the previous conversation summary across 
   const { agentId, runner } = await fixture();
   const service = h.services.conversations;
   const other = await h.createAgent({ name: 'Second', source: 'runner' });
-  const chat = await service.create('alice', { agentId, projectId: 'project' });
-  await service.send('alice', chat.id, { content: 'Read code' });
+  const agent = await h.services.onlineAgent.realtime(
+    {
+      user: { id: 'alice' },
+      credentials: { kind: 'test-session', userId: 'alice' },
+      authorization: {
+        identity: { principal: { type: 'user', id: 'alice' } },
+      } as import('@nocobase/authorization/core').AuthorizationContext,
+    },
+    { agentId, projectId: 'project' },
+  );
+  const chat = await service.get('alice', agent.sessionId);
+  await agent.send([{ role: 'user', content: 'Read code' }]);
   const [first] = await claim(h, runner);
   expect(first.workspace.dirs).toMatchObject([
     { branch: 'chat/test', defaultBranch: 'dev' },
@@ -102,8 +112,12 @@ it('retains the bound runner and takes the previous conversation summary across 
       })
     ).status,
   ).toBe(200);
-  await service.switchAgent('alice', chat.id, other);
-  await service.send('alice', chat.id, { content: 'Continue' });
+  await vi.waitFor(async () =>
+    expect((await service.get('alice', chat.id)).execution?.status).toBe(
+      'idle',
+    ),
+  );
+  await agent.send([{ role: 'user', content: 'Continue' }], { agentId: other });
   expect((await service.get('alice', chat.id)).runner?.id).toBe(
     runner.runnerId,
   );

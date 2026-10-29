@@ -114,7 +114,15 @@ const SelectedModel = z.strictObject({
   model: z.string().min(1),
 });
 const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
-  projectId: z.string().min(1).max(64).nullable().optional(),
+  projectId: z
+    .string()
+    .min(1)
+    .max(64)
+    .nullable()
+    .optional()
+    .describe(
+      'Optional project workspace for a Runner conversation; null selects no project. Frozen after the first user message.',
+    ),
   agentId: z
     .string()
     .min(1)
@@ -146,7 +154,15 @@ const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
 });
 
 const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
-  projectId: z.string().min(1).max(64).nullable().optional(),
+  projectId: z
+    .string()
+    .min(1)
+    .max(64)
+    .nullable()
+    .optional()
+    .describe(
+      'Optional project workspace for a Runner conversation; null selects no project. Frozen after the first user message.',
+    ),
   title: z
     .string()
     .max(CONVERSATION_TITLE_MAX * 2)
