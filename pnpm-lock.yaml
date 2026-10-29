@@ -2871,15 +2871,9 @@ importers:
 
   packages/libs/jobs:
     dependencies:
-      bullmq:
-        specifier: 6.3.6
-        version: 6.3.6(ioredis@5.11.1)(pg@8.23.0)
       cron-parser:
         specifier: ^5.10.0
         version: 5.10.1
-      ioredis:
-        specifier: 'catalog:'
-        version: 5.11.1
     devDependencies:
       '@nocobase/dev-config':
         specifier: workspace:*
