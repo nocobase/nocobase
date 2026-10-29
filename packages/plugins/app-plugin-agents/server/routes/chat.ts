@@ -114,6 +114,7 @@ const SelectedModel = z.strictObject({
   model: z.string().min(1),
 });
 const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
+  projectId: z.string().min(1).max(64).nullable().optional(),
   agentId: z
     .string()
     .min(1)
@@ -145,6 +146,7 @@ const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
 });
 
 const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
+  projectId: z.string().min(1).max(64).nullable().optional(),
   title: z
     .string()
     .max(CONVERSATION_TITLE_MAX * 2)
@@ -373,12 +375,19 @@ export function createChatRoutes(
               !conversations.sources.has(request.source)
             )
               throw invalid('Unknown conversation source.');
+            if (
+              request.projectId &&
+              (request.agentId ?? request.config?.agentId ?? 'online') ===
+                'online'
+            )
+              throw invalid('Only Runner conversations can select a project.');
             const agent = await services.onlineAgent.realtime(
               trusted(context),
               {
                 ...request.config,
                 ...(request.agentId ? { agentId: request.agentId } : {}),
                 selectedModel: request.selectedModel,
+                projectId: request.projectId,
                 source: request.source ?? 'panel',
                 title: title?.text || undefined,
                 showInChatList: request.showInChatList,

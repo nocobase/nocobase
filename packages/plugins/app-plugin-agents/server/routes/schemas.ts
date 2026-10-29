@@ -1681,6 +1681,7 @@ const availability = z.object({
 });
 
 const conversationSummaryObject = z.object({
+  projectId: z.string().nullable().optional(),
   execution: z
     .object({
       status: z.enum(['running', 'idle']),

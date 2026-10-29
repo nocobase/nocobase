@@ -41,12 +41,27 @@ import type {
 
 /** A conversation as the application sees the one a run works on. */
 export interface ConversationRef {
+  readonly projectId?: string | null;
   readonly id: string;
   /** The owner: the person the run acts for. */
   readonly userId: string;
   readonly agentId: string;
   readonly title: string | null;
   readonly source: ConversationSource;
+}
+
+/** Application-owned project authorization and workspace assembly; the framework knows no project tables. */
+export interface ConversationWorkspaceProvider {
+  /** Resolve external permissions before a transaction. */
+  prepare(userId: string): Promise<unknown>;
+  /** Validate current project access using this connection, then return its directories and variable/skill scopes. */
+  resolve(
+    conn: DatabaseConnection,
+    conversation: ConversationRef,
+    prepared: unknown,
+  ): Promise<
+    Pick<import('../runs/index.js').SubjectAssembly, 'dirs' | 'scopes'>
+  >;
 }
 
 /** What a plugin adding rules to a conversation's system layer learns about it. */
@@ -340,6 +355,9 @@ export interface ConversationService {
    */
   lock(conn: DatabaseConnection, id: string): Promise<boolean>;
   /** Where plugins add sections to the system layer of conversation runs. */
+  readonly workspace: {
+    provide(provider: ConversationWorkspaceProvider): () => void;
+  };
   readonly rules: {
     provide(source: ConversationRules): () => void;
   };

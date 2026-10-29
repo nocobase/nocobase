@@ -110,6 +110,7 @@ function overrides(
     source: _source,
     title: _title,
     showInChatList: _showInChatList,
+    projectId: _projectId,
     selectedModel: _selectedModel,
     ...pending
   } = options;
@@ -483,6 +484,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       {
         agentId: initial.config.agentId,
         source: options.source,
+        projectId: options.projectId,
         title: options.title,
         showInChatList: options.showInChatList,
       },

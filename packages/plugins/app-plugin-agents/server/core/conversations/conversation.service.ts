@@ -123,6 +123,7 @@ import {
 } from './conversation.store.js';
 import type {
   ConversationRef,
+  ConversationWorkspaceProvider,
   ConversationRules,
   ConversationService,
   ConversationSourceKind,
@@ -294,6 +295,7 @@ function refOf(record: ConversationRecord): ConversationRef {
     agentId: record.agentId,
     title: record.title,
     source: record.source,
+    projectId: record.projectId ?? null,
   };
 }
 
@@ -379,6 +381,17 @@ export function createConversationService(
   const viewOf = (record: MessageRecord) =>
     toMessage(record, deps.basePath?.() ?? '');
   const rules: ConversationRules[] = [];
+  let workspace: ConversationWorkspaceProvider | undefined;
+  async function projectWorkspace(
+    conn: DatabaseConnection,
+    conversation: ConversationRef,
+    prepared: unknown,
+  ) {
+    if (!conversation.projectId) return { dirs: [], scopes: [] };
+    if (!workspace) throw invalid('Project workspaces are not available.');
+    return workspace.resolve(conn, conversation, prepared);
+  }
+
   const sources = createSources();
   const links = createConversationLinks({
     tx,
@@ -472,6 +485,7 @@ export function createConversationService(
         category: record.category,
         showInChatList: record.showInChatList,
         source: record.source,
+        projectId: record.projectId ?? null,
         mode: record.mode,
         execution: onlineExecution(
           record,
@@ -840,7 +854,7 @@ export function createConversationService(
             }
           : {}),
         thread: Number(record.thread) + 1,
-        runnerId: null,
+        runnerId: record.projectId ? record.runnerId : null,
         updatedAt: now(),
       },
     });
@@ -1086,8 +1100,10 @@ export function createConversationService(
     ownerName: string,
     history: readonly HistoryLine[],
     previousSummary: string | null,
+    prepared?: unknown,
   ): Promise<SubjectAssembly> {
     const key = conversationKey(conversation.id);
+    const directories = await projectWorkspace(conn, conversation, prepared);
     const added = await Promise.all(
       rules.map((source) =>
         source(conn, {
@@ -1097,6 +1113,7 @@ export function createConversationService(
             agentId: conversation.agentId,
             title: conversation.title,
             source: conversation.source,
+            projectId: conversation.projectId ?? null,
           },
           agent: claim.agent,
           ownerName,
@@ -1151,8 +1168,7 @@ export function createConversationService(
           source: conversation.source,
         },
       },
-      dirs: [],
-      scopes: [],
+      ...directories,
     };
   }
 
@@ -1236,7 +1252,13 @@ export function createConversationService(
       },
     },
     context: {
-      async assemble(conn, claim) {
+      async prepare(run) {
+        const record = await findConversation(tx.read(), run.subject.id);
+        return record?.projectId
+          ? workspace?.prepare(record.userId)
+          : undefined;
+      },
+      async assemble(conn, claim, prepared) {
         const record = await findConversation(conn, claim.run.subject.id);
         // Only the owner's runs see a conversation (a preview by anyone else, too, finds nothing).
         if (!record || record.userId !== claim.run.actorUserId)
@@ -1300,7 +1322,7 @@ export function createConversationService(
           ? await lastSummary(
               conn,
               {
-                agentId: claim.agent.id,
+                ...(record.projectId ? {} : { agentId: claim.agent.id }),
                 subjectKind: CONVERSATION_SUBJECT,
                 subjectId: record.id,
               },
@@ -1314,6 +1336,7 @@ export function createConversationService(
           ownerName,
           history,
           previousSummary,
+          prepared,
         );
         const config = runnerBinding(record.metadata)?.config;
         return config
@@ -1805,6 +1828,9 @@ export function createConversationService(
     },
 
     async create(userId, request, runnerConfig) {
+      const prepared = request.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
       const id = await tx.run(async (unit) => {
         const agent = await pickAgent(unit.conn, userId, request.agentId);
         if (
@@ -1823,6 +1849,20 @@ export function createConversationService(
         if (source !== 'panel' && !sources.has(source))
           throw invalid(`${source} is not a source conversations start from.`);
         const conversationId = ids.next();
+        if (request.projectId && agent.source !== 'runner')
+          throw invalid('Only Runner conversations can select a project.');
+        await projectWorkspace(
+          unit.conn,
+          {
+            id: conversationId,
+            userId,
+            agentId: agent.id,
+            title,
+            source,
+            projectId: request.projectId,
+          },
+          prepared,
+        );
         await conversationsRepo(unit.conn).createOne({
           values: {
             id: conversationId,
@@ -1834,6 +1874,7 @@ export function createConversationService(
                 }
               : {}),
             userId,
+            projectId: request.projectId ?? null,
             agentId: agent.id,
             mode: 'runner',
             fallbackFromAgentId: null,
@@ -1865,9 +1906,29 @@ export function createConversationService(
     get: detail,
 
     async update(userId, id, patch) {
+      const prepared = patch.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id, true);
         const values: Record<string, unknown> = {};
+        if (
+          patch.projectId !== undefined &&
+          patch.projectId !== (record.projectId ?? null)
+        ) {
+          if (Number(record.lastSeq) > 0)
+            throw conflict(
+              'Start a new conversation to choose another project.',
+            );
+          if (record.mode !== 'runner')
+            throw invalid('Only Runner conversations can select a project.');
+          await projectWorkspace(
+            unit.conn,
+            { ...refOf(record), projectId: patch.projectId },
+            prepared,
+          );
+          values.projectId = patch.projectId;
+        }
         if (patch.title !== undefined) {
           values.title = titleFor(patch.title, CONVERSATION_TITLE_MAX);
           values.titleSource = 'user';
@@ -2556,6 +2617,18 @@ export function createConversationService(
     lock: async (conn, id) =>
       (await lockConversation(conn, id, now())) !== null,
 
+    workspace: {
+      provide(provider) {
+        if (workspace)
+          throw new Error(
+            'A conversation workspace provider is already registered.',
+          );
+        workspace = provider;
+        return () => {
+          if (workspace === provider) workspace = undefined;
+        };
+      },
+    },
     rules: {
       provide(source) {
         rules.push(source);

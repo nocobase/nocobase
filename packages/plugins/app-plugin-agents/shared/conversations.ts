@@ -233,6 +233,8 @@ export interface ConversationRun {
 
 /** A conversation in the history list. */
 export interface ConversationSummary {
+  /** The optional project whose code this Runner conversation uses. */
+  readonly projectId?: string | null;
   readonly execution?: {
     readonly status: 'running' | 'idle';
     readonly outcome?: 'completed' | 'cancelled' | 'failed';
@@ -666,6 +668,7 @@ export interface OnlineChatConfigSnapshot {
   readonly variable?: OnlineChatJson;
 }
 export interface CreateConversationRequest {
+  readonly projectId?: string | null;
   /** Defaults to true; background SDK sessions are always hidden. */
   readonly showInChatList?: boolean;
   readonly config?: {
@@ -686,6 +689,8 @@ export interface CreateConversationRequest {
 
 /** `PATCH conversation`: rename (the title becomes `user`'s and the agent may no longer change it), or archive. */
 export interface ConversationPatch {
+  /** May change only before the first user message. */
+  readonly projectId?: string | null;
   readonly title?: string;
   readonly archived?: boolean;
 }

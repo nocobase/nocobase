@@ -116,6 +116,7 @@ export type OnlineAgentSendOptions = {
   selectedModel?: ModelRef;
 };
 export type OnlineAgentRealtimeOptions = OnlineAgentOptions & {
+  projectId?: string | null;
   sessionId?: string;
   selectedModel?: ModelRef;
   source?: string;
