@@ -48,6 +48,7 @@ import {
 
 export interface CustomerListContext {
   selected: string[];
+  selectedCustomers: Pick<Customer, 'id' | 'name'>[];
   reload: () => void;
   clearSelection: () => void;
   onBatchSaved: (
@@ -215,6 +216,9 @@ function CustomerContactsContent() {
   };
   const context: CustomerListContext = {
     selected,
+    selectedCustomers: rows
+      .filter((row) => selected.includes(row.id))
+      .map(({ id, name }) => ({ id, name })),
     reload,
     clearSelection: () => setSelection({ key: '', ids: [] }),
     onBatchSaved: (ids, values) => {

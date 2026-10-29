@@ -71,7 +71,7 @@ test('filters relation searches and pages, rechecks source/target scopes and per
     );
   }
   const searched = await rep.fetch(
-    `${prefix}/customers/options?search=Acorn&status=active&pageSize=20`,
+    `${prefix}/customers/options?search=aCoRn&status=active&pageSize=20`,
   );
   expect(await searched.json()).toMatchObject({
     data: [{ id: 'customer-06' }, { id: 'customer-11' }],
@@ -85,6 +85,14 @@ test('filters relation searches and pages, rechecks source/target scopes and per
   expect(
     await (await rep.fetch(`${prefix}/salesReps/options`)).json(),
   ).toMatchObject({ data: [{ id: 'crm-rep' }], meta: { total: 1 } });
+  expect(
+    await (
+      await manager.fetch(`${prefix}/salesReps/options?search=aLeX`)
+    ).json(),
+  ).toMatchObject({
+    data: [{ id: 'crm-rep', name: 'Alex Rivera' }],
+    meta: { total: 1 },
+  });
   expect((await rep.fetch(`${prefix}/salesReps/crm-colleague`)).status).toBe(
     403,
   );

@@ -226,6 +226,7 @@ it('clears current-page selection on pagination and sends only the new page sele
     screen.getByRole('button', { name: 'Apply', exact: true }),
   );
   await screen.findByText('1 updated, 0 failed');
+  expect(screen.getByText('Birch 11: Done')).toBeInTheDocument();
   expect(writes).toEqual([
     { ids: ['customer-11'], values: { status: 'active' } },
   ]);
@@ -282,7 +283,7 @@ it('shows every partial result without looking up hidden record names and locks 
   });
   await screen.findByText('1 updated, 1 failed');
   expect(
-    screen.getByText('customer-02: Record or operation unavailable'),
+    screen.getByText('Birch 02: Record or operation unavailable'),
   ).toBeInTheDocument();
 });
 

@@ -14,6 +14,9 @@ import type { CustomerListContext } from './index.js';
 export default function CustomerBatchPage() {
   const context = useOutletContext<CustomerListContext>();
   const [ids] = useState(() => [...context.selected]);
+  const [names] = useState(
+    () => new Map(context.selectedCustomers.map((row) => [row.id, row.name])),
+  );
   const { t } = useTranslation();
   const api = useApiClient();
   const edit = useCrmAction('customers', 'edit');
@@ -97,7 +100,7 @@ export default function CustomerBatchPage() {
           <ul className='flex flex-col gap-2 text-sm'>
             {result.items.map((item) => (
               <li key={item.id} className='break-words'>
-                {item.id}:{' '}
+                {names.get(item.id) ?? item.id}:{' '}
                 {item.outcome === 'failed'
                   ? t(`customerContacts.${item.reason}`)
                   : t('customerContacts.done')}

@@ -130,7 +130,9 @@ export class CustomerContactsService {
     const repository = await this.customers();
     const filter = buildFilter((f) =>
       f.and([
-        ...(query.search ? [f.string('name').includes(query.search)] : []),
+        ...(query.search
+          ? [f.string('name').includes(query.search, { mode: 'insensitive' })]
+          : []),
         ...(query.status ? [f.string('status').eq(query.status)] : []),
         ...(query.ownerId ? [f.string('ownerId').eq(query.ownerId)] : []),
       ]),
@@ -164,7 +166,9 @@ export class CustomerContactsService {
     const filter = buildFilter((f) =>
       f.and([
         f.boolean('active').isTrue(),
-        ...(query.search ? [f.string('name').includes(query.search)] : []),
+        ...(query.search
+          ? [f.string('name').includes(query.search, { mode: 'insensitive' })]
+          : []),
       ]),
     );
     const [data, total] = await Promise.all([
