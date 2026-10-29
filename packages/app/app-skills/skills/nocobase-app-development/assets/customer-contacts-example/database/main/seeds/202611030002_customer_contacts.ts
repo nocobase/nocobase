@@ -11,6 +11,11 @@ export default defineSeed({
   name: '202611030002_customer_contacts',
   transaction: true,
   async run(task) {
+    // Database-only examples can load application seeds without authentication migrations.
+    const client = await task.connection.client<{
+      schema: { hasTable(name: string): Promise<boolean> };
+    }>();
+    if (!(await client.schema.hasTable('user'))) return;
     const { query } = task;
     const users = {
       manager: randomUUID(),
