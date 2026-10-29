@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/realtime",
-  "version": "0.1.0-beta.3",
+  "version": "1.0.0-beta",
   "description": "Realtime protocol, browser client, and authorized server topic service for NocoBase.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -53,7 +53,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node ./scripts/clean-dist.mjs && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
@@ -70,8 +70,5 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/node": "catalog:"
-  },
-  "dependencies": {
-    "ioredis": "catalog:"
   }
 }

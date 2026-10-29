@@ -41,6 +41,12 @@ When adopting the refresh scheduler, wire the existing Refresh/Try again action 
 
 Update test doubles to return publication promises and correlate subscription acknowledgements/errors and heartbeat replies with their request IDs. An open fake socket without acknowledgements no longer proves subscription readiness. Test publication admission separately from delivery; `flush()` can wait for local queues in tests, while remote delivery needs an observed recipient.
 
+## Redis implementation extraction
+
+When TARGET removes the built-in Redis broker, install a compatible `@nocobase/app-plugin-realtime-redis` and explicitly add its `/server` definition to the existing Server plugin composition. Keep realtime.adapter, namespace and redis configuration paths. Standalone consumers move createRedisRealtimeBroker and RedisRealtimeBrokerOptions imports to `@nocobase/app-plugin-realtime-redis/broker`; the core service and original realtimeServiceToken do not change. The public realtimeServiceOptions helper preserves its first two arguments and accepts an optional application-local registry; without one it supports only Memory. Custom factories register during register, before first service resolution.
+
+Resolve real published peer lower bounds, not merely workspace manifest versions. Roll out additive OSS API, compatible commercial package and application registration before final OSS removal. An unregistered selected adapter fails rather than silently using Memory. Roll back packages, lockfile, registration and configuration together; do not mix Memory and Redis replicas. Server plugin registration and config-factory aggregation are separate; config check proves neither plugin enablement nor Redis connectivity.
+
 ## Preserve recovery during rollout
 
 Keep recovery polling until all relevant producers announce changes and disconnected clients can reconcile from durable data. External changes, time-based expiry and failed best-effort announcements may still require a suitable reconciliation interval. Replacing every poll is not a prerequisite for this upgrade.
