@@ -1,3 +1,6 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createJobExecutorService,
@@ -28,46 +31,57 @@ const externalConfig = {
 };
 
 describe('application-local Jobs implementation registration', () => {
-  it('registers on an early service and freezes at owner setup without creating executors', async () => {
-    const service = createJobExecutorService(externalConfig, dependencies, {
-      requireSetup: true,
-    });
-    const extension = implementation();
-    expect(() => service.getJobExecutor('scope')).toThrow(
-      /during provider registration/u,
+  it('registers lazily and permits new implementations after executor startup', async () => {
+    const storagePath = await mkdtemp(
+      path.join(os.tmpdir(), 'jobs-registration-'),
     );
-    expect(() => service.getScheduleExecutor('scope')).toThrow(
-      /during provider registration/u,
-    );
-    service.registerImplementation('external', extension);
-    expect(extension.resolve).not.toHaveBeenCalled();
-    expect(extension.createJobExecutor).not.toHaveBeenCalled();
-    expect(extension.createScheduleExecutor).not.toHaveBeenCalled();
-    service.setup();
-    expect(extension.resolve).toHaveBeenCalledWith(
-      externalConfig.x,
-      expect.objectContaining({
-        key: 'x',
-        adapter: 'external',
-        scope: expect.stringMatching(/^@[^/]+\/[^/]+$/u),
-      }),
+    const dependencies = { appName: 'test', storagePath };
+    const service = createJobExecutorService(
+      { ...externalConfig, memory: { adapter: 'memory' } },
       dependencies,
     );
-    expect(extension.createJobExecutor).not.toHaveBeenCalled();
-    expect(extension.createScheduleExecutor).not.toHaveBeenCalled();
-    expect(() =>
-      service.registerImplementation('later', implementation()),
-    ).toThrow(/closed/u);
-    const ordinary = service.getJobExecutor('scope');
-    const schedule = service.getScheduleExecutor('scope');
-    expect(service.getJobExecutor('scope')).toBe(ordinary);
-    expect(service.getScheduleExecutor('scope')).toBe(schedule);
-    expect(extension.createJobExecutor).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ key: 'x', custom: { value: 42 } }),
-      dependencies,
-    );
-    expect(extension.createScheduleExecutor).toHaveBeenCalledTimes(1);
-    await service.shutdown();
+    try {
+      expect('setup' in service).toBe(false);
+      const memory = service.getJobExecutor('scope', 'memory');
+      await memory.setup({ consume: false });
+      expect(() => service.getJobExecutor('scope')).toThrow(
+        JobsBackendNotRegisteredError,
+      );
+      expect(() => service.getScheduleExecutor('scope')).toThrow(
+        JobsBackendNotRegisteredError,
+      );
+      const extension = implementation();
+      service.registerImplementation('external', extension);
+      expect(extension.resolve).not.toHaveBeenCalled();
+      expect(extension.createJobExecutor).not.toHaveBeenCalled();
+      expect(extension.createScheduleExecutor).not.toHaveBeenCalled();
+      const ordinary = service.getJobExecutor('scope');
+      const schedule = service.getScheduleExecutor('scope');
+      expect(service.getJobExecutor('scope')).toBe(ordinary);
+      expect(service.getScheduleExecutor('scope')).toBe(schedule);
+      expect(service.getJobExecutor('scope', 'memory')).toBe(memory);
+      expect(extension.resolve).toHaveBeenCalledWith(
+        externalConfig.x,
+        expect.objectContaining({
+          key: 'x',
+          adapter: 'external',
+          scope: 'scope',
+        }),
+        dependencies,
+      );
+      expect(extension.createJobExecutor).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ key: 'x', custom: { value: 42 } }),
+        dependencies,
+      );
+      expect(extension.createScheduleExecutor).toHaveBeenCalledTimes(1);
+      service.registerImplementation('later', implementation());
+      expect(() =>
+        service.registerImplementation('external', implementation()),
+      ).toThrow(/already registered/u);
+    } finally {
+      await service.shutdown();
+      await rm(storagePath, { recursive: true, force: true });
+    }
   });
 
   it('preserves prototype methods and implementation instance state', async () => {
@@ -96,11 +110,9 @@ describe('application-local Jobs implementation registration', () => {
     const service = createJobExecutorService(externalConfig, dependencies);
     const extension = new StatefulImplementation();
     service.registerImplementation('external', extension);
-    service.setup();
     service.getJobExecutor('scope');
     service.getScheduleExecutor('scope');
     expect(extension.calls).toEqual([
-      'resolve',
       'resolve',
       'ordinary',
       'resolve',
@@ -120,7 +132,6 @@ describe('application-local Jobs implementation registration', () => {
     expect(() => service.registerImplementation('memory', duplicate)).toThrow(
       /already registered/u,
     );
-    service.setup();
     service.getJobExecutor('scope');
     service.getScheduleExecutor('scope');
     expect(first.createJobExecutor).toHaveBeenCalledTimes(1);
@@ -153,7 +164,6 @@ describe('application-local Jobs implementation registration', () => {
         service.registerImplementation('external', incomplete),
       ).toThrow(/resolver and both executor factories/u);
       service.registerImplementation('external', implementation());
-      service.setup();
       service.getJobExecutor('scope');
       service.getScheduleExecutor('scope');
       await service.shutdown();
@@ -168,18 +178,16 @@ describe('application-local Jobs implementation registration', () => {
         service.registerImplementation('external', JSON.parse(value)),
       ).toThrow(/resolver and both executor factories/u);
       service.registerImplementation('external', implementation());
-      service.setup();
       await service.shutdown();
     },
   );
 
-  it('closes registration when the service shuts down before setup', async () => {
+  it('closes registration when the service shuts down', async () => {
     const service = createJobExecutorService(undefined, dependencies);
     await service.shutdown();
     expect(() =>
       service.registerImplementation('external', implementation()),
     ).toThrow(/closed/u);
-    expect(() => service.setup()).toThrow(/shut down/u);
   });
 
   it('does not scan unused invalid configuration or fall back for a selected missing implementation', async () => {
@@ -187,7 +195,6 @@ describe('application-local Jobs implementation registration', () => {
       '{"default":"m","m":{"adapter":"memory"},"unused":null,"r":{"adapter":"redis","connection":{"password":"not-logged"}}}',
     );
     const service = createJobExecutorService(config, dependencies);
-    service.setup();
     service.getJobExecutor('scope');
     service.getScheduleExecutor('scope');
     expect(() => service.getJobExecutor('scope', 'r')).toThrow(
@@ -239,10 +246,8 @@ describe('application-local Jobs implementation registration', () => {
     const first = createJobExecutorService(externalConfig, dependencies);
     const second = createJobExecutorService(externalConfig, dependencies);
     first.registerImplementation('external', implementation());
-    first.setup();
     first.getJobExecutor('scope');
     first.getScheduleExecutor('scope');
-    expect(() => second.setup()).toThrow(JobsBackendNotRegisteredError);
     expect(() => second.getJobExecutor('scope')).toThrow(
       JobsBackendNotRegisteredError,
     );

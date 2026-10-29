@@ -33,12 +33,6 @@ export interface JobExecutorServiceDependencies {
   readonly onFallback?: (event: JobsFallbackEvent) => void;
 }
 
-/** Controls when an owner permits executor acquisition, not executor startup. */
-export interface JobExecutorServiceOptions {
-  /** The application host requires setup at boot before any executor is acquired. */
-  readonly requireSetup?: boolean;
-}
-
 /** The service as its owner holds it: consumers see `JobExecutorService`. */
 export interface ManagedJobExecutorService extends JobExecutorService {
   /** Shuts every executor down. Safe to call more than once. */
@@ -63,19 +57,9 @@ export function createJobExecutorServiceWith(
       name: string,
       implementation: JobsImplementation<TConfig>,
     ): void {
-      registry.register(name, implementation);
-    },
-
-    setup(): void {
       if (shutdownPromise)
-        throw new Error('The jobs service has been shut down.');
-      registry.freeze();
-      registry.select(
-        config,
-        undefined,
-        '@nocobase/jobs-preflight',
-        dependencies,
-      );
+        throw new Error('Jobs backend registration is closed.');
+      registry.register(name, implementation);
     },
 
     getScheduleExecutor(scope: string, name?: string): ScheduleExecutor {
@@ -143,7 +127,6 @@ export function createJobExecutorServiceWith(
     },
 
     shutdown(): Promise<void> {
-      registry.freeze();
       shutdownPromise ??= Promise.allSettled(
         [...executors.values(), ...new Set(jobs.values())].map((executor) =>
           Promise.resolve().then(() => executor.shutdown()),

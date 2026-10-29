@@ -26,7 +26,6 @@ export { ScheduleHandlerNotRegisteredError } from './schedule/executor.js';
 export type {
   ManagedJobExecutorService,
   JobExecutorServiceDependencies,
-  JobExecutorServiceOptions,
   JobsFallbackEvent,
 } from './service.js';
 export {

@@ -232,7 +232,7 @@ describe('JobExecutorServiceProvider', () => {
     const { app, container } = await application({ default: 'missing' });
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
-    await expect(provider.boot()).rejects.toThrow(/jobs.default/u);
+    await provider.boot();
     const service = container.resolve(jobExecutorServiceToken);
 
     expect(() => service.getJobExecutor(SCOPE)).toThrow(/jobs.default/u);
@@ -291,27 +291,31 @@ describe('JobExecutorServiceProvider', () => {
     );
   });
 
-  it('registers lazily and freezes the same service at boot without opening resources', async () => {
+  it('keeps an unused service lazy through boot and permits acquisition before boot', async () => {
     const { app, container, logger } = await application();
     const provider = new JobExecutorServiceProvider(app);
-
-    expect(provider.name).toBe('@nocobase/app-server/jobs');
     provider.register();
     expect(container.resolveIfCreated(jobExecutorServiceToken)).toBeUndefined();
-
-    const service = container.resolve(jobExecutorServiceToken);
-    expect(() => service.getJobExecutor(SCOPE)).toThrow(/registration/u);
     await provider.boot();
-    expect(container.resolveIfCreated(jobExecutorServiceToken)).toBe(service);
+    expect(container.resolveIfCreated(jobExecutorServiceToken)).toBeUndefined();
     expect(logger.warn).not.toHaveBeenCalled();
     await expect(
       readdir(path.join(rootDir, 'storage', 'jobs')),
-    ).rejects.toMatchObject({
-      code: 'ENOENT',
-    });
-    expect(service.getScheduleExecutor(SCOPE)).toBe(
-      service.getScheduleExecutor(SCOPE),
-    );
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    await provider.shutdown();
+  });
+
+  it('permits executor acquisition before boot without a service setup', async () => {
+    const { app, container } = await application();
+    const provider = new JobExecutorServiceProvider(app);
+    provider.register();
+    const service = container.resolve(jobExecutorServiceToken);
+    const ordinary = service.getJobExecutor(SCOPE);
+    const schedule = service.getScheduleExecutor(SCOPE);
+    await provider.boot();
+    expect(container.resolve(jobExecutorServiceToken)).toBe(service);
+    expect(service.getJobExecutor(SCOPE)).toBe(ordinary);
+    expect(service.getScheduleExecutor(SCOPE)).toBe(schedule);
     await provider.shutdown();
   });
 

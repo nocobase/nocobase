@@ -58,11 +58,10 @@ type Resolver = (
   dependencies: JobExecutorServiceDependencies,
 ) => SelectedBackend;
 
-/** One registry per service/application. Host registries open only after register. */
+/** One registry per service/application; implementations cannot be replaced. */
 export class JobsBackendRegistry {
   private readonly adapters = new Map<string, Resolver>();
-  private frozen = false;
-  public constructor(private readonly requireFreeze: boolean = false) {
+  public constructor() {
     this.register('memory', {
       resolve: resolveMemoryJobsConfig,
       createJobExecutor: (config, { logger }) =>
@@ -76,7 +75,6 @@ export class JobsBackendRegistry {
     name: string,
     implementation: JobsImplementation<TConfig>,
   ): void {
-    if (this.frozen) throw new Error('Jobs backend registration is closed.');
     if (typeof name !== 'string' || name.trim() === '')
       throw new TypeError('A jobs adapter name must be a non-empty string.');
     if (this.adapters.has(name))
@@ -104,20 +102,12 @@ export class JobsBackendRegistry {
     });
   }
 
-  public freeze(): void {
-    this.frozen = true;
-  }
-
   public select(
     config: JobsConfig | undefined,
     name: string | undefined,
     scope: string,
     dependencies: JobExecutorServiceDependencies,
   ): SelectedBackend {
-    if (this.requireFreeze && !this.frozen)
-      throw new Error(
-        'Jobs executors cannot be used during provider registration.',
-      );
     const selection = selectJobsConfig(config, name);
     const base = resolveJobsConfig(selection, scope, dependencies);
     const resolve = this.adapters.get(base.adapter);

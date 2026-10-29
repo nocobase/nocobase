@@ -48,9 +48,6 @@ export class JobExecutorServiceProvider extends ServiceProvider<AppPluginApplica
     );
   }
 
-  public override async boot(): Promise<void> {
-    this.app.container.resolve(jobExecutorServiceToken).setup();
-  }
   public override async shutdown(): Promise<void> {
     await this.service?.shutdown();
   }
@@ -78,7 +75,6 @@ export class JobExecutorServiceProvider extends ServiceProvider<AppPluginApplica
           else console.warn(message);
         },
       },
-      { requireSetup: true },
     );
     return this.service;
   }
