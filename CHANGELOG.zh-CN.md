@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.36](https://github.com/nocobase/nocobase/compare/v2.2.35...v2.2.36) - 2026-10-29
+
+### 🚀 优化
+
+- **[AI 员工]** 优化 AI 员工聊天在移动端和窄区块中的使用体验，提供紧凑操作栏、底部选项面板及便于触控的选择器，并在选择页面区块时自动收起选项面板。 ([#11230](https://github.com/nocobase/nocobase/pull/11230)) by @cgyrock
+
+### 🐛 修复
+
+- **[飞书 / Lark]** 修复旧版地址(无 `/v` 前缀)下工作流通知节点选择飞书渠道后消息表单不显示；修复新版地址下保存节点时接收人与消息内容丢失 by @chenzhizdt
+
 ## [v2.2.35](https://github.com/nocobase/nocobase/compare/v2.2.34...v2.2.35) - 2026-10-28
 
 ### 🐛 修复
