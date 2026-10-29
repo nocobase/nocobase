@@ -19,17 +19,14 @@ const viVN: LocaleResource<typeof enUS> = {
     explanation: 'Hiểu yêu cầu, giải thích và viết đề xuất.',
   },
   goodAtTemplates: {
-    label: 'Mẫu',
+    fill: 'Điền từ mẫu',
     design: 'Thiết kế và đánh giá',
     large: 'Triển khai lớn',
     review: 'Đánh giá mã và CI',
     routine: 'Triển khai thông thường',
     small: 'Thay đổi nhỏ',
     explanation: 'Giải thích và đề xuất',
-    replaceTitle: 'Thay thế mô tả hiện tại?',
-    replaceHint:
-      'Văn bản hiện tại sẽ được thay bằng mẫu đã chọn. Bạn có thể chỉnh sửa sau đó.',
-    replace: 'Thay thế',
+    undo: 'Hoàn tác',
   },
   actions: {
     back: 'Quay lại',

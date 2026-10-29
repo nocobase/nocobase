@@ -20,17 +20,14 @@ const frFR: LocaleResource<typeof enUS> = {
       'Compréhension des besoins, explications et rédaction de propositions.',
   },
   goodAtTemplates: {
-    label: 'Modèles',
+    fill: 'Remplir avec un modèle',
     design: 'Conception et revue',
     large: 'Implémentation importante',
     review: 'Revue de code et CI',
     routine: 'Implémentation courante',
     small: 'Petites modifications',
     explanation: 'Explications et propositions',
-    replaceTitle: 'Remplacer la description actuelle ?',
-    replaceHint:
-      'Votre texte actuel sera remplacé par le modèle sélectionné. Vous pourrez ensuite le modifier.',
-    replace: 'Remplacer',
+    undo: 'Annuler',
   },
   actions: {
     back: 'Retour',

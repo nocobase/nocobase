@@ -18,17 +18,14 @@ const jaJP: LocaleResource<typeof enUS> = {
     explanation: '要件の理解、解説、提案書の作成。',
   },
   goodAtTemplates: {
-    label: 'テンプレート',
+    fill: 'テンプレートから入力',
     design: '設計とレビュー',
     large: '大規模な実装',
     review: 'コードレビューと CI',
     routine: '通常の実装',
     small: '小さな変更',
     explanation: '解説と提案',
-    replaceTitle: '現在の説明を置き換えますか？',
-    replaceHint:
-      '現在の文章は選択したテンプレートで置き換えられます。後から編集できます。',
-    replace: '置き換える',
+    undo: '元に戻す',
   },
   actions: {
     back: '戻る',

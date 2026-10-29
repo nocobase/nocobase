@@ -19,17 +19,14 @@ const idID: LocaleResource<typeof enUS> = {
     explanation: 'Memahami kebutuhan, penjelasan dan penulisan usulan.',
   },
   goodAtTemplates: {
-    label: 'Templat',
+    fill: 'Isi dari templat',
     design: 'Desain dan peninjauan',
     large: 'Implementasi besar',
     review: 'Peninjauan kode dan CI',
     routine: 'Implementasi rutin',
     small: 'Perubahan kecil',
     explanation: 'Penjelasan dan usulan',
-    replaceTitle: 'Ganti deskripsi saat ini?',
-    replaceHint:
-      'Teks saat ini akan diganti dengan templat yang dipilih. Anda dapat menyuntingnya setelah itu.',
-    replace: 'Ganti',
+    undo: 'Urungkan',
   },
   actions: {
     back: 'Kembali',

@@ -19,16 +19,14 @@ const zhCN: AgentsResource = {
     explanation: '理解需求、讲解说明、编写方案',
   },
   goodAtTemplates: {
-    label: '模板',
+    fill: '从模板填写',
     design: '方案设计与评审',
     large: '较大实现',
     review: '代码评审与 CI',
     routine: '常规实现',
     small: '小改动',
     explanation: '讲解与方案',
-    replaceTitle: '覆盖当前内容？',
-    replaceHint: '当前文字将被所选模板替换，之后仍可继续编辑。',
-    replace: '覆盖',
+    undo: '撤销',
   },
 
   actions: {

@@ -20,17 +20,14 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Compreensão de requisitos, explicações e redação de propostas.',
   },
   goodAtTemplates: {
-    label: 'Modelos',
+    fill: 'Preencher com modelo',
     design: 'Design e revisão',
     large: 'Implementação maior',
     review: 'Revisão de código e CI',
     routine: 'Implementação comum',
     small: 'Pequenas alterações',
     explanation: 'Explicações e propostas',
-    replaceTitle: 'Substituir a descrição atual?',
-    replaceHint:
-      'O texto atual será substituído pelo modelo selecionado. Você poderá editá-lo depois.',
-    replace: 'Substituir',
+    undo: 'Desfazer',
   },
   actions: {
     back: 'Voltar',

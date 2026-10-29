@@ -20,17 +20,14 @@ const deDE: LocaleResource<typeof enUS> = {
       'Anforderungen verstehen, Erklärungen und Vorschläge verfassen.',
   },
   goodAtTemplates: {
-    label: 'Vorlagen',
+    fill: 'Aus Vorlage ausfüllen',
     design: 'Entwurf und Prüfung',
     large: 'Größere Umsetzung',
     review: 'Codeprüfung und CI',
     routine: 'Routineumsetzung',
     small: 'Kleine Änderungen',
     explanation: 'Erklärung und Vorschläge',
-    replaceTitle: 'Aktuelle Beschreibung ersetzen?',
-    replaceHint:
-      'Ihr aktueller Text wird durch die gewählte Vorlage ersetzt. Sie können ihn danach bearbeiten.',
-    replace: 'Ersetzen',
+    undo: 'Rückgängig',
   },
 
   actions: {

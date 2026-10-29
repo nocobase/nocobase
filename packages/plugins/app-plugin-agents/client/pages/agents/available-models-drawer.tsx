@@ -822,14 +822,17 @@ function ConfirmStep({
           const rowError = rowErrors.get(key);
           return (
             <Field key={key} data-invalid={missing ? true : undefined}>
-              <FieldLabel htmlFor={`confirm-good-at-${key}`}>
-                {modelName(model)}
-              </FieldLabel>
-              <GoodAtTemplates
-                value={goodAt}
-                onChange={(value) => onDraftChange(key, value)}
-                disabled={pending}
-              />
+              <p className='text-sm font-medium'>{modelName(model)}</p>
+              <div className='flex flex-wrap items-center justify-between gap-2'>
+                <FieldLabel htmlFor={`confirm-good-at-${key}`}>
+                  {t('agents.columns.goodAt')}
+                </FieldLabel>
+                <GoodAtTemplates
+                  value={goodAt}
+                  onChange={(value) => onDraftChange(key, value)}
+                  disabled={pending}
+                />
+              </div>
               <Textarea
                 id={`confirm-good-at-${key}`}
                 rows={3}

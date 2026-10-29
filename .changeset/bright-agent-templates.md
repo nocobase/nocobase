@@ -2,4 +2,4 @@
 '@nocobase/app-plugin-agents': patch
 ---
 
-Offer editable descriptions from six templates when adding or editing runner agents, and suggest a template for newer models in known families.
+Offer six editable description templates through a compact selector with one-step Undo when adding or editing runner agents, and suggest a template for newer models in known families.

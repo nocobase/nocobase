@@ -24,17 +24,14 @@ const pages = {
       'Understanding requirements, explanations and writing proposals.',
   },
   goodAtTemplates: {
-    label: 'Templates',
+    fill: 'Fill from template',
     design: 'Design and review',
     large: 'Larger implementation',
     review: 'Code review and CI',
     routine: 'Routine implementation',
     small: 'Small changes',
     explanation: 'Explanation and proposals',
-    replaceTitle: 'Replace the current description?',
-    replaceHint:
-      'Your current text will be replaced by the selected template. You can edit it afterwards.',
-    replace: 'Replace',
+    undo: 'Undo',
   },
 
   actions: {

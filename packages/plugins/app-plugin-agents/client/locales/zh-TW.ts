@@ -16,16 +16,14 @@ const zhTW: LocaleResource<typeof enUS> = {
     explanation: '理解需求、講解說明、撰寫方案',
   },
   goodAtTemplates: {
-    label: '範本',
+    fill: '從範本填寫',
     design: '方案設計與審查',
     large: '較大實作',
     review: '程式碼審查與 CI',
     routine: '一般實作',
     small: '小幅修改',
     explanation: '講解與方案',
-    replaceTitle: '覆蓋目前內容？',
-    replaceHint: '目前文字將被所選範本取代，之後仍可繼續編輯。',
-    replace: '覆蓋',
+    undo: '復原',
   },
 
   actions: {

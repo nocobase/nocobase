@@ -138,14 +138,16 @@ function AgentForm({
       >
         <FieldGroup>
           <Field data-invalid={submitted && missing ? true : undefined}>
-            <FieldLabel htmlFor='agent-good-at'>
-              {t('agents.columns.goodAt')}
-            </FieldLabel>
-            <GoodAtTemplates
-              value={goodAt}
-              onChange={setGoodAt}
-              disabled={save.isPending}
-            />
+            <div className='flex flex-wrap items-center justify-between gap-2'>
+              <FieldLabel htmlFor='agent-good-at'>
+                {t('agents.columns.goodAt')}
+              </FieldLabel>
+              <GoodAtTemplates
+                value={goodAt}
+                onChange={setGoodAt}
+                disabled={save.isPending}
+              />
+            </div>
             <Textarea
               id='agent-good-at'
               rows={4}

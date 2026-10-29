@@ -19,17 +19,14 @@ const esES: LocaleResource<typeof enUS> = {
     explanation: 'Comprender requisitos, explicar y redactar propuestas.',
   },
   goodAtTemplates: {
-    label: 'Plantillas',
+    fill: 'Rellenar desde plantilla',
     design: 'Diseño y revisión',
     large: 'Implementación grande',
     review: 'Revisión de código y CI',
     routine: 'Implementación habitual',
     small: 'Cambios pequeños',
     explanation: 'Explicaciones y propuestas',
-    replaceTitle: '¿Reemplazar la descripción actual?',
-    replaceHint:
-      'El texto actual se reemplazará con la plantilla seleccionada. Podrá editarlo después.',
-    replace: 'Reemplazar',
+    undo: 'Deshacer',
   },
   actions: {
     back: 'Volver',

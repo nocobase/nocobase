@@ -1,16 +1,14 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
+import { ChevronDownIcon } from 'lucide-react';
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../../components/ui/alert-dialog.js';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../components/ui/dropdown-menu.js';
 import { Button } from '../../components/ui/button.js';
 
 const TEMPLATES = [
@@ -33,61 +31,54 @@ export function GoodAtTemplates({
   readonly disabled?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
-  const [pending, setPending] = useState<string | null>(null);
+  const [previous, setPrevious] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   return (
-    <>
-      <div
-        className='flex flex-wrap gap-2'
-        role='group'
-        aria-label={t('goodAtTemplates.label')}
-      >
-        {TEMPLATES.map((key) => (
-          <Button
-            key={key}
-            type='button'
-            variant='outline'
-            size='sm'
-            disabled={disabled}
-            onClick={() => {
-              const next = t(`modelSuggestions.${key}`);
-              if (value.trim()) setPending(next);
-              else onChange(next);
-            }}
-          >
-            {t(`goodAtTemplates.${key}`)}
-          </Button>
-        ))}
-      </div>
-      <AlertDialog
-        open={pending !== null}
-        onOpenChange={(open) => {
-          if (!open) setPending(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('goodAtTemplates.replaceTitle')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('goodAtTemplates.replaceHint')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              type='button'
-              disabled={disabled}
-              onClick={() => {
-                if (pending !== null) onChange(pending);
-                setPending(null);
-              }}
-            >
-              {t('goodAtTemplates.replace')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    <div className='flex shrink-0 items-center gap-1'>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          ref={triggerRef}
+          disabled={disabled}
+          render={<Button type='button' variant='ghost' size='xs' />}
+        >
+          {t('goodAtTemplates.fill')}
+          <ChevronDownIcon data-icon='inline-end' />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align='end'
+          className='w-56 max-w-(--available-width)'
+        >
+          <DropdownMenuGroup>
+            {TEMPLATES.map((key) => (
+              <DropdownMenuItem
+                key={key}
+                disabled={disabled}
+                onClick={() => {
+                  setPrevious(value);
+                  onChange(t(`modelSuggestions.${key}`));
+                }}
+              >
+                {t(`goodAtTemplates.${key}`)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {previous !== null ? (
+        <Button
+          type='button'
+          variant='ghost'
+          size='xs'
+          disabled={disabled}
+          onClick={() => {
+            onChange(previous);
+            setPrevious(null);
+            triggerRef.current?.focus();
+          }}
+        >
+          {t('goodAtTemplates.undo')}
+        </Button>
+      ) : null}
+    </div>
   );
 }
