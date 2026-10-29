@@ -22,69 +22,39 @@ const defaultRequestHeaders = [
   'user-agent',
 ] as const;
 
-const oneOf = (...values: string[]) => {
-  const allowed = new Set(values);
-  return (value: string) => allowed.has(value);
-};
 const integer = (minimum: number, maximum: number) => (value: string) =>
   /^(?:0|[1-9]\d*)$/u.test(value) &&
   Number(value) >= minimum &&
   Number(value) <= maximum;
-// Log only a diagnostic subset of route contracts. Custom kinds, slugs, free
-// text and opaque identifiers are omitted even when a route accepts them.
-const identifier = (value: string) =>
-  /^[1-9]\d{0,19}$/u.test(value) ||
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
-    value,
-  );
-const safeQueryParameters: Readonly<
+const paginationParameters: Readonly<
   Record<string, (value: string) => boolean>
 > = {
   limit: integer(1, 1000),
   offset: integer(0, 1_000_000_000),
   page: integer(1, 1_000_000_000),
   pageSize: integer(1, 1000),
-  mode: oneOf('split', 'table'),
-  view: oneOf('table', 'board', 'list'),
-  status: oneOf(
-    'queued',
-    'dispatched',
-    'running',
-    'completed',
-    'failed',
-    'cancelled',
-  ),
-  statusKey: oneOf(
-    'backlog',
-    'in_progress',
-    'blocked',
-    'in_review',
-    'done',
-    'cancelled',
-  ),
-  subjectKind: oneOf('issue', 'conversation'),
-  subjectId: identifier,
-  agentId: identifier,
-  runnerId: identifier,
-  projectId: identifier,
-  issueId: identifier,
-  appId: identifier,
-  environmentId: identifier,
-  sort: oneOf('updated', 'created', 'number', 'priority'),
-  direction: oneOf('asc', 'desc'),
-  purpose: oneOf('preview', 'production'),
-  includeArchived: oneOf('true', 'false'),
 };
+const scalarQueryValue = (value: string) =>
+  /^-?(?:0|[1-9]\d{0,19})$/u.test(value) ||
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  ) ||
+  /^[a-z][a-zA-Z0-9_-]{0,31}$/u.test(value);
+const sensitiveQueryName =
+  /password|passwd|token|secret|authorization|cookie|api[-_]?key|credential|signature/iu;
 
 function safeQuery(context: Context): Record<string, string> {
-  const query: Record<string, string> = {};
-  const values = context.req.query();
-  for (const [key, accepts] of Object.entries(safeQueryParameters)) {
-    const value = values[key];
-    // Check length before validating; never turn a rejected value into a valid
-    // prefix by truncating it.
-    if (value !== undefined && value.length <= 100 && accepts(value))
-      query[key] = value;
+  const query = Object.create(null) as Record<string, string>;
+  for (const [key, value] of Object.entries(context.req.query())) {
+    if (Object.keys(query).length >= 20) break;
+    // Bound names and values before validation; never make a rejected value
+    // acceptable by truncating it. Authentication fields stay out at any shape.
+    if (key.length > 64 || value.length > 100 || sensitiveQueryName.test(key))
+      continue;
+    const accepts = Object.hasOwn(paginationParameters, key)
+      ? paginationParameters[key]
+      : scalarQueryValue;
+    if (accepts(value)) query[key] = value;
   }
   return query;
 }

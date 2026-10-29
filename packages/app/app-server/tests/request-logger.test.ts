@@ -121,7 +121,7 @@ describe('requestLogger', () => {
       expect.objectContaining({
         level: 40,
         req: expect.objectContaining({
-          query: {},
+          query: { reason: 'unknown' },
           headers: { 'user-agent': 'test' },
         }),
         res: expect.objectContaining({ status: 404 }),
@@ -167,28 +167,30 @@ describe('requestLogger', () => {
         subjectId: '394741478850560',
         limit: '20',
         status: 'running',
-        token: 'token-value',
-        password: 'password-value',
-        q: 'private-search',
+        token: 'abc',
+        access_token: '123',
+        apiKey: 'key',
+        authorization: 'bearer',
+        signature: 'signed',
+        password: 'pass',
+        q: 'private search',
         filter: '{"secret":"private-filter"}',
-        cursor: 'opaque-cursor',
+        cursor: 'opaque+cursor==',
       });
       await router.request(`/runs?${query}`, {
         headers: { 'x-nocobase-run-token': 'run-secret' },
       });
       expect(output.records()).toHaveLength(2);
       for (const record of output.records()) {
-        expect(record.req).toMatchObject({
-          query: {
-            subjectId: '394741478850560',
-            limit: '20',
-            status: 'running',
-          },
-          caller: 'agentRun',
+        expect(record.req).toMatchObject({ caller: 'agentRun' });
+        expect((record.req as { query: unknown }).query).toEqual({
+          subjectId: '394741478850560',
+          limit: '20',
+          status: 'running',
         });
       }
       expect(JSON.stringify(output.records())).not.toMatch(
-        /token-value|password-value|private-search|private-filter|opaque-cursor|run-secret/,
+        /private search|private-filter|opaque\+cursor|run-secret/,
       );
     },
   );
@@ -208,34 +210,32 @@ describe('requestLogger', () => {
         offset: '-1',
         page: '1.5',
         pageSize: '1001',
-        mode: 'private-mode',
-        view: 'private-view',
-        status: '任意正文',
-        statusKey: 'private-status',
-        subjectKind: 'private-kind',
-        subjectId: 'i'.repeat(1000),
-        agentId: 'private-agent',
-        runnerId: 'private-runner',
-        projectId: '123\nsecret',
-        issueId: '123 secret',
-        appId: 'private-app',
-        environmentId: 'private-environment',
-        sort: 'private-sort',
-        direction: 'private-direction',
-        purpose: 'private-purpose',
-        includeArchived: 'private-boolean',
+        custom: 'free text',
+        unicode: '任意正文',
+        control: '123\nsecret',
+        decimal: '1.5',
+        exponent: '1e+3',
+        upper: 'Uppercase',
+        punctuation: 'a.b',
+        empty: '',
+        longWord: 'a'.repeat(33),
+        longNumber: '1'.repeat(21),
+        tooLong: 'a'.repeat(101),
+        longPrefix: 'valid' + ' '.repeat(100),
+        uuidSuffix: 'dba9a7e6-79f5-4cd0-bf2a-f24f87184461 secret',
+        malformedUuid: 'dba9a7e6-79f5-4cd0-bf2a-f24f8718446z',
       });
       await router.request(`/?${query}`);
       expect(output.records()).toHaveLength(2);
       for (const record of output.records())
-        expect(record.req).toMatchObject({ query: {} });
+        expect((record.req as { query: unknown }).query).toEqual({});
       expect(JSON.stringify(output.records())).not.toMatch(
-        /private-|任意正文|secret|iiii/,
+        /free text|任意正文|secret|aaaa/,
       );
     },
   );
 
-  it('accepts bounded numeric, boolean, enum and structured identifier values', async () => {
+  it('accepts generic scalar shapes without application parameter contracts', async () => {
     const output = createMemoryDestination();
     const router = new Hono();
     router.use('*', requestLogger({ logger: createLogger({}, output) }));
@@ -245,25 +245,40 @@ describe('requestLogger', () => {
       offset: '0',
       page: '1',
       pageSize: '50',
-      mode: 'table',
-      view: 'board',
-      status: 'queued',
-      statusKey: 'backlog',
-      subjectKind: 'issue',
-      subjectId: '123',
-      agentId: 'dba9a7e6-79f5-4cd0-bf2a-f24f87184461',
-      runnerId: '124',
-      projectId: '125',
-      issueId: '126',
-      appId: '127',
-      environmentId: '128',
-      sort: 'updated',
-      direction: 'desc',
-      purpose: 'preview',
-      includeArchived: 'false',
+      count: '-42',
+      recordId: '394741478850560',
+      uuid: 'dba9a7e6-79f5-4cd0-bf2a-f24f87184461',
+      upperUuid: 'DBA9A7E6-79F5-4CD0-BF2A-F24F87184461',
+      customKind: 'customKind_2-archived',
+      arbitraryFlag: 'false',
+      singleLetter: 'a',
+      longestWord: 'a'.repeat(32),
+      largestId: '1'.repeat(20),
+      constructor: 'safe',
+      toString: 'safe',
+      ['__proto__']: 'safe',
     };
     await router.request(`/?${new URLSearchParams(query)}`);
     expect(output.records()[0].req).toMatchObject({ query });
+  });
+
+  it('bounds query entry counts and names without truncating them', async () => {
+    const output = createMemoryDestination();
+    const router = new Hono();
+    router.use('*', requestLogger({ logger: createLogger({}, output) }));
+    router.get('/', (context) => context.text('ok'));
+    const query = Object.fromEntries(
+      Array.from({ length: 25 }, (_, index) => [`key${index}`, 'valid']),
+    );
+    await router.request(
+      `/?${new URLSearchParams({ ['a'.repeat(65)]: 'valid', ...query })}`,
+    );
+    expect(output.records()[0].req).toMatchObject({
+      query: Object.fromEntries(Object.entries(query).slice(0, 20)),
+    });
+    expect(
+      Object.keys((output.records()[0].req as { query: object }).query),
+    ).toHaveLength(20);
   });
 
   it('applies the same validation when downstream middleware throws', async () => {
@@ -281,11 +296,14 @@ describe('requestLogger', () => {
       return context.text('ok');
     });
     await router.request(
-      '/runs?limit=private-text&status=running&subjectId=' + '1'.repeat(1000),
+      '/runs?limit=private-text&customKind=customRun&token=abc&subjectId=' +
+        '1'.repeat(1000),
     );
     expect(output.records()).toHaveLength(2);
     for (const record of output.records())
-      expect(record.req).toMatchObject({ query: { status: 'running' } });
+      expect((record.req as { query: unknown }).query).toEqual({
+        customKind: 'customRun',
+      });
     expect(JSON.stringify(output.records())).not.toContain('private-text');
   });
 
