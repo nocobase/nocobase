@@ -214,6 +214,89 @@ it('shares durable daily claims across service instances', async () => {
     await other.claimDaily(new Date('2026-10-22T20:00:00Z')),
   ).toMatchObject(schedule);
 });
+/** Moves the system clock, which claim acknowledgements and retry delays read, to the firing being simulated. */
+function at(iso: string): Date {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(iso));
+  return new Date(iso);
+}
+async function dailyRow(day: string) {
+  return app.connection.query
+    .selectFrom('demoModeDailyResets')
+    .selectAll()
+    .where('day', '=', day)
+    .executeTakeFirst<{ state: string; attempt: number; failure: unknown }>();
+}
+it('admits only due minutes and stays idle after a successful day', async () => {
+  const { config } = await setup();
+  expect(await config.dailyDue(at('2026-10-21T02:59:00Z'))).toBe(false);
+  expect(await config.dailyDue(at('2026-10-21T03:00:00Z'))).toBe(true);
+  const claim = await config.claimDaily(new Date('2026-10-21T03:00:00Z'));
+  expect(claim).toMatchObject({ day: '2026-10-21', attempt: 1 });
+  // A live claim is neither due again nor claimed twice.
+  expect(await config.dailyDue(at('2026-10-21T03:01:00Z'))).toBe(false);
+  await config.finishDaily(claim!);
+  expect(await config.dailyDue(at('2026-10-21T03:02:00Z'))).toBe(false);
+  // Outside the admission window nothing new is created for the day.
+  expect(await config.dailyDue(at('2026-10-22T03:20:00Z'))).toBe(false);
+  expect(await config.dailyDue(at('2026-10-23T03:15:00Z'))).toBe(true);
+});
+it('retries settled failures after a delay, at most three attempts per day', async () => {
+  const { config } = await setup();
+  let claim = await config.claimDaily(at('2026-10-21T03:00:00Z'));
+  await config.finishDaily(claim!, new Error('generation failed'), true);
+  expect(await dailyRow('2026-10-21')).toMatchObject({ state: 'retry' });
+  expect(await config.dailyDue(at('2026-10-21T03:04:00Z'))).toBe(false);
+  expect(await config.claimDaily(new Date('2026-10-21T03:04:00Z'))).toBeNull();
+  for (const [minute, attempt] of [
+    ['05', 2],
+    ['10', 3],
+  ] as const) {
+    const now = at(`2026-10-21T03:${minute}:00Z`);
+    expect(await config.dailyDue(now)).toBe(true);
+    claim = await config.claimDaily(now);
+    expect(claim).toMatchObject({ attempt });
+    await config.finishDaily(claim!, new Error('generation failed'), true);
+  }
+  expect(await dailyRow('2026-10-21')).toMatchObject({
+    state: 'failed',
+    attempt: 3,
+  });
+  expect(await config.dailyDue(at('2026-10-21T03:20:00Z'))).toBe(false);
+  // A failure that is not retryable ends its day at once.
+  claim = await config.claimDaily(at('2026-10-22T03:00:00Z'));
+  await config.finishDaily(claim!, new Error('invalid policy'));
+  expect(await dailyRow('2026-10-22')).toMatchObject({ state: 'failed' });
+  expect(await config.dailyDue(at('2026-10-22T03:10:00Z'))).toBe(false);
+});
+it('closes an unacknowledged claim once its data settled, without repeating its day', async () => {
+  const { config } = await setup();
+  const lost = await config.claimDaily(at('2026-10-21T03:00:00Z'));
+  // The owner stopped renewing. While its data operation may still run, nothing starts and nothing throws.
+  expect(await config.dailyDue(at('2026-10-21T03:11:00Z'))).toBe(true);
+  expect(await config.claimDaily(new Date('2026-10-21T03:11:00Z'))).toBeNull();
+  expect(await dailyRow('2026-10-21')).toMatchObject({ state: 'interrupted' });
+  const tomorrow = at('2026-10-22T03:00:00Z');
+  expect(await config.claimDaily(tomorrow)).toBeNull();
+  // Settled data shows the operation ended; the next day proceeds and the old day stays terminal.
+  const next = await config.claimDaily(tomorrow, { dataSettled: true });
+  expect(next).toMatchObject({ day: '2026-10-22', attempt: 1 });
+  expect(await dailyRow('2026-10-21')).toMatchObject({ state: 'recovered' });
+  await expect(config.finishDaily(lost!)).rejects.toThrow(/lost/u);
+  await config.finishDaily(next!);
+  expect(await dailyRow('2026-10-22')).toMatchObject({ state: 'succeeded' });
+});
+it('never starts a later day while an earlier owner still renews its claim', async () => {
+  const { config } = await setup({ NOCOBASE_DEMO_RESET_HOUR: '23' });
+  const late = await config.claimDaily(at('2026-10-21T23:00:00Z'));
+  await config.renewDaily(late!);
+  // A reset still renewing a minute before the next day's run blocks that run without failing it.
+  at('2026-10-22T22:59:00Z');
+  await config.renewDaily(late!);
+  const now = at('2026-10-22T23:00:00Z');
+  expect(await config.dailyDue(now)).toBe(false);
+  expect(await config.claimDaily(now, { dataSettled: true })).toBeNull();
+});
 it('provides deterministic daily samples independent of record iteration order', () => {
   const a = createDemoClock(
     new Date('2026-10-21T01:00:00Z'),

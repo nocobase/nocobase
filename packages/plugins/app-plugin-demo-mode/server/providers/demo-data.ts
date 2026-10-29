@@ -63,6 +63,7 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   private service: DefaultDemoDataService | undefined;
   private agents: DemoAgents | undefined;
   private resetJobs: ScheduleExecutor | undefined;
+  private interruptionReported = false;
 
   public override register(): void {
     const container = this.app.container;
@@ -201,10 +202,16 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       },
       payload: {},
       // A rule armed while a request ran would otherwise carry that request's policy snapshot into every firing.
-      execute: (context) =>
-        this.app.container
-          .resolve(demoConfigurationRuntimeToken)
-          .withFreshPolicy(() => this.runDailyReset(context.runAt)),
+      // The rule fires every minute; idle minutes stop at the cheap admission check.
+      execute: async (context) => {
+        const configuration = this.app.container.resolve(
+          demoConfigurationRuntimeToken,
+        );
+        if (!(await configuration.dailyDue(context.runAt))) return;
+        await configuration.withFreshPolicy(() =>
+          this.runDailyReset(context.runAt),
+        );
+      },
     };
   }
 
@@ -212,64 +219,75 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
     const configuration = this.app.container.resolve(
       demoConfigurationRuntimeToken,
     );
-    let claim: Awaited<ReturnType<typeof configuration.claimDaily>> = null;
-    let renewing: Promise<void> | undefined;
-    let heartbeat: ReturnType<typeof setInterval> | undefined;
-    try {
-      const status = await this.service!.status();
-      if (status.state === null) return;
-      // A lease cannot fence arbitrary application callbacks. Require manual recovery of an uncertain operation.
-      if (status.failure?.code === 'DEMO_DATA_INTERRUPTED') {
+    const status = await this.service!.status();
+    if (status.state === null) return;
+    // A lease cannot fence arbitrary application callbacks. Require manual recovery of an uncertain operation.
+    if (status.failure?.code === 'DEMO_DATA_INTERRUPTED') {
+      // The management page shows the interruption; report it once instead of every minute.
+      if (!this.interruptionReported)
         this.logger()?.warn(
           { dataset: status.datasetId },
           'Daily demo reset requires manual recovery of an interrupted operation',
         );
-        return;
-      }
-      claim = await configuration.claimDaily(scheduledAt);
-      if (!claim) return;
-      const owned = claim;
-      heartbeat = setInterval(() => {
-        if (renewing) return;
-        renewing = configuration
-          .renewDaily(owned)
-          .catch((err: unknown) => {
-            this.logger()?.warn(
-              { err, day: owned.day, attempt: owned.attempt },
-              'Could not renew daily demo reset claim',
-            );
-          })
-          .finally(() => {
-            renewing = undefined;
-          });
-      }, 30_000);
-      heartbeat.unref();
+      this.interruptionReported = true;
+      return;
+    }
+    this.interruptionReported = false;
+    const claim = await configuration.claimDaily(scheduledAt, {
+      dataSettled: status.state === 'ready' || status.state === 'failed',
+    });
+    if (!claim) return;
+    let renewing: Promise<void> | undefined;
+    const heartbeat = setInterval(() => {
+      if (renewing) return;
+      renewing = configuration
+        .renewDaily(claim)
+        .catch((err: unknown) => {
+          this.logger()?.warn(
+            { err, day: claim.day, attempt: claim.attempt },
+            'Could not renew daily demo reset claim',
+          );
+        })
+        .finally(() => {
+          renewing = undefined;
+        });
+    }, 30_000);
+    heartbeat.unref();
+    try {
       await this.service!.reset(undefined, claim.language, {
         wait: true,
         scheduled: true,
       });
-      await configuration.finishDaily(claim);
     } catch (err) {
       this.logger()?.warn(
-        { err, day: claim?.day, attempt: claim?.attempt },
+        { err, day: claim.day, attempt: claim.attempt },
         'The daily demo data reset failed',
       );
-      if (claim) {
-        // Only a settled cleanup/generation failure or admission contention is safe to retry. Lease loss and
-        // validation/policy errors require intervention. Never retry an uncertain successful completion.
-        const status = await this.service!.status();
-        const retryable =
-          err instanceof ApiError
-            ? err.reason === 'DEMO_DATA_BUSY'
-            : status.state === 'failed' &&
-              status.failure?.code !== 'DEMO_DATA_INTERRUPTED';
-        await configuration.finishDaily(claim, err, retryable);
-      }
+      // Only a settled cleanup/generation failure or admission contention is safe to retry. Lease loss and
+      // validation/policy errors require intervention.
+      const after = await this.service!.status().catch(() => null);
+      const retryable =
+        err instanceof ApiError
+          ? err.reason === 'DEMO_DATA_BUSY'
+          : after?.state === 'failed' &&
+            after.failure?.code !== 'DEMO_DATA_INTERRUPTED';
+      // Recording the outcome must not replace the reset's own error.
+      await configuration
+        .finishDaily(claim, err, retryable)
+        .catch((finishErr: unknown) => {
+          this.logger()?.warn(
+            { err: finishErr, day: claim.day, attempt: claim.attempt },
+            'Could not record the failed daily demo reset',
+          );
+        });
       throw err;
     } finally {
-      if (heartbeat) clearInterval(heartbeat);
+      clearInterval(heartbeat);
       await renewing;
     }
+    // Outside the failure path: a reset that completed is never recorded as failed. If this acknowledgement fails,
+    // the claim goes stale and is closed without repetition once the settled data is seen.
+    await configuration.finishDaily(claim);
   }
 
   /** This process's own address, so the gateway's calls to the simulated model never leave the machine. */

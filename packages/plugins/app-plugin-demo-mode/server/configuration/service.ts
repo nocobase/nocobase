@@ -19,6 +19,7 @@ import {
 import type {
   DemoConfiguration,
   DemoConfigurationView,
+  DemoDailySchedule,
   DemoMockAdapter,
 } from '../../shared/configuration.js';
 
@@ -387,7 +388,11 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     return (await adapter.invoke(input)) as T;
   }
   /** Admission uses deployment policy and the database, independently of the request policy cache. */
-  public async claimDaily(now: Date): Promise<DailyClaim | null> {
+  private async dailyAdmission(now: Date): Promise<{
+    readonly day: string;
+    readonly schedule: DemoDailySchedule;
+    readonly allowCreate: boolean;
+  } | null> {
     if (!this.enabled) return null;
     const row = await this.row();
     if (!row) return null;
@@ -415,11 +420,30 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         break;
       }
     }
+    return { day: local.day, schedule, allowCreate };
+  }
+  public async dailyDue(now: Date): Promise<boolean> {
+    const admission = await this.dailyAdmission(now);
+    return admission
+      ? new DailyResetClaims(this.database).pending(
+          admission.day,
+          now,
+          admission.allowCreate,
+        )
+      : false;
+  }
+  public async claimDaily(
+    now: Date,
+    options: { readonly dataSettled?: boolean } = {},
+  ): Promise<DailyClaim | null> {
+    const admission = await this.dailyAdmission(now);
+    if (!admission) return null;
     return new DailyResetClaims(this.database).claim(
-      local.day,
-      schedule,
+      admission.day,
+      admission.schedule,
       now,
-      allowCreate,
+      admission.allowCreate,
+      options.dataSettled,
     );
   }
   public renewDaily(claim: DailyClaim): Promise<void> {

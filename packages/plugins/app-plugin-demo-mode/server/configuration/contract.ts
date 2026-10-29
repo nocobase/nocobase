@@ -48,7 +48,13 @@ export interface DemoConfigurationRuntime extends DemoConfigurationService {
   initialize(): Promise<void>;
   runWithPolicy<T>(run: () => Promise<T>): Promise<T>;
   wholeCollectionRules(): Promise<readonly DemoSqlRule[]>;
-  claimDaily(now: Date): Promise<DailyClaim | null>;
+  /** Cheap admission check, so idle minutes of the per-minute schedule read no demo data status. */
+  dailyDue(now: Date): Promise<boolean>;
+  /** `dataSettled` lets an unacknowledged claim whose data operation has settled be closed without repeating it. */
+  claimDaily(
+    now: Date,
+    options?: { readonly dataSettled?: boolean },
+  ): Promise<DailyClaim | null>;
   renewDaily(claim: DailyClaim): Promise<void>;
   finishDaily(
     claim: DailyClaim,
