@@ -218,7 +218,7 @@ export function useAgentOption(agentId: string): ChatAgent | null {
     {
       queryKey: agentsKeys.agent(agentId),
       queryFn: () => api.agent(agentId),
-      staleTime: 30_000,
+      staleTime: 60_000,
     },
     cache,
   );
