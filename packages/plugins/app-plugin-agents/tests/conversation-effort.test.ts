@@ -55,6 +55,12 @@ it('intersects exact-model reports with executable efforts and treats unknown an
   expect(chatEffortCapabilities(entry, [{ tools: tools([]) }])).toEqual([]);
   expect(
     chatEffortCapabilities(entry, [
+      { tools: tools([]) },
+      { tools: tools(undefined) },
+    ]),
+  ).toEqual([]);
+  expect(
+    chatEffortCapabilities(entry, [
       { tools: tools(['low']) },
       { tools: tools(['high']) },
     ]),

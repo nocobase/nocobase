@@ -779,10 +779,14 @@ export function chatEffortCapabilities(
             normalizeModel(entry.tool, entry.model!),
         )?.efforts,
   );
-  if (reports.some((report) => report === undefined)) return undefined;
-  return effortsFor(entry).filter((effort) =>
-    reports.every((report) => report?.includes(effort)),
+  const known = reports.filter((report) => report !== undefined);
+  const options = effortsFor(entry).filter((effort) =>
+    known.every((report) => report.includes(effort)),
   );
+  // Missing reports cannot widen an already empty intersection of known capabilities.
+  return options.length === 0 || known.length === reports.length
+    ? options
+    : undefined;
 }
 
 /** Known efforts common to every eligible runner; unknown reports hide selection. */
