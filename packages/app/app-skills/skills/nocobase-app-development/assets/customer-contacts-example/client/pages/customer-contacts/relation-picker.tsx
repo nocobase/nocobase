@@ -1,15 +1,10 @@
 import { useEffect, useId, useRef, useState, type Ref } from 'react';
+import { useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useAuthorizationRevision } from '@nocobase/app-plugin-authorization/client';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { cn } from 'cn';
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsUpDown,
-  Search,
-  SearchX,
-} from 'lucide-react';
+import { Check, ChevronsUpDown, Search, SearchX } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import {
   InputGroup,
@@ -21,10 +16,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '#components/ui/popover';
-import { useListData } from '#hooks/use-list-data';
+import { Spinner } from '#components/ui/spinner';
 import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
+import { useListData } from '#hooks/use-list-data';
 import { ReadFeedback } from './shared.js';
 import { base, type List, type Option } from './model.js';
+
+const PAGE_SIZE = 10;
 
 export function RelationPicker(props: {
   kind: 'customers' | 'salesReps';
@@ -39,7 +37,7 @@ export function RelationPicker(props: {
   required?: boolean;
 }) {
   const revision = useAuthorizationRevision();
-  return <Picker key={revision} {...props} />;
+  return <Picker key={revision} revision={revision} {...props} />;
 }
 function Picker({
   kind,
@@ -52,38 +50,80 @@ function Picker({
   errorId,
   invalid,
   required,
-}: Parameters<typeof RelationPicker>[0]) {
+  revision,
+}: Parameters<typeof RelationPicker>[0] & { revision: unknown }) {
   const { t } = useTranslation();
+  const api = useApiClient();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
-  const [page, setPage] = useState(1);
   const composingRef = useRef(false);
   const [composition, setComposition] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
   const id = useId();
   useEffect(() => {
     if (composition) return;
-    const timer = setTimeout(() => {
-      setSearch(text.trim());
-      setPage(1);
-    }, 300);
+    const timer = setTimeout(() => setSearch(text.trim()), 300);
     return () => clearTimeout(timer);
   }, [text, composition]);
   const selected = useListData<{ data: Option }>(
     `${base}/${kind}/${encodeURIComponent(value)}`,
     { active: Boolean(value) },
   );
-  const query = new URLSearchParams({
-    search,
-    page: String(page),
-    pageSize: '5',
-    ...(kind === 'customers' && status !== 'all' ? { status } : {}),
+  const filter = kind === 'customers' && status !== 'all' ? status : undefined;
+  // Each search and filter is its own query, so a change restarts from the
+  // first server page and a late response for an old query is never shown.
+  const options = useInfiniteQuery({
+    queryKey: [base, kind, 'options', revision, search, filter],
+    queryFn: ({ pageParam, signal }) =>
+      api.request<List<Option>>({
+        path: `${base}/${kind}/options`,
+        query: { search, page: pageParam, pageSize: PAGE_SIZE, status: filter },
+        signal,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: ({ meta }) =>
+      meta.page * meta.pageSize < meta.total ? meta.page + 1 : undefined,
+    enabled: open,
+    retry: false,
   });
-  const request = useListData<List<Option>>(
-    `${base}/${kind}/options?${query}`,
-    { active: open },
-  );
+  const {
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = options;
+  const items = [
+    ...new Map(
+      (options.data?.pages ?? [])
+        .flatMap((page) => page.data)
+        .map((option) => [option.id, option]),
+    ).values(),
+  ];
+  // Load the next server page when the end of the list scrolls into view;
+  // a list shorter than the panel keeps loading until it can scroll.
+  useEffect(() => {
+    const end = endRef.current;
+    if (!end || !hasNextPage || isFetchingNextPage || isFetchNextPageError)
+      return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void fetchNextPage();
+      },
+      { root: listRef.current, rootMargin: '0px 0px 48px 0px' },
+    );
+    observer.observe(end);
+    return () => observer.disconnect();
+  }, [
+    open,
+    items.length,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  ]);
   const valid = Boolean(
     value &&
     !selected.loading &&
@@ -97,8 +137,6 @@ function Picker({
     : selected.error || selected.data?.data.active === false
       ? t('customerContacts.unavailable')
       : (selected.data?.data.name ?? t('customerContacts.loading'));
-  const total = request.data?.meta.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / 5));
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -123,7 +161,7 @@ function Picker({
       <PopoverContent
         aria-label={label}
         align='start'
-        className='w-(--anchor-width) min-w-72 max-w-[calc(100vw-2rem)] max-h-[min(28rem,var(--available-height))] gap-0 overflow-hidden p-0'
+        className='w-(--anchor-width) min-w-72 max-w-[calc(100vw-2rem)] max-h-[min(24rem,var(--available-height))] gap-0 overflow-hidden p-0'
       >
         <div className='flex flex-col gap-2 border-b p-2'>
           <InputGroup>
@@ -159,9 +197,7 @@ function Picker({
               className='flex-wrap'
               value={[status]}
               onValueChange={(next: string[]) => {
-                if (!next[0]) return;
-                setStatus(next[0]);
-                setPage(1);
+                if (next[0]) setStatus(next[0]);
               }}
             >
               {(['all', 'active', 'paused', 'closed'] as const).map((value) => (
@@ -177,17 +213,25 @@ function Picker({
           )}
         </div>
         <div
+          ref={listRef}
           className='min-h-0 flex-1 overflow-y-auto p-1'
           aria-live='polite'
-          aria-busy={request.loading}
+          aria-busy={options.isFetching}
         >
-          {request.loading || request.error ? (
-            <div className='p-1'>
-              <ReadFeedback error={request.error} retry={request.reload} />
+          {options.isPending ? (
+            <div className='flex justify-center py-6'>
+              <Spinner className='text-muted-foreground' />
             </div>
-          ) : request.data?.data.length ? (
+          ) : options.isError && !isFetchNextPageError ? (
+            <div className='p-1'>
+              <ReadFeedback
+                error={options.error}
+                retry={() => void options.refetch()}
+              />
+            </div>
+          ) : items.length ? (
             <div className='flex flex-col gap-0.5'>
-              {request.data.data.map((option) => {
+              {items.map((option) => {
                 const current = option.id === value;
                 return (
                   <Button
@@ -206,6 +250,20 @@ function Picker({
                   </Button>
                 );
               })}
+              {isFetchNextPageError ? (
+                <div className='p-1'>
+                  <ReadFeedback
+                    error={options.error}
+                    retry={() => void fetchNextPage()}
+                  />
+                </div>
+              ) : hasNextPage ? (
+                <div ref={endRef} className='flex justify-center py-2'>
+                  {isFetchingNextPage && (
+                    <Spinner className='size-4 text-muted-foreground' />
+                  )}
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className='flex flex-col items-center gap-1 px-2 py-6 text-center'>
@@ -216,38 +274,6 @@ function Picker({
               </p>
             </div>
           )}
-        </div>
-        <div className='flex items-center justify-between gap-2 border-t px-2 py-1.5'>
-          <span className='text-xs text-muted-foreground'>
-            {request.data && !request.loading
-              ? t('customerContacts.resultCount', { count: total })
-              : null}
-          </span>
-          <div className='flex items-center gap-1'>
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon-sm'
-              aria-label={t('customerContacts.previous')}
-              disabled={page <= 1 || request.loading}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              <ChevronLeft />
-            </Button>
-            <span className='min-w-16 text-center text-xs tabular-nums'>
-              {t('customerContacts.page', { page, pages })}
-            </span>
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon-sm'
-              aria-label={t('customerContacts.next')}
-              disabled={page >= pages || request.loading}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              <ChevronRight />
-            </Button>
-          </div>
         </div>
       </PopoverContent>
     </Popover>

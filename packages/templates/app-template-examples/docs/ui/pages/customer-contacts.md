@@ -41,21 +41,21 @@ Contacts section                                               [New contact]
 DataTable name | email | phone | title | actions menu
 
 RouteDialog edit/contact: fixed title, scrolling body, fixed Cancel/Save footer
-Relation picker: selected label; search; status filter (customers); options; paging
+Relation picker: selected label; search; status filter (customers); options that load the next server page on scroll
 Batch RouteDialog: count + field/value; Cancel/Apply; result summary + per-id failures
 ```
 
 ## Components and sources
 
-| Need                               | Reuse/composition and underlying source                                                                                                              | Acceptance |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| Page, detail and modal             | #components/page-container, page-header, route-child-page, route-dialog, back-button; route-overlay.tsx composes Base UI Dialog with fixed footer    | D1,D4,D7   |
-| Lists and selection                | #components/data-table (TanStack v8, Table and pagination), #components/ui/checkbox (Base UI); controlled page-scoped id selection                   | D1,D3      |
-| Names/status                       | #components/record-link; #components/status-badge                                                                                                    | D1         |
-| Inputs and filters                 | #components/ui/input, textarea, label, select (Base UI), button                                                                                      | D2,D4      |
-| Relation selector                  | Feature-owned composition of Input, Select, Popover (Base UI), Button and paged results; no existing remote paged relation picker fits this contract | D2,D5,D7   |
-| Feedback                           | Existing list loading/feedback support, Alert, Skeleton and useToaster; no raw server errors                                                         | D4,D6      |
-| Batch and destructive confirmation | Existing Dialog and AlertDialog (Base UI); no new primitive                                                                                          | D3,D6,D7   |
+| Need                               | Reuse/composition and underlying source                                                                                                                                                   | Acceptance |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Page, detail and modal             | #components/page-container, page-header, route-child-page, route-dialog, back-button; route-overlay.tsx composes Base UI Dialog with fixed footer                                         | D1,D4,D7   |
+| Lists and selection                | #components/data-table (TanStack v8, Table and pagination), #components/ui/checkbox (Base UI); controlled page-scoped id selection                                                        | D1,D3      |
+| Names/status                       | #components/record-link; #components/status-badge                                                                                                                                         | D1         |
+| Inputs and filters                 | #components/ui/input, textarea, label, select (Base UI), button                                                                                                                           | D2,D4      |
+| Relation selector                  | Feature-owned composition of InputGroup, ToggleGroup, Popover (Base UI), Button, Spinner and TanStack Query infinite results; no existing remote paged relation picker fits this contract | D2,D5,D7   |
+| Feedback                           | Existing list loading/feedback support, Alert, Skeleton and useToaster; no raw server errors                                                                                              | D4,D6      |
+| Batch and destructive confirmation | Existing Dialog and AlertDialog (Base UI); no new primitive                                                                                                                               | D3,D6,D7   |
 
 Inspect these source components before implementation. SelectContent uses the guideline's growing/wrapping popup classes. No shared primitive edits or new library are required. All copy lives in feature locales, merged into English/Chinese resources, including aria labels, unknown-label placeholders, validation, failure reasons and toasts.
 
@@ -63,14 +63,14 @@ Inspect these source components before implementation. SelectContent uses the gu
 
 Search is debounced 300 ms and supports IME composition. Search/filter/page state is URL-backed. Changing any list query or beginning a refresh clears the current selection synchronously; only displayed, current-query rows can be selected. Selection is also cleared after a completed batch. List and relation responses from obsolete requests are discarded. Empty and no-results use distinct single-line feedback; retry/clear remain in the toolbar. Loading shows no stale actionable rows from another query; same-query refresh may retain rows with delayed feedback but disables selection until settled. Access errors discard previous data.
 
-Forms read fresh records before editing, show a skeleton in a stable dialog while reading, validate on submit, focus the first invalid field and revalidate corrected fields. Pending writes lock submit, Cancel, close, navigation and unload. Failure keeps the draft. Successful save updates the current view, refreshes its parent and shows a localized toast; a later refresh failure does not negate save success. Unauthorized selected associations display only an unavailable-record placeholder, never a cached name, and block save until a new permitted association is selected. Picker search/paging does not erase the selected label. Target access is always checked again on save.
+Forms read fresh records before editing, show a skeleton in a stable dialog while reading, validate on submit, focus the first invalid field and revalidate corrected fields. Pending writes lock submit, Cancel, close, navigation and unload. Failure keeps the draft. Successful save updates the current view, refreshes its parent and shows a localized toast; a later refresh failure does not negate save success. Unauthorized selected associations display only an unavailable-record placeholder, never a cached name, and block save until a new permitted association is selected. Picker search and scroll loading do not erase the selected label. Target access is always checked again on save.
 
 Batch confirmation displays the exact selected count and one assignable field. No permission means no button. The result remains visible until dismissed and reports updated/failed counts and each selected customer's name with FORBIDDEN or STATE_CONFLICT translated. Names are captured from the visible selected rows when the dialog opens, with an id fallback; it never looks up a hidden customer's name. A request-level rejection says nothing was changed; transport/5xx uncertainty says to refresh and inspect before resubmitting. Reset deletes/restores only these three example collections and preserves users, grants and other examples. Delete confirmation names the contact and describes removal.
 
 ## Acceptance
 
 - D1 (V1,V2): Authenticated menu/list/detail routes render English and Chinese customer/contact data; direct detail links work; Back returns to the filtered, paged list; name links and status badges use host components.
-- D2 (V1): Customer and representative pickers search/page on the server, customer status filters work, selected values survive paging, stale responses cannot replace a newer query, and hidden selected labels show only the placeholder.
+- D2 (V1): Customer and representative pickers search on the server and append the next server page on scroll until the last page, customer status filters work, selected values survive paging, stale responses cannot replace a newer query, and hidden selected labels show only the placeholder.
 - D3 (V1): Selection is current-page only and clears on query/page/refresh; batch buttons follow permissions; confirmation names count/field; total success and mixed results match saved rows exactly.
 - D4 (V2): Forms have required labels, submit-only validation, correction feedback, fresh reads, pending locks and retained drafts on error; successful writes refresh parent data and announce success.
 - D5 (V1): Normal users cannot read/select hidden targets or move contacts across scope; both source/target are rechecked; reps cannot assign owners or inject forbidden fields; closed customers report conflicts.

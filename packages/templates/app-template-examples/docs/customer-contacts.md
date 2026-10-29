@@ -34,7 +34,7 @@ The tests use disposable databases and native sign-in; they do not use this deve
 
 ## Try the interaction
 
-Search by customer name, filter by status or permitted owner, and navigate pages. Customer and owner name searches ignore case across supported databases. Open a customer's name to view its details and maintain contacts. Contact editors resolve the current customer through a protected detail endpoint; their picker supports name search, status filters and server pagination. The manager can choose active owners from the same protected picker pattern. Inaccessible selected records show only **Record unavailable**. Saving always rechecks both source and target permission scopes.
+Search by customer name, filter by status or permitted owner, and navigate pages. Customer and owner name searches ignore case across supported databases. Open a customer's name to view its details and maintain contacts. Contact editors resolve the current customer through a protected detail endpoint; their picker supports name search, status filters and server pages that load as the list scrolls to its end. The manager can choose active owners from the same protected picker pattern. Inaccessible selected records show only **Record unavailable**. Saving always rechecks both source and target permission scopes.
 
 Select customers on the current page and open **Edit selected customers**. Choose exactly one field, status or owner, and review the displayed count before applying. Changing page/query or refreshing clears selection. A completed request shows one outcome per submitted id, labeled with the previously selected customer's name, and exact success/failure counts. Closed customers are readable but reject changes, including contact changes. Representatives cannot assign owners. Unknown fields and invalid values reject the whole request, while an otherwise valid mixed-scope request can succeed for permitted rows and report the other ids as unavailable. No hidden record names are fetched for failure reporting.
 
@@ -56,7 +56,7 @@ These English screenshots show the running Examples application with fictional d
 
 ![Customer list with scoped selection](customer-contacts/customers-list.png)
 
-![Customer relation picker with search, status and pagination](customer-contacts/relation-picker.png)
+![Customer relation picker with search, status filter and scroll loading](customer-contacts/relation-picker.png)
 
 ![A batch result with one updated customer and one closed-customer failure](customer-contacts/batch-result.png)
 

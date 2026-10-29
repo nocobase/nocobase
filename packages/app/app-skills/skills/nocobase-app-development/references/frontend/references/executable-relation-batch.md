@@ -1,6 +1,6 @@
 # Executable relation selection and batch assignment
 
-Use this example when a business feature needs server-searched and paged relation options, permitted selected labels, validated association changes or current-page batch assignments. The canonical source runs at `/customer-contacts` in Examples; this is a framework learning scenario, not a CRM product module. [Relation picker source](../../../assets/customer-contacts-example/client/pages/customer-contacts/relation-picker.tsx) and [batch editor source](../../../assets/customer-contacts-example/client/pages/customer-contacts/batch.tsx) remain independent entry points.
+Use this example when a business feature needs server-searched relation options loaded page by page on scroll, permitted selected labels, validated association changes or current-page batch assignments. The canonical source runs at `/customer-contacts` in Examples; this is a framework learning scenario, not a CRM product module. [Relation picker source](../../../assets/customer-contacts-example/client/pages/customer-contacts/relation-picker.tsx) and [batch editor source](../../../assets/customer-contacts-example/client/pages/customer-contacts/batch.tsx) remain independent entry points.
 
 ## Find the implementation
 

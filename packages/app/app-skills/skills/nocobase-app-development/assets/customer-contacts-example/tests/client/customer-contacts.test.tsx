@@ -13,7 +13,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router';
-import { expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { renderSettingsClient } from '../helpers/settings-client.js';
 import CustomerContactsPage from '../../client/pages/customer-contacts/index.js';
 import CustomerDetailPage from '../../client/pages/customer-contacts/detail.js';
@@ -105,7 +105,43 @@ function mount(
   );
 }
 
-it('keeps the selected label while searching and paging and discards a late picker response', async () => {
+/** Lets a test decide when the end of the picker list becomes visible. */
+const observers = new Set<TestIntersectionObserver>();
+class TestIntersectionObserver {
+  readonly targets: Element[] = [];
+  constructor(readonly callback: IntersectionObserverCallback) {}
+  observe(target: Element) {
+    this.targets.push(target);
+    observers.add(this);
+  }
+  unobserve() {}
+  disconnect() {
+    observers.delete(this);
+  }
+  takeRecords() {
+    return [];
+  }
+}
+beforeEach(() => {
+  vi.stubGlobal('IntersectionObserver', TestIntersectionObserver);
+});
+afterEach(() => {
+  observers.clear();
+  vi.unstubAllGlobals();
+});
+function scrollToEnd() {
+  act(() => {
+    for (const observer of [...observers])
+      observer.callback(
+        observer.targets.map(
+          (target) => ({ isIntersecting: true, target }) as never,
+        ),
+        observer as never,
+      );
+  });
+}
+
+it('keeps the selected label while scrolling and searching and discards a late picker response', async () => {
   const calls: ApiCall[] = [];
   let finish!: (value: unknown) => void;
   const slow = new Promise((resolve) => {
@@ -146,11 +182,16 @@ it('keeps the selected label while searching and paging and discards a late pick
   await screen.findByText('Acorn 01');
   await userEvent.click(screen.getByRole('button', { name: 'Customer' }));
   await screen.findByText('Page 1 option');
-  await userEvent.click(
-    screen.getByRole('button', { name: 'Next', exact: true }),
-  );
+  expect(
+    screen.queryByRole('button', { name: 'Next' }),
+  ).not.toBeInTheDocument();
+  scrollToEnd();
   await screen.findByText('Page 2 option');
+  expect(screen.getByText('Page 1 option')).toBeInTheDocument();
   expect(screen.getByText('Acorn 01')).toBeInTheDocument();
+  await waitFor(() => expect(observers.size).toBe(0));
+  scrollToEnd();
+  expect(calls.filter((call) => call.query?.page === '3')).toEqual([]);
   const search = screen.getByRole('textbox', { name: 'Search by name' });
   fireEvent.change(search, { target: { value: 'old' } });
   await waitFor(() =>
@@ -158,6 +199,7 @@ it('keeps the selected label while searching and paging and discards a late pick
   );
   fireEvent.change(search, { target: { value: 'new' } });
   await screen.findByText('New result');
+  expect(screen.queryByText('Page 2 option')).not.toBeInTheDocument();
   await act(async () => {
     finish(list([{ id: 'old', name: 'Old result' }]));
   });
@@ -167,16 +209,21 @@ it('keeps the selected label while searching and paging and discards a late pick
   );
 });
 
-it('filters picker options by status from the first page and shows the empty state', async () => {
+it('retries a failed next page and restarts a status filter from the first page', async () => {
   const calls: ApiCall[] = [];
+  let failNext = true;
   await mount(
     (call) => {
       if (call.path !== 'customerContacts/customers/options')
         throw new Error(`Unexpected ${call.path}`);
       calls.push(call);
-      return call.query?.status === 'closed'
-        ? list([])
-        : list([customer], Number(call.query?.page), 12);
+      if (call.query?.status === 'closed') return list([]);
+      const page = Number(call.query?.page);
+      if (page === 2 && failNext) {
+        failNext = false;
+        return failure(500);
+      }
+      return list([{ id: `c-${page}`, name: `Customer ${page}` }], page, 12);
     },
     '/picker',
     'en-US',
@@ -190,13 +237,17 @@ it('filters picker options by status from the first page and shows the empty sta
   await userEvent.click(
     await screen.findByRole('button', { name: 'Customer' }),
   );
-  await screen.findByText('12 results');
-  await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-  await screen.findByText('Page 2 of 3');
+  await screen.findByText('Customer 1');
+  scrollToEnd();
+  await screen.findByText('Unable to load data');
+  expect(screen.getByText('Customer 1')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+  await screen.findByText('Customer 2');
+  expect(screen.queryByText('Unable to load data')).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: 'Closed' }));
   await screen.findByText('No results');
   expect(calls.at(-1)?.query).toMatchObject({ status: 'closed', page: '1' });
-  expect(screen.getByText('0 results')).toBeInTheDocument();
+  expect(screen.queryByText('Customer 2')).not.toBeInTheDocument();
 });
 
 it.each(['en-US', 'zh-CN'])(
