@@ -1,38 +1,43 @@
+import {
+  createRealtimeRefresh,
+  refreshRealtimeQueries,
+} from '@nocobase/app-client';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
-/** How long announcements gather before the queries they name are read again. */
 export const CHAT_INVALIDATION_MS = 150;
 
-interface CoalescedInvalidation {
-  /** The query is stale: read it again, once for the announcements that arrive meanwhile. */
-  readonly add: (queryKey: QueryKey) => void;
-  readonly stop: () => void;
-}
-
-/**
- * A run announces its conversation many times in a moment (the message, its state, its title); each announcement
- * marking the same lists and details stale would read them again every time. Gathered for `delay`, they are read once.
- */
+/** Coalesce bursts and retain a trailing read for changes received during a snapshot. */
 export function coalescedInvalidation(
-  client: Pick<QueryClient, 'invalidateQueries'>,
-  delay: number = CHAT_INVALIDATION_MS,
-): CoalescedInvalidation {
+  client: QueryClient,
+  delay = CHAT_INVALIDATION_MS,
+) {
   const keys = new Map<string, QueryKey>();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  return {
-    add(queryKey) {
-      keys.set(JSON.stringify(queryKey), queryKey);
-      timer ??= setTimeout(() => {
-        timer = undefined;
-        const due = [...keys.values()];
-        keys.clear();
-        for (const key of due) void client.invalidateQueries({ queryKey: key });
-      }, delay);
-    },
-    stop() {
-      if (timer !== undefined) clearTimeout(timer);
-      timer = undefined;
+  const scheduled = createRealtimeRefresh(
+    async (signal) => {
+      const due = [...keys.values()];
       keys.clear();
+      await Promise.all(
+        due
+          .filter(
+            (key) =>
+              !due.some(
+                (other) =>
+                  other.length < key.length &&
+                  other.every((part, index) => part === key[index]),
+              ),
+          )
+          .map((queryKey) =>
+            refreshRealtimeQueries(client, { queryKey }, signal),
+          ),
+      );
     },
+    { delayMs: delay },
+  );
+  return {
+    add(queryKey: QueryKey) {
+      keys.set(JSON.stringify(queryKey), queryKey);
+      scheduled.request();
+    },
+    stop: scheduled.close,
   };
 }

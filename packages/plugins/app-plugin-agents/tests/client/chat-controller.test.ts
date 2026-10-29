@@ -1091,3 +1091,26 @@ it.each(['none', 'reread', 'detail'])(
     expect(f.controller.chat('c1').messages).toEqual([saved]);
   },
 );
+
+it('shares initial conversation reads and keeps one trailing refresh for concurrent changes', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const blocked = Promise.withResolvers<{ data: ConversationDetail }>();
+  f.request.mockImplementationOnce(() => blocked.promise);
+  const first = f.controller.refresh('c1', false);
+  const duplicate = f.controller.refresh('c1', false);
+  const changed = f.controller.refresh('c1');
+  expect(duplicate).toBe(first);
+  expect(changed).toBe(first);
+  expect(f.request).toHaveBeenCalledTimes(1);
+  blocked.resolve({ data: f.state.detail });
+  await first;
+  expect(
+    f.request.mock.calls.filter(
+      ([options]) => options.path === 'agents/conversations/c1',
+    ),
+  ).toHaveLength(2);
+});

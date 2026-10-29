@@ -86,6 +86,11 @@ export class ChatController {
     string,
     { accepted: boolean; gate: ReturnType<typeof deferred<ResendResult>> }
   >();
+  private detailReads = new Map<string, Promise<ConversationDetail>>();
+  private refreshes = new Map<
+    string,
+    { task: Promise<void>; trailing: boolean }
+  >();
   private reconciles = new Map<string, Promise<void>>();
   readonly submissions: ChatSubmissions;
   private chats = new Map<string, Chat<AppUIMessage>>();
@@ -1134,7 +1139,43 @@ export class ChatController {
     );
     if (active()) await this.refresh(id);
   }
-  async refresh(id: string): Promise<void> {
+  /** One detail request shared by the query observer and message reconciliation. */
+  readDetail(id: string, fresh = false): Promise<ConversationDetail> {
+    const pending = this.detailReads.get(id);
+    if (pending)
+      return fresh
+        ? pending.catch(() => undefined).then(() => this.readDetail(id))
+        : pending;
+    const task = this.api.conversation(id);
+    this.detailReads.set(id, task);
+    const clear = () => {
+      if (this.detailReads.get(id) === task) this.detailReads.delete(id);
+    };
+    void task.then(clear, clear);
+    return task;
+  }
+  refresh(id: string, fresh = true): Promise<void> {
+    if (this.disposed) return Promise.resolve();
+    const pending = this.refreshes.get(id);
+    if (pending) {
+      pending.trailing ||= fresh;
+      return pending.task;
+    }
+    const owner = { trailing: false, task: Promise.resolve() };
+    const run = async () => {
+      do {
+        owner.trailing = false;
+        await this.refreshOnce(id, fresh);
+        fresh = true;
+      } while (owner.trailing && !this.disposed);
+    };
+    owner.task = run().finally(() => {
+      if (this.refreshes.get(id) === owner) this.refreshes.delete(id);
+    });
+    this.refreshes.set(id, owner);
+    return owner.task;
+  }
+  private async refreshOnce(id: string, fresh: boolean): Promise<void> {
     if (this.disposed) return;
     const lifetime = this.lifetime(),
       commandVersion = this.commandVersions.get(id),
@@ -1151,13 +1192,13 @@ export class ChatController {
                 message.role === 'user' && message.metadata?.seq !== undefined,
             )
         : undefined;
-    const detail = await this.api.conversation(id);
+    const detail = await this.readDetail(id, fresh);
     if (!active()) return;
     if (ordered()) await this.reconcile(id, detail);
     if (!active()) return;
     // A newer detail query must not discard this refresh's message catch-up.
     // loadHistory coalesces overlapping reads independently of detail ordering.
-    await this.loadHistory(id, false, true);
+    await this.loadHistory(id, false, fresh);
     if (!active()) return;
     const history = this.history(id);
     if (history.error)

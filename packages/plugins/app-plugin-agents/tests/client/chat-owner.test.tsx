@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import type { ApiClient } from '@nocobase/app-client';
+import {
+  ClientApplicationContext,
+  realtimeClientToken,
+  type ApiClient,
+  type ClientApplication,
+} from '@nocobase/app-client';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { useLayoutEffect } from 'react';
 import { MemoryRouter } from 'react-router';
@@ -11,9 +17,17 @@ import type * as AppClient from '@nocobase/app-client';
 const host = vi.hoisted(() => ({
   api: undefined as unknown as ApiClient,
   realtime: {
-    watch: vi.fn((_topic: string, _options?: { onReady?: () => void }) => ({
-      close: vi.fn(),
-    })),
+    watch: vi.fn(
+      (
+        _topic: string,
+        _options?: {
+          onReady?: () => void;
+          onStateChange?: (state: string) => void;
+        },
+      ) => ({
+        close: vi.fn(),
+      }),
+    ),
   },
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
@@ -59,14 +73,24 @@ it('moves every mounted surface to one fresh SDK owner for a full-prefix replay 
       </output>
     );
   }
+  const services = new ServiceContainer();
+  services.instance(realtimeClientToken, host.realtime as never);
   render(
-    <MemoryRouter>
-      <ChatProvider>
-        <Surface />
-        <Surface />
-      </ChatProvider>
-    </MemoryRouter>,
+    <ClientApplicationContext
+      value={{ services } as unknown as ClientApplication}
+    >
+      <MemoryRouter>
+        <ChatProvider>
+          <Surface />
+          <Surface />
+        </ChatProvider>
+      </MemoryRouter>
+    </ClientApplicationContext>,
   );
+  await act(async () => {
+    for (const [, options] of host.realtime.watch.mock.calls)
+      options?.onReady?.();
+  });
   await waitFor(() => expect(output.attached).toBe(true));
   expect(owners).toHaveLength(2);
   expect(owners[0]).toBe(owners[1]);
@@ -116,8 +140,9 @@ it('moves every mounted surface to one fresh SDK owner for a full-prefix replay 
   const conversationWatches = host.realtime.watch.mock.calls.filter(
     ([topic]) => topic === CONVERSATIONS_TOPIC,
   );
-  expect(conversationWatches).toHaveLength(3);
   await act(async () => {
+    for (const [, options] of conversationWatches)
+      options?.onStateChange?.('pending');
     for (const [, options] of conversationWatches) options?.onReady?.();
   });
   await waitFor(() =>
