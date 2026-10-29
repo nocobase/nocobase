@@ -16,7 +16,8 @@ it.each([1, 10, 50])(
       ['/agents/chatAgents', 8],
       ['/agents/runners', 4],
       ['/agents/runners/:id', 5],
-      ['/agents/runners/:id/runs', 2],
+      // Empty history probes dated and never-started ranges, plus the runner visibility read.
+      ['/agents/runners/:id/runs', 3],
     ]);
     h = await createHarness();
     const models = Array.from({ length: n }, (_, index) => ({

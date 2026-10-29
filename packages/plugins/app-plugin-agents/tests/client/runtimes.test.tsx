@@ -73,17 +73,20 @@ describe('runtimes page', () => {
       'agents/runners/r2': () => runners[1],
       'agents/runners/r1/workspaces': () =>
         workspacePage(runners[0]?.workspaceUsage),
-      'agents/runners/r1/runs': () => [
-        {
-          id: 'run1',
-          title: 'Coder',
-          status: 'completed',
-          startedAt: '2026-10-01T08:00:00.000Z',
-          finishedAt: '2026-10-01T08:10:00.000Z',
-          createdAt: '2026-10-01T08:00:00.000Z',
-          path: '/samples/1',
-        },
-      ],
+      'agents/runners/r1/runs': () => ({
+        data: [
+          {
+            id: 'run1',
+            title: 'Coder',
+            status: 'completed',
+            startedAt: '2026-10-01T08:00:00.000Z',
+            finishedAt: '2026-10-01T08:10:00.000Z',
+            createdAt: '2026-10-01T08:00:00.000Z',
+            path: '/samples/1',
+          },
+        ],
+        meta: { nextCursor: null },
+      }),
       'PATCH agents/runners/r1': (request) => ({
         ...runners[0],
         ...(request.json as object),
@@ -555,6 +558,55 @@ describe('runtimes page', () => {
       '/samples/1',
     );
     within(runs).getByText('runs.status.completed');
+  });
+
+  it('loads the next twenty runs only on request and retains rows when that request fails', async () => {
+    runners[0] = { ...runners[0]!, recentRunsCount: 21 };
+    const row = (id: string) => ({
+      id,
+      title: id,
+      subjectLabel: id,
+      status: 'completed',
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-10-01T08:00:00.000Z',
+      path: null,
+    });
+    let fail = true;
+    api.routes['agents/runners/r1/runs'] = ({ query }) => {
+      if (!query.cursor)
+        return {
+          data: Array.from({ length: 20 }, (_, i) => row(`run-${i}`)),
+          meta: { nextCursor: 'older' },
+        };
+      if (fail) throw new FakeApiError(500);
+      return { data: [row('last-run')], meta: { nextCursor: null } };
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    const tab = within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' });
+    expect(tab).toHaveTextContent('20+');
+    await userEvent.click(tab);
+    const table = await within(sheet).findByTestId('runner-runs');
+    expect(within(table).getAllByRole('row')).toHaveLength(21);
+    expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(1);
+    await userEvent.click(
+      within(table).getByRole('button', { name: 'agents.loadMore' }),
+    );
+    await within(table).findByRole('alert');
+    expect(within(table).getAllByRole('row')).toHaveLength(21);
+    fail = false;
+    await userEvent.click(
+      within(table).getByRole('button', { name: 'agents.loadMore' }),
+    );
+    await within(table).findByText('last-run', { selector: 'td.max-w-44' });
+    expect(within(table).getAllByRole('row')).toHaveLength(22);
+    expect(
+      within(table).queryByRole('button', { name: 'agents.loadMore' }),
+    ).toBeNull();
+    expect(callsTo('GET', 'agents/runners/r1/runs').at(-1)?.query.cursor).toBe(
+      'older',
+    );
   });
 
   it('opens the same settings from the row’s Edit item', async () => {

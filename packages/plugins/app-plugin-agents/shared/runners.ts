@@ -278,6 +278,17 @@ export interface RunnerRecentRun {
   readonly path: string | null;
 }
 
+/** Opaque continuation values use the stored start time, including never-started runs. */
+export interface RunnerRunsCursor {
+  readonly startedAt: string | null;
+  readonly id: string;
+}
+
+export interface RunnerRunsPage {
+  readonly data: RunnerRecentRun[];
+  readonly meta: { readonly nextCursor: string | null };
+}
+
 /**
  * A runner in the list, with what the viewer may do with it. What identifies its machine (the host name, the tools'
  * executable paths) is shown only to its owner, the managers of runners and anyone who may wake an agent: `hostname`
@@ -315,7 +326,7 @@ export interface RunnerSummary extends Omit<
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
   readonly canClearQuota: boolean;
-  /** Count of the recent (at most ten) run rows, without loading their details. */
+  /** Run count capped at 21 (shown as 20+), without loading row details. */
   readonly recentRunsCount: number;
   /**
    * A newer runner version the application serves for its platform, which the runner installs on its own between

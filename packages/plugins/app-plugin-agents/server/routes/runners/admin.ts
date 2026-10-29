@@ -68,6 +68,8 @@ import {
   RunnerParams,
   RunnerPatchInput,
   RunnerRecentRunSchema,
+  RunnerRunsQuery,
+  RunnerRunsPageMetaSchema,
   RunnerSchema,
   RunnerSummarySchema,
   RunnerWorkspaceSchema,
@@ -535,21 +537,23 @@ export function createAdminRoutes(
         columns: ['id', 'title', 'status', 'createdAt'],
       }),
       description:
-        'Its latest runs whatever their status, newest first, without the link of a private run the caller is not part of.',
+        'Twenty runs ordered by startedAt descending then id descending, with null start times last. Pass meta.nextCursor to load more. Private run links are hidden from other viewers.',
       responses: {
-        200: listResponse(RunnerRecentRunSchema),
+        200: listResponse(RunnerRecentRunSchema, RunnerRunsPageMetaSchema),
         ...apiErrorResponses,
         404: notVisible,
       },
     }),
     runnerParam,
+    apiValidator('query', RunnerRunsQuery),
     async (context) => {
       const runner = await visibleRunner(context);
-      const data = await services.runnerView.recent(
+      const page = await services.runnerView.recent(
         runner,
         caller(context).userId,
+        context.req.valid('query').cursor,
       );
-      return context.json({ data, meta: { total: data.length } });
+      return context.json(page);
     },
   );
   router.patch(

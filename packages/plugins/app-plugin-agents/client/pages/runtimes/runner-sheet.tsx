@@ -192,7 +192,7 @@ function RunnerDetail({
             <TabsTrigger value='runs'>
               {t('runtimes.quota.runs')}{' '}
               <span aria-hidden className='text-xs text-muted-foreground'>
-                {runner.recentRunsCount}
+                {runner.recentRunsCount > 20 ? '20+' : runner.recentRunsCount}
               </span>
             </TabsTrigger>
           </TabsList>

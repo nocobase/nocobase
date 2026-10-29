@@ -13,7 +13,8 @@ import {
   runnerTakesAgent,
   type Runner,
   type RunnerHeldItem,
-  type RunnerRecentRun,
+  type RunnerRunsPage,
+  type RunnerRunsCursor,
   type RunnerWorkTarget,
 } from '../../../shared/runners.js';
 import type { Run } from '../../../shared/runs.js';
@@ -21,7 +22,7 @@ import type { AgentService } from '../agents/agent.service.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
 
-import { ACTIVE, runsRepo, toRun } from './run.store.js';
+import { ACTIVE, runsRepo, toRun, type RunRecord } from './run.store.js';
 
 /** How many runs each of `runnerIds` holds now; they take its slots. */
 export async function runsHeldBy(
@@ -75,7 +76,7 @@ export async function runsHeldSnapshot(
 }
 
 /** How many of a runner's latest runs its page shows. */
-export const RECENT_RUNS = 10;
+export const RECENT_RUNS = 20;
 
 /** What a runner shows its viewer of its machine. */
 export interface RunnerMachineView {
@@ -124,7 +125,11 @@ export interface RunnerView {
   /** For a runner's page: the runs it holds now, as `viewerUserId` may see them. */
   held(runner: Runner, viewerUserId: string): Promise<RunnerHeldItem[]>;
   /** For a runner's page: its latest runs, newest first, as `viewerUserId` may see them. */
-  recent(runner: Runner, viewerUserId: string): Promise<RunnerRecentRun[]>;
+  recent(
+    runner: Runner,
+    viewerUserId: string,
+    cursor?: RunnerRunsCursor,
+  ): Promise<RunnerRunsPage>;
 }
 
 export function createRunnerView(deps: {
@@ -178,7 +183,7 @@ export function createRunnerView(deps: {
         await runsRepo(deps.tx.read()).findMany({
           filter: { runnerId },
           select: (s) => s.fields('id'),
-          limit: RECENT_RUNS,
+          limit: RECENT_RUNS + 1,
         })
       ).length;
     },
@@ -220,30 +225,86 @@ export function createRunnerView(deps: {
         path: pathOf(run, viewerUserId),
       }));
     },
-    async recent(runner, viewerUserId) {
-      const records = await runsRepo(deps.tx.read()).findMany({
-        filter: (f) => f.string('runnerId').eq(runner.id),
-        sort: (sort) => [
-          sort.field('createdAt').desc(),
-          sort.field('id').desc(),
-        ],
-        limit: RECENT_RUNS,
-      });
+    async recent(runner, viewerUserId, cursor) {
+      const query = deps.tx
+        .read()
+        .query.selectFrom('agRuns')
+        .selectAll()
+        .where('runnerId', '=', runner.id);
+      const records: RunRecord[] = [];
+      // Separate index ranges avoid scanning all preceding pages or sorting NULLs
+      // differently across dialects. Never-started runs follow dated runs.
+      if (cursor?.startedAt) {
+        records.push(
+          ...(await query
+            .where('startedAt', '=', cursor.startedAt)
+            .where('id', '<', cursor.id)
+            .orderBy('id', 'desc')
+            .limit(RECENT_RUNS + 1)
+            .execute<RunRecord>()),
+        );
+      }
+      if (
+        (!cursor || cursor.startedAt !== null) &&
+        records.length < RECENT_RUNS + 1
+      ) {
+        const older = cursor
+          ? query.where('startedAt', '<', cursor.startedAt)
+          : query.where('startedAt', 'is not', null);
+        records.push(
+          ...(await older
+            .orderBy('startedAt', 'desc')
+            .orderBy('id', 'desc')
+            .limit(RECENT_RUNS + 1 - records.length)
+            .execute<RunRecord>()),
+        );
+      }
+      if (records.length < RECENT_RUNS + 1) {
+        const undated = query.where('startedAt', 'is', null);
+        records.push(
+          ...(await (
+            cursor?.startedAt === null
+              ? undated.where('id', '<', cursor.id)
+              : undated
+          )
+            .orderBy('id', 'desc')
+            .limit(RECENT_RUNS + 1 - records.length)
+            .execute<RunRecord>()),
+        );
+      }
+      const hasMore = records.length > RECENT_RUNS;
+      records.length = Math.min(records.length, RECENT_RUNS);
+      const last = records.at(-1);
+      const nextCursor =
+        hasMore && last
+          ? Buffer.from(
+              JSON.stringify({
+                startedAt:
+                  last.startedAt === null
+                    ? null
+                    : new Date(last.startedAt).toISOString(),
+                id: last.id,
+              }),
+            ).toString('base64url')
+          : null;
       const names = await agentNames(records);
       const runs = records.map(toRun);
       const labels = await subjectLabels(runs, viewerUserId);
-      return runs.map((run) => ({
-        subjectLabel:
-          labels.get(`${run.subject.kind}:${run.subject.id}`) ?? null,
-        failureReason: run.failureReason,
-        id: run.id,
-        title: names.get(run.agentId) ?? run.agentId,
-        status: run.status,
-        startedAt: run.startedAt ?? run.dispatchedAt,
-        finishedAt: run.finishedAt,
-        createdAt: run.createdAt,
-        path: pathOf(run, viewerUserId),
-      }));
+      return {
+        meta: { nextCursor },
+        data: runs.map((run) => ({
+          subjectLabel:
+            labels.get(`${run.subject.kind}:${run.subject.id}`) ?? null,
+          failureReason: run.failureReason,
+          id: run.id,
+          title: names.get(run.agentId) ?? run.agentId,
+          status: run.status,
+          startedAt: run.startedAt ?? run.dispatchedAt,
+          finishedAt: run.finishedAt,
+          createdAt: run.createdAt,
+          path: pathOf(run, viewerUserId),
+        })),
+      };
     },
   };
 }
