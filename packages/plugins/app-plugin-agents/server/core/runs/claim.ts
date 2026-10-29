@@ -1084,6 +1084,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       claim,
       prepared.get('subject'),
     );
+    if (assembly.effort !== undefined)
+      entry = { ...entry, effort: assembly.effort };
     // workspace.key is required for coordinating runs; old runners must not silently ignore it.
     if (
       (await assemblyCompatibility(

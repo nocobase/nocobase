@@ -66,6 +66,7 @@ const SOURCE_MATERIAL_DIRECTORIES = new Map([
     [
       'skills/nocobase-app-plugin-development/assets/testing-example',
       'skills/nocobase-app-development/assets/list-edit-example',
+      'skills/nocobase-app-development/assets/customer-contacts-example',
     ],
   ],
 ]);

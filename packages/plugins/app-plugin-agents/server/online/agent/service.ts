@@ -143,6 +143,14 @@ export class OnlineAgentService {
       );
     }
     const initial = await this.initial(context, options, boundary);
+    if (
+      options.effort !== undefined &&
+      (!initial.config.agentId || initial.config.agentId === 'online')
+    )
+      throw invalid(
+        'Online agents do not support conversation reasoning effort.',
+        { reason: 'EFFORT_UNSUPPORTED' },
+      );
     return this.selectedBackend(initial).createRealtime(
       context,
       initial,

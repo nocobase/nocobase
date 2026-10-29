@@ -51,6 +51,8 @@ const viVN: LocaleResource<typeof enUS> = {
     title: 'Hủy các thay đổi chưa được lưu?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'Runner này không thể chạy Agent đã chọn. Hãy đổi runner hoặc bắt đầu cuộc trò chuyện mới.',
     CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
     REVISION_CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
     FORBIDDEN: 'Bạn không được phép làm điều này.',

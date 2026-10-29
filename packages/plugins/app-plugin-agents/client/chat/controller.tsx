@@ -881,6 +881,7 @@ export class ChatController {
       {
         body: {
           ...(input.agentId ? { agentId: input.agentId } : {}),
+          ...(input.effort !== undefined ? { effort: input.effort } : {}),
           ...(input.context ? { context: input.context } : {}),
           ...(input.attachmentIds?.length
             ? { attachmentIds: input.attachmentIds }

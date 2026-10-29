@@ -25,7 +25,7 @@ import {
  *   and bumps `thread`, so every switch starts a new session.
  */
 import { isDeepStrictEqual } from 'node:util';
-import { quotaForAgent } from '../../../shared/runners.js';
+import { quotaForAgent, chatEffortsFor } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -80,6 +80,7 @@ import { agentNamesOf } from '../agents/agent.store.js';
 import type { RunnerService } from '../../runners/index.js';
 import {
   eventsAfter,
+  fitsActor,
   hasSession,
   lastSummary,
   openRunsOnEach,
@@ -123,6 +124,7 @@ import {
 } from './conversation.store.js';
 import type {
   ConversationRef,
+  ConversationWorkspaceProvider,
   ConversationRules,
   ConversationService,
   ConversationSourceKind,
@@ -294,6 +296,7 @@ function refOf(record: ConversationRecord): ConversationRef {
     agentId: record.agentId,
     title: record.title,
     source: record.source,
+    projectId: record.projectId ?? null,
   };
 }
 
@@ -379,6 +382,17 @@ export function createConversationService(
   const viewOf = (record: MessageRecord) =>
     toMessage(record, deps.basePath?.() ?? '');
   const rules: ConversationRules[] = [];
+  let workspace: ConversationWorkspaceProvider | undefined;
+  async function projectWorkspace(
+    conn: DatabaseConnection,
+    conversation: ConversationRef,
+    prepared: unknown,
+  ) {
+    if (!conversation.projectId) return { dirs: [], scopes: [] };
+    if (!workspace) throw invalid('Project workspaces are not available.');
+    return workspace.resolve(conn, conversation, prepared);
+  }
+
   const sources = createSources();
   const links = createConversationLinks({
     tx,
@@ -472,6 +486,7 @@ export function createConversationService(
         category: record.category,
         showInChatList: record.showInChatList,
         source: record.source,
+        projectId: record.projectId ?? null,
         mode: record.mode,
         execution: onlineExecution(
           record,
@@ -559,6 +574,47 @@ export function createConversationService(
     );
   }
 
+  async function effortOptions(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+  ): Promise<readonly string[]> {
+    const eligible = await deps.eligibility.runnersFor(conn, agent, {
+      actorUserId: userId,
+    });
+    return chatEffortsFor(agent.modelEntries[0], eligible);
+  }
+
+  async function validateEffort(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+    selected: string | null | undefined,
+    saved: unknown,
+  ): Promise<string | null> {
+    const preference =
+      selected === undefined
+        ? typeof saved === 'string'
+          ? saved
+          : null
+        : selected;
+    // Unknown capabilities preserve default execution, but never silently replace an explicit preference.
+    const options = await effortOptions(conn, agent, userId);
+    const effective = preference ?? agent.modelEntries[0]?.effort ?? null;
+    if (
+      (preference !== null && !options.includes(preference)) ||
+      (options.length > 0 && effective !== null && !options.includes(effective))
+    )
+      throw invalid(
+        'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
+        { reason: 'EFFORT_UNSUPPORTED', effort: effective, efforts: options },
+      );
+    return (
+      preference ??
+      (effective && options.includes(effective) ? effective : null)
+    );
+  }
+
   async function canAnswer(
     conn: DatabaseConnection,
     agent: Agent | null,
@@ -611,6 +667,10 @@ export function createConversationService(
     const target = await fallbackTarget(conn, record);
     return {
       ...summary,
+      effort:
+        typeof jsonObject(record.metadata).effort === 'string'
+          ? (jsonObject(record.metadata).effort as string)
+          : null,
       availability: await availabilityFor(conn, agent, record.userId),
       canFallback: Boolean(target),
       canRestore:
@@ -814,6 +874,17 @@ export function createConversationService(
     const binding = runnerBinding(record.metadata);
     if (binding && !idleOnly)
       throw conflict('Start a new conversation to choose another agent.');
+    if (record.projectId && record.runnerId) {
+      const [runner] = await deps.runners.all(unit.conn, [record.runnerId]);
+      if (
+        !runner ||
+        !fitsActor(runner, agent, record.userId, [], clock.now().getTime())
+      )
+        throw conflict(
+          'This runner cannot run the selected Agent. Switch runner or start a new conversation.',
+          { reason: 'boundRunnerIncompatible' },
+        );
+    }
     const withdrawn = idleOnly
       ? []
       : await deps.runs.withdrawQueued(
@@ -840,7 +911,7 @@ export function createConversationService(
             }
           : {}),
         thread: Number(record.thread) + 1,
-        runnerId: null,
+        runnerId: record.projectId ? record.runnerId : null,
         updatedAt: now(),
       },
     });
@@ -1086,8 +1157,10 @@ export function createConversationService(
     ownerName: string,
     history: readonly HistoryLine[],
     previousSummary: string | null,
+    prepared?: unknown,
   ): Promise<SubjectAssembly> {
     const key = conversationKey(conversation.id);
+    const directories = await projectWorkspace(conn, conversation, prepared);
     const added = await Promise.all(
       rules.map((source) =>
         source(conn, {
@@ -1097,6 +1170,7 @@ export function createConversationService(
             agentId: conversation.agentId,
             title: conversation.title,
             source: conversation.source,
+            projectId: conversation.projectId ?? null,
           },
           agent: claim.agent,
           ownerName,
@@ -1151,8 +1225,7 @@ export function createConversationService(
           source: conversation.source,
         },
       },
-      dirs: [],
-      scopes: [],
+      ...directories,
     };
   }
 
@@ -1236,7 +1309,13 @@ export function createConversationService(
       },
     },
     context: {
-      async assemble(conn, claim) {
+      async prepare(run) {
+        const record = await findConversation(tx.read(), run.subject.id);
+        return record?.projectId
+          ? workspace?.prepare(record.userId)
+          : undefined;
+      },
+      async assemble(conn, claim, prepared) {
         const record = await findConversation(conn, claim.run.subject.id);
         // Only the owner's runs see a conversation (a preview by anyone else, too, finds nothing).
         if (!record || record.userId !== claim.run.actorUserId)
@@ -1300,7 +1379,7 @@ export function createConversationService(
           ? await lastSummary(
               conn,
               {
-                agentId: claim.agent.id,
+                ...(record.projectId ? {} : { agentId: claim.agent.id }),
                 subjectKind: CONVERSATION_SUBJECT,
                 subjectId: record.id,
               },
@@ -1314,11 +1393,19 @@ export function createConversationService(
           ownerName,
           history,
           previousSummary,
+          prepared,
         );
+        const preference =
+          jsonObject(record.metadata).turnEffort ??
+          jsonObject(record.metadata).effort;
+        const withEffort =
+          typeof preference === 'string'
+            ? { ...assembly, effort: preference }
+            : assembly;
         const config = runnerBinding(record.metadata)?.config;
         return config
           ? {
-              ...assembly,
+              ...withEffort,
               system: [
                 assembly.system,
                 config.systemPrompt,
@@ -1329,7 +1416,7 @@ export function createConversationService(
                 .filter(Boolean)
                 .join('\n\n'),
             }
-          : assembly;
+          : withEffort;
       },
     },
     runnerPin: {
@@ -1509,6 +1596,11 @@ export function createConversationService(
   ): Promise<
     SendMessageResult | Awaited<ReturnType<ConversationService['sendRealtime']>>
   > {
+    if (request.effort !== undefined && !realtime)
+      throw invalid(
+        'Reasoning effort selection requires a Runner realtime message.',
+        { reason: 'EFFORT_UNSUPPORTED' },
+      );
     if (request.agentId !== undefined && (!realtime || !request.agentId.trim()))
       throw invalid('Agent selection requires a Runner realtime message.');
     const content = request.content;
@@ -1556,6 +1648,7 @@ export function createConversationService(
     const sent = await measuredAdmission(async (unit) => {
       let record = await lockOwned(unit, userId, id, Boolean(realtime));
       let binding = runnerBinding(record.metadata);
+      let turnEffort: string | null = null;
       if (realtime) {
         if (!binding)
           throw invalid('This is not a Runner OnlineAgent conversation.');
@@ -1596,6 +1689,37 @@ export function createConversationService(
             !(await canAnswer(unit.conn, agent, userId)))
         )
           throw conflict('This agent has no available execution environment.');
+        turnEffort =
+          (typeof jsonObject(record.metadata).effort === 'string'
+            ? (jsonObject(record.metadata).effort as string)
+            : null) ??
+          agent.modelEntries[0]?.effort ??
+          null;
+        if (!realtime.queue) {
+          const effort = await validateEffort(
+            unit.conn,
+            agent,
+            userId,
+            request.effort,
+            switching ? null : jsonObject(record.metadata).effort,
+          );
+          turnEffort = effort ?? agent.modelEntries[0]?.effort ?? null;
+          if (
+            effort !== (jsonObject(record.metadata).effort ?? null) ||
+            turnEffort !== (jsonObject(record.metadata).turnEffort ?? null)
+          ) {
+            const metadata = asJson({
+              ...jsonObject(record.metadata),
+              effort,
+              turnEffort,
+            });
+            await conversationsRepo(unit.conn).updateMany({
+              filter: { id },
+              values: { metadata },
+            });
+            record = { ...record, metadata };
+          }
+        }
         if (switching) {
           record = await rebind(
             unit,
@@ -1644,6 +1768,7 @@ export function createConversationService(
         workContext: realtime?.workContext ?? context,
         metadata: {
           ...(request.clientId ? { clientId: request.clientId } : {}),
+          ...(turnEffort ? { effort: turnEffort } : {}),
           ...(realtime?.queue ? { queued: true } : {}),
         },
       });
@@ -1805,6 +1930,9 @@ export function createConversationService(
     },
 
     async create(userId, request, runnerConfig) {
+      const prepared = request.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
       const id = await tx.run(async (unit) => {
         const agent = await pickAgent(unit.conn, userId, request.agentId);
         if (
@@ -1814,6 +1942,13 @@ export function createConversationService(
           throw invalid('Select a callable Runner agent.');
         if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
           throw conflict('This agent has no available execution environment.');
+        const effort = await validateEffort(
+          unit.conn,
+          agent,
+          userId,
+          request.effort,
+          null,
+        );
         const title =
           request.title === undefined
             ? null
@@ -1823,17 +1958,31 @@ export function createConversationService(
         if (source !== 'panel' && !sources.has(source))
           throw invalid(`${source} is not a source conversations start from.`);
         const conversationId = ids.next();
+        if (request.projectId && agent.source !== 'runner')
+          throw invalid('Only Runner conversations can select a project.');
+        await projectWorkspace(
+          unit.conn,
+          {
+            id: conversationId,
+            userId,
+            agentId: agent.id,
+            title,
+            source,
+            projectId: request.projectId,
+          },
+          prepared,
+        );
         await conversationsRepo(unit.conn).createOne({
           values: {
             id: conversationId,
-            ...(runnerConfig
-              ? {
-                  metadata: asJson({
-                    runnerOnlineAgent: { version: 1, config: runnerConfig },
-                  }),
-                }
-              : {}),
+            metadata: asJson({
+              effort,
+              ...(runnerConfig
+                ? { runnerOnlineAgent: { version: 1, config: runnerConfig } }
+                : {}),
+            }),
             userId,
+            projectId: request.projectId ?? null,
             agentId: agent.id,
             mode: 'runner',
             fallbackFromAgentId: null,
@@ -1865,9 +2014,34 @@ export function createConversationService(
     get: detail,
 
     async update(userId, id, patch) {
+      const prepared = patch.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id, true);
         const values: Record<string, unknown> = {};
+        if (
+          patch.projectId !== undefined &&
+          patch.projectId !== (record.projectId ?? null)
+        ) {
+          if (
+            Number(record.lastSeq) > 0 &&
+            (await messagesRepo(unit.conn).findOne({
+              filter: { conversationId: id, role: 'user' },
+            }))
+          )
+            throw conflict(
+              'Start a new conversation to choose another project.',
+            );
+          if (record.mode !== 'runner')
+            throw invalid('Only Runner conversations can select a project.');
+          await projectWorkspace(
+            unit.conn,
+            { ...refOf(record), projectId: patch.projectId },
+            prepared,
+          );
+          values.projectId = patch.projectId;
+        }
         if (patch.title !== undefined) {
           values.title = titleFor(patch.title, CONVERSATION_TITLE_MAX);
           values.titleSource = 'user';
@@ -2556,6 +2730,18 @@ export function createConversationService(
     lock: async (conn, id) =>
       (await lockConversation(conn, id, now())) !== null,
 
+    workspace: {
+      provide(provider) {
+        if (workspace)
+          throw new Error(
+            'A conversation workspace provider is already registered.',
+          );
+        workspace = provider;
+        return () => {
+          if (workspace === provider) workspace = undefined;
+        };
+      },
+    },
     rules: {
       provide(source) {
         rules.push(source);
@@ -2602,7 +2788,14 @@ export function createConversationService(
             const fitting = runners.filter((runner) =>
               runnerTakesAgent(runner, agent, now),
             );
+            const eligible = await deps.eligibility.runnersFor(conn, agent, {
+              actorUserId: userId,
+              runners,
+              variableState: variableStates?.get(agent.id),
+            });
             return {
+              efforts: chatEffortsFor(agent.modelEntries[0], eligible),
+              effort: agent.modelEntries[0]?.effort ?? null,
               id: agent.id,
               name: agent.name,
               description: agent.description,
@@ -2611,12 +2804,12 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
-              availability: await availabilityFor(
-                conn,
+              availability: availabilityOf(
                 agent,
                 userId,
-                runners,
-                variableStates?.get(agent.id),
+                deps.agents.mayInvoke,
+                eligible.length,
+                fitting.length > 0,
               ),
               quota: quotaForAgent(runners, agent, userId, now),
               runnerNames: fitting

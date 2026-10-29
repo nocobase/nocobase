@@ -19,7 +19,7 @@ import {
   type WorkspaceCleanupResult,
 } from '@nocobase/agent-protocol';
 
-import type { RunnerModelEntry } from './agents.js';
+import { effortsFor, type RunnerModelEntry } from './agents.js';
 import { normalizeModel } from './model-catalog.js';
 
 /**
@@ -761,4 +761,25 @@ export function workspaceSummary(
     else totalBytes += workspace.sizeBytes;
   }
   return { ...usage, totalBytes, sizeUnknownCount, counts };
+}
+
+/** Known efforts common to every eligible runner for this exact model; unknown reports disable selection. */
+export function chatEffortsFor(
+  entry: RunnerModelEntry | undefined,
+  runners: readonly Pick<Runner, 'tools'>[],
+): readonly string[] {
+  if (!entry?.model || runners.length === 0) return [];
+  const reports = runners.map(
+    (runner) =>
+      runner.tools
+        .find((tool) => tool.kind === entry.tool)
+        ?.models?.find(
+          (model) =>
+            normalizeModel(entry.tool, model.id) ===
+            normalizeModel(entry.tool, entry.model!),
+        )?.efforts,
+  );
+  return effortsFor(entry).filter((effort) =>
+    reports.every((report) => report?.includes(effort)),
+  );
 }
