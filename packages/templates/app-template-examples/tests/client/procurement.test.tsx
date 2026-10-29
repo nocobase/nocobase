@@ -122,12 +122,10 @@ it('adds, edits and removes lines with a live total, preserving the real saved r
     screen.getByRole('textbox', { name: 'Title', exact: true }),
   ).toHaveValue('Client purchase');
   expect(screen.getByLabelText('Total (USD)')).toHaveTextContent('20.50');
-  await app!.connection
-    .repository('procurementMaterials')
-    .updateOne({
-      filter: { id: materialId },
-      values: { unitPriceMinor: 1800 },
-    });
+  await app!.connection.repository('procurementMaterials').updateOne({
+    filter: { id: materialId },
+    values: { unitPriceMinor: 1800 },
+  });
   await userEvent.click(
     screen.getByRole('button', { name: 'Close', exact: true }),
   );

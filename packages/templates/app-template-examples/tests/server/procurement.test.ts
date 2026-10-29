@@ -473,12 +473,10 @@ test('applicant quotes are validated snapshots while catalog references and acto
     currentCatalogPriceMinor: 1250,
   });
   const snapshot = { ...detail.lines[0], currentCatalogPriceMinor: undefined };
-  await testApp.connection
-    .repository('procurementMaterials')
-    .updateOne({
-      filter: { id: f.materialId },
-      values: { unitPriceMinor: 1800 },
-    });
+  await testApp.connection.repository('procurementMaterials').updateOne({
+    filter: { id: f.materialId },
+    values: { unitPriceMinor: 1800 },
+  });
   expect(
     (await f.fire(id, 'submit', detail.record.lifecycleVersion)).status,
   ).toBe(200);
