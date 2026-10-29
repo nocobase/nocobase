@@ -1161,6 +1161,18 @@ export function authorizationProgram(
       (ts.isArrowFunction(call.arguments[0]) ||
         ts.isFunctionExpression(call.arguments[0]))
     ) {
+      const callback = call.arguments[0];
+      // The third argument is the receiving array. Until its aliases are modelled,
+      // reject every way to obtain it rather than losing its collection provenance.
+      if (
+        callback.parameters.length > 2 ||
+        callback.parameters.some((parameter) => parameter.dotDotDotToken) ||
+        mentions(
+          callback,
+          (node) => ts.isIdentifier(node) && node.text === 'arguments',
+        )
+      )
+        return undefined;
       const sites = collection(receiver, false);
       return sites ? { receiver, name, sites } : undefined;
     }

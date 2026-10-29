@@ -1181,3 +1181,74 @@ it.each([
     ).toBe(expected);
   },
 );
+
+const localArrayMethods = ['map', 'filter', 'find', 'some', 'every'];
+it.each(
+  localArrayMethods.flatMap((method) => [
+    [
+      method,
+      'direct array escape',
+      '(tool,index,array)=>{external(array);return true;}',
+    ],
+    [
+      method,
+      'nested array escape',
+      '(tool,index,array)=>{external({nested:[array]});return true;}',
+    ],
+    [
+      method,
+      'element overwrite',
+      '(tool,index,array)=>{array[0].execute=external;return true;}',
+    ],
+    [
+      method,
+      'rest array escape',
+      '(tool,...rest)=>{external(rest[1]);return true;}',
+    ],
+    [
+      method,
+      'arguments array escape',
+      'function(tool){external(arguments[2]);return true;}',
+    ],
+  ]),
+)('rejects %s callbacks with %s', async (method, _name, callback) => {
+  const result = await collectModuleSources(
+    await fixture(routes, {
+      ...staticToolRegistry,
+      [registryFile]: staticToolRegistry[registryFile].replace(
+        'return {tools};',
+        `[...tools.values()].${method}(${callback});return {tools};`,
+      ),
+    }),
+  );
+  expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+});
+
+it.each(localArrayMethods)(
+  'retains read-only two-parameter %s callbacks',
+  async (method) => {
+    const result = await collectModuleSources(
+      await fixture(routes, {
+        ...staticToolRegistry,
+        [registryFile]: staticToolRegistry[registryFile].replace(
+          'return {tools};',
+          `[...tools.values()].${method}((tool,index)=>tool.definition.name);return {tools};`,
+        ),
+      }),
+    );
+    expect(result.routes[0]?.apiProviders).toContain('@nocobase/db');
+  },
+);
+
+it('allows string keys to leave a local registry', async () => {
+  const result = await collectModuleSources(
+    await fixture(routes, {
+      ...staticToolRegistry,
+      [registryFile]: staticToolRegistry[registryFile].replace(
+        'return {tools};',
+        'external([...tools.keys()]);return {tools};',
+      ),
+    }),
+  );
+  expect(result.routes[0]?.apiProviders).toContain('@nocobase/db');
+});
