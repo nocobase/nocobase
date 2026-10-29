@@ -65,6 +65,8 @@ export interface SubjectScope {
 
 /** The subject's part of a run payload; the runs domain adds the rules, the workspace and the skills. */
 export interface SubjectAssembly {
+  /** Subject-specific effort for this run only; absent uses the Agent entry. */
+  readonly effort?: string;
   /**
    * `key` names the run's working directory (and a checkout's branch, as the subject's domain chooses); `title` and
    * `url` are what a person sees of the subject; `noun` is what the brief calls it (`ticket`, `document`).
