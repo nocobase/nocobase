@@ -19,6 +19,7 @@ import type { TxRunner } from '../../../kernel/tx.js';
 import {
   eventsRepo,
   runsRepo,
+  toExecutions,
   type EventRecord,
 } from '../../../core/runs/run.store.js';
 import { jsonObject } from '../../../kernel/values.js';
@@ -226,6 +227,7 @@ export function runnerUIMessages(
   reasoning: readonly SavedReasoning[] = [],
   /** How each finished run ended, by run id. */
   outcomes: ReadonlyMap<string, AppUITurn['outcome']> = new Map(),
+  defaultEffortRuns: ReadonlySet<string> = new Set(),
 ): AppUIMessage[] {
   const messages = new Map<string, AppUIMessage>();
   const seen = new Set<string>();
@@ -336,6 +338,30 @@ export function runnerUIMessages(
         recordId: row.id,
         seq: row.seq,
         partId: `file:${file.id}`,
+        partIndex: message.parts.length - 1,
+        createdAt: row.createdAt,
+      });
+    }
+    if (
+      row.role === 'user' &&
+      row.metadata.effort &&
+      row.runId &&
+      defaultEffortRuns.has(row.runId)
+    ) {
+      const id = `effort-defaulted:${row.id}`;
+      message.parts.push({
+        type: 'data-notice',
+        id,
+        data: {
+          type: 'effortDefaulted',
+          title:
+            'This runtime does not support the selected reasoning effort; the tool default was used.',
+        },
+      });
+      message.metadata!.sourceRecords!.push({
+        recordId: row.id,
+        seq: row.seq,
+        partId: id,
         partIndex: message.parts.length - 1,
         createdAt: row.createdAt,
       });
@@ -589,7 +615,15 @@ export async function runnerMessages(
       run.status === 'failed'
     )
       outcomes.set(String(run.id), run.status);
-  return runnerUIMessages(rows, reasoning, outcomes);
+  const defaultEffortRuns = new Set(
+    runs
+      .filter((run) => {
+        const last = toExecutions(run.executionHistory).at(-1);
+        return last?.dispatchedAt && last.effort === null;
+      })
+      .map((run) => String(run.id)),
+  );
+  return runnerUIMessages(rows, reasoning, outcomes, defaultEffortRuns);
 }
 
 /** Seed a bounded source page, then expand whole Runs and the intervening independent records. */

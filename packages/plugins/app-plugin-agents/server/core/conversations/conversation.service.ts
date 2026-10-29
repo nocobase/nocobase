@@ -594,34 +594,18 @@ export function createConversationService(
     agent: Agent,
     userId: string,
     selected: string | null | undefined,
-    saved: unknown,
   ): Promise<string | null> {
+    // Only an explicitly selected non-default value is a conversation preference.
     const preference =
-      selected === undefined
-        ? typeof saved === 'string'
-          ? saved
-          : null
-        : selected;
-    // Keep saved preferences while offline; the claiming runner validates its own report.
+      selected && selected !== agent.modelEntries[0]?.effort ? selected : null;
+    if (preference === null) return null;
     const options = await effortOptions(conn, agent, userId);
-    const effective = preference ?? agent.modelEntries[0]?.effort ?? null;
-    if (
-      options !== undefined &&
-      effective !== null &&
-      !options.includes(effective)
-    )
+    if (options !== undefined && !options.includes(preference))
       throw invalid(
         'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
-        {
-          reason: 'EFFORT_UNSUPPORTED',
-          effort: effective,
-          efforts: options,
-        },
+        { reason: 'EFFORT_UNSUPPORTED', effort: preference, efforts: options },
       );
-    return (
-      preference ??
-      (effective && options?.includes(effective) ? effective : null)
-    );
+    return preference;
   }
 
   async function canAnswer(
@@ -1407,10 +1391,10 @@ export function createConversationService(
         const preference =
           jsonObject(record.metadata).turnEffort ??
           jsonObject(record.metadata).effort;
-        const withEffort =
-          typeof preference === 'string'
-            ? { ...assembly, effort: preference }
-            : assembly;
+        const withEffort = {
+          ...assembly,
+          effort: typeof preference === 'string' ? preference : null,
+        };
         const config = runnerBinding(record.metadata)?.config;
         return config
           ? {
@@ -1699,20 +1683,17 @@ export function createConversationService(
         )
           throw conflict('This agent has no available execution environment.');
         turnEffort =
-          (typeof jsonObject(record.metadata).effort === 'string'
-            ? (jsonObject(record.metadata).effort as string)
-            : null) ??
-          agent.modelEntries[0]?.effort ??
-          null;
+          typeof jsonObject(record.metadata).turnEffort === 'string'
+            ? (jsonObject(record.metadata).turnEffort as string)
+            : null;
         if (!realtime.queue) {
           const effort = await validateEffort(
             unit.conn,
             agent,
             userId,
             request.effort,
-            switching ? null : jsonObject(record.metadata).effort,
           );
-          turnEffort = effort ?? agent.modelEntries[0]?.effort ?? null;
+          turnEffort = effort;
           if (
             effort !== (jsonObject(record.metadata).effort ?? null) ||
             turnEffort !== (jsonObject(record.metadata).turnEffort ?? null)
@@ -1956,7 +1937,6 @@ export function createConversationService(
           agent,
           userId,
           request.effort,
-          null,
         );
         const title =
           request.title === undefined

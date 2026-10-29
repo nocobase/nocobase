@@ -2,4 +2,4 @@
 '@nocobase/app-plugin-agents': patch
 ---
 
-Queue conversation messages with saved reasoning efforts while runtime capabilities are unknown, and validate the selected effort against the claiming runtime before execution.
+Use the coding tool default when conversation reasoning effort is unselected or runtime capabilities are unknown, retain only explicit non-default selections, and expose a display notice when a selected effort falls back to the tool default.

@@ -1089,8 +1089,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       entry = { ...entry, effort: assembly.effort };
       if (entry.effort) {
         const efforts = chatEffortCapabilities(entry, [runner]);
-        if (efforts === undefined) throw new NotForThisRunner();
-        if (!efforts.includes(entry.effort))
+        if (efforts === undefined) entry = { ...entry, effort: null };
+        else if (!efforts.includes(entry.effort))
           throw new Error(
             `The reasoning effort "${entry.effort}" is not supported by this runtime for the selected model.`,
           );
