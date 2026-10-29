@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Aggregate release tag, e.g. release-beta/2026-08-26.5
+        description: Aggregate release tag, e.g. nocobase-v3-beta/2026-08-26.5
         type: string
         required: true
 permissions:
