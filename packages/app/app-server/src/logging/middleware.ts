@@ -22,6 +22,50 @@ const defaultRequestHeaders = [
   'user-agent',
 ] as const;
 
+// Free text, opaque cursors and authentication parameters never enter request logs.
+const safeQueryParameters = new Set([
+  'limit',
+  'offset',
+  'page',
+  'pageSize',
+  'mode',
+  'view',
+  'status',
+  'statusKey',
+  'subjectKind',
+  'subjectId',
+  'agentId',
+  'runnerId',
+  'projectId',
+  'issueId',
+  'appId',
+  'environmentId',
+  'sort',
+  'direction',
+  'purpose',
+  'includeArchived',
+]);
+
+function safeQuery(context: Context): Record<string, string> {
+  const query: Record<string, string> = {};
+  const values = context.req.query();
+  for (const key of safeQueryParameters) {
+    const value = values[key];
+    if (value !== undefined) query[key] = value.slice(0, 100);
+  }
+  return query;
+}
+
+/** A transport hint for traffic analysis, never an authentication decision. */
+function callerOf(context: Context): string {
+  if (context.req.header('x-nocobase-runner-key')) return 'runner';
+  if (context.req.header('x-nocobase-run-token')) return 'agentRun';
+  if (context.req.header('x-nocobase-client') === 'cli') return 'cli';
+  if (context.req.header('x-api-key')) return 'apiKey';
+  if (context.req.header('cookie')) return 'browser';
+  return 'anonymous';
+}
+
 export interface RequestLoggerOptions {
   logger: Logger;
   app?: string;
@@ -50,7 +94,8 @@ export function requestLogger(
         req: {
           method,
           path,
-          query: context.req.query(),
+          query: safeQuery(context),
+          caller: callerOf(context),
           headers: selectHeaders(
             context,
             options.requestHeaders ?? defaultRequestHeaders,
@@ -141,9 +186,10 @@ function completionBindings(
       path,
       route: context.req.routePath,
       params: context.req.param(),
+      query: safeQuery(context),
+      caller: callerOf(context),
       ...(status >= 400
         ? {
-            query: context.req.query(),
             headers: selectHeaders(context, requestHeaders),
           }
         : {}),

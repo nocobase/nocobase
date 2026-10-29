@@ -53,7 +53,7 @@ describe('requestLogger', () => {
     );
     router.get('/users/:id', (context) => context.json({ ok: true }));
 
-    await router.request('/users/42?active=true', {
+    await router.request('/users/42?limit=20', {
       headers: {
         authorization: 'secret',
         'user-agent': 'vitest',
@@ -68,7 +68,8 @@ describe('requestLogger', () => {
         req: {
           method: 'GET',
           path: '/users/42',
-          query: { active: 'true' },
+          query: { limit: '20' },
+          caller: 'anonymous',
           headers: {
             'user-agent': 'vitest',
             'x-request-source': 'cli',
@@ -84,6 +85,8 @@ describe('requestLogger', () => {
           path: '/users/42',
           route: '/users/:id',
           params: { id: '42' },
+          query: { limit: '20' },
+          caller: 'anonymous',
         },
         res: expect.objectContaining({ status: 200 }),
         durationMs: expect.any(Number),
@@ -118,7 +121,7 @@ describe('requestLogger', () => {
       expect.objectContaining({
         level: 40,
         req: expect.objectContaining({
-          query: { reason: 'unknown' },
+          query: {},
           headers: { 'user-agent': 'test' },
         }),
         res: expect.objectContaining({ status: 404 }),
@@ -149,6 +152,68 @@ describe('requestLogger', () => {
 
     expect(output.records()).toEqual([]);
   });
+
+  it.each([200, 400, 500] as const)(
+    'bounds allowlisted query values and omits secrets at every log level (%s)',
+    async (status) => {
+      const output = createMemoryDestination();
+      const router = new Hono();
+      router.use(
+        '*',
+        requestLogger({ logger: createLogger({ level: 'debug' }, output) }),
+      );
+      router.get('/runs', (context) => context.json({}, status));
+      const query = new URLSearchParams({
+        subjectId: 'i'.repeat(1000),
+        limit: '20',
+        status: 'running',
+        token: 'token-value',
+        password: 'password-value',
+        q: 'private-search',
+        filter: '{"secret":"private-filter"}',
+        cursor: 'opaque-cursor',
+      });
+      await router.request(`/runs?${query}`, {
+        headers: { 'x-nocobase-run-token': 'run-secret' },
+      });
+      expect(output.records()).toHaveLength(2);
+      for (const record of output.records()) {
+        expect(record.req).toMatchObject({
+          query: { subjectId: 'i'.repeat(100), limit: '20', status: 'running' },
+          caller: 'agentRun',
+        });
+      }
+      expect(JSON.stringify(output.records())).not.toMatch(
+        /token-value|password-value|private-search|private-filter|opaque-cursor|run-secret/,
+      );
+    },
+  );
+
+  it.each([
+    [
+      { 'x-nocobase-runner-key': 'hidden', 'x-nocobase-run-token': 'hidden' },
+      'runner',
+    ],
+    [
+      { 'x-nocobase-run-token': 'hidden', 'x-nocobase-client': 'cli' },
+      'agentRun',
+    ],
+    [{ 'x-nocobase-client': 'cli', 'x-api-key': 'hidden' }, 'cli'],
+    [{ 'x-api-key': 'hidden', cookie: 'hidden' }, 'apiKey'],
+    [{ cookie: 'hidden' }, 'browser'],
+    [{}, 'anonymous'],
+  ])(
+    'classifies the caller without logging credentials (%j)',
+    async (headers, caller) => {
+      const output = createMemoryDestination();
+      const router = new Hono();
+      router.use('*', requestLogger({ logger: createLogger({}, output) }));
+      router.get('/', (context) => context.text('ok'));
+      await router.request('/', { headers });
+      expect(output.records()[0].req).toMatchObject({ caller });
+      expect(JSON.stringify(output.records())).not.toContain('hidden');
+    },
+  );
 });
 
 type MemoryDestination = DestinationStream & {
