@@ -512,3 +512,45 @@ it.each([false, true])(
     }
   },
 );
+
+it.each(['legacy', 'email', 'custom'] as const)(
+  'emits sender startup diagnostics once, including across repeated transaction bindings: %s',
+  async (source) => {
+    const warning = vi.fn();
+    const create = vi.spyOn(mailer, 'createMailTransport');
+    const fixture = await setup({
+      ...(source === 'legacy' ? {} : { email }),
+      passwordReset: { enabled: true, emailChannel: 'legacy' },
+      emailAndPassword: {
+        enabled: true,
+        ...(source === 'custom' ? { sendResetPassword: vi.fn() } : {}),
+      },
+      passwordResetServices: {
+        warning,
+        legacyChannels: { legacy: email },
+      },
+    });
+    const messages = warning.mock.calls.map(([message]) => message as string);
+    expect(messages).toHaveLength(source === 'custom' ? 2 : 1);
+    expect(messages[0]).toContain(
+      source === 'legacy' ? 'deprecated' : 'unused',
+    );
+    await fixture.connection.transaction(async (transaction) => {
+      const bound = fixture.auth.forConnection(transaction);
+      try {
+        for (let index = 0; index < 5; index++) {
+          const rebound = bound.forConnection(transaction);
+          expect(rebound.passwordResetAvailable()).toBe(true);
+          await rebound.close();
+        }
+      } finally {
+        await bound.close();
+      }
+    });
+    expect(fixture.auth.passwordResetAvailable()).toBe(true);
+    expect(warning.mock.calls.map(([message]) => message as string)).toEqual(
+      messages,
+    );
+    expect(create).not.toHaveBeenCalled();
+  },
+);

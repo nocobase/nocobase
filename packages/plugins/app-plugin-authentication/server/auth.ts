@@ -687,7 +687,15 @@ export class Auth {
 
   /** Binds trusted server operations to a caller-owned connection or transaction. */
   forConnection(connection: DatabaseConnection): Auth {
-    const bound = new Auth({ ...this.options, connection });
+    const bound = new Auth({
+      ...this.options,
+      connection,
+      passwordResetServices: {
+        ...this.options.passwordResetServices,
+        // Startup diagnostics belong to the main instance, not transaction bindings.
+        warning: undefined,
+      },
+    });
     bound.scopedCredentialChecks = this.scopedCredentialChecks;
     bound.credentialResolvers = this.credentialResolvers;
     bound.userInitializers = this.userInitializers;
