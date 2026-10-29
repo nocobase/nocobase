@@ -460,14 +460,22 @@ function Highlights({
 }: {
   readonly overview: FoundationOverview;
   readonly onSelect: (key: FoundationCapabilityKey) => void;
-}): ReactElement {
+}): ReactElement | null {
   const { t, locale } = useFoundationTranslation();
+  const highlights = FOUNDATION_HIGHLIGHTS.filter(({ capability, metric }) =>
+    overview.capabilities.some(
+      (entry) =>
+        entry.key === capability &&
+        entry.metrics.some(
+          (item) => item.key === metric && item.value !== null,
+        ),
+    ),
+  );
+  if (highlights.length === 0) return null;
   return (
     <section aria-label={t('page.highlightsLabel')}>
       <ul className='grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6'>
-        {FOUNDATION_HIGHLIGHTS.filter(({ capability }) =>
-          overview.capabilities.some((entry) => entry.key === capability),
-        ).map(({ capability: key, metric: metricKey }) => {
+        {highlights.map(({ capability: key, metric: metricKey }) => {
           const capability = overview.capabilities.find(
             (entry) => entry.key === key,
           );
@@ -493,17 +501,19 @@ function Highlights({
                   )}
                   title={
                     metric && !metric.complete && metric.value !== null
-                      ? t('page.lowerBound')
+                      ? t('page.partial')
                       : undefined
                   }
                 >
-                  {value === undefined
-                    ? capability?.status === 'unused' ||
-                      capability?.status === 'needsSetup'
-                      ? t(`status.${capability.status}`)
-                      : t('page.unavailable')
+                  {key === 'dataModeling'
+                    ? t(
+                        metricKey === 'businessCollections'
+                          ? 'page.identified'
+                          : 'page.counted',
+                        { value },
+                      )
                     : metric && !metric.complete
-                      ? `≥ ${value}`
+                      ? t('page.counted', { value })
                       : value}
                 </span>
                 <span className='text-sm text-muted-foreground'>
@@ -613,7 +623,14 @@ function CapabilityDetail({
         )
       : undefined;
   const otherFacts = capability.facts.filter(
-    (fact) => fact !== collectionSummary,
+    (fact) =>
+      fact !== collectionSummary && fact.code !== 'collectionOwnershipUnknown',
+  );
+  const ownershipNote = capability.facts.some(
+    (fact) => fact.code === 'collectionOwnershipUnknown',
+  );
+  const visibleMetrics = capability.metrics.filter(
+    (metric) => metric.value !== null,
   );
   const unreadable = capability.issues
     .filter((issue) => issue.code === 'SOURCE_UNREADABLE' && issue.source)
@@ -646,6 +663,12 @@ function CapabilityDetail({
         <p className='text-sm text-muted-foreground'>
           {t('dynamic.pendingDescription')}
         </p>
+      ) : null}
+      {ownershipNote ? (
+        <details className='text-sm text-muted-foreground'>
+          <summary>{t('inventory.recognitionNotes')}</summary>
+          <p>{t('facts.collectionOwnershipUnknown')}</p>
+        </details>
       ) : null}
       {capability.completeness !== 'complete' ? (
         <div
@@ -779,13 +802,13 @@ function CapabilityDetail({
         </div>
 
         <div className='flex flex-col gap-4'>
-          {capability.metrics.length > 0 ? (
+          {visibleMetrics.length > 0 ? (
             <div className='flex flex-col gap-2'>
               <h3 className='text-sm text-muted-foreground'>
                 {t('detail.liveData')}
               </h3>
               <ul className='grid grid-cols-2 gap-2'>
-                {capability.metrics.map((metric) => {
+                {visibleMetrics.map((metric) => {
                   const value = formatMetricValue(metric, locale);
                   return (
                     <li key={metric.key} className='rounded-lg bg-muted p-3'>
@@ -795,23 +818,22 @@ function CapabilityDetail({
                           value === undefined &&
                             'text-sm font-normal text-muted-foreground',
                         )}
-                        title={
-                          !metric.complete && value !== undefined
-                            ? t(
-                                capability.key === 'files'
-                                  ? 'page.partial'
-                                  : 'page.lowerBound',
-                              )
-                            : undefined
-                        }
+                        title={!metric.complete ? t('page.partial') : undefined}
                       >
-                        {value === undefined
-                          ? t('page.unavailable')
-                          : metric.complete
-                            ? value
-                            : capability.key === 'files'
-                              ? t('page.counted', { value })
-                              : `≥ ${value}`}
+                        {capability.key === 'dataModeling'
+                          ? t(
+                              [
+                                'businessCollections',
+                                'views',
+                                'systemCollections',
+                              ].includes(metric.key)
+                                ? 'page.identified'
+                                : 'page.counted',
+                              { value },
+                            )
+                          : !metric.complete
+                            ? t('page.counted', { value })
+                            : value}
                       </p>
                       <p className='text-xs text-muted-foreground'>
                         {word(`metrics.${metric.key}`)}

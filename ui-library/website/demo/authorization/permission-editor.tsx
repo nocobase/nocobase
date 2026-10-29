@@ -147,7 +147,12 @@ const CATALOG: readonly {
     description:
       'Choose business pages. System settings and their actions are controlled under Configuration permissions.',
     navigation: [
-      { id: 'dashboard', label: 'Dashboard', rowId: 'page-dashboard' },
+      {
+        id: 'dashboard',
+        label: 'Dashboard',
+        rowId: 'page-dashboard',
+        path: '/dashboard',
+      },
       {
         id: 'sales-menu',
         label: 'Sales',
@@ -156,12 +161,19 @@ const CATALOG: readonly {
             id: 'pipeline-menu',
             label: 'Pipeline',
             rowId: 'page-pipeline',
+            path: '/sales/pipeline',
             children: [
-              { id: 'deals-menu', label: 'Deals', rowId: 'page-deals' },
+              {
+                id: 'deals-menu',
+                label: 'Deals',
+                rowId: 'page-deals',
+                path: '/sales/pipeline/deals',
+              },
               {
                 id: 'contacts-menu',
                 label: 'Contacts',
                 rowId: 'page-contacts',
+                path: '/sales/pipeline/contacts',
               },
             ],
           },

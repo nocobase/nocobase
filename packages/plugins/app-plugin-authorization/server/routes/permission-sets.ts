@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { submitSettingsMutation } from '../extension/submission.js';
 import {
   ApiError,
   apiErrorResponse,
@@ -31,6 +33,7 @@ import {
   AuthorizationInputError,
   createRouteHandler,
   createSettingsRouter,
+  requireSettings,
   settingsAccess,
 } from '../extension/http.js';
 import { assertDatabaseScope } from '../database/scope.js';
@@ -70,7 +73,7 @@ export interface PermissionSetSummary extends PermissionSet {
 
 export const PERMISSION_SETS_SETTINGS = 'authorization.permission-sets';
 
-type Api = Omit<PermissionSetsApi, 'withTransaction'>;
+type Api = PermissionSetsApi;
 
 /** Every `/permissionSets` route, gated by `settings:authorization.permission-sets`. */
 export function createPermissionSetHandler(
@@ -179,16 +182,37 @@ export function createPermissionSetHandler(
         ),
       },
     }),
+    apiValidator(
+      'header',
+      z.object({
+        'idempotency-key': z
+          .string()
+          .optional()
+          .describe(
+            'Required when operation receipts are strict; reuse the original key and input when retrying.',
+          ),
+      }),
+    ),
     apiValidator('json', CreatePermissionSetBody),
     async (context) => {
       const input = permissionSetInput(context.req.valid('json'));
       validateGrants(host, input);
       await validateWriteGrants(host, input.grants);
       api.assertWritable(input.key, 'create');
-      return context.json(
-        { data: summarize(api, await api.create(input)) },
-        201,
+      const data = await submitSettingsMutation(
+        input,
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          return summarize(bound, await bound.create(input));
+        },
+        () =>
+          requireSettings(
+            context.env.authorization,
+            PERMISSION_SETS_SETTINGS,
+            'read',
+          ),
       );
+      return context.json({ data }, 201);
     },
   );
   routes.get(
@@ -352,39 +376,61 @@ export function createPermissionSetHandler(
       },
     }),
     apiValidator('param', PermissionSetParams),
+    apiValidator(
+      'header',
+      z.object({
+        'idempotency-key': z
+          .string()
+          .optional()
+          .describe(
+            'Required when operation receipts are strict; reuse the original key and input when retrying.',
+          ),
+      }),
+    ),
     apiValidator('json', UpdatePermissionSetBody),
     async (context) => {
       const { key } = context.req.valid('param');
-      const existing = await api.get(key);
-      if (!existing) throw notFound(key);
       const changes = context.req.valid('json');
-      const input = permissionSetInput({
-        key: changes.key ?? existing.key,
-        title: changes.title === undefined ? existing.title : changes.title,
-        grants: changes.grants ?? existing.grants,
-      });
-      validateGrants(host, input);
-      // Stored grants are checked only when the body replaces them, so a title change still saves a set whose grants a
-      // later schema change invalidated; startup reports those.
-      if (changes.grants !== undefined)
-        await validateWriteGrants(host, input.grants);
-      api.assertWritable(key, 'update');
-      if (input.key !== key)
-        for (const candidate of [key, input.key]) {
-          const protection = api.protection(candidate);
-          if (protection)
-            throw new PermissionSetProtectedError(
-              candidate,
-              protection.owner,
-              'update',
-            );
-        }
-      return context.json({
-        data: summarize(
-          api,
-          await api.update(key, input, changes.expectedRevision),
-        ),
-      });
+      const data = await submitSettingsMutation(
+        changes,
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          const existing = await bound.get(key);
+          if (!existing) throw notFound(key);
+          const input = permissionSetInput({
+            key: changes.key ?? existing.key,
+            title: changes.title === undefined ? existing.title : changes.title,
+            grants: changes.grants ?? existing.grants,
+          });
+          validateGrants(host, input);
+          // Stored grants are checked only when the body replaces them, so a title change still saves a set whose grants a
+          // later schema change invalidated; startup reports those.
+          if (changes.grants !== undefined)
+            await validateWriteGrants(host, input.grants);
+          api.assertWritable(key, 'update');
+          if (input.key !== key)
+            for (const candidate of [key, input.key]) {
+              const protection = api.protection(candidate);
+              if (protection)
+                throw new PermissionSetProtectedError(
+                  candidate,
+                  protection.owner,
+                  'update',
+                );
+            }
+          return summarize(
+            bound,
+            await bound.update(key, input, changes.expectedRevision),
+          );
+        },
+        () =>
+          requireSettings(
+            context.env.authorization,
+            PERMISSION_SETS_SETTINGS,
+            'read',
+          ),
+      );
+      return context.json({ data });
     },
   );
   routes.delete(
@@ -409,11 +455,28 @@ export function createPermissionSetHandler(
       },
     }),
     apiValidator('param', PermissionSetParams),
+    apiValidator(
+      'header',
+      z.object({ 'idempotency-key': z.string().optional() }),
+    ),
     async (context) => {
       const { key } = context.req.valid('param');
       api.assertWritable(key, 'delete');
-      if (!(await api.get(key))) throw notFound(key);
-      await api.delete(key);
+      await submitSettingsMutation(
+        { key },
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          if (!(await bound.get(key))) throw notFound(key);
+          await bound.delete(key);
+          return null;
+        },
+        () =>
+          requireSettings(
+            context.env.authorization,
+            PERMISSION_SETS_SETTINGS,
+            'read',
+          ),
+      );
       return context.body(null, 204);
     },
   );

@@ -5,6 +5,19 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  listFeedback: {
+    loading: '加载中',
+    empty: '暂无数据',
+    noResults: '无结果',
+    forbidden: '无权访问',
+    unauthenticated: '会话已过期',
+    failed: '列表加载失败',
+    refreshFailed: '刷新失败，仍显示旧数据',
+    retry: '重试',
+    retrying: '正在重试…',
+    clear: '清空筛选',
+    signIn: '登录',
+  },
   flowDiagram: {
     controls: '流程图控制',
     fitView: '适应画布',
@@ -50,6 +63,14 @@ const systemZhCN: SystemResource = {
   ...deviceApprovalZhCN,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
   ...inboxZhCN,
+  // Shared form wording overrides the defaults included by composed blocks.
+  formFeedback: {
+    field: '此字段的值未通过校验，请检查并修改后重试。',
+    invalid: '请检查标记的字段后重试。',
+    failed: '保存失败，已保留您的输入，请重试。',
+    network: '无法连接，请检查网络后重试。已保留您的输入。',
+    denied: '当前权限无法提交此表单。已保留您的输入。',
+  },
   // The UI Library component of the header's inbox button.
   'inboxButton.title': '收件箱',
   'inboxButton.pending': '收件箱，{{count}} 项待处理',
@@ -366,7 +387,7 @@ const systemZhCN: SystemResource = {
     back: '返回',
   },
   dataTable: {
-    noResults: '暂无数据。',
+    noResults: '无结果',
     sortAscending: '升序',
     sortDescending: '降序',
     hideColumn: '隐藏',

@@ -108,7 +108,7 @@ describe('agents built from runner reports', () => {
       source: 'runner',
     });
     expect(agent!.id).toBe(runnerAgentId('claude', 'claude-sonnet-5'));
-    // Not pending: already in the roster.
+    // Already enabled and in the roster.
     expect(await h.services.roster(h.services.tx.read(), 'alice')).toHaveLength(
       1,
     );
@@ -141,7 +141,7 @@ describe('agents built from runner reports', () => {
   const damagedAgents = [
     { name: 'deleted marker', deleted: true, status: 'enabled' },
     { name: 'archive marker', archived: true, status: 'disabled' },
-    { name: 'empty model entries', empty: true, status: 'pending' },
+    { name: 'empty model entries', empty: true, status: 'disabled' },
     {
       name: 'all three corruptions',
       deleted: true,

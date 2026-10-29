@@ -1,4 +1,5 @@
 import systemSettingsRoutes from './pages/settings/routes.js';
+import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
   agentsRoute,
   modelsRoute,
@@ -21,6 +22,9 @@ import {
   Plug,
   Workflow,
   Settings,
+  BookOpen,
+  DatabaseZap,
+  UsersRound,
 } from 'lucide-react';
 import {
   defineAppRoutes,
@@ -28,6 +32,69 @@ import {
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  {
+    name: 'customer-contacts',
+    path: '/customer-contacts',
+    auth: 'required',
+    authz: {
+      resource: { type: 'page', id: 'customer-contacts' },
+      action: 'access',
+    },
+    navigation: { title: 'customerContacts.title', icon: UsersRound },
+    componentLoader: () => import('./pages/customer-contacts/index.js'),
+    children: [
+      {
+        name: 'customer-contacts-batch',
+        path: 'batch',
+        componentLoader: () => import('./pages/customer-contacts/batch.js'),
+      },
+      {
+        name: 'customer-contacts-detail',
+        path: ':customerId',
+        componentLoader: () => import('./pages/customer-contacts/detail.js'),
+        children: [
+          {
+            name: 'customer-contacts-edit',
+            path: 'edit',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+          {
+            name: 'customer-contacts-new-contact',
+            path: 'contacts/new',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+          {
+            name: 'customer-contacts-edit-contact',
+            path: 'contacts/:contactId/edit',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'skill-projects',
+    path: '/skill-projects',
+    auth: 'required',
+    authz: {
+      resource: { type: 'page', id: 'skill-projects' },
+      action: 'access',
+    },
+    navigation: { title: 'skillProjects.title', icon: FilePenLine },
+    componentLoader: () => import('./pages/skill-projects/index.js'),
+    children: [
+      {
+        name: 'skill-projects-new',
+        path: 'new',
+        componentLoader: () => import('./pages/skill-projects/edit.js'),
+      },
+      {
+        name: 'skill-projects-edit',
+        path: ':projectId/edit',
+        componentLoader: () => import('./pages/skill-projects/edit.js'),
+      },
+    ],
+  },
   {
     name: 'systemManagement',
     children: [],
@@ -37,6 +104,26 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       order: 100,
     },
     breadcrumb: { title: 'workflows.systemManagement' },
+  },
+  {
+    ...knowledgeDefinition(),
+    componentLoader: () => import('./pages/knowledge/index.js'),
+    parent: 'systemManagement',
+    navigation: { title: 'knowledge.title', icon: BookOpen },
+    breadcrumb: { title: 'knowledge.title' },
+  },
+  {
+    name: 'knowledgeIndexing',
+    path: '/knowledge/indexing',
+    parent: 'systemManagement',
+    auth: 'required',
+    authz: {
+      resource: { type: 'settings', id: 'kb.indexing' },
+      action: 'read',
+    },
+    navigation: { title: 'knowledge.indexing', icon: DatabaseZap },
+    breadcrumb: { title: 'knowledge.indexing' },
+    componentLoader: () => import('./pages/knowledge/indexing.js'),
   },
   {
     name: 'workflows',

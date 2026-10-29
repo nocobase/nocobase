@@ -187,6 +187,11 @@ export interface RunPrompt {
   /** `resume` only when the runner holds `resumeSessionId` in the same working directory; otherwise start fresh. */
   readonly session: 'fresh' | 'resume';
   readonly resumeSessionId?: string;
+  /**
+   * With `resume`: what a new session needs to know of what came before (the subject's recent history), which the
+   * runner gives the tool when the kept session turns out not to be resumable after all. Absent from older servers.
+   */
+  readonly recoveryContext?: string;
 }
 
 export const RunPromptSchema: z.ZodType<RunPrompt> = z.object({
@@ -194,6 +199,7 @@ export const RunPromptSchema: z.ZodType<RunPrompt> = z.object({
   turn: z.string(),
   session: z.enum(['fresh', 'resume']),
   resumeSessionId: z.string().optional(),
+  recoveryContext: z.string().optional(),
 });
 
 /** The placeholder in `RunPrompt.system` the runner replaces with its notes on the working directories. */

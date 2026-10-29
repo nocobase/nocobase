@@ -2,6 +2,10 @@
  * Issue reads for the browser: a page of the list, the board, one issue in detail, and older activities. Everything is
  * limited to what the viewer may see (`issue.access.ts`).
  */
+import {
+  hierarchySource,
+  type IssueHierarchySource,
+} from './issue.hierarchy-source.js';
 import type {
   DatabaseConnection,
   FilterBuilder,
@@ -14,6 +18,7 @@ import {
   ISSUE_PAGE_LIMIT,
   type ActivityPage,
   type Issue,
+  type IssueSummary,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -21,7 +26,7 @@ import {
   type IssuePage,
   type StatusDefinition,
 } from '../../../shared/issues.js';
-import type { Viewer } from '../../access/viewer.js';
+import { requireAction, type Viewer } from '../../access/viewer.js';
 import {
   AGENT_VIA_KIND,
   readActivities,
@@ -35,8 +40,10 @@ import {
   deletedIssues,
   requireVisible,
   visibleIssues,
+  visibleIssueIds,
 } from './issue.access.js';
 import {
+  findIssueSummaries,
   findIssue,
   findIssueRefs,
   findIssueRow,
@@ -53,11 +60,30 @@ import { FIXED_STATUSES } from '../../../shared/statuses.js';
 import { oneOf } from '../../kernel/db.js';
 
 export interface IssueQueries {
+  /** At most 100 IDs or identifiers, filtered by current visibility in one read. */
+  summaries(viewer: Viewer, refs: readonly string[]): Promise<IssueSummary[]>;
+  /** Reauthorize explicit ids without hydrating issue rows, children or dependency counts. */
+  visibleIds(
+    viewer: Viewer,
+    ids: readonly string[],
+  ): Promise<ReadonlySet<string>>;
+  /** Authorized relations for database-side tree grouping and exact statistics. */
+  hierarchySource(
+    viewer: Viewer,
+    query: IssueListQuery,
+  ): Promise<IssueHierarchySource>;
   /** The fixed statuses, in order. */
   statuses(): StatusDefinition[];
   page(viewer: Viewer, query: IssueListQuery): Promise<IssuePage>;
-  /** Complete live authorized hierarchy and filter matches; no list-page or matching cap. */
-  hierarchy(viewer: Viewer, query: IssueListQuery): Promise<IssueHierarchy>;
+  /** Complete authorized hierarchy by default; optionally unfinished records, explicit inclusions and visible ancestors. */
+  hierarchy(
+    viewer: Viewer,
+    query: IssueListQuery,
+    options?: {
+      readonly unfinishedOnly?: boolean;
+      readonly includeIds?: readonly string[];
+    },
+  ): Promise<IssueHierarchy>;
   /**
    * Hydrates a bounded set of IDs (at most `HIERARCHY_ITEMS_MAX`) after independently rechecking visibility, in a fixed
    * number of queries. `readableIds`, the ids `hierarchy` answered for the same viewer, saves reading them again for the
@@ -350,18 +376,128 @@ function unknownStatus(key: string): StatusDefinition {
 }
 
 export function createIssueQueries(deps: QueryDeps): IssueQueries {
+  /** The caller has already checked visibility for this issue in the same read. */
+  async function activityPage(
+    conn: DatabaseConnection,
+    issueId: string,
+    viewer: Viewer,
+    options: Parameters<IssueQueries['activities']>[2],
+  ): Promise<ActivityPage> {
+    const limit = pageLimit(
+      options.limit,
+      ACTIVITY_PAGE_LIMIT.default,
+      ACTIVITY_PAGE_LIMIT.max,
+    );
+    const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
+    const rows = await readActivities(
+      conn,
+      issueId,
+      limit,
+      cursor
+        ? { createdAt: String(cursor.createdAt), id: String(cursor.id) }
+        : undefined,
+    );
+    const result = pageOf(rows, limit, (row) => ({
+      createdAt: row.createdAt,
+      id: row.id,
+    }));
+    const name = await deps.kinds.nameAll(conn, [
+      ...result.rows.map((row) => ({ type: row.actorType, id: row.actorId })),
+      ...tracedAgents(result.rows),
+    ]);
+    return {
+      // Oldest first, as the timeline reads.
+      data: result.rows.reverse().map((row) => ({
+        id: row.id,
+        actorType: row.actorType,
+        actorId: row.actorId,
+        actorName: name(row.actorType, row.actorId),
+        action: row.action,
+        ...splitVia(
+          row.details,
+          (agentId) => name(AGENT_VIA_KIND, agentId),
+          viewer,
+        ),
+        createdAt: row.createdAt,
+      })),
+      nextCursor: result.nextCursor,
+    };
+  }
+
   return {
-    async hierarchy(viewer, query) {
+    summaries: (viewer, refs) => {
+      requireAction(viewer, 'pm.issues', 'view', 'You may not view issues.');
+      return findIssueSummaries(deps.tx.read(), (f) =>
+        f.and([
+          visibleIssues(f, viewer),
+          f.or([oneOf(f, 'id', refs), oneOf(f, 'identifier', refs)]),
+        ]),
+      );
+    },
+    visibleIds: (viewer, ids) => visibleIssueIds(deps.tx.read(), viewer, ids),
+    hierarchySource: (viewer, query) =>
+      hierarchySource(deps.tx.read(), viewer, query),
+    async hierarchy(viewer, query, options) {
       const conn = deps.tx.read();
       const issues = await hierarchyRecords(conn, (f) =>
-        visibleIssues(f, viewer),
+        f.and([
+          visibleIssues(f, viewer),
+          ...(options?.unfinishedOnly
+            ? [
+                options.includeIds?.length
+                  ? f.or([
+                      f.and(
+                        FINISHED_KEYS.map((key) =>
+                          f.string('statusKey').ne(key),
+                        ),
+                      ),
+                      oneOf(f, 'id', options.includeIds),
+                    ])
+                  : f.and(
+                      FINISHED_KEYS.map((key) => f.string('statusKey').ne(key)),
+                    ),
+              ]
+            : []),
+        ]),
       );
+      if (options?.unfinishedOnly) {
+        const known = new Set(issues.map((issue) => issue.id));
+        let layer = issues;
+        while (layer.length) {
+          const parents = [
+            ...new Set(
+              layer.flatMap((issue) =>
+                issue.parentIssueId && !known.has(issue.parentIssueId)
+                  ? [issue.parentIssueId]
+                  : [],
+              ),
+            ),
+          ];
+          if (!parents.length) break;
+          // Cut a path at an invisible parent, as the complete authorized hierarchy does.
+          layer = await hierarchyRecords(conn, (f) =>
+            f.and([visibleIssues(f, viewer), oneOf(f, 'id', parents)]),
+          );
+          for (const issue of layer) known.add(issue.id);
+          issues.push(...layer);
+        }
+      }
       const exact = exactMatcher(query);
       const matches = exact
         ? issues.filter(exact)
-        : await hierarchyRecords(
-            conn,
-            listFilter(viewer, { ...query, deleted: false }),
+        : await hierarchyRecords(conn, (f) =>
+            f.and([
+              listFilter(viewer, { ...query, deleted: false })(f),
+              ...(options?.unfinishedOnly
+                ? [
+                    oneOf(
+                      f,
+                      'id',
+                      issues.map((issue) => issue.id),
+                    ),
+                  ]
+                : []),
+            ]),
           );
       return {
         issues,
@@ -476,7 +612,7 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         ? await findIssue(conn, issue.parentIssueId)
         : undefined;
       const catalog = deps.statuses.catalog();
-      const activities = await this.activities(viewer, issue.id, {});
+      const activities = await activityPage(conn, issue.id, viewer, {});
       const threads = await deps.extras().threads(conn, issue, viewer);
       return {
         ...item,
@@ -555,45 +691,7 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
     async activities(viewer, idOrKey, options) {
       const conn = deps.tx.read();
       const issue = await requireVisible(conn, viewer, idOrKey);
-      const limit = pageLimit(
-        options.limit,
-        ACTIVITY_PAGE_LIMIT.default,
-        ACTIVITY_PAGE_LIMIT.max,
-      );
-      const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
-      const rows = await readActivities(
-        conn,
-        issue.id,
-        limit,
-        cursor
-          ? { createdAt: String(cursor.createdAt), id: String(cursor.id) }
-          : undefined,
-      );
-      const result = pageOf(rows, limit, (row) => ({
-        createdAt: row.createdAt,
-        id: row.id,
-      }));
-      const name = await deps.kinds.nameAll(conn, [
-        ...result.rows.map((row) => ({ type: row.actorType, id: row.actorId })),
-        ...tracedAgents(result.rows),
-      ]);
-      return {
-        // Oldest first, as the timeline reads.
-        data: result.rows.reverse().map((row) => ({
-          id: row.id,
-          actorType: row.actorType,
-          actorId: row.actorId,
-          actorName: name(row.actorType, row.actorId),
-          action: row.action,
-          ...splitVia(
-            row.details,
-            (agentId) => name(AGENT_VIA_KIND, agentId),
-            viewer,
-          ),
-          createdAt: row.createdAt,
-        })),
-        nextCursor: result.nextCursor,
-      };
+      return activityPage(conn, issue.id, viewer, options);
     },
   };
 }

@@ -1,5 +1,17 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.16
+
+### Minor Changes
+
+- 22748f7: A message sent while a runner conversation's agent works is no longer refused as busy: `POST /api/agents/conversations/{conversationId}/queue` (`conversation message queue`) joins it to the run at work, which the runner steers into the running turn when its tool can and takes as the next turn otherwise, and `POST /api/agents/conversations/{conversationId}/messages/{messageId}/withdraw` takes it back while its runner has not taken it. A queued message carries `metadata.queue` (`queued`, `withdrawn` or `unanswered`), and the answer to it is its own response. The agent's todo list shows as a `data-plan` part, from Codex's `turn/plan/updated` and ACP plan updates; conversation usage adds `costUsd` from the cost Claude Code, Pi and OpenCode report. A live runner response opens at once and says where it stands before its first output (`data-phase`: `waiting`, `starting`, `thinking`).
+
+  Runs respond faster. Claude Code starts with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` unless the runner is started with `NOCOBASE_RUNNER_CLAUDE_NONESSENTIAL_TRAFFIC=1` or the run sets the variable itself. The events answer carries input that arrived for the run (`EventsResponse.inputs`, absent from older servers), so it reaches the agent with the next events rather than the next status poll, and tool steps, input, status, usage and error events are sent as they happen instead of at the next spool interval.
+
+- 22748f7: A conversation no longer loses its context when its kept tool session cannot be resumed. When the brief changed since the session was kept, the claim starts a new session with the conversation's recent history, as a first one gets; when it resumes, the payload carries `prompt.recoveryContext` (that history), which the runner gives a new session should the kept one be gone on its machine. A subject's per-turn rules can now change without ending the kept session (`ConversationRuleLines.turn`).
+
+  `DELETE /api/agents/conversations/{conversationId}` (`conversation delete`) deletes the owner's conversation for good: its open runs are cancelled, its messages, files (and their stored bytes), links and kept sessions are deleted, its inbox notices are settled, and runners remove its working directories and session files on their next workspace report. Conversations archived longer than `agents.conversations.archivedRetentionDays` (30 by default, 0 keeps them) are deleted the same way by a daily cleanup.
+
 ## 0.1.0-beta.15
 
 ### Patch Changes

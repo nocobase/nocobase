@@ -11,9 +11,13 @@ const sources: readonly MigrationSource[] = [
   },
 ];
 
-describeMigration('202610290002_ag_add_runner_tool_refresh', {
+describeMigration('202611070002_ag_add_runner_tool_refresh', {
   sources,
   up: async ({ expectCollection }) => {
+    await expectCollection('agConversations').toHaveField('projectId', {
+      type: 'string',
+      nullable: true,
+    });
     await expectCollection('agConversations').toHaveField('showInChatList', {
       type: 'boolean',
       nullable: false,
@@ -40,6 +44,10 @@ describeMigration('202610290002_ag_add_runner_tool_refresh', {
     });
   },
   down: async ({ expectCollection }) => {
+    await expectCollection('agConversations').toHaveField('projectId', {
+      type: 'string',
+      nullable: true,
+    });
     await expectCollection('agConversations').toHaveField('showInChatList', {
       type: 'boolean',
       nullable: false,

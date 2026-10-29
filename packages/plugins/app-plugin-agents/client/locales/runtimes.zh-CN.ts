@@ -304,10 +304,13 @@ const runtimesZhCN: RuntimesLocale = {
     nodeRequired:
       '主机需要安装 Node.js 24 或更高版本（可用 node --version 查看）。未安装时命令会停止并说明如何安装。',
     installed: '已经装好 nocobase-runner？改为注册它：',
-    prompt: '提示词',
-    manual: '手动安装',
+    manual: '或者手动安装',
+    promptTitle: '让 Agent 来安装',
+    promptCopy: '复制给 Agent 的提示词',
+    promptShow: '查看提示词',
+    promptHide: '收起提示词',
     promptHint:
-      '把下面的完整提示词复制给目标机器上的 Agent（Claude Code、Codex 等）。窄屏可滚动弹窗阅读全部步骤。其中包含一次性凭证，请只交给该 Agent。',
+      '把这段提示词复制给目标机器上的 Agent（Claude Code、Codex 等），它会替你完成下面的步骤。其中包含一次性凭证，请只交给该 Agent。',
     windowsPowerShell: '1. 安装 WSL：在 PowerShell 执行，然后重启 Windows：',
     windowsUbuntu:
       '2. 打开 Ubuntu，执行下面的 Linux 命令。Node.js 和编码工具都安装在 WSL Ubuntu 里。',

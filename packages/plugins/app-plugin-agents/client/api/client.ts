@@ -18,8 +18,6 @@ import type {
   AgentView,
   AvailableModelGroupsPage,
   AvailableModelsPage,
-  CleanupCandidatesPage,
-  CleanupGroupsPage,
   ModelAvailabilityStatus,
   RunnerAgentCreateInput,
   UserRef,
@@ -190,14 +188,6 @@ export class AgentsApi {
     return this.list('users');
   }
 
-  /** Every agent discovered from runners, as the Agent page shows it to the caller. */
-  public setIgnored(
-    groups: readonly { key: string; expectedRevision: number }[],
-    ignored: boolean,
-  ): Promise<unknown> {
-    return this.send('discoveryPreferences', 'PUT', { groups, ignored });
-  }
-
   public agents(): Promise<AgentView[]> {
     return this.list('');
   }
@@ -234,37 +224,6 @@ export class AgentsApi {
   /** Creates and enables an agent for a tool and model from the available models list. */
   public createRunnerAgent(input: RunnerAgentCreateInput): Promise<Agent> {
     return this.send('runnerAgents', 'POST', input);
-  }
-
-  /** One row per tool with cleanup candidates: agents nobody enabled and that never ran. */
-  public cleanupGroups(q?: string): Promise<CleanupGroupsPage> {
-    return this.api.request<CleanupGroupsPage>({
-      path: pathOf('cleanupCandidates'),
-      query: cleanQuery({ q }),
-    });
-  }
-
-  /** One tool's cleanup candidates, a page at a time. */
-  public cleanupRows(
-    tool: AgentTool,
-    filter: {
-      readonly q?: string;
-      readonly page?: number;
-      readonly pageSize?: number;
-    } = {},
-  ): Promise<CleanupCandidatesPage> {
-    return this.api.request<CleanupCandidatesPage>({
-      path: pathOf('cleanupCandidates'),
-      query: cleanQuery({ tool, ...filter }),
-    });
-  }
-
-  /** Removes the named cleanup candidates; anything no longer eligible is reported back skipped, not removed. */
-  public cleanup(agentIds: readonly string[]): Promise<{
-    readonly removed: readonly string[];
-    readonly skipped: readonly string[];
-  }> {
-    return this.send('cleanup', 'POST', { agentIds });
   }
 
   public agent(agentId: string): Promise<AgentView> {

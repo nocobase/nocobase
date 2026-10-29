@@ -93,6 +93,8 @@ import { ProposeFileDialog } from './propose-file.js';
 export type { DocMode } from '../hooks/use-view-state.js';
 
 export interface DocPaneProps {
+  /** Availability already read by the containing knowledge view. */
+  readonly proposalsEnabled?: boolean;
   readonly docId: string;
   /** Shown in another space's view, which inherits it: read-only here. */
   readonly inherited: boolean;
@@ -447,6 +449,7 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const { docId, inherited, mode, version } = props;
   const doc = useKnowledgeDoc(docId);
+  const proposalsEnabled = props.proposalsEnabled !== false;
   const old = useKnowledgeVersion(docId, version);
   const api = useKnowledgeApi();
   const notify = useNotify();
@@ -492,7 +495,13 @@ export function DocPane(props: DocPaneProps): ReactElement {
         <Skeleton className='h-40 w-full' />
       </div>
     );
-  const current = doc.data;
+  const current = proposalsEnabled
+    ? doc.data
+    : {
+        ...doc.data,
+        pendingProposals: 0,
+        access: { ...doc.data.access, propose: false },
+      };
   const live = !current.archivedAt;
   const editable = current.access.edit && !inherited;
   // Someone who may propose but not edit proposes changes instead.

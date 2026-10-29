@@ -182,3 +182,74 @@ it('marks a change of project, parent or executor as moving the issue', async ()
     true,
   ]);
 });
+
+it('limits hierarchy records to unfinished issues, explicit issues and contiguous visible ancestors', async () => {
+  const h = await harness();
+  const parent = await h.services.issues.create(admin(h), {
+    title: 'Finished parent',
+  });
+  await move(h, parent, 'done');
+  const child = await h.services.issues.create(admin(h), {
+    title: 'Unfinished child',
+    parentIssueId: parent.id,
+  });
+  const followed = await h.services.issues.create(admin(h), {
+    title: 'Finished explicit issue',
+  });
+  await move(h, followed, 'done');
+  const historical = await h.services.issues.create(admin(h), {
+    title: 'Other history',
+  });
+  await move(h, historical, 'cancelled');
+  const result = await h.services.issueQueries.hierarchy(
+    admin(h),
+    {},
+    { unfinishedOnly: true, includeIds: [followed.id] },
+  );
+  expect(result.issues.map((issue) => issue.id).sort()).toEqual(
+    [parent.id, child.id, followed.id].sort(),
+  );
+  expect(
+    (await h.services.issueQueries.hierarchy(admin(h), {})).issues,
+  ).toHaveLength(4);
+  expect(
+    (
+      await h.services.issueQueries.hierarchy(
+        { ...admin(h), projectIds: [] },
+        {},
+        { unfinishedOnly: true, includeIds: [followed.id] },
+      )
+    ).issues,
+  ).toEqual([]);
+});
+
+it('keeps database hierarchy relations equivalent to authorized filter matches', async () => {
+  const h = await harness();
+  await seed(h, 2);
+  const client = await h.database.connection().client<Knex>();
+  for (const viewer of [
+    admin(h),
+    { ...admin(h), projectIds: [] },
+    h.viewer('admin', 'member'),
+  ]) {
+    for (const query of [
+      {},
+      { statusKey: 'done' },
+      { involvesUserId: 'admin' },
+      { q: 'STEP 1.' },
+      { q: '%' },
+    ]) {
+      const hierarchy = await h.services.issueQueries.hierarchy(viewer, query);
+      const source = await h.services.issueQueries.hierarchySource(
+        viewer,
+        query,
+      );
+      const rows = (await client.raw(source.matching.sql, [
+        ...source.matching.parameters,
+      ] as Knex.RawBinding[])) as { id: string }[];
+      expect(rows.map((row) => row.id).sort()).toEqual(
+        [...hierarchy.matchingIds].sort(),
+      );
+    }
+  }
+});

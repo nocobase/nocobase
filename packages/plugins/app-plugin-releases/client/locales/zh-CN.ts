@@ -358,7 +358,6 @@ const zhCN: typeof enUS = {
     },
     initialAdmin: {
       title: '初始管理员',
-      expires: '首次部署时生成。请立即保存：{{hours}} 小时后删除。',
       kept: '首次部署时生成，保留到应用删除为止。',
       username: '用户名',
       email: '邮箱',
@@ -584,6 +583,10 @@ const zhCN: typeof enUS = {
       name: '名称',
       driver: '驱动',
       runsOn: '运行方式',
+      appCount: '应用数',
+      purpose: '用途',
+      purposeHint: '每个环境只做一件事：运行 PR 预览，或测试版本。',
+      purposes: { preview: '预览', test: '测试' },
       policy: '策略',
       publicUrl: '访问地址规则',
       config: '设置（JSON）',

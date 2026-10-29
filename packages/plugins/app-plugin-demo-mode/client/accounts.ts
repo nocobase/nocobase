@@ -1,11 +1,22 @@
 import { useApiClient } from '@nocobase/app-client';
-import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useTranslation } from '@nocobase/i18n/client';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from 'react';
 import { useHref } from 'react-router';
 
 import type { DemoSignInAccount } from '../shared/accounts.js';
 import { demoAccountCache } from './account-cache.js';
+import { DEMO_MODE_NAMESPACE } from './namespace.js';
 
-export type { DemoSignInAccount } from '../shared/accounts.js';
+export type {
+  DemoAccountRoleTitle,
+  DemoSignInAccount,
+} from '../shared/accounts.js';
 
 /** The route a visitor opens to enter a demo account: `?as=<username>&redirect=/path`. */
 export const DEMO_SIGN_IN_PATH = '/demo-sign-in';
@@ -17,15 +28,29 @@ export interface DemoAccounts {
   readonly signIn: (username: string, redirect?: string) => Promise<void>;
 }
 
-/** Shares the preloaded account list; refreshes in the background whenever `refreshKey` changes. */
+/** Shares preloaded accounts and translates their roles locally; refreshes whenever `refreshKey` changes. */
 export function useDemoAccounts(refreshKey?: unknown): DemoAccounts {
   const api = useApiClient();
+  const { t } = useTranslation(DEMO_MODE_NAMESPACE);
   const root = useHref('/');
   const cache = demoAccountCache(api);
-  const accounts = useSyncExternalStore(
+  const snapshot = useSyncExternalStore(
     cache.subscribe,
     cache.snapshot,
     cache.snapshot,
+  );
+  const accounts = useMemo(
+    () =>
+      snapshot?.map((account) => {
+        if (!account.roleTitles?.length) return account;
+        const labels = account.roleTitles.map((title) =>
+          typeof title === 'string'
+            ? title
+            : t(title.key, { ns: title.ns, defaultValue: title.defaultValue }),
+        );
+        return { ...account, role: [...new Set(labels)].join(', ') };
+      }) ?? null,
+    [snapshot, t],
   );
   const previousKeyRef = useRef(refreshKey);
 
@@ -41,7 +66,18 @@ export function useDemoAccounts(refreshKey?: unknown): DemoAccounts {
         path: `/demoMode/accounts/${encodeURIComponent(username)}/signIn`,
         method: 'POST',
       });
-      window.location.assign(safeRedirect(redirect, root));
+      const target = safeRedirect(redirect, root);
+      const url = new URL(target, window.location.href);
+      if (
+        url.pathname === window.location.pathname &&
+        url.search === window.location.search
+      ) {
+        // Assigning the same document with a hash only navigates within it, retaining the previous account's state.
+        window.history.replaceState(window.history.state, '', target);
+        window.location.reload();
+      } else {
+        window.location.assign(target);
+      }
     },
     [api, root],
   );

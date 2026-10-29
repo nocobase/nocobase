@@ -484,3 +484,5 @@ export {
 } from './repository/writable-fields.js';
 
 export type { DatabaseTaskConfig } from './task-config.js';
+
+export { getRepositoryMutationIdentity } from './repository/mutation-identity.js';

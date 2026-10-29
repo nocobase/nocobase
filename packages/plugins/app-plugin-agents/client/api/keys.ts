@@ -74,15 +74,6 @@ export const agentsKeys: {
     q: string,
     status: string,
   ) => readonly ['agents', 'available-models', 'rows', string, string, string];
-  /** Prefix shared by every cleanup-candidates query, to invalidate groups and rows together after a change. */
-  readonly cleanupCandidatesAll: readonly ['agents', 'cleanup-candidates'];
-  readonly cleanupGroups: (
-    q: string,
-  ) => readonly ['agents', 'cleanup-candidates', 'groups', string];
-  readonly cleanupRows: (
-    tool: string,
-    q: string,
-  ) => readonly ['agents', 'cleanup-candidates', 'rows', string, string];
 } = {
   available: ['agents', 'available'],
   chatAgents: ['agents', 'chat', 'agents'],
@@ -139,7 +130,4 @@ export const agentsKeys: {
     q,
     status,
   ],
-  cleanupCandidatesAll: ['agents', 'cleanup-candidates'],
-  cleanupGroups: (q) => ['agents', 'cleanup-candidates', 'groups', q],
-  cleanupRows: (tool, q) => ['agents', 'cleanup-candidates', 'rows', tool, q],
 };

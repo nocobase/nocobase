@@ -1,0 +1,62 @@
+name: V3 PR Description
+
+# Check a v3 pull request's description against .github/pull_request_template.md: exactly one type checked, and unless
+# it is Others one English and one Chinese changelog sentence, which the release workflows copy into the root
+# CHANGELOG.md and CHANGELOG.zh-CN.md and the GitHub Release (scripts/changelog.mjs). The title's scope names the
+# module; an unknown scope only warns.
+#
+# `edited` runs the check again whenever the title or description changes, so fixing the description is enough. It runs
+# the pull request's own scripts/check-pr-body.mjs with node builtins only: no dependencies are installed and no token
+# is used. Pull requests opened by the release workflows carry only versions and changelogs and are skipped.
+
+on:
+  pull_request:
+    branches:
+      - v3-main
+      - v3-develop
+      - '*/v3-*'
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v3-pr-description-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: PR description
+    if: >-
+      !startsWith(github.head_ref, 'release-beta/') && !startsWith(github.head_ref, 'release/')
+      && !startsWith(github.head_ref, 'chore/promote-') && !startsWith(github.head_ref, 'chore/sync-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the scripts
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # The title and body come from the event through the environment, never interpolated into the script.
+      - name: Check the pull request description
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            fs.writeFileSync(process.argv[1], JSON.stringify({ title: process.env.PR_TITLE, body: process.env.PR_BODY ?? "" }));
+          ' "$RUNNER_TEMP/pull-request.json"
+          node scripts/check-pr-body.mjs "$RUNNER_TEMP/pull-request.json"

@@ -7,6 +7,7 @@ import { ServiceContainer } from '@nocobase/service-provider';
 import { createApiClient } from '@nocobase/app-client';
 import { Hono } from 'hono';
 import { vi } from 'vitest';
+import { repositoryIdempotencyToken } from '@nocobase/app-server/router';
 import { apiRoutes } from '../server/routes/index.js';
 
 /**
@@ -14,10 +15,10 @@ import { apiRoutes } from '../server/routes/index.js';
  * `NOCOBASE_TEST_DB_DIALECT` selects. Call `destroy()` when the test is done:
  * on a database server it drops the database the fixture created.
  */
-export async function createFixture() {
+export async function createFixture(required = false) {
   const testDatabase = await createTestDatabase();
   try {
-    const fixture = await routeFixture(testDatabase.database);
+    const fixture = await routeFixture(testDatabase.database, required);
     return { ...fixture, destroy: () => testDatabase.destroy() };
   } catch (error) {
     await testDatabase.destroy();
@@ -25,13 +26,25 @@ export async function createFixture() {
   }
 }
 
-async function routeFixture(database: DatabaseManager) {
+async function routeFixture(database: DatabaseManager, required: boolean) {
   const migrator = database.createMigrator({
     directory: path.resolve(import.meta.dirname, '../database/migrations'),
     packageName: '@nocobase/app-plugin-repository-example',
   });
   await migrator.latest();
+  await database.builder().createCollection('mutationReceipts', (c) => {
+    c.string('id', { length: 64 }).primary().notNull();
+    c.string('digest', { length: 64 }).notNull();
+    c.json('result').nullable();
+    c.datetime('expiresAt').notNull();
+    c.index('expiresAt');
+  });
   const container = new ServiceContainer();
+  // Old test callers may omit keys while migrated browser demonstrations use the receipt protocol.
+  container.instance(repositoryIdempotencyToken, {
+    required,
+    principal: () => 'tester',
+  });
   container.instance(databaseManagerToken, database);
   const authentication = new Auth({
     connection: database.connection(),

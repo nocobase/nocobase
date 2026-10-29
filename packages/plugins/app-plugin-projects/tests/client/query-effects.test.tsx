@@ -1,14 +1,11 @@
+import { realtimeClientToken } from '@nocobase/app-client';
+import { renderWithApp } from '@nocobase/app-testing/client';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { render } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 
-vi.mock('@nocobase/app-client', async (original) => ({
-  ...(await original<typeof import('@nocobase/app-client')>()),
-  useService: () => ({ watch: () => ({ close: () => {} }) }),
-}));
-const { default: projects } = await import('../../client/plugin.js');
+import projects from '../../client/plugin.js';
 
-it('mounts application effects and pages in the same projects query cache', () => {
+it('mounts application effects and pages in the same projects query cache', async () => {
   let effectClient: QueryClient | undefined;
   let pageClient: QueryClient | undefined;
   function Effects() {
@@ -21,10 +18,23 @@ it('mounts application effects and pages in the same projects query cache', () =
   }
   const Provider = projects({ routes: false, queryEffects: Effects })
     .reactProviders[0]!.component;
-  render(
+  await renderWithApp(
     <Provider>
       <Page />
     </Provider>,
+    {
+      services: (app) => {
+        vi.spyOn(
+          app.container.resolve(realtimeClientToken),
+          'watch',
+        ).mockReturnValue({
+          state: 'subscribed',
+          error: undefined,
+          retry: () => {},
+          close: () => {},
+        });
+      },
+    },
   );
   expect(effectClient).toBeDefined();
   expect(effectClient).toBe(pageClient);

@@ -85,6 +85,7 @@ Password sign-in, sign-up, reset-request and reset forms. Use them on authentica
 - Install: `yes n | pnpm exec shadcn add @nocobase/auth-forms`
 - Installs to: `client/extensions/nocobase-auth-forms/`
 - Plugin dependencies: none
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/auth-forms-demo` (`pnpm exec shadcn view @nocobase/auth-forms-demo`)
 - After installing: Presentational: each form calls onSubmit(values) and renders what it is given (submitting, error, fieldErrors, labels with English defaults). Wire onSubmit to @nocobase/app-plugin-authentication/client/actions (the templates' client/pages/auth/ pages are the reference), pass translated labels, and put links in forgotPasswordLink and footer.
 
@@ -129,6 +130,7 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 - Install: `yes n | pnpm exec shadcn add @nocobase/device-approval`
 - Installs to: `client/extensions/nocobase-device-approval/`
 - Plugin dependencies: `@nocobase/app-plugin-authentication`
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/device-approval-demo` (`pnpm exec shadcn view @nocobase/device-approval-demo`)
 - After installing: Needs wiring before it works: enable deviceAuthorization() and bearer() in server/config/auth.ts, add an application migration creating Better Auth's deviceCode table, and register deviceAuthorizationClient() in client/config/auth.ts. Render DeviceApproval on a /device route only signed-in people reach (auth: 'optional', sending others to /login?redirect=), passing ?user_code= as userCode, and spread locales/ into client/locales/. The authentication plugin's Skill (references/better-auth-plugins.md) has the details.
 
@@ -136,7 +138,7 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A controlled permission workspace with category navigation, application-owned menu trees, compact action tiles and named data scopes.
+A controlled permission workspace with top category tabs, application-owned menu paths, compact action groups, status filtering and independent data scopes.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
@@ -144,7 +146,7 @@ A controlled permission workspace with category navigation, application-owned me
 - Plugin dependencies: none
 - Also installs: `@nocobase/long-text`
 - Example: `@nocobase/permission-editor-demo` (`pnpm exec shadcn view @nocobase/permission-editor-demo`)
-- After installing: The application owns the exposed permission catalog, its business grouping, labels and persistence. Pass sections of groups of rows; the component has no built-in business or system permissions and never discovers or requests them. Preserve caller action order, including non-CRUD operations. Each row shows a checkbox, its title and optional hint; enabled scoped actions show every independently named range directly. onEnabledChange and onLevelChange report only explicit draft edits by stable row or scope id. The host owns loading, validation, Save, conflicts and preservation of grants absent from the visible catalog. Installing a plugin or receiving a capability in options does not opt it into this form: select only actual application features and supported actions in application-owned composition code. Settings require explicit app opt-in, an actual registered configuration page and matching server capability/action together; neither installed plugins nor a catalog entry alone are sufficient. Keep the original category navigation (left-side desktop, horizontal narrow layout), show one category by default and matching categories during global filtering; search and enabled-only filters never change grants. Do not supply a default System and tools section or copy demo permissions into an application. Set group.accessOnly for a page with one access action. Supply scope.configuration for parameterized filters, scope.hint for contextual help, and translated labels including emptyDescription, readOnly and managedPermission. Full-width descriptions use LongText and narrow tile descriptions use LongTextPreview; disabled controls have visible explanations. Existing apps reconcile the component, its LongText and Empty dependencies, application catalog adapter and host bindings through a normal source upgrade. Preserve unknown policies and native filter parameters. For page access, pass section.navigation as application-owned nodes with id, label, optional rowId and children. References use the existing flat row ids; a structural menu group has no grant. Single-level menus stay flat; a parent page and its children use independent checkboxes for staged authorization. Disclosure only changes presentation. Search includes ancestor names and retains their paths; filtering expands matching branches and Clear restores collapse state. The host adapter uses the complete runtime menu tree and its navigation transforms, deduplicates inherited page grants, and retains independent non-menu pages. Supply translated expandGroup and collapseGroup callbacks. Never infer authorization inheritance or grant every child when opening a menu group. All page grants, business actions and settings permissions use Checkbox to edit the host draft. The enabled-only filter also uses Checkbox and changes presentation immediately without editing grants. The page-access tree contains business pages only. Compose every actual system-settings page and operation, including user management and business configuration, under Configuration permissions. Preserve original row ids and grants when reclassifying existing controls, and do not duplicate these entries as page checkboxes or category-jump placeholders. Explain this boundary in the application-supplied section descriptions. Map each independently assignable business operation to its actual UI entry, server request, affected fields and record scopes. Use actual operation labels, reuse a permission across equivalent entry points, and separate steps such as Approve and Reject instead of bundling them behind Manage. Page access, record viewing and lifecycle eligibility are separate; read lists do not require unrelated write permissions. Enforce the matching action and all affected record scopes server-side, including operation-scoped related-record pickers. When splitting existing actions, update backend enforcement, frontend availability and the application selection together and migrate grants and default, sharing and restriction rules without widening scopes or changing history. See the authorization Registry README for the full contract. For Create operations, hide the selector for the newly created record because no existing row can be selected; retain the source catalog and stored hidden policy values. If creation reads an existing related record, keep that related range visible and label its actual purpose. Localize custom-filter field captions by collection while preserving field identifiers and saved conditions. The application adapter decides this presentation from its real operations; the Registry supplies no fixed business fields.
+- After installing: Use the application’s standard top Tabs, grant Checkboxes and compact groups. Supply navigation.path from actual route metadata for menu names and routes. All / Granted / Ungranted filters and draft counts never mutate grants; collapse affects presentation only. Translate granted, ungranted, authorizationStatus, clearSearch, collapseAll, expandAll and summary labels. The application owns the exposed permission catalog, its business grouping, labels and persistence. Pass sections of groups of rows; the component has no built-in business or system permissions and never discovers or requests them. Preserve caller action order, including non-CRUD operations. Each row shows a checkbox, its title and optional hint; enabled scoped actions show every independently named range directly. onEnabledChange and onLevelChange report only explicit draft edits by stable row or scope id. The host owns loading, validation, Save, conflicts and preservation of grants absent from the visible catalog. Installing a plugin or receiving a capability in options does not opt it into this form: select only actual application features and supported actions in application-owned composition code. Settings require explicit app opt-in, an actual registered configuration page and matching server capability/action together; neither installed plugins nor a catalog entry alone are sufficient. Keep standard top category tabs at every width, show one category by default and matching categories during global filtering; search and grant-status filters never change grants. Do not supply a default System and tools section or copy demo permissions into an application. Set group.accessOnly for a page with one access action. Supply scope.configuration for parameterized filters, scope.hint for contextual help, and translated labels including emptyDescription, readOnly and managedPermission. Keep descriptions near their permission, let long content wrap, and show disabled explanations. Existing apps reconcile the component, its Tabs, InputGroup, LongText and Empty dependencies, application catalog adapter and host bindings through a normal source upgrade. Preserve unknown policies and native filter parameters. For page access, pass section.navigation as application-owned nodes with id, label, optional rowId and children. References use the existing flat row ids; a structural menu group has no grant. Single-level menus stay flat; a parent page and its children use independent checkboxes for staged authorization. Disclosure only changes presentation. Search includes ancestor names and retains their paths; filtering expands matching branches and Clear restores collapse state. The host adapter uses the complete runtime menu tree and its navigation transforms, deduplicates inherited page grants, and retains independent non-menu pages. Supply translated expandGroup and collapseGroup callbacks. Never infer authorization inheritance or grant every child when opening a menu group. All page grants, business actions and settings permissions use Checkbox to edit the host draft. The grant-status Tabs change presentation immediately without editing grants. The page-access tree contains business pages only. Compose every actual system-settings page and operation, including user management and business configuration, under Configuration permissions. Preserve original row ids and grants when reclassifying existing controls, and do not duplicate these entries as page checkboxes or category-jump placeholders. Keep this boundary in developer documentation rather than repeating it as generic Page access helper copy. Map each independently assignable business operation to its actual UI entry, server request, affected fields and record scopes. Use actual operation labels, reuse a permission across equivalent entry points, and separate steps such as Approve and Reject instead of bundling them behind Manage. Page access, record viewing and lifecycle eligibility are separate; read lists do not require unrelated write permissions. Enforce the matching action and all affected record scopes server-side, including operation-scoped related-record pickers. When splitting existing actions, update backend enforcement, frontend availability and the application selection together and migrate grants and default, sharing and restriction rules without widening scopes or changing history. See the authorization Registry README for the full contract. For Create operations, hide the selector for the newly created record because no existing row can be selected; retain the source catalog and stored hidden policy values. If creation reads an existing related record, keep that related range visible and label its actual purpose. Localize custom-filter field captions by collection while preserving field identifiers and saved conditions. The application adapter decides this presentation from its real operations; the Registry supplies no fixed business fields.
 
 ### role-list
 
@@ -288,6 +290,33 @@ Theme-aware, read-only lifecycle diagram using React Flow and ELK. Shows the cur
 - Example: `@nocobase/lifecycle-diagram-demo` (`pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`)
 - After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN, autoHeight and initialMinZoom 0.7 for readable vertical page reading. The Fit control still shows the entire graph; an explicit initialMinZoom overrides the default. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger border and ring; icons, top accents and status footers distinguish current, visited and configurable nodes using theme tokens. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export. Pass configuration={label, canConfigure, onConfigure} for automatic Configure buttons on authorized bound states and configuration selection on bound transitions. onConfigure receives the exact target and permitted bound fields grouped by native parameter key; connect the existing real editor and API. canConfigure is required and is only a UI affordance. Explicit direction/style overrides are reserved for user-requested customization; Mermaid is documentation/export only.
 
+## File
+
+### file-component-ui
+
+Application-owned upload, list, thumbnail, and preview components for business file endpoints.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/file-component-ui`
+- Installs to: `client/extensions/nocobase-file-component-ui/`
+- Plugin dependencies: `@nocobase/app-plugin-file`
+- Also installs: `@nocobase/attachment-list`
+- Example: `@nocobase/file-component-ui-demo` (`pnpm exec shadcn view @nocobase/file-component-ui-demo`)
+- After installing: Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them.
+
+## Forms
+
+### feedback-form
+
+Preserves form input, maps safe field errors and focuses the first editable error in layout order. Preinstalled in the templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/feedback-form`
+- Installs to: `client/components/feedback-form.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/feedback-form-demo` (`pnpm exec shadcn view @nocobase/feedback-form-demo`)
+- After installing: Show mapped reasons only beside fields/groups, with automatic reveal/focus and no top summary or navigation list. Unmapped failures or unavailable focus targets keep a safe accessible form message. Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Publication is gated by check-form-feedback-release.mjs: the declared app-client version floor must be obtainable and export the form APIs in JavaScript and declarations. Release the runtime and raise this item's floor before publishing the registry. Existing controlled fields expose trusted errors through aria-errormessage or explicitly associated data-slot=field-error / data-feedback-field-error nodes.
+
 ## Inbox
 
 ### inbox
@@ -313,6 +342,19 @@ A header button linking to the inbox, with an amber badge for what waits on the 
 - Example: `@nocobase/inbox-button-demo` (`pnpm exec shadcn view @nocobase/inbox-button-demo`)
 - After installing: Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from #components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.
 
+## Notification
+
+### notification-logs-ui
+
+Application-owned delivery and provider attempt log components backed by the NocoBase notification API.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/notification-logs-ui`
+- Installs to: `client/extensions/nocobase-notification-logs-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/notification-logs-ui-demo` (`pnpm exec shadcn view @nocobase/notification-logs-ui-demo`)
+- After installing: Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.
+
 ## Other
 
 ### data-table
@@ -323,8 +365,20 @@ Standard TanStack Table v8 table with controlled server pagination and sorting, 
 - Install: `yes n | pnpm exec shadcn add @nocobase/data-table`
 - Installs to: `client/components/data-table/column-header.tsx`, `client/components/data-table/data-table.tsx`, `client/components/data-table/index.ts`, `client/components/data-table/pagination.tsx`, `client/components/data-table/view-options.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/list-feedback`
 - Example: `@nocobase/data-table-demo` (`pnpm exec shadcn view @nocobase/data-table-demo`)
 - After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.
+
+### list-feedback
+
+Accessible list loading, empty, filtered, permission and request feedback for tables and cards.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/list-feedback`
+- Installs to: `client/components/list-feedback.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/list-feedback-demo` (`pnpm exec shadcn view @nocobase/list-feedback-demo`)
+- After installing: Pass resolveListState from @nocobase/app-client. ListFeedback renders each built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content.
 
 ## Page layout
 

@@ -40,7 +40,7 @@ describe('App Foundation overview', () => {
     expect(Date.parse(overview.checkedAt)).not.toBeNaN();
   });
 
-  it('withholds business counts when an unclassified runtime extension may own Collections', async () => {
+  it('retains observed counts when an unclassified runtime extension may own Collections', async () => {
     await app.migrateApplication();
     const overview = await app
       .service({
@@ -51,10 +51,14 @@ describe('App Foundation overview', () => {
       .overview();
     expect(capability(overview, 'dataModeling')).toMatchObject({
       status: 'active',
-      completeness: 'partial',
-      facts: [{ code: 'collectionOwnershipUnknown' }],
+      completeness: 'complete',
+      facts: expect.arrayContaining([{ code: 'collectionOwnershipUnknown' }]),
     });
-    expect(metricValue(overview, 'dataModeling', 'businessRecords')).toBeNull();
+    expect(metricValue(overview, 'dataModeling', 'businessCollections')).toBe(
+      3,
+    );
+    expect(metricValue(overview, 'dataModeling', 'fields')).toBeGreaterThan(0);
+    expect(capability(overview, 'dataModeling').issues).toEqual([]);
     expect(overview.inventory?.entries).toContainEqual(
       expect.objectContaining({
         name: '@vendor/injected-plugin',

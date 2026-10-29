@@ -3,6 +3,157 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  indexing: {
+    failedDocumentCount: 'Fehlgeschlagene Dokumente: {{count}}',
+    enabled: 'Indexierung aktivieren',
+    enabledHint:
+      'Deaktivieren, um nur die Textsuche zu verwenden. Änderungen werden nach dem Speichern wirksam.',
+    chooseInstance: 'Indexinstanz auswählen',
+    documentProgress: 'Indexierte Dokumente',
+    pendingDocuments: 'Ausstehende Dokumente',
+    failedDocuments: 'Fehlgeschlagene Dokumente',
+    preparedChunks: 'Vorbereitete Abschnitte',
+    committedChunks: 'Übernommene Abschnitte',
+    agentPrompt:
+      'Hilf mir, die Indizierung der Wissensdatenbank dieser NocoBase-3-Anwendung einzurichten.\n\nLies die AGENTS.md und prüfe die tatsächlich verfügbaren Indextypen (type). Zur Auswahl stehen zwei Vektordatenbanken: SQLite mit sqlite-vec (type sqlite-vec, lokale Datei) und PostgreSQL mit pgvector (type pgvector, Erweiterung vector erforderlich). Erkläre geeignete Optionen und Voraussetzungen für diese Bereitstellung und lass mich vor dem Fortfahren wählen.\n\nFrage danach die nötigen Angaben ab: bei SQLite den Indexdateipfad, bei PostgreSQL die Verbindung und den Status der Erweiterung vector. Zeige keine Passwörter oder API-Schlüssel.\n\nZeige die geplante Konfiguration und hole meine Bestätigung ein, bevor du knowledge.indexing in der config.yaml änderst. Erhalte andere Einstellungen. Wird bereits config.yml verwendet, bearbeite diese Datei statt eine weitere anzulegen.\n\nPrüfe die Konfiguration sicher und erkläre den Neustart. Starte die Anwendung nicht ohne Zustimmung neu und installiere keine Abhängigkeiten ohne Bestätigung. Führe mich danach durch das erneute Öffnen der Indexeinstellungen, Aktivieren, Auswählen von Instanz und Embedding-Modell und Speichern. Frage vor kostenpflichtigen Modellaufrufen oder dem Neuaufbau des Index nach.',
+    databases: {
+      sqlite: {
+        name: 'SQLite-Vektordatenbank',
+        description:
+          'Speichert den Index mit der Vektorerweiterung sqlite-vec in einer lokalen SQLite-Datei auf dem Anwendungsserver. Kein separater Datenbankdienst erforderlich; für einen einzelnen Host geeignet.',
+      },
+      pgvector: {
+        name: 'PostgreSQL-Vektordatenbank',
+        description:
+          'Speichert und durchsucht Vektoren mit pgvector in PostgreSQL. Benötigt eine Datenbankverbindung und die Erweiterung vector. Geeignet für vorhandene PostgreSQL-Dienste oder mehrere Anwendungsserver mit gemeinsamem Index.',
+      },
+    },
+    setupTitle: 'Konfigurationsschritte',
+    setup: {
+      instance:
+        'Öffne die config.yaml und ergänze unter knowledge.indexing eine Instanz mit Name, Typ und lokalem Dateipfad oder Datenbankverbindung.',
+      restart:
+        'Speichere die Datei und starte die Anwendung neu, um die Konfiguration zu laden.',
+      enable:
+        'Öffne die Indexeinstellungen erneut, aktiviere die Indizierung, wähle die neue Instanz und ein Embedding-Modell und speichere.',
+    },
+    agentHandoff:
+      'Wenn du mit Konfigurationsdateien nicht vertraut bist, kopiere den folgenden Prompt für einen Entwicklungs-Agent.',
+    global: 'Alle Wissensbereiche',
+    back: 'Zurück zum Wissen',
+    configuration: 'Indexkonfiguration',
+    typeHint:
+      'Instanzen sind nach type gruppiert. Jeder Typ bestimmt sein Formular und ob ein Embedding-Modell nötig ist.',
+    typeForm: 'Dynamisches Formular dieses Typs',
+    openPage: 'Separate Einstellungsseite öffnen',
+    emptyTitle: 'Zuerst eine Vektordatenbank konfigurieren',
+    emptyDescription:
+      'Der Wissensindex benötigt eine Vektordatenbank, um Dokumentvektoren zu speichern und zu durchsuchen. Wähle eine der folgenden Möglichkeiten und ergänze die config.yaml der Anwendung:',
+    agentTitle: 'Konfigurationsprompt',
+    copyPrompt: 'Konfigurationsprompt kopieren',
+    promptCopied: 'Prompt kopiert. Es wurde nichts ausgeführt.',
+    promptCopyFallback:
+      'Automatisches Kopieren nicht möglich. Der Prompt ist zum manuellen Kopieren markiert.',
+    promptLabel: 'Konfigurationsprompt für Ihren Entwicklungs-Agent',
+    rebuildHint: 'Änderungen erfordern einen Neuaufbau',
+    editHint: 'Zum Speichern die Konfiguration ändern',
+    confirmRetryEmbedding:
+      'Nur fehlgeschlagene Dokumente aller Wissensbereiche erneut verarbeiten. Abgeschlossene Arbeit bleibt erhalten; Embedding-Kosten können anfallen.',
+    confirmRetry:
+      'Nur fehlgeschlagene Dokumente aller Wissensbereiche erneut verarbeiten. Abgeschlossene Arbeit bleibt erhalten; Dienstressourcen werden genutzt.',
+    confirmResources:
+      'Alle Wissensbereiche werden neu indexiert. Dieser Typ benötigt keine Embedding-Aufrufe, verbraucht aber Speicher und Dienstressourcen. Der veröffentlichte Index bleibt bis zum Austausch verfügbar.',
+    deploymentPg:
+      'Verbindung, Schema und Tabellenpräfix werden in der Bereitstellung konfiguriert.',
+    deploymentFile:
+      'Der Indexdateipfad wird in der Bereitstellung konfiguriert.',
+    errors: {
+      configurationChanged:
+        'Index- oder Modelleinstellungen wurden geändert. Die alte Generation kann damit nicht erneut ausgeführt werden. Einstellungen prüfen und bei Bedarf alle Bereiche neu aufbauen (Embedding-Kosten möglich).',
+      modelAuth:
+        'Embedding-Authentifizierung fehlgeschlagen. API-Schlüssel, Zugriffsrechte und Endpunktregion prüfen.',
+      modelQuota:
+        'Embedding-Kontingent oder Guthaben aufgebraucht. Modellkonto vor dem Wiederholen prüfen.',
+      modelRateLimit:
+        'Der Embedding-Dienst begrenzt Anfragen. Vor dem Wiederholen warten.',
+      modelConfig:
+        'Das gespeicherte Embedding-Modell ist nicht verfügbar, geändert oder nicht unterstützt. Dienstauswahl und Modell prüfen.',
+      modelInput:
+        'Die Embedding-Eingabe ist zu lang. Größe der Dokumentabschnitte prüfen.',
+      modelPolicy:
+        'Der Embedding-Dienst hat die Eingabe wegen seiner Inhaltsrichtlinie abgelehnt. Betroffene Inhalte prüfen.',
+      modelResponse:
+        'Der Embedding-Dienst lieferte ungültige Vektoren. Modellkompatibilität und Dimensionen prüfen.',
+      modelUnavailable:
+        'Der Embedding-Dienst ist nicht erreichbar oder vorübergehend nicht verfügbar. Endpunkt und Netzwerk prüfen.',
+      storageAuth:
+        'Authentifizierung des Indexspeichers fehlgeschlagen. Datenbankbenutzer, Passwort und Verbindung prüfen.',
+      storagePermission:
+        'Der Indexspeicher verweigert den Vorgang oder ist schreibgeschützt. Schema- und Tabellenrechte prüfen.',
+      storageSchema:
+        'Indexdatenbank, Schema oder erforderliche Tabelle nicht verfügbar. Bereitstellung und Schema prüfen.',
+      storageUnavailable:
+        'Der Indexspeicher ist nicht erreichbar oder die Verbindung wurde unterbrochen. Adresse, Port und Netzwerk prüfen.',
+      storageBusy:
+        'Der Indexspeicher ist ausgelastet oder ein Transaktionskonflikt ist aufgetreten. Wiederholungsrichtlinie des Hosts abwarten.',
+      timeout:
+        'Zeitüberschreitung beim Indizieren. Speicher und Modelldienst vor dem Wiederholen prüfen.',
+      vectorExtension:
+        'Die PostgreSQL-Erweiterung vector fehlt. Datenbankadministration um Installation bitten.',
+      ownership:
+        'Eigentümer oder Struktur des Indexziels stimmen nicht überein. Instanzressource prüfen; keine fremden Tabellen löschen.',
+      dependencies:
+        'Indexinstanz, Erweiterung oder Host-Jobs-Konfiguration nicht verfügbar. Bereitstellung prüfen und bei Bedarf neu starten.',
+    },
+    invalidValue: 'Prüfen Sie diesen Wert.',
+    title: 'Wissensindex-Einstellungen',
+    description: 'Suchindexierung für alle Wissensbereiche konfigurieren.',
+    progress: 'Indexierungsfortschritt',
+    instance: 'Indexinstanz',
+    off: 'Aus — nur Textsuche',
+    missingForm:
+      'Das Konfigurationsformular ist nicht verfügbar. Gespeicherte Optionen bleiben erhalten.',
+    statusFailed: 'Der Indexstatus konnte nicht aktualisiert werden.',
+    loadFailed:
+      'Indexeinstellungen konnten nicht geladen werden. Prüfen Sie Ihre Berechtigungen.',
+    saveFailed:
+      'Die Anfrage wurde nicht angenommen. Ihr Entwurf wurde beibehalten.',
+    conflict:
+      'Die Einstellungen wurden anderweitig geändert. Laden Sie die aktuelle Revision, ohne Ihren Entwurf zu verwerfen, prüfen Sie ihn und speichern Sie erneut.',
+    saved: 'Anfrage angenommen. Die Indexierung läuft im Hintergrund weiter.',
+    workFailed:
+      'Einige Indexaufgaben sind fehlgeschlagen. Prüfen Sie Instanz und Modelldienst und versuchen Sie es erneut.',
+    rebuild: 'Alle Bereiche neu indizieren',
+    retry: 'Fehlgeschlagene Aufgaben wiederholen',
+    confirmTitle: 'Globale Indexänderung bestätigen',
+    confirmRebuild:
+      'Dies betrifft alle Wissensbereiche und kann alle Dokumente neu einbetten, Modellkosten verursachen und zusätzlichen Speicher erfordern. Der bisherige Index bleibt verfügbar, bis der neue bereit ist.',
+    confirmDisable:
+      'Dies deaktiviert die Indexsuche für alle Wissensbereiche. Die Textsuche bleibt verfügbar. Die Bereinigung läuft im Hintergrund.',
+    discardTitle: 'Ungespeicherte Änderungen verwerfen?',
+    discardDescription:
+      'Ihre ungespeicherten Indexeinstellungen gehen verloren.',
+    discard: 'Änderungen verwerfen',
+    confirm: 'Bestätigen',
+    documents:
+      'Dokumente: {{done}} / {{total}} · Ausstehend: {{pending}} · Fehlgeschlagen: {{failed}}',
+    chunks: 'Vorbereitete Abschnitte: {{prepared}} · Übernommen: {{committed}}',
+    availability: {
+      disabled: 'Deaktiviert — nur Textsuche',
+      unavailable: 'Index nicht verfügbar — Textsuche bleibt verfügbar',
+      building: 'Index wird erstellt',
+      ready: 'Index bereit',
+      degraded: 'Index eingeschränkt — Textsuche bleibt verfügbar',
+    },
+    table: 'Tabellenname',
+    modelService: 'Modelldienst',
+    model: 'Embedding-Modell',
+    chooseService: 'Modelldienst auswählen',
+    chooseModel: 'Modell wählen oder Modellnamen eingeben',
+    loadingModels: 'Embedding-Modelle werden geladen…',
+    modelsUnavailable:
+      'Embedding-Modelle sind nicht verfügbar. Prüfen Sie den Modelldienst und versuchen Sie es erneut.',
+  },
   access: {
     businessSection: 'Wissen',
     businesses: {
@@ -378,13 +529,13 @@ const deDE: LocaleResource<typeof enUS> = {
         none: 'Kein Zugang',
       },
       title: 'Weltraumzugriff',
-      description: 'Wer darf in {{space}} lesen, vorschlagen und bearbeiten?',
+      description: 'Wer darf auf {{space}} zugreifen?',
       yours: 'Ihr Zugang',
       actions: {
         read: 'Lesen Sie die Dokumente und durchsuchen Sie sie',
         propose:
           'Schlagen Sie Änderungen vor, damit jemand, der sie bearbeiten kann, darüber entscheiden kann',
-        edit: 'Bearbeiten, organisieren und überprüfen Sie Dokumente und entscheiden Sie über Vorschläge',
+        edit: 'Dokumente bearbeiten, organisieren und überprüfen',
         manage: 'Ändern Sie, wer auf jeden Ordner und Artikel zugreifen darf',
       },
       allowed: 'Erlaubt',

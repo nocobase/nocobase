@@ -6,6 +6,7 @@ const zhTW: FoundationResource = {
     foundation: '應用底座',
   },
   page: {
+    identified: '已識別 {{value}}',
     counted: '已統計 {{value}}',
     partial: '部分資料待更新',
     title: '應用底座',
@@ -34,6 +35,7 @@ const zhTW: FoundationResource = {
     successPath: '成功路徑的 API 請求：{{method}} {{path}}',
     conditions: {
       databaseAvailable: '資料庫可用',
+      authorizationIdentityResolved: '授權身分解析成功',
       authenticated: '身分驗證通過',
       bodyWithinLimit: '請求內容未超過大小限制',
       validInput: '輸入驗證通過',
@@ -125,8 +127,9 @@ const zhTW: FoundationResource = {
     collectionResults: '共 {{count}} 張符合的資料表',
     previousPage: '上一頁',
     nextPage: '下一頁',
-    countRecords: '統計業務資料量',
-    recordsOnDemand: '業務資料總量按需統計，資料庫較大時可能需要較長時間。',
+    countRecords: '統計記錄數',
+    recordsOnDemand:
+      '按需統計已識別表的記錄，排除已知系統表。大型資料庫可能需要較長時間。',
     recordsCountedAt: '資料量統計於 {{time}}',
 
     businessModules: '關聯業務模組',
@@ -253,11 +256,11 @@ const zhTW: FoundationResource = {
   facts: {
     fileCollectionsPartial: '已統計 {{count}} 張檔案表：{{names}}。',
     collectionOwnershipUnknown:
-      '發現未分類的執行階段擴充，資料表歸屬尚未確認，暫不顯示業務統計。',
-    noApplicationCollections: '資料層已執行，應用尚無自有資料表。',
+      '已排除目錄中已知的 NocoBase 系統表。其餘表的歸屬待識別；此處顯示實際讀取結果，不代表純業務或全應用總量。',
+    noApplicationCollections: '尚未識別到其他資料表。',
     applicationCollectionsPreview:
-      '本系統自有 {{count}} 張資料表，包含 {{names}} 等。',
-    applicationCollections: '本應用有 {{count}} 個自有資料表：{{names}}。',
+      '已識別 {{count}} 張資料表，包括 {{names}}。',
+    applicationCollections: '已識別 {{count}} 張資料表：{{names}}。',
     relations: '共 {{count}} 個關聯。',
     fileCollections: '共 {{count}} 個檔案資料表：{{names}}。',
     accounts: '{{count}} 個帳號透過 NocoBase 認證登入。',
@@ -300,8 +303,8 @@ const zhTW: FoundationResource = {
     caching: '快取',
   },
   metrics: {
-    businessRecords: '筆業務資料',
-    businessCollections: '個業務資料表',
+    businessRecords: '記錄',
+    businessCollections: '資料表',
     views: '個檢視表',
     fields: '個欄位',
     relations: '個關聯',

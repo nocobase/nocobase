@@ -1,5 +1,110 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.5
+
+### Minor Changes
+
+- 4721806: Export shared server and client Demo Mode checks and a configurable request guard that refuses external effects before route handlers, with localized errors and explicit method/path exceptions.
+
+### Patch Changes
+
+- f037f2d: Make the demo writable collections environment variable optional in generated deployment manifests.
+- 4721806: Show localized permission set names for demo sign-in accounts without dataset role labels, including existing administrators.
+- 4721806: Prevent encoded line terminators from bypassing demo request guards and translate account role titles in the browser so language changes take effect without additional requests.
+
+  Reduce repeated permission queries during automatic demo sign-in and keep entry independent of dataset role labels.
+
+- 4721806: Display the daily reset time, language, and timezone in one row on wider screens.
+- Updated dependencies [f9ada4a]
+  - @nocobase/app-plugin-agents@1.0.0-beta.29
+
+## 0.2.0-beta.4
+
+### Patch Changes
+
+- 4ccf1c8: Keep language, theme mode and color preset choices made through the Users preference API independent per demo visitor session and application, including when sharing or switching accounts. Return site defaults for new visitors while preserving the existing API protections and ordinary account preferences.
+- Updated dependencies [07b14c0]
+- Updated dependencies [451bf75]
+- Updated dependencies [22748f7]
+- Updated dependencies [5782713]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [cc0b521]
+  - @nocobase/app-cli@1.0.0-beta.30
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-plugin-agents@1.0.0-beta.28
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+
+## 0.2.0-beta.3
+
+### Patch Changes
+
+- df09e63: Ship plugin development guidance with the App's installed Skills, reserve its existing name for @nocobase/app-skills, and guide upgrades through verifying the project replacement before retiring old global installations. Update application and plugin entry points to use the version-matched project Skill.
+
+  Synchronize project Skills as real copies, exclude dependencies installed inside executable examples, and preserve the targets of older project links during migration.
+
+- Updated dependencies [82aa791]
+- Updated dependencies [df09e63]
+  - @nocobase/app-cli@1.0.0-beta.29
+
+## 0.2.0-beta.2
+
+### Patch Changes
+
+- 14e042c: Automatically use secure, partitioned authentication cookies for HTTPS demo deployments so visitors can stay signed in inside a cross-site iframe. Preserve explicit deployment overrides and the existing cookie policy for HTTP development and non-demo applications.
+
+## 0.2.0-beta.1
+
+### Patch Changes
+
+- f5b51a4: Restore the compact Demo Mode header menu with smaller text, tighter spacing, a narrower dropdown and the application's primary color. Keep account preloading, pending and retry states, keyboard access, and location-preserving switching unchanged.
+- Updated dependencies [d78f586]
+  - @nocobase/app-plugin-agents@1.0.0-beta.26
+
+## 0.2.0-beta.0
+
+### Minor Changes
+
+- 97d20de: Replace floating and avatar-menu account switching with a standalone DemoModeMenu for application headers. The dropdown combines the demo environment notice, account names and roles, and the current-account check, with preloading and retryable account switching. Applications must mount the new client/menu component in their header and remove the former DemoAccountMenu, accountSwitcher and showFloatingAccountSwitcher integration.
+
+  Replace calls to the former demoModeReactProviders factory with the static reactProviders export from client/react-providers.
+
+  Ensure account switching reloads the document even when the destination differs only by its hash, so the previous account's client state is discarded while preserving the requested location.
+
+### Patch Changes
+
+- 4001a6e: Make the demo settings page read-only by removing data generation, clear, reset and dataset language controls while retaining status, progress, scheduled reset details and account entry links.
+
+  Remove unused settings controls, mutation error messages and obsolete presentation guidance.
+
+- e525be3: Expire matching legacy unpartitioned authentication cookies when Demo Mode issues partitioned sign-in cookies, preserving custom cookie names and scopes and cross-site iframe sessions. Verify the new session before reloading the demo home page so rejected cookies cannot cause an automatic sign-in reload loop.
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [671e1b3]
+- Updated dependencies [e5d61bd]
+- Updated dependencies [7fbcda4]
+- Updated dependencies [7fbcda4]
+  - @nocobase/app-plugin-agents@1.0.0-beta.25
+
+## 0.2.0-beta
+
 ## 0.1.0-beta.3
 
 ### Minor Changes

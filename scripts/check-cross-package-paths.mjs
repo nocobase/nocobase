@@ -56,29 +56,18 @@ const SCRIPT_EXTENSIONS = new Set([
  * why; the check fails once an entry no longer covers a violation, so the list only shrinks.
  */
 export const EXEMPTIONS = [
-  // The Registry tests of file and notification materialize their recipe into a stand-in receiving application, which
-  // needs the shadcn primitives an application owns (`#components/ui/*`) and a `node_modules` that resolves them. They
-  // copy those from the default template, and notification also from the agents plugin. Neither can be declared: the
-  // template depends on both plugins, so a devDependency would be a cycle, and no package publishes the primitives,
-  // which every application owns as copied source. `scripts/select-quality-scope.mjs` keeps a path mapping for these
-  // reads instead, so a change to those components still runs the two plugins' tests.
   {
-    packageName: '@nocobase/app-plugin-file',
-    path: 'vitest.config.ts',
+    packageName: '@nocobase/app-skills',
+    path: 'skills/nocobase-app-plugin-development/scripts/verify-testing-example.mjs',
     reason:
-      'Copies the default template’s button, dialog and spinner primitives into the Registry test application and links the template’s node_modules; see the comment above.',
+      'Verifies the private example shipped inside the same Skill, using an installed App’s dependencies. It is source material in the app-skills tarball, not a separately installed package; select-quality-scope.mjs maps fixture changes to app-skills.',
   },
+  // The File integration test needs a receiving application; a template dependency would create a cycle.
   {
     packageName: '@nocobase/app-plugin-file',
     path: 'tests/agent-workflow.test.ts',
     reason:
       'Builds the same stand-in application from the default template’s primitives and node_modules, and type-checks it against the template’s vite-env.d.ts; see the comment above.',
-  },
-  {
-    packageName: '@nocobase/app-plugin-notification',
-    path: 'vitest.config.ts',
-    reason:
-      'Copies the agents plugin’s alert, badge, button, card and table primitives into the Registry test application and links the default template’s node_modules; see the comment above.',
   },
   {
     packageName: '@nocobase/app-testing',
@@ -141,6 +130,28 @@ export function collectScriptReferences(source, fileName = 'source.ts') {
     if (specifier && isLiteral(specifier)) {
       moduleNodes.add(specifier);
       if (specifier.text.startsWith('.')) add('module', specifier.text);
+    }
+
+    // A URL based on import.meta.url resolves only from this file, never from the package root.
+    if (
+      ts.isNewExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'URL'
+    ) {
+      const [relative, base] = node.arguments ?? [];
+      if (
+        relative &&
+        isLiteral(relative) &&
+        base &&
+        ts.isPropertyAccessExpression(base) &&
+        base.name.text === 'url' &&
+        ts.isMetaProperty(base.expression) &&
+        base.expression.keywordToken === ts.SyntaxKind.ImportKeyword &&
+        base.expression.name.text === 'meta'
+      ) {
+        moduleNodes.add(relative);
+        if (isRelative(relative.text)) add('module', relative.text);
+      }
     }
 
     if (ts.isCallExpression(node) || ts.isNewExpression(node)) {

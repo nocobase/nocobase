@@ -58,6 +58,8 @@ const pages = {
       'Please restart the runner to refresh its status.',
     RUNNER_REFRESH_UNAVAILABLE: 'This runner has been revoked.',
 
+    boundRunnerIncompatible:
+      'This runner cannot run the selected Agent. Switch runner or start a new conversation.',
     CONFLICT: 'It changed in the meantime. Reload and try again.',
     REVISION_CONFLICT: 'It changed in the meantime. Reload and try again.',
     FORBIDDEN: 'You are not allowed to do this.',
@@ -103,41 +105,28 @@ const pages = {
     unavailableNow: 'Unavailable now',
     title: 'Agents',
     description:
-      'Each coding tool and model a runner reports is an agent. The project manager hands each step of an issue to the agent whose description fits it.',
+      'Add agents from the models runners report. The project manager hands each step of an issue to the agent whose description fits it.',
     fromRunners: 'Agents from runners',
-    discovery: {
-      selectAll: 'Select all results',
-      selectFirst: 'Select the first {{limit}} results',
-      selectionCount: 'Selected {{count}} / {{limit}} groups',
-      clearSelection: 'Clear selection',
-      new: 'New discoveries ({{count}})',
-      ignored: 'Ignored ({{count}})',
+    display: {
       search: 'Search models or providers',
       select: 'Select {{name}}',
-      ignore: 'Ignore',
-      restore: 'Restore',
-      ignoreSelected: 'Ignore selected',
-      restoreSelected: 'Restore selected',
       showDisabled: 'Show disabled',
       hideDisabled: 'Hide disabled',
-      provider: 'Provider and runner',
-      saved: 'Discovery preferences saved',
     },
     filterLabel: 'Show agents',
     filters: {
       all: 'All {{count}}',
       enabled: 'Enabled {{count}}',
-      pending: 'To enable {{count}}',
       unreported: 'No runner {{count}}',
     },
     loadFailed: 'Could not load the agents',
     loadMore: 'Load more',
     emptyTitle: 'No agents yet',
     emptyDescription:
-      'Connect a runner with a coding tool signed in: each of its models shows up here as an agent to enable.',
+      'Connect a runner with a coding tool signed in, then add an agent from Available models.',
     noneInFilter: 'No agent here.',
     howToAdd:
-      'To add an agent, install a coding tool on a runner and sign in to a model you may use: once the runner reports it, it shows up here, and you enable it by writing what it is good at. An agent only personal runners have works only on issues their owners start.',
+      'To add an agent, install a coding tool on a runner and sign in to a model you may use: once the runner reports it, add it from Available models by writing what it is good at. An agent only personal runners have works only on issues their owners start.',
     goodAtMissing: 'Not written yet',
     columns: {
       agent: 'Agent',
@@ -160,7 +149,6 @@ const pages = {
     },
     state: {
       enabled: 'Enabled',
-      pending: 'To enable',
       disabled: 'Disabled',
       unreported: 'No runner',
     },
@@ -176,9 +164,6 @@ const pages = {
       ultra: 'Ultra',
     },
     enable: {
-      button: 'Fill in and enable',
-      buttonFor: 'Fill in and enable {{name}}',
-      title: 'Enable {{name}}',
       reportedBy_one: 'Reported by {{count}} runner online: {{names}}.',
       reportedBy_other: 'Reported by {{count}} runners online: {{names}}.',
       noRunnerNow: 'No runner that has it is online now.',
@@ -189,8 +174,6 @@ const pages = {
         'The project manager cannot change it when it hands work over.',
       personalOnly:
         'Only personal runners have it: the project manager hands it work only on issues their owners start.',
-      submit: 'Enable',
-      done: '{{name}} is enabled',
     },
     edit: {
       button: 'Edit',
@@ -244,31 +227,6 @@ const pages = {
         'Added {{succeeded}}, {{failed}} could not be added. See the reason under each.',
       addFailed:
         '{{failed}} could not be added. See the reason under each; try again.',
-    },
-    cleanup: {
-      open: 'Clean up',
-      title: 'Remove unused discovered agents',
-      description:
-        'Agents a runner’s report created that nobody enabled and that never ran: safe to remove outright. Anything changed since this list loaded is skipped, not removed.',
-      none: 'Nothing to remove.',
-      select: 'Select {{name}}',
-      selectGroup: 'Select all in {{tool}}',
-      clearGroup: 'Clear {{tool}}',
-      neverEnabled: 'Never enabled · No run history',
-      createdAt: 'Discovered {{when}}',
-      group_one: '{{tool}} · {{count}} candidate',
-      group_other: '{{tool}} · {{count}} candidates',
-      selectedCount_one: '{{count}} selected',
-      selectedCount_other: '{{count}} selected',
-      remove: 'Remove {{count}}',
-      confirmTitle_one: 'Remove {{count}} agent?',
-      confirmTitle_other: 'Remove {{count}} agents?',
-      confirmDescription:
-        'Across {{tools}}. Safe to remove: re-checked just before removal, and anything no longer eligible is skipped, not removed.',
-      confirmAction: 'Remove {{count}}',
-      done: 'Removed {{removed}}, skipped {{skipped}}',
-      partialFailure:
-        'Removed {{removed}}, skipped {{skipped}}; {{failed}} could not be removed ({{reason}}). They stay selected to try again.',
     },
   },
   agentTypes: {

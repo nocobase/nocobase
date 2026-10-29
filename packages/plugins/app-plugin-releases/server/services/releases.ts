@@ -243,9 +243,8 @@ export interface DeploymentRecord {
   /** The variables it runs with, sealed; null for one made before variables, or with none. */
   readonly env: string | null;
   readonly variablesFingerprint: string | null;
-  /** The first administrator it generated, sealed; cleared once saved or expired. */
+  /** The first administrator it generated, sealed; cleared once saved. */
   readonly initialAdmin: string | null;
-  readonly initialAdminExpiresAt: Date | null;
   readonly initialAdminSavedBy: string | null;
   readonly initialAdminSavedAt: Date | null;
   readonly createdAt: Date;
@@ -287,6 +286,24 @@ export interface StartDeploymentOptions {
   readonly kind: 'deploy' | 'rollback';
   readonly rollbackTargetDeploymentId?: string | null;
   readonly requestId?: string | null;
+}
+
+/** A release's archive opened for download (`ReleasesService.openArchive`). */
+export interface ReleaseArchive {
+  readonly stream: Readable;
+  /** In bytes, when the upload recorded it. */
+  readonly size: number | null;
+  /** The archive's SHA-256, hex. */
+  readonly checksum: string;
+  /** `<appId>-<version>.tar.gz`, reduced to characters safe in a file name. */
+  readonly fileName: string;
+}
+
+/** `<appId>-<version>.tar.gz`, with anything but letters, digits, `.`, `_` and `-` replaced. */
+export function archiveFileName(appId: string, version: string): string {
+  const safe = (text: string): string =>
+    text.replace(/[^A-Za-z0-9._-]+/gu, '_').replace(/^\.+/u, '') || 'release';
+  return `${safe(appId)}-${safe(version)}.tar.gz`;
 }
 
 export class ReleasesService {
@@ -405,6 +422,13 @@ export class ReleasesService {
   public async createApp(
     caller: Caller,
     input: CreateAppInput,
+    options: {
+      /** Initialize application-owned records in the creation transaction. Runs before app.created is emitted. */
+      readonly initialize?: (
+        connection: DatabaseConnection,
+        appId: string,
+      ) => Promise<void>;
+    } = {},
   ): Promise<AppSummary> {
     this.options.guard.requireCreate(caller);
     if (!input || typeof input.id !== 'string')
@@ -452,29 +476,33 @@ export class ReleasesService {
             'ALREADY_EXISTS',
           );
         await this.assertEnvironmentCapacity(environment);
-        await this.query()
-          .insertInto('relApps')
-          .values({
-            id,
-            environmentId: environment.id,
-            name,
-            description:
-              typeof input.description === 'string' && input.description.trim()
-                ? input.description.trim()
-                : null,
-            currentDeploymentId: null,
-            enabled: false,
-            activation: policy.activation,
-            idleStopMinutes: policy.idleStopMinutes,
-            dormantAfterHours: policy.dormantAfterHours,
-            labels: JSON.stringify(labels),
-            previewOf,
-            createdBy: caller.userId,
-            createdVia: caller.kind,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .execute();
+        await this.options.database.transaction(async (connection) => {
+          await connection.query
+            .insertInto('relApps')
+            .values({
+              id,
+              environmentId: environment.id,
+              name,
+              description:
+                typeof input.description === 'string' &&
+                input.description.trim()
+                  ? input.description.trim()
+                  : null,
+              currentDeploymentId: null,
+              enabled: false,
+              activation: policy.activation,
+              idleStopMinutes: policy.idleStopMinutes,
+              dormantAfterHours: policy.dormantAfterHours,
+              labels: JSON.stringify(labels),
+              previewOf,
+              createdBy: caller.userId,
+              createdVia: caller.kind,
+              createdAt: now,
+              updatedAt: now,
+            })
+            .execute();
+          await options.initialize?.(connection, id);
+        });
       });
     } catch (error) {
       if (!(error instanceof ReleasesError) && (await this.findApp(id)))
@@ -620,6 +648,59 @@ export class ReleasesService {
     const release = await this.requireRelease(appId, releaseId);
     const images = await this.artifacts.imagesOf([release.id]);
     return releaseView(release, images.get(release.id) ?? []);
+  }
+
+  /**
+   * Several Apps' summaries in one batched read (one runtime status call per environment), for the assembling
+   * application: no caller is checked. Unknown ids are left out; the rest keep the order asked.
+   */
+  public async summarizeApps(appIds: readonly string[]): Promise<AppSummary[]> {
+    const ids = [...new Set(appIds)];
+    if (ids.length === 0) return [];
+    const rows = await this.query()
+      .selectFrom('relApps')
+      .selectAll()
+      .where('id', 'in', ids)
+      .execute<Row>();
+    const byId = new Map(
+      rows.map(decodeApp).map((app) => [app.id, app] as const),
+    );
+    const apps = ids.flatMap((id) => {
+      const app = byId.get(id);
+      return app ? [app] : [];
+    });
+    return this.summarize(apps);
+  }
+
+  /**
+   * A release's archive, to download: `view` on the App. An image release has none (`RELEASE_HAS_NO_ARCHIVE`), and an
+   * archive missing from the disk is `RELEASE_ARCHIVE_NOT_FOUND`. The stream is opened last, so a refusal never touches
+   * the disk.
+   */
+  public async openArchive(
+    caller: Caller,
+    appId: string,
+    releaseId: string,
+  ): Promise<ReleaseArchive> {
+    const app = await this.requireApp(appId);
+    await this.options.guard.requireApp(caller, 'view', app);
+    const release = await this.requireRelease(appId, releaseId);
+    const key = release.artifactKey;
+    if (!key)
+      throw new ReleasesError(
+        'This release is a set of images and has no archive to download.',
+        'RELEASE_HAS_NO_ARCHIVE',
+        'FAILED_PRECONDITION',
+      );
+    // A local disk opens its file lazily, so a missing archive would fail only after the response headers went out.
+    if (!(await this.disk.exists(key)))
+      throw notFound('Archive', 'RELEASE_ARCHIVE_NOT_FOUND', releaseId);
+    return {
+      stream: await this.disk.getStream(key),
+      size: release.size,
+      checksum: release.checksum,
+      fileName: archiveFileName(app.id, release.version),
+    };
   }
 
   /**
@@ -1522,12 +1603,6 @@ export class ReleasesService {
    * not report every App as stopped or a finished deployment as still running.
    */
   public async restore(): Promise<void> {
-    await this.clearExpiredInitialAdmins().catch((error: unknown) =>
-      this.diagnostic.warn(
-        'Failed to clear expired first administrators',
-        error,
-      ),
-    );
     const interrupted = (
       await this.query()
         .selectFrom('relDeployments')
@@ -1897,7 +1972,7 @@ export class ReleasesService {
 
   /**
    * The first administrator the App's first deployment generated, for a person who may deploy it: until someone
-   * says it is saved, and for 24 hours (a preview App's until the App goes).
+   * says it is saved or the App is removed.
    */
   public async readInitialAdmin(
     caller: Caller,
@@ -1905,11 +1980,10 @@ export class ReleasesService {
   ): Promise<InitialAdminView> {
     const app = await this.requireApp(appId);
     await this.requireInitialAdminReader(caller, app);
-    await this.clearExpiredInitialAdmins();
     const found = await this.initialAdminOf(app);
     if (!found)
       throw new ReleasesError(
-        'This App has no first administrator to show: it was saved, it expired, or the application did not generate one.',
+        'This App has no first administrator to show: it was saved or the application did not generate one.',
         'INITIAL_ADMIN_UNAVAILABLE',
         'NOT_FOUND',
       );
@@ -1932,19 +2006,6 @@ export class ReleasesService {
       })
       .where('appId', '=', appId)
       .where('initialAdmin', 'is not', null)
-      .execute();
-  }
-
-  /** Clears the first administrators whose 24 hours are over. */
-  public async clearExpiredInitialAdmins(
-    now: Date = new Date(),
-  ): Promise<void> {
-    await this.query()
-      .updateTable('relDeployments')
-      .set({ initialAdmin: null })
-      .where('initialAdmin', 'is not', null)
-      .where('initialAdminExpiresAt', 'is not', null)
-      .where('initialAdminExpiresAt', '<=', now)
       .execute();
   }
 
@@ -1975,19 +2036,13 @@ export class ReleasesService {
       .where('initialAdmin', 'is not', null)
       .orderBy('createdAt', 'desc')
       .execute<Row>();
-    const now = new Date();
     for (const deployment of rows.map(decodeDeployment)) {
-      if (
-        deployment.initialAdminExpiresAt &&
-        deployment.initialAdminExpiresAt <= now
-      )
-        continue;
       const admin = this.openInitialAdmin(deployment);
       if (!admin) continue;
       return {
         deploymentId: deployment.id,
         ...admin,
-        expiresAt: iso(deployment.initialAdminExpiresAt),
+        expiresAt: null,
       };
     }
     return null;
@@ -2179,7 +2234,6 @@ export class ReleasesService {
     readonly env: string | null;
     readonly variablesFingerprint: string | null;
     readonly initialAdmin: string | null;
-    readonly initialAdminExpiresAt: Date | null;
   }> {
     let context = await this.variablesContext(app);
     const plan = planGenerated(release.variables, context, configFile);
@@ -2213,7 +2267,6 @@ export class ReleasesService {
     for (const [name, variable] of plan.oneShot)
       generated[name] = generateVariable(variable.generate!);
     let initialAdmin: string | null = null;
-    let initialAdminExpiresAt: Date | null = null;
     if (plan.initialAdmin) {
       const password =
         (await this.earlierInitialAdmin(app))?.password ?? randomPassword();
@@ -2229,10 +2282,6 @@ export class ReleasesService {
         this.options.secrets,
         'initial-admin',
       );
-      // A preview App's goes with the preview; any other's is deleted after a day.
-      initialAdminExpiresAt = app.previewOf
-        ? null
-        : new Date(Date.now() + INITIAL_ADMIN_TTL_MS);
     }
     const resolved = resolveVariables({
       manifest: release.variables,
@@ -2257,7 +2306,6 @@ export class ReleasesService {
       variablesFingerprint:
         release.variables || names.length > 0 ? resolved.fingerprint : null,
       initialAdmin,
-      initialAdminExpiresAt,
     };
   }
 
@@ -3395,8 +3443,6 @@ export class ReleasesService {
 
 // --- Variables --------------------------------------------------------------------------------------------------
 
-const INITIAL_ADMIN_TTL_MS = 24 * 60 * 60 * 1000;
-
 interface VariablesContext {
   readonly environment: EnvironmentRecord;
   readonly environmentVariables: readonly StoredEnvironmentVariable[];
@@ -3849,7 +3895,6 @@ function decodeDeployment(row: Row): DeploymentRecord {
     env: nullableString(row.env),
     variablesFingerprint: nullableString(row.variablesFingerprint),
     initialAdmin: nullableString(row.initialAdmin),
-    initialAdminExpiresAt: decodeOptionalDate(row.initialAdminExpiresAt),
     initialAdminSavedBy: nullableString(row.initialAdminSavedBy),
     initialAdminSavedAt: decodeOptionalDate(row.initialAdminSavedAt),
     createdAt: decodeDate(row.createdAt),

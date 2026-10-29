@@ -1,6 +1,6 @@
 # Data operations and write policies
 
-Use the built-in management page for data operations and a read-only daily reset overview. Write policies are managed through deployment configuration or the configuration service/API, without a built-in settings tab. Add the application's base path to each URL below.
+Use the built-in management page for a read-only overview of data status, progress, daily resets and account entry links. Run data operations and select the dataset language through the CLI or API. Write policies are managed through deployment configuration or the configuration service/API, without a built-in settings tab. Add the application's base path to request URLs below; middleware path patterns are application-relative and exclude it.
 
 ## Data operations
 
@@ -12,11 +12,19 @@ Clear/reset run the application's full business cleanup, including visitor addit
 
 ## Write protection
 
-`GET /api/demoMode/status` returns `{ data: { enabled: boolean } }` without a session. Server integrations resolve the original `demoModeServiceToken` from `@nocobase/app-plugin-demo-mode/server/tokens` to read `enabled`.
+Use `isDemoMode(container)` from `@nocobase/app-plugin-demo-mode/server` for server checks. It returns `false` without a registered Demo Mode service, including plugin-free generator tests; failures initializing a registered service propagate. Use `useDemoMode()` from the client export for UI checks. The client provider shares the startup `demoMode.enabled` from `defineDemoModeConfig()` public configuration; it never calls the status endpoint, and the hook returns `false` without the provider or when disabled. Reload after changing deployment configuration. `GET /api/demoMode/status` remains compatible with existing clients.
 
 The guard observes SQL through `@nocobase/db` in an HTTP request context. It does not replace authentication, operation permissions or record scopes, or intercept files, outbound calls and background work. Treat jobs, queue messages and schedule firings as unguarded, including work a visitor's action triggers: Redis workers never see the request, and in-process adapters stop being refused once the request that enqueued them has ended. Writes made after a route handler returns are unguarded as well: a streamed response body, such as server-sent events from Agents chat and the tool calls and message persistence it runs, and messages on an upgraded WebSocket. Adapt those [external boundaries and jobs](integration-checklist.md) in the application.
 
 A refused request returns 400 with `error.reason: DEMO_READ_ONLY`. Branch on the reason, not its translated message. If a page encounters a refusal, identify the required business write before granting an exception.
+
+## Request effects guard
+
+Register `app.addHttpMiddleware(demoEffectsGuard({ paths, allow }))`, importing `demoEffectsGuard` from the server export, after the application's i18n middleware and before middleware that performs outbound work. It rejects matching non-GET/HEAD/OPTIONS requests in Demo Mode before route handlers, using the same localized `DEMO_READ_ONLY` error and `Server-Timing: demo-read-only`. A missing or disabled Demo Mode service passes requests through. It does not automatically register routes for official plugins.
+
+`paths` is a list of application-relative paths including `/api`, without a deployment prefix such as `/main`. Use exact endpoints, `:id` for one segment, or a final `/*` for a subtree including its root. Matching is case-sensitive with segment boundaries; exact endpoints accept a trailing slash. `allow` is an optional list of `{ method, path }` exceptions with the same path syntax and case-insensitive methods. Use precise POST exceptions for verified read-only queries. If protecting `/api/*`, explicitly allow the intended authentication, visitor entry and Demo Mode management routes; there is no blanket management bypass. Allowed requests still undergo authorization and the database guard.
+
+Keep checks at service boundaries for jobs, direct calls, GET routes with effects and WebSocket messages. Registering this middleware covers only the selected HTTP paths, and cannot undo work performed by earlier middleware. See the [package README](../../../README.md#refuse-requests-before-external-effects) for a registration example.
 
 ## Collection write exceptions
 
@@ -25,6 +33,8 @@ Use logical collection names matching migrations, such as `orderItems`. An excep
 The management page does not display collection exceptions; existing policies remain effective. For application-owned configuration clients, GET `/api/demoMode/configuration/collections` returns selectable `{ name, title? }` entries. Preserve saved selections absent from the catalog so administrators can remove them. Unknown, malformed or duplicate names are rejected.
 
 Deployment defaults come from `demoMode.allowCollections`, overridden by `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=orderItems,userPreferences`. Restart after changing deployment configuration. These `fixedCollections` combine with runtime selections and cannot be removed through the runtime configuration API.
+
+The Users preference API stores `locale`, `theme.mode` and `theme.preset` in application-scoped visitor session cookies while Demo Mode is enabled. These three keys need no `userPreferences` write exception; other keys still use account storage and the write guard. API clients must retain and resend the cookies, and cookie-bearing writes must send a trusted `Origin` or `Referer`, including when using an API key. Authentication rules are unchanged. Controls using only localStorage or `/i18n/locale` do not use this storage policy; see the package README for defaults and session behavior.
 
 ## Custom configuration clients
 

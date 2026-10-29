@@ -55,6 +55,10 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
     '@nocobase/lifecycle',
     'a LifecycleRuntime is shared between plugins through addGuard(), and EffectFailure and LifecycleError are recognised with instanceof, so a second copy neither registers into the runtime it is handed nor recognises the errors thrown by the other',
   ],
+  [
+    '@nocobase/concurrency',
+    'shared backend contracts and concurrent error constructors cross adapter boundaries and are recognised by identity',
+  ],
 ]);
 
 // Packages a guest reaches only through the host that wraps them, so it declares them in no dependency field at all.

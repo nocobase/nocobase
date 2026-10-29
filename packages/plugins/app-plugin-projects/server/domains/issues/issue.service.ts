@@ -211,6 +211,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     ownerClaimed = false,
     viewer?: Viewer,
   ): Promise<Issue> {
+    const statusChangedAt = after.updatedAt;
     await deps
       .triggers()
       .onIssueChanged(tx, { before, after, actor, ownerClaimed, viewer });
@@ -237,6 +238,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
         actor: eventActor(actor),
         changes,
         revision: after.revision,
+        ...(changes.status ? { statusChangedAt } : {}),
       });
     return after;
   }
@@ -558,6 +560,9 @@ export function createIssueService(deps: IssueDeps): IssueService {
         await deps.relations().placed(tx, await reload(tx, issue.id));
         await record(tx, issue.id, viewer.actor, 'issue_restored');
         tx.emit({ type: 'issue.changed', issueId: issue.id });
+        // A refreshed parent no longer embeds a deleted child, so restoration must name it too.
+        if (issue.parentIssueId)
+          tx.emit({ type: 'issue.changed', issueId: issue.parentIssueId });
         tx.emit({
           type: 'issue.restored',
           issueId: issue.id,
@@ -601,6 +606,8 @@ export function createIssueService(deps: IssueDeps): IssueService {
         .relations()
         .removed(tx, { ...issue, deletedAt: now }, viewer.actor);
       tx.emit({ type: 'issue.changed', issueId: issue.id });
+      if (issue.parentIssueId)
+        tx.emit({ type: 'issue.changed', issueId: issue.parentIssueId });
       tx.emit({
         type: 'issue.deleted',
         issueId: issue.id,

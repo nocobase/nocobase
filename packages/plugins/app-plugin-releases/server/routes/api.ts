@@ -17,6 +17,8 @@ import {
   listResponse,
   type ApiFieldViolation,
 } from '@nocobase/app-server/router';
+import { Readable } from 'node:stream';
+
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import type { AppAction } from '../../shared/access.js';
@@ -58,6 +60,7 @@ import {
   ReleasesDeploymentSchema,
   ReleasesDriverSchema,
   ReleasesEnvironmentCheckSchema,
+  ReleasesEnvironmentListItemSchema,
   ReleasesEnvironmentSchema,
   ReleasesLogEntrySchema,
   ReleasesLogMeta,
@@ -246,13 +249,13 @@ export function createReleasesApi(
       security: personOrRunSecurity,
       ...cliRoute({
         command: 'env list',
-        columns: ['id', 'name', 'driver', 'protected'],
+        columns: ['id', 'name', 'driver', 'protected', 'appCount'],
         action: 'rel.environments/read',
       }),
       description:
         'Requires the `rel.environments` `read` setting, access to the Apps page, or the `create` action on every App.',
       responses: {
-        200: listResponse(ReleasesEnvironmentSchema, ReleasesTotalMeta),
+        200: listResponse(ReleasesEnvironmentListItemSchema, ReleasesTotalMeta),
         ...apiErrorResponses,
       },
     }),
@@ -278,7 +281,7 @@ export function createReleasesApi(
         },
         bodyFile: 'file',
         examples: [
-          'env create staging --name Staging --driver host --protected',
+          'env create staging --name Staging --driver host --purpose test --protected',
           'env create production --file production.json',
         ],
         action: 'rel.environments/manage',
@@ -1306,13 +1309,13 @@ export function createReleasesApi(
       // A password: it stays out of the command line, so it never lands in a terminal's history or an agent's log.
       ...cliRoute(false),
       description:
-        'Requires the `deploy` action on the App. People only: agents and keys are refused. The first administrator its first deployment generated, until someone saves it (`dismiss`) or 24 hours pass (a preview App’s stays until the App goes).',
+        'Requires the `deploy` action on the App. People only: agents and keys are refused. The first administrator its first deployment generated, until someone saves it (`dismiss`) or the App is removed.',
       responses: {
         200: dataResponse(ReleasesInitialAdminSchema),
         ...apiErrorResponses,
         404: apiErrorResponse(
           404,
-          'Nothing to show: it was saved or expired, or none was generated (`INITIAL_ADMIN_UNAVAILABLE`).',
+          'Nothing to show: it was saved or none was generated (`INITIAL_ADMIN_UNAVAILABLE`).',
         ),
       },
     }),
@@ -1555,6 +1558,74 @@ export function createReleasesApi(
           releaseId,
         ),
       });
+    },
+  );
+  api.get(
+    '/apps/:appId/releases/:releaseId/archive',
+    onApps('view'),
+    describeRoute({
+      tags,
+      summary: "Download a release's archive",
+      operationId: 'releasesDownloadReleaseArchive',
+      security: personOrRunSecurity,
+      ...cliRoute({
+        command: 'release download',
+        flags: { appId: { name: 'app' }, releaseId: { name: 'release' } },
+        action: 'rel.apps/view',
+        examples: ['release download --app <app> --release <release> --out .'],
+      }),
+      description:
+        'Requires the `view` action on the App. Answers the uploaded `.tar.gz` as `<appId>-<version>.tar.gz`, with its SHA-256 in `X-Artifact-Sha256`. An image release has no archive (`RELEASE_HAS_NO_ARCHIVE`).',
+      responses: {
+        200: {
+          description: 'The archive.',
+          headers: {
+            'Content-Disposition': {
+              description: '`attachment`, named `<appId>-<version>.tar.gz`.',
+              schema: { type: 'string' },
+            },
+            'X-Artifact-Sha256': {
+              description: "The archive's SHA-256, hex.",
+              schema: { type: 'string' },
+            },
+          },
+          content: {
+            'application/gzip': {
+              schema: { type: 'string', format: 'binary' },
+            },
+          },
+        },
+        ...apiErrorResponses,
+        404: apiErrorResponse(
+          404,
+          'The App or release does not exist, or its archive is missing from the artifact storage (reason `RELEASE_ARCHIVE_NOT_FOUND`).',
+        ),
+        400: apiErrorResponse(
+          400,
+          'An image release has no archive (`FAILED_PRECONDITION`, reason `RELEASE_HAS_NO_ARCHIVE`).',
+        ),
+      },
+    }),
+    apiValidator('param', ReleaseParams),
+    async (context) => {
+      const { appId, releaseId } = context.req.valid('param');
+      const archive = await services.releases.openArchive(
+        person(context),
+        appId,
+        releaseId,
+      );
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/gzip',
+        'Content-Disposition': `attachment; filename="${archive.fileName}"`,
+        'X-Artifact-Sha256': archive.checksum,
+        'Cache-Control': 'private, no-store',
+      };
+      if (archive.size !== null)
+        headers['Content-Length'] = String(archive.size);
+      return new Response(
+        Readable.toWeb(archive.stream) as unknown as ReadableStream<Uint8Array>,
+        { headers },
+      );
     },
   );
   api.patch(

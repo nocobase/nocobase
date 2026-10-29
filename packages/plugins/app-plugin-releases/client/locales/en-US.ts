@@ -375,8 +375,6 @@ const ui = {
   },
   initialAdmin: {
     title: 'First administrator',
-    expires:
-      'Generated for the first deployment. Save it now: it is deleted in {{hours}} h.',
     kept: 'Generated for the first deployment; it is kept until the app is removed.',
     username: 'Username',
     email: 'Email',
@@ -616,6 +614,11 @@ const ui = {
     name: 'Name',
     driver: 'Driver',
     runsOn: 'Runs on',
+    appCount: 'Apps',
+    purpose: 'Purpose',
+    purposeHint:
+      'Each environment is for one thing: pull request previews, or testing releases.',
+    purposes: { preview: 'Previews', test: 'Testing' },
     policy: 'Policy',
     publicUrl: 'Public URL pattern',
     config: 'Settings (JSON)',

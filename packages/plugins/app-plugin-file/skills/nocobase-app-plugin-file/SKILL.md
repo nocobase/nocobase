@@ -1,19 +1,19 @@
 ---
 name: nocobase-app-plugin-file
-description: Add file collections, uploads, downloads, DOCX/XLSX/PPTX previews, business attachments, and editable Registry file components to a NocoBase 3 App using the public File Repository services.
+description: Add file collections, uploads, downloads, DOCX/XLSX/PPTX previews, business attachments, and editable UI Library file components to a NocoBase 3 App using the public File Repository services.
 ---
 
 # Add files to an App
 
-Use `@nocobase/app-plugin-file/server` and `@nocobase/app-plugin-file/client`. The plugin provides Repository managers, service tokens, route helpers, and the component-ui Registry recipe. The App or business plugin owns collections, migrations, Drive configuration, resource routes, permissions, and pages.
+Use `@nocobase/app-plugin-file/server` and `@nocobase/app-plugin-file/client`. The plugin provides Repository managers, service tokens, and route helpers. The UI Library provides `@nocobase/file-component-ui`. The App or business plugin owns collections, migrations, Drive configuration, resource routes, permissions, and pages.
 
 Inspect the App's existing registrations, migrations, disks, and resources first. Register the Server default export and the Client default factory before consumers, using the App's plugin lifecycle commands. The core does not create collections or routes.
 
 ## Find and reuse the preview UI first
 
-Inspect `client/extensions/nocobase-file-component-ui/` before writing upload or preview components. Current Default templates preinstall this application-owned Registry source and its client dependencies; older applications and other templates may not. Import from its `index.ts`, not from plugin-internal paths. Registering the plugin supplies services and translations; it does not automatically install or upgrade the copied UI.
+Inspect `client/extensions/nocobase-file-component-ui/` before writing upload or preview components. Current Default templates preinstall this application-owned UI Library source and its client dependencies; older applications and other templates may not. Import from its `index.ts`, not from plugin-internal paths. Registering the plugin supplies services and translations; it does not automatically install or upgrade the copied UI.
 
-| Format                                               | Registry preview                  | Content access                                                                 |
+| Format                                               | UI Library preview                | Content access                                                                 |
 | ---------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------ |
 | DOCX / XLSX / PPTX                                   | Local `@silurus/ooxml` viewer     | Same-origin session credentials; no public URL or third-party service required |
 | Raster image / PDF / text / Markdown / audio / video | Built-in preview components       | See the content access rules below                                             |
@@ -22,11 +22,11 @@ Inspect `client/extensions/nocobase-file-component-ui/` before writing upload or
 
 To show a record's files as thumbnails and chips, or take uploads beside a form or a comment, install the UI Library's `attachment-list` component (`yes n | pnpm exec shadcn add @nocobase/attachment-list`; its example is `@nocobase/attachment-list-demo`), map file records to `AttachmentFile`, and open `FilePreviewDialog` from its `onPreview`. For custom attachment lists, uploads or business associations, reuse `FilePreviewDialog` with file records and `contentUrl`; it requires no repository prop. Extend the existing UI or add the necessary content adapter rather than reimplementing format detection and dropping supported formats. A DOCX download fallback indicates a request/rendering failure or an outdated/custom component, not that the plugin lacks DOCX support. Report the actual failure and preserve its evidence.
 
-If the installed package, synchronized Skill and copied UI disagree, inspect the resolved plugin version, run `pnpm nocobase skills sync` to refresh guidance, and reconcile the UI source separately. Skills synchronization does not upgrade Registry copies.
+If the installed package, synchronized Skill and copied UI disagree, inspect the resolved plugin version, run `pnpm nocobase skills sync` to refresh guidance, and reconcile the UI source separately. Skills synchronization does not upgrade UI Library copies.
 
 ## Work incrementally
 
-- Use standard File Repository routes, the Client File Repository and Registry components for new attachment features. Save associations through the existing business API, whether standard CRUD or custom routes; do not migrate working business routes just to add files.
+- Use standard File Repository routes, the Client File Repository and UI Library components for new attachment features. Save associations through the existing business API, whether standard CRUD or custom routes; do not migrate working business routes just to add files.
 - Extend existing services, middleware, response adapters or installed UI components where needed. A necessary compatibility handler should delegate to File Repository; do not rebuild upload, storage and metadata handling with Drive or replace the whole CRUD stack.
 - Inspect the App's registration, collection, disk and business save path together. Reuse what works; do not ask the user to choose an implementation or repeatedly explore source when the documented contract suffices.
 - Verify one small upload → metadata query → content download before building UI. Then wire the returned IDs into the existing save/detail flow. Retain uploaded IDs if the business save fails, and run the affected checks after edits stabilize.
@@ -162,19 +162,19 @@ const rows = await files.findMany({ limit: 20 });
 await files.deleteOne({ filter: { id: record.id } });
 ```
 
-Inputs are a native File or a nonempty File array. Results are `{ record, createdTargets, version? }` and `{ createdCount, records }`. Upload already creates metadata. Client uploads accept an optional second `{ signal }` argument; abort does not undo a server commit. Use returned contentUrl directly: HTTP already adds the host prefix, such as `/main`. Both the read Policy and custom selects must retain `id`, `ext`, `filename`, `mimeType`, `size`, `createdAt` and `updatedAt` when their results feed Registry UI. `id` and `ext` derive `contentUrl`; the remaining fields support thumbnails, preview selection and component refresh. Verify queried records, not only the immediate upload response. Storage `disk` and `key` need not be exposed to read-only UI.
+Inputs are a native File or a nonempty File array. Results are `{ record, createdTargets, version? }` and `{ createdCount, records }`. Upload already creates metadata. Client uploads accept an optional second `{ signal }` argument; abort does not undo a server commit. Use returned contentUrl directly: HTTP already adds the host prefix, such as `/main`. Both the read Policy and custom selects must retain `id`, `ext`, `filename`, `mimeType`, `size`, `createdAt` and `updatedAt` when their results feed UI Library UI. `id` and `ext` derive `contentUrl`; the remaining fields support thumbnails, preview selection and component refresh. Verify queried records, not only the immediate upload response. Storage `disk` and `key` need not be exposed to read-only UI.
 
-## Registry components
+## UI Library components
 
-The registered Client plugin supplies English and Chinese UI resources. Registry components bind the `@nocobase/app-plugin-file` namespace explicitly; retain the Client registration and `@nocobase/i18n` dependency when installing them. Existing label overrides still take precedence.
+The UI Library block carries its own `locales/`. Merge them into application locales before application overrides. Its components use the current namespace and label overrides take precedence. Plugin registration supplies repository services; it does not install UI.
 
 Reuse the preinstalled directory when present. For an application without it, materialize `component-ui` from a NocoBase source workspace into the target application:
 
 ```bash
-pnpm registry materialize --package @nocobase/app-plugin-file --item component-ui --output-root /absolute/path/to/app
+pnpm exec shadcn add @nocobase/file-component-ui
 ```
 
-Materialize copies source only and refuses an existing target directory. Run it from the NocoBase source repository, not from a generated application. For an upgrade, materialize into a separate temporary directory and three-way merge the previous Registry source, new source and application copy; preserve application customizations. The App must provide React/React DOM, lucide-react, react-markdown, remark-gfm and shadcn button/dialog primitives. It adds no route or permissions. A hosted Registry JSON can instead be installed with shadcn add, which reads the item's declared dependencies; npm publication alone supplies no Registry URL.
+Run the command from a consuming application. In this source repository, copy the files declared by `ui-library/registry/file/registry.json` to their targets and retain workspace dependency ranges. For upgrades, merge changes with the existing application copy. The block adds no route or permissions; keep existing customized primitives.
 
 Default already declares the viewer. For an application installing the source or upgrading an older copy, add the OOXML viewer from the target App directory if missing:
 
@@ -182,7 +182,7 @@ Default already declares the viewer. For an application installing the source or
 pnpm add -D --save-exact @silurus/ooxml@0.85.1
 ```
 
-The viewer belongs in the App's `devDependencies`: Vite compiles this application-owned client source. Registry `dependencies` describes the installation recipe, while a plugin's published runtime Client imports belong in that plugin's `peerDependencies`. Do not move this viewer into server `dependencies` or add it as a plugin peer solely for copied Registry source. Retain the registered file Client plugin for its locale resources. Merge Registry upgrades with App customizations instead of overwriting installed source.
+The viewer belongs in the App's `devDependencies`: Vite compiles this application-owned client source. UI Library item `dependencies` describes the installation recipe, while a plugin's published runtime Client imports belong in that plugin's `peerDependencies`. Do not move this viewer into server `dependencies` or add it as a plugin peer solely for copied UI Library source. Merge the block's locale resources into the application namespace. Merge UI Library upgrades with App customizations instead of overwriting installed source.
 
 Use a version of `@nocobase/dev-config` whose `createAppViteConfig` excludes `@silurus/ooxml` from dependency prebundling. For an older shared preset or custom Vite configuration, merge this entry into the existing configuration and preserve other exclusions:
 
@@ -206,7 +206,7 @@ import {
 import {
   FileUploadField,
   FileList,
-} from '#extensions/nocobase-file-component-ui';
+} from '#extensions/nocobase-file-component-ui/index';
 
 export function InvoiceAttachments(): ReactElement {
   const manager = useService(clientFileRepositoryManagerToken);
@@ -240,7 +240,7 @@ Preview supports safe raster images, PDF, text/Markdown and audio/video. HTML/SV
 
 OOXML, PDF and text fetches use same-origin credentials. An App-owned content route protected by same-origin session cookies can therefore serve restricted previews, provided it checks the caller's record access. Cross-origin fetches omit credentials and require CORS; an external cookie-protected URL is not supported by this default path. The Repository API client's Bearer token is not automatically attached to content fetches.
 
-For Bearer-only content authorization, adapt the installed Registry source in the App. Add an authenticated content loader to the OOXML fetch path and `PreviewBody`'s PDF/text fetches, and adapt download and media/image paths as needed. Resolve authentication through the App's supported client/session services and send credentials only to the trusted content endpoint. Do not put tokens in `contentUrl`. If the adapter creates blob URLs, keep an App-owned trusted URL set, pass it to the relevant `resolveSafeFileUrl` calls, and revoke URLs when replaced or unmounted. Merely assigning a `blob:` URL to `FileRecord.contentUrl` is insufficient: the default components reject untrusted blob URLs.
+For Bearer-only content authorization, adapt the installed UI Library source in the App. Add an authenticated content loader to the OOXML fetch path and `PreviewBody`'s PDF/text fetches, and adapt download and media/image paths as needed. Resolve authentication through the App's supported client/session services and send credentials only to the trusted content endpoint. Do not put tokens in `contentUrl`. If the adapter creates blob URLs, keep an App-owned trusted URL set, pass it to the relevant `resolveSafeFileUrl` calls, and revoke URLs when replaced or unmounted. Merely assigning a `blob:` URL to `FileRecord.contentUrl` is insufficient: the default components reject untrusted blob URLs.
 
 OOXML request or rendering failure displays an error and, when downloads are enabled, a download action. `download={false}` removes that action. This is not a second preview service or a guarantee that downloading the same inaccessible URL will succeed.
 

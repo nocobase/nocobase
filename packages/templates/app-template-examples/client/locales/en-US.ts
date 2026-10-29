@@ -1,3 +1,5 @@
+import { enUS as customerContacts } from '../pages/customer-contacts/locales.js';
+import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
 import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
@@ -5,6 +7,38 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  customerContacts,
+  skillProjects: skillProjectsenUS,
+  knowledge: {
+    indexing: 'Knowledge indexing',
+    title: 'Knowledge base',
+    spaces: { default: 'Default knowledge base' },
+    chat: {
+      title: 'Start knowledge AI chat',
+      description: 'Choose how this conversation retrieves knowledge.',
+      strategy: 'Knowledge retrieval policy',
+      onDemand: 'On-demand retrieval',
+      onDemandDescription:
+        'Search for internal knowledge or when explicitly requested; greetings and questions independent of the knowledge base may be answered directly.',
+      always: 'Retrieve for every question',
+      alwaysDescription:
+        'Instruct AI to search before answering each new question and disclose missing or insufficient evidence.',
+      policyNote:
+        'The policy applies throughout the new conversation. It is a model instruction, not an enforced tool-execution guarantee.',
+      start: 'Start chat',
+      starting: 'Starting…',
+      expired: 'Your session has ended. Sign in again to start a conversation.',
+      forbidden:
+        'You do not have permission to start this conversation. Ask an administrator for access.',
+      failed:
+        'The conversation could not be created. Check the model configuration and try again.',
+      unknown:
+        'The result is unknown. A conversation may already exist. Check chat history before starting another one.',
+      history: 'Check chat history',
+      signIn: 'Sign in again',
+      retry: 'Retry',
+    },
+  },
   aiFormFill: {
     title: 'AI form assistance',
     description: 'Describe your request and let AI help fill the form.',
@@ -297,9 +331,6 @@ const enUS = {
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {{page}} · {{total}} executions',
-    noDefinitions: 'No workflow definitions.',
-    noExecutions: 'No executions yet. Start a workflow from its example page.',
-    noResults: 'No executions for this workflow.',
     loading: 'Loading workflows',
     failed: 'Could not load workflows. Please try again.',
     forbidden: 'You do not have access to this workflow.',
@@ -573,7 +604,6 @@ const enUS = {
     error:
       'Unable to load numeric examples. Check your connection and sign-in status, then retry.',
     retry: 'Try again',
-    empty: 'No rows in this selection. Aggregate results are shown below.',
     rows: 'Stored values',
     aggregates: 'Aggregate results',
     field: 'Field / type',
@@ -598,6 +628,10 @@ const enUS = {
     },
   },
   examples: {
+    customerContacts: {
+      title: 'Customer relations and batch editing',
+      description: customerContacts.description,
+    },
     aiFormFill: {
       title: 'AI form assistance',
       description:
@@ -696,11 +730,6 @@ const enUS = {
     archived: 'Archived',
     filter: 'Filter by status',
     search: 'Search titles…',
-    loading: 'Loading articles…',
-    loadError: 'Unable to load articles. Check your connection and try again.',
-    retry: 'Try again',
-    empty: 'No matching articles',
-    emptyHint: 'Try another search or create your first article.',
     noSummary: 'No summary yet.',
     read: 'Read article',
     total: '{{count}} articles',
@@ -735,7 +764,7 @@ const enUS = {
     loadError:
       'Unable to load orders. Check that you are signed in and that the external CRM database is reachable.',
     retry: 'Retry',
-    empty: 'No matching orders',
+    empty: 'No orders yet.',
     emptyHint:
       'The SQLite stand-in is filled with sample orders on startup; a real CRM shows whatever it holds.',
     columns: {

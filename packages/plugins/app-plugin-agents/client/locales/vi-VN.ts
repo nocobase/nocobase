@@ -55,6 +55,8 @@ const viVN: LocaleResource<typeof enUS> = {
       'Runner này không hỗ trợ làm mới trạng thái. Hãy khởi động lại runner.',
     RUNNER_REFRESH_UNAVAILABLE:
       'Không thể làm mới trạng thái của runner đã bị thu hồi.',
+    boundRunnerIncompatible:
+      'Runner này không thể chạy Agent đã chọn. Hãy đổi runner hoặc bắt đầu cuộc trò chuyện mới.',
     CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
     REVISION_CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
     FORBIDDEN: 'Bạn không được phép làm điều này.',
@@ -100,41 +102,28 @@ const viVN: LocaleResource<typeof enUS> = {
     unavailableNow: 'Hiện không khả dụng',
     title: 'Tác nhân',
     description:
-      'Mỗi công cụ mã hóa và mô hình mà trình chạy báo cáo là một tác nhân. Người quản lý dự án giao từng bước của một vấn đề cho người đại diện có mô tả phù hợp với nó.',
+      'Thêm tác nhân từ các mô hình do trình chạy báo cáo. Người quản lý dự án giao từng bước của nhiệm vụ cho tác nhân có mô tả phù hợp.',
     fromRunners: 'Đại lý từ trình chạy',
-    discovery: {
-      selectAll: 'Chọn tất cả kết quả',
-      selectFirst: 'Chọn kết quả {{limit}} đầu tiên',
-      selectionCount: 'Các nhóm {{count}} / {{limit}} đã chọn',
-      clearSelection: 'Lựa chọn rõ ràng',
-      new: 'Những khám phá mới ({{count}})',
-      ignored: 'Đã bỏ qua ({{count}})',
+    display: {
       search: 'Tìm kiếm người mẫu hoặc nhà cung cấp',
       select: 'Chọn {{name}}',
-      ignore: 'Bỏ qua',
-      restore: 'Khôi phục',
-      ignoreSelected: 'Bỏ qua đã chọn',
-      restoreSelected: 'Khôi phục đã chọn',
       showDisabled: 'Hiện đã tắt',
       hideDisabled: 'Ẩn đã tắt',
-      provider: 'Nhà cung cấp và trình chạy',
-      saved: 'Đã lưu tùy chọn khám phá',
     },
     filterLabel: 'Hiển thị đại lý',
     filters: {
       all: 'Tất cả {{count}}',
       enabled: 'Đã bật {{count}}',
-      pending: 'Để kích hoạt {{count}}',
       unreported: 'Không có trình chạy {{count}}',
     },
     loadFailed: 'Không thể tải các đại lý',
     loadMore: 'Tải thêm',
     emptyTitle: 'Chưa có đại lý',
     emptyDescription:
-      'Kết nối trình chạy với công cụ mã hóa đã đăng nhập: mỗi mô hình của nó hiển thị ở đây với tư cách là tác nhân để kích hoạt.',
+      'Kết nối trình chạy có công cụ lập trình đã đăng nhập, rồi thêm tác nhân từ “Các mô hình khả dụng”.',
     noneInFilter: 'Không có đại lý ở đây.',
     howToAdd:
-      'Để thêm một tác nhân, hãy cài đặt một công cụ mã hóa trên một trình chạy và đăng nhập vào một mô hình mà bạn có thể sử dụng: sau khi trình chạy báo cáo, nó sẽ hiển thị ở đây và bạn kích hoạt nó bằng cách viết nó giỏi ở lĩnh vực nào. Một đại lý chỉ có những vận động viên cá nhân chỉ làm việc về những vấn đề mà chủ sở hữu của họ bắt đầu.',
+      'Để thêm tác nhân, hãy cài đặt công cụ lập trình trên trình chạy và đăng nhập để sử dụng mô hình khả dụng. Sau khi trình chạy báo cáo mô hình, hãy thêm tác nhân từ “Các mô hình khả dụng” và mô tả thế mạnh của tác nhân. Tác nhân được bật ngay khi thêm. Tác nhân chỉ có trên trình chạy cá nhân chỉ xử lý các nhiệm vụ do chủ sở hữu trình chạy đó bắt đầu.',
     goodAtMissing: 'Chưa viết',
     columns: {
       agent: 'Tác nhân',
@@ -157,7 +146,6 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: 'Đã bật',
-      pending: 'Để kích hoạt',
       disabled: 'Đã tắt',
       unreported: 'Không có trình chạy',
     },
@@ -173,9 +161,6 @@ const viVN: LocaleResource<typeof enUS> = {
       ultra: 'Cực',
     },
     enable: {
-      button: 'Điền và kích hoạt',
-      buttonFor: 'Điền và kích hoạt {{name}}',
-      title: 'Kích hoạt {{name}}',
       reportedBy_one: 'Á hậu {{count}} tường thuật trực tuyến: {{names}}.',
       reportedBy_other:
         'Báo cáo của các vận động viên {{count}} trực tuyến: {{names}}.',
@@ -187,8 +172,6 @@ const viVN: LocaleResource<typeof enUS> = {
         'Người quản lý dự án không thể thay đổi nó khi bàn giao công việc.',
       personalOnly:
         'Chỉ những trình chạy bộ cá nhân mới có nó: người quản lý dự án giao nó chỉ giải quyết các vấn đề mà chủ sở hữu của họ bắt đầu.',
-      submit: 'Bật',
-      done: '{{name}} được bật',
     },
     edit: {
       button: 'Chỉnh sửa',
@@ -242,31 +225,6 @@ const viVN: LocaleResource<typeof enUS> = {
         'Đã thêm {{succeeded}}, {{failed}} không thể thêm. Lý do ở dưới mỗi mục.',
       addFailed:
         '{{failed}} không thể thêm. Lý do ở dưới mỗi mục; hãy thử lại.',
-    },
-    cleanup: {
-      open: 'Dọn dẹp',
-      title: 'Xóa các agent được phát hiện nhưng không dùng',
-      description:
-        'Các agent do báo cáo của runner tạo ra, chưa ai bật và chưa từng chạy: có thể xóa thẳng mà an toàn. Mọi thứ đã thay đổi từ khi danh sách này được tải sẽ bị bỏ qua, không bị xóa.',
-      none: 'Không có gì để xóa.',
-      select: 'Chọn {{name}}',
-      selectGroup: 'Chọn tất cả trong {{tool}}',
-      clearGroup: 'Bỏ chọn {{tool}}',
-      neverEnabled: 'Chưa từng bật · Không có lịch sử chạy',
-      createdAt: 'Phát hiện {{when}}',
-      group_one: '{{tool}} · {{count}} mục',
-      group_other: '{{tool}} · {{count}} mục',
-      selectedCount_one: 'Đã chọn {{count}}',
-      selectedCount_other: 'Đã chọn {{count}}',
-      remove: 'Xóa {{count}}',
-      confirmTitle_one: 'Xóa {{count}} agent?',
-      confirmTitle_other: 'Xóa {{count}} agent?',
-      confirmDescription:
-        'Trong {{tools}}. An toàn để xóa: được kiểm tra lại ngay trước khi xóa, và những mục không còn đủ điều kiện sẽ bị bỏ qua, không bị xóa.',
-      confirmAction: 'Xóa {{count}}',
-      done: 'Đã xóa {{removed}}, bỏ qua {{skipped}}',
-      partialFailure:
-        'Đã xóa {{removed}}, bỏ qua {{skipped}}; {{failed}} không thể xóa ({{reason}}). Vẫn được chọn để thử lại.',
     },
   },
   agentTypes: {
@@ -995,6 +953,8 @@ const viVN: LocaleResource<typeof enUS> = {
         '{{own}} hiện không có trình chạy nào dành cho bạn, vì vậy {{name}} sẽ trả lời cho đến khi {{own}} quay trở lại.',
       onlineFallbackUnavailable:
         'Tác nhân dự phòng trực tuyến không thể trả lời ({{reason}}). Cuộc trò chuyện này vẫn ở lại với {{own}} trong khi chờ trình chạy.',
+      switchedAgent:
+        'Đã chuyển sang {{name}}, giữ nguyên lịch sử cuộc trò chuyện.',
       switchedBack: 'Quay lại với {{name}}.',
       runFailed: 'Người đại diện dừng lại trước khi trả lời.',
       runFailedReason: 'Nhân viên dừng lại trước khi trả lời: {{reason}}',

@@ -544,8 +544,6 @@ const esES: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Primer administrador',
-      expires:
-        'Generado para el primer despliegue. Guárdalo ahora: se elimina en {{hours}} h.',
       kept: 'Generado para el primer despliegue; se conserva hasta que se elimina la aplicación.',
       username: 'Nombre de usuario',
       email: 'Correo electrónico',
@@ -803,6 +801,11 @@ const esES: LocaleResource<typeof enUS> = {
       name: 'Nombre',
       driver: 'Conductor',
       runsOn: 'Se ejecuta en',
+      appCount: 'Aplicaciones',
+      purpose: 'Uso',
+      purposeHint:
+        'Cada entorno tiene un solo uso: vistas previas de pull requests o pruebas de versiones.',
+      purposes: { preview: 'Vistas previas', test: 'Pruebas' },
       policy: 'Política',
       publicUrl: 'Patrón público URL',
       config: 'Configuración (JSON)',

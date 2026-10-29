@@ -2,16 +2,27 @@
 
 | Item          | Details                                                                                                                                                                                                                                                                                                                                   |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status        | Draft / Pending review / Confirmed                                                                                                                                                                                                                                                                                                        |
+| Status        | Draft / Pending review / Ready for implementation                                                                                                                                                                                                                                                                                         |
 | Routes        | `/<path>`; child routes: `/<path>/:id` (detail drawer), and on a page with tabs `/<path>/:id/<tab>/edit` under every tab for each overlay its header opens …                                                                                                                                                                              |
 | Navigation    | Sidebar menu "[name]", icon `<LucideIcon>`; or: not shown in navigation                                                                                                                                                                                                                                                                   |
 | Permissions   | All signed-in users (`authz: 'skip'`) / App page: the page grant `page:<id>`, and the business action `composite:<id>` `<action>` its endpoints check (a page grant authorizes no endpoint) / settings page: the settings item `settings:<id>` (`read`; writes check `update`), registered on the server and checked by its endpoints too |
 | Page template | [`ui-guidelines.md`](../ui-guidelines.md) T1 list page / T2 detail view / T3 form / T4 settings page / T5 dashboard                                                                                                                                                                                                                       |
-| Confirmation  | Confirmed by the user on [date] / the user authorized skipping confirmation in advance                                                                                                                                                                                                                                                    |
 
 ## 1. Goals
 
 Who uses this page and in what situation, and which tasks they need to complete (no more than 3).
+
+For a cross-module change, link the existing business journey and name the affected roles, record states, entry points, return context and refresh behavior. Scope this to the requested change.
+
+### Design inputs and reference agreement
+
+Read [the shared design contract](../design-contract.md). Link the application's existing global design record and the page's existing exceptions (or record that none exist). Name the owning application/plugin and target host. For a plugin, include the plugin-owned implementation paths and the host's theme and layout contract.
+
+| Reference ID | Original source and version/screen | Mode: faithful / structure / style | Must-preserve detail | Allowed difference | Viewport/state | Acceptance criterion |
+| ------------ | ---------------------------------- | ---------------------------------- | -------------------- | ------------------ | -------------- | -------------------- |
+| V1           |                                    |                                    |                      |                    |                | D1                   |
+
+If there is no UI reference, say so and use the current system design and defaults. If a reference is inaccessible or its intended use is unresolved, state that; do not invent its contents. Give each required detail its own stable V ID. Name where confirmed decisions will be retained after this task, such as `docs/ui/pages/<feature>.md`.
 
 ## 2. Data and endpoints
 
@@ -47,11 +58,11 @@ Wireframe:
 
 ## 4. Component list
 
-| Area | Component | Notes |
-| ---- | --------- | ----- |
-|      |           |       |
+| Area / interaction | Component and underlying primitive | Source file / public import / registry item | Reused / Added / Composed / Custom | Custom gap, alternatives and verification |
+| ------------------ | ---------------------------------- | ------------------------------------------- | ---------------------------------- | ----------------------------------------- |
+|                    |                                    |                                             |                                    |                                           |
 
-Components come from `client/components/ui/` or `client/components/`; for a component that has to be added, mark it "New" and give its source (the shadcn registry name).
+Follow [component selection](../component-selection.md): reuse existing business components, then installed primitives, then add missing registry items. List the source of local wrappers and their underlying primitives. For custom/native interactions, explain why reuse or composition cannot satisfy the requirement (or cite the explicit user instruction), and map their behavior to acceptance criteria. Use the owning plugin's paths for plugin UI.
 
 ## 5. States
 
@@ -96,31 +107,31 @@ Each one must be checkable by an action or a screenshot:
 
 When the design changes, keep existing numbers unchanged and append new criteria at the end.
 
-Every route, navigation entry (including its icon), permission, component and state declared in sections 2–4 must map to one criterion above, or be marked explicitly as not a criterion. A declaration with no criterion is not compared with the code at acceptance time.
+Every required reference detail, route, navigation entry (including its icon), permission, component and state must map to a criterion above. Review the whole design as well; a missing criterion does not exempt a declared requirement. For an overlay, specify its footer placement, responsive button order, long-content scrolling and pending/error states, using the actual installed component behavior. Include affected cross-module or host integration checks.
 
 ## 10. Open questions
 
-Points the user needs to decide; if there are none, write "None".
+Record assumptions and any blocking decisions that require user input; if there are none, write "None". Routine design choices do not require confirmation.
 
 ## 11. Change log
 
-Record here any changes made after the design was confirmed.
+Record changes made after the design review.
 
-| Date | Change | Reason | Affected acceptance criteria | Confirmed by the user |
-| ---- | ------ | ------ | ---------------------------- | --------------------- |
-|      |        |        |                              |                       |
+| Date | Change | Reason | Affected acceptance criteria | Decision / handling |
+| ---- | ------ | ------ | ---------------------------- | ------------------- |
+|      |        |        |                              |                     |
 
 ## 12. Guideline trade-offs
 
-Give a reason for each Should guideline you do not adopt; where a Must guideline leaves room for interpretation, write down how you read it; deliberate fixed sizes (F7) also go here.
+Give a reason for each Should departure. A replacement for a Must product default needs its scope, reason, exact replacement and authorization under the shared design contract. Record interpretations and deliberate fixed sizes (F7) here too. Usability, correctness and host integration outcomes remain required. Mark unresolved proposals as Pending; do not treat them as approved exceptions.
 
-| Guideline | Level | Handling | Notes |
-| --------- | ----- | -------- | ----- |
-|           |       |          |       |
+| Guideline | Default and replacement | Scope and reason | Authorization: user instruction / confirmed design / Pending | Acceptance criterion |
+| --------- | ----------------------- | ---------------- | ------------------------------------------------------------ | -------------------- |
+|           |                         |                  |                                                              |                      |
 
 ## 13. Review responses
 
-Record how each comment from the design review (`review-design.md`) was handled, and cover them when you ask the user to confirm the design.
+Record how each comment from the design review (`review-design.md`) was handled, and summarize the resolutions when presenting the design.
 
 | ID  | Type                  | Handling                                                | Where changed |
 | --- | --------------------- | ------------------------------------------------------- | ------------- |

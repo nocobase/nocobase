@@ -18,12 +18,13 @@ export const ApiEvidenceSchema: z.ZodType<FoundationApiEvidence> = z
             source: z.enum([
               '@nocobase/db#databaseManagerToken',
               '@nocobase/app-plugin-authentication#authenticationToken.required',
+              '@nocobase/app-plugin-authorization#authorizationToken.middleware',
               'hono/body-limit#bodyLimit',
               '@nocobase/app-server/router#apiValidator',
             ]),
           })
           .strict(),
       )
-      .max(4),
+      .max(5),
   })
   .strict();

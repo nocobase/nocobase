@@ -316,10 +316,13 @@ const runtimesEnUS = {
     nodeRequired:
       'The host needs Node.js 24 or newer (check with node --version). The command stops and says how to install it when it is missing.',
     installed: 'Already have nocobase-runner installed? Register it instead:',
-    prompt: 'Prompt',
-    manual: 'Manual',
+    manual: 'Or install it yourself',
+    promptTitle: 'Let an agent set it up',
+    promptCopy: 'Copy the prompt for the agent',
+    promptShow: 'View prompt',
+    promptHide: 'Hide prompt',
     promptHint:
-      'Copy the full prompt below to an agent (Claude Code, Codex, etc.) on the target machine. On small screens, scroll the dialog to read every step. It includes a one-time credential; share it only with that agent.',
+      'Copy this prompt to an agent (Claude Code, Codex and the like) on the target machine and it takes the steps below for you. It carries a one-time credential: give it only to that agent.',
     windowsPowerShell:
       '1. Install WSL: run in PowerShell, then restart Windows:',
     windowsUbuntu:

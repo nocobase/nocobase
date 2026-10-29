@@ -16,7 +16,7 @@ For a Docker source build, pass `--build-arg CDN_BASE_URL=https://cdn.example.co
 
 ## Packing the build for a deployment
 
-`pnpm build --tar` writes `storage/exports/dist.tar.gz` after the build. The archive holds `dist/` as a directory next to `config.example.yml`, so extracting it produces exactly those two paths rather than scattering `server/` and `node_modules/` into whatever directory you unpacked in.
+`pnpm build --tar` writes `storage/exports/dist.tar.gz` after the build. The archive holds `dist/` as a directory next to `config.example.yml`, with the `Dockerfile` and `Dockerfile.dockerignore`, so extracting it produces exactly those paths rather than scattering `server/` and `node_modules/` into whatever directory you unpacked in, and a server can build the image from it alone with `docker build --build-arg DIST=prebuilt .`.
 
 `config.example.yml` travels with it because a deployment has to write a `config.yml` before it can start — `pnpm nocobase config init`, run inside `dist/`, does that from the example, in place, and `pnpm nocobase config check` there verifies it, database connection included, before the first start — and the example is the only statement of what may go in it. Directories of executable shims are left out: a `.bin` entry points at a path on the machine that installed it, and a dangling one makes `pnpm install` in the extracted tree report a corrupt store rather than repair it.
 

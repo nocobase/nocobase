@@ -20,6 +20,86 @@ function announcer() {
 }
 
 describe('change announcements', () => {
+  it('keeps named task scope when opaque executor announcements accompany status changes', () => {
+    const { it: changes, published } = announcer();
+    changes.add({ type: 'work.announced' });
+    changes.flush();
+    expect(published).toEqual([]);
+    changes.add({ type: 'issue.changed', issueId: 'a' });
+    changes.add({ type: 'work.announced' });
+    changes.add({
+      type: 'issue.updated',
+      issueId: 'a',
+      changes: { status: { from: 'backlog', to: 'in_progress' } },
+    });
+    changes.flush();
+    expect(published).toEqual([
+      {
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: ['a'],
+        listsChanged: true,
+      },
+    ]);
+  });
+
+  it('narrows only a confirmed discussion batch, and resets its classification after flushing', () => {
+    const { it: changes, published } = announcer();
+    changes.add({ type: 'issue.changed', issueId: 'a', discussionOnly: true });
+    changes.add({
+      type: 'comment.created',
+      issueId: 'a',
+      discussionOnly: true,
+      mentions: [],
+    });
+    changes.flush();
+    expect(published).toEqual([
+      {
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: ['a'],
+        discussionOnly: true,
+      },
+    ]);
+    changes.add({ type: 'issue.changed', issueId: 'a' });
+    changes.flush();
+    expect(published[1]).not.toHaveProperty('discussionOnly');
+  });
+
+  it.each([
+    { type: 'comment.created', issueId: 'a', mentions: [] },
+    {
+      type: 'comment.created',
+      issueId: 'a',
+      discussionOnly: true,
+      mentions: [{ kind: 'user', id: 'u' }],
+    },
+    { type: 'issue.changed', issueId: 'a' },
+    {
+      type: 'issue.updated',
+      issueId: 'a',
+      changes: { status: { from: 'blocked', to: 'in_progress' } },
+    },
+    { type: 'work.announced', issueId: 'a' },
+    { type: 'unknown.change', issueId: 'a', discussionOnly: true },
+    { type: 'notice.planned', notice: { kind: 'decision', type: 'answer' } },
+    { type: 'notice.planned', notice: { kind: 'info', type: 'mentioned' } },
+    { type: 'label.changed' },
+  ])('keeps mixed or uncertain batches complete: $type', (event) => {
+    const { it: changes, published } = announcer();
+    changes.add({ type: 'issue.changed', issueId: 'a', discussionOnly: true });
+    changes.add({
+      type: 'comment.created',
+      issueId: 'a',
+      discussionOnly: true,
+      mentions: [],
+    });
+    changes.add(event);
+    changes.flush();
+    expect(
+      published.find((entry) => entry.domain === 'issues'),
+    ).not.toHaveProperty('discussionOnly');
+  });
   it('gathers the events of a moment into one announcement naming the issues', () => {
     const { it: changes, published } = announcer();
     changes.add({ type: 'comment.created', issueId: 'a' });
@@ -34,7 +114,7 @@ describe('change announcements', () => {
     expect(published).toHaveLength(1);
   });
 
-  it('names no issue once a change may move issues between lists, or names none', () => {
+  it('keeps task scope when a change moves issues between lists, with unknown scope as fallback', () => {
     for (const event of [
       { type: 'issue.created', issueId: 'c' },
       { type: 'issue.deleted', issueId: 'c' },
@@ -58,7 +138,16 @@ describe('change announcements', () => {
       changes.add(event);
       changes.add({ type: 'issue.changed', issueId: 'b' });
       changes.flush();
-      expect(published).toEqual([{ kind: 'pm.changed', domain: 'issues' }]);
+      expect(published).toEqual([
+        event.type === 'member.changed'
+          ? { kind: 'pm.changed', domain: 'issues' }
+          : {
+              kind: 'pm.changed',
+              domain: 'issues',
+              issueIds: ['a', 'c', 'b'],
+              listsChanged: true,
+            },
+      ]);
       changes.close();
     }
   });
@@ -76,7 +165,7 @@ describe('change announcements', () => {
     ]);
   });
 
-  it('announces each kind of data once, and too many issues without naming them', () => {
+  it('announces each kind of data and splits large batches without losing task scope', () => {
     const { it: changes, published } = announcer();
     changes.add({ type: 'label.changed' });
     changes.add({ type: 'plan.changed' });
@@ -87,7 +176,19 @@ describe('change announcements', () => {
     expect(published).toEqual([
       { kind: 'pm.changed', domain: 'labels' },
       { kind: 'pm.changed', domain: 'plans' },
-      { kind: 'pm.changed', domain: 'issues' },
+      {
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: Array.from(
+          { length: ANNOUNCED_ISSUES_MAX },
+          (_, at) => `i${at}`,
+        ),
+      },
+      {
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: [`i${ANNOUNCED_ISSUES_MAX}`],
+      },
     ]);
   });
 

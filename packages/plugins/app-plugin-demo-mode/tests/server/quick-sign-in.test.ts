@@ -36,11 +36,19 @@ const listed: DemoAccountSummary[] = [
 
 let testDatabase: TestDatabase;
 let auth: Auth;
+let ordinaryAuth: Auth;
 let enabled: boolean;
 let quickSignIn: boolean;
 let accounts: DemoAccountSummary[];
 let ids: Record<string, string>;
 let administratorIds: string[];
+let authorizationEnabled: boolean;
+let datasetUnavailable: boolean;
+let roleSets: { key: string; title?: string }[];
+let roleAssignments: {
+  subject: { type: string; id: string };
+  permissionSet: string;
+}[];
 
 async function routes(): Promise<Hono> {
   const services = new Map<unknown, unknown>([
@@ -49,15 +57,21 @@ async function routes(): Promise<Hono> {
       authorizationToken,
       {
         permissionSets: {
-          list: async () => [{ key: 'administrators' }],
+          list: async () => [
+            { key: 'administrators', title: 'System administrator' },
+            ...roleSets,
+          ],
           protection: (key: string) => ({
             unrestricted: key === 'administrators',
+            hidden: key === 'internal',
           }),
-          listAssignments: async () =>
-            administratorIds.map((id) => ({
+          listAssignments: async () => [
+            ...administratorIds.map((id) => ({
               subject: { type: 'user', id },
               permissionSet: 'administrators',
             })),
+            ...roleAssignments,
+          ],
         },
       },
     ],
@@ -71,8 +85,18 @@ async function routes(): Promise<Hono> {
         allowCollections: [],
       },
     ],
-    [demoDataToken, { status: async () => ({ datasetId: 'demo', accounts }) }],
+    [
+      demoDataToken,
+      {
+        status: async () => {
+          if (datasetUnavailable)
+            throw new Error('Dataset labels unavailable.');
+          return { datasetId: 'demo', accounts };
+        },
+      },
+    ],
   ]);
+  if (!authorizationEnabled) services.delete(authorizationToken);
   const app = {
     container: {
       has: (token: unknown) => services.has(token),
@@ -142,6 +166,7 @@ beforeAll(async () => {
     emailAndPassword: { enabled: true },
     session: { storeSessionInDatabase: true },
   });
+  ordinaryAuth = auth;
   const users = createUserAdministrationService({
     auth,
     connection: database.connection(),
@@ -180,10 +205,15 @@ beforeAll(async () => {
 });
 afterAll(() => testDatabase.destroy());
 beforeEach(() => {
+  auth = ordinaryAuth;
   enabled = true;
   quickSignIn = true;
   accounts = listed;
   administratorIds = [ids.owner!];
+  authorizationEnabled = true;
+  datasetUnavailable = false;
+  roleSets = [];
+  roleAssignments = [];
 });
 
 describe('demo quick sign-in', () => {
@@ -195,10 +225,67 @@ describe('demo quick sign-in', () => {
         { username: 'ann', name: 'Ann', role: 'Admin', current: false },
         { username: 'bob', name: 'Bob', role: 'Reviewer', current: false },
         { username: 'eve', name: 'Eve', role: 'Owner', current: false },
-        { username: 'owner', name: 'Super Admin', role: '', current: false },
+        {
+          username: 'owner',
+          name: 'Super Admin',
+          role: 'System administrator',
+          roleTitles: ['System administrator'],
+          current: false,
+        },
       ],
       meta: { total: 4 },
     });
+  });
+
+  it('uses visible direct permission set names when dataset labels are absent', async () => {
+    accounts = [listed[0]!, { ...listed[1]!, role: '' }];
+    roleSets = [
+      { key: 'sales', title: 'Sales manager' },
+      { key: 'audit', title: 'Auditor' },
+      { key: 'untitled' },
+      { key: 'member', title: 'Member' },
+      { key: 'internal', title: 'Internal permissions' },
+    ];
+    roleAssignments = [
+      { subject: { type: 'user', id: ids.ann! }, permissionSet: 'sales' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'sales' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'sales' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'audit' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'untitled' },
+      { subject: { type: 'user', id: ids.bob! }, permissionSet: 'internal' },
+      { subject: { type: 'team', id: ids.eve! }, permissionSet: 'sales' },
+      { subject: { type: 'user', id: ids.owner! }, permissionSet: 'member' },
+    ];
+    const response = await call('GET', '/demoMode/accounts');
+    expect(response.status).toBe(200);
+    const { data } = await response.json();
+    expect(data).toMatchObject([
+      { username: 'ann', role: 'Admin' },
+      { username: 'bob', role: 'Sales manager, Auditor, untitled' },
+      { username: 'eve', role: '' },
+      { username: 'owner', role: 'System administrator' },
+    ]);
+    expect(data[0]).not.toHaveProperty('roleTitles');
+    expect(data[1].roleTitles).toEqual([
+      'Sales manager',
+      'Auditor',
+      'untitled',
+    ]);
+    expect(data[2]).not.toHaveProperty('roleTitles');
+    expect(data[3].roleTitles).toEqual(['System administrator']);
+  });
+
+  it('keeps unlabeled accounts available without Authorization', async () => {
+    authorizationEnabled = false;
+    accounts = [];
+    const response = await call('GET', '/demoMode/accounts');
+    expect(response.status).toBe(200);
+    expect((await response.json()).data).toMatchObject([
+      { username: 'ann', role: '' },
+      { username: 'bob', role: '' },
+      { username: 'eve', role: '' },
+      { username: 'owner', role: '' },
+    ]);
   });
 
   it('signs in with an ordinary session and marks the current account', async () => {
@@ -207,6 +294,11 @@ describe('demo quick sign-in', () => {
     expect(await response.json()).toEqual({
       data: { username: 'ann', name: 'Ann', role: 'Admin', current: true },
     });
+    expect(
+      response.headers
+        .getSetCookie()
+        .some((cookie) => /Max-Age=0/i.test(cookie)),
+    ).toBe(false);
     const cookie = cookieOf(response);
     expect(await signedInUser(cookie)).toBe(ids.ann);
     const list = (await (
@@ -248,6 +340,9 @@ describe('demo quick sign-in', () => {
     accounts = [];
     const response = await call('POST', '/demoMode/accounts/owner/signIn');
     expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      data: { username: 'owner', role: 'System administrator' },
+    });
     expect(await signedInUser(cookieOf(response))).toBe(ids.owner);
     expect(
       (await (await call('GET', '/demoMode/accounts')).json()).data,
@@ -271,11 +366,19 @@ describe('demo quick sign-in', () => {
   });
 
   it('leaves normal entry available when no enabled Super Admin exists', async () => {
-    for (const candidates of [[], [ids.cat!]]) {
+    for (const candidates of [[], [ids.cat!], [ids.robot!]]) {
       administratorIds = candidates;
       const response = await call('POST', '/demoMode/accounts/signInDefault');
       expect(await response.json()).toEqual({ data: { signedIn: false } });
     }
+  });
+
+  it('enters an administrator without depending on dataset role labels', async () => {
+    datasetUnavailable = true;
+    const response = await call('POST', '/demoMode/accounts/signInDefault');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: { signedIn: true } });
+    expect(await signedInUser(cookieOf(response))).toBe(ids.owner);
   });
 
   it('offers nothing outside demo mode or when switched off', async () => {
@@ -310,4 +413,69 @@ describe('demo quick sign-in', () => {
     expect(response.status).toBe(403);
     expect(await signedInUser(cookie)).toBe(ids.ann);
   });
+});
+
+describe('partitioned demo sign-in cookies', () => {
+  it.each([
+    { route: '/demoMode/accounts/signInDefault', username: 'owner' },
+    { route: '/demoMode/accounts/bob/signIn', username: 'bob' },
+  ])(
+    'removes conflicting ordinary cookies when entering through $route',
+    async ({ route, username }) => {
+      auth = new Auth({
+        connection: testDatabase.database.connection(),
+        baseURL: `${ORIGIN}/api/auth`,
+        secret: 'development-secret-at-least-32-characters',
+        emailAndPassword: { enabled: true },
+        session: { storeSessionInDatabase: true },
+        advanced: {
+          cookiePrefix: 'demo-custom',
+          useSecureCookies: true,
+          defaultCookieAttributes: {
+            domain: 'localhost',
+            path: '/api',
+            secure: true,
+            sameSite: 'none',
+            partitioned: true,
+          },
+        },
+      });
+      const stale =
+        '__Secure-demo-custom.session_token=expired-before-partitioning';
+      const response = await call('POST', route, {
+        cookie: `${stale}; unrelated=keep`,
+      });
+      expect(response.status).toBe(200);
+      const cookies = response.headers.getSetCookie();
+      const issued = cookies.filter((cookie) =>
+        /; Partitioned(?:;|$)/i.test(cookie),
+      );
+      expect(
+        issued.some((cookie) =>
+          cookie.startsWith('__Secure-demo-custom.session_token='),
+        ),
+      ).toBe(true);
+      for (const cookie of issued) {
+        const name = cookie.slice(0, cookie.indexOf('='));
+        const expired = cookies.find((header) =>
+          header.startsWith(`${name}=;`),
+        );
+        expect(expired).toContain('Max-Age=0');
+        expect(expired).toContain('Domain=localhost');
+        expect(expired).toContain('Path=/api');
+        expect(expired).toContain('; Secure');
+        expect(expired).not.toMatch(/; Partitioned(?:;|$)/i);
+      }
+      expect(cookies.every((cookie) => !cookie.startsWith('unrelated='))).toBe(
+        true,
+      );
+      const cookie = issued.map((header) => header.split(';')[0]).join('; ');
+      expect(await signedInUser(cookie)).toBe(ids[username]);
+      const returning = await call('POST', '/demoMode/accounts/signInDefault', {
+        cookie,
+      });
+      expect(await returning.json()).toEqual({ data: { signedIn: false } });
+      expect(returning.headers.getSetCookie()).toEqual([]);
+    },
+  );
 });

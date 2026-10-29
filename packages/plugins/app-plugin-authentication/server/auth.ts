@@ -198,6 +198,25 @@ export class Auth {
   private readonly resetPolicy: PasswordResetPolicy;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
+  private userInitializers = new Set<
+    (
+      user: Record<string, unknown>,
+      connection: DatabaseConnection,
+    ) => Promise<void>
+  >();
+
+  /** Trusted initialization in the same transaction as the first user insert. */
+  addUserInitializer(
+    initializer: (
+      user: Record<string, unknown>,
+      connection: DatabaseConnection,
+    ) => Promise<void>,
+  ): () => void {
+    this.userInitializers.add(initializer);
+    return () => {
+      this.userInitializers.delete(initializer);
+    };
+  }
 
   constructor(options: AuthOptions) {
     const { connection, passwordReset, passwordResetServices, ...config } =
@@ -254,7 +273,12 @@ export class Auth {
     this.auth = betterAuth({
       ...config,
       appName: config.appName ?? 'NocoBase3',
-      database: databaseAdapter(connection),
+      database: databaseAdapter(connection, {
+        initializeUser: async (user, transaction) => {
+          for (const initialize of this.userInitializers)
+            await initialize(user, transaction);
+        },
+      }),
       plugins: [
         ...(plugins ?? []),
         this.resetPolicy.plugin(),
@@ -658,6 +682,7 @@ export class Auth {
     const bound = new Auth({ ...this.options, connection });
     bound.scopedCredentialChecks = this.scopedCredentialChecks;
     bound.credentialResolvers = this.credentialResolvers;
+    bound.userInitializers = this.userInitializers;
     return bound;
   }
 

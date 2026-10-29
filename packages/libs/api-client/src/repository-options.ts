@@ -69,7 +69,10 @@ export type RemoteGroupByOptionsJson<T extends object> = Omit<
 export type RemoteCreateOneOptionsJson<
   TCreate extends object,
   TRecord extends object = RepositoryRecord,
-> = Omit<RemoteCreateOneOptions<TCreate, TRecord>, 'values' | 'select'> & {
+> = Omit<
+  RemoteCreateOneOptions<TCreate, TRecord>,
+  'values' | 'select' | 'idempotencyKey' | 'signal'
+> & {
   readonly values: BuiltMutationValues<CreateMutationValues<TCreate>>;
   readonly select?: SelectAst;
 };
@@ -78,7 +81,7 @@ export type RemoteUpdateOneOptionsJson<
   TUpdate extends object = Partial<TRecord>,
 > = Omit<
   RemoteUpdateOneOptions<TRecord, TUpdate>,
-  'values' | 'filter' | 'select'
+  'values' | 'filter' | 'select' | 'idempotencyKey' | 'signal'
 > & {
   readonly values: BuiltMutationValues<UpdateMutationValues<TUpdate>>;
   readonly filter: RemoteFilterJson<TRecord>;
@@ -86,13 +89,15 @@ export type RemoteUpdateOneOptionsJson<
 };
 export type RemoteDeleteOneOptionsJson<TRecord extends object> = Omit<
   RemoteDeleteOneOptions<TRecord>,
-  'filter' | 'select'
+  'filter' | 'select' | 'idempotencyKey' | 'signal'
 > & { readonly filter: RemoteFilterJson<TRecord>; readonly select?: SelectAst };
 
 /** Construct a wire snapshot; do not execute HTTP or supply server defaults. */
 function buildOptions(input: object, fields: readonly string[]): unknown {
   if (!isRecord(input)) inputError([], 'Expected a Repository options object.');
   const output = { ...input } as Record<string, unknown>;
+  delete output.idempotencyKey;
+  delete output.signal;
   for (const field of fields) {
     const value = output[field];
     if (value === undefined) continue;

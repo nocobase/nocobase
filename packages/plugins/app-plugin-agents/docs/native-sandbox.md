@@ -1,6 +1,6 @@
 # Native Skills and application CLI
 
-Native OnlineAgent realtime and background sessions may explicitly select a virtual Shell and Skills. This is not a Runner, a checkout or a host execution environment. Existing sessions with no environment tools keep their existing behavior; nothing is enabled application-wide by default.
+Native OnlineAgent realtime and background sessions enable the virtual Shell (`bash`) and Skill reader (`skill`) by default. This is not a Runner, a checkout or a host execution environment. Global scopes, named scopes and trusted options can replace the tool list, including `tool: []` to disable all tools. Existing sessions retain their saved tool selection; Runner sessions do not inherit these native defaults.
 
 ## Select capabilities on the server
 
@@ -16,7 +16,7 @@ const chat = await online.realtime(actor, { scope: ['reports'] });
 await chat.send([{ role: 'user', content: 'Follow the report Skill.' }]);
 ```
 
-Select both `bash` and `skill` when selecting Skills. Bash alone may have no Skills. HTTP may select an allowed scope, not raw tools/Skill IDs. Scopes select configuration and grant no permission. Native background uses the same scope through `online.background(actor, { scope: ['reports'] })`, then the ordinary `run(messages, draft07Schema)`, `get()` and `try({ wait })`. An observation timeout returns `{ ok: false, reason: 'pending' }` and does not stop work. `get` returns only a validated, persisted, finalized result. Runner refuses these native-only capabilities instead of silently switching execution modes.
+New native sessions can select Skills without repeating the default tools. If a scope or trusted options replace the tool list, include both `bash` and `skill` when selecting Skills. Either tool may be enabled without selected Skills; the Skill reader reports an unknown selected Skill when none matches. HTTP may select an allowed scope, not raw tools/Skill IDs. Scopes select configuration and grant no permission. Native background uses the same scope through `online.background(actor, { scope: ['reports'] })`, then the ordinary `run(messages, draft07Schema)`, `get()` and `try({ wait })`. An observation timeout returns `{ ok: false, reason: 'pending' }` and does not stop work. `get` returns only a validated, persisted, finalized result. Runner refuses explicitly selected native-only capabilities instead of silently switching execution modes.
 
 ## Current resources, not persisted environments
 
@@ -44,7 +44,7 @@ Real upload/download/ticket/stream/file transfer remains unavailable. Commands r
 
 The standard provider creates an application-local fgo_ credential only on first bash; the existing x-nocobase-run-token/runToken transport also carries independent real fgr_ Run credentials. Each resolver only recognizes its own prefix. The token service takes trusted user/execution IDs, retains hashes in memory with a 30-minute fallback expiry and releases after actual work exits. It adds no API key, token table, fake Run, new Header/scheme or framework-wide authentication semantics. Credentials never enter model input, argv, VFS/env or private/public messages.
 
-The application manifest is caller-filtered and every dispatched request still checks actual authentication, user state, authorization and business Policies. Only the explicitly declared owner-checked conversation list/get/update accept this new identity; their CLI identities are person-only, not Run. Other routes must explicitly support the existing scoped-credential boundary before an agent can use them. Run, Runner and attachment routes are unchanged. The CLI is not a general network proxy or a second permission system.
+The application manifest is caller-filtered and every dispatched request still checks actual authentication, user state, authorization and business Policies. The explicitly declared owner-checked conversation list/get/update accept this identity; their CLI identities are person-only, not Run. When the optional Knowledge plugin is enabled, it separately opts in only its `kb search` and `kb read <docId>` routes, preserving the current user's document ACL and rejecting Run credentials. Other routes must explicitly support the existing scoped-credential boundary before an agent can use them. Run, Runner and attachment routes are unchanged. The CLI is not a general network proxy or a second permission system.
 
 Stop propagates to interpreter, request and response reader and waits for actual accepted work to exit. Stop is not rollback; an already committed write can remain committed. Neither tools nor entire scripts are automatically retried, and toolCallId is not a business idempotency key. For a lost/failed response, query the record first; if still uncertain, report an unknown outcome rather than claiming success or rollback. Dispose or persistence failure keeps execution busy; `retryFinalization()` retries only closed-resource cleanup/persistence.
 

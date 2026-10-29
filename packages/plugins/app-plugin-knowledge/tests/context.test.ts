@@ -4,6 +4,7 @@ import {
   type TestDatabase,
 } from '@nocobase/app-testing/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import path from 'node:path';
 
 import { NO_ACCESS } from '../server/services/access.js';
 import { createKnowledgeContext } from '../server/services/context.js';
@@ -13,6 +14,12 @@ describe('knowledge transaction completion', () => {
 
   beforeEach(async () => {
     testDatabase = await createTestDatabase();
+    await testDatabase.database
+      .createMigrator({
+        directory: path.resolve(import.meta.dirname, '../database/migrations'),
+        packageName: '@nocobase/app-plugin-knowledge',
+      })
+      .latest();
   });
 
   afterEach(async () => {

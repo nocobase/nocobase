@@ -1,8 +1,9 @@
 packages:
   - packages/*/*
+  - packages/templates/*/packages/*
   - ui-library
   - docs
-  - skills/nocobase-app-plugin-development/assets/testing-example
+  - packages/app/app-skills/skills/nocobase-app-plugin-development/assets/testing-example
 
 # Commands with --dry-run must not trigger an implicit install before their
 # own code can enforce read-only behavior. Dependency changes are synchronized
@@ -10,14 +11,21 @@ packages:
 verifyDepsBeforeRun: false
 
 catalog:
-  '@ai-sdk/alibaba': ^2.0.60
-  '@ai-sdk/anthropic': ^4.0.71
-  '@ai-sdk/cohere': ^4.0.54
-  '@ai-sdk/deepseek': ^3.0.58
-  '@ai-sdk/google': ^4.0.87
-  '@ai-sdk/moonshotai': ^3.0.62
-  '@ai-sdk/openai': ^4.0.83
-  '@ai-sdk/openai-compatible': ^3.0.62
+  # Upgrade this AI SDK release set together; Agents tests/ai-sdk-dependencies.test.ts
+  # checks every installed provider against ai and provider-utils (Schema uses a unique symbol).
+  # Exact official provider versions also constrain published dependencies; workspace overrides do not.
+  ai: 7.0.128
+  '@ai-sdk/react': 4.0.131
+  '@ai-sdk/provider-utils': 5.0.54
+  '@ai-sdk/alibaba': 2.0.61
+  '@ai-sdk/anthropic': 4.0.72
+  '@ai-sdk/cohere': 4.0.55
+  '@ai-sdk/deepseek': 3.0.59
+  '@ai-sdk/google': 4.0.88
+  '@ai-sdk/moonshotai': 3.0.63
+  '@ai-sdk/openai': 4.0.84
+  '@ai-sdk/openai-compatible': 3.0.63
+  ollama-ai-provider-v2: ^4.0.1
   '@arethetypeswrong/cli': ^0.18.5
   '@base-ui/react': ^1.6.0
   '@better-auth/api-key': 1.7.5
@@ -52,6 +60,7 @@ catalog:
   '@tiptap/react': 3.30.2
   '@tiptap/starter-kit': 3.30.2
   '@tiptap/suggestion': 3.30.2
+  '@types/jsdom': ^30.0.0
   '@types/node': ^24.0.0
   '@types/react': ^19.2.0
   '@types/react-dom': ^19.2.0
@@ -61,8 +70,6 @@ catalog:
   '@vitejs/plugin-react': ^4.4.1
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/eslint-plugin': ^1.6.27
-  ai: 7.0.128
-  '@ai-sdk/react': 4.0.131
   ajv: ^8.20.0
   better-auth: 1.7.5
   better-sqlite3: ^13.0.3
@@ -90,7 +97,6 @@ catalog:
   lint-staged: ^17.3.0
   lucide-react: ^0.487.0
   mermaid: ^12.0.0
-  ollama-ai-provider-v2: ^4.0.1
   oracledb: ^6.10.0
   pino: ^10.3.1
   pino-pretty: ^13.0.0
@@ -128,6 +134,9 @@ catalog:
 # part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
 # LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
 overrides:
+  # Ollama declares a provider-utils range; constrain workspace builds to the same release set.
+  # This root override does not constrain an application's independent installation of Agents.
+  'ollama-ai-provider-v2>@ai-sdk/provider-utils': 'catalog:'
   '@anthropic-ai/sdk>zod': 3.25.76
   '@langchain/anthropic>zod': 3.25.76
   '@langchain/classic>zod': 3.25.76

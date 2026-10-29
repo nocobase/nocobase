@@ -2,14 +2,14 @@
  * Turns domain events into the realtime announcements open pages refresh from (`PM_REALTIME_TOPIC`): the events of a
  * moment are gathered into one announcement per kind of data, so a write that emits several events, or an agent
  * writing in bursts, makes each page refetch once. An issue announcement names the issues that changed when every event
- * named one and none changed which lists an issue belongs in; a page then refreshes only what it shows of those issues.
+ * named one, including list membership changes; a page refreshes its lists and only the named issue details.
  */
 import type { PmChangeDomain, PmChangeEvent } from '../../shared/realtime.js';
 
 /** How long events are gathered before they are announced. */
 export const ANNOUNCE_DELAY_MS = 250;
 
-/** More issues than this in one announcement are announced as "issues changed", without naming them. */
+/** Maximum issue IDs per announcement; larger batches are split. */
 export const ANNOUNCED_ISSUES_MAX = 100;
 
 /** The kind of data an event changed, as the browser refreshes it. */
@@ -19,23 +19,15 @@ export function domainOf(type: string): PmChangeDomain {
   return 'issues';
 }
 
-/**
- * Events that may move an issue into or out of a list a page shows: created, deleted, restored, given to someone else,
- * moved to another status, or moved to another project, parent or executor.
- */
+/** Membership changes still refresh lists while preserving the scope of task details. */
 function movesLists(event: AnnouncedEvent): boolean {
-  if (
-    event.type === 'issue.created' ||
-    event.type === 'issue.deleted' ||
-    event.type === 'issue.restored' ||
-    (event.type === 'issue.changed' && event.moved === true)
-  )
-    return true;
   return (
-    event.type === 'issue.updated' &&
-    typeof event.changes === 'object' &&
-    event.changes !== null &&
-    ('owner' in event.changes || 'status' in event.changes)
+    ['issue.created', 'issue.deleted', 'issue.restored'].includes(event.type) ||
+    (event.type === 'issue.changed' && event.moved === true) ||
+    (event.type === 'issue.updated' &&
+      typeof event.changes === 'object' &&
+      event.changes !== null &&
+      ('owner' in event.changes || 'status' in event.changes))
   );
 }
 
@@ -45,6 +37,13 @@ export interface AnnouncedEvent {
   readonly issueId?: unknown;
   readonly changes?: unknown;
   readonly moved?: unknown;
+  readonly discussionOnly?: unknown;
+  readonly mentions?: unknown;
+  readonly notice?: {
+    readonly kind?: unknown;
+    readonly type?: unknown;
+    readonly actor?: { readonly type?: unknown };
+  };
 }
 
 export interface ChangeAnnouncer {
@@ -60,31 +59,74 @@ export function createChangeAnnouncer(
 ): ChangeAnnouncer {
   // Per domain: the issues named so far, or null once an event names none.
   let pending = new Map<PmChangeDomain, Set<string> | null>();
+  let discussionOnly = true;
+  let listsChanged = false;
+  let comment = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const flush = (): void => {
     if (timer) clearTimeout(timer);
     timer = undefined;
     const gathered = pending;
+    const discussions = discussionOnly && comment;
+    const moved = listsChanged;
     pending = new Map();
-    for (const [domain, issueIds] of gathered)
-      publish(
-        domain === 'issues' &&
-          issueIds &&
-          issueIds.size > 0 &&
-          issueIds.size <= ANNOUNCED_ISSUES_MAX
-          ? { kind: 'pm.changed', domain, issueIds: [...issueIds] }
-          : { kind: 'pm.changed', domain },
-      );
+    discussionOnly = true;
+    listsChanged = false;
+    comment = false;
+    for (const [domain, issueIds] of gathered) {
+      if (domain !== 'issues' || !issueIds?.size) {
+        publish({ kind: 'pm.changed', domain });
+        continue;
+      }
+      const ids = [...issueIds];
+      for (let at = 0; at < ids.length; at += ANNOUNCED_ISSUES_MAX)
+        publish({
+          kind: 'pm.changed',
+          domain,
+          issueIds: ids.slice(at, at + ANNOUNCED_ISSUES_MAX),
+          ...(discussions ? { discussionOnly: true } : {}),
+          ...(moved ? { listsChanged: true } : {}),
+        });
+    }
   };
 
   return {
     add(event) {
+      // Notices and opaque executor announcements are delivery events. The issue
+      // events own their scope; waiting or work still prevents a discussion-only read.
+      if (event.type.startsWith('notice.') || event.type === 'work.announced') {
+        if (!(
+          event.type === 'notice.planned' &&
+          event.notice?.kind === 'info' &&
+          event.notice.type === 'commented' &&
+          typeof event.notice.actor?.type === 'string' &&
+          event.notice.actor.type !== 'user'
+        ))
+          discussionOnly = false;
+        if (!timer) {
+          timer = setTimeout(flush, delayMs);
+          timer.unref?.();
+        }
+        return;
+      }
+      listsChanged ||= movesLists(event);
+      const safeComment =
+        event.type === 'comment.created' &&
+        event.discussionOnly === true &&
+        Array.isArray(event.mentions) &&
+        event.mentions.length === 0;
+      comment ||= safeComment;
+      discussionOnly &&=
+        safeComment ||
+        (event.type === 'issue.changed' &&
+          event.discussionOnly === true &&
+          event.moved !== true);
       const domain = domainOf(event.type);
       const named =
         domain === 'issues' &&
         typeof event.issueId === 'string' &&
-        !movesLists(event)
+        event.issueId.length > 0
           ? event.issueId
           : null;
       const current = pending.get(domain);
@@ -101,6 +143,9 @@ export function createChangeAnnouncer(
       if (timer) clearTimeout(timer);
       timer = undefined;
       pending = new Map();
+      discussionOnly = true;
+      listsChanged = false;
+      comment = false;
     },
   };
 }

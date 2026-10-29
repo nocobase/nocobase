@@ -14,6 +14,10 @@ import type { Knex } from 'knex';
 
 export interface DatabaseAdapterOptions {
   debugLogs?: boolean;
+  initializeUser?(
+    user: Record<string, unknown>,
+    connection: DatabaseConnection,
+  ): Promise<void>;
 }
 
 type CleanWhere = Required<Where>;
@@ -198,10 +202,19 @@ function buildCustomAdapter(
   connection: DatabaseConnection,
   fieldsForModel: (model: string) => string[],
   mapField: (model: string, field: string) => string,
+  isUserModel: (model: string) => boolean,
+  options: DatabaseAdapterOptions,
 ): CustomAdapter {
   return {
     async create({ model, data, select }) {
-      await connection.query.insertInto(model).values(data).execute();
+      if (isUserModel(model) && options.initializeUser) {
+        await connection.transaction(async (transaction) => {
+          await transaction.query.insertInto(model).values(data).execute();
+          await options.initializeUser!(data, transaction);
+        });
+      } else {
+        await connection.query.insertInto(model).values(data).execute();
+      }
       return (await connection.query
         .selectFrom(model)
         .select(select?.length ? select : fieldsForModel(model))
@@ -474,6 +487,8 @@ export function databaseAdapter(
           fieldsForModel,
           (model, field) =>
             getFieldName({ model: getDefaultModelName(model), field }),
+          (model) => getDefaultModelName(model) === 'user',
+          options,
         );
       },
     });

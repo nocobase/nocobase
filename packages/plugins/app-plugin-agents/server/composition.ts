@@ -15,9 +15,9 @@ import type { FileInputsConfig } from './online/files/types.js';
  * off-by-default runner build method (`jobs/`) from the runners' shared slots, and jobs open the stored variables they
  * name here. The runner and CLI tarballs the application serves are `distribution/`.
  *
- * Agents are discovered from what runners report (`agents.syncRunner`, on each registration and heartbeat): one for each
- * coding tool and model, which someone who manages agents enables. Subject kinds (what runs work on), scopes, business
- * actions, the instructions every discovered agent gets and who holds which action are added later by the application
+ * Runner reports refresh existing agents and auto-create enabled agents for recommended models (`agents.syncRunner`).
+ * Administrators add other reported models from the live available-model list. Subject kinds (what runs work on),
+ * scopes, business actions, runner-agent instructions and who holds which action are added later by the application
  * that assembles the plugin (through `subjects`, `scopes`, `actions`, `agents.setDefaults`, `gate`); this plugin
  * brings the
  * `conversation` subject.
@@ -116,11 +116,6 @@ import {
   type ModelServices,
 } from './online/index.js';
 import {
-  createVectors,
-  type Vectors,
-  type VectorsConfig,
-} from './vectors/index.js';
-import {
   createBriefPreviewer,
   createBriefSectionRegistry,
   createClaimEligibility,
@@ -191,13 +186,6 @@ export interface AgentsDeps {
   /** The application's public base path (`/app`, or empty), for the URLs of files sent in chat. */
   readonly basePath?: () => string;
   readonly onError?: (message: string, error: unknown) => void;
-  /**
-   * The vector store of vector collections (`agents.vectors`), apart from the application's database: sqlite-vec in
-   * `storage/vectors.sqlite` by default.
-   */
-  readonly vectors?: VectorsConfig;
-  /** The application's root and storage directories, which the vector store's relative paths resolve against. */
-  readonly paths?: { readonly root: string; readonly storage: string };
 }
 
 export interface Agents {
@@ -312,12 +300,6 @@ export interface Agents {
     readonly services: ModelServices;
     readonly gateway: ModelGateway;
   };
-  /**
-   * Vector collections the application keeps (`collection(spec)`), embedded with the model services' embedding models
-   * through a queue, over a pluggable vector store (`stores`; pgvector by default). The provider starts the queue's
-   * worker at boot.
-   */
-  readonly vectors: Vectors;
 }
 
 /** The application work comes from when nothing names it: the CLI's name, else a neutral one. */
@@ -360,7 +342,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     people,
     latestRunner: async (runner) =>
       (await upgradeFor(dist, runner))?.latestVersion ?? null,
-    // Every tool and model a runner reports becomes an agent, pending until someone enables it.
+    // Reports auto-create enabled agents only for recommended models; other models stay in the live available list.
     onReport: (unit, runner) => agents.syncRunner(unit, runner),
   });
   const jobs = createJobService({
@@ -381,22 +363,6 @@ export function createAgents(deps: AgentsDeps): Agents {
   // Embeddings, reranking and utility texts the application asks for are recorded apart from runs (`agModelUsage`).
   const gateway = createModelGateway(modelServices, {
     usage: createModelUsageRecorder({ tx, ids, clock }),
-    onError,
-  });
-  const vectors = createVectors({
-    tx,
-    ids,
-    clock,
-    embed: (request) => gateway.embed(request),
-    dimensionsOf: async (ref) => {
-      try {
-        return (await modelServices.endpointFor(ref, 'embedding')).dimensions;
-      } catch {
-        return null;
-      }
-    },
-    ...(deps.vectors ? { config: deps.vectors } : {}),
-    ...(deps.paths ? { paths: deps.paths } : {}),
     onError,
   });
   const actions = createAgentActionCatalog();
@@ -571,6 +537,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     nativeAvailable,
     nativeNotice: (unit, row, id, parts) =>
       sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
+    runnerBusy: (id) => runnerOnlineAgent.busy(id),
     nativeActive: (id, persistedRunning) =>
       onlineAgent.producerAvailable(id, persistedRunning),
     contextKinds: createPageContextKinds(),
@@ -751,7 +718,6 @@ export function createAgents(deps: AgentsDeps): Agents {
       services: modelServices,
       gateway,
     },
-    vectors,
   };
 }
 

@@ -39,6 +39,11 @@ export interface ClaimContext {
   readonly cli: string;
   /** The application's name in prose (`agents.app.name`, such as `Acme`). */
   readonly appName: string;
+  /**
+   * The run starts a new tool session although one is kept for the subject on this runner (its brief changed, the
+   * subject was reset, or the kept session is unusable): the subject gives its history again.
+   */
+  readonly freshSession?: boolean;
 }
 
 /**
@@ -60,6 +65,8 @@ export interface SubjectScope {
 
 /** The subject's part of a run payload; the runs domain adds the rules, the workspace and the skills. */
 export interface SubjectAssembly {
+  /** Subject-specific effort for this run only; absent uses the Agent entry. */
+  readonly effort?: string;
   /**
    * `key` names the run's working directory (and a checkout's branch, as the subject's domain chooses); `title` and
    * `url` are what a person sees of the subject; `noun` is what the brief calls it (`ticket`, `document`).
@@ -292,6 +299,16 @@ export interface SubjectBinding {
   /** Offered as a scenario of "Preview full prompt" on the agent page, rendered on a made-up subject of the kind. */
   readonly preview?: SubjectSample;
   readonly context: ContextProvider;
+  /**
+   * Binds the work on a subject to one runner. `runnerOf` names it, or null while any eligible runner may take the work;
+   * it is read while choosing work and again in the claim's transaction, and other runners pass the work over. `pin`
+   * binds a subject to the runner taking a run on it, in the claim's transaction, and answers false when another
+   * runner holds it. Work on a subject bound to a runner that is offline or gone waits.
+   */
+  readonly runnerPin?: {
+    runnerOf(conn: DatabaseConnection, run: Run): Promise<string | null>;
+    pin(tx: Tx, run: Run, runner: Runner): Promise<boolean>;
+  };
   readonly sink?: WorkSink;
   /**
    * How long a run on this kind may wait in the queue, counted from its last change or from when its delay passed;

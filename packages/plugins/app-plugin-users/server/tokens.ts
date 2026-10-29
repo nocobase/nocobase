@@ -46,7 +46,8 @@ export interface UserRoleScope {
   readonly selection: UserRoleSelection;
   readonly requiredOnCreate?: boolean;
   /** The scope shows direct roles while authenticated-subject permissions apply separately. */
-  readonly hasAuthenticatedDefaultAccess?: boolean;
+  readonly hasAuthenticatedDefaultAccess?: boolean | (() => Promise<boolean>);
+  readonly defaultValue?: UserRoleValue;
   options(): Promise<readonly UserRoleOption[]>;
   get(userId: string, connection: DatabaseConnection): Promise<UserRoleValue>;
   getMany?(
@@ -112,6 +113,7 @@ export interface UserManagementOptions {
     selection: UserRoleSelection;
     requiredOnCreate: boolean;
     hasAuthenticatedDefaultAccess: boolean;
+    defaultValue?: UserRoleValue;
     options: readonly UserRoleOption[];
   }[];
 }
@@ -227,6 +229,13 @@ export type UserInvitationAcceptedHandler = (
 ) => Promise<void>;
 
 export interface UserManagementService {
+  withConnection(connection: DatabaseConnection): UserManagementService;
+  assertCanAdminister(
+    userId: string,
+    actorId: string | undefined,
+    action: UserAdministrationAction,
+    connection?: DatabaseConnection,
+  ): Promise<void>;
   get(userId: string): Promise<ManagedUser>;
   options(): Promise<UserManagementOptions>;
   list(input?: ListManagedUsersInput): Promise<ManagedUserPage>;

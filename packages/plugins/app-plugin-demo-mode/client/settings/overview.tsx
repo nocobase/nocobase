@@ -1,6 +1,5 @@
 import { copyText, useToaster } from '@nocobase/app-client';
 import { Check, Copy, DatabaseZap, ExternalLink } from 'lucide-react';
-import { useTranslation } from '@nocobase/i18n/client';
 import {
   useContext,
   useEffect,
@@ -14,19 +13,10 @@ import type { DemoDataStatus } from '../../shared/data.js';
 import { useDemoAccounts } from '../accounts.js';
 import { DEMO_SIGN_IN_PATH } from '../accounts.js';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert.js';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../components/ui/alert-dialog.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from './components.js';
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -40,20 +30,11 @@ import {
   EmptyTitle,
 } from '../components/ui/empty.js';
 import { Progress } from '../components/ui/progress.js';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select.js';
 import { Skeleton } from '../components/ui/skeleton.js';
-import { Spinner } from '../components/ui/spinner.js';
 import type { DemoDataControls } from '../demo-data.js';
 import {
   DemoSettingsContext,
   languageName,
-  useErrorText,
   useLabel,
   useT,
 } from './context.js';
@@ -77,33 +58,23 @@ function StateBadge({
   return <Badge variant='outline'>{t('data.state.none')}</Badge>;
 }
 
-type Intent = 'import' | 'reset' | 'clear';
-
-/** The demo dataset: what is generated now, and generating, resetting and clearing it. */
+/** Read-only status and progress of the demo dataset. */
 export function DataCard({
   demo,
-  canManage,
 }: {
-  readonly demo: DemoDataControls;
-  readonly canManage: boolean;
+  readonly demo: Pick<DemoDataControls, 'status' | 'error'>;
 }): ReactElement {
   const t = useT();
   const label = useLabel();
-  const errorText = useErrorText();
-  const toaster = useToaster();
   const { onDataChange } = useContext(DemoSettingsContext);
-  const { i18n } = useTranslation();
   const { status } = demo;
-  const [chosen, setChosen] = useState<string>();
-  // An import or reset this page watched has finished: everything the application shows changed.
+  // A data operation this page watched has finished: refresh the application’s cached data.
   const importing = Boolean(status?.importing);
   const wasImportingRef = useRef(importing);
   useEffect(() => {
     if (wasImportingRef.current && !importing) onDataChange?.();
     wasImportingRef.current = importing;
   }, [importing, onDataChange]);
-  const [intent, setIntent] = useState<Intent>();
-  const [failure, setFailure] = useState<unknown>();
   if (!status)
     return demo.error ? (
       <ErrorAlert error={demo.error} />
@@ -126,15 +97,6 @@ export function DataCard({
         </CardContent>
       </Card>
     );
-  // The reader's own language when the dataset is written in it.
-  const reader = status.languages.find(
-    (item) =>
-      item === i18n.language ||
-      item.split('-')[0] === i18n.language.split('-')[0],
-  );
-  const language =
-    chosen ?? status.language ?? reader ?? status.languages[0] ?? '';
-  const working = Boolean(status.importing) || demo.pending;
   // A reset keeps the page's shape: the data is being replaced, not generated for the first time.
   const resetting = Boolean(status.importing) && status.operation === 'reset';
   // While a reset clears, the counts are of what is being removed.
@@ -142,30 +104,6 @@ export function DataCard({
     resetting && status.state === 'clearing'
       ? []
       : Object.entries(status.counts);
-  const run = async () => {
-    const action = intent;
-    setFailure(undefined);
-    try {
-      if (action === 'clear') {
-        await demo.clear();
-        onDataChange?.();
-      } else if (action === 'reset') await demo.reset(language);
-      else await demo.importData(language);
-      setIntent(undefined);
-      toaster.show({
-        type: 'success',
-        title: t(
-          action === 'clear'
-            ? 'data.cleared'
-            : action === 'reset'
-              ? 'data.resetStarted'
-              : 'data.importStarted',
-        ),
-      });
-    } catch (cause) {
-      setFailure(cause);
-    }
-  };
   return (
     <Card>
       <CardHeader>
@@ -176,7 +114,9 @@ export function DataCard({
         <CardDescription>
           {resetting
             ? t('data.resettingSummary', {
-                language: languageName(status.language ?? language),
+                language: languageName(
+                  status.language ?? status.languages[0] ?? '—',
+                ),
               })
             : status.present && status.language
               ? t('data.presentSummary', {
@@ -187,69 +127,6 @@ export function DataCard({
                 })
               : t('data.absentSummary')}
         </CardDescription>
-        {canManage ? (
-          <CardAction className='flex flex-wrap items-center gap-2'>
-            {status.languages.length > 1 ? (
-              <Select
-                value={language}
-                disabled={working}
-                onValueChange={(value) => {
-                  if (value !== null) setChosen(value);
-                }}
-              >
-                <SelectTrigger aria-label={t('data.language')} size='sm'>
-                  <SelectValue>{languageName(language)}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {status.languages.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {languageName(item)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : null}
-            {status.present || resetting ? (
-              <>
-                <Button
-                  size='sm'
-                  variant='outline'
-                  disabled={working}
-                  onClick={() => setIntent('clear')}
-                >
-                  {t('data.clear')}
-                </Button>
-                <Button
-                  size='sm'
-                  disabled={working}
-                  onClick={() => setIntent('reset')}
-                >
-                  {t('data.reset')}
-                </Button>
-              </>
-            ) : (
-              <>
-                {status.state === 'failed' ? (
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    disabled={working}
-                    onClick={() => setIntent('clear')}
-                  >
-                    {t('data.clear')}
-                  </Button>
-                ) : null}
-                <Button
-                  size='sm'
-                  disabled={working}
-                  onClick={() => setIntent('import')}
-                >
-                  {t('data.generate')}
-                </Button>
-              </>
-            )}
-          </CardAction>
-        ) : null}
       </CardHeader>
       <CardContent className='flex flex-col gap-4'>
         {status.importing ? (
@@ -296,58 +173,7 @@ export function DataCard({
             ))}
           </dl>
         ) : null}
-        {!canManage ? (
-          <p className='text-sm text-muted-foreground'>{t('data.readOnly')}</p>
-        ) : null}
       </CardContent>
-      <AlertDialog
-        open={intent !== undefined}
-        onOpenChange={(open) => {
-          if (!open && !demo.pending) {
-            setIntent(undefined);
-            setFailure(undefined);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {intent ? t(`data.confirm.${intent}.title`) : null}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {intent
-                ? t(`data.confirm.${intent}.description`, {
-                    language: languageName(language),
-                  })
-                : null}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {failure ? (
-            <Alert variant='destructive'>
-              <AlertTitle>{errorText(failure)}</AlertTitle>
-            </Alert>
-          ) : null}
-          <AlertDialogFooter>
-            <Button
-              variant='outline'
-              disabled={demo.pending}
-              onClick={() => setIntent(undefined)}
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              variant={intent === 'import' ? 'default' : 'destructive'}
-              disabled={demo.pending}
-              onClick={() => void run()}
-            >
-              {demo.pending ? <Spinner /> : null}
-              {intent
-                ? t(`data.${intent === 'import' ? 'generate' : intent}`)
-                : null}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 }

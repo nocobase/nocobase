@@ -323,7 +323,7 @@ describe('historical Runner conversation domain', () => {
     expect((await domain().markRead(ALICE, id)).read).toBe(true);
   });
 
-  it('resumes on the same runner and gives another runner the recent history', async () => {
+  it('resumes on its bound runner, waits for it, and gives a switched runner the recent history', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ name: 'PM' });
     const id = await newConversation(agentId);
@@ -368,13 +368,86 @@ describe('historical Runner conversation domain', () => {
         values: { status: 'offline' },
       });
     const two = await h.registerRunner({ name: 'two' });
+    // Bound to one: the run waits for it.
+    expect(await claim(h, two)).toEqual([]);
+    expect((await domain().get(ALICE, id)).runner).toMatchObject({
+      id: one.runnerId,
+      status: 'offline',
+    });
+    expect((await domain().switchRunner(ALICE, id)).runner).toBeNull();
     const [fresh] = await claim(h, two);
     expect(fresh.run.id).toBe(second.run.id);
+    expect((await domain().get(ALICE, id)).runner).toMatchObject({
+      id: two.runnerId,
+      status: 'online',
+    });
     expect(fresh.prompt.session).toBe('fresh');
     expect(fresh.prompt.system).toContain('Earlier in this conversation');
     expect(fresh.prompt.system).toContain('Noted: 42.');
     expect(fresh.prompt.system).not.toContain('What was the number?');
     expect(fresh.prompt.turn).toContain('Remembered 42.');
+  });
+
+  it('gives a new session the history when the kept one cannot be resumed, on the server or on the runner', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ name: 'PM' });
+    const id = await newConversation(agentId);
+    const first = await send(id, 'Create a test task for me.');
+    const one = await h.registerRunner({ name: 'one', slots: 1 });
+    await claim(h, one);
+    await runner(one).post(first.run.id, 'start', start);
+    await runner(one).post(first.run.id, 'events', {
+      events: [
+        {
+          seq: 1,
+          at: '2026-10-01T00:00:01.000Z',
+          type: 'text',
+          content: 'Which project should it go in?',
+        },
+      ],
+    });
+    const done = async (runId: string, sessionId: string) =>
+      runner(one).post(runId, 'complete', {
+        summary: 'Asked for the project.',
+        handledInputIds: (await h.services.runs.detail(runId)).inputs.map(
+          (input) => input.id,
+        ),
+        sessionId,
+      });
+    await done(first.run.id, 'session-1');
+
+    // Resumed, with the history to give a new session should the kept one be gone on the runner (after a restart).
+    const second = await send(id, 'Studio Platform');
+    const [resumed] = await claim(h, one);
+    expect(resumed.prompt).toMatchObject({
+      session: 'resume',
+      resumeSessionId: 'session-1',
+    });
+    expect(resumed.prompt.recoveryContext).toContain(
+      'Which project should it go in?',
+    );
+    expect(resumed.prompt.recoveryContext).toContain(
+      'Create a test task for me.',
+    );
+    await runner(one).post(second.run.id, 'start', start);
+    await done(second.run.id, 'session-1');
+
+    // The agent's brief changed since the session was kept: a new session, which is told what came before.
+    await h.database
+      .connection()
+      .repository('agSessions')
+      .updateMany({
+        filter: { subjectId: id },
+        values: { fingerprint: 'an earlier brief' },
+      });
+    const third = await send(id, 'And make it urgent.');
+    const [fresh] = await claim(h, one);
+    expect(fresh.run.id).toBe(third.run.id);
+    expect(fresh.prompt.session).toBe('fresh');
+    expect(fresh.prompt.recoveryContext).toBeUndefined();
+    expect(fresh.prompt.system).toContain('Earlier in this conversation');
+    expect(fresh.prompt.system).toContain('Create a test task for me.');
+    expect(fresh.prompt.system).toContain('Studio Platform');
   });
 
   it('saves messages while the agent cannot answer and reports why', async () => {

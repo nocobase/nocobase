@@ -53,6 +53,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       'この runner は状態の更新に対応していません。再起動してください。',
     RUNNER_REFRESH_UNAVAILABLE:
       'この runner は取り消されているため、状態を更新できません。',
+    boundRunnerIncompatible:
+      'このランナーは選択した Agent を実行できません。ランナーを切り替えるか、新しい会話を開始してください。',
     CONFLICT: 'そのうちに変わりました。リロードして再試行してください。',
     REVISION_CONFLICT:
       'そのうちに変わりました。リロードして再試行してください。',
@@ -100,41 +102,28 @@ const jaJP: LocaleResource<typeof enUS> = {
     unavailableNow: '現在利用不可',
     title: 'エージェント',
     description:
-      'ランナーが報告する各コーディング ツールとモデルはエージェントです。プロジェクト マネージャーは、問題の各ステップを、その説明に該当するエージェントに渡します。',
+      'ランナーが報告したモデルからエージェントを追加します。プロジェクトマネージャーは、説明が適したエージェントに課題の各ステップを割り当てます。',
     fromRunners: 'ランナーからのエージェント',
-    discovery: {
-      selectAll: 'すべての結果を選択',
-      selectFirst: '最初の{{limit}}結果を選択してください',
-      selectionCount: '選択された {{count}} / {{limit}} グループ',
-      clearSelection: '選択をクリア',
-      new: '新しい発見 ({{count}})',
-      ignored: '無視されました ({{count}})',
+    display: {
       search: 'モデルまたはプロバイダーの検索',
       select: '{{name}}を選択してください',
-      ignore: '無視する',
-      restore: '復元',
-      ignoreSelected: '選択を無視します',
-      restoreSelected: '選択したものを復元する',
       showDisabled: '無効を表示',
       hideDisabled: '無効を隠す',
-      provider: 'プロバイダーとランナー',
-      saved: '検出設定が保存されました',
     },
     filterLabel: 'ショーエージェント',
     filters: {
       all: 'すべての{{count}}',
       enabled: '{{count}}を有効にしました',
-      pending: '{{count}}を有効にするには',
       unreported: 'ランナーなし {{count}}',
     },
     loadFailed: 'エージェントをロードできませんでした',
     loadMore: 'もっと読み込む',
     emptyTitle: 'まだエージェントがいません',
     emptyDescription:
-      'ランナーをサインインしたコーディング ツールに接続します。各モデルは有効にするエージェントとしてここに表示されます。',
+      'コーディングツールにサインイン済みのランナーを接続し、「利用可能なモデル」からエージェントを追加してください。',
     noneInFilter: 'ここにはエージェントがいません。',
     howToAdd:
-      'エージェントを追加するには、ランナーにコーディング ツールをインストールし、使用できるモデルにサインインします。ランナーが報告すると、ここに表示され、その得意分野を記述することでエージェントを有効にします。エージェントのみの個人ランナーは、オーナーが開始した問題のみに対応します。',
+      'エージェントを追加するには、ランナーにコーディングツールをインストールし、利用できるモデルを使うためにサインインします。ランナーがモデルを報告したら、「利用可能なモデル」で得意分野を入力してエージェントを追加します。追加と同時に有効になります。個人用ランナーだけで利用できるエージェントは、その所有者が開始した課題のみを担当します。',
     goodAtMissing: 'まだ書かれていません',
     columns: {
       agent: 'エージェント',
@@ -157,7 +146,6 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: '有効',
-      pending: '有効にするには',
       disabled: '無効',
       unreported: 'ランナーなし',
     },
@@ -173,9 +161,6 @@ const jaJP: LocaleResource<typeof enUS> = {
       ultra: 'ウルトラ',
     },
     enable: {
-      button: '入力して有効にします',
-      buttonFor: '{{name}} を入力して有効にします',
-      title: '{{name}}を有効にする',
       reportedBy_one:
         'オンラインの {{count}} ランナーによって報告されました: {{names}}。',
       reportedBy_other:
@@ -188,8 +173,6 @@ const jaJP: LocaleResource<typeof enUS> = {
         'プロジェクトマネージャーは、作業を引き継ぐときに変更することはできません。',
       personalOnly:
         'これを持っているのは個人ランナーのみです。プロジェクト マネージャーは、オーナーが開始した問題に対してのみ作業を実行します。',
-      submit: '有効にする',
-      done: '{{name}} が有効になります',
     },
     edit: {
       button: '編集',
@@ -242,31 +225,6 @@ const jaJP: LocaleResource<typeof enUS> = {
         '{{succeeded}} 件を追加しました。{{failed}} 件は追加できませんでした。理由は各項目の下に表示されています。',
       addFailed:
         '{{failed}} 件を追加できませんでした。理由は各項目の下に表示されています。もう一度お試しください。',
-    },
-    cleanup: {
-      open: '整理',
-      title: '未使用の発見済みエージェントを削除',
-      description:
-        'ランナーの報告によって作成され、誰も有効化せず、一度も実行されていないエージェント: そのまま削除しても安全です。このリストを読み込んだ後に変わったものはスキップされ、削除されません。',
-      none: '削除するものはありません。',
-      select: '{{name}} を選択',
-      selectGroup: '{{tool}} をすべて選択',
-      clearGroup: '{{tool}} の選択を解除',
-      neverEnabled: '未有効化・実行履歴なし',
-      createdAt: '{{when}} に発見',
-      group_one: '{{tool}} · {{count}} 件',
-      group_other: '{{tool}} · {{count}} 件',
-      selectedCount_one: '{{count}} 件選択中',
-      selectedCount_other: '{{count}} 件選択中',
-      remove: '{{count}} 件を削除',
-      confirmTitle_one: '{{count}} 件のエージェントを削除しますか？',
-      confirmTitle_other: '{{count}} 件のエージェントを削除しますか？',
-      confirmDescription:
-        '{{tools}} にまたがります。削除は安全です：削除直前に再確認し、条件を満たさなくなったものはスキップされ、削除されません。',
-      confirmAction: '{{count}} 件を削除',
-      done: '{{removed}} 件削除、{{skipped}} 件スキップ',
-      partialFailure:
-        '{{removed}} 件削除、{{skipped}} 件スキップ。{{failed}} 件は削除できませんでした（{{reason}}）。再試行できるよう選択は保持されます。',
     },
   },
   agentTypes: {
@@ -996,6 +954,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         '{{own}} には現在あなたのランナーがいないため、{{own}} が戻ってくるまで {{name}} が応答します。',
       onlineFallbackUnavailable:
         'オンライン フォールバック エージェントが応答できません ({{reason}})。この会話は、ランナーを待つ間、{{own}} に残ります。',
+      switchedAgent: '会話の履歴を保持して {{name}} に切り替えました。',
       switchedBack: '{{name}} で戻ります。',
       runFailed: 'エージェントは応答する前に停止しました。',
       runFailedReason: 'エージェントは応答する前に停止しました: {{reason}}',

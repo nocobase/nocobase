@@ -535,8 +535,6 @@ const idID: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Administrator pertama',
-      expires:
-        'Dihasilkan untuk penerapan pertama. Simpan sekarang: dihapus di {{hours}} h.',
       kept: 'Dihasilkan untuk penerapan pertama; itu disimpan sampai aplikasi dihapus.',
       username: 'Nama Pengguna',
       email: 'Email',
@@ -785,6 +783,11 @@ const idID: LocaleResource<typeof enUS> = {
       name: 'Nama',
       driver: 'Sopir',
       runsOn: 'Berjalan terus',
+      appCount: 'Aplikasi',
+      purpose: 'Kegunaan',
+      purposeHint:
+        'Setiap lingkungan punya satu kegunaan: pratinjau pull request, atau menguji rilis.',
+      purposes: { preview: 'Pratinjau', test: 'Pengujian' },
       policy: 'Kebijakan',
       publicUrl: 'Pola URL publik',
       config: 'Pengaturan (JSON)',

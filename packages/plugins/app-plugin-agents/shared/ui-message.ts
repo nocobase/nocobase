@@ -92,6 +92,8 @@ export function publicUIPageContext(
 
 /** Public identity and ordering only; configuration and credentials are private. */
 export interface AppUIMessageMetadata {
+  /** Reasoning effort accepted for this turn, independent of later conversation preferences. */
+  effort?: string;
   conversationId: string;
   createdAt: string;
   agentId?: string;
@@ -106,6 +108,11 @@ export interface AppUIMessageMetadata {
   /** Zero before saving; increases when the same message is updated. */
   revision: number;
   context?: ResolvedPageContext;
+  /**
+   * A user message sent while the agent worked: `queued` until the agent takes it, `withdrawn` when its sender took
+   * it back first, `unanswered` when the run ended without taking it.
+   */
+  queue?: 'queued' | 'withdrawn' | 'unanswered';
   sourceRecords?: {
     recordId: string;
     seq: number;
@@ -126,11 +133,13 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
     sourceUserMessageId: identity.optional(),
     clientId: identity.optional(),
     executionId: identity.optional(),
+    effort: z.string().min(1).max(40).optional(),
     /** Absent before the first save. Never used as an update cursor. */
     seq: z.number().int().positive().optional(),
     /** Zero before saving; increases when the same message is updated. */
     revision: z.number().int().nonnegative(),
     context: appUIPageContextSchema.optional(),
+    queue: z.enum(['queued', 'withdrawn', 'unanswered']).optional(),
     /** Runner aggregation keeps distinct database records and stable part identities. */
     sourceRecords: z
       .array(
@@ -146,9 +155,37 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
       .optional(),
   });
 
+/** How a runner response's turn went: how long it took, its tokens and how it ended, as far as its tool reports them. */
+export interface AppUITurn {
+  durationMs?: number;
+  inputTokens?: number;
+  cacheReadTokens?: number;
+  outputTokens?: number;
+  outcome?: 'completed' | 'cancelled' | 'failed';
+}
+
+/** The agent's own task list for the work (a todo list or plan), as it last reported it. */
+export interface AppUIPlan {
+  entries: {
+    content: string;
+    status: 'pending' | 'in_progress' | 'completed';
+  }[];
+}
+
+/**
+ * Where a response stands before it has anything to show: `waiting` for a runner to take it, `starting` the agent on
+ * it, `thinking` once the agent started. Only a live response carries it; saved history never does.
+ */
+export interface AppUIPhase {
+  phase: 'waiting' | 'starting' | 'thinking';
+}
+
 export type AppUIData = {
   notice: { type: string; title: string; params?: Record<string, string> };
   business: { kind: string; id: string; payload: AppUIJson };
+  turn: AppUITurn;
+  plan: AppUIPlan;
+  phase: AppUIPhase;
 };
 
 /** Display data does not enter model context unless the server explicitly converts it. */
@@ -165,6 +202,24 @@ export const appUIDataSchemas: {
     kind: identity,
     id: identity,
     payload: appUIJsonSchema,
+  }),
+  turn: z.strictObject({
+    durationMs: z.number().int().nonnegative().optional(),
+    inputTokens: z.number().int().nonnegative().optional(),
+    cacheReadTokens: z.number().int().nonnegative().optional(),
+    outputTokens: z.number().int().nonnegative().optional(),
+    outcome: z.enum(['completed', 'cancelled', 'failed']).optional(),
+  }),
+  phase: z.strictObject({
+    phase: z.enum(['waiting', 'starting', 'thinking']),
+  }),
+  plan: z.strictObject({
+    entries: z.array(
+      z.strictObject({
+        content: z.string(),
+        status: z.enum(['pending', 'in_progress', 'completed']),
+      }),
+    ),
   }),
 };
 

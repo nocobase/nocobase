@@ -233,11 +233,6 @@ export function sameModel(tool: AgentTool, a: string, b: string): boolean {
   return normalizeModel(tool, a) === normalizeModel(tool, b);
 }
 
-/** Display identity only. Unknown models retain their provider; execution identity never changes. */
-export function discoveryKey(tool: AgentTool, model: string): string {
-  return `${tool}:${catalogEntry(tool, model)?.id ?? model}`;
-}
-
 /** Provider ids remain execution identities; these names are for display only. */
 export function providerLabel(provider: string): string {
   const names: Readonly<Record<string, string>> = {

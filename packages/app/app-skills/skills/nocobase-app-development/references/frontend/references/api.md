@@ -228,13 +228,21 @@ export async function uploadProjectAttachment(
 
 - Authentication uses the application's existing integration. Having the client does not bypass the server's authentication, authorization or the endpoint's own requirements.
 
+### Data invalidation boundaries
+
+Define retention separately for query results, navigation/facets, form drafts and authorization-sensitive data. Sharing one response does not mean all fields have the same lifetime: a category switch may invalidate rows while its navigation remains useful. Preserve navigation only within its valid scope; do not keep query-specific counts as if they were current.
+
+During a same-resource refresh, retain still-authorized content with a visible refresh indicator. For a changed query, clear the result area or explicitly identify retained rows as previous results while loading; never label old tasks as results of the new category. Discard late responses from superseded requests. User, tenant or permission changes invalidate protected data and drafts according to the application contract, even if this requires unmounting. Retention must not bypass a 401/403 or expose a previous identity's content.
+
+Reset record-specific content when the record changes, inside a stable overlay where practical. A request key identifies a fetch; it is not automatically the React key of the overlay or form. See [overlay lifecycle](overlay.md#asynchronous-overlay-lifecycle) and [transition tests](testing.md#asynchronous-transitions).
+
 ## Loading data in a component
 
 For live updates, read the installed `nocobase-realtime` Skill in `.agents/skills/` for server authorization, snapshot recovery, retries, distributed delivery and polling decisions.
 
 Data reloads when the user acts (a search, "Retry", a refresh button) or after the page's own writes. For live updates, declare the server Topic during provider boot and reuse the host client through `useRealtimeTopic` or `useRealtimeRefresh` from `@nocobase/app-client`. A watch's `onReady` runs after that Topic is acknowledged, including reconnects; `onOpen` only describes the transport. Refresh authoritative API data on readiness because disconnected events are not replayed. Use `enabled: false` for inactive pages, return the refresh promise for burst coalescing and one in-flight follow-up, and use `refreshRealtimeQueries(queryClient, filters, signal)` for TanStack Query snapshots. It matches exact keys, prefixes and predicates, waits for pre-event reads (including initial loading), and follows them with a fresh read without repeatedly cancelling slow requests. Bare `invalidateQueries` with `cancelRefetch: false` can reuse a pre-event response and lose the change. For lower-level code, resolve `realtimeClientToken` and call `watch(topic, { onEvent, onReady, onError })`; close its handle on cleanup. Personal inbox usage is documented in the `nocobase-app-plugin-notification-in-app` Skill.
 
-There is no shared data-loading hook; write it directly in the component: `useApiClient()` + `useEffect` + `AbortController`. Do not reach for TanStack Query in a page: one loading pattern across pages keeps states and errors consistent. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
+For an individual record read, write the request in the component with `useApiClient()` + `useEffect` + `AbortController`; lists use the shared `useListData` and `resolveListState` pattern in [`table.md`](table.md). Do not reach for TanStack Query in a page: one loading pattern across pages keeps states and errors consistent. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
 
 ```tsx
 // client/pages/projects/project-summary.tsx (excerpt; the complete file is in example/project-summary.md)
@@ -279,7 +287,7 @@ export function ProjectSummary({
   // During a reload this is still the last successful data, so the UI does not have to be cleared.
   const project = result?.project;
 
-  // … reload(), the four states and the card: example/project-summary.md
+  // … reload(), list feedback and the card: example/project-summary.md
 }
 ```
 

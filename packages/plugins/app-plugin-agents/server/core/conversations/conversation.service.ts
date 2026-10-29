@@ -1,4 +1,4 @@
-import { outputBlock } from '@nocobase/agent-protocol';
+import { outputBlock, TERMINAL_RUN_STATUSES } from '@nocobase/agent-protocol';
 import {
   historicalPageContext,
   hasContent,
@@ -25,7 +25,7 @@ import {
  *   and bumps `thread`, so every switch starts a new session.
  */
 import { isDeepStrictEqual } from 'node:util';
-import { quotaForAgent } from '../../../shared/runners.js';
+import { quotaForAgent, chatEffortsFor } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -43,6 +43,11 @@ import {
   MESSAGE_PAGE_MAX,
   type ChatAgent,
   type ChatAvailability,
+  type ConversationAttentionCounts,
+  type ConversationUsage,
+  type ConversationNeedsYou,
+  type ConversationNeedsYouReason,
+  type ConversationRunner,
   type ConversationAgent,
   type ConversationConflict,
   type ConversationDetail,
@@ -75,6 +80,7 @@ import { agentNamesOf } from '../agents/agent.store.js';
 import type { RunnerService } from '../../runners/index.js';
 import {
   eventsAfter,
+  fitsActor,
   hasSession,
   lastSummary,
   openRunsOnEach,
@@ -85,7 +91,14 @@ import {
   type SubjectAssembly,
   type SubjectBinding,
 } from '../runs/index.js';
-import { findRunRecord, toRun } from '../runs/run.store.js';
+import {
+  eventsRepo,
+  findRunRecord,
+  inputsRepo,
+  runsRepo,
+  sessionsRepo,
+  toRun,
+} from '../runs/run.store.js';
 import {
   readAttachmentIds,
   storedAttachments,
@@ -99,6 +112,7 @@ import {
   findConversation,
   findDraft,
   metadataOf,
+  queuedRevision,
   rewriteMessage,
   lockConversation,
   messagesRepo,
@@ -110,6 +124,7 @@ import {
 } from './conversation.store.js';
 import type {
   ConversationRef,
+  ConversationWorkspaceProvider,
   ConversationRules,
   ConversationService,
   ConversationSourceKind,
@@ -126,6 +141,7 @@ import {
   type HistoryLine,
 } from './prompt.js';
 import { autoTitle, cleanTitle } from './titles.js';
+import { createConversationLinks } from './links.js';
 import type { AppUIMessage, AppUIJson } from '../../../shared/online-agent.js';
 
 /** Events read per page while turning a run's events into messages. */
@@ -143,7 +159,7 @@ export interface ConversationServiceDeps {
   readonly ids: IdSource;
   readonly clock: Clock;
   readonly agents: Pick<AgentService, 'mayInvoke' | 'get' | 'list'>;
-  readonly runners: Pick<RunnerService, 'list'>;
+  readonly runners: Pick<RunnerService, 'list' | 'all'>;
   readonly eligibility: Pick<
     ClaimEligibility,
     'canClaim' | 'runnersFor' | 'prepare'
@@ -157,6 +173,8 @@ export interface ConversationServiceDeps {
   readonly contextKinds: PageContextKinds;
   /** Availability of the built-in model-backed chat capability. */
   readonly nativeAvailable?: () => Promise<boolean>;
+  /** Transient Runner admission/finalization occupancy, in addition to persisted open runs. */
+  readonly runnerBusy?: (sessionId: string) => boolean;
   /** Native process occupancy, combined with the authorized persisted row. */
   readonly nativeActive?: (
     sessionId: string,
@@ -167,6 +185,11 @@ export interface ConversationServiceDeps {
   /** The application's public base path (`/app`, or empty), for the files' URLs. */
   readonly basePath?: () => string;
 }
+
+/** Archived conversations one purge pass reads at a time, the most it deletes, and how long it may take. */
+const ARCHIVED_PURGE_BATCH = 50;
+const ARCHIVED_PURGE_LIMIT = 1000;
+const ARCHIVED_PURGE_TIME_MS = 5 * 60_000;
 
 function conversationConflict(
   reason: ConversationConflict,
@@ -251,6 +274,8 @@ function noticeText(
       return `${name(notice.fromAgentId)} has no runner for you now, so ${name(notice.agentId)} answers until you switch back.`;
     case 'onlineFallbackUnavailable':
       return `The online fallback agent cannot answer (${notice.reason}). This conversation stays with ${name(notice.fromAgentId)} while it waits for a runner.`;
+    case 'switchedAgent':
+      return `This conversation now uses ${name(notice.agentId)}. The conversation history is preserved.`;
     case 'switchedBack':
       return `This conversation is back with ${name(notice.agentId)}.`;
     case 'runFailed':
@@ -271,6 +296,7 @@ function refOf(record: ConversationRecord): ConversationRef {
     agentId: record.agentId,
     title: record.title,
     source: record.source,
+    projectId: record.projectId ?? null,
   };
 }
 
@@ -308,6 +334,45 @@ function onlineExecution(
   };
 }
 
+/** At most this many characters of what an agent asks its owner are kept. */
+const QUESTION_MAX = 500;
+
+function needsYouOf(record: ConversationRecord): ConversationNeedsYou | null {
+  const reason = record.needsYou as ConversationNeedsYouReason | null;
+  if (
+    !reason ||
+    record.needsYouSeq === null ||
+    record.needsYouSeq === undefined
+  )
+    return null;
+  return {
+    reason,
+    seq: Number(record.needsYouSeq),
+    text: record.needsYouText ?? null,
+  };
+}
+
+/** What settles what waits for the owner. */
+const SETTLED = {
+  needsYou: null,
+  needsYouSeq: null,
+  needsYouText: null,
+} as const;
+
+function runnerOf(id: string, runner: Runner | undefined): ConversationRunner {
+  if (!runner) return { id, name: null, status: 'missing' };
+  return {
+    id,
+    name: runner.name,
+    status:
+      runner.status === 'online'
+        ? 'online'
+        : runner.status === 'revoked'
+          ? 'revoked'
+          : 'offline',
+  };
+}
+
 export function createConversationService(
   deps: ConversationServiceDeps,
 ): ConversationService {
@@ -317,7 +382,25 @@ export function createConversationService(
   const viewOf = (record: MessageRecord) =>
     toMessage(record, deps.basePath?.() ?? '');
   const rules: ConversationRules[] = [];
+  let workspace: ConversationWorkspaceProvider | undefined;
+  async function projectWorkspace(
+    conn: DatabaseConnection,
+    conversation: ConversationRef,
+    prepared: unknown,
+  ) {
+    if (!conversation.projectId) return { dirs: [], scopes: [] };
+    if (!workspace) throw invalid('Project workspaces are not available.');
+    return workspace.resolve(conn, conversation, prepared);
+  }
+
   const sources = createSources();
+  const links = createConversationLinks({
+    tx,
+    ids,
+    now,
+    refOf,
+    changed: (unit, record) => changed(unit, record),
+  });
 
   // -------------------------------------------------------------------------------------------------------------------
   // Reading
@@ -385,6 +468,16 @@ export function createConversationService(
       CONVERSATION_SUBJECT,
       records.map((record) => record.id),
     );
+    const runnerIds = [
+      ...new Set(
+        records.flatMap((record) => (record.runnerId ? [record.runnerId] : [])),
+      ),
+    ];
+    const machines = new Map(
+      (runnerIds.length ? await deps.runners.all(conn, runnerIds) : []).map(
+        (runner) => [runner.id, runner],
+      ),
+    );
     return Promise.all(
       records.map(async (record) => ({
         id: record.id,
@@ -393,6 +486,7 @@ export function createConversationService(
         category: record.category,
         showInChatList: record.showInChatList,
         source: record.source,
+        projectId: record.projectId ?? null,
         mode: record.mode,
         execution: onlineExecution(
           record,
@@ -430,6 +524,12 @@ export function createConversationService(
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
         run: runRef(open.filter((run) => run.subject.id === record.id)),
+        runner: record.runnerId
+          ? runnerOf(record.runnerId, machines.get(record.runnerId))
+          : null,
+        lastSeq: Number(record.lastSeq),
+        seenSeq: Number(record.seenSeq ?? 0),
+        needsYou: needsYouOf(record),
       })),
     );
   }
@@ -471,6 +571,47 @@ export function createConversationService(
       deps.agents.mayInvoke,
       eligible.length,
       online.some((runner) => runnerTakesAgent(runner, agent, now)),
+    );
+  }
+
+  async function effortOptions(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+  ): Promise<readonly string[]> {
+    const eligible = await deps.eligibility.runnersFor(conn, agent, {
+      actorUserId: userId,
+    });
+    return chatEffortsFor(agent.modelEntries[0], eligible);
+  }
+
+  async function validateEffort(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+    selected: string | null | undefined,
+    saved: unknown,
+  ): Promise<string | null> {
+    const preference =
+      selected === undefined
+        ? typeof saved === 'string'
+          ? saved
+          : null
+        : selected;
+    // Unknown capabilities preserve default execution, but never silently replace an explicit preference.
+    const options = await effortOptions(conn, agent, userId);
+    const effective = preference ?? agent.modelEntries[0]?.effort ?? null;
+    if (
+      (preference !== null && !options.includes(preference)) ||
+      (options.length > 0 && effective !== null && !options.includes(effective))
+    )
+      throw invalid(
+        'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
+        { reason: 'EFFORT_UNSUPPORTED', effort: effective, efforts: options },
+      );
+    return (
+      preference ??
+      (effective && options.includes(effective) ? effective : null)
     );
   }
 
@@ -526,6 +667,10 @@ export function createConversationService(
     const target = await fallbackTarget(conn, record);
     return {
       ...summary,
+      effort:
+        typeof jsonObject(record.metadata).effort === 'string'
+          ? (jsonObject(record.metadata).effort as string)
+          : null,
       availability: await availabilityFor(conn, agent, record.userId),
       canFallback: Boolean(target),
       canRestore:
@@ -543,12 +688,20 @@ export function createConversationService(
   // Writing
   // -------------------------------------------------------------------------------------------------------------------
 
-  function changed(unit: Tx, record: ConversationRecord, lastSeq?: number) {
+  function changed(
+    unit: Tx,
+    record: ConversationRecord,
+    at?: number | { readonly messageId: string; readonly revision: number },
+  ) {
     unit.emit({
       type: 'conversation.changed',
       conversationId: record.id,
       userId: record.userId,
-      ...(lastSeq === undefined ? {} : { lastSeq }),
+      ...(at === undefined
+        ? {}
+        : typeof at === 'number'
+          ? { lastSeq: at }
+          : at),
     });
   }
 
@@ -608,7 +761,8 @@ export function createConversationService(
     const agentIds =
       value.code === 'switchedToDefault' ||
       value.code === 'switchedToOnline' ||
-      value.code === 'switchedBack'
+      value.code === 'switchedBack' ||
+      value.code === 'switchedAgent'
         ? [value.agentId, value.fromAgentId]
         : value.code === 'onlineFallbackUnavailable'
           ? [value.fromAgentId]
@@ -715,13 +869,28 @@ export function createConversationService(
     agent: Agent,
     fallbackFromAgentId: string | null,
     value: ConversationNotice,
-  ): Promise<void> {
-    if (runnerBinding(record.metadata))
+    idleOnly = false,
+  ): Promise<ConversationRecord> {
+    const binding = runnerBinding(record.metadata);
+    if (binding && !idleOnly)
       throw conflict('Start a new conversation to choose another agent.');
-    const withdrawn = await deps.runs.withdrawQueued(
-      { subject: subjectOf(record.id), byUserId: record.userId },
-      unit,
-    );
+    if (record.projectId && record.runnerId) {
+      const [runner] = await deps.runners.all(unit.conn, [record.runnerId]);
+      if (
+        !runner ||
+        !fitsActor(runner, agent, record.userId, [], clock.now().getTime())
+      )
+        throw conflict(
+          'This runner cannot run the selected Agent. Switch runner or start a new conversation.',
+          { reason: 'boundRunnerIncompatible' },
+        );
+    }
+    const withdrawn = idleOnly
+      ? []
+      : await deps.runs.withdrawQueued(
+          { subject: subjectOf(record.id), byUserId: record.userId },
+          unit,
+        );
     await conversationsRepo(unit.conn).updateMany({
       filter: { id: record.id },
       values: {
@@ -730,11 +899,27 @@ export function createConversationService(
         modelService: null,
         model: null,
         fallbackFromAgentId,
+        ...(binding
+          ? {
+              metadata: asJson({
+                ...jsonObject(record.metadata),
+                runnerOnlineAgent: {
+                  ...binding,
+                  config: { ...binding.config, agentId: agent.id },
+                },
+              }),
+            }
+          : {}),
         thread: Number(record.thread) + 1,
+        runnerId: record.projectId ? record.runnerId : null,
         updatedAt: now(),
       },
     });
     const moved = (await findConversation(unit.conn, record.id))!;
+    if (idleOnly) {
+      await notice(unit, moved, value);
+      return moved;
+    }
     const runIds = withdrawn.map((run) => run.id);
     const unanswered = await messagesRepo(unit.conn).findMany({
       filter: (f) =>
@@ -750,6 +935,7 @@ export function createConversationService(
     });
     await notice(unit, moved, value);
     await wake(unit, moved, unanswered);
+    return moved;
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -779,6 +965,10 @@ export function createConversationService(
       const events = await eventsAfter(unit.conn, run.id, after, SYNC_PAGE);
       for (const event of events) {
         after = Number(event.seq);
+        if (event.type === 'input') {
+          await pickUp(unit, record, jsonObject(event.meta).inputId);
+          continue;
+        }
         const text = event.type === 'text' ? (event.content ?? '') : '';
         const meta = jsonObject(event.meta);
         const output = event.type === 'text' ? outputBlock(meta) : undefined;
@@ -812,6 +1002,149 @@ export function createConversationService(
       });
   }
 
+  /** A queued message the agent took (its run's `input` event): it is no longer waiting. */
+  async function pickUp(
+    unit: Tx,
+    record: ConversationRecord,
+    inputId: unknown,
+  ): Promise<void> {
+    if (typeof inputId !== 'string') return;
+    const [message] = await messagesRepo(unit.conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('conversationId').eq(record.id),
+          f.string('role').eq('user'),
+          f.json('metadata').path(['inputId']).eq(inputId),
+        ]),
+      limit: 1,
+    });
+    const metadata = message ? jsonObject(message.metadata) : {};
+    if (!message || !metadata.queued || metadata.pickedUp) return;
+    await messagesRepo(unit.conn).updateMany({
+      filter: { id: message.id },
+      values: {
+        metadata: asJson({ ...metadata, pickedUp: true }),
+        updatedAt: now(),
+      },
+    });
+    changed(unit, record, {
+      messageId: message.id,
+      revision: queuedRevision(message.seq, 'pickedUp'),
+    });
+  }
+
+  /** Deletes the runs of `ids` with everything they recorded. */
+  async function deleteRuns(
+    conn: DatabaseConnection,
+    ids: readonly string[],
+  ): Promise<void> {
+    for (let start = 0; start < ids.length; start += 200) {
+      const chunk = ids.slice(start, start + 200);
+      for (const name of [
+        'agRunEvents',
+        'agRunUsage',
+        'agRunInputs',
+        'agRunTokens',
+        'agRunRepos',
+        'agRunBriefs',
+      ])
+        await conn.repository(name).deleteMany({
+          filter: (f) => f.or(chunk.map((id) => f.string('runId').eq(id))),
+        });
+      await runsRepo(conn).deleteMany({
+        filter: (f) => f.or(chunk.map((id) => f.string('id').eq(id))),
+      });
+    }
+  }
+
+  /** Ended runs of conversations deleted while those runs were still stopping, a batch at a time. */
+  async function purgeOrphanRuns(): Promise<void> {
+    const conn = tx.read();
+    const ended = await runsRepo(conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('subjectKind').eq(CONVERSATION_SUBJECT),
+          f.or(
+            TERMINAL_RUN_STATUSES.map((status) =>
+              f.string('status').eq(status),
+            ),
+          ),
+        ]),
+      sort: (sort) => sort.field('id').asc(),
+      limit: 500,
+    });
+    const subjects = [...new Set(ended.map((run) => String(run.subjectId)))];
+    if (subjects.length === 0) return;
+    const kept = new Set(
+      (
+        await conversationsRepo(conn).findMany({
+          filter: (f) => f.or(subjects.map((id) => f.string('id').eq(id))),
+        })
+      ).map((record) => String(record.id)),
+    );
+    const orphans = ended
+      .filter((run) => !kept.has(String(run.subjectId)))
+      .map((run) => String(run.id));
+    if (orphans.length) await tx.run((unit) => deleteRuns(unit.conn, orphans));
+  }
+
+  /**
+   * Deletes `record` inside `unit`: cancels its open runs (as `by`), deletes its messages, files, links and kept
+   * sessions and the conversation, and announces the change (which settles its inbox notices). Answers what removes
+   * the files' bytes once the transaction committed.
+   */
+  async function remove(
+    unit: Tx,
+    record: ConversationRecord,
+    by: string,
+  ): Promise<() => Promise<void>> {
+    for (const run of await openRunsOnEach(unit.conn, CONVERSATION_SUBJECT, [
+      record.id,
+    ]))
+      await deps.runs.cancel(run.id, by, unit);
+    const released = deps.attachments
+      ? await deps.attachments.release(unit.conn, record.id)
+      : async () => {};
+    await messagesRepo(unit.conn).deleteMany({
+      filter: { conversationId: record.id },
+    });
+    await unit.conn
+      .repository('agConversationLinks')
+      .deleteMany({ filter: { conversationId: record.id } });
+    // Runners remove the directories and session files on their next report: the conversation is gone (`settled`).
+    await sessionsRepo(unit.conn).deleteMany({
+      filter: { subjectKind: CONVERSATION_SUBJECT, subjectId: record.id },
+    });
+    // Its finished runs and what they recorded; one still stopping goes once it ended (`purgeOrphanRuns`).
+    await deleteRuns(
+      unit.conn,
+      (
+        await runsRepo(unit.conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('subjectKind').eq(CONVERSATION_SUBJECT),
+              f.string('subjectId').eq(record.id),
+              f.or(
+                TERMINAL_RUN_STATUSES.map((status) =>
+                  f.string('status').eq(status),
+                ),
+              ),
+            ]),
+        })
+      ).map((run) => String(run.id)),
+    );
+    await conversationsRepo(unit.conn).deleteMany({
+      filter: { id: record.id },
+    });
+    changed(unit, record);
+    unit.emit({
+      type: 'conversation.deleted',
+      conversationId: record.id,
+      userId: record.userId,
+    });
+    return released;
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
   // The run subject
   // -------------------------------------------------------------------------------------------------------------------
@@ -824,8 +1157,10 @@ export function createConversationService(
     ownerName: string,
     history: readonly HistoryLine[],
     previousSummary: string | null,
+    prepared?: unknown,
   ): Promise<SubjectAssembly> {
     const key = conversationKey(conversation.id);
+    const directories = await projectWorkspace(conn, conversation, prepared);
     const added = await Promise.all(
       rules.map((source) =>
         source(conn, {
@@ -835,6 +1170,7 @@ export function createConversationService(
             agentId: conversation.agentId,
             title: conversation.title,
             source: conversation.source,
+            projectId: conversation.projectId ?? null,
           },
           agent: claim.agent,
           ownerName,
@@ -842,6 +1178,11 @@ export function createConversationService(
         }),
       ),
     );
+    const linked = await links.turnSection(conn, conversation);
+    const turnSections = [
+      ...(linked ? [linked] : []),
+      ...added.flatMap((lines) => lines.turn ?? []),
+    ];
     return {
       subject: {
         key,
@@ -869,7 +1210,10 @@ export function createConversationService(
         history,
       }),
       turn: {
-        prompt: conversationTurn(claim.inputs.length),
+        prompt: [
+          conversationTurn(claim.inputs.length),
+          ...turnSections.map((section) => section.join('\n')),
+        ].join('\n\n'),
         ...(previousSummary ? { previousSummary } : {}),
       },
       data: {
@@ -881,13 +1225,56 @@ export function createConversationService(
           source: conversation.source,
         },
       },
-      dirs: [],
-      scopes: [],
+      ...directories,
     };
+  }
+
+  /**
+   * After a turn ended: the conversation waits for its owner when they have not seen all of it, or when its agent asked
+   * them something; announced once per turn.
+   */
+  async function attend(unit: Tx, id: string, run: Run): Promise<void> {
+    if (run.status !== 'completed' && run.status !== 'failed') return;
+    const record = await findConversation(unit.conn, id);
+    if (!record || record.archivedAt) return;
+    const seq = Number(record.lastSeq);
+    // A failed run asked nothing it can still be answered on: the failure is what waits.
+    const reason: ConversationNeedsYouReason =
+      run.status === 'failed'
+        ? 'failed'
+        : record.needsYou === 'confirm'
+          ? 'confirm'
+          : 'reply';
+    if (reason !== 'confirm' && seq <= Number(record.seenSeq ?? 0)) return;
+    const text = reason === 'confirm' ? (record.needsYouText ?? null) : null;
+    await conversationsRepo(unit.conn).updateMany({
+      filter: { id },
+      values: { needsYou: reason, needsYouSeq: seq, needsYouText: text },
+    });
+    changed(unit, record);
+    unit.emit({
+      type: 'conversation.attention',
+      conversationId: id,
+      userId: record.userId,
+      reason,
+      seq,
+      title: record.title,
+      text,
+    });
   }
 
   const binding: SubjectBinding = {
     kind: CONVERSATION_SUBJECT,
+    // A deleted conversation's work is over: runners remove what they keep for it.
+    workspaces: {
+      async settled(conn, subjectIds) {
+        const kept = await conversationsRepo(conn).findMany({
+          filter: (f) => f.or(subjectIds.map((id) => f.string('id').eq(id))),
+        });
+        const known = new Set(kept.map((record) => String(record.id)));
+        return new Set(subjectIds.filter((id) => !known.has(id)));
+      },
+    },
     private: true,
     title: { key: 'subjects.conversation', ns: ACCESS_NAMESPACE },
     triggers: CONVERSATION_TRIGGERS,
@@ -922,13 +1309,20 @@ export function createConversationService(
       },
     },
     context: {
-      async assemble(conn, claim) {
+      async prepare(run) {
+        const record = await findConversation(tx.read(), run.subject.id);
+        return record?.projectId
+          ? workspace?.prepare(record.userId)
+          : undefined;
+      },
+      async assemble(conn, claim, prepared) {
         const record = await findConversation(conn, claim.run.subject.id);
         // Only the owner's runs see a conversation (a preview by anyone else, too, finds nothing).
         if (!record || record.userId !== claim.run.actorUserId)
           throw new Error('The conversation is gone.');
         const ownerName = await nameOf(conn, record.userId);
         const fresh =
+          claim.freshSession === true ||
           !claim.runner ||
           !(await hasSession(conn, {
             agentId: claim.agent.id,
@@ -954,7 +1348,11 @@ export function createConversationService(
             limit: CONVERSATION_HISTORY_IN_PROMPT + pending.size,
           });
           history = recent
-            .filter((message) => !pending.has(message.id))
+            .filter(
+              (message) =>
+                !pending.has(message.id) &&
+                !jsonObject(message.metadata).withdrawn,
+            )
             .slice(0, CONVERSATION_HISTORY_IN_PROMPT)
             .reverse()
             .map((message) => {
@@ -981,7 +1379,7 @@ export function createConversationService(
           ? await lastSummary(
               conn,
               {
-                agentId: claim.agent.id,
+                ...(record.projectId ? {} : { agentId: claim.agent.id }),
                 subjectKind: CONVERSATION_SUBJECT,
                 subjectId: record.id,
               },
@@ -995,11 +1393,19 @@ export function createConversationService(
           ownerName,
           history,
           previousSummary,
+          prepared,
         );
+        const preference =
+          jsonObject(record.metadata).turnEffort ??
+          jsonObject(record.metadata).effort;
+        const withEffort =
+          typeof preference === 'string'
+            ? { ...assembly, effort: preference }
+            : assembly;
         const config = runnerBinding(record.metadata)?.config;
         return config
           ? {
-              ...assembly,
+              ...withEffort,
               system: [
                 assembly.system,
                 config.systemPrompt,
@@ -1010,7 +1416,27 @@ export function createConversationService(
                 .filter(Boolean)
                 .join('\n\n'),
             }
-          : assembly;
+          : withEffort;
+      },
+    },
+    runnerPin: {
+      async runnerOf(conn, run) {
+        const record = await findConversation(conn, run.subject.id);
+        if (!record || record.userId !== run.actorUserId) return null;
+        return record.runnerId ?? null;
+      },
+      async pin(unit, run, runner) {
+        const record = await findConversation(unit.conn, run.subject.id);
+        if (!record || record.userId !== run.actorUserId) return true;
+        if (record.runnerId) return record.runnerId === runner.id;
+        const bound = await conversationsRepo(unit.conn).updateMany({
+          filter: (f) =>
+            f.and([f.string('id').eq(record.id), f.string('runnerId').empty()]),
+          values: { runnerId: runner.id },
+        });
+        if (bound.updatedCount !== 1) return false;
+        changed(unit, record);
+        return true;
       },
     },
     sink: {
@@ -1068,13 +1494,33 @@ export function createConversationService(
           );
           changed(unit, record, Number(draft.seq));
         }
-        if (run.status !== 'failed') return;
-        await notice(
-          unit,
-          record,
-          { code: 'runFailed', runId: run.id, reason: run.failureReason },
-          run.id,
-        );
+        if (run.status === 'failed')
+          await notice(
+            unit,
+            record,
+            { code: 'runFailed', runId: run.id, reason: run.failureReason },
+            run.id,
+          );
+        // The run's response now closes with its turn's footer, one revision on: a page showing it rereads it.
+        const [answered] = await messagesRepo(unit.conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('conversationId').eq(record.id),
+              f.string('runId').eq(run.id),
+              f.or([
+                f.string('role').eq('assistant'),
+                f.string('role').eq('user'),
+              ]),
+            ]),
+          sort: (sort) => [sort.field('role').asc(), sort.field('seq').desc()],
+          limit: 1,
+        });
+        if (answered)
+          changed(unit, record, {
+            messageId: `runner:${run.id}`,
+            revision: Number(answered.seq) + 1,
+          });
+        await attend(unit, record.id, run);
       },
     },
   };
@@ -1150,6 +1596,13 @@ export function createConversationService(
   ): Promise<
     SendMessageResult | Awaited<ReturnType<ConversationService['sendRealtime']>>
   > {
+    if (request.effort !== undefined && !realtime)
+      throw invalid(
+        'Reasoning effort selection requires a Runner realtime message.',
+        { reason: 'EFFORT_UNSUPPORTED' },
+      );
+    if (request.agentId !== undefined && (!realtime || !request.agentId.trim()))
+      throw invalid('Agent selection requires a Runner realtime message.');
     const content = request.content;
     const attachmentIds = readAttachmentIds(request.attachmentIds);
     if (
@@ -1193,8 +1646,9 @@ export function createConversationService(
         )
       : undefined;
     const sent = await measuredAdmission(async (unit) => {
-      const record = await lockOwned(unit, userId, id, Boolean(realtime));
-      const binding = runnerBinding(record.metadata);
+      let record = await lockOwned(unit, userId, id, Boolean(realtime));
+      let binding = runnerBinding(record.metadata);
+      let turnEffort: string | null = null;
       if (realtime) {
         if (!binding)
           throw invalid('This is not a Runner OnlineAgent conversation.');
@@ -1202,19 +1656,85 @@ export function createConversationService(
           throw conflict(
             'The conversation configuration changed; read it again.',
           );
-        if ((realtime.config.agentId ?? 'online') !== record.agentId)
+        const targetId = request.agentId ?? record.agentId;
+        const switching = targetId !== record.agentId;
+        if ((realtime.config.agentId ?? 'online') !== targetId)
           throw conflict('Start a new conversation to choose another agent.');
         if (
-          binding.closingRunId ||
-          (await openRunsOnEach(unit.conn, CONVERSATION_SUBJECT, [id])).length
+          switching &&
+          (realtime.queue || record.archivedAt || record.mode !== 'runner')
         )
-          throw conflict('This conversation is busy.');
-        const agent = await pickAgent(unit.conn, userId, record.agentId);
+          throw conflict(
+            'Only an idle, unarchived Runner conversation can change agents.',
+          );
+        const open = await openRunsOnEach(unit.conn, CONVERSATION_SUBJECT, [
+          id,
+        ]);
+        // Queued input joins the run at work; otherwise a new one starts only once the last one closed.
+        if (
+          realtime.queue
+            ? !open.some((run) => run.status !== 'queued')
+            : binding.closingRunId || open.length
+        )
+          throw conflict(
+            realtime.queue
+              ? 'The agent is not working on this conversation.'
+              : 'This conversation is busy.',
+          );
+        const agent = await pickAgent(unit.conn, userId, targetId);
+        // A conversation bound to a runner waits for it, online or not.
         if (
           agent.source !== 'runner' ||
-          !(await canAnswer(unit.conn, agent, userId))
+          ((switching || !record.runnerId) &&
+            !(await canAnswer(unit.conn, agent, userId)))
         )
           throw conflict('This agent has no available execution environment.');
+        turnEffort =
+          (typeof jsonObject(record.metadata).effort === 'string'
+            ? (jsonObject(record.metadata).effort as string)
+            : null) ??
+          agent.modelEntries[0]?.effort ??
+          null;
+        if (!realtime.queue) {
+          const effort = await validateEffort(
+            unit.conn,
+            agent,
+            userId,
+            request.effort,
+            switching ? null : jsonObject(record.metadata).effort,
+          );
+          turnEffort = effort ?? agent.modelEntries[0]?.effort ?? null;
+          if (
+            effort !== (jsonObject(record.metadata).effort ?? null) ||
+            turnEffort !== (jsonObject(record.metadata).turnEffort ?? null)
+          ) {
+            const metadata = asJson({
+              ...jsonObject(record.metadata),
+              effort,
+              turnEffort,
+            });
+            await conversationsRepo(unit.conn).updateMany({
+              filter: { id },
+              values: { metadata },
+            });
+            record = { ...record, metadata };
+          }
+        }
+        if (switching) {
+          record = await rebind(
+            unit,
+            record,
+            agent,
+            null,
+            {
+              code: 'switchedAgent',
+              agentId: agent.id,
+              fromAgentId: record.agentId,
+            },
+            true,
+          );
+          binding = runnerBinding(record.metadata)!;
+        }
         if (!isDeepStrictEqual(binding.config, realtime.config))
           await conversationsRepo(unit.conn).updateMany({
             filter: { id },
@@ -1248,6 +1768,8 @@ export function createConversationService(
         workContext: realtime?.workContext ?? context,
         metadata: {
           ...(request.clientId ? { clientId: request.clientId } : {}),
+          ...(turnEffort ? { effort: turnEffort } : {}),
+          ...(realtime?.queue ? { queued: true } : {}),
         },
       });
       if (links && attachmentIds.length > 0) {
@@ -1272,12 +1794,25 @@ export function createConversationService(
         realtime?.business,
         previousPage,
       );
-      if (realtime && (!run || run.outcome !== 'created'))
-        throw conflict('This conversation could not accept a new execution.');
+      if (
+        realtime &&
+        (!run ||
+          (realtime.queue
+            ? run.outcome !== 'appended'
+            : run.outcome !== 'created'))
+      )
+        throw conflict(
+          realtime.queue
+            ? 'The agent is no longer working on this conversation.'
+            : 'This conversation could not accept a new execution.',
+        );
+      // Writing answers what waited for the owner, and they have seen what they answered.
       await conversationsRepo(unit.conn).updateMany({
         filter: { id },
-        values: { read: true },
+        values: { read: true, seenSeq: Number(message.seq), ...SETTLED },
       });
+      // Announced apart from the new message, so a listener that settles what waited (an inbox notice) hears it.
+      changed(unit, record);
       return {
         run,
         message: (await messagesRepo(unit.conn).findOne({
@@ -1308,6 +1843,19 @@ export function createConversationService(
       );
       const cursor = query.pageToken ? decodeCursor(query.pageToken) : null;
       const q = query.q?.trim();
+      if ((query.linkKind === undefined) !== (query.linkTargetId === undefined))
+        throw invalid('linkKind and linkTargetId go together.', {
+          field: query.linkKind === undefined ? 'linkKind' : 'linkTargetId',
+        });
+      const linked =
+        query.linkKind !== undefined && query.linkTargetId !== undefined
+          ? await links.conversationIds(conn, {
+              kind: query.linkKind,
+              targetId: query.linkTargetId,
+            })
+          : null;
+      if (linked && linked.length === 0)
+        return { items: [], nextCursor: null } satisfies ConversationPage;
       const rows = await conversationsRepo(conn).findMany({
         filter: (f) =>
           f.and([
@@ -1336,6 +1884,9 @@ export function createConversationService(
                 ]
               : []),
             ...(query.source ? [f.string('source').eq(query.source)] : []),
+            ...(linked
+              ? [f.or(linked.map((id) => f.string('id').eq(id)))]
+              : []),
             ...(q
               ? [
                   f.or([
@@ -1379,6 +1930,9 @@ export function createConversationService(
     },
 
     async create(userId, request, runnerConfig) {
+      const prepared = request.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
       const id = await tx.run(async (unit) => {
         const agent = await pickAgent(unit.conn, userId, request.agentId);
         if (
@@ -1388,6 +1942,13 @@ export function createConversationService(
           throw invalid('Select a callable Runner agent.');
         if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
           throw conflict('This agent has no available execution environment.');
+        const effort = await validateEffort(
+          unit.conn,
+          agent,
+          userId,
+          request.effort,
+          null,
+        );
         const title =
           request.title === undefined
             ? null
@@ -1397,17 +1958,31 @@ export function createConversationService(
         if (source !== 'panel' && !sources.has(source))
           throw invalid(`${source} is not a source conversations start from.`);
         const conversationId = ids.next();
+        if (request.projectId && agent.source !== 'runner')
+          throw invalid('Only Runner conversations can select a project.');
+        await projectWorkspace(
+          unit.conn,
+          {
+            id: conversationId,
+            userId,
+            agentId: agent.id,
+            title,
+            source,
+            projectId: request.projectId,
+          },
+          prepared,
+        );
         await conversationsRepo(unit.conn).createOne({
           values: {
             id: conversationId,
-            ...(runnerConfig
-              ? {
-                  metadata: asJson({
-                    runnerOnlineAgent: { version: 1, config: runnerConfig },
-                  }),
-                }
-              : {}),
+            metadata: asJson({
+              effort,
+              ...(runnerConfig
+                ? { runnerOnlineAgent: { version: 1, config: runnerConfig } }
+                : {}),
+            }),
             userId,
+            projectId: request.projectId ?? null,
             agentId: agent.id,
             mode: 'runner',
             fallbackFromAgentId: null,
@@ -1439,17 +2014,44 @@ export function createConversationService(
     get: detail,
 
     async update(userId, id, patch) {
+      const prepared = patch.projectId
+        ? await workspace?.prepare(userId)
+        : undefined;
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id, true);
         const values: Record<string, unknown> = {};
+        if (
+          patch.projectId !== undefined &&
+          patch.projectId !== (record.projectId ?? null)
+        ) {
+          if (
+            Number(record.lastSeq) > 0 &&
+            (await messagesRepo(unit.conn).findOne({
+              filter: { conversationId: id, role: 'user' },
+            }))
+          )
+            throw conflict(
+              'Start a new conversation to choose another project.',
+            );
+          if (record.mode !== 'runner')
+            throw invalid('Only Runner conversations can select a project.');
+          await projectWorkspace(
+            unit.conn,
+            { ...refOf(record), projectId: patch.projectId },
+            prepared,
+          );
+          values.projectId = patch.projectId;
+        }
         if (patch.title !== undefined) {
           values.title = titleFor(patch.title, CONVERSATION_TITLE_MAX);
           values.titleSource = 'user';
         }
-        if (patch.archived !== undefined)
+        if (patch.archived !== undefined) {
           values.archivedAt = patch.archived
             ? (record.archivedAt ?? now())
             : null;
+          if (patch.archived) Object.assign(values, SETTLED);
+        }
         if (Object.keys(values).length === 0) return;
         await conversationsRepo(unit.conn).updateMany({
           filter: { id },
@@ -1558,6 +2160,51 @@ export function createConversationService(
     sendRealtime: (userId, id, request, input) =>
       sendMessage(userId, id, request, input),
 
+    async withdraw(userId, id, messageId) {
+      await tx.run(async (unit) => {
+        const record = await lockOwned(unit, userId, id, true);
+        const message = await messagesRepo(unit.conn).findOne({
+          filter: { id: messageId, conversationId: id },
+        });
+        if (!message || message.role !== 'user') throw notFound('Message');
+        const metadata = jsonObject(message.metadata);
+        if (metadata.withdrawn) return;
+        // Taken back only while no runner has it: one conditional update, which a delivery racing it cannot both
+        // pass (`markDelivered` updates only an input not handled).
+        const taken =
+          !metadata.queued ||
+          metadata.pickedUp ||
+          typeof metadata.inputId !== 'string' ||
+          (
+            await inputsRepo(unit.conn).updateMany({
+              filter: (f) =>
+                f.and([
+                  f.string('id').eq(metadata.inputId as string),
+                  f.date('deliveredAt').empty(),
+                  f.date('handledAt').empty(),
+                ]),
+              values: { handledAt: now() },
+            })
+          ).updatedCount !== 1;
+        if (taken)
+          throw conversationConflict(
+            'messageTaken',
+            'The agent already has this message.',
+          );
+        await messagesRepo(unit.conn).updateMany({
+          filter: { id: message.id },
+          values: {
+            metadata: asJson({ ...metadata, withdrawn: true }),
+            updatedAt: now(),
+          },
+        });
+        changed(unit, record, {
+          messageId: message.id,
+          revision: queuedRevision(message.seq, 'withdrawn'),
+        });
+      });
+    },
+
     async start(userId, request) {
       if (!sources.has(request.source))
         throw invalid(
@@ -1590,16 +2237,328 @@ export function createConversationService(
     },
 
     async markRead(userId, id) {
+      const record = await owned(tx.read(), userId, id);
+      return service.markSeen(userId, id, Number(record.lastSeq));
+    },
+
+    async markSeen(userId, id, seq) {
+      if (!Number.isInteger(seq) || seq < 0)
+        throw invalid('seq must be a message seq.', { field: 'seq' });
+      const changes = (record: ConversationRecord) => {
+        const last = Number(record.lastSeq);
+        const seen = Math.max(Number(record.seenSeq ?? 0), Math.min(seq, last));
+        const waiting = needsYouOf(record);
+        return {
+          ...(seen !== Number(record.seenSeq ?? 0) ? { seenSeq: seen } : {}),
+          ...(seen >= last && !record.read ? { read: true } : {}),
+          ...(waiting && waiting.reason !== 'confirm' && seen >= waiting.seq
+            ? SETTLED
+            : {}),
+        };
+      };
+      // Nothing new seen: no write at all, not even the lock (a read-only deployment acknowledges freely).
+      if (Object.keys(changes(await owned(tx.read(), userId, id))).length === 0)
+        return detail(userId, id);
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id, true);
-        if (record.read) return;
+        const values = changes(record);
+        if (Object.keys(values).length === 0) return;
         await conversationsRepo(unit.conn).updateMany({
           filter: { id },
-          values: { read: true },
+          values,
         });
         changed(unit, record);
       });
       return detail(userId, id);
+    },
+
+    async attention(userId) {
+      const conn = tx.read();
+      const [unread, needsYou] = await Promise.all([
+        conversationsRepo(conn).count({
+          filter: (f) =>
+            f.and([
+              f.string('userId').eq(userId),
+              f.boolean('showInChatList').isTrue(),
+              f.date('archivedAt').empty(),
+              f.boolean('read').isFalse(),
+            ]),
+        }),
+        conversationsRepo(conn).count({
+          filter: (f) =>
+            f.and([
+              f.string('userId').eq(userId),
+              f.boolean('showInChatList').isTrue(),
+              f.date('archivedAt').empty(),
+              f.string('needsYou').notEmpty(),
+            ]),
+        }),
+      ]);
+      return { unread, needsYou } satisfies ConversationAttentionCounts;
+    },
+
+    async usage(userId, id) {
+      const conn = tx.read();
+      await owned(conn, userId, id);
+      const totals = await conn.query
+        .selectFrom('agRunUsage as u')
+        .innerJoin('agRuns as r', 'r.id', 'u.runId')
+        .where('r.subjectKind', '=', CONVERSATION_SUBJECT)
+        .where('r.subjectId', '=', id)
+        .select((eb) => [
+          eb.fn.sum<number>('u.inputTokens').as('inputTokens'),
+          eb.fn.sum<number>('u.cacheReadTokens').as('cacheReadTokens'),
+          eb.fn.sum<number>('u.outputTokens').as('outputTokens'),
+          eb.fn.count<number>('u.runId').distinct().as('runs'),
+        ])
+        .executeTakeFirst();
+      // The status events its runs reported, read through the Repository: `content` is a text field, which some
+      // dialects (Oracle's CLOB) do not compare with `=`.
+      const runIds = (
+        await runsRepo(conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('subjectKind').eq(CONVERSATION_SUBJECT),
+              f.string('subjectId').eq(id),
+            ]),
+        })
+      ).map((run) => String(run.id));
+      const statuses = async (content: string, limit?: number) =>
+        runIds.length === 0
+          ? []
+          : eventsRepo(conn).findMany({
+              filter: (f) =>
+                f.and([
+                  f.or(runIds.map((runId) => f.string('runId').eq(runId))),
+                  f.string('type').eq('status'),
+                  f.text('content').eq(content),
+                ]),
+              sort: (sort) =>
+                limit
+                  ? [sort.field('createdAt').desc(), sort.field('seq').desc()]
+                  : [sort.field('seq').asc()],
+              ...(limit ? { limit } : {}),
+            });
+      // The latest run that said how full its context window was.
+      const [latest] = await statuses('context', 1);
+      const context = jsonObject(jsonObject(latest?.meta).context);
+      const used = Number(context.used);
+      const size = Number(context.size);
+      // A run's tool reports what it cost so far at each turn's end: its last report is the run's.
+      const turns = await statuses('turnCompleted');
+      const costs = new Map<string, number>();
+      for (const turn of turns) {
+        const cost = Number(jsonObject(turn.meta).costUsd);
+        if (Number.isFinite(cost) && cost >= 0)
+          costs.set(String(turn.runId), cost);
+      }
+      return {
+        inputTokens: Number(totals?.inputTokens ?? 0),
+        cacheReadTokens: Number(totals?.cacheReadTokens ?? 0),
+        outputTokens: Number(totals?.outputTokens ?? 0),
+        runs: Number(totals?.runs ?? 0),
+        context:
+          Number.isFinite(used) && Number.isFinite(size) && size > 0
+            ? { used, size }
+            : null,
+        costUsd: costs.size
+          ? Math.round(
+              [...costs.values()].reduce((sum, cost) => sum + cost, 0) * 1e6,
+            ) / 1e6
+          : null,
+      } satisfies ConversationUsage;
+    },
+
+    async markNoticed(conversationId, seq) {
+      await tx.run(async (unit) => {
+        const record = await lockConversation(unit.conn, conversationId, now());
+        if (!record || Number(record.noticedSeq ?? -1) >= seq) return;
+        await conversationsRepo(unit.conn).updateMany({
+          filter: { id: conversationId },
+          values: { noticedSeq: seq },
+        });
+      });
+    },
+
+    async switchAgent(userId, id, agentId) {
+      if (typeof agentId !== 'string' || !agentId.trim())
+        throw invalid('Select a valid agentId.');
+      await tx.run(async (unit) => {
+        const record = await lockOwned(unit, userId, id, true);
+        if (record.mode !== 'runner' || jsonObject(record.metadata).onlineAgent)
+          throw invalid('Only Runner conversations can switch agents.');
+        if (record.archivedAt)
+          throw conflict('Restore the conversation before changing agents.', {
+            reason: 'archived',
+          });
+        const agent = await pickAgent(unit.conn, userId, agentId);
+        if (agent.source !== 'runner')
+          throw invalid('Select a callable Runner agent.');
+        if (record.agentId === agent.id) return;
+        const binding = runnerBinding(record.metadata);
+        // Sending, queueing and switching serialize on this same conversation row. An admitted or closing stream
+        // also keeps the boundary busy until its durable run and canonical history have settled.
+        if (
+          deps.runnerBusy?.(id) ||
+          binding?.closingRunId ||
+          (await openRunsOnEach(unit.conn, CONVERSATION_SUBJECT, [id])).length
+        )
+          throw conflict(
+            'Finish the conversation’s pending work before changing agents.',
+            { reason: 'busy' },
+          );
+        await rebind(
+          unit,
+          record,
+          agent,
+          null,
+          {
+            code: 'switchedAgent',
+            agentId: agent.id,
+            fromAgentId: record.agentId,
+          },
+          true,
+        );
+      });
+      return detail(userId, id);
+    },
+
+    async switchRunner(userId, id) {
+      await tx.run(async (unit) => {
+        const record = await lockOwned(unit, userId, id, true);
+        if (!record.runnerId) return;
+        await conversationsRepo(unit.conn).updateMany({
+          filter: { id },
+          values: { runnerId: null, updatedAt: now() },
+        });
+        changed(unit, record);
+      });
+      return detail(userId, id);
+    },
+
+    async askOwnerFromRun(run, question, issue) {
+      const text = question.trim();
+      if (text === '' || [...text].length > QUESTION_MAX)
+        throw invalid(`question must be 1 to ${QUESTION_MAX} characters.`, {
+          field: 'question',
+        });
+      const conversation = await tx.run(async (unit) => {
+        if (run.subject.kind !== CONVERSATION_SUBJECT)
+          throw notFound('Conversation');
+        const record = await lockConversation(unit.conn, run.subject.id, now());
+        if (!record || record.userId !== run.actorUserId)
+          throw notFound('Conversation');
+        await conversationsRepo(unit.conn).updateMany({
+          filter: { id: record.id },
+          values: {
+            needsYou: 'confirm',
+            needsYouSeq: Number(record.lastSeq),
+            needsYouText: text,
+            metadata: asJson({
+              ...jsonObject(record.metadata),
+              ownerQuestion: issue ? { issue, askedAt: now() } : null,
+            }),
+          },
+        });
+        changed(unit, record);
+        return record;
+      });
+      return detail(conversation.userId, conversation.id);
+    },
+
+    async settleOwnerQuestion(id, issue, resumedAt) {
+      const resumed = Date.parse(resumedAt);
+      const matches = (record: ConversationRecord | null) => {
+        if (!record || record.needsYou !== 'confirm') return false;
+        const question = jsonObject(jsonObject(record.metadata).ownerQuestion);
+        return (
+          question.issue === issue &&
+          typeof question.askedAt === 'string' &&
+          Date.parse(question.askedAt) < resumed
+        );
+      };
+      // Filter before taking the existing conversation write boundary, then recheck under it.
+      if (!matches(await findConversation(tx.read(), id))) return false;
+      return tx.run(async (unit) => {
+        const record = await lockConversation(unit.conn, id, now());
+        if (!record || !matches(record)) return false;
+        await conversationsRepo(unit.conn).updateMany({
+          filter: { id },
+          values: {
+            ...SETTLED,
+            metadata: asJson({
+              ...jsonObject(record.metadata),
+              ownerQuestion: null,
+            }),
+          },
+        });
+        changed(unit, record);
+        return true;
+      });
+    },
+
+    async ofRunId(runId) {
+      const conn = tx.read();
+      const stored = await findRunRecord(conn, runId);
+      return stored ? service.homeOf(conn, toRun(stored)) : null;
+    },
+
+    links,
+
+    async delete(userId, id) {
+      const cleanup = await tx.run(async (unit) => {
+        const record = await lockOwned(unit, userId, id, true);
+        return remove(unit, record, userId);
+      });
+      await cleanup();
+    },
+
+    async purgeArchived(days, at = new Date()) {
+      if (days <= 0) return 0;
+      const cutoff = new Date(at.getTime() - days * 86_400_000).toISOString();
+      const started = Date.now();
+      let purged = 0;
+      for (;;) {
+        const due = await conversationsRepo(tx.read()).findMany({
+          filter: (f) =>
+            f.and([
+              f.date('archivedAt').notEmpty(),
+              f.date('archivedAt').before(cutoff),
+            ]),
+          sort: (sort) => [
+            sort.field('archivedAt').asc(),
+            sort.field('id').asc(),
+          ],
+          limit: ARCHIVED_PURGE_BATCH,
+        });
+        for (const candidate of due) {
+          const cleanup = await tx.run(async (unit) => {
+            const record = await lockConversation(
+              unit.conn,
+              candidate.id,
+              now(),
+            );
+            // Restored meanwhile, or already gone: not counted.
+            if (
+              !record?.archivedAt ||
+              new Date(record.archivedAt).toISOString() >= cutoff
+            )
+              return null;
+            return remove(unit, record, record.userId);
+          });
+          if (!cleanup) continue;
+          await cleanup();
+          purged += 1;
+        }
+        if (
+          due.length < ARCHIVED_PURGE_BATCH ||
+          purged >= ARCHIVED_PURGE_LIMIT ||
+          Date.now() - started > ARCHIVED_PURGE_TIME_MS
+        ) {
+          await purgeOrphanRuns();
+          return purged;
+        }
+      }
     },
 
     async stop(userId, id) {
@@ -1739,13 +2698,15 @@ export function createConversationService(
       const record = await lockConversation(outer.conn, conversationId, now());
       if (!record) return null;
       await notice(outer, record, news.notice);
-      // New bindings save business notices atomically but never wake a second execution.
+      // Native bindings save business notices atomically but never wake a second execution; a Runner binding only
+      // when the application asks it to.
       if (
         jsonObject(record.metadata).onlineAgent ||
-        runnerBinding(record.metadata)
+        (runnerBinding(record.metadata) && !news.wake)
       )
         return null;
-      if (!news.input) return null;
+      // An archived conversation keeps the news but is not woken by it.
+      if (!news.input || record.archivedAt) return null;
       const agent = record.agentId
         ? await findAgent(outer.conn, record.agentId)
         : null;
@@ -1769,6 +2730,18 @@ export function createConversationService(
     lock: async (conn, id) =>
       (await lockConversation(conn, id, now())) !== null,
 
+    workspace: {
+      provide(provider) {
+        if (workspace)
+          throw new Error(
+            'A conversation workspace provider is already registered.',
+          );
+        workspace = provider;
+        return () => {
+          if (workspace === provider) workspace = undefined;
+        };
+      },
+    },
     rules: {
       provide(source) {
         rules.push(source);
@@ -1815,7 +2788,14 @@ export function createConversationService(
             const fitting = runners.filter((runner) =>
               runnerTakesAgent(runner, agent, now),
             );
+            const eligible = await deps.eligibility.runnersFor(conn, agent, {
+              actorUserId: userId,
+              runners,
+              variableState: variableStates?.get(agent.id),
+            });
             return {
+              efforts: chatEffortsFor(agent.modelEntries[0], eligible),
+              effort: agent.modelEntries[0]?.effort ?? null,
               id: agent.id,
               name: agent.name,
               description: agent.description,
@@ -1824,12 +2804,12 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
-              availability: await availabilityFor(
-                conn,
+              availability: availabilityOf(
                 agent,
                 userId,
-                runners,
-                variableStates?.get(agent.id),
+                deps.agents.mayInvoke,
+                eligible.length,
+                fitting.length > 0,
               ),
               quota: quotaForAgent(runners, agent, userId, now),
               runnerNames: fitting

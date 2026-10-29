@@ -1,8 +1,8 @@
 {
   "name": "@nocobase/app-plugin-file",
   "displayName": "File App Plugin",
-  "description": "File repositories, uploads, stable content URLs, and editable Registry components for NocoBase applications.",
-  "version": "1.0.0-beta.26",
+  "description": "File repositories, uploads, stable content URLs for NocoBase applications.",
+  "version": "1.0.0-beta.27",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -31,10 +31,7 @@
     "docs",
     "README.md",
     "CHANGELOG.md",
-    "skills",
-    "registry",
-    "registry.config.json",
-    "public/r"
+    "skills"
   ],
   "publishConfig": {
     "access": "public",
@@ -58,11 +55,9 @@
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm registry:build && pnpm build",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format",
-    "registry:build": "node ../../../scripts/registry.mjs build --package .",
-    "registry:materialize": "node ../../../scripts/registry.mjs materialize --package .",
-    "prepack": "pnpm registry:build && pnpm build"
+    "prepack": "pnpm build"
   },
   "devDependencies": {
     "@nocobase/api-client": "workspace:*",
@@ -100,12 +95,5 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@nocobase/i18n": "workspace:^"
-  },
-  "nocobase": {
-    "registry": {
-      "items": {
-        "component-ui": "./registry/component-ui"
-      }
-    }
   }
 }

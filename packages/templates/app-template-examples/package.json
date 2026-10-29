@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.62",
+  "version": "1.0.0-beta.68",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.62",
+    "defaultTemplateVersion": "1.0.0-beta.68",
     "cli": {
       "bin": "nocobase-examples",
       "displayName": "NocoBase Examples",
@@ -93,7 +93,9 @@
     "vitest": "catalog:",
     "tar": "catalog:",
     "@xyflow/react": "^12.11.5",
-    "elkjs": "^0.10.2"
+    "elkjs": "^0.10.2",
+    "@types/jsdom": "catalog:",
+    "@noble/hashes": "2.3.0"
   },
   "files": [
     ".prettierignore",
@@ -129,7 +131,12 @@
     "AGENTS.md",
     ".agents/rules",
     "CLAUDE.md",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "scripts/check-packages.mjs",
+    "docs/ui/pages/skill-projects.md",
+    "docs/ui/pages/customer-contacts.md",
+    "docs/customer-contacts.md",
+    "docs/customer-contacts/*.png"
   ],
   "publishConfig": {
     "access": "public"
@@ -144,7 +151,7 @@
     "dev": "nocobase dev",
     "build": "nocobase build",
     "start": "nocobase start",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "check": "pnpm check:packages && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "lint": "eslint . --max-warnings 0",
@@ -154,7 +161,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test --pass-with-no-tests"
+    "test:e2e": "playwright test --pass-with-no-tests",
+    "check:packages": "node scripts/check-packages.mjs"
   },
   "browserslist": {
     "production": [

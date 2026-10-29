@@ -53,6 +53,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     TOOLS_REFRESH_UNSUPPORTED:
       '此 runner 不支援重新整理狀態，請重新啟動 runner。',
     RUNNER_REFRESH_UNAVAILABLE: '此 runner 已撤銷，無法重新整理狀態。',
+    boundRunnerIncompatible:
+      '此執行機無法執行所選 Agent。請更換執行機或建立新對話。',
     CONFLICT: '同時，它發生了變化。重新載入並重試。',
     REVISION_CONFLICT: '同時，它發生了變化。重新載入並重試。',
     FORBIDDEN: '您不可以這樣做。',
@@ -98,41 +100,27 @@ const zhTW: LocaleResource<typeof enUS> = {
     unavailableNow: '目前無法使用',
     title: '代理',
     description:
-      '執行器報告的每個編碼工具和模型都是一個代理。專案經理將議題的每一步交給與其描述相符的代理人。',
+      '從執行器回報的模型中新增代理。專案經理依據代理的擅長領域分派議題的每個步驟。',
     fromRunners: '執行器代理',
-    discovery: {
-      selectAll: '選擇所有結果',
-      selectFirst: '選擇第一個 {{limit}} 結果',
-      selectionCount: '選定的 {{count}} / {{limit}} 組',
-      clearSelection: '清除選擇',
-      new: '新發現({{count}})',
-      ignored: '忽略 ({{count}})',
+    display: {
       search: '搜尋型號或供應商',
       select: '選擇{{name}}',
-      ignore: '忽略',
-      restore: '恢復',
-      ignoreSelected: '忽略所選',
-      restoreSelected: '恢復所選',
       showDisabled: '顯示已停用',
       hideDisabled: '隱藏已停用',
-      provider: '提供者和執行者',
-      saved: '已儲存發現首選項',
     },
     filterLabel: '顯示代理',
     filters: {
       all: '全部{{count}}',
       enabled: '啟用 {{count}}',
-      pending: '待啟用 {{count}}',
       unreported: '無參賽者 {{count}}',
     },
     loadFailed: '無法載入代理',
     loadMore: '載入更多',
     emptyTitle: '還沒有代理',
-    emptyDescription:
-      '將執行器與已登入的編碼工具連線起來：其每個模型都在此處顯示為要啟用的代理。',
+    emptyDescription: '連接已登入編碼工具的執行器，再從「可用模型」新增代理。',
     noneInFilter: '這裡沒有代理。',
     howToAdd:
-      '要新增代理，請在執行器上安裝編碼工具並登入您可能使用的模型：一旦執行器報告它，它就會顯示在這裡，您可以透過編寫它擅長的內容來啟用它。私人執行器的代理人只能處理其主人發起的議題。',
+      '要新增代理，請在執行器上安裝編碼工具並登入可用的模型。執行器回報後，從「可用模型」填寫擅長領域即可新增並啟用代理。只有個人執行器可執行的代理，只能處理其擁有者發起的議題。',
     goodAtMissing: '還沒寫',
     columns: {
       agent: '代理',
@@ -155,7 +143,6 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     state: {
       enabled: '已啟用',
-      pending: '啟用',
       disabled: '已停用',
       unreported: '沒有執行器',
     },
@@ -171,9 +158,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       ultra: '超',
     },
     enable: {
-      button: '填寫並啟用',
-      buttonFor: '填寫並啟用{{name}}',
-      title: '啟用{{name}}',
       reportedBy_one: '{{count}} 執行器線上報道：{{names}}。',
       reportedBy_other: '{{count}} 執行器線上檢舉：{{names}}。',
       noRunnerNow: '目前沒有擁有它的執行器線上。',
@@ -183,8 +167,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       effortHint: '專案經理交接工作時不能更改。',
       personalOnly:
         '只有個人執行器擁有它：專案經理只在其所有者開始的議題上才讓它工作。',
-      submit: '啟用',
-      done: '{{name}} 已啟用',
     },
     edit: {
       button: '編輯',
@@ -236,31 +218,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       addedPartial:
         '已新增 {{succeeded}} 個，{{failed}} 個無法新增，原因見各自下方。',
       addFailed: '{{failed}} 個無法新增，原因見各自下方，請重試。',
-    },
-    cleanup: {
-      open: '清理',
-      title: '移除未使用的發現項目',
-      description:
-        '執行機回報建立、沒人啟用、也從未執行過的 Agent：可以直接移除。預覽之後有變動的項目會跳過，不會被移除。',
-      none: '沒有可移除的項目。',
-      select: '選擇 {{name}}',
-      selectGroup: '全選 {{tool}}',
-      clearGroup: '取消全選 {{tool}}',
-      neverEnabled: '從未啟用・無執行記錄',
-      createdAt: '發現於 {{when}}',
-      group_one: '{{tool}} · {{count}} 項',
-      group_other: '{{tool}} · {{count}} 項',
-      selectedCount_one: '已選 {{count}} 個',
-      selectedCount_other: '已選 {{count}} 個',
-      remove: '移除 {{count}} 項',
-      confirmTitle_one: '移除 {{count}} 個 Agent？',
-      confirmTitle_other: '移除 {{count}} 個 Agent？',
-      confirmDescription:
-        '涉及 {{tools}}。移除前會重新驗證，期間已不符合條件的項目會被跳過，不會被移除。',
-      confirmAction: '移除 {{count}} 項',
-      done: '已移除 {{removed}} 項，跳過 {{skipped}} 項',
-      partialFailure:
-        '已移除 {{removed}} 項，跳過 {{skipped}} 項；{{failed}} 項無法移除（{{reason}}），已保留選取以便重試。',
     },
   },
   agentTypes: {
@@ -952,6 +909,7 @@ const zhTW: LocaleResource<typeof enUS> = {
         '{{own}} 現在沒有適合您的執行器，所以 {{name}} 會回答，直到 {{own}} 回來。',
       onlineFallbackUnavailable:
         '線上備援代理無法回覆（{{reason}}）。等待執行器期間，此對話仍由 {{own}} 負責。',
+      switchedAgent: '已切換到 {{name}}，保留此對話的歷史。',
       switchedBack: '返回 {{name}}。',
       runFailed: '客服人員在回答之前停了下來。',
       runFailedReason: '客服人員在回答前停了下來：{{reason}}',

@@ -2,11 +2,14 @@ import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
 import { mayAccessRun } from '../core/runs/access.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
- * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of
+ * conversations. The runners' side (their announcements, the sweeper and the wake-ups of
  * work sent back with a back-off) is `runners.ts`.
  */
 import { HEADERS, type RunApp } from '@nocobase/agent-protocol';
-import { runRetentionDays } from '../core/runs/run-data-purge.js';
+import {
+  archivedRetentionDays,
+  runRetentionDays,
+} from '../core/runs/run-data-purge.js';
 import { retryBaseDelayMs } from '../core/runs/policy.js';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { driveManagerToken } from '@nocobase/app-server/drive';
@@ -32,7 +35,6 @@ import { createAgents, type Agents } from '../composition.js';
 import { createChatFileStorage } from '../core/conversations/index.js';
 import { directoryDisk } from '../core/skills/index.js';
 import { createAgentsSecretsStores } from '../secrets-stores.js';
-import type { VectorsConfig } from '../vectors/index.js';
 import type { DistConfig } from '../distribution/index.js';
 import { resolveAgentCli, type AgentCli } from '../core/runs/index.js';
 import { runCredentialResolver } from '../cli/run-credential.js';
@@ -58,6 +60,11 @@ export interface AgentsConfig {
     readonly retentionDays?: number;
     readonly retryBaseDelayMs?: number;
   };
+  /**
+   * Archived conversations are deleted `archivedRetentionDays` days after they were archived, with their messages,
+   * files and links: 30 by default, 0 keeps them. Checked once a day.
+   */
+  readonly conversations?: { readonly archivedRetentionDays?: number };
   /** How often the runners sweep runs (`sweepIntervalMs`): every 30 seconds by default. */
   readonly runners?: { readonly sweepIntervalMs?: number };
   /**
@@ -77,12 +84,8 @@ export interface AgentsConfig {
    * `storage/runners/dist` by default, on the `stable` channel, the highest version unless `versions` pins one.
    */
   readonly dist?: DistConfig;
-  /**
-   * The vector store of vector collections, apart from the application's database: `store` (`sqlite-vec` by default,
-   * in `path`, `storage/vectors.sqlite` by default; `pgvector` with its own `url` or `host`, `port`, `database`,
-   * `user`, `password` and `ssl`; `false` turns vectors off). See `VectorsConfig`.
-   */
-  readonly vectors?: VectorsConfig;
+  /** @deprecated Remove this disabled legacy setting. Active vector stores are no longer supported. */
+  readonly vectors?: { readonly store: false };
   /** Skills: `disk`, the Drive disk their files' contents go to (Drive's default disk by default). */
   readonly skills?: {
     readonly disk?: string;
@@ -96,7 +99,6 @@ const PURGE_INTERVAL_MS = 60 * 60_000;
 export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = ACCESS_NAMESPACE;
   private readonly releases: (() => void)[] = [];
-  private stoppingVectors: Promise<void> | undefined;
   private surface: CliSurface | undefined;
 
   /** Historical command surface, with execution-local authentication and cancellation. */
@@ -146,8 +148,25 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override register(): void {
+    // Read untyped configuration too: YAML and JavaScript callers can still carry an active legacy store.
+    const vectors: unknown =
+      this.app.config.get<AgentsConfig>('agents')?.vectors;
+    if (
+      vectors !== undefined &&
+      (vectors === null ||
+        typeof vectors !== 'object' ||
+        !('store' in vectors) ||
+        vectors.store !== false)
+    )
+      throw new Error(
+        'Agents vector collections have been removed. Migrate consumers before upgrading and remove agents.vectors; see @nocobase/app-plugin-agents/docs/vectors-migration.md.',
+      );
     runRetentionDays(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,
+    );
+    archivedRetentionDays(
+      this.app.config.get<AgentsConfig>('agents')?.conversations
+        ?.archivedRetentionDays,
     );
     retryBaseDelayMs(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retryBaseDelayMs,
@@ -192,11 +211,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
         uiRecovery: config?.uiRecovery,
         fileInputs: config?.fileInputs,
         manifestUrl: `${this.app.publicBasePath}/api/cli/manifest`,
-        ...(config?.vectors ? { vectors: config.vectors } : {}),
-        paths: {
-          root: this.app.paths.root(),
-          storage: this.app.paths.storage(),
-        },
         // The contents of skills' files: on the Drive disk `agents.skills.disk` names (Drive's default), else under the
         // application's storage. Asked on each use, so a configuration reload applies.
         skillDisk: resolver.has(driveManagerToken)
@@ -266,10 +280,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       );
     this.bindAuthentication(services);
     this.purgeChatFiles(services);
-    services.vectors.start();
-    this.releases.push(() => {
-      this.stoppingVectors = services.vectors.stop();
-    });
     return Promise.resolve();
   }
 
@@ -329,8 +339,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
         ?.onlineAgent.shutdown();
     } finally {
       for (const release of this.releases.splice(0)) release();
-      await this.stoppingVectors;
-      this.stoppingVectors = undefined;
     }
   }
 

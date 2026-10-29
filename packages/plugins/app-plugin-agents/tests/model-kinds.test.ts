@@ -39,6 +39,59 @@ describe('model kinds', () => {
     return h;
   };
 
+  it('uses one Alibaba service for unchanged chat and compatible embedding batches', async () => {
+    h = await createHarness();
+    const saved = await h.services.models.services.create({
+      title: 'Alibaba shared service',
+      provider: 'alibaba',
+      baseUrl: mock.url,
+      apiKey: 'fixture-key',
+      models: [
+        { value: 'mock-chat', kind: 'chat' },
+        { value: 'mock-embed', kind: 'embedding', dimensions: 6 },
+      ],
+    });
+    const gateway = h.services.models.gateway;
+    mock.answer({ text: ['Chat unchanged.'] });
+    expect(
+      await gateway.generate({
+        model: { modelService: saved.name, model: 'mock-chat' },
+        prompt: 'Hello.',
+        source: 'knowledge',
+      }),
+    ).toEqual({ text: 'Chat unchanged.' });
+    const values = Array.from({ length: 13 }, (_, i) => 'x'.repeat(i + 1));
+    const result = await gateway.embed({
+      model: { modelService: saved.name, model: 'mock-embed' },
+      values,
+      source: 'knowledge',
+    });
+    expect(result.dimension).toBe(6);
+    expect(result.embeddings).toHaveLength(13);
+    expect(mock.embeddings).toEqual([
+      expect.objectContaining({
+        model: 'mock-embed',
+        input: values.slice(0, 10),
+        dimensions: 6,
+      }),
+      expect.objectContaining({
+        model: 'mock-embed',
+        input: values.slice(10),
+        dimensions: 6,
+      }),
+    ]);
+    expect(
+      mock.seen
+        .filter((request) => request.method === 'POST')
+        .map((request) => request.path),
+    ).toEqual(['/v1/chat/completions', '/v1/embeddings', '/v1/embeddings']);
+    expect(
+      mock.seen.every(
+        (request) => request.headers.authorization === 'Bearer fixture-key',
+      ),
+    ).toBe(true);
+  });
+
   it('keeps each model of a kind its provider serves, and lists the catalog by kind', async () => {
     const harness = await create();
     const services = harness.services.models.services;
@@ -89,6 +142,7 @@ describe('model kinds', () => {
 
   it('embeds, reranks and writes short texts, recording each use apart from runs', async () => {
     const harness = await create();
+    expect(harness.services).not.toHaveProperty('vectors');
     const gateway = harness.services.models.gateway;
     const embedded = await gateway.embed({
       model: { modelService: 'local', model: 'mock-embed' },
@@ -294,5 +348,100 @@ describe('the system prompt', () => {
       },
       { role: 'system', content: 'More.' },
     ]);
+  });
+});
+
+describe('fixed embedding model names', () => {
+  let h: Harness | undefined;
+  let mock: MockOpenAI;
+  beforeEach(async () => {
+    mock = await startMockOpenAI();
+    h = await createHarness();
+  });
+  afterEach(async () => {
+    await h?.close();
+    await mock.close();
+  });
+  it('requires explicit opt-in, preserves typed model ID, learns dimensions and records use without modifying the catalog', async () => {
+    const services = h!.services.models.services;
+    const saved = await services.create({
+      title: 'Fixed embedding',
+      provider: 'openai-compatible',
+      baseUrl: mock.url,
+      models: [],
+    });
+    const gateway = h!.services.models.gateway;
+    const request = {
+      model: { modelService: saved.name, model: 'custom-embedding-v1' },
+      values: ['fixture text'],
+      source: 'knowledge',
+    };
+    await expect(gateway.embed(request)).rejects.toMatchObject({
+      code: 'config',
+    });
+    expect(mock.embeddings).toHaveLength(0);
+    const result = await gateway.embed({
+      ...request,
+      allowUnlistedModel: true,
+    });
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.dimension).toBeGreaterThan(0);
+    expect(mock.embeddings).toEqual([
+      expect.objectContaining({
+        model: 'custom-embedding-v1',
+        input: ['fixture text'],
+      }),
+    ]);
+    expect(mock.embeddings[0]).not.toHaveProperty('dimensions');
+    expect(
+      (await services.list()).find((s) => s.name === saved.name)?.models,
+    ).toEqual([]);
+    await services.update(saved.name, { enabled: false });
+    await expect(
+      gateway.embed({ ...request, allowUnlistedModel: true }),
+    ).rejects.toMatchObject({ code: 'config' });
+    expect(mock.embeddings).toHaveLength(1);
+  });
+  it('rejects a known wrong-kind model, incompatible provider and invalid model IDs even with opt-in', async () => {
+    const services = h!.services.models.services;
+    const saved = await services.create({
+      title: 'Chat only',
+      provider: 'openai-compatible',
+      baseUrl: mock.url,
+      models: [{ value: 'chat', kind: 'chat' }],
+    });
+    const gateway = h!.services.models.gateway;
+    for (const model of ['chat', '', 'x'.repeat(201)]) {
+      await expect(
+        gateway.embed({
+          model: { modelService: saved.name, model },
+          values: ['text'],
+          source: 'knowledge',
+          allowUnlistedModel: true,
+        }),
+      ).rejects.toMatchObject({ code: 'config' });
+    }
+    const incompatible = await services.create({
+      title: 'No embedding',
+      provider: 'anthropic',
+      apiKey: 'fixture-key',
+      models: [],
+    });
+    await expect(
+      gateway.embed({
+        model: { modelService: incompatible.name, model: 'custom' },
+        values: ['text'],
+        source: 'knowledge',
+        allowUnlistedModel: true,
+      }),
+    ).rejects.toMatchObject({ code: 'config' });
+    await expect(
+      services.endpointFor(
+        { modelService: saved.name, model: 'unlisted-chat' },
+        'chat',
+        { allowUnlistedModel: true },
+      ),
+    ).rejects.toMatchObject({ code: 'config' });
+    expect(mock.embeddings).toHaveLength(0);
   });
 });

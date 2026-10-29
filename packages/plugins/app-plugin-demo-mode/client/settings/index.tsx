@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import type { DemoConfigurationView } from '../../shared/configuration.js';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert.js';
 import { Skeleton } from '../components/ui/skeleton.js';
+import { useDemoMode } from '../demo-mode-context.js';
 import { useDemoData } from '../demo-data.js';
 import { Button, DefaultHeader } from './components.js';
 import { DataCard, VisitorsCard } from './overview.js';
@@ -28,21 +29,19 @@ const settings = (id: string, action: string) => ({
   action,
 });
 
-/** What the signed-in person may see and change on the page. */
+/** What the signed-in person may see on the page. */
 function useAccess() {
   const readData = useCan(settings('demoMode.data', 'read'));
-  const manageData = useCan(settings('demoMode.data', 'manage'));
   const readConfiguration = useCan(settings('demoMode.configuration', 'read'));
   return {
     pending: readData.isPending || readConfiguration.isPending,
     readData: readData.can,
-    manageData: readData.can && manageData.can,
     readConfiguration: readConfiguration.can,
   };
 }
 
 /**
- * The demo's administration page: its data, how visitors enter, and the daily reset.
+ * The demo's read-only overview: its data, how visitors enter, and the daily reset.
  * An application mounts it on a route of its own, passing the names of its dataset counts.
  */
 export function DemoModeSettings(
@@ -52,34 +51,19 @@ export function DemoModeSettings(
   const Header = options.components?.Header ?? DefaultHeader;
   const api = useApiClient();
   const access = useAccess();
-  const demo = useDemoData({ enabled: access.readData });
+  const enabled = useDemoMode();
+  const demo = useDemoData({ enabled: enabled && access.readData });
   const [view, setView] = useState<DemoConfigurationView>();
   const [viewError, setViewError] = useState<unknown>();
   const [configurationLoaded, setConfigurationLoaded] = useState<{
     reads: number;
     importing: boolean;
   }>();
-  const [enabled, setEnabled] = useState<boolean>();
   // Bumped to read the configuration again; a later read supersedes an earlier one still in flight.
   const [reads, setReads] = useState(0);
   const load = useCallback(async () => {
     setReads((value) => value + 1);
   }, []);
-
-  useEffect(() => {
-    let active = true;
-    api
-      .request<{ data: { enabled: boolean } }>({ path: '/demoMode/status' })
-      .then(({ data }) => {
-        if (active) setEnabled(data.enabled);
-      })
-      .catch(() => {
-        if (active) setEnabled(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api]);
 
   // Refresh the busy state and the server's next-run preview when a data operation finishes.
   const importing = Boolean(demo.status?.importing);
@@ -107,7 +91,7 @@ export function DemoModeSettings(
     };
   }, [api, readable, importing, reads]);
 
-  if (access.pending || enabled === undefined)
+  if (access.pending)
     return (
       <div className='flex flex-col gap-4'>
         <Skeleton className='h-10 w-64' />
@@ -168,9 +152,7 @@ export function DemoModeSettings(
             <AlertDescription>{t('busyHelp')}</AlertDescription>
           </Alert>
         ) : null}
-        {access.readData ? (
-          <DataCard demo={demo} canManage={access.manageData} />
-        ) : null}
+        {access.readData ? <DataCard demo={demo} /> : null}
         {access.readConfiguration ? configured() : null}
         {access.readData ? <VisitorsCard status={demo.status} /> : null}
       </div>

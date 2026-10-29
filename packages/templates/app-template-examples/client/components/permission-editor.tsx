@@ -4,6 +4,7 @@ import {
   ChevronRightIcon,
   InfoIcon,
   SearchIcon,
+  XIcon,
   ShieldCheckIcon,
 } from 'lucide-react';
 import {
@@ -15,7 +16,13 @@ import {
 } from 'react';
 import { cn } from 'cn';
 import { Button } from '#components/ui/button';
-import { Input } from '#components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '#components/ui/tabs';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '#components/ui/input-group';
 import {
   Select,
   SelectContent,
@@ -25,7 +32,7 @@ import {
   SelectValue,
 } from '#components/ui/select';
 import { Checkbox } from '#components/ui/checkbox';
-import { LongText, LongTextPreview } from '#components/long-text';
+import { LongTextPreview } from '#components/long-text';
 import {
   Empty,
   EmptyDescription,
@@ -59,6 +66,7 @@ export interface PermissionEditorRow {
   /** Unique permission identifier supplied unchanged to callbacks. */
   readonly id: string;
   readonly label: string;
+  readonly path?: string | undefined;
   readonly hint?: string | undefined;
   /** Optional action metadata; presentation preserves the supplied row order. */
   readonly actionKey?: string | undefined;
@@ -98,6 +106,7 @@ export interface PermissionEditorSection {
 export interface PermissionEditorNavigationNode {
   readonly id: string;
   readonly label: string;
+  readonly path?: string | undefined;
   readonly hint?: string | undefined;
   readonly rowId?: string | undefined;
   readonly children?: readonly PermissionEditorNavigationNode[];
@@ -108,6 +117,12 @@ export interface PermissionEditorLabels {
   readonly levelFor: (rowLabel: string) => string;
   readonly search: string;
   readonly enabledOnly: string;
+  readonly granted?: string;
+  readonly ungranted?: string;
+  readonly authorizationStatus?: string;
+  readonly clearSearch?: string;
+  readonly collapseAll?: string;
+  readonly expandAll?: string;
   readonly clear: string;
   readonly empty: string;
   readonly emptyDescription?: string;
@@ -141,6 +156,12 @@ const DEFAULT_LABELS: Required<PermissionEditorLabels> = {
   levelFor: (rowLabel) => `How far ${rowLabel} reaches`,
   search: 'Search categories, groups or permissions',
   enabledOnly: 'Enabled only',
+  granted: 'Granted',
+  ungranted: 'Ungranted',
+  authorizationStatus: 'Authorization status',
+  clearSearch: 'Clear search',
+  collapseAll: 'Collapse all',
+  expandAll: 'Expand all',
   clear: 'Clear filters',
   empty: 'No permissions to configure',
   emptyDescription:
@@ -169,7 +190,12 @@ function navigationSearchContext(
     parents: readonly string[],
   ): void => {
     for (const node of items) {
-      const context = [...parents, node.label, node.hint ?? ''];
+      const context = [
+        ...parents,
+        node.label,
+        node.hint ?? '',
+        node.path ?? '',
+      ];
       if (node.rowId)
         result.set(node.rowId, [...(result.get(node.rowId) ?? []), ...context]);
       visit(node.children ?? [], context);
@@ -256,6 +282,7 @@ function PermissionNavigation({
   filtering,
   onDisclosure,
   nested = false,
+  counts,
   ...rowProps
 }: {
   readonly nodes: readonly PermissionEditorNavigationNode[];
@@ -265,6 +292,8 @@ function PermissionNavigation({
   readonly filtering: boolean;
   readonly onDisclosure: (key: string) => void;
   readonly nested?: boolean;
+  readonly counts?:
+    ReadonlyMap<string, { enabled: number; total: number }> | undefined;
 } & Omit<
   Parameters<typeof PermissionRow>[0],
   'row' | 'controlId' | 'presentation'
@@ -314,6 +343,7 @@ function PermissionNavigation({
                       ...row,
                       label: node.label,
                       hint: node.hint ?? row.hint,
+                      path: node.path ?? row.path,
                     }}
                     presentation='navigation'
                   />
@@ -322,7 +352,7 @@ function PermissionNavigation({
                 <div className='grid min-w-0 flex-1 gap-1 px-2 py-1.5 text-muted-foreground'>
                   <LongTextPreview
                     label={node.label}
-                    className='text-xs leading-5 font-medium'
+                    className='text-xs leading-5 font-normal'
                   >
                     {node.label}
                   </LongTextPreview>
@@ -333,12 +363,17 @@ function PermissionNavigation({
                   )}
                 </div>
               )}
+              {!nested && !row && counts?.has(node.id) && (
+                <span className='ml-auto shrink-0 px-2 py-1.5 text-xs text-muted-foreground'>
+                  {rowProps.labels.summary(
+                    counts.get(node.id)!.enabled,
+                    counts.get(node.id)!.total,
+                  )}
+                </span>
+              )}
             </div>
             {expanded && children.length > 0 && (
-              <div
-                id={childrenId}
-                className='mt-0.5 ml-3 min-w-0 border-l pl-2 sm:pl-3'
-              >
+              <div id={childrenId} className='min-w-0 pl-4 sm:pl-6'>
                 <PermissionNavigation
                   {...rowProps}
                   nodes={children}
@@ -348,6 +383,7 @@ function PermissionNavigation({
                   filtering={filtering}
                   onDisclosure={onDisclosure}
                   nested
+                  counts={counts}
                 />
               </div>
             )}
@@ -463,7 +499,7 @@ function LevelControl({
     >
       <SelectTrigger
         size='sm'
-        className='h-7 w-full min-w-0 max-w-full flex-1 gap-1 border-0 bg-muted/50 px-2 text-xs shadow-none'
+        className='w-full min-w-0 max-w-full flex-1'
         aria-label={label}
       >
         <SelectValue />
@@ -498,10 +534,12 @@ function PermissionRow({
   readonly labels: Required<PermissionEditorLabels>;
   readonly onEnabledChange: (rowId: string, enabled: boolean) => void;
   readonly onLevelChange: (rowId: string, level: string) => void;
-  readonly presentation?: 'tile' | 'navigation';
+  readonly presentation?: 'tile' | 'navigation' | 'inline';
 }): ReactElement {
   const hasControls =
     row.enabled && Boolean(row.levels?.length || row.scopes?.length);
+  const singleRange =
+    hasControls && (row.scopes?.length ?? 0) + (row.levels ? 1 : 0) === 1;
   const describedBy =
     [
       row.hint ? `${controlId}-hint` : undefined,
@@ -514,16 +552,17 @@ function PermissionRow({
     <div
       data-slot='permission-row'
       className={cn(
-        'grid min-w-0 items-start gap-2 transition-colors',
-        presentation === 'navigation'
-          ? 'rounded-md px-2 py-1.5 hover:bg-muted/40 focus-within:bg-muted/40'
-          : cn(
-              'rounded-lg border p-2.5',
-              row.enabled ? 'border-primary/20 bg-primary/5' : 'bg-card',
-            ),
+        'group/field grid min-w-0 gap-2 rounded-md px-2 py-2 hover:bg-hover',
+        presentation === 'inline' && 'inline-flex items-start',
+        singleRange && 'sm:flex sm:flex-wrap sm:items-start sm:gap-x-5',
       )}
     >
-      <div className='flex min-w-0 items-start gap-2'>
+      <div
+        className={cn(
+          'flex min-w-0 items-start gap-3',
+          singleRange && 'sm:max-w-lg',
+        )}
+      >
         <Checkbox
           id={controlId}
           className='mt-0.5 shrink-0'
@@ -532,20 +571,28 @@ function PermissionRow({
           onCheckedChange={(on: boolean) => onEnabledChange(row.id, on)}
           aria-describedby={describedBy}
         />
-        <div className='grid min-w-0 gap-1'>
-          <label
-            htmlFor={controlId}
-            className='cursor-pointer text-sm font-medium leading-5 break-words'
-          >
-            {row.label}
-          </label>
-          {row.hint && (
-            <div id={`${controlId}-hint`}>
-              <LongTextPreview label={row.label} className='text-xs'>
+        <div className='grid min-w-0 flex-1 gap-1'>
+          <div className='flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1'>
+            <label
+              htmlFor={controlId}
+              className='cursor-pointer text-sm leading-5 font-normal break-words'
+            >
+              {row.label}
+            </label>
+            {row.path && (
+              <code className='text-xs text-muted-foreground [overflow-wrap:anywhere]'>
+                {row.path}
+              </code>
+            )}
+            {row.hint && (
+              <div
+                id={`${controlId}-hint`}
+                className='min-w-0 basis-48 grow text-xs leading-5 text-muted-foreground'
+              >
                 {row.hint}
-              </LongTextPreview>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
           {row.toggleable === false && (
             <p
               id={`${controlId}-managed`}
@@ -557,7 +604,13 @@ function PermissionRow({
         </div>
       </div>
       {hasControls && (
-        <div data-slot='permission-scopes' className='grid min-w-0 gap-2 pl-6'>
+        <div
+          data-slot='permission-scopes'
+          className={cn(
+            'grid min-w-0 gap-x-5 gap-y-2 pl-7 sm:grid-cols-2',
+            singleRange && 'w-full sm:w-80 sm:shrink-0 sm:grid-cols-1 sm:pl-0',
+          )}
+        >
           {row.levels && (
             <LevelControl
               label={labels.levelFor(row.label)}
@@ -568,8 +621,11 @@ function PermissionRow({
             />
           )}
           {row.scopes?.map((scope) => (
-            <div key={scope.id} className='grid min-w-0 gap-1'>
-              <span className='text-xs text-muted-foreground'>
+            <div
+              key={scope.id}
+              className='grid min-w-0 grid-cols-[minmax(4rem,auto)_minmax(0,1fr)] items-center gap-2'
+            >
+              <span className='max-w-36 text-xs break-words text-muted-foreground'>
                 {scope.label}
               </span>
               <div className='flex min-w-0 items-center gap-1'>
@@ -594,9 +650,12 @@ function PermissionRow({
           {[
             ...new Set(row.scopes?.map((scope) => scope.hint).filter(Boolean)),
           ].map((hint) => (
-            <LongTextPreview key={hint} label={row.label} className='text-xs'>
+            <p
+              key={hint}
+              className='text-xs leading-5 text-muted-foreground sm:col-span-full'
+            >
               {hint}
-            </LongTextPreview>
+            </p>
           ))}
         </div>
       )}
@@ -615,7 +674,7 @@ export function PermissionEditor({
   const words = { ...DEFAULT_LABELS, ...labels };
   const [selected, setSelected] = useState(sections[0]?.id ?? '');
   const [query, setQuery] = useState('');
-  const [enabledOnly, setEnabledOnly] = useState(false);
+  const [status, setStatus] = useState('all');
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -628,7 +687,7 @@ export function PermissionEditor({
     ? selected
     : available[0]?.id;
   const search = query.trim().toLocaleLowerCase();
-  const filtering = Boolean(search) || enabledOnly;
+  const filtering = Boolean(search) || status !== 'all';
   const matches = (values: readonly (string | undefined)[]): boolean =>
     !search ||
     values.some((value) => value?.toLocaleLowerCase().includes(search));
@@ -643,7 +702,7 @@ export function PermissionEditor({
             ...group,
             rows: group.rows.filter(
               (row) =>
-                (!enabledOnly || row.enabled) &&
+                (status === 'all' || row.enabled === (status === 'granted')) &&
                 matches([
                   section.title,
                   section.description,
@@ -652,6 +711,7 @@ export function PermissionEditor({
                   group.actionHint,
                   row.label,
                   row.hint,
+                  row.path,
                   ...(context.get(row.id) ?? []),
                   ...(row.scopes?.map((scope) => scope.label) ?? []),
                 ]),
@@ -663,38 +723,150 @@ export function PermissionEditor({
     .filter((section) => section.groups.length);
   const clearFilters = (): void => {
     setQuery('');
-    setEnabledOnly(false);
+    setStatus('all');
     searchRef.current?.focus();
   };
+  const disclose = (key: string): void =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const groupKey = (section: string, group: string): string =>
+    `${id}-${section}-group-${group}`;
+  const branchKeys = (
+    nodes: readonly PermissionEditorNavigationNode[],
+    prefix: string,
+  ): string[] =>
+    nodes.flatMap((node) =>
+      node.children?.length
+        ? [`${prefix}-${node.id}`, ...branchKeys(node.children, prefix)]
+        : [],
+    );
+  const activeSection = available.find((section) => section.id === active);
+  const collapseKeys = activeSection
+    ? activeSection.navigation
+      ? branchKeys(activeSection.navigation, `${id}-${activeSection.id}`)
+      : activeSection.groups
+          .filter((group) => !group.accessOnly || group.rows.length !== 1)
+          .map((group) => groupKey(activeSection.id, group.id))
+    : [];
+  const allCollapsed =
+    collapseKeys.length > 0 && collapseKeys.every((key) => collapsed.has(key));
+  const changeEnabled = (rowId: string, enabled: boolean): void => {
+    if (status !== 'all') searchRef.current?.focus();
+    onEnabledChange(rowId, enabled);
+  };
+  const navigationCounts = (
+    section: PermissionEditorSection,
+  ): ReadonlyMap<string, { enabled: number; total: number }> => {
+    const rows = new Map(
+      section.groups.flatMap((group) =>
+        group.rows.map((row) => [row.id, row] as const),
+      ),
+    );
+    const counts = new Map<string, { enabled: number; total: number }>();
+    const visit = (node: PermissionEditorNavigationNode): Set<string> => {
+      const ids = new Set(
+        node.rowId && rows.has(node.rowId) ? [node.rowId] : [],
+      );
+      for (const child of node.children ?? [])
+        for (const childId of visit(child)) ids.add(childId);
+      counts.set(node.id, {
+        enabled: [...ids].filter((rowId) => rows.get(rowId)?.enabled).length,
+        total: ids.size,
+      });
+      return ids;
+    };
+    for (const node of section.navigation ?? []) visit(node);
+    return counts;
+  };
+  const rowProps = {
+    readOnly,
+    readOnlyHintId: `${id}-readonly`,
+    labels: words,
+    onEnabledChange: changeEnabled,
+    onLevelChange,
+  };
   return (
-    <div className='@container flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card'>
-      <div className='flex flex-wrap items-center gap-3 border-b p-3'>
-        <div className='relative min-w-48 flex-1'>
-          <SearchIcon
-            aria-hidden
-            className='pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground'
-          />
-          <Input
+    <Tabs
+      value={active ?? ''}
+      onValueChange={(value) => {
+        setSelected(String(value));
+        setQuery('');
+        setStatus('all');
+      }}
+      className='min-w-0 gap-3'
+    >
+      {available.length > 0 && (
+        <div className='overflow-x-auto pb-1'>
+          <TabsList variant='line' aria-label={words.navigation}>
+            {available.map((section) => (
+              <TabsTrigger key={section.id} value={section.id}>
+                {section.title}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      )}
+      <div className='flex min-w-0 flex-wrap items-center gap-3 border-b pb-3'>
+        <InputGroup className='min-w-0 basis-full sm:basis-56 sm:flex-1'>
+          <InputGroupAddon>
+            <SearchIcon aria-hidden />
+          </InputGroupAddon>
+          <InputGroupInput
             ref={searchRef}
-            className='pl-9'
             value={query}
             aria-label={words.search}
             placeholder={words.search}
             onChange={(event) => setQuery(event.target.value)}
           />
-        </div>
-        <label
-          htmlFor={`${id}-enabled`}
-          className='flex shrink-0 items-center gap-2 text-sm whitespace-nowrap'
+          {query && (
+            <InputGroupAddon align='inline-end'>
+              <InputGroupButton
+                type='button'
+                size='icon-xs'
+                aria-label={words.clearSearch}
+                onClick={() => {
+                  setQuery('');
+                  searchRef.current?.focus();
+                }}
+              >
+                <XIcon aria-hidden />
+              </InputGroupButton>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
+        <Tabs
+          value={status}
+          onValueChange={(value) => setStatus(String(value))}
         >
-          <Checkbox
-            id={`${id}-enabled`}
-            checked={enabledOnly}
-            onCheckedChange={setEnabledOnly}
-          />
-          {words.enabledOnly}
-        </label>
-        {filtering && (
+          <TabsList aria-label={words.authorizationStatus}>
+            <TabsTrigger value='all'>{words.selectAll}</TabsTrigger>
+            <TabsTrigger value='granted'>{words.granted}</TabsTrigger>
+            <TabsTrigger value='ungranted'>{words.ungranted}</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          disabled={filtering || !collapseKeys.length}
+          onClick={() =>
+            setCollapsed((current) => {
+              const next = new Set(current);
+              for (const key of collapseKeys) {
+                if (allCollapsed) next.delete(key);
+                else next.add(key);
+              }
+              return next;
+            })
+          }
+        >
+          {allCollapsed ? words.expandAll : words.collapseAll}
+        </Button>
+        {filtering && visible.length > 0 && (
           <Button
             type='button'
             variant='ghost'
@@ -705,167 +877,176 @@ export function PermissionEditor({
           </Button>
         )}
       </div>
-      <div className='flex max-h-128 min-w-0 flex-col overflow-auto @2xl:flex-row'>
-        {available.length > 0 && (
-          <nav
-            aria-label={words.navigation}
-            className='flex shrink-0 gap-1 overflow-x-auto border-b bg-muted/25 p-2 @2xl:sticky @2xl:top-0 @2xl:w-52 @2xl:self-start @2xl:flex-col @2xl:border-r @2xl:border-b-0'
-          >
-            {available.map((section) => (
-              <Button
-                key={section.id}
-                type='button'
-                variant='ghost'
-                aria-current={section.id === active ? 'page' : undefined}
-                aria-controls={`${id}-content`}
-                onClick={() => {
-                  setSelected(section.id);
-                  setQuery('');
-                  setEnabledOnly(false);
-                }}
-                className={cn(
-                  'h-auto min-h-8 shrink-0 justify-start px-3 py-2 text-left text-sm font-normal whitespace-nowrap @2xl:w-full @2xl:whitespace-normal',
-                  section.id === active &&
-                    'bg-primary/10 font-medium text-primary hover:bg-primary/15',
-                )}
-              >
-                {section.title}
-              </Button>
-            ))}
-          </nav>
-        )}
-        <div id={`${id}-content`} className='min-w-0 flex-1'>
+      <TabsContent value={active ?? ''} className='min-w-0'>
+        <div className='min-w-0 md:max-h-[min(65dvh,48rem)] md:overflow-y-auto md:pr-2'>
           {readOnly && (
             <p
               id={`${id}-readonly`}
-              className='px-4 pt-3 text-xs text-muted-foreground'
+              className='mb-3 text-xs text-muted-foreground'
             >
               {words.readOnly}
             </p>
           )}
           {visible.length ? (
-            visible.map((section) => (
-              <section
-                key={section.id}
-                aria-label={section.title}
-                className='grid min-w-0 gap-3 p-3'
-              >
-                {filtering && (
-                  <h2 className='text-base font-medium'>{section.title}</h2>
-                )}
-                {section.description && (
-                  <LongText className='text-xs text-muted-foreground'>
-                    {section.description}
-                  </LongText>
-                )}
-                {section.navigation ? (
-                  <PermissionNavigationSection
-                    section={section}
-                    prefix={`${id}-${section.id}`}
-                    collapsed={collapsed}
-                    filtering={filtering}
-                    onDisclosure={(key) =>
-                      setCollapsed((current) => {
-                        const next = new Set(current);
-                        if (next.has(key)) next.delete(key);
-                        else next.add(key);
-                        return next;
-                      })
-                    }
-                    readOnly={readOnly}
-                    readOnlyHintId={`${id}-readonly`}
-                    labels={words}
-                    onEnabledChange={(rowId, on) => {
-                      if (enabledOnly && !on) searchRef.current?.focus();
-                      onEnabledChange(rowId, on);
-                    }}
-                    onLevelChange={onLevelChange}
-                  />
-                ) : (
-                  <div
-                    className={cn(
-                      'grid min-w-0 gap-3',
-                      section.groups.every(
-                        (group) => group.accessOnly && group.rows.length === 1,
-                      ) &&
-                        'grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))]',
+            visible.map((section) => {
+              const original = available.find(
+                (item) => item.id === section.id,
+              )!;
+              const allRows = original.groups.flatMap((group) => group.rows);
+              return (
+                <section
+                  key={section.id}
+                  aria-label={section.title}
+                  className='grid min-w-0 gap-3 py-1'
+                >
+                  <div className='flex flex-wrap items-baseline justify-between gap-2'>
+                    {filtering && (
+                      <h2 className='text-sm font-normal'>{section.title}</h2>
                     )}
-                  >
-                    {section.groups.map((group) => {
-                      const accessRow =
-                        group.accessOnly && group.rows.length === 1
-                          ? group.rows[0]
-                          : undefined;
-                      const rows = accessRow
-                        ? [
-                            {
-                              ...accessRow,
-                              label: group.title ?? accessRow.label,
-                              hint: group.hint ?? accessRow.hint,
-                            },
-                          ]
-                        : group.rows;
-                      return (
-                        <div
-                          key={group.id}
-                          data-slot='permission-resource'
-                          className={cn(
-                            'grid min-w-0 gap-2',
-                            !accessRow && 'rounded-lg border p-3',
-                          )}
-                        >
-                          {!accessRow && group.title && (
-                            <h3 className='text-base font-medium'>
-                              {group.title}
-                            </h3>
-                          )}
-                          {!accessRow && group.hint && (
-                            <LongText className='text-xs text-muted-foreground'>
-                              {group.hint}
-                            </LongText>
-                          )}
-                          {!accessRow && group.actionHint && (
-                            <LongText className='text-xs text-muted-foreground'>
-                              {group.actionHint}
-                            </LongText>
-                          )}
-                          {/* The 18rem minimum keeps scope controls usable; enabling an action never changes its column span. */}
+                    {section.description && (
+                      <p className='text-xs text-muted-foreground'>
+                        {section.description}
+                      </p>
+                    )}
+                    <span className='ml-auto text-xs text-muted-foreground'>
+                      {words.summary(
+                        allRows.filter((row) => row.enabled).length,
+                        allRows.length,
+                      )}
+                    </span>
+                  </div>
+                  {section.navigation ? (
+                    <PermissionNavigationSection
+                      {...rowProps}
+                      section={section}
+                      prefix={`${id}-${section.id}`}
+                      collapsed={collapsed}
+                      filtering={filtering}
+                      onDisclosure={disclose}
+                      counts={navigationCounts(original)}
+                    />
+                  ) : (
+                    <div className='divide-y rounded-lg border'>
+                      {section.groups.map((group) => {
+                        const key = groupKey(section.id, group.id);
+                        const complete = original.groups.find(
+                          (item) => item.id === group.id,
+                        )!;
+                        const inline = complete.rows.every(
+                          (row) =>
+                            !row.hint &&
+                            !row.scopes?.length &&
+                            !row.levels?.length,
+                        );
+                        const accessRow =
+                          group.accessOnly && group.rows.length === 1
+                            ? group.rows[0]
+                            : undefined;
+                        const closed =
+                          !accessRow && !filtering && collapsed.has(key);
+                        const rows = accessRow
+                          ? [
+                              {
+                                ...accessRow,
+                                label: group.title ?? accessRow.label,
+                                hint: group.hint ?? accessRow.hint,
+                              },
+                            ]
+                          : group.rows;
+                        return (
                           <div
-                            data-slot='permission-actions'
-                            className='grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] items-start gap-2'
+                            key={group.id}
+                            data-slot='permission-resource'
+                            className='min-w-0 p-2'
                           >
-                            {rows.map((row) => (
-                              <div key={row.id} className='min-w-0'>
-                                <PermissionRow
-                                  controlId={`${id}-${row.id}`}
-                                  row={row}
-                                  readOnly={readOnly}
-                                  readOnlyHintId={`${id}-readonly`}
-                                  labels={words}
-                                  onEnabledChange={(rowId, on) => {
-                                    if (enabledOnly && !on)
-                                      searchRef.current?.focus();
-                                    onEnabledChange(rowId, on);
-                                  }}
-                                  onLevelChange={onLevelChange}
-                                />
+                            {!accessRow && (
+                              <div className='flex min-w-0 flex-wrap items-center gap-2 rounded-md px-1 py-1 hover:bg-hover'>
+                                <Button
+                                  type='button'
+                                  variant='ghost'
+                                  size='icon-sm'
+                                  disabled={filtering}
+                                  aria-label={
+                                    closed
+                                      ? words.expandGroup(
+                                          group.title ?? group.id,
+                                        )
+                                      : words.collapseGroup(
+                                          group.title ?? group.id,
+                                        )
+                                  }
+                                  aria-expanded={!closed}
+                                  aria-controls={closed ? undefined : key}
+                                  onClick={() => disclose(key)}
+                                >
+                                  {closed ? (
+                                    <ChevronRightIcon aria-hidden />
+                                  ) : (
+                                    <ChevronDownIcon aria-hidden />
+                                  )}
+                                </Button>
+                                {group.title && (
+                                  <h3 className='text-sm font-normal break-words'>
+                                    {group.title}
+                                  </h3>
+                                )}
+                                {group.hint && (
+                                  <span className='text-xs text-muted-foreground'>
+                                    {group.hint}
+                                  </span>
+                                )}
+                                <span className='ml-auto text-xs text-muted-foreground'>
+                                  {words.summary(
+                                    complete.rows.filter((row) => row.enabled)
+                                      .length,
+                                    complete.rows.length,
+                                  )}
+                                </span>
                               </div>
-                            ))}
+                            )}
+                            {!closed && (
+                              <div id={key} className='min-w-0'>
+                                {group.actionHint && (
+                                  <p className='px-2 py-1 text-xs text-muted-foreground'>
+                                    {group.actionHint}
+                                  </p>
+                                )}
+                                <div
+                                  data-slot='permission-actions'
+                                  className={cn(
+                                    'min-w-0',
+                                    inline
+                                      ? 'flex flex-wrap items-start gap-x-3'
+                                      : 'grid',
+                                  )}
+                                >
+                                  {rows.map((row) => (
+                                    <PermissionRow
+                                      key={row.id}
+                                      {...rowProps}
+                                      row={row}
+                                      controlId={`${id}-${row.id}`}
+                                      presentation={inline ? 'inline' : 'tile'}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {section.footer && (
-                  <div className='text-xs text-muted-foreground'>
-                    {section.footer}
-                  </div>
-                )}
-              </section>
-            ))
+                        );
+                      })}
+                    </div>
+                  )}
+                  {section.footer && (
+                    <div className='text-xs text-muted-foreground'>
+                      {section.footer}
+                    </div>
+                  )}
+                </section>
+              );
+            })
           ) : (
-            <Empty role='status' className='min-h-40 border p-6 m-4'>
+            <Empty role='status' className='min-h-40 border p-6'>
               <EmptyHeader>
                 <EmptyMedia variant='icon'>
                   <ShieldCheckIcon aria-hidden />
@@ -877,10 +1058,15 @@ export function PermissionEditor({
                   {filtering ? words.clear : words.emptyDescription}
                 </EmptyDescription>
               </EmptyHeader>
+              {filtering && (
+                <Button type='button' variant='outline' onClick={clearFilters}>
+                  {words.clear}
+                </Button>
+              )}
             </Empty>
           )}
         </div>
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }

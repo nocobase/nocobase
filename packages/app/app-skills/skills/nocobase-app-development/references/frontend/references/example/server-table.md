@@ -12,22 +12,23 @@ Rules: [section 1 of `table.md`](../table.md#1-choosing-a-table-component). This
 
 The endpoint contract this assumes is the one in [types](types.md): `GET /api/projects` takes `page` (from 1), `pageSize` (at most 100) and `orderBy` besides `q` and `status`, and returns `{ data: Project[], meta: { page, pageSize, total } }` (`ProjectList`), where `total` counts the matching records on all pages. `orderBy` names a column the endpoint sorts by, `name` (in the order of the request's language) or `updatedAt`, followed by ` desc` for descending; the page always sends it, `updatedAt desc` by default (guideline T1.8).
 
-The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
+The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, list feedback, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Read [delete and recover a list](../table.md#delete-and-recover-a-list) first; its shared hooks own response isolation and bounded correction. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
+
+Keep the standard create action in the page header as in [`example/list-page.md`](list-page.md), including for a successful empty result; never pass it as `emptyAction`. The server table renders each built-in list state with its matching icon and one short line. Clear and Retry stay in the existing toolbar, and sign-in recovery stays in the authentication flow. Preserve the optional business-specific `emptyMessage` and `emptyAction` pass-through.
 
 The changes, inside the list page's component; everything marked `// …` stays as it is there:
 
 ```tsx
 // client/pages/projects/index.tsx (server-paginated: the list page with these changes)
 import type { ColumnSort } from '@tanstack/react-table';
+import { resolveListState } from '@nocobase/app-client';
+import { type ReactElement } from 'react';
+import { useListData } from '#hooks/use-list-data';
+import { useListLocation } from '#hooks/use-list-location';
 import {
-  type ReactElement,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+  readTableUrlState,
+  useTableUrlState,
+} from '#hooks/use-table-url-state';
 // … the other imports of the list page, without DataTable, and with ProjectList added to the import from ./types.js
 import { ProjectsServerTable } from './projects-server-table.js';
 
@@ -39,36 +40,26 @@ const DEFAULT_SORT: ColumnSort = { id: 'updatedAt', desc: true };
 
 // … isProjectStatus, as in the list page
 
-/** Reads `orderBy` from the URL: a sortable column, followed by ` desc` for descending. Anything else is the default. */
-function parseOrderBy(value: string | null): ColumnSort {
-  const [field, direction, ...rest] = (value ?? '').trim().split(/\s+/);
-  const id = SORTABLE.find((column) => column === field);
-  const desc = direction === 'desc';
-  const valid =
-    rest.length === 0 &&
-    (direction === undefined || desc || direction === 'asc');
-  return id && valid ? { id, desc } : DEFAULT_SORT;
-}
-
-function formatOrderBy(column: ColumnSort): string {
-  return column.desc ? `${column.id} desc` : column.id;
-}
-
 export default function ProjectsPage(): ReactElement {
-  // … t, locale, api, location and searchRef, as in the list page
+  // … t, locale, location and searchRef, as in the list page
 
   // A new search term starts on the first page, so the hook removes `page` whenever it writes the term.
   const { searchParams, search, text, inputProps, updateParams, clear } =
     useUrlSearch({ resetParams: ['page'] });
   const statusParam = searchParams.get('status');
   const status = isProjectStatus(statusParam) ? statusParam : undefined;
-  // Bound what the URL may say: an unknown size or a page below 1 falls back to the defaults.
-  const pageSize =
-    PAGE_SIZES.find((size) => String(size) === searchParams.get('pageSize')) ??
-    PAGE_SIZES[0];
-  const page = Math.max(1, Math.trunc(Number(searchParams.get('page'))) || 1);
-  const columnSort = parseOrderBy(searchParams.get('orderBy'));
-  const orderBy = formatOrderBy(columnSort);
+  const parsedTableState = readTableUrlState(searchParams, {
+    defaultPageSize: PAGE_SIZES[0],
+    pageSizeOptions: PAGE_SIZES,
+    sortColumns: SORTABLE,
+    sortFormat: 'orderBy',
+    defaultSorting: [DEFAULT_SORT],
+  });
+  const { pageSize, pageIndex } = parsedTableState.paginationState;
+  const page = pageIndex + 1;
+  const orderBy = parsedTableState.sortingState
+    .map((sort) => `${sort.id}${sort.desc ? ' desc' : ''}`)
+    .join(',');
 
   function changeStatus(value: string | null): void {
     updateParams((params) => {
@@ -81,141 +72,69 @@ export default function ProjectsPage(): ReactElement {
 
   // … hasFilters and clearFilters, as in the list page
 
-  // A page past the end (its last record was deleted elsewhere): go to the last page that exists. An effect event,
-  // so the request effect can call it without depending on updateParams, which changes on every render.
-  const goToPage = useEffectEvent((target: number) => {
-    updateParams((params) => params.set('page', String(target)));
-  });
-
-  const [reloadCount, reload] = useReducer((count: number) => count + 1, 0);
-  const requestKey = JSON.stringify([
-    search,
-    status ?? null,
-    page,
-    pageSize,
+  const { active } = useListLocation();
+  const remote = new URLSearchParams({
+    q: search,
+    ...(status ? { status } : {}),
+    page: String(page),
+    pageSize: String(pageSize),
     orderBy,
-    reloadCount,
-  ]);
-  const [result, setResult] = useState<{
-    readonly key: string;
-    readonly rows?: Project[];
-    /** Whether this batch was fetched with filters; tells "empty" apart from "no results". */
-    readonly filtered?: boolean;
-    readonly error?: unknown;
-    readonly total?: number;
-  }>();
+  });
+  const requestPath = `projects?${remote}`;
+  const request = useListData<ProjectList>(requestPath, {
+    active,
+    keepPreviousData: true,
+  });
+  const hasCurrentResponse = request.path === requestPath;
+  const response = hasCurrentResponse ? request.data : undefined;
+  const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
+    defaultPageSize: PAGE_SIZES[0],
+    sortFormat: 'orderBy',
+    defaultSorting: [DEFAULT_SORT],
+    pageSizeOptions: PAGE_SIZES,
+    sortColumns: SORTABLE,
+    rowCount:
+      hasCurrentResponse && !request.loading && !request.error
+        ? response?.meta.total
+        : undefined,
+  });
+  const reload = request.reload;
+  const loading = request.loading;
+  const error = tableState.error ?? request.error;
+  const rows = response?.data ?? [];
+  const result = response ? { total: response.meta.total } : undefined;
+  const displayedQuery = new URLSearchParams(requestPath.split('?')[1]);
+  const rowsFiltered = Boolean(
+    displayedQuery.get('q') || displayedQuery.get('status'),
+  );
+  const listState = resolveListState(
+    { data: response, error, isPending: loading && !hasCurrentResponse },
+    result?.total ?? 0,
+    rowsFiltered,
+  );
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const key = JSON.stringify([
-      search,
-      status ?? null,
-      page,
-      pageSize,
-      orderBy,
-      reloadCount,
-    ]);
-    api
-      .request<ProjectList>({
-        path: 'projects',
-        query: { q: search || undefined, status, page, pageSize, orderBy },
-        signal: controller.signal,
-      })
-      .then(
-        ({ data, meta }) => {
-          if (controller.signal.aborted) return;
-          setResult({
-            key,
-            rows: data,
-            total: meta.total,
-            filtered: search !== '' || status !== undefined,
-          });
-          const lastPage = Math.max(1, Math.ceil(meta.total / pageSize));
-          if (data.length === 0 && page > lastPage) goToPage(lastPage);
-        },
-        (error: unknown) => {
-          // Keep the previous batch on failure: after "Retry", show the old data and a small Spinner, not the skeleton.
-          if (!controller.signal.aborted) {
-            setResult((previous) => ({ ...previous, key, error }));
-          }
-        },
-      );
-    return () => controller.abort();
-  }, [api, search, status, page, pageSize, orderBy, reloadCount]);
-
-  // … loading, rows, rowsFiltered, the focus handling after a delete, outletContext, the deletion state, the formatters
+  // … the focus handling after a delete, outletContext, the deletion state, the formatters
   // and the columns, as in the list page
 
-  let content: ReactElement;
-  if (error instanceof ApiClientError && error.status === 401) {
-    // The session ended; signing in again is the only way forward (guideline S4).
-    content = <SessionExpiredAlert />;
-  } else if (error) {
-    // … the error Alert, as in the list page
-  } else if (rows === undefined) {
-    content = <TableSkeleton label={t('status.loading')} />;
-  } else if (result?.total === 0 && !rowsFiltered) {
-    // No records at all (guideline S2). Decided by the total: an empty page past the end is not an empty list.
-    content = (
-      <Empty className='min-h-48 border border-dashed'>
-        <EmptyHeader>
-          <EmptyMedia variant='icon'>
-            <FolderKanbanIcon />
-          </EmptyMedia>
-          <EmptyTitle>{t('projects.empty.title')}</EmptyTitle>
-          <EmptyDescription>{t('projects.empty.description')}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          {/* While the list is empty the primary action is only here; the page header leaves it out, as in the list page (guideline L7). */}
-          <Button
-            render={<Link to={{ pathname: 'new', search: location.search }} />}
-            nativeButton={false}
-          >
-            <PlusIcon data-icon='inline-start' />
-            {t('projects.create.action')}
-          </Button>
-        </EmptyContent>
-      </Empty>
-    );
-  } else {
-    content = (
-      <ProjectsServerTable
-        columns={columns}
-        rows={rows}
-        total={result?.total ?? 0}
-        pagination={{ pageIndex: page - 1, pageSize }}
-        pageSizeOptions={PAGE_SIZES}
-        onPaginationChange={(next) => {
-          updateParams((params) => {
-            params.set('page', String(next.pageIndex + 1));
-            params.set('pageSize', String(next.pageSize));
-          });
-        }}
-        sorting={[columnSort]}
-        onSortingChange={(next) => {
-          const column = next.at(0);
-          updateParams((params) => {
-            if (column) params.set('orderBy', formatOrderBy(column));
-            else params.delete('orderBy');
-            // A new order starts on the first page.
-            params.delete('page');
-          });
-        }}
-        // No results for the filters. Without filters an empty page only shows while a page past the end moves to the
-        // last one, so it stays blank.
-        emptyMessage={
-          rowsFiltered ? (
-            <div className='flex flex-col items-center gap-2'>
-              <span>{t('projects.empty.noResults')}</span>
-              <Button variant='link' size='sm' onClick={clearFilters}>
-                {t('projects.filters.clear')}
-              </Button>
-            </div>
-          ) : null
-        }
-      />
-    );
-  }
+  // Retry uses reload, and detail/batch deletions call reload once after the operation settles.
+  const content = (
+    <ProjectsServerTable
+      columns={columns}
+      rows={rows}
+      total={result?.total ?? 0}
+      listState={listState}
+      loading={loading}
+      onRetry={reload}
+      onClearFilters={clearFilters}
+      pagination={tableState.paginationState}
+      pageSizeOptions={PAGE_SIZES}
+      onPaginationChange={tableState.onPaginationChange}
+      sorting={tableState.sortingState}
+      onSortingChange={tableState.onSortingChange}
+    />
+  );
 
   // … the returned page, as in the list page
 }
@@ -230,11 +149,19 @@ import type {
   PaginationState,
   SortingState,
 } from '@tanstack/react-table';
-import type { ReactElement, ReactNode } from 'react';
-import { DataTable } from '#components/data-table';
+import type { ReactElement } from 'react';
+import { DataTable, type DataTableProps } from '#components/data-table';
 import type { Project } from './types.js';
 
-export interface ProjectsServerTableProps {
+export interface ProjectsServerTableProps extends Pick<
+  DataTableProps<Project>,
+  | 'listState'
+  | 'loading'
+  | 'onRetry'
+  | 'onClearFilters'
+  | 'emptyMessage'
+  | 'emptyAction'
+> {
   readonly columns: ColumnDef<Project>[];
   readonly rows: Project[];
   readonly total: number;
@@ -242,7 +169,6 @@ export interface ProjectsServerTableProps {
   readonly onPaginationChange: (pagination: PaginationState) => void;
   readonly sorting: SortingState;
   readonly onSortingChange: (sorting: SortingState) => void;
-  readonly emptyMessage: ReactNode;
   readonly pageSizeOptions: readonly number[];
 }
 
@@ -254,13 +180,14 @@ export function ProjectsServerTable({
   onPaginationChange,
   sorting,
   onSortingChange,
-  emptyMessage,
   pageSizeOptions,
+  ...listFeedback
 }: ProjectsServerTableProps): ReactElement {
   return (
     <DataTable
       columns={columns}
       data={rows}
+      {...listFeedback}
       getRowId={(row) => String(row.id)}
       manualPagination
       rowCount={total}
@@ -273,7 +200,6 @@ export function ProjectsServerTable({
       onSortingChange={(next) =>
         onSortingChange(typeof next === 'function' ? next(sorting) : next)
       }
-      emptyMessage={emptyMessage}
       pageSizeOptions={pageSizeOptions}
       showSelectedCount={false}
     />

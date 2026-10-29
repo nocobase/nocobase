@@ -43,7 +43,16 @@ export function loadAdapters(
   for (const kind of selected) {
     const factory = nativeAdapters.get(kind);
     const spec = AGENTS.find((agent) => agent.id === kind);
-    if (factory) {
+    if (kind === 'claude')
+      adapters.set(
+        kind,
+        createClaudeAdapter({
+          ...detection,
+          nonessentialTraffic:
+            env.NOCOBASE_RUNNER_CLAUDE_NONESSENTIAL_TRAFFIC === '1',
+        }),
+      );
+    else if (factory) {
       adapters.set(kind, factory(detection));
     } else if (spec) adapters.set(kind, createAcpAdapter(spec, detection.env));
     else throw new Error(`Unknown coding tool: ${kind}`);

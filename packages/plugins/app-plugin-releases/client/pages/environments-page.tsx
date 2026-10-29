@@ -13,10 +13,13 @@ import {
   ServerIcon,
   Trash2Icon,
 } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useNavigate, useOutlet } from 'react-router';
 
-import type { EnvironmentRecord } from '../../shared/releases.js';
+import type {
+  EnvironmentListItem,
+  EnvironmentRecord,
+} from '../../shared/releases.js';
 import { ActorName } from '../components/actor-name.js';
 import { useConfirmDialog } from '../components/confirm-dialog.js';
 import { DataTable } from '../components/data-table.js';
@@ -37,13 +40,24 @@ import { useEnvironmentCheck } from '../hooks/use-environment-check.js';
 import { useNotify } from '../hooks/use-notify.js';
 import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
 
-export default function EnvironmentsPage(): ReactElement {
-  const outlet = useOutlet();
-  if (outlet) return <>{outlet}</>;
-  return <EnvironmentsList />;
+/** The page's heading, when the application that mounts it names the page in its own words. */
+export interface EnvironmentsPageProps {
+  readonly title?: ReactNode;
+  readonly description?: ReactNode;
 }
 
-export function EnvironmentsList(): ReactElement {
+export default function EnvironmentsPage(
+  props: EnvironmentsPageProps,
+): ReactElement {
+  const outlet = useOutlet();
+  if (outlet) return <>{outlet}</>;
+  return <EnvironmentsList {...props} />;
+}
+
+export function EnvironmentsList({
+  title,
+  description,
+}: EnvironmentsPageProps): ReactElement {
   const api = useReleasesApi();
   const me = useMe();
   const notify = useNotify();
@@ -51,7 +65,7 @@ export function EnvironmentsList(): ReactElement {
   const canManage = me.permissions.settings['rel.environments/manage'];
   const environments = useLoad(
     () =>
-      api.list<EnvironmentRecord>('environments').then((page) => page.items),
+      api.list<EnvironmentListItem>('environments').then((page) => page.items),
     'environments',
   );
   const { drivers, driverName, t } = useDriverNames();
@@ -83,7 +97,7 @@ export function EnvironmentsList(): ReactElement {
     }
   };
 
-  const columns: ColumnDef<EnvironmentRecord, unknown>[] = [
+  const columns: ColumnDef<EnvironmentListItem, unknown>[] = [
     {
       id: 'name',
       header: t('ui.environments.name'),
@@ -104,10 +118,22 @@ export function EnvironmentsList(): ReactElement {
       ),
     },
     {
+      id: 'purpose',
+      header: t('ui.environments.purpose'),
+      meta: { className: 'w-24' },
+      cell: ({ row }) => t(`ui.environments.purposes.${row.original.purpose}`),
+    },
+    {
       id: 'driver',
       header: t('ui.environments.runsOn'),
       meta: { className: 'w-32' },
       cell: ({ row }) => driverName(row.original.driver, row.original.config),
+    },
+    {
+      id: 'appCount',
+      header: t('ui.environments.appCount'),
+      meta: { className: 'w-20 text-right tabular-nums' },
+      cell: ({ row }) => row.original.appCount,
     },
     {
       id: 'policy',
@@ -231,8 +257,8 @@ export function EnvironmentsList(): ReactElement {
   return (
     <PageContainer>
       <PageHeader
-        title={t('ui.environments.title')}
-        description={t('ui.environments.description')}
+        title={title ?? t('ui.environments.title')}
+        description={description ?? t('ui.environments.description')}
         actions={
           environments.data && environments.data.length > 0 ? addButton() : null
         }

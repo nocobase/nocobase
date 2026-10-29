@@ -4,16 +4,18 @@ description: >-
   Primary entry for building complete NocoBase 3 applications and individual features:
   business and administration pages, routes, components, endpoints, data, permissions, services, translations, and tests.
   Use this application-local workflow instead of globally installed NocoBase 2
-  Skills. Do not use for a published NocoBase 3 plugin package.
+  Skills. For local or published NocoBase 3 plugin packages, use the project plugin development Skill.
 metadata:
   short-description: Develop features in a NocoBase 3 application
 ---
 
 # NocoBase 3 application development
 
+When the task creates or maintains a plugin under this App's `packages/`, read `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by its explicit project path. It ships alongside this Skill in `@nocobase/app-skills`. Use this application's guidance for App-owned features and the plugin Skill for plugin-owned contracts and packaging; do not install the older global plugin development Skill.
+
 Use this Skill when building a complete application or an individual feature: business and administration pages, endpoints, data, services and their tests.
 
-Do not use it to develop a published plugin package. Plugin development has its own protocol and lives in a separate repository.
+For plugin-owned code, use the project plugin development Skill, whether the plugin stays local to this App or is published for reuse. Plugin development does not require a separate repository or a NocoBase source checkout.
 
 Do not use it to upgrade the template this application was generated from, which is also how the application moves to a newer NocoBase version when the user asks to upgrade NocoBase or its core. That is `.agents/skills/nocobase-app-upgrade/`, which reconciles a newer template release against the application without reverting the user's work.
 
@@ -35,9 +37,11 @@ If instead you find `client/plugin.ts`, `server/plugin.ts`, or a `defineServerPl
 
 Do not infer the application's capabilities from a template name or from this Skill. Inspect `package.json`, `client/plugins.ts`, `server/plugins.ts`, `cli/plugins.ts`, `server/config/index.ts`, and `database/` before deciding what is installed, registered, configured, or application-owned. `nocobase.templatePackage` and `nocobase.templateKind` identify known template ancestry when present, but a new template remains valid without being listed here. Read [template variants](references/template-variants.md) only when those files identify one of the documented official templates.
 
-## The one rule that decides most tasks
+## Choose where the feature belongs
 
-Build the feature in the application. Do not run a plugin generator, create a `packages/plugins/` directory, or write a `defineServerPlugin()` declaration for this application's own feature. Create a plugin only when the user explicitly asks for an independently published, reusable package.
+Build application-specific features directly in the application by default. Use a plugin when the user requests one or when code reuse or modular organization calls for a separately registered, maintainable feature. Create local plugins under `packages/` with the project plugin development Skill; do not use the source repository's `packages/plugins/` layout. The App builds and packages registered local plugins for deployment without an npm release. Publish only when distributing the plugin through a package registry.
+
+Ordinary internal workspace packages can share code without plugin registration. Follow [internal workspace packages](references/dependencies.md#internal-workspace-packages), keeping one application at the workspace root with internal packages under `packages/`. The [runnable package example](references/internal-package-example.md) supplies complete configuration and explains declaration watching.
 
 ## Check the installed plugins first
 
@@ -102,9 +106,13 @@ For initialization prerequisites introduced by the feature, apply [setup readine
 
 ## Frontend work
 
+Before implementing interactions, follow [component selection and source review](references/frontend/component-selection.md): existing business component → installed shadcn primitive → registry addition → justified custom composition/primitive. Record the actual component source and run the targeted component checker before delivery; a matching screenshot alone does not justify duplicating a primitive.
+
+Application and plugin UI share [the UI design contract](references/frontend/design-contract.md). Read the application's existing design records and original UI references first: record whether a reference controls appearance, structure or style, apply authorized page exceptions, and retain reusable decisions outside synchronized Skills. Use the contract's system-design section when planning a business system across modules; do not redesign the system for a small edit. Plugin implementation still belongs to `nocobase-app-plugin-development`, whose UI entry points to these same design and acceptance rules.
+
 For business lists, reuse the template-provided `DataTable` and companions from `#components/data-table`, backed by the supported TanStack Table v8 dependency. Use its controlled manual mode for server paging/sorting. Do not replace it with an agent-written table engine when a dependency version is incompatible; inspect and repair the dependency first. See [tables](references/frontend/references/table.md).
 
-Before writing or changing anything under `client/` — pages, components, styles, copy — read [the frontend workflow](references/frontend/ui-workflow.md). It decides whether the change takes the full workflow (a design file reviewed once, then an independent acceptance review), a theme change (tokens and presets, verified with the theme tests and a browser check) or a quick change (edit directly, then the static checks, the related tests and one look at the changed element in the browser), and which parts of [the UI guidelines](references/frontend/ui-guidelines.md) and [the frontend handbook](references/frontend/frontend-dev.md) to read at each step.
+Before writing or changing anything under `client/` — pages, components, styles, copy — read [the frontend workflow](references/frontend/ui-workflow.md). It decides whether the change takes the full workflow (a design file reviewed once, then an independent acceptance review), a theme change (tokens and presets, verified with the theme tests and a browser check) or a quick change (edit directly, then the static checks, the related tests and browser verification of the changed element and affected interactions), and which parts of [the UI guidelines](references/frontend/ui-guidelines.md) and [the frontend handbook](references/frontend/frontend-dev.md) to read at each step.
 
 The handbook's "Look up by task" table routes each frontend task to the sections that cover it, and [the worked example](references/frontend/references/example.md) holds the complete files of the projects feature its rules are illustrated with. Components are shadcn/ui primitives, added with the CLI when a page first needs one: the shadcn/ui skill in `references/frontend/shadcn/` covers their API and composition rules, and [its guide in this handbook](references/frontend/references/shadcn.md) says what to read there and where this application departs from it.
 
@@ -115,6 +123,7 @@ Read the page for the task in front of you. Do not read all of them.
 | Task                                                                                                                              | Read                                                                                                                                                                                                                                                                                                                                 |
 | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Anything under `client/`: pages, routes, components, styling, forms, API calls, copy, frontend tests                              | [frontend workflow](references/frontend/ui-workflow.md), which routes to the [frontend handbook](references/frontend/frontend-dev.md), the theme reference or the worked example                                                                                                                                                     |
+| Search/paginate relation choices, save associations, or batch-assign selected records                                             | [executable relation and batch example](references/frontend/references/executable-relation-batch.md), then the installed authorization Skill                                                                                                                                                                                         |
 | Add an API endpoint, a webhook, or a callback; authenticate and authorize it                                                      | [server routes](references/server-routes.md)                                                                                                                                                                                                                                                                                         |
 | Name an endpoint, shape its response or errors, validate its input, paginate a list, document it in the API document              | [HTTP API design](references/http-api.md)                                                                                                                                                                                                                                                                                            |
 | A list, chart or polled endpoint, or keeping one live: read it with a fixed number of queries, refresh only what changed          | [server routes](references/server-routes.md#lists-and-statistics-a-fixed-number-of-queries) and [client API requests](references/frontend/references/api.md#keeping-lists-and-charts-live)                                                                                                                                           |

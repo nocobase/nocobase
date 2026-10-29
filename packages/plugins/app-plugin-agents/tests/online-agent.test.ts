@@ -2,6 +2,7 @@ import {
   fixtureFileInputs,
   projectNativeHistory,
 } from './helpers/native-files.js';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import {
@@ -112,6 +113,7 @@ async function fixture(model: MockLanguageModelV4) {
     model: resolveModel,
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
   });
   // HTTP projections must observe the same real Service that owns this SDK fixture.
   vi.spyOn(h.services.onlineAgent, 'producerAvailable').mockImplementation(
@@ -1890,6 +1892,28 @@ it('warns on failed shutdown finalization, drains other executions and preserves
   }
 });
 
+it('announces an accepted message with its seq, so other pages read it at once', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Saved')) }),
+    }),
+  );
+  const agent = await f.service.realtime(context());
+  const events: { lastSeq?: number; messageId?: string }[] = [];
+  h.services.events.on('conversation.changed', (event) => {
+    if (event.conversationId === agent.sessionId) events.push(event);
+  });
+  await agent.send([{ role: 'user', content: 'Hello' }]);
+  await agent.receive();
+  const page = await f.sessions.native.page('alice', agent.sessionId, {
+    limit: 100,
+  });
+  const user = page.items.find((message) => message.role === 'user');
+  expect(events).toContainEqual(
+    expect.objectContaining({ lastSeq: user?.metadata?.seq }),
+  );
+});
+
 it('announces committed message revisions and permits stable ID rereads', async () => {
   const f = await fixture(
     new MockLanguageModelV4({
@@ -2260,6 +2284,7 @@ it('does not reclaim current-process occupancy through a new service facade or b
   await agent.send([{ role: 'user', content: 'Work' }]);
   await entered.promise;
   const second = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions: f.sessions,
     ids: { next: () => 'unused' },
     model: async () => model,
@@ -2534,6 +2559,7 @@ it('waits for persistence and release, isolates multiple observers across rounds
   outputs[1].close();
   expect(await final).toEqual({ count: 2 });
   const restarted = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions: f.sessions,
     ids: { next: () => 'unused-read-id' },
     model: f.resolveModel,

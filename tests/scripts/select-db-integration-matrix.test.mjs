@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -135,6 +136,12 @@ const claimConcurrency = {
     'tests/claim-concurrency.test.ts tests/active-input.test.ts tests/run-revision-migration.test.ts',
 };
 
+const claimPagination = {
+  dialect: 'postgres',
+  filter: '@nocobase/app-plugin-agents',
+  tests: 'tests/claim-pagination.test.ts',
+};
+
 const artifactKeyMigration = {
   dialect: 'mssql',
   filter: '@nocobase/app-plugin-releases',
@@ -180,7 +187,6 @@ test('release migration changes select the SQL Server upgrade regression', () =>
 
 test('a guarded package path selects its dialect suite, and nothing else does', () => {
   for (const file of [
-    'packages/plugins/app-plugin-agents/server/core/runs/claim.ts',
     'packages/plugins/app-plugin-agents/server/core/runs/comment-consent.ts',
     'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
     'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
@@ -189,6 +195,12 @@ test('a guarded package path selects its dialect suite, and nothing else does', 
     assert.deepEqual(selectPackageSuites([file]), [claimConcurrency], file);
     assert.deepEqual(selectDatabases([file]), [], file);
   }
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agents/server/core/runs/claim.ts',
+    ]),
+    [claimConcurrency, claimPagination],
+  );
   for (const file of [
     'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
     'packages/plugins/app-plugin-agents/client/index.ts',
@@ -197,14 +209,64 @@ test('a guarded package path selects its dialect suite, and nothing else does', 
     assert.deepEqual(selectPackageSuites([file]), [], file);
 });
 
+test('claim pagination changes select the PostgreSQL boundary and competition suite', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-agents/server/core/runs/claim.ts',
+    'packages/plugins/app-plugin-agents/server/routes/runners/runner.ts',
+    'packages/plugins/app-plugin-agents/tests/claim-pagination.test.ts',
+  ]) {
+    assert.deepEqual(
+      selectPackageSuites([file]).filter(
+        (suite) => suite.tests === claimPagination.tests,
+      ),
+      [claimPagination],
+      file,
+    );
+    assert.deepEqual(selectDatabases([file]), []);
+  }
+  for (const file of [
+    'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
+    'packages/plugins/app-plugin-agents/client/index.ts',
+  ]) {
+    assert.ok(!selectPackageSuites([file]).includes(claimPagination), file);
+  }
+});
+
+const receiptConcurrency = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-server',
+  tests: 'tests/idempotency.test.ts',
+}));
+
+test('receipt writes select PostgreSQL and MySQL concurrency checks without charging client-only changes', () => {
+  for (const file of [
+    'packages/app/app-server/src/router/idempotency.ts',
+    'packages/app/app-server/src/router/repository-routes.ts',
+    'packages/app/app-server/tests/idempotency.test.ts',
+    'packages/templates/app-template-default/database/main/migrations/202611020002_create_mutation_receipts.ts',
+    'packages/templates/app-template-examples/database/analytics/migrations/202611020002_create_mutation_receipts.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), receiptConcurrency, file);
+  assert.deepEqual(
+    selectPackageSuites(['packages/app/app-client/src/submission.ts']),
+    [],
+  );
+});
+
 test('every package suite names tests that exist', () => {
   for (const suite of packageSuites) {
-    const directory = path.join(
-      root,
-      'packages',
+    const packageName = suite.filter.replace('@nocobase/', '');
+    const directory = [
       'plugins',
-      suite.filter.replace('@nocobase/', ''),
-    );
+      'app',
+      'libs',
+      'examples',
+      'tools',
+      'templates',
+    ]
+      .map((section) => path.join(root, 'packages', section, packageName))
+      .find((candidate) => existsSync(path.join(candidate, 'package.json')));
+    assert.ok(directory, `Cannot find ${suite.filter}`);
     for (const file of suite.tests)
       assert.ok(
         readdirSync(path.dirname(path.join(directory, file))).includes(
@@ -281,8 +343,10 @@ test('missing or unavailable comparison commits conservatively select every data
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
     assert.deepEqual(plan.suites, [
+      ...receiptConcurrency,
       ...withdrawalConcurrency,
       claimConcurrency,
+      claimPagination,
       artifactKeyMigration,
     ]);
   }

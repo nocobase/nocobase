@@ -651,7 +651,7 @@
       "name": "task-center-ui-demo",
       "type": "registry:example",
       "title": "Task Center UI Demo",
-      "description": "Usage example of @nocobase/task-center-ui. A person's tasks from four sources — approvals waiting for them, their own requests, copies and work items — with subjects under each source, To do / Done / All, summaries contributed per subject, one-type batch approval, reminders and mark-as-read, and a detail drawer whose approve and reject form the approval type contributes.",
+      "description": "Usage example of @nocobase/task-center-ui. A person's tasks from four sources \u2014 approvals waiting for them, their own requests, copies and work items \u2014 with subjects under each source, To do / Done / All, summaries contributed per subject, one-type batch approval, reminders and mark-as-read, and a detail drawer whose approve and reject form the approval type contributes.",
       "categories": ["task-center"],
       "registryDependencies": [
         "button",
@@ -824,6 +824,72 @@
           "path": "components/record-link.tsx",
           "type": "registry:example",
           "target": "client/extensions/nocobase-record-link-demo/record-link.tsx"
+        }
+      ]
+    },
+    {
+      "name": "file-component-ui-demo",
+      "type": "registry:example",
+      "title": "File Component Ui Demo",
+      "description": "Usage example of @nocobase/file-component-ui with sample data.",
+      "categories": ["file"],
+      "registryDependencies": ["@nocobase/file-component-ui"],
+      "dependencies": ["@nocobase/app-plugin-file@>=1.0.0-beta.0 <2.0.0"],
+      "files": [
+        {
+          "path": "file/file-component-ui.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-file-component-ui-demo/file-component-ui.tsx"
+        },
+        {
+          "path": "file/release-notes.txt",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-file-component-ui-demo/release-notes.txt"
+        }
+      ]
+    },
+    {
+      "name": "notification-logs-ui-demo",
+      "type": "registry:example",
+      "title": "Notification Logs Ui Demo",
+      "description": "Usage example of @nocobase/notification-logs-ui with sample data.",
+      "categories": ["notification"],
+      "registryDependencies": ["@nocobase/notification-logs-ui"],
+      "dependencies": [],
+      "files": [
+        {
+          "path": "notification/notification-logs-ui.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-notification-logs-ui-demo/notification-logs-ui.tsx"
+        }
+      ]
+    },
+    {
+      "name": "feedback-form-demo",
+      "type": "registry:example",
+      "title": "Form Feedback Demo",
+      "description": "Locate required fields and keep input after a simulated connection failure, then retry successfully.",
+      "categories": ["form"],
+      "registryDependencies": ["@nocobase/feedback-form", "button", "input"],
+      "files": [
+        {
+          "path": "components/feedback-form.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-feedback-form-demo/feedback-form.tsx"
+        }
+      ]
+    },
+    {
+      "name": "list-feedback-demo",
+      "type": "registry:example",
+      "title": "List Feedback Demo",
+      "description": "List feedback states with static demonstration data.",
+      "registryDependencies": ["@nocobase/list-feedback"],
+      "files": [
+        {
+          "path": "components/list-feedback.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-list-feedback-demo/list-feedback.tsx"
         }
       ]
     }

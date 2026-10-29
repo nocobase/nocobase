@@ -1,3 +1,4 @@
+import { useFileSubmission } from '../submission.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import {
@@ -59,6 +60,7 @@ export default function AttachmentsPage(): ReactElement {
     };
   }, [fetchRecords]);
 
+  const submission = useFileSubmission();
   const run = useCallback(
     async (action: () => Promise<unknown>): Promise<void> => {
       setBusy(true);
@@ -97,20 +99,43 @@ export default function AttachmentsPage(): ReactElement {
         repository={repository}
         labels={labels}
         multiple
-        disabled={busy}
+        disabled={busy || submission.submitting || submission.pending}
         onChange={() => run(async () => undefined)}
       />
       {error && (
         <p role='alert' className='text-sm text-destructive'>
           {error}
+          <button
+            type='button'
+            disabled={submission.submitting}
+            onClick={() => {
+              void (async () => {
+                try {
+                  await submission.retry();
+                  setRecords(await fetchRecords());
+                  setError('');
+                } catch (cause) {
+                  setError(messageOf(cause));
+                }
+              })();
+            }}
+          >
+            {t('retrySubmission')}
+          </button>
         </p>
       )}
       <FileList
         files={records}
         labels={labels}
-        disabled={busy}
+        disabled={busy || submission.submitting || submission.pending}
         onRemove={(file) =>
-          run(() => repository.deleteOne({ filter: { id: file.id } }))
+          run(() =>
+            submission.run(
+              { filter: { id: file.id } },
+              (idempotencyKey, snapshot) =>
+                repository.deleteOne({ ...snapshot, idempotencyKey }),
+            ),
+          )
         }
       />
       <div className='flex items-start gap-2.5 rounded-xl border bg-muted/20 p-3.5 text-xs text-muted-foreground leading-relaxed'>

@@ -54,6 +54,8 @@ const zhCN: AgentsResource = {
     TOOLS_REFRESH_UNSUPPORTED: '请重启 runner 以刷新状态。',
     RUNNER_REFRESH_UNAVAILABLE: '此运行环境已撤销。',
 
+    boundRunnerIncompatible:
+      '此执行机无法运行所选 Agent。请更换执行机或新建对话。',
     CONFLICT: '它已被修改，请刷新后重试。',
     REVISION_CONFLICT: '它已被修改，请刷新后重试。',
     FORBIDDEN: '你没有权限执行此操作。',
@@ -99,41 +101,28 @@ const zhCN: AgentsResource = {
     unavailableNow: '当前不可用',
     title: 'Agent',
     description:
-      '执行机上报的每个「工具 · 模型」就是一个 agent。项目经理按「擅长什么」把任务的每一步派给它们。',
+      '从执行机上报的模型中添加 agent。项目经理按「擅长什么」把任务的每一步派给它们。',
     fromRunners: '来自执行机的 agent',
-    discovery: {
-      selectAll: '全选当前结果',
-      selectFirst: '选择当前结果中的前 {{limit}} 组',
-      selectionCount: '已选 {{count}} / {{limit}} 组',
-      clearSelection: '清除所选',
-      new: '新发现（{{count}}）',
-      ignored: '已忽略（{{count}}）',
+    display: {
       search: '搜索模型或服务商',
       select: '选择 {{name}}',
-      ignore: '忽略',
-      restore: '恢复',
-      ignoreSelected: '忽略所选',
-      restoreSelected: '恢复所选',
       showDisabled: '显示已停用',
       hideDisabled: '隐藏已停用',
-      provider: '服务商与执行机',
-      saved: '发现偏好已保存',
     },
     filterLabel: '按状态筛选',
     filters: {
       all: '全部 {{count}}',
       enabled: '已启用 {{count}}',
-      pending: '待启用 {{count}}',
       unreported: '暂无执行机 {{count}}',
     },
     loadFailed: '无法加载 agent',
     loadMore: '加载更多',
     emptyTitle: '还没有 agent',
     emptyDescription:
-      '连接一台登录了编码工具的执行机：它上报的每个模型都会出现在这里，等你启用。',
+      '连接一台登录了编码工具的执行机，再从「可用模型」添加 agent。',
     noneInFilter: '这里没有 agent。',
     howToAdd:
-      '想加一个 agent：在某台执行机上装好工具、登录可用的模型，执行机上报后它会出现在这里，写好「擅长什么」即可启用。只有个人执行机能跑的 agent，只有执行机的主人自己发起的任务能用。',
+      '想加一个 agent：在某台执行机上装好工具、登录可用的模型，执行机上报后，从「可用模型」写好「擅长什么」即可添加并启用。只有个人执行机能跑的 agent，只有执行机的主人自己发起的任务能用。',
     goodAtMissing: '还没写',
     columns: {
       agent: 'Agent',
@@ -156,7 +145,6 @@ const zhCN: AgentsResource = {
     },
     state: {
       enabled: '已启用',
-      pending: '待启用',
       disabled: '已停用',
       unreported: '暂无执行机',
     },
@@ -172,9 +160,6 @@ const zhCN: AgentsResource = {
       ultra: '极高',
     },
     enable: {
-      button: '填写并启用',
-      buttonFor: '填写并启用 {{name}}',
-      title: '启用 {{name}}',
       reportedBy_one: '由 {{count}} 台在线执行机上报：{{names}}。',
       reportedBy_other: '由 {{count}} 台在线执行机上报：{{names}}。',
       noRunnerNow: '现在没有在线的执行机有它。',
@@ -184,8 +169,6 @@ const zhCN: AgentsResource = {
       effortHint: '项目经理派活时不能调。',
       personalOnly:
         '只有个人执行机能跑：只有这些执行机的主人自己发起的任务，项目经理才会派给它。',
-      submit: '启用',
-      done: '{{name}} 已启用',
     },
     edit: {
       button: '编辑',
@@ -237,31 +220,6 @@ const zhCN: AgentsResource = {
       addedPartial:
         '已添加 {{succeeded}} 个，{{failed}} 个未能添加，原因见各自下方。',
       addFailed: '{{failed}} 个未能添加，原因见各自下方，请重试。',
-    },
-    cleanup: {
-      open: '清理',
-      title: '清理未使用的发现项',
-      description:
-        '执行机上报产生、没人启用、也从未运行过的 Agent：可以直接删除。预览之后发生变化的项会跳过，不会被删除。',
-      none: '没有可清理的项。',
-      select: '选择 {{name}}',
-      selectGroup: '全选 {{tool}}',
-      clearGroup: '取消全选 {{tool}}',
-      neverEnabled: '从未启用・无运行记录',
-      createdAt: '发现于 {{when}}',
-      group_one: '{{tool}} · {{count}} 项',
-      group_other: '{{tool}} · {{count}} 项',
-      selectedCount_one: '已选 {{count}} 个',
-      selectedCount_other: '已选 {{count}} 个',
-      remove: '删除 {{count}} 项',
-      confirmTitle_one: '删除 {{count}} 个 Agent？',
-      confirmTitle_other: '删除 {{count}} 个 Agent？',
-      confirmDescription:
-        '涉及 {{tools}}。删除前会重新校验，期间已不再符合条件的会被跳过，不会被删除。',
-      confirmAction: '删除 {{count}} 项',
-      done: '已删除 {{removed}} 项，跳过 {{skipped}} 项',
-      partialFailure:
-        '已删除 {{removed}} 项，跳过 {{skipped}} 项；{{failed}} 项未能删除（{{reason}}），已保留选中以便重试。',
     },
   },
   agentTypes: {

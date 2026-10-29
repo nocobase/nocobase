@@ -3,12 +3,11 @@
 ## Where tests go
 
 ```text
-tests/components/   Component tests: rendering and interaction of pages and components (Vitest, jsdom)
-tests/logic/        Logic tests: route declarations, pure functions, providers (Vitest)
-tests/playwright/   End-to-end tests against a running application (Playwright); create the directory with the first test
+tests/client/      Pages, components, route declarations, client services and pure client functions (Vitest, jsdom)
+tests/playwright/  Browser behavior against a running application (Playwright)
 ```
 
-Tests never go beside the source. Vitest discovers `tests/**/*.test.{ts,tsx}` and skips `tests/playwright/` (`vitest.config.ts`); Playwright discovers `tests/playwright/**/*.test.ts` (`playwright.config.ts`). Use `tests/playwright/` for browser behavior and complete browser-to-API flows. A real server, database or sign-in alone belongs in a Node test with `createAppTest()` from `@nocobase/app-testing/server`; it does not require Playwright. Applications created from the Default and Examples templates have Playwright set up; an application without it, before its first end-to-end test, adds `@playwright/test` to `devDependencies`, a `playwright.config.ts` with `testDir: './tests/playwright'` and `testMatch: '**/*.test.ts'`, a `test:e2e` script running `playwright test --pass-with-no-tests`, `exclude: ['tests/playwright/**']` to the `test` section of `vitest.config.ts` unless it is already there, and `playwright.config.ts` and `tests/playwright/**/*.ts` to the `include` of `tsconfig.node.json`.
+Tests never go beside the source. The client Vitest project discovers `tests/client/**/*.test.{ts,tsx}` in jsdom; the Node project discovers server, database, CLI and project tests, with no client setup files. Both projects leave `tests/playwright/` to its own runner (`vitest.config.ts`); Playwright discovers `tests/playwright/**/*.test.ts` (`playwright.config.ts`). Use `tests/playwright/` for browser behavior and complete browser-to-API flows. A real server, database or sign-in alone belongs in a Node test with `createAppTest()` from `@nocobase/app-testing/server`; it does not require Playwright. Applications created from the Default and Examples templates have Playwright set up; an application without it, before its first end-to-end test, adds `@playwright/test` to `devDependencies`, a `playwright.config.ts` with `testDir: './tests/playwright'` and `testMatch: '**/*.test.ts'`, a `test:e2e` script running `playwright test --pass-with-no-tests`, Vitest include patterns that leave `tests/playwright/**` out (or an explicit exclusion in every applicable project), and `playwright.config.ts` and `tests/playwright/**/*.ts` to the `include` of `tsconfig.node.json`.
 
 ## What to test
 
@@ -17,17 +16,17 @@ Tests never go beside the source. Vitest discovers `tests/**/*.test.{ts,tsx}` an
 | Page or component     | What it renders in each state (loading, empty, no results, failed) and what happens after an interaction: the request sent, the state change, the toast, the error shown where the action started                                                                                                                                                                                             |
 | Overlay (child route) | Opening its URL renders the overlay over the parent; closing returns to the parent URL with the query kept; `beforeClose` blocks closing while submitting; opened from a view other than the first one the page shows — every tab of a page whose header opens it — the URL keeps that view and closing returns to it ([`example/detail-page-tabs.md`](example/detail-page-tabs.md#the-test)) |
 | Covering child page   | Opening its URL covers the parent: the parent's content stays in the document, and `RouteChildPage` makes what it covers `inert`, so `expect(screen.getByRole('heading', { name: parentTitle }).closest('[inert]')).not.toBeNull()` passes, and fails for a child route that renders inline below the parent's content; the back button returns to the parent URL with the query kept         |
-| Route declarations    | `tests/logic/client-routes.test.ts` already checks that every page loads and pins each page's resolved `authz`; when you add a page that requires sign-in, add it to the test's page grant list, as [section 12 of `page.md`](page.md#12-update-the-route-test) describes                                                                                                                     |
-| Copy                  | `tests/logic/app-locale-coverage.test.ts` passes: every key the application's code passes to `t()` or names as a route `title`, and every dynamic key family, exists in both locale files. Component tests render with the real i18n runtime (below) rather than a mocked `t`, so both languages show real text, not keys                                                                     |
+| Route declarations    | `tests/client/client-routes.test.ts` already checks that every page loads and pins each page's resolved `authz`; when you add a page that requires sign-in, add it to the test's page grant list, as [section 12 of `page.md`](page.md#12-update-the-route-test) describes                                                                                                                    |
+| Copy                  | `tests/client/app-locale-coverage.test.ts` passes: every key the application's code passes to `t()` or names as a route `title`, and every dynamic key family, exists in both locale files. Component tests render with the real i18n runtime (below) rather than a mocked `t`, so both languages show real text, not keys                                                                    |
 | A bug fix             | A test that fails before the fix and passes after it, when jsdom can reproduce the bug                                                                                                                                                                                                                                                                                                        |
 
 ## Building the test harness
 
-Also run `tests/logic/page-permission-titles.test.ts` when adding or changing routes. It requires translated names for every application page permission, including overlays without navigation/breadcrumbs, and preserves the complete resource/action identity list. See [permission display names](page.md#permission-display-names).
+Also run `tests/client/page-permission-titles.test.ts` when adding or changing routes. It requires translated names for every application page permission, including overlays without navigation/breadcrumbs, and preserves the complete resource/action identity list. See [permission display names](page.md#permission-display-names).
 
 For a page or component that uses application services, start from the [complete `@nocobase/app-testing/client` example](../../testing/client/page.md). `renderWithApp()` supplies the real API client, router, translations and toaster. Supply HTTP responses through `answerApi()`, load the application's locale map, and assert visible state and `view.toasts()`. Register the client plugins or service doubles that the page actually consumes; avoid mocking the whole `@nocobase/app-client` module.
 
-`tests/components/page-harness.test.tsx` in the official templates uses `renderWithApp()` with real API, authorization, translation and toaster hooks. It covers a pending request, the request payload, a `403` without retry, a `401` with session refresh, allowed and denied actions, and a child route opened by URL and closed with a success toast. It replaces the authentication service through `services` while keeping its provider and hooks real. When adapting those cases, import the real page and supply its required plugins or services. Put new files in the application's current test layout; the worked example uses `tests/client/` with an explicit React config.
+`tests/client/page-harness.test.tsx` in the official templates uses `renderWithApp()` with real API, authorization, translation and toaster hooks. It covers a pending request, the request payload, a `403` without retry, a `401` with session refresh, allowed and denied actions, and a child route opened by URL and closed with a success toast. It replaces the authentication service through `services` while keeping its provider and hooks real. When adapting those cases, import the real page and supply its required plugins or services. Put new files in the application's current test layout; the worked example uses `tests/client/` with an explicit React config.
 
 The template's local Vitest inline rules transform client plugins in any scope, including `@acme/app-plugin-*`, alongside `app-client` and the client test helper. Preserve that scope coverage when changing the configuration so installed plugins share application contexts and service tokens. Keep server and database modules external. The shared React preset handles native router resolution; preserve its package export conditions and router externalization when adjusting local rules.
 
@@ -35,8 +34,8 @@ The template's local Vitest inline rules transform client plugins in any scope, 
 
 For anything else, start from the test that already sets it up:
 
-- **A second language**: pass the `client/locales/index.ts` loader map and switch with `changeLanguage` inside `act`, as the next section shows; `tests/components/primitive-labels.test.tsx` renders in Chinese from the start with `locale: 'zh-CN'`.
-- **Overlay behavior in depth** (`beforeClose`, nested layers, focus): `tests/logic/route-overlay.test.tsx`.
+- **A second language**: pass the `client/locales/index.ts` loader map and switch with `changeLanguage` inside `act`, as the next section shows; `tests/client/primitive-labels.test.tsx` renders in Chinese from the start with `locale: 'zh-CN'`.
+- **Overlay behavior in depth** (`beforeClose`, nested layers, focus): `tests/client/route-overlay.test.tsx`.
 - **A UI Library item**: it passes its English as `defaultValue`, but the strict runtime still fails on a key `client/locales/` lacks, so add the keys the item's README lists before testing a page that renders it.
 
 - Assert what the user can see: text, roles and accessible names, the result of a click (`@testing-library/react`, `@testing-library/user-event` and the jest-dom assertions are set up). Do not assert internal state.
@@ -59,6 +58,36 @@ For a primitive that needs translations alone, `createTestI18nRuntime()` and `Te
 - To check a second language with `renderWithApp()`, pass the loader map in `namespaces` and set `locale: 'zh-CN'`. With a directly created i18n runtime, pass the loader map instead of one resource and call `runtime.changeLanguage('zh-CN')` inside `act`.
 
 `packages/libs/i18n/README.md` in the `@nocobase/i18n` package documents every option.
+
+## Asynchronous transitions
+
+Choose cases for the changed behavior rather than applying a complete matrix to every edit. Hold relevant requests pending: assert that navigation and the current overlay remain present, then release success or failure and retry. Cover empty results, rapid switching and late responses where applicable. Same-resource refresh should preserve drafts, selection and scroll; record, user or permission changes must clear content that no longer belongs to the current scope.
+
+The [complete component example](../../testing/client/page.md#test-submission-failure-retry-and-pending-state) demonstrates `Promise.withResolvers<Response>()` with `answerApi()` and cleanup in `finally`. Adapt that setup to the real page. For an overlay expected to keep its container, add this pattern after arranging its pending response and rendering through `renderWithApp()`; `screen`, `act` and `waitFor` come from Testing Library, and `response` is the deferred response supplied to the relevant endpoint:
+
+```tsx
+try {
+  const panel = await screen.findByRole('dialog', { name: 'Project details' });
+  expect(screen.getByText('Loading project')).toBeInTheDocument();
+  await act(async () => {
+    response.resolve(Response.json({ data: project }));
+    await response.promise;
+  });
+  await waitFor(() =>
+    expect(screen.getByText(project.name)).toBeInTheDocument(),
+  );
+  expect(screen.getByRole('dialog', { name: 'Project details' })).toBe(panel);
+} finally {
+  await act(async () => {
+    response.resolve(Response.json({ data: project }));
+    await response.promise;
+  });
+}
+```
+
+Use the page's actual translated labels and response shape. Node identity is useful when stable ownership is the intended contract; a deliberate container handoff instead needs assertions for uninterrupted presentation and correct focus. Check failure → retry → success, cancellation, unsaved-close protection, repeat opening and nested layers as relevant. Backdrop counts must match intended layers, not always one. Never use arbitrary sleeps to stand in for controlled responses.
+
+jsdom verifies DOM continuity and request behavior, not layout or visible animation. In the actual application browser, exercise the affected flow from its entry through loading, completion and closing, with controlled slow responses or failures where relevant. Observe layout, animation, focus and scroll throughout; inspect animation events or computed animation when checking entrance replay. A final screenshot or CSS class assertion is insufficient. Distinguish component or synthetic fixture checks from actual application checks, which also cover routing, permissions and business APIs. Follow the workflow's session rules and report unavailable browser checks as unverified.
 
 ## Running tests
 

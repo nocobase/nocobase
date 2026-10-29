@@ -185,6 +185,8 @@ export class ModelError extends Error {
 /** `ModelGateway.embed`: texts to turn into vectors, by an embedding model; `source` names the caller in usage. */
 export interface EmbedRequest {
   readonly model: ModelRef;
+  /** Server-owned opt-in for a fixed model ID not listed by the selected service. */
+  readonly allowUnlistedModel?: boolean;
   readonly values: readonly string[];
   readonly source: string;
   readonly signal?: AbortSignal;
@@ -283,8 +285,12 @@ export interface ModelSource {
    * `ModelError` `config` or `auth` otherwise.
    */
   connectionFor(ref: ModelRef, kind?: ModelKind): Promise<ModelConnection>;
-  /** As `connectionFor`, with what the service says of the model. */
-  endpointFor(ref: ModelRef, kind: ModelKind): Promise<ModelEndpoint>;
+  /** As `connectionFor`; an explicit server opt-in may allow an unlisted embedding model. */
+  endpointFor(
+    ref: ModelRef,
+    kind: ModelKind,
+    options?: { readonly allowUnlistedModel?: boolean },
+  ): Promise<ModelEndpoint>;
 }
 
 /** A check, with the code of its failure for the server to reason about; `ModelCheck` itself never carries it. */
@@ -702,6 +708,7 @@ export function createModelGateway(
     const { connection, dimensions } = await source.endpointFor(
       request.model,
       'embedding',
+      { allowUnlistedModel: request.allowUnlistedModel === true },
     );
     if (request.values.length === 0)
       return {

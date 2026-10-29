@@ -21,6 +21,7 @@ import { MockLanguageModelV4 } from 'ai/test';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { z } from 'zod';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { createHarness, type Harness } from './harness.js';
 import { OnlineAgentService } from '../server/online/agent/service.js';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
@@ -135,6 +136,7 @@ async function fixture(
   );
   const create = () => {
     const service = new OnlineAgentService({
+      sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
       sessions,
       uiStreams: new OnlineAgentUIStreams({
         tx: h.services.tx,

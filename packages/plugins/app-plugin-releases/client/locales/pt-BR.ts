@@ -544,8 +544,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Primeiro administrador',
-      expires:
-        'Gerado para a primeira implantação. Salve-o agora: ele será excluído em {{hours}} h.',
       kept: 'Gerado para a primeira implantação; ele é mantido até que o aplicativo seja removido.',
       username: 'Nome de usuário',
       email: 'E-mail',
@@ -805,6 +803,11 @@ const ptBR: LocaleResource<typeof enUS> = {
       name: 'Nome',
       driver: 'Motorista',
       runsOn: 'Continua',
+      appCount: 'Aplicativos',
+      purpose: 'Finalidade',
+      purposeHint:
+        'Cada ambiente tem uma finalidade: pré-visualizações de pull requests ou testes de versões.',
+      purposes: { preview: 'Pré-visualizações', test: 'Testes' },
       policy: 'Política',
       publicUrl: 'Padrão público URL',
       config: 'Configurações (JSON)',

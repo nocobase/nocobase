@@ -372,6 +372,7 @@ class CodexRun {
   private readonly items = new Map<string, ThreadItem>();
   private usageBaseline?: TokenUsageBreakdown;
   private usageTotal?: TokenUsageBreakdown;
+  private context?: { used: number; size: number };
 
   private stopping = false;
   private finished = false;
@@ -654,6 +655,31 @@ class CodexRun {
       case 'turn/completed':
         this.onTurnCompleted(p.turn as Turn);
         return;
+      case 'turn/plan/updated': {
+        // The plan the agent keeps for the turn (`update_plan`), reported the way ACP agents report theirs.
+        const steps = Array.isArray(p.plan) ? (p.plan as unknown[]) : [];
+        const plan = steps.flatMap((step) => {
+          const { step: content, status } = (step ?? {}) as Record<
+            string,
+            unknown
+          >;
+          return typeof content === 'string'
+            ? [
+                {
+                  content,
+                  status:
+                    status === 'completed'
+                      ? 'completed'
+                      : status === 'inProgress' || status === 'in_progress'
+                        ? 'in_progress'
+                        : 'pending',
+                },
+              ]
+            : [];
+        });
+        this.emit({ type: 'status', content: 'plan', meta: { plan } });
+        return;
+      }
       case 'item/agentMessage/delta':
         if (!this.session.outputBlocks) return;
         this.streaming.delta(
@@ -676,12 +702,20 @@ class CodexRun {
       case 'item/completed':
         this.onItemCompleted(p.item as ThreadItem);
         return;
-      case 'thread/tokenUsage/updated':
-        this.onUsage(
-          (p.tokenUsage as ThreadTokenUsage).total,
-          (p.tokenUsage as ThreadTokenUsage).last,
-        );
+      case 'thread/tokenUsage/updated': {
+        const usage = p.tokenUsage as ThreadTokenUsage;
+        this.onUsage(usage.total, usage.last);
+        // What the conversation holds now against the model's window, when Codex says how large that is.
+        if (
+          typeof usage.modelContextWindow === 'number' &&
+          usage.modelContextWindow > 0
+        )
+          this.context = {
+            used: usage.last.totalTokens,
+            size: usage.modelContextWindow,
+          };
         return;
+      }
       case 'error': {
         const error = p.error as TurnError;
         if (p.willRetry) {
@@ -730,6 +764,12 @@ class CodexRun {
       },
     });
     this.emit({ type: 'usage', meta: { usage: this.usage() } });
+    if (this.context)
+      this.emit({
+        type: 'status',
+        content: 'context',
+        meta: { context: this.context },
+      });
     this.afterTurn();
   }
 
@@ -1138,7 +1178,9 @@ class CodexRun {
     if (this.stopping) return;
     const prompt: Steer = {
       clientId: randomUUID(),
-      text: recovered ? recoveryPrompt(session.prompt) : session.prompt,
+      text: recovered
+        ? recoveryPrompt(session.prompt, session.recoveryContext)
+        : session.prompt,
       prompt: true,
     };
     const early = this.carry;

@@ -26,6 +26,7 @@ import type {
 } from '../../../shared/runners.js';
 import { RUNNERS_TOPIC } from '../../../shared/realtime.js';
 import { agentsKeys } from '../../api/keys.js';
+import { AgentPromptCallout } from '../../components/agent-prompt-callout.js';
 import { CommandLine } from '../../components/command-line.js';
 import { RouteDialog } from '../../components/route-dialog.js';
 import { Button } from '../../components/ui/button.js';
@@ -280,7 +281,6 @@ function InstallStep({
   const [system, setSystem] = useState(() =>
     guessSystem(typeof navigator === 'undefined' ? '' : navigator.userAgent),
   );
-  const [method, setMethod] = useState('prompt');
   // Polled while waiting, and fetched again as soon as the server announces a runner.
   const runners = useQuery({
     queryKey: agentsKeys.runners,
@@ -313,33 +313,31 @@ function InstallStep({
           const command = installCommand(candidate, server, token.token);
           return (
             <TabsContent key={candidate} value={candidate} className='pt-3'>
-              <Tabs value={method} onValueChange={setMethod}>
-                <TabsList>
-                  <TabsTrigger value='prompt'>
-                    {t('connect.prompt')}
-                  </TabsTrigger>
-                  <TabsTrigger value='manual'>
-                    {t('connect.manual')}
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value='prompt' className='space-y-3 pt-3'>
-                  <p className='text-sm'>{t('connect.promptHint')}</p>
-                  <CommandLine
-                    expanded
-                    command={
-                      (candidate === 'windows'
-                        ? t('connect.promptWindows')
-                        : '') +
-                      t('connect.promptBody', {
-                        tools: (token.enabledTools ?? AGENT_TOOLS)
-                          .map((tool) => t(`tools.${tool}`))
-                          .join(', '),
-                        command,
-                      })
-                    }
-                  />
-                </TabsContent>
-                <TabsContent value='manual' className='space-y-3 pt-3'>
+              <div className='space-y-4'>
+                <AgentPromptCallout
+                  title={t('connect.promptTitle')}
+                  description={t('connect.promptHint')}
+                  prompt={
+                    (candidate === 'windows'
+                      ? t('connect.promptWindows')
+                      : '') +
+                    t('connect.promptBody', {
+                      tools: (token.enabledTools ?? AGENT_TOOLS)
+                        .map((tool) => t(`tools.${tool}`))
+                        .join(', '),
+                      command,
+                    })
+                  }
+                  labels={{
+                    copy: t('connect.promptCopy'),
+                    copied: t('command.copied'),
+                    copyFailed: t('command.copyFailed'),
+                    show: t('connect.promptShow'),
+                    hide: t('connect.promptHide'),
+                  }}
+                />
+                <section className='space-y-3' data-install-manual=''>
+                  <h3 className='text-sm font-medium'>{t('connect.manual')}</h3>
                   {candidate === 'windows' ? (
                     <>
                       <p className='text-sm'>
@@ -358,8 +356,8 @@ function InstallStep({
                   <p className='text-xs text-muted-foreground'>
                     {t('connect.nodeRequired')}
                   </p>
-                </TabsContent>
-              </Tabs>
+                </section>
+              </div>
             </TabsContent>
           );
         })}

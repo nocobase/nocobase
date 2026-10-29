@@ -233,6 +233,8 @@ export interface ConversationRun {
 
 /** A conversation in the history list. */
 export interface ConversationSummary {
+  /** The optional project whose code this Runner conversation uses. */
+  readonly projectId?: string | null;
   readonly execution?: {
     readonly status: 'running' | 'idle';
     readonly outcome?: 'completed' | 'cancelled' | 'failed';
@@ -262,10 +264,109 @@ export interface ConversationSummary {
   readonly updatedAt: string;
   /** The open run, if any: the panel shows "working" and offers to stop. */
   readonly run: ConversationRun | null;
+  /**
+   * The runner the conversation is bound to: the first one that took a run on it, which alone takes the next ones.
+   * Null until then, and after `switchRunner`. These four are absent from servers before they were added.
+   */
+  readonly runner?: ConversationRunner | null;
+  /** The highest message `seq`. */
+  readonly lastSeq?: number;
+  /** How far the owner has seen it (`markSeen`). */
+  readonly seenSeq?: number;
+  /** What waits for the owner, until they see it (a reply, a failure) or answer it (a question). */
+  readonly needsYou?: ConversationNeedsYou | null;
 }
+
+/** A conversation's bound runner, as its owner sees it. */
+export interface ConversationRunner {
+  readonly id: string;
+  /** Null once the runner is gone. */
+  readonly name: string | null;
+  /**
+   * `online` takes the conversation's runs now; `offline` and `revoked` keep them waiting until it is back (or the owner
+   * switches runner); `missing` is a deleted runner, which only a switch gets past.
+   */
+  readonly status: 'online' | 'offline' | 'revoked' | 'missing';
+}
+
+/** Why a conversation waits for its owner. */
+export const CONVERSATION_NEEDS_YOU = ['reply', 'failed', 'confirm'] as const;
+
+export type ConversationNeedsYouReason =
+  (typeof CONVERSATION_NEEDS_YOU)[number];
+
+export interface ConversationNeedsYou {
+  /** `reply`: the agent finished a turn; `failed`: its run failed; `confirm`: it asked the owner something. */
+  readonly reason: ConversationNeedsYouReason;
+  /** The message `seq` it is about. */
+  readonly seq: number;
+  /** What the agent asked, for `confirm`; null otherwise. */
+  readonly text: string | null;
+}
+
+/** The owner's conversations that wait for them (`GET /api/agents/conversationAttention`), for a badge. */
+export interface ConversationAttentionCounts {
+  /** Open conversations with messages the owner has not read. */
+  readonly unread: number;
+  /** Open conversations that need the owner (`ConversationSummary.needsYou`). */
+  readonly needsYou: number;
+}
+
+/**
+ * What a conversation's runs used, as their coding tools reported it: tokens summed over every run (zero when none
+ * reported any), and how full the context window was after the latest run that said (null when none did).
+ */
+export interface ConversationUsage {
+  readonly inputTokens: number;
+  readonly cacheReadTokens: number;
+  readonly outputTokens: number;
+  /** Runs that reported tokens. */
+  readonly runs: number;
+  readonly context: { readonly used: number; readonly size: number } | null;
+  /** What the runs cost in US dollars, over the runs whose coding tool priced them; null when none did. */
+  readonly costUsd: number | null;
+}
+
+/** How the application shows something a conversation is tied to, as its link kind resolves it for the viewer. */
+export interface ConversationLinkView {
+  /** Its short identifier, such as an issue's `ST-58`. */
+  readonly key: string | null;
+  readonly title: string;
+  /** Where it stands, in words (`In progress`); null when the kind says nothing. */
+  readonly status: string | null;
+  /** Where the application shows it, relative to the application's routes. */
+  readonly url: string | null;
+}
+
+/** Who tied a target to a conversation: its owner, the agent working in it, or the application. */
+export const CONVERSATION_LINK_ORIGINS = [
+  'user',
+  'agent',
+  'application',
+] as const;
+
+export type ConversationLinkOrigin = (typeof CONVERSATION_LINK_ORIGINS)[number];
+
+/** Something a conversation is tied to: a record of a kind the application registered. */
+export interface ConversationLink {
+  readonly id: string;
+  readonly conversationId: string;
+  readonly kind: string;
+  readonly targetId: string;
+  readonly origin: ConversationLinkOrigin;
+  readonly createdAt: string;
+  /** Null when the kind cannot resolve it, or the viewer may no longer see it. */
+  readonly view: ConversationLinkView | null;
+}
+
+/** `kind` of a conversation link: letters, digits, `_` and `-`, starting with a letter. */
+export const CONVERSATION_LINK_KIND_PATTERN: RegExp =
+  /^[a-z][a-zA-Z0-9_-]{0,63}$/u;
 
 /** One conversation as the panel opens it. */
 export interface ConversationDetail extends ConversationSummary {
+  /** Saved per-conversation preference; null uses the current Agent default. */
+  readonly effort?: string | null;
   readonly availability: ChatAvailability;
   /** Another agent may take over (`POST …/fallback`): the system default agent, when it can answer. */
   readonly canFallback: boolean;
@@ -302,6 +403,12 @@ export type ConversationNotice =
       readonly code: 'onlineFallbackUnavailable';
       readonly fromAgentId: string;
       readonly reason: OfflineReason;
+    }
+  /** The owner selected another Runner Agent; the next message starts a fresh tool session. */
+  | {
+      readonly code: 'switchedAgent';
+      readonly agentId: string;
+      readonly fromAgentId: string;
     }
   /** The conversation is back on its own agent. */
   | {
@@ -375,11 +482,17 @@ export type ConversationNoticeCode = ConversationNotice['code'];
 
 /** `aiMessages.metadata`. */
 export interface MessageMetadata {
+  readonly effort?: string;
   readonly output?: OutputBlock;
   readonly parentToolUseId?: string;
   readonly childSessionId?: string;
   /** A user message: the run input it became, once the agent was woken. */
   readonly inputId?: string;
+  /** A user message sent while the agent was working, joining its run (`queue`); `pickedUp` once the agent took it. */
+  readonly queued?: boolean;
+  readonly pickedUp?: boolean;
+  /** A queued user message its sender took back before the agent took it: kept in the history, never answered. */
+  readonly withdrawn?: boolean;
   /** An assistant message: the agent that wrote it and the run event it came from. */
   readonly agentId?: string;
   readonly runEventSeq?: number;
@@ -466,9 +579,16 @@ export const CHAT_ROUTES = {
   conversations: 'agents/conversations',
   conversation: 'agents/conversations/:conversationId',
   messages: 'agents/conversations/:conversationId/messages',
+  queue: 'agents/conversations/:conversationId/queue',
+  usage: 'agents/conversations/:conversationId/usage',
   events: 'agents/conversations/:conversationId/events',
   config: 'agents/conversations/:conversationId/config',
   markRead: 'agents/conversations/:conversationId/markRead',
+  markSeen: 'agents/conversations/:conversationId/markSeen',
+  switchRunner: 'agents/conversations/:conversationId/switchRunner',
+  switchAgent: 'agents/conversations/:conversationId/switchAgent',
+  links: 'agents/conversations/:conversationId/links',
+  attention: 'agents/conversationAttention',
   stop: 'agents/conversations/:conversationId/stop',
   agents: 'agents/chatAgents',
   preferences: 'agents/chatPreferences',
@@ -498,6 +618,8 @@ export const CONVERSATION_CONFLICTS = [
   'noFallback',
   /** `restore`: the conversation is not on the system default, or its own agent is still unavailable. */
   'noRestore',
+  /** `withdraw`: the message's runner already took it, so the agent has it. */
+  'messageTaken',
 ] as const;
 
 export type ConversationConflict = (typeof CONVERSATION_CONFLICTS)[number];
@@ -512,6 +634,9 @@ export interface ConversationListQuery {
   /** `online`: conversations with the online agent; `runner`: those with every other agent. */
   readonly mode?: ConversationMode;
   readonly source?: ConversationSource;
+  /** Only the conversations tied to this target (`linkKind` with `linkTargetId`). */
+  readonly linkKind?: string;
+  readonly linkTargetId?: string;
   /** The `meta.nextPageToken` of the previous page. */
   readonly pageToken?: string;
   /** `CONVERSATION_PAGE_DEFAULT`, at most `CONVERSATION_PAGE_MAX`. */
@@ -546,6 +671,9 @@ export interface OnlineChatConfigSnapshot {
   readonly variable?: OnlineChatJson;
 }
 export interface CreateConversationRequest {
+  readonly projectId?: string | null;
+  /** Runner reasoning effort; null explicitly restores the Agent default. */
+  readonly effort?: string | null;
   /** Defaults to true; background SDK sessions are always hidden. */
   readonly showInChatList?: boolean;
   readonly config?: {
@@ -566,6 +694,8 @@ export interface CreateConversationRequest {
 
 /** `PATCH conversation`: rename (the title becomes `user`'s and the agent may no longer change it), or archive. */
 export interface ConversationPatch {
+  /** May change only before the first user message. */
+  readonly projectId?: string | null;
   readonly title?: string;
   readonly archived?: boolean;
 }
@@ -597,6 +727,10 @@ export interface MessagePage {
 
 /** `POST messages`. */
 export interface SendMessageRequest {
+  /** Runner reasoning effort; null explicitly restores the Agent default. */
+  readonly effort?: string | null;
+  /** Confirm this Runner agent only if the message is accepted while idle. */
+  readonly agentId?: string;
   /** Markdown, at most `MESSAGE_CONTENT_MAX` characters; empty only when files are sent. */
   readonly content: string;
   readonly context?: PageContext;
@@ -647,6 +781,10 @@ export interface StartConversationRequest {
 
 /** An agent the person may chat with (`GET agents`). */
 export interface ChatAgent {
+  /** Known efforts shared by all eligible runners for the current model. Empty or absent hides selection. */
+  readonly efforts?: readonly string[];
+  /** The Agent default; it can become unsupported after a capability update. */
+  readonly effort?: string | null;
   readonly quota?: readonly QuotaLocation[];
   /** Viewer-visible eligible runtimes, for partial quota availability. */
   readonly runnerNames: readonly string[];

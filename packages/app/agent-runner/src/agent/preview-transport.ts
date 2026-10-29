@@ -10,9 +10,15 @@ export class PreviewTransport {
   private pending = Promise.resolve();
   private readonly client: ApiClient;
   private readonly runId: string;
-  constructor(client: ApiClient, runId: string) {
+  private readonly onResponse?: (body: unknown) => void;
+  constructor(
+    client: ApiClient,
+    runId: string,
+    onResponse?: (body: unknown) => void,
+  ) {
     this.client = client;
     this.runId = runId;
+    this.onResponse = onResponse;
   }
   send(event: SpoolEvent): void {
     if (this.failed || this.queued >= 64) {
@@ -27,12 +33,13 @@ export class PreviewTransport {
     };
     this.pending = this.pending
       .then(async () => {
-        if (!this.failed)
-          await this.client.request(
-            'POST',
-            routePath(RUNNER_ROUTES.events, { runId: this.runId }),
-            { events: [numbered] },
-          );
+        if (this.failed) return;
+        const body: unknown = await this.client.request(
+          'POST',
+          routePath(RUNNER_ROUTES.events, { runId: this.runId }),
+          { events: [numbered] },
+        );
+        this.onResponse?.(body);
       })
       .catch(() => {
         this.failed = true;

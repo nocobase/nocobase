@@ -4,7 +4,7 @@ Read this when the application has outbound integrations, file storage or backgr
 
 ## External effects
 
-At each application-owned transport or service boundary, use the server-side Demo Mode flag to choose a local fixture or refuse the operation before it causes an external effect. Apply this to visitor-created records and queued work as well as generated fixtures.
+At each application-owned transport or service boundary, use `isDemoMode(container)` from `@nocobase/app-plugin-demo-mode/server` to choose a local fixture or refuse the operation before it causes an external effect. Apply this to visitor-created records and queued work as well as generated fixtures. For HTTP endpoints that should be unavailable in the demo, register the [request effects guard](policies.md#request-effects-guard) with explicit paths and exceptions before their handlers execute; retain boundary checks for work reached outside those requests.
 
 Reuse existing adapters and business parsing/validation. Fixtures should return the shape each caller expects. Missing or disabled simulations must not fall through to real mail, notifications, payments, publishing or other outbound services. For models, tools and Runners, follow [simulation](simulation.md).
 

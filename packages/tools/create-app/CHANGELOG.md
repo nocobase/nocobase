@@ -1,5 +1,11 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- 7770b46: Support internal workspace packages while keeping the application at the project root. Generate workspace package patterns, build dependencies before client compilation, watch reachable internal sources, and document independent package checks and deployment exports.
+
 ## 0.1.0-beta.33
 
 ### Patch Changes

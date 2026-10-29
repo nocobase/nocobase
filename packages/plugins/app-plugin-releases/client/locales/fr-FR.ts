@@ -544,8 +544,6 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Premier administrateur',
-      expires:
-        'Généré pour le premier déploiement. Enregistrez-le maintenant : il est supprimé dans {{hours}} h.',
       kept: "Généré pour le premier déploiement ; il est conservé jusqu'à la suppression de l'application.",
       username: "Nom d'utilisateur",
       email: 'E-mail',
@@ -811,6 +809,11 @@ const frFR: LocaleResource<typeof enUS> = {
       name: 'Nom',
       driver: 'Pilote',
       runsOn: 'Fonctionne sur',
+      appCount: 'Applications',
+      purpose: 'Usage',
+      purposeHint:
+        'Chaque environnement a un seul usage : les aperçus de pull requests, ou le test des versions.',
+      purposes: { preview: 'Aperçus', test: 'Test' },
       policy: 'Politique',
       publicUrl: 'Modèle public URL',
       config: 'Paramètres (JSON)',
