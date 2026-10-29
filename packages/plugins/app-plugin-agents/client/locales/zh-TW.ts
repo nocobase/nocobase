@@ -6,12 +6,26 @@ import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
   modelSuggestions: {
-    design: '方案設計、架構規劃、疑難排查及重要變更的審查。',
-    routine: '範圍明確的功能實作、小幅修正、測試及文案。',
-    small: '小幅、重複性的修改，成本低且速度快。',
-    explanation: '理解需求、撰寫提案及說明。',
-    large: '較大型的功能實作、跨套件變更及重構。',
-    review: '程式碼審查及 CI 失敗分析。',
+    design:
+      '最強推理：方案設計、架構、疑難排查、重要修改的程式碼審查；也能進行一般實作、跨套件修改及撰寫方案',
+    large:
+      '較大的實作、跨套件修改、重構、一般實作；也能撰寫方案、審查程式碼及小幅修改',
+    review: '程式碼審查、分析 CI 失敗原因；也能設計方案及疑難排查',
+    routine: '一般實作、小型修復、補充測試、修改文案；也能分析 CI 失敗原因',
+    small: '小幅修改、機械性修改、補充測試，便宜、快速；也能分析 CI 失敗原因',
+    explanation: '理解需求、講解說明、撰寫方案',
+  },
+  goodAtTemplates: {
+    label: '範本',
+    design: '方案設計與審查',
+    large: '較大實作',
+    review: '程式碼審查與 CI',
+    routine: '一般實作',
+    small: '小幅修改',
+    explanation: '講解與方案',
+    replaceTitle: '覆蓋目前內容？',
+    replaceHint: '目前文字將被所選範本取代，之後仍可繼續編輯。',
+    replace: '覆蓋',
   },
 
   actions: {
@@ -95,7 +109,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     unavailableNow: '目前無法使用',
     title: '代理',
     description:
-      '從執行器回報的模型中新增代理。專案經理依據代理的擅長領域分派議題的每個步驟。',
+      '從執行器回報的模型中新增代理。Lead Agent依據代理的擅長領域分派議題的每個步驟。',
     fromRunners: '執行器代理',
     display: {
       search: '搜尋型號或供應商',
@@ -157,11 +171,11 @@ const zhTW: LocaleResource<typeof enUS> = {
       reportedBy_other: '{{count}} 執行器線上檢舉：{{names}}。',
       noRunnerNow: '目前沒有擁有它的執行器線上。',
       goodAtHint:
-        '專案經理透過這句話來決定交給該代理什麼。說一下它適合什麼，不適合什麼。',
+        'Lead Agent透過這句話來決定交給該代理什麼。說一下它適合什麼，不適合什麼。',
       goodAtRequired: '在啟用它之前寫下它擅長什麼。',
-      effortHint: '專案經理交接工作時不能更改。',
+      effortHint: 'Lead Agent交接工作時不能更改。',
       personalOnly:
-        '只有個人執行器擁有它：專案經理只在其所有者開始的議題上才讓它工作。',
+        '只有個人執行器擁有它：Lead Agent只在其所有者開始的議題上才讓它工作。',
     },
     edit: {
       button: '編輯',

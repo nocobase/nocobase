@@ -7,14 +7,30 @@ import type enUS from './en-US.js';
 const ptBR: LocaleResource<typeof enUS> = {
   modelSuggestions: {
     design:
-      'Design, arquitetura, investigação de problemas complexos e revisão de alterações importantes.',
+      'Raciocínio mais forte: propostas, arquitetura, investigações difíceis e revisão de alterações importantes; também implementação comum e alterações entre pacotes.',
+    large:
+      'Implementações maiores, alterações entre pacotes, refatoração e implementação comum; também propostas, revisão de código e pequenas alterações.',
+    review:
+      'Revisão de código e análise de falhas de CI; também propostas e investigações difíceis.',
     routine:
-      'Implementações com escopo claro, pequenas correções, testes e redação.',
-    small: 'Alterações pequenas e mecânicas, rápidas e econômicas.',
+      'Implementação comum, pequenas correções, testes e textos; também análise de falhas de CI.',
+    small:
+      'Pequenas alterações, edições mecânicas e testes, baratos e rápidos; também análise de falhas de CI.',
     explanation:
-      'Compreensão de requisitos e redação de propostas e explicações.',
-    large: 'Implementações maiores, alterações entre pacotes e refatoração.',
-    review: 'Revisão de código e análise de falhas de CI.',
+      'Compreensão de requisitos, explicações e redação de propostas.',
+  },
+  goodAtTemplates: {
+    label: 'Modelos',
+    design: 'Design e revisão',
+    large: 'Implementação maior',
+    review: 'Revisão de código e CI',
+    routine: 'Implementação comum',
+    small: 'Pequenas alterações',
+    explanation: 'Explicações e propostas',
+    replaceTitle: 'Substituir a descrição atual?',
+    replaceHint:
+      'O texto atual será substituído pelo modelo selecionado. Você poderá editá-lo depois.',
+    replace: 'Substituir',
   },
   actions: {
     back: 'Voltar',
@@ -98,7 +114,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponível agora',
     title: 'Agentes',
     description:
-      'Adicione agentes a partir dos modelos informados pelos executores. O gerente de projeto atribui cada etapa de uma tarefa ao agente cuja descrição é adequada.',
+      'Adicione agentes a partir dos modelos informados pelos executores. O Lead Agent atribui cada etapa de uma tarefa ao agente cuja descrição é adequada.',
     fromRunners: 'Agentes de executores',
     display: {
       search: 'Pesquisar modelos ou provedores',
@@ -163,12 +179,11 @@ const ptBR: LocaleResource<typeof enUS> = {
       reportedBy_other: 'Relatado por executores {{count}} online: {{names}}.',
       noRunnerNow: 'Nenhum executor que o tenha está online agora.',
       goodAtHint:
-        'O gerente do projeto decide o que entregar a este agente com estas palavras. Diga o que é adequado e o que não é.',
+        'O Lead Agent decide o que entregar a este agente com estas palavras. Diga o que é adequado e o que não é.',
       goodAtRequired: 'Escreva em que ele é bom antes de ativá-lo.',
-      effortHint:
-        'O gerente de projeto não pode alterá-lo quando entrega o trabalho.',
+      effortHint: 'O Lead Agent não pode alterá-lo quando entrega o trabalho.',
       personalOnly:
-        'Apenas os executores pessoais o possuem: o gerente do projeto entrega o trabalho apenas nas questões que seus proprietários iniciam.',
+        'Apenas os executores pessoais o possuem: o Lead Agent entrega o trabalho apenas nas questões que seus proprietários iniciam.',
       reportedBy_many: 'Relatado por executores {{count}} online: {{names}}.',
     },
     edit: {

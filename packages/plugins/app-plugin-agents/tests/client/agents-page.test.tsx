@@ -211,6 +211,112 @@ describe('the Agent page', () => {
     );
   });
 
+  it('prefills an out-of-catalog model and confirms replacing its draft before saving', async () => {
+    availableRows.claude = [
+      {
+        ...availableRows.claude![0]!,
+        model: 'claude-haiku-5-5',
+        suggestion: null,
+      },
+    ];
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    fireEvent.click(
+      await within(drawer).findByTestId(
+        'available-model-create-claude-claude-haiku-5-5',
+      ),
+    );
+    const input = await within(drawer).findByTestId(
+      'available-model-good-at-claude-claude-haiku-5-5',
+    );
+    expect(input).toHaveValue('modelSuggestions.small');
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'goodAtTemplates.routine' }),
+    );
+    const confirmation = await screen.findByRole('alertdialog');
+    expect(input).toHaveValue('modelSuggestions.small');
+    fireEvent.click(
+      within(confirmation).getByRole('button', { name: 'actions.cancel' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(input).toHaveValue('modelSuggestions.small');
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'goodAtTemplates.review' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'goodAtTemplates.replace',
+      }),
+    );
+    expect(input).toHaveValue('modelSuggestions.review');
+    fireEvent.change(input, { target: { value: 'Edited template' } });
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    );
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/runnerAgents')[0]?.json).toMatchObject({
+        model: 'claude-haiku-5-5',
+        description: 'Edited template',
+      }),
+    );
+  });
+
+  it('preserves an existing description until a template replacement is confirmed', async () => {
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    const input = within(dialog).getByTestId('agent-good-at');
+    expect(input).toHaveValue('Small changes');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'goodAtTemplates.large' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'actions.cancel',
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(input).toHaveValue('Small changes');
+    expect(callsTo('PATCH', 'agents/sonnet')).toHaveLength(0);
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'goodAtTemplates.large' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'goodAtTemplates.replace',
+      }),
+    );
+    expect(input).toHaveValue('modelSuggestions.large');
+    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
+    await waitFor(() =>
+      expect(callsTo('PATCH', 'agents/sonnet')[0]?.json).toMatchObject({
+        description: 'modelSuggestions.large',
+      }),
+    );
+  });
+
+  it('keeps an existing empty description empty and lets a template fill it immediately', async () => {
+    agents[0] = { ...agents[0]!, description: null };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue('');
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'goodAtTemplates.explanation',
+      }),
+    );
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue(
+      'modelSuggestions.explanation',
+    );
+  });
+
   it('shows a group’s setup guidance even when it already has a model with an agent', async () => {
     availableGroups = [
       {
@@ -469,7 +575,7 @@ describe('the Agent page', () => {
       ...availableRows.claude!,
       {
         tool: 'claude',
-        model: 'claude-fable-5-1',
+        model: 'unknown-model',
         agentId: null,
         status: null,
         recommended: false,
@@ -486,15 +592,15 @@ describe('the Agent page', () => {
     );
     fireEvent.click(within(opus).getByRole('checkbox'));
     const fable = await within(drawer).findByTestId(
-      'available-model-claude-claude-fable-5-1',
+      'available-model-claude-unknown-model',
     );
     fireEvent.click(within(fable).getByRole('checkbox'));
     fireEvent.click(
       within(drawer).getByTestId('available-models-add-selected'),
     );
-    // Fable has no catalog suggestion, so the confirm step leaves it for the admin to fill in.
+    // Unknown families stay empty until the admin writes a description or chooses a template.
     const fableGoodAt = await within(drawer).findByTestId(
-      'available-model-good-at-claude-claude-fable-5-1',
+      'available-model-good-at-claude-unknown-model',
     );
     expect(fableGoodAt).toHaveValue('');
     expect(fableGoodAt).toHaveAttribute('aria-invalid', 'true');
@@ -522,10 +628,10 @@ describe('the Agent page', () => {
       (call) => call.json as { model: string; description: string },
     );
     expect(new Set(bodies.map((body) => body.model))).toEqual(
-      new Set(['claude-opus-5-5', 'claude-fable-5-1']),
+      new Set(['claude-opus-5-5', 'unknown-model']),
     );
     expect(
-      bodies.find((body) => body.model === 'claude-fable-5-1')?.description,
+      bodies.find((body) => body.model === 'unknown-model')?.description,
     ).toBe('Fable good at');
   });
 

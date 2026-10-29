@@ -32,6 +32,7 @@ import {
   TOOL_SIGN_IN,
 } from '../../../shared/model-catalog.js';
 import { modelSuggestion } from '../../model-suggestion.js';
+import { GoodAtTemplates } from './good-at-templates.js';
 import { agentsKeys } from '../../api/keys.js';
 import { AgListSkeleton, AgLoadError } from '../../components/ag-states.js';
 import { AgTag, type Tone } from '../../components/ag-tag.js';
@@ -824,6 +825,11 @@ function ConfirmStep({
               <FieldLabel htmlFor={`confirm-good-at-${key}`}>
                 {modelName(model)}
               </FieldLabel>
+              <GoodAtTemplates
+                value={goodAt}
+                onChange={(value) => onDraftChange(key, value)}
+                disabled={pending}
+              />
               <Textarea
                 id={`confirm-good-at-${key}`}
                 rows={3}

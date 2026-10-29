@@ -7,15 +7,30 @@ import type enUS from './en-US.js';
 const deDE: LocaleResource<typeof enUS> = {
   modelSuggestions: {
     design:
-      'Entwurf, Architektur, Untersuchung schwieriger Probleme und Prüfung wichtiger Änderungen.',
-    routine:
-      'Umsetzungen mit klarem Umfang, kleine Korrekturen, Tests und Formulierungen.',
-    small: 'Kleine, mechanische Änderungen, kostengünstig und schnell.',
-    explanation:
-      'Verstehen von Anforderungen sowie Verfassen von Vorschlägen und Erläuterungen.',
+      'Stärkstes Schlussfolgern: Vorschläge, Architektur, schwierige Untersuchungen und Prüfung wichtiger Änderungen; auch Routineumsetzung, paketübergreifende Änderungen und Vorschläge.',
     large:
-      'Größere Umsetzungen, paketübergreifende Änderungen und Refactoring.',
-    review: 'Codeprüfung und Analyse von CI-Fehlern.',
+      'Größere Umsetzungen, paketübergreifende Änderungen, Refactoring und Routineumsetzung; auch Vorschläge, Codeprüfung und kleine Änderungen.',
+    review:
+      'Codeprüfung und Analyse von CI-Fehlern; auch Vorschläge und schwierige Untersuchungen.',
+    routine:
+      'Routineumsetzung, kleine Korrekturen, Tests und Formulierungen; auch Analyse von CI-Fehlern.',
+    small:
+      'Kleine Änderungen, mechanische Bearbeitung und Tests, günstig und schnell; auch Analyse von CI-Fehlern.',
+    explanation:
+      'Anforderungen verstehen, Erklärungen und Vorschläge verfassen.',
+  },
+  goodAtTemplates: {
+    label: 'Vorlagen',
+    design: 'Entwurf und Prüfung',
+    large: 'Größere Umsetzung',
+    review: 'Codeprüfung und CI',
+    routine: 'Routineumsetzung',
+    small: 'Kleine Änderungen',
+    explanation: 'Erklärung und Vorschläge',
+    replaceTitle: 'Aktuelle Beschreibung ersetzen?',
+    replaceHint:
+      'Ihr aktueller Text wird durch die gewählte Vorlage ersetzt. Sie können ihn danach bearbeiten.',
+    replace: 'Ersetzen',
   },
 
   actions: {
@@ -102,7 +117,7 @@ const deDE: LocaleResource<typeof enUS> = {
     unavailableNow: 'Derzeit nicht verfügbar',
     title: 'Agenten',
     description:
-      'Fügen Sie Agenten aus den von Runnern gemeldeten Modellen hinzu. Der Projektmanager weist jeden Schritt einer Aufgabe dem Agenten zu, dessen Beschreibung dazu passt.',
+      'Fügen Sie Agenten aus den von Runnern gemeldeten Modellen hinzu. Der Lead Agent weist jeden Schritt einer Aufgabe dem Agenten zu, dessen Beschreibung dazu passt.',
     fromRunners: 'Agenten von Runnern',
     display: {
       search: 'Suchmodelle oder Anbieter',
@@ -165,13 +180,13 @@ const deDE: LocaleResource<typeof enUS> = {
       reportedBy_other: 'Von {{count}}-Runnern online gemeldet: {{names}}.',
       noRunnerNow: 'Kein Runner, der es hat, ist jetzt online.',
       goodAtHint:
-        'Mit diesen Worten entscheidet der Projektmanager, was er diesem Agenten geben soll. Sagen Sie, was Ihnen passt und was nicht.',
+        'Mit diesen Worten entscheidet der Lead Agent, was er diesem Agenten geben soll. Sagen Sie, was Ihnen passt und was nicht.',
       goodAtRequired:
         'Schreiben Sie, was es gut kann, bevor Sie es aktivieren.',
       effortHint:
-        'Der Projektmanager kann es bei der Übergabe der Arbeit nicht ändern.',
+        'Der Lead Agent kann es bei der Übergabe der Arbeit nicht ändern.',
       personalOnly:
-        'Nur persönliche Runner haben es: Der Projektmanager übergibt die Arbeit nur an Vorgänge, die ihre Besitzer starten.',
+        'Nur persönliche Runner haben es: Der Lead Agent übergibt die Arbeit nur an Vorgänge, die ihre Besitzer starten.',
     },
     edit: {
       button: 'Bearbeiten',
