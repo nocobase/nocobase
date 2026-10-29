@@ -257,14 +257,12 @@ describe('in-app notification inbox hooks', () => {
     await waitFor(() => expect(view.result.current.data).toBe(2));
     mocks.fetchUnreadCount.mockResolvedValue(3);
     act(() =>
-      callbacks
-        .get('app:inbox')!
-        .onEvent?.({
-          type: 'event',
-          topic: 'app:inbox',
-          payload: {},
-          publishedAt: new Date().toISOString(),
-        }),
+      callbacks.get('app:inbox')!.onEvent?.({
+        type: 'event',
+        topic: 'app:inbox',
+        payload: {},
+        publishedAt: new Date().toISOString(),
+      }),
     );
     await waitFor(() => expect(view.result.current.data).toBe(3));
     expect(mocks.realtime.watch).toHaveBeenCalledTimes(2);
