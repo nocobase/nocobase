@@ -1175,13 +1175,14 @@ export class ChatController {
       pending.trailing ||= fresh;
       return pending.task;
     }
+    const active = this.lifetime();
     const owner = { trailing: false, task: Promise.resolve() };
     const run = async () => {
       do {
         owner.trailing = false;
         await this.refreshOnce(id, fresh);
         fresh = true;
-      } while (owner.trailing && !this.disposed);
+      } while (owner.trailing && active());
     };
     owner.task = run().finally(() => {
       if (this.refreshes.get(id) === owner) this.refreshes.delete(id);
@@ -1431,6 +1432,8 @@ export class ChatController {
     this.replacements.clear();
     this.reconciles.clear();
     this.streamFollowers.clear();
+    this.detailReads.clear();
+    this.refreshes.clear();
     for (const watch of this.watches.values()) clearInterval(watch.timer);
     this.watches.clear();
     this.messageVersions.clear();
