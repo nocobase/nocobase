@@ -115,6 +115,7 @@ export class ChatController {
   private disposed = false;
   private generation = 0;
   private detailVersions = new Map<string, number>();
+  private receiptVersions = new Map<string, number>();
   private commandVersions = new Map<string, number>();
   constructor(readonly api: ChatApi) {
     this.submissions = new ChatSubmissions(
@@ -1135,7 +1136,10 @@ export class ChatController {
   }
   async refresh(id: string): Promise<void> {
     if (this.disposed) return;
-    const active = this.lifetime(),
+    const lifetime = this.lifetime(),
+      commandVersion = this.commandVersions.get(id),
+      active = () =>
+        lifetime() && this.commandVersions.get(id) === commandVersion,
       ordered = this.detailRequest(id);
     const submittedOwner = this.chat(id);
     const submittedInput =
@@ -1154,7 +1158,7 @@ export class ChatController {
     // A newer detail query must not discard this refresh's message catch-up.
     // loadHistory coalesces overlapping reads independently of detail ordering.
     await this.loadHistory(id, false, true);
-    if (!active() || !ordered()) return;
+    if (!active()) return;
     const history = this.history(id);
     if (history.error)
       throw history.error instanceof Error
@@ -1288,6 +1292,26 @@ export class ChatController {
     agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
     void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
   }
+  async markRead(id: string): Promise<ConversationDetail> {
+    const active = this.lifetime(),
+      commandVersion = this.commandVersions.get(id),
+      receiptVersion = (this.receiptVersions.get(id) ?? 0) + 1;
+    // Detail reads must not suppress the read transition needed by a viewed conversation.
+    this.receiptVersions.set(id, receiptVersion);
+    this.nextDetailVersion(id);
+    const detail = await this.api.markRead(id);
+    if (
+      active() &&
+      this.commandVersions.get(id) === commandVersion &&
+      this.receiptVersions.get(id) === receiptVersion
+    ) {
+      // Read receipts do not change execution or invalidate pending history.
+      this.nextDetailVersion(id);
+      agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
+      void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
+    }
+    return detail;
+  }
   async command<T>(
     id: string,
     request: () => Promise<T>,
@@ -1347,6 +1371,7 @@ export class ChatController {
     this.loads.clear();
     this.refreshAgain.clear();
     this.commandVersions.clear();
+    this.receiptVersions.clear();
     this.stopRequests.clear();
     this.approvalRequests.clear();
     this.recoveries.clear();
