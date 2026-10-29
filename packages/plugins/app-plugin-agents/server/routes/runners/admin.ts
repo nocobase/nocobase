@@ -1,3 +1,4 @@
+import { getRequestTranslator } from '@nocobase/i18n/server';
 import { requestToolDetection } from '../../runners/tool-detection.js';
 /**
  * The people-facing runners API, mounted at `/api/agents/runners` beside the runner protocol (`runner.ts`): runners
@@ -99,6 +100,16 @@ export interface AdminAuditLogger {
 export interface AdminRoutesOptions {
   /** Without one, the record goes to the console. */
   readonly logger?: AdminAuditLogger;
+}
+
+function conversationLabel(context: Context): (title: string | null) => string {
+  const t = getRequestTranslator(context, '@nocobase/app-plugin-agents');
+  return (title) =>
+    title === null
+      ? t('runnerConversation.other')
+      : t('runnerConversation.title', {
+          title: title || t('runnerConversation.untitled'),
+        });
 }
 
 /**
@@ -503,6 +514,7 @@ export function createAdminRoutes(
       const runs = await services.runnerView.held(
         runner,
         caller(context).userId,
+        conversationLabel(context),
       );
       const jobs = (
         await services.jobs.list({ runnerId: runner.id, limit: 200 })
@@ -552,6 +564,7 @@ export function createAdminRoutes(
         runner,
         caller(context).userId,
         context.req.valid('query').cursor,
+        conversationLabel(context),
       );
       return context.json(page);
     },

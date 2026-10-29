@@ -20,6 +20,7 @@ import {
   resetApi,
 } from './fake-client.js';
 import { runner } from './fixtures.js';
+import { ChatPanelScope, useChatPanel } from '../../client/chat/provider.js';
 import { renderPage, renderRoute } from './render.js';
 import { RunnersRefresh } from '../../client/components/runners-refresh.js';
 
@@ -559,6 +560,71 @@ describe('runtimes page', () => {
     );
     within(runs).getByText('runs.status.completed');
   });
+
+  it.each([false, true])(
+    'uses the native conversation entry (full page: %s) and leaves other conversations unlinked',
+    async (fullPage) => {
+      api.routes['agents/runners/r1/runs'] = () => ({
+        data: [
+          {
+            id: 'mine',
+            title: 'Coder',
+            subjectLabel: 'Conversation: Release plan',
+            path: '?chat=mine',
+            status: 'completed',
+            startedAt: null,
+            finishedAt: null,
+            createdAt: '2026-10-01T08:00:00Z',
+          },
+          {
+            id: 'other',
+            title: 'Coder',
+            subjectLabel: "Someone else's conversation",
+            path: null,
+            status: 'completed',
+            startedAt: null,
+            finishedAt: null,
+            createdAt: '2026-10-01T08:00:00Z',
+          },
+        ],
+        meta: { nextCursor: null },
+      });
+      function Host() {
+        const panel = useChatPanel();
+        return (
+          <ChatPanelScope
+            value={{
+              ...panel,
+              conversationPath: fullPage ? (id) => `/sessions/${id}` : null,
+            }}
+          >
+            <RuntimesPage />
+          </ChatPanelScope>
+        );
+      }
+      renderPage(<Host />);
+      const sheet = await openSheet();
+      await userEvent.click(
+        within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' }),
+      );
+      const table = await within(sheet).findByTestId('runner-runs');
+      expect(
+        within(table).getByRole('link', { name: 'Conversation: Release plan' }),
+      ).toHaveAttribute(
+        'href',
+        fullPage ? '/sessions/mine' : '/config?chat=mine',
+      );
+      expect(
+        within(table).getByText("Someone else's conversation").closest('a'),
+      ).toBeNull();
+      await userEvent.click(
+        within(table).getByRole('link', { name: 'Conversation: Release plan' }),
+      );
+      await waitFor(() =>
+        expect(screen.queryByTestId('runner-sheet')).toBeNull(),
+      );
+    },
+  );
 
   it('loads the next twenty runs only on request and retains rows when that request fails', async () => {
     runners[0] = { ...runners[0]!, recentRunsCount: 21 };

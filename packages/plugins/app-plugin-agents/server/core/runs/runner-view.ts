@@ -17,6 +17,7 @@ import {
   type RunnerRunsCursor,
   type RunnerWorkTarget,
 } from '../../../shared/runners.js';
+import { CONVERSATION_SUBJECT } from '../../../shared/conversations.js';
 import type { Run } from '../../../shared/runs.js';
 import type { AgentService } from '../agents/agent.service.js';
 import type { TxRunner } from '../../kernel/tx.js';
@@ -116,6 +117,9 @@ export function runnerForViewer(
   };
 }
 
+/** null means inaccessible; an empty title is an owned, untitled conversation. */
+export type ConversationLabel = (title: string | null) => string;
+
 export interface RunnerView {
   recentCount(runnerId: string): Promise<number>;
   /** What each of `runners` takes work for: the agents it may run, by what people configured and what it reported. */
@@ -123,12 +127,17 @@ export interface RunnerView {
     runners: readonly Runner[],
   ): Promise<ReadonlyMap<string, readonly RunnerWorkTarget[]>>;
   /** For a runner's page: the runs it holds now, as `viewerUserId` may see them. */
-  held(runner: Runner, viewerUserId: string): Promise<RunnerHeldItem[]>;
+  held(
+    runner: Runner,
+    viewerUserId: string,
+    conversationLabel: ConversationLabel,
+  ): Promise<RunnerHeldItem[]>;
   /** For a runner's page: its latest runs, newest first, as `viewerUserId` may see them. */
   recent(
     runner: Runner,
     viewerUserId: string,
-    cursor?: RunnerRunsCursor,
+    cursor: RunnerRunsCursor | undefined,
+    conversationLabel: ConversationLabel,
   ): Promise<RunnerRunsPage>;
 }
 
@@ -163,7 +172,10 @@ export function createRunnerView(deps: {
     const labels = new Map<string, string>();
     const byKind = new Map<string, string[]>();
     for (const run of runs)
-      if (pathOf(run, viewerUserId))
+      if (
+        run.subject.kind === CONVERSATION_SUBJECT ||
+        pathOf(run, viewerUserId)
+      )
         byKind.set(run.subject.kind, [
           ...(byKind.get(run.subject.kind) ?? []),
           run.subject.id,
@@ -176,6 +188,26 @@ export function createRunnerView(deps: {
         if (fact.visible) labels.set(`${kind}:${id}`, fact.label);
     }
     return labels;
+  };
+  const subjectView = (
+    run: Run,
+    viewerUserId: string,
+    labels: Map<string, string>,
+    label: ConversationLabel,
+  ) => {
+    const title = labels.get(`${run.subject.kind}:${run.subject.id}`);
+    if (run.subject.kind === CONVERSATION_SUBJECT)
+      return {
+        subjectLabel: label(title ?? null),
+        path:
+          title !== undefined
+            ? `?chat=${encodeURIComponent(run.subject.id)}`
+            : null,
+      };
+    return {
+      subjectLabel: title ?? null,
+      path: pathOf(run, viewerUserId),
+    };
   };
   return {
     async recentCount(runnerId) {
@@ -201,7 +233,7 @@ export function createRunnerView(deps: {
         ]),
       );
     },
-    async held(runner, viewerUserId) {
+    async held(runner, viewerUserId, conversationLabel) {
       const records = await runsRepo(deps.tx.read()).findMany({
         filter: (f) =>
           f.and([
@@ -214,18 +246,16 @@ export function createRunnerView(deps: {
       const runs = records.map(toRun);
       const labels = await subjectLabels(runs, viewerUserId);
       return runs.map((run) => ({
-        subjectLabel:
-          labels.get(`${run.subject.kind}:${run.subject.id}`) ?? null,
+        ...subjectView(run, viewerUserId, labels, conversationLabel),
         failureReason: run.failureReason,
         id: run.id,
         kind: 'run' as const,
         title: names.get(run.agentId) ?? run.agentId,
         status: run.status === 'running' ? 'running' : 'dispatched',
         startedAt: run.startedAt ?? run.dispatchedAt,
-        path: pathOf(run, viewerUserId),
       }));
     },
-    async recent(runner, viewerUserId, cursor) {
+    async recent(runner, viewerUserId, cursor, conversationLabel) {
       const query = deps.tx
         .read()
         .query.selectFrom('agRuns')
@@ -293,8 +323,7 @@ export function createRunnerView(deps: {
       return {
         meta: { nextCursor },
         data: runs.map((run) => ({
-          subjectLabel:
-            labels.get(`${run.subject.kind}:${run.subject.id}`) ?? null,
+          ...subjectView(run, viewerUserId, labels, conversationLabel),
           failureReason: run.failureReason,
           id: run.id,
           title: names.get(run.agentId) ?? run.agentId,
@@ -302,7 +331,6 @@ export function createRunnerView(deps: {
           startedAt: run.startedAt ?? run.dispatchedAt,
           finishedAt: run.finishedAt,
           createdAt: run.createdAt,
-          path: pathOf(run, viewerUserId),
         })),
       };
     },

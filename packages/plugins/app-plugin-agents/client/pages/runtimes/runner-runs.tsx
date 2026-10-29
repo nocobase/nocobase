@@ -2,6 +2,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
+import { useChatPanel } from '../../chat/provider.js';
 import { agentsKeys } from '../../api/keys.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import {
@@ -25,11 +26,14 @@ import {
 } from '../../components/ui/table.js';
 export function RunnerRuns({
   runnerId,
+  onNavigate,
 }: {
   readonly runnerId: string;
+  readonly onNavigate: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
   const api = useAgentsApi();
+  const { conversationPath } = useChatPanel();
   const format = useFormatters();
   const runs = useInfiniteQuery({
     queryKey: agentsKeys.runnerRuns(runnerId),
@@ -83,7 +87,17 @@ export function RunnerRuns({
                   title={run.subjectLabel ?? undefined}
                 >
                   {run.path ? (
-                    <Link to={run.path} className='hover:underline'>
+                    <Link
+                      to={
+                        run.path.startsWith('?chat=') && conversationPath
+                          ? conversationPath(
+                              new URLSearchParams(run.path).get('chat')!,
+                            )
+                          : run.path
+                      }
+                      onClick={onNavigate}
+                      className='hover:underline'
+                    >
                       {run.subjectLabel ?? run.title}
                     </Link>
                   ) : (

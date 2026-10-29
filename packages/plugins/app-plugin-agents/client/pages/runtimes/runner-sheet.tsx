@@ -231,7 +231,7 @@ function RunnerDetail({
           <RunnerWorkspaces runner={runner} />
         </TabsContent>
         <TabsContent value='runs' className='min-h-0 overflow-y-auto p-4'>
-          <RunnerRuns runnerId={runner.id} />
+          <RunnerRuns runnerId={runner.id} onNavigate={onClose} />
         </TabsContent>
         {(editable || runner.canManageTools) &&
         runner.status !== 'revoked' &&

@@ -62,6 +62,11 @@ const frFR: LocaleResource<typeof enUS> = {
       },
     },
   },
+  runnerConversation: {
+    title: 'Conversation : {{title}}',
+    other: 'Conversation de quelqu’un d’autre',
+    untitled: 'Nouvelle conversation',
+  },
 };
 
 export default frFR;

@@ -1203,6 +1203,31 @@ export function createConversationService(
       },
     },
     private: true,
+    path: '?chat={id}',
+    reports: {
+      async describe(conn, userId, ids) {
+        if (ids.length === 0) return new Map();
+        // Match owned(): current ownership, never the historical run identity.
+        const records = await conversationsRepo(conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('userId').eq(userId),
+              f.or(ids.map((id) => f.string('id').eq(id))),
+            ]),
+          select: (s) => s.fields('id', 'title'),
+        });
+        return new Map(
+          records.map((record) => [
+            String(record.id),
+            {
+              label: record.title ?? '',
+              visible: true,
+              group: null,
+            },
+          ]),
+        );
+      },
+    },
     title: { key: 'subjects.conversation', ns: ACCESS_NAMESPACE },
     triggers: CONVERSATION_TRIGGERS,
     // "Preview full prompt": a new conversation of the previewer's, with one message, both made up.
