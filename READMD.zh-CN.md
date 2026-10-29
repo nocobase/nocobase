@@ -28,33 +28,19 @@ NocoBase 是用 AI 持续开发和运行业务系统的开源平台。Agent 写�
 
 ## 快速开始
 
-你可以让 Coding Agent 创建应用，也可以直接在终端执行命令。两种方式使用相同的创建工具。
-
-环境要求：
-
-- Node.js 24 或更高版本
-- pnpm 11
-- Windows 用户请在 WSL 中执行命令
-
-以下示例使用 SQLite，无需单独安装数据库服务。
+需要 Node.js 24+ 和 pnpm 11，Windows 用户请使用 WSL。以下示例使用 SQLite，无需单独安装数据库服务。
 
 ### 使用 Coding Agent
 
-在一个空的项目目录中，开启支持 Skills 的 Coding Agent。
-
-让 Agent 执行以下命令，安装创建应用的 Skill：
+在空目录中开启支持 Skills 的 Coding Agent，安装创建应用的 Skill：
 
 ```bash
 npx skills@latest add nocobase/skills-v3 --skill nocobase-create-app -g
 ```
 
-安装时按提示选择当前使用的 Agent。如果当前会话没有识别到新 Skill，请在同一目录重新开启会话。
+安装时选择当前使用的 Agent；若未识别到新 Skill，重新开启会话。然后发送：
 
-然后发送创建需求：
-
-> 请在当前空目录中创建一个供本地开发使用的 NocoBase 3 应用。使用默认模板和 SQLite，按照 nocobase-create-app Skill 检查环境、创建应用、初始化并检查配置，然后启动应用。完成后告诉我应用地址，以及如何完成首次登录。
-
-Agent 会按照指引完成创建，并说明需要补充的环境准备。
+> 请按照 nocobase-create-app Skill，在当前空目录中创建并启动 NocoBase 3 应用，使用默认模板和 SQLite。
 
 ### 使用终端
 
@@ -68,22 +54,7 @@ pnpm nocobase config check
 pnpm dev
 ```
 
-创建命令会安装依赖。配置初始化命令会生成本地 `config.yml`，并初始化所需的密钥。
-
-`@beta` 标签用于选择 NocoBase 3 的 beta 创建工具和模板。命令前的环境变量允许 pnpm 在本次执行中安装刚发布的版本。
-
-### 打开应用
-
-打开 `pnpm dev` 输出的完整 `Local:` 地址，包括应用路径，并保持终端运行。
-
-如果没有修改初始管理员配置，默认登录信息为：
-
-- **用户名：** `nocobase`
-- **密码：** `admin123`
-
-首次登录后请修改默认密码。
-
-应用创建后，可以让 Coding Agent 读取项目中的 `AGENTS.md` 和 Skills，继续开发业务功能。详细的创建步骤和开发指引，请参阅[文档](https://docs.nocobase.com/)。
+更多创建步骤和开发指引，请参阅[文档](https://docs.nocobase.com/zh-CN/)。
 
 ## NocoBase 生态
 
