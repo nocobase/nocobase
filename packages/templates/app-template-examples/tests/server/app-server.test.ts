@@ -9,8 +9,10 @@ import { structuredExtractionRoutes } from '../../server/routes/structured-extra
 import { aiTranslationRoutes } from '../../server/routes/ai-translation.ts';
 import { knowledgeDirectoryRoutes } from '../../server/routes/knowledge-directory.js';
 import { skillProjectsRoutes } from '../../server/routes/skill-projects.js';
+import { customerContactsRoutes } from '../../server/routes/customer-contacts.js';
 import AIFormFillProvider from '../../server/providers/ai-form-fill.js';
 import KnowledgeChatProvider from '../../server/providers/knowledge-chat.js';
+import CustomerContactsAuthorizationProvider from '../../server/providers/customer-contacts-authorization.js';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -351,12 +353,14 @@ describe('app server', () => {
             route !== structuredExtractionRoutes &&
             route !== knowledgeDirectoryRoutes &&
             route !== skillProjectsRoutes &&
+            route !== customerContactsRoutes &&
             route !== aiTranslationRoutes,
         ),
         serviceProviders: [
           ...appRuntime.serviceProviders.filter(
             (provider) =>
               provider !== AIFormFillProvider &&
+              provider !== CustomerContactsAuthorizationProvider &&
               provider !== KnowledgeChatProvider,
           ),
           TestRuntimeApplicationProvider,

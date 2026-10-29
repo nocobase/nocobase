@@ -10,7 +10,11 @@ import {
 } from '@nocobase/db';
 
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
-import type { Issue, IssueProject } from '../../../shared/issues.js';
+import type {
+  Issue,
+  IssueProject,
+  IssueSummary,
+} from '../../../shared/issues.js';
 import type { Label } from '../../../shared/labels.js';
 import { oneOf } from '../../kernel/db.js';
 import { conflict } from '../../kernel/errors.js';
@@ -129,6 +133,18 @@ export function toIssue(record: IssueRecord): Issue {
         ? { type: executorType, id: executorId }
         : null,
   };
+}
+
+/** A bounded batch of card fields, using the same visibility predicate as issue lists. */
+export async function findIssueSummaries(
+  conn: DatabaseConnection,
+  filter: RepositoryFilter<IssueRecord>,
+): Promise<IssueSummary[]> {
+  return issues(conn).findMany({
+    filter,
+    select: (select) => select.fields('id', 'identifier', 'title', 'statusKey'),
+    limit: 100,
+  });
 }
 
 /** Complete authorized projections without owner, executor, project or label hydration. */

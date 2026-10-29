@@ -13,6 +13,7 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 
 import type {
   AgentView,
@@ -41,6 +42,18 @@ const { default: AgentsPage } =
 let agents: AgentView[] = [];
 let availableGroups: AvailableModelGroup[] = [];
 let availableRows: Record<string, AvailableModel[]> = {};
+
+async function chooseTemplate(container: HTMLElement, template: string) {
+  const user = userEvent.setup();
+  await user.click(
+    within(container).getByRole('button', { name: 'goodAtTemplates.fill' }),
+  );
+  await user.click(
+    await screen.findByRole('menuitem', {
+      name: `goodAtTemplates.${template}`,
+    }),
+  );
+}
 
 describe('the Agent page', () => {
   beforeEach(() => {
@@ -209,6 +222,126 @@ describe('the Agent page', () => {
         },
       ]),
     );
+  });
+
+  it('prefills an out-of-catalog model and replaces or undoes its draft without saving', async () => {
+    availableRows.claude = [
+      {
+        ...availableRows.claude![0]!,
+        model: 'claude-haiku-5-5',
+        suggestion: null,
+      },
+    ];
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agents-available-open'));
+    const drawer = await screen.findByTestId('available-models-drawer');
+    fireEvent.click(
+      await within(drawer).findByTestId(
+        'available-model-create-claude-claude-haiku-5-5',
+      ),
+    );
+    const input = await within(drawer).findByTestId(
+      'available-model-good-at-claude-claude-haiku-5-5',
+    );
+    expect(input).toHaveValue('modelSuggestions.small');
+    await chooseTemplate(drawer, 'routine');
+    expect(input).toHaveValue('modelSuggestions.routine');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(callsTo('POST', 'agents/runnerAgents')).toHaveLength(0);
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'goodAtTemplates.undo' }),
+    );
+    expect(input).toHaveValue('modelSuggestions.small');
+    await chooseTemplate(drawer, 'review');
+    expect(input).toHaveValue('modelSuggestions.review');
+    fireEvent.change(input, { target: { value: 'Edited template' } });
+    fireEvent.click(
+      within(drawer).getByTestId('available-models-confirm-submit'),
+    );
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/runnerAgents')[0]?.json).toMatchObject({
+        model: 'claude-haiku-5-5',
+        description: 'Edited template',
+      }),
+    );
+  });
+
+  it('restores the exact pre-replacement text and keeps only one undo step while editing', async () => {
+    const original = '  Original description\n原文  ';
+    agents[0] = { ...agents[0]!, description: original };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    const input = within(dialog).getByTestId('agent-good-at');
+    expect(input).toHaveValue(original);
+    await chooseTemplate(dialog, 'large');
+    expect(input).toHaveValue('modelSuggestions.large');
+    fireEvent.change(input, { target: { value: 'Edited after selection' } });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'goodAtTemplates.undo' }),
+    );
+    expect(input).toHaveValue(original);
+    expect(callsTo('PATCH', 'agents/sonnet')).toHaveLength(0);
+    await chooseTemplate(dialog, 'routine');
+    await chooseTemplate(dialog, 'large');
+    expect(input).toHaveValue('modelSuggestions.large');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'goodAtTemplates.undo' }),
+    );
+    expect(input).toHaveValue('modelSuggestions.routine');
+    expect(
+      within(dialog).queryByRole('button', { name: 'goodAtTemplates.undo' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByTestId('agent-dialog-save'));
+    await waitFor(() =>
+      expect(callsTo('PATCH', 'agents/sonnet')[0]?.json).toMatchObject({
+        description: 'modelSuggestions.routine',
+      }),
+    );
+  });
+
+  it('keeps an existing empty description empty and lets a template fill it immediately', async () => {
+    agents[0] = { ...agents[0]!, description: null };
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue('');
+    await chooseTemplate(dialog, 'explanation');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue(
+      'modelSuggestions.explanation',
+    );
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'goodAtTemplates.undo' }),
+    );
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue('');
+  });
+
+  it('fills and undoes a template using the keyboard without opening another dialog', async () => {
+    const user = userEvent.setup();
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+    const dialog = await screen.findByTestId('agent-dialog');
+    const trigger = within(dialog).getByRole('button', {
+      name: 'goodAtTemplates.fill',
+    });
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await screen.findByRole('menuitem', { name: 'goodAtTemplates.design' });
+    await user.keyboard('{Enter}');
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue(
+      'modelSuggestions.design',
+    );
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    const undo = within(dialog).getByRole('button', {
+      name: 'goodAtTemplates.undo',
+    });
+    undo.focus();
+    await user.keyboard('{Enter}');
+    expect(within(dialog).getByTestId('agent-good-at')).toHaveValue(
+      'Small changes',
+    );
+    expect(trigger).toHaveFocus();
   });
 
   it('shows a group’s setup guidance even when it already has a model with an agent', async () => {
@@ -469,7 +602,7 @@ describe('the Agent page', () => {
       ...availableRows.claude!,
       {
         tool: 'claude',
-        model: 'claude-fable-5-1',
+        model: 'unknown-model',
         agentId: null,
         status: null,
         recommended: false,
@@ -486,15 +619,15 @@ describe('the Agent page', () => {
     );
     fireEvent.click(within(opus).getByRole('checkbox'));
     const fable = await within(drawer).findByTestId(
-      'available-model-claude-claude-fable-5-1',
+      'available-model-claude-unknown-model',
     );
     fireEvent.click(within(fable).getByRole('checkbox'));
     fireEvent.click(
       within(drawer).getByTestId('available-models-add-selected'),
     );
-    // Fable has no catalog suggestion, so the confirm step leaves it for the admin to fill in.
+    // Unknown families stay empty until the admin writes a description or chooses a template.
     const fableGoodAt = await within(drawer).findByTestId(
-      'available-model-good-at-claude-claude-fable-5-1',
+      'available-model-good-at-claude-unknown-model',
     );
     expect(fableGoodAt).toHaveValue('');
     expect(fableGoodAt).toHaveAttribute('aria-invalid', 'true');
@@ -522,10 +655,10 @@ describe('the Agent page', () => {
       (call) => call.json as { model: string; description: string },
     );
     expect(new Set(bodies.map((body) => body.model))).toEqual(
-      new Set(['claude-opus-5-5', 'claude-fable-5-1']),
+      new Set(['claude-opus-5-5', 'unknown-model']),
     );
     expect(
-      bodies.find((body) => body.model === 'claude-fable-5-1')?.description,
+      bodies.find((body) => body.model === 'unknown-model')?.description,
     ).toBe('Fable good at');
   });
 

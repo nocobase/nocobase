@@ -1,0 +1,75 @@
+name: V3 V2 Workflow Entries
+
+# v3-develop carries one thin entry per v1/v2 manual (workflow_dispatch) workflow on main, so that those workflows stay
+# runnable once v3-develop becomes the default branch. This check compares the entries with main's workflows and fails
+# when main added, removed or renamed a manual workflow, or changed its name or inputs, without its entry following. See
+# .agents/rules/workflows-and-release.md ("V2 workflow entries on v3-develop").
+#
+# It has no entry on main (like v3-pr-description.yml): it only runs on pull requests, on a schedule and on demand.
+# On a pull request a mismatch with main is only a warning, because an entry may legitimately land before the change on
+# main (update the entry first, then main); the schedule and manual runs treat it as an error so drift cannot linger.
+# Structural problems in an entry are errors everywhere. The script is copied out of the checkout and only `yaml` is
+# installed next to it, so no full pnpm install is needed.
+
+on:
+  pull_request:
+    branches:
+      - v3-develop
+      - v3-main
+      - '*/v3-*'
+    paths:
+      - '.github/workflows/*.yml'
+      - '!.github/workflows/v3-*.yml'
+      - '.github/workflows/v3-v2-workflow-entries.yml'
+      - 'scripts/check-v2-workflow-entries.mjs'
+  # A schedule only fires on the default branch. It starts working once v3-develop replaces main as the default branch.
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v3-v2-workflow-entries-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: V2 workflow entries
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the entries
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out main's workflows
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+          persist-credentials: false
+          sparse-checkout: .github/workflows
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Keep the yaml version in step with the `yaml` catalog entry in pnpm-workspace.yaml.
+      - name: Install yaml next to the script
+        run: |
+          mkdir -p "$RUNNER_TEMP/check"
+          cp scripts/check-v2-workflow-entries.mjs "$RUNNER_TEMP/check/"
+          npm install --prefix "$RUNNER_TEMP/check" --no-save --no-package-lock --no-audit --no-fund yaml@2.9.0
+
+      - name: Compare the entries with main
+        env:
+          MISMATCH: ${{ github.event_name == 'pull_request' && 'warn' || 'error' }}
+        run: >
+          node "$RUNNER_TEMP/check/check-v2-workflow-entries.mjs"
+          --main main/.github/workflows
+          --entries .github/workflows
+          --mismatch "$MISMATCH"
