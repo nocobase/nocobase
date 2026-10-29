@@ -812,6 +812,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       version: 'Executor {{version}}',
       runs: 'Execuções recentes',
       runsEmpty: 'Ainda não há corridas.',
+      runsShown: 'Exibindo {{count}} execuções',
+      runsShownAll: 'Exibindo todas as {{count}} execuções',
       runsFailed: 'Não foi possível carregar suas execuções.',
       readOnly: 'Somente seu proprietário pode alterá-lo.',
       owner: 'Proprietário {{name}}',

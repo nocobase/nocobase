@@ -212,6 +212,8 @@ const runtimesEnUS = {
       version: 'Runner {{version}}',
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',
+      runsShown: 'Showing {{count}} runs',
+      runsShownAll: 'Showing all {{count}} runs',
       runsFailed: 'Could not load its runs.',
       readOnly: 'Only its owner can change it.',
       owner: 'Owner {{name}}',

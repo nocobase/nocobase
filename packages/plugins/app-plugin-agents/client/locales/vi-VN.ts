@@ -787,6 +787,8 @@ const viVN: LocaleResource<typeof enUS> = {
       version: 'Á quân {{version}}',
       runs: 'Các lần chạy gần đây',
       runsEmpty: 'Chưa có lượt chạy nào.',
+      runsShown: 'Đã hiển thị {{count}} lượt chạy',
+      runsShownAll: 'Đã hiển thị tất cả {{count}} lượt chạy',
       runsFailed: 'Không thể tải các lượt chạy của nó.',
       readOnly: 'Chỉ có chủ nhân của nó mới có thể thay đổi nó.',
       owner: 'Chủ sở hữu {{name}}',

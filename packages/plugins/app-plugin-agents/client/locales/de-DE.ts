@@ -814,6 +814,8 @@ const deDE: LocaleResource<typeof enUS> = {
       version: 'Runner {{version}}',
       runs: 'Letzte Läufe',
       runsEmpty: 'Noch keine Läufe.',
+      runsShown: '{{count}} Ausführungen angezeigt',
+      runsShownAll: 'Alle {{count}} Ausführungen angezeigt',
       runsFailed: 'Die Läufe konnten nicht geladen werden.',
       readOnly: 'Nur sein Besitzer kann es ändern.',
       owner: 'Besitzer {{name}}',

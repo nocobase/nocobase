@@ -655,6 +655,13 @@ describe('runtimes page', () => {
     await userEvent.click(tab);
     const table = await within(sheet).findByTestId('runner-runs');
     expect(within(table).getAllByRole('row')).toHaveLength(21);
+    const more = within(table).getByRole('button', { name: 'agents.loadMore' });
+    expect(more.parentElement?.closest('.border')).toBeNull();
+    expect(more.parentElement).toHaveClass('mt-3');
+    expect(more).toHaveClass('h-7');
+    expect(
+      within(table).getByText('runtimes.detail.runsShown(count=20)'),
+    ).toBeInTheDocument();
     expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(1);
     await userEvent.click(
       within(table).getByRole('button', { name: 'agents.loadMore' }),
@@ -668,11 +675,60 @@ describe('runtimes page', () => {
     await within(table).findByText('last-run', { selector: 'td.max-w-44' });
     expect(within(table).getAllByRole('row')).toHaveLength(22);
     expect(
+      within(table).getByText('runtimes.detail.runsShownAll(count=21)'),
+    ).toBeInTheDocument();
+    expect(
       within(table).queryByRole('button', { name: 'agents.loadMore' }),
     ).toBeNull();
     expect(callsTo('GET', 'agents/runners/r1/runs').at(-1)?.query.cursor).toBe(
       'older',
     );
+  });
+
+  it('shows dates outside today in the browser timezone, including the created-time fallback', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 29, 0, 5));
+    try {
+      api.routes['agents/runners/r1/runs'] = () => ({
+        data: [
+          {
+            id: 'today',
+            title: 'Today',
+            status: 'completed',
+            startedAt: new Date(2026, 9, 29, 0, 2).toISOString(),
+            createdAt: new Date(2026, 9, 28, 23, 58).toISOString(),
+          },
+          {
+            id: 'yesterday',
+            title: 'Yesterday',
+            status: 'completed',
+            startedAt: new Date(2026, 9, 28, 23, 2).toISOString(),
+            createdAt: new Date(2026, 9, 28, 23, 2).toISOString(),
+          },
+          {
+            id: 'fallback',
+            title: 'No start',
+            status: 'completed',
+            startedAt: null,
+            createdAt: new Date(2026, 9, 28, 22, 2).toISOString(),
+          },
+        ],
+        meta: { nextCursor: null },
+      });
+      renderPage(<RuntimesPage />);
+      const sheet = await openSheet();
+      await userEvent.click(
+        within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' }),
+      );
+      const table = await within(sheet).findByTestId('runner-runs');
+      expect(within(table).getByText('00:02')).toBeInTheDocument();
+      expect(within(table).getByText('Oct 28 23:02')).toHaveClass(
+        'whitespace-nowrap',
+      );
+      expect(within(table).getByText('Oct 28 22:02')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('opens the same settings from the row’s Edit item', async () => {

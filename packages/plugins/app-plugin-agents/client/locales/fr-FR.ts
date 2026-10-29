@@ -816,6 +816,8 @@ const frFR: LocaleResource<typeof enUS> = {
       version: 'Couloir {{version}}',
       runs: 'Exécutions récentes',
       runsEmpty: 'Aucune course pour l’instant.',
+      runsShown: '{{count}} exécutions affichées',
+      runsShownAll: 'Toutes les {{count}} exécutions sont affichées',
       runsFailed: 'Impossible de charger ses exécutions.',
       readOnly: 'Seul son propriétaire peut le modifier.',
       owner: 'Propriétaire {{name}}',

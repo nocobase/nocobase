@@ -786,6 +786,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       version: 'ランナー {{version}}',
       runs: '最近の走行',
       runsEmpty: 'まだ実行はありません。',
+      runsShown: '{{count}} 件を表示中',
+      runsShownAll: '全 {{count}} 件を表示中',
       runsFailed: '実行をロードできませんでした。',
       readOnly: '所有者のみが変更できます。',
       owner: 'オーナー {{name}}',

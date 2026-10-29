@@ -750,6 +750,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       version: '執行器 {{version}}',
       runs: '最近執行',
       runsEmpty: '尚未執行。',
+      runsShown: '已顯示 {{count}} 條',
+      runsShownAll: '已顯示全部 {{count}} 條',
       runsFailed: '無法載入其執行。',
       readOnly: '只有其所有者才能更改它。',
       owner: '所有者 {{name}}',

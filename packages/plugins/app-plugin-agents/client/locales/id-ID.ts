@@ -790,6 +790,8 @@ const idID: LocaleResource<typeof enUS> = {
       version: 'Runner {{version}}',
       runs: 'Berjalan baru-baru ini',
       runsEmpty: 'Belum berjalan.',
+      runsShown: 'Menampilkan {{count}} proses',
+      runsShownAll: 'Menampilkan semua {{count}} proses',
       runsFailed: 'Tidak dapat memuat jalannya.',
       readOnly: 'Hanya pemiliknya yang dapat mengubahnya.',
       owner: 'Pemilik {{name}}',

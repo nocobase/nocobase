@@ -821,6 +821,8 @@ const esES: LocaleResource<typeof enUS> = {
       version: 'Ejecutor {{version}}',
       runs: 'Ejecuciones recientes',
       runsEmpty: 'Aún no hay ejecuciones.',
+      runsShown: 'Mostrando {{count}} ejecuciones',
+      runsShownAll: 'Mostrando las {{count}} ejecuciones',
       runsFailed: 'No se pudieron cargar sus ejecuciones.',
       readOnly: 'Sólo su propietario puede cambiarlo.',
       owner: 'Propietario {{name}}',
