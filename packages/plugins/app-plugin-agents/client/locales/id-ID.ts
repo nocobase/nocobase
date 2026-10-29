@@ -52,6 +52,8 @@ const idID: LocaleResource<typeof enUS> = {
     title: 'Buang perubahan yang belum disimpan?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'Runner ini tidak dapat menjalankan Agent yang dipilih. Ganti runner atau mulai percakapan baru.',
     CONFLICT: 'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',
     REVISION_CONFLICT:
       'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',

@@ -54,6 +54,8 @@ const pages = {
     title: 'Discard unsaved changes?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'This runner cannot run the selected Agent. Switch runner or start a new conversation.',
     CONFLICT: 'It changed in the meantime. Reload and try again.',
     REVISION_CONFLICT: 'It changed in the meantime. Reload and try again.',
     FORBIDDEN: 'You are not allowed to do this.',

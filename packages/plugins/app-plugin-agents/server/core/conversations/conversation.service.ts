@@ -80,6 +80,7 @@ import { agentNamesOf } from '../agents/agent.store.js';
 import type { RunnerService } from '../../runners/index.js';
 import {
   eventsAfter,
+  fitsActor,
   hasSession,
   lastSummary,
   openRunsOnEach,
@@ -873,6 +874,17 @@ export function createConversationService(
     const binding = runnerBinding(record.metadata);
     if (binding && !idleOnly)
       throw conflict('Start a new conversation to choose another agent.');
+    if (record.projectId && record.runnerId) {
+      const [runner] = await deps.runners.all(unit.conn, [record.runnerId]);
+      if (
+        !runner ||
+        !fitsActor(runner, agent, record.userId, [], clock.now().getTime())
+      )
+        throw conflict(
+          'This runner cannot run the selected Agent. Switch runner or start a new conversation.',
+          { reason: 'boundRunnerIncompatible' },
+        );
+    }
     const withdrawn = idleOnly
       ? []
       : await deps.runs.withdrawQueued(

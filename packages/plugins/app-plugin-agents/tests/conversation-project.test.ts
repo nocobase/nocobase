@@ -1,5 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { createHarness, claim, type Harness } from './harness.js';
+import {
+  createHarness,
+  claim,
+  type Harness,
+  type RegisteredRunner,
+} from './harness.js';
 
 let h: Harness;
 afterEach(async () => {
@@ -164,3 +169,153 @@ it('accepts project selection through native Runner HTTP creation and protects p
     ).status,
   ).toBe(409);
 });
+
+async function bindProject(
+  agentId: string,
+  runner: RegisteredRunner,
+  nativeSend = false,
+) {
+  const service = h.services.conversations;
+  const native = nativeSend
+    ? await h.services.onlineAgent.realtime(
+        {
+          user: { id: 'alice' },
+          credentials: { kind: 'test-session', userId: 'alice' },
+          authorization: {
+            identity: { principal: { type: 'user', id: 'alice' } },
+          } as import('@nocobase/authorization/core').AuthorizationContext,
+        },
+        { agentId, projectId: 'project' },
+      )
+    : null;
+  const chat = native
+    ? await service.get('alice', native.sessionId)
+    : await service.create('alice', { agentId, projectId: 'project' });
+  if (native) await native.send([{ role: 'user', content: 'Read code' }]);
+  else await service.send('alice', chat.id, { content: 'Read code' });
+  const [first] = await claim(h, runner);
+  const post = (action: string, body: unknown) =>
+    h.request('POST', `/agents/runners/runs/${first.run.id}/${action}`, {
+      runnerKey: runner.key,
+      body,
+    });
+  expect(
+    (
+      await post('start', {
+        workDir: '/work/chat',
+        adapter: { kind: 'claude' },
+        acceptsInput: true,
+      })
+    ).status,
+  ).toBe(200);
+  const inputs = (await h.services.runs.detail(first.run.id)).inputs;
+  expect(
+    (
+      await post('complete', {
+        summary: 'Read project',
+        handledInputIds: inputs.map((input) => input.id),
+      })
+    ).status,
+  ).toBe(200);
+  if (native)
+    await vi.waitFor(async () =>
+      expect((await service.get('alice', chat.id)).execution?.status).toBe(
+        'idle',
+      ),
+    );
+  return { id: chat.id, native };
+}
+
+it.each(['switchAgent', 'send', 'fallback', 'restore'] as const)(
+  '%s rejects an incompatible bound runner before changing any conversation state',
+  async (operation) => {
+    const { agentId, runner } = await fixture();
+    const service = h.services.conversations;
+    const target = await h.createAgent({
+      source: 'runner',
+      modelEntries: [{ tool: 'codex', model: null }],
+    });
+    // The new Agent is available elsewhere; retaining the claude-only runner would strand its work.
+    await h.registerRunner({ tools: [{ kind: 'codex', authenticated: true }] });
+    const { id, native } = await bindProject(
+      agentId,
+      runner,
+      operation === 'send',
+    );
+    if (operation === 'fallback')
+      await h.services.chat.updateSettings('alice', { defaultAgentId: target });
+    if (operation === 'restore')
+      await h.database
+        .connection()
+        .repository('agConversations')
+        .updateMany({
+          filter: { id },
+          values: { fallbackFromAgentId: target },
+        });
+    const before = await service.get('alice', id);
+    const messages = await service.messages('alice', id, {});
+    const runs = await h.services.runs.list({ subjectKind: 'conversation' });
+    const result =
+      operation === 'switchAgent'
+        ? service.switchAgent('alice', id, target)
+        : operation === 'send'
+          ? native!.send([{ role: 'user', content: 'Continue' }], {
+              agentId: target,
+            })
+          : service[operation]('alice', id);
+    await expect(result).rejects.toMatchObject({
+      code: 'CONFLICT',
+      details: { reason: 'boundRunnerIncompatible' },
+    });
+    expect(await service.get('alice', id)).toMatchObject({
+      agent: before.agent,
+      runner: before.runner,
+      fallbackFrom: before.fallbackFrom,
+      lastSeq: before.lastSeq,
+    });
+    expect(await service.messages('alice', id, {})).toEqual(messages);
+    expect(await h.services.runs.list({ subjectKind: 'conversation' })).toEqual(
+      runs,
+    );
+  },
+);
+
+it.each(['switchAgent', 'send', 'fallback', 'restore'] as const)(
+  '%s keeps a compatible project runner and subsequent work can be claimed',
+  async (operation) => {
+    const { agentId, runner } = await fixture();
+    const service = h.services.conversations;
+    const target = await h.createAgent({ source: 'runner' });
+    const { id, native } = await bindProject(
+      agentId,
+      runner,
+      operation === 'send',
+    );
+    if (operation === 'fallback')
+      await h.services.chat.updateSettings('alice', { defaultAgentId: target });
+    if (operation === 'restore')
+      await h.database
+        .connection()
+        .repository('agConversations')
+        .updateMany({
+          filter: { id },
+          values: { fallbackFromAgentId: target },
+        });
+    if (operation === 'switchAgent')
+      await service.switchAgent('alice', id, target);
+    else if (operation === 'send')
+      await native!.send([{ role: 'user', content: 'Continue' }], {
+        agentId: target,
+      });
+    else await service[operation]('alice', id);
+    expect(await service.get('alice', id)).toMatchObject({
+      agent: { id: target },
+      runner: { id: runner.runnerId },
+    });
+    if (operation !== 'send')
+      await service.send('alice', id, { content: 'Continue' });
+    const [next] = await claim(h, runner);
+    expect(next.agent.id).toBe(target);
+    expect(next.workspace.dirs).toMatchObject([{ branch: 'chat/test' }]);
+  },
+);
