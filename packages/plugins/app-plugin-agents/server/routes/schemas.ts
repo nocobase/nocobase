@@ -1742,6 +1742,7 @@ export const ConversationSummarySchema: z.ZodType<ConversationSummary> =
   conversationSummaryObject.meta({ ref: 'AgentsConversationSummary' });
 
 const conversationDetailObject = conversationSummaryObject.extend({
+  effort: z.string().nullable().optional(),
   availability,
   canFallback: z.boolean(),
   canRestore: z.boolean(),
@@ -1911,6 +1912,8 @@ export const SendMessageResultSchema: z.ZodType<SendMessageResult> = z
   .meta({ ref: 'AgentsSendMessageResult' });
 
 export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
+  efforts: z.array(z.string()).optional(),
+  effort: z.string().nullable().optional(),
   runnerNames: z
     .array(z.string())
     .describe('Eligible runtime display names visible to this caller.'),

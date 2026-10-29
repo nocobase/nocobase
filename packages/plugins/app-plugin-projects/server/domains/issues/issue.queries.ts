@@ -18,6 +18,7 @@ import {
   ISSUE_PAGE_LIMIT,
   type ActivityPage,
   type Issue,
+  type IssueSummary,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -25,7 +26,7 @@ import {
   type IssuePage,
   type StatusDefinition,
 } from '../../../shared/issues.js';
-import type { Viewer } from '../../access/viewer.js';
+import { requireAction, type Viewer } from '../../access/viewer.js';
 import {
   AGENT_VIA_KIND,
   readActivities,
@@ -42,6 +43,7 @@ import {
   visibleIssueIds,
 } from './issue.access.js';
 import {
+  findIssueSummaries,
   findIssue,
   findIssueRefs,
   findIssueRow,
@@ -58,6 +60,8 @@ import { FIXED_STATUSES } from '../../../shared/statuses.js';
 import { oneOf } from '../../kernel/db.js';
 
 export interface IssueQueries {
+  /** At most 100 IDs or identifiers, filtered by current visibility in one read. */
+  summaries(viewer: Viewer, refs: readonly string[]): Promise<IssueSummary[]>;
   /** Reauthorize explicit ids without hydrating issue rows, children or dependency counts. */
   visibleIds(
     viewer: Viewer,
@@ -421,6 +425,15 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
   }
 
   return {
+    summaries: (viewer, refs) => {
+      requireAction(viewer, 'pm.issues', 'view', 'You may not view issues.');
+      return findIssueSummaries(deps.tx.read(), (f) =>
+        f.and([
+          visibleIssues(f, viewer),
+          f.or([oneOf(f, 'id', refs), oneOf(f, 'identifier', refs)]),
+        ]),
+      );
+    },
     visibleIds: (viewer, ids) => visibleIssueIds(deps.tx.read(), viewer, ids),
     hierarchySource: (viewer, query) =>
       hierarchySource(deps.tx.read(), viewer, query),

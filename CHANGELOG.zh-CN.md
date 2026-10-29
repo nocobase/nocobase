@@ -1,8 +1,8 @@
 # 更新日志
 
-本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`release-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
+本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
-## [release-beta/2026-10-28.2](https://github.com/nocobase/nocobase/releases/tag/release-beta%2F2026-10-28.2)
+## [nocobase-v3-beta/2026-10-28.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-28.2)
 
 ### 🎉 新特性
 

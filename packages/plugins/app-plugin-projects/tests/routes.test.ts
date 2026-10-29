@@ -165,6 +165,36 @@ const call = (path: string, init: RequestInit & { role?: string } = {}) => {
 };
 
 describe('the /api/projects guard', () => {
+  it('authenticates and bounds summary batches without disclosing invisible references', async () => {
+    const admin = h.viewer('alice', 'admin');
+    const visible = await h.services.issues.create(admin, { title: 'Card' });
+    const path = `/issues/summaries?refs=${visible.id},${visible.identifier},missing`;
+    expect((await call(path)).status).toBe(401);
+    expect((await call(path, { role: 'none' })).status).toBe(403);
+    const response = await call(path, { role: 'admin' });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: [
+        {
+          id: visible.id,
+          identifier: visible.identifier,
+          title: 'Card',
+          statusKey: 'backlog',
+        },
+      ],
+      meta: { total: 1 },
+    });
+    for (const refs of [
+      '',
+      'a,,b',
+      Array.from({ length: 101 }, (_, at) => `i${at}`).join(','),
+    ])
+      expect(
+        (await call(`/issues/summaries?refs=${refs}`, { role: 'admin' }))
+          .status,
+      ).toBe(400);
+  });
+
   it.each([false, true])(
     'updates structured progress through PATCH (delegated=%s)',
     async (delegated) => {
