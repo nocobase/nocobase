@@ -14,10 +14,6 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
-    },
-    "./backend": {
-      "types": "./src/backend.ts",
-      "import": "./src/backend.ts"
     }
   },
   "files": [
@@ -28,10 +24,6 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
-      },
-      "./backend": {
-        "types": "./dist/backend.d.ts",
-        "import": "./dist/backend.js"
       }
     },
     "access": "public"

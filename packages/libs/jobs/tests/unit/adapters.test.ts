@@ -11,7 +11,7 @@ import type {
   JobsAdapterConfig,
   JobsImplementation,
   ResolvedJobsConfig,
-} from '../../src/backend.js';
+} from '../../src/index.js';
 
 const dependencies = { appName: 'test', storagePath: '/tmp/jobs-registry' };
 function implementation(): JobsImplementation<ResolvedJobsConfig> {
