@@ -1321,3 +1321,55 @@ describe('static module dependencies', () => {
     });
   });
 });
+
+it('discovers form requests after repeated UI helpers without expanding invocation contexts', async () => {
+  // A bounded literal helper repeated in a page used to spend the endpoint call budget before reaching its form.
+  const helper = `function label(key){const palette=[${Array.from({ length: 3000 }, (_, i) => i % 10).join(',')}];return key;}`;
+  const labels = Array.from(
+    { length: 36 },
+    (_, i) => `label('label.${i}');`,
+  ).join('');
+  const root = await fixture({
+    'client/routes.ts': `export default [{name:'certifications',componentLoader:()=>import('./page.js')}];`,
+    'client/page.tsx': `${helper}
+import {useApiClient} from '@nocobase/app-client';
+function Form({certification,onSaved}){const api=useApiClient();async function submit(event){event.preventDefault();const json={name:'Example'};const result=certification?await api.request({path:\`talent/certifications/\${encodeURIComponent(certification.id)}\`,method:'PATCH',json}):await api.request({path:'talent/certifications',method:'POST',json});onSaved(result.data.id);}return <form onSubmit={event=>void submit(event)}/>;}
+export default function Page(){${labels}return <Form/>;}`,
+    'server/routes/index.ts': `export default [];`,
+  });
+  const result = await collectModuleSources(root);
+  expect(result.routes[0]?.apiEvidence).toBeUndefined();
+  // Verify discovery directly so missing backend declarations cannot hide a request regression.
+  const ast = ts.createSourceFile(
+    'page.tsx',
+    await readFile(path.join(root, 'client/page.tsx'), 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const { SourceEvidence } = await import('../../server/source-evidence.js');
+  const { pageRequests } = await import('../../server/request-evidence.js');
+  const analysis = new SourceEvidence([{ file: 'page.tsx', ast }], new Map());
+  const selected = analysis.collect('page.tsx');
+  expect(
+    pageRequests(
+      [...selected.nodes.values()].map((nodes) => ({ nodes })),
+      analysis,
+    ),
+  ).toEqual(
+    expect.arrayContaining([
+      { method: 'PATCH', path: 'talent/certifications/:dynamic' },
+      { method: 'POST', path: 'talent/certifications' },
+    ]),
+  );
+});
+
+it('keeps ordinary translation data spreads complete during page discovery', async () => {
+  const root = await fixture({
+    'client/routes.ts': `export default [{name:'items',componentLoader:()=>import('./page.js')}];`,
+    'client/page.tsx': `import {useApiClient} from '@nocobase/app-client';import {useTranslation} from 'react-i18next';export default function Page(){const {t}=useTranslation();const values={employee:'Example'};const api=useApiClient();t('errors.generic',{defaultValue:'',...values});return api.request({path:'items',method:'GET'});}`,
+    'server/routes/index.ts': `export default [];`,
+  });
+  const result = await collectModuleSources(root);
+  expect(result.routes[0]?.complete).toBe(true);
+});

@@ -19,17 +19,19 @@ const MAX_CALL_DEPTH = 32;
 
 /** Resolves bounded local values and returns without loading or executing application code. */
 export class StaticValues {
-  private readonly captures: Map<ts.SignatureDeclaration, Bindings>;
+  // Bindings of the invocation that produced a returned function or object literal, keyed by that node.
+  private readonly captures: Map<ts.Node, Bindings>;
   private readonly activeCalls: Set<ts.CallExpression>;
 
   public constructor(
     private readonly analysis: SourceEvidence,
     private readonly bindings: Bindings = new Map(),
-    captures?: Map<ts.SignatureDeclaration, Bindings>,
+    captures?: Map<ts.Node, Bindings>,
     activeCalls?: Set<ts.CallExpression>,
     private readonly expandServices = true,
+    private readonly awaitReturns = false,
   ) {
-    this.captures = captures ?? new Map<ts.SignatureDeclaration, Bindings>();
+    this.captures = captures ?? new Map<ts.Node, Bindings>();
     this.activeCalls = activeCalls ?? new Set();
   }
 
@@ -41,6 +43,13 @@ export class StaticValues {
     seen = new Set(seen).add(node);
     const next = (value: ts.Node): readonly ts.Node[] =>
       this.values(value, seen);
+    if (node.kind === ts.SyntaxKind.ThisKeyword) {
+      let owner: ts.Node | undefined = node.parent;
+      while (owner && !ts.isClassLike(owner)) owner = owner.parent;
+      return owner && ts.isClassLike(owner)
+        ? (this.bindings.get(owner) ?? [])
+        : [];
+    }
     if (ts.isExportAssignment(node)) return next(node.expression);
     if (ts.isIdentifier(node))
       return this.analysis
@@ -122,6 +131,12 @@ export class StaticValues {
           .slice(0, MAX_VALUES);
       return [];
     }
+    if (ts.isAwaitExpression(node)) {
+      const target = this.expressionCall(node.expression);
+      if (!target) return next(node.expression);
+      const flow = this.callFlow(target.call, new Set(seen), 0, true);
+      return flow.unknown ? [] : flow.values;
+    }
     if (ts.isCallExpression(node)) {
       if (this.activeCalls.has(node) || this.activeCalls.size >= MAX_CALL_DEPTH)
         return [];
@@ -132,6 +147,7 @@ export class StaticValues {
         this.captures,
         nested,
         this.expandServices,
+        this.awaitReturns,
       );
       const service = this.expandServices
         ? evaluator.serviceValues(node)
@@ -141,7 +157,11 @@ export class StaticValues {
       if (!invocations.length) return [node];
       return invocations
         .flatMap((invocation) =>
-          evaluator.invoke(invocation, new Set(), this.activeCalls.size),
+          ts
+            .getModifiers(invocation.fn as ts.FunctionLikeDeclaration)
+            ?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword)
+            ? []
+            : evaluator.invoke(invocation, new Set(), this.activeCalls.size),
         )
         .slice(0, MAX_VALUES);
     }
@@ -231,25 +251,48 @@ export class StaticValues {
     )
       return undefined;
     const factories = this.analysis.serviceFactories(node.arguments[0]);
-    if (!factories) return [];
-    const result: ts.Node[] = [];
-    for (const factory of factories) {
-      const values = this.values(factory);
-      for (const value of values) {
+    // Another package's service stays this opaque `resolve(token)` value; competing local registrations are unknown.
+    if (!factories)
+      return this.analysis.externalService(node.arguments[0]) ? [node] : [];
+    const factory = factories[0];
+    const summary = this.analysis.serviceSummary(factory, (receiver) => {
+      const scopes = new Map<ts.Node, Bindings>();
+      const evaluator = new StaticValues(this.analysis, new Map(), scopes);
+      const result: ts.Node[] = [];
+      for (const value of evaluator.values(factory)) {
         if (ts.isFunctionLike(value) && 'body' in value && value.body) {
-          const invocation = {
-            fn: value,
-            bindings: new Map(this.bindings),
-          };
+          if (
+            ts
+              .getModifiers(value)
+              ?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword)
+          )
+            continue;
+          const bindings = new Map<ts.Declaration, readonly ts.Node[]>();
           if (value.parameters[0])
-            invocation.bindings.set(value.parameters[0], [
-              node.expression.expression,
-            ]);
-          result.push(...this.invoke(invocation, new Set(), 0));
+            bindings.set(value.parameters[0], receiver ? [receiver] : []);
+          result.push(
+            ...evaluator.invoke({ fn: value, bindings }, new Set(), 0),
+          );
         } else result.push(value);
       }
+      return { values: result.slice(0, MAX_VALUES), scopes };
+    });
+    for (const [value, scope] of summary.scopes) {
+      const imported = new Map(scope);
+      for (const [declaration, values] of this.captures.get(value) ?? []) {
+        const current = imported.get(declaration);
+        imported.set(
+          declaration,
+          current &&
+            (current.length !== values.length ||
+              current.some((item, index) => item !== values[index]))
+            ? []
+            : values,
+        );
+      }
+      this.captures.set(value, imported);
     }
-    return result.slice(0, MAX_VALUES);
+    return summary.values;
   }
 
   private invoke(
@@ -266,6 +309,7 @@ export class StaticValues {
       this.captures,
       this.activeCalls,
       this.expandServices,
+      this.awaitReturns,
     );
     const flow = evaluator.flow(body, seen, depth + 1);
     if (flow.unknown) return [];
@@ -280,10 +324,15 @@ export class StaticValues {
     return !flow.continues && (flow.returns || flow.throws);
   }
 
+  /**
+   * `awaited` is whether the caller waits for the result. An async function's throw only rejects its promise, so an
+   * async target that is not awaited lets the caller continue; a synchronous target throws either way.
+   */
   private callFlow(
     node: ts.CallExpression,
     seen: ReadonlySet<ts.Node>,
     depth: number,
+    awaited = false,
   ): Flow {
     if (
       depth >= MAX_CALL_DEPTH ||
@@ -304,7 +353,19 @@ export class StaticValues {
       this.captures,
       activeCalls,
       this.expandServices,
+      this.awaitReturns,
     );
+    const service = this.expandServices
+      ? evaluator.serviceValues(node)
+      : undefined;
+    if (service !== undefined)
+      return {
+        values: service,
+        continues: service.length > 0,
+        returns: false,
+        throws: false,
+        unknown: service.length === 0,
+      };
     const invocations = evaluator.invocations(node);
     if (!invocations.length)
       return {
@@ -325,14 +386,33 @@ export class StaticValues {
         unknown = true;
         continue;
       }
+      if ('asteriskToken' in invocation.fn && invocation.fn.asteriskToken) {
+        // A generator runs nothing until iterated; its body says nothing about this call.
+        continues = true;
+        continue;
+      }
+      const isAsync = !!ts
+        .getModifiers(invocation.fn as ts.FunctionLikeDeclaration)
+        ?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword);
       const flow = new StaticValues(
         this.analysis,
         invocation.bindings,
         this.captures,
         activeCalls,
         this.expandServices,
+        awaited,
       ).flow(body, new Set(seen), depth + 1);
-      values.push(...flow.values);
+      if (!isAsync || awaited) {
+        for (const value of flow.values)
+          this.capture(value, invocation.bindings);
+        values.push(...flow.values);
+      }
+      if (isAsync && !awaited) {
+        // The rejection reaches the promise, not this call site.
+        continues = true;
+        unknown ||= flow.unknown;
+        continue;
+      }
       continues ||= flow.continues || flow.returns;
       throws ||= flow.throws;
       unknown ||= flow.unknown;
@@ -357,6 +437,22 @@ export class StaticValues {
       };
     const nextSeen = new Set(seen).add(node);
     if (ts.isExpression(node)) {
+      const target = this.expressionCall(node);
+      if (target && !ts.isCallExpression(node)) {
+        const call = this.callFlow(
+          target.call,
+          nextSeen,
+          depth + 1,
+          target.awaited,
+        );
+        return {
+          values: call.values,
+          continues: false,
+          returns: call.continues,
+          throws: call.throws,
+          unknown: call.unknown,
+        };
+      }
       if (ts.isCallExpression(node)) {
         const call = this.callFlow(node, nextSeen, depth + 1);
         return {
@@ -368,7 +464,7 @@ export class StaticValues {
         };
       }
       return {
-        values: this.values(node, new Set(nextSeen)),
+        values: this.values(node, new Set(seen)),
         continues: false,
         returns: true,
         throws: false,
@@ -393,10 +489,15 @@ export class StaticValues {
       return { values, continues, returns, throws, unknown };
     }
     if (ts.isReturnStatement(node)) {
-      const call =
-        node.expression && ts.isCallExpression(node.expression)
-          ? this.callFlow(node.expression, nextSeen, depth + 1)
-          : undefined;
+      const target = node.expression && this.expressionCall(node.expression);
+      const call = target
+        ? this.callFlow(
+            target.call,
+            nextSeen,
+            depth + 1,
+            target.awaited || this.awaitReturns,
+          )
+        : undefined;
       return {
         values:
           call?.values ??
@@ -430,9 +531,14 @@ export class StaticValues {
       let unknown = false;
       for (const declaration of node.declarationList.declarations) {
         if (!declaration.initializer) continue;
-        const call = this.expressionCall(declaration.initializer);
-        if (!call) continue;
-        const flow = this.callFlow(call, nextSeen, depth + 1);
+        const target = this.expressionCall(declaration.initializer);
+        if (!target) continue;
+        const flow = this.callFlow(
+          target.call,
+          nextSeen,
+          depth + 1,
+          target.awaited,
+        );
         throws ||= flow.throws;
         unknown ||= flow.unknown;
         if (!flow.continues) return { ...flow, returns: false };
@@ -454,9 +560,14 @@ export class StaticValues {
           throws: false,
           unknown: true,
         };
-      const call = this.expressionCall(node.expression);
-      if (call) {
-        const flow = this.callFlow(call, nextSeen, depth + 1);
+      const target = this.expressionCall(node.expression);
+      if (target) {
+        const flow = this.callFlow(
+          target.call,
+          nextSeen,
+          depth + 1,
+          target.awaited,
+        );
         return { ...flow, values: [], returns: false };
       }
     }
@@ -539,6 +650,7 @@ export class StaticValues {
             this.captures,
             this.activeCalls,
             this.expandServices,
+            this.awaitReturns,
           ).flow(node.statement, nextSeen, depth + 1);
           values.push(...flow.values);
           returns ||= flow.returns;
@@ -577,15 +689,21 @@ export class StaticValues {
     };
   }
 
-  private expressionCall(node: ts.Expression): ts.CallExpression | undefined {
-    if (ts.isCallExpression(node)) return node;
+  /** The call an expression evaluates, and whether it is awaited. */
+  private expressionCall(
+    node: ts.Expression,
+    awaited = false,
+  ): { call: ts.CallExpression; awaited: boolean } | undefined {
+    if (ts.isCallExpression(node)) return { call: node, awaited };
+    if (ts.isAwaitExpression(node))
+      return this.expressionCall(node.expression, true);
     if (
       ts.isParenthesizedExpression(node) ||
       ts.isAsExpression(node) ||
       ts.isSatisfiesExpression(node) ||
       ts.isNonNullExpression(node)
     )
-      return this.expressionCall(node.expression);
+      return this.expressionCall(node.expression, awaited);
     return undefined;
   }
 
@@ -725,11 +843,25 @@ export class StaticValues {
   }
 
   private capture(node: ts.Node, bindings: Bindings): void {
-    if (ts.isFunctionLike(node)) {
-      this.captures.set(node, new Map(bindings));
-      return;
+    if (ts.isFunctionLike(node) || ts.isObjectLiteralExpression(node)) {
+      // Inner invocations own their parameters. An outer return must retain that scope; competing
+      // values for the same parameter are ambiguous and cannot establish selected evidence.
+      const captured = new Map(bindings);
+      for (const [declaration, values] of this.captures.get(node) ?? []) {
+        const current = captured.get(declaration);
+        captured.set(
+          declaration,
+          current &&
+            (current.length !== values.length ||
+              current.some((value, index) => value !== values[index]))
+            ? []
+            : values,
+        );
+      }
+      this.captures.set(node, captured);
+      if (ts.isFunctionLike(node)) return;
     }
-    if (ts.isObjectLiteralExpression(node))
+    if (ts.isObjectLiteralExpression(node)) {
       for (const property of node.properties) {
         if (ts.isPropertyAssignment(property))
           this.capture(property.initializer, bindings);
@@ -738,13 +870,34 @@ export class StaticValues {
         else if (ts.isMethodDeclaration(property))
           this.capture(property, bindings);
       }
-    else if (ts.isArrayLiteralExpression(node))
+    } else if (ts.isArrayLiteralExpression(node))
       node.elements.forEach((element) => this.capture(element, bindings));
   }
 
-  private hasSpread(node: ts.Node): boolean {
+  private hasSpread(node: ts.Node, seen = new Set<ts.Node>()): boolean {
+    if (seen.has(node) || seen.size >= MAX_VALUES) return true;
+    const next = new Set(seen).add(node);
     return ts.isObjectLiteralExpression(node)
-      ? node.properties.some(ts.isSpreadAssignment)
+      ? node.properties.some((property) => {
+          if (!ts.isSpreadAssignment(property)) return false;
+          const scope = this.captures.get(node);
+          const evaluator = scope
+            ? new StaticValues(
+                this.analysis,
+                new Map([...this.bindings, ...scope]),
+                this.captures,
+                this.activeCalls,
+                this.expandServices,
+                this.awaitReturns,
+              )
+            : this;
+          const values = evaluator.values(property.expression);
+          return (
+            values.length !== 1 ||
+            !ts.isObjectLiteralExpression(values[0]) ||
+            this.hasSpread(values[0], next)
+          );
+        })
       : ts.isJsxAttributes(node) &&
           node.properties.some(ts.isJsxSpreadAttribute);
   }
@@ -755,13 +908,124 @@ export class StaticValues {
     seen: Set<ts.Node>,
   ): readonly ts.Node[] {
     if (this.hasSpread(node)) return [];
-    if (ts.isObjectLiteralExpression(node)) {
-      const entry = node.properties.find(
+    if (ts.isNewExpression(node)) {
+      const classes = this.analysis
+        .values(node.expression)
+        .filter(ts.isClassLike);
+      if (
+        classes.length !== 1 ||
+        classes[0].heritageClauses?.length ||
+        node.arguments?.some(ts.isSpreadElement)
+      )
+        return [];
+      const owner = classes[0];
+      const constructor = owner.members.find(ts.isConstructorDeclaration);
+      if (constructor?.parameters.some((parameter) => parameter.dotDotDotToken))
+        return [];
+      const scope = new Map(this.bindings).set(owner, [node]);
+      constructor?.parameters.forEach((parameter, index) => {
+        const argument = node.arguments?.[index] ?? parameter.initializer;
+        scope.set(parameter, argument ? this.values(argument, seen) : []);
+      });
+      const evaluator = new StaticValues(
+        this.analysis,
+        scope,
+        this.captures,
+        this.activeCalls,
+        this.expandServices,
+        this.awaitReturns,
+      );
+      if (constructor?.body) {
+        const flow = evaluator.flow(constructor.body, new Set(), 0);
+        if (flow.unknown || !flow.continues || flow.returns) return [];
+      }
+      const member = owner.members.find(
         (item) =>
           item.name &&
           (ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name)) &&
-          item.name.text === name,
+          item.name.text === name &&
+          !(
+            ts.canHaveModifiers(item) ? ts.getModifiers(item) : undefined
+          )?.some((modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword),
       );
+      if (member && ts.isMethodDeclaration(member)) {
+        evaluator.capture(member, scope);
+        return [member];
+      }
+      const values: ts.Node[] =
+        member && ts.isPropertyDeclaration(member) && member.initializer
+          ? [member.initializer]
+          : [];
+      const parameterProperty = constructor?.parameters.find(
+        (parameter) =>
+          ts.isIdentifier(parameter.name) &&
+          parameter.name.text === name &&
+          parameter.modifiers?.some((modifier) =>
+            [
+              ts.SyntaxKind.PrivateKeyword,
+              ts.SyntaxKind.PublicKeyword,
+              ts.SyntaxKind.ProtectedKeyword,
+              ts.SyntaxKind.ReadonlyKeyword,
+            ].includes(modifier.kind),
+          ),
+      );
+      if (parameterProperty) values.push(parameterProperty);
+      for (const statement of constructor?.body?.statements ?? []) {
+        const assignment = ts.isExpressionStatement(statement)
+          ? statement.expression
+          : undefined;
+        if (
+          assignment &&
+          ts.isBinaryExpression(assignment) &&
+          assignment.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+          ts.isPropertyAccessExpression(assignment.left) &&
+          assignment.left.expression.kind === ts.SyntaxKind.ThisKeyword &&
+          assignment.left.name.text === name
+        )
+          values.push(assignment.right);
+      }
+      return values.length === 1 ? evaluator.values(values[0], seen) : [];
+    }
+    if (ts.isObjectLiteralExpression(node)) {
+      const properties: ts.ObjectLiteralElementLike[] = [];
+      const expand = (
+        object: ts.ObjectLiteralExpression,
+        visited = new Set<ts.Node>(),
+      ): boolean => {
+        if (visited.has(object) || visited.size >= MAX_VALUES) return false;
+        const scope = this.captures.get(object);
+        const evaluator = scope
+          ? new StaticValues(
+              this.analysis,
+              new Map([...this.bindings, ...scope]),
+              this.captures,
+              this.activeCalls,
+              this.expandServices,
+              this.awaitReturns,
+            )
+          : this;
+        for (const property of object.properties) {
+          if (ts.isSpreadAssignment(property)) {
+            const values = evaluator.values(property.expression);
+            if (
+              values.length !== 1 ||
+              !ts.isObjectLiteralExpression(values[0]) ||
+              !expand(values[0], new Set(visited).add(object))
+            )
+              return false;
+          } else properties.push(property);
+        }
+        return true;
+      };
+      if (!expand(node)) return [];
+      const entry = [...properties]
+        .reverse()
+        .find(
+          (item) =>
+            item.name &&
+            (ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name)) &&
+            item.name.text === name,
+        );
       const value =
         entry && ts.isPropertyAssignment(entry)
           ? entry.initializer
@@ -770,7 +1034,18 @@ export class StaticValues {
             : entry && ts.isMethodDeclaration(entry)
               ? entry
               : undefined;
-      return value ? this.values(value, seen) : [];
+      const scope = this.captures.get(node);
+      const evaluator = scope
+        ? new StaticValues(
+            this.analysis,
+            new Map([...this.bindings, ...scope]),
+            this.captures,
+            this.activeCalls,
+            this.expandServices,
+            this.awaitReturns,
+          )
+        : this;
+      return value ? evaluator.values(value, seen) : [];
     }
     if (ts.isJsxAttributes(node)) {
       const entry = node.properties.find(

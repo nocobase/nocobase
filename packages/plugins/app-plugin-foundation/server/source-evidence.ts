@@ -12,6 +12,42 @@ export class SourceEvidence {
   private readonly checker: ts.TypeChecker;
   private readonly sources: Map<string, EvidenceSource>;
   private readonly services = new Map<ts.Declaration, ts.Expression[]>();
+  private readonly serviceReceivers = new Map<ts.Expression, ts.Expression>();
+  private readonly serviceSummaries = new Map<
+    ts.Expression,
+    {
+      readonly values: readonly ts.Node[];
+      readonly scopes: ReadonlyMap<
+        ts.Node,
+        ReadonlyMap<ts.Declaration, readonly ts.Node[]>
+      >;
+    }
+  >();
+
+  /** Reuse one static registration's value summary, without sharing endpoint evidence or mutable scopes. */
+  public serviceSummary(
+    factory: ts.Expression,
+    build: (receiver: ts.Expression | undefined) => {
+      readonly values: readonly ts.Node[];
+      readonly scopes: ReadonlyMap<
+        ts.Node,
+        ReadonlyMap<ts.Declaration, readonly ts.Node[]>
+      >;
+    },
+  ): {
+    readonly values: readonly ts.Node[];
+    readonly scopes: ReadonlyMap<
+      ts.Node,
+      ReadonlyMap<ts.Declaration, readonly ts.Node[]>
+    >;
+  } {
+    const known = this.serviceSummaries.get(factory);
+    if (known) return known;
+    this.serviceSummaries.set(factory, { values: [], scopes: new Map() });
+    const summary = build(this.serviceReceivers.get(factory));
+    this.serviceSummaries.set(factory, summary);
+    return summary;
+  }
 
   public constructor(
     sources: readonly EvidenceSource[],
@@ -55,12 +91,31 @@ export class SourceEvidence {
       ) {
         const [token, factory] = node.arguments;
         const declaration = token && this.declarations(token)[0];
-        if (declaration && factory)
+        if (declaration && factory) {
+          this.serviceReceivers.set(factory, node.expression.expression);
           this.services.set(declaration, [
             ...(this.services.get(declaration) ?? []),
             factory,
           ]);
+        }
       }
+      if (ts.isBlock(node)) {
+        for (const statement of node.statements) {
+          visit(statement);
+          if (new StaticValues(this).definitelyTerminates(statement)) break;
+        }
+        return;
+      }
+      // Providers often split registration into private methods on the same instance. Only an
+      // explicit local call reaches those methods; merely declaring another method does not.
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.expression.kind === ts.SyntaxKind.ThisKeyword
+      )
+        for (const declaration of this.declarations(node.expression))
+          if (ts.isMethodDeclaration(declaration) && declaration.body)
+            visit(declaration.body);
       ts.forEachChild(node, visit);
     };
     for (const entry of entries)
@@ -85,12 +140,14 @@ export class SourceEvidence {
     contextualCalls = false,
   ): {
     references: Set<string>;
+    collections: Set<string>;
     nodes: Map<string, Set<ts.Node>>;
     complete: boolean;
     unsafeCapability: boolean;
     unsafeValue: boolean;
   } {
     const references = new Set<string>();
+    const collections = new Set<string>();
     const nodes = new Map<string, Set<ts.Node>>();
     const visited = new Map<ts.Node, Set<string>>();
     const rootFunctions = new Set<ts.SignatureDeclaration>(
@@ -101,7 +158,7 @@ export class SourceEvidence {
     );
     const symbols = new Set<ts.Symbol>();
     const captures = new Map<
-      ts.SignatureDeclaration,
+      ts.Node,
       ReadonlyMap<ts.Declaration, readonly ts.Node[]>
     >();
     let complete = true;
@@ -201,7 +258,8 @@ export class SourceEvidence {
         ts.isPropertyAccessExpression(node.expression) &&
         node.expression.name.text === 'resolve' &&
         node.arguments.length === 1 &&
-        this.serviceFactories(node.arguments[0]) !== undefined
+        (this.serviceFactories(node.arguments[0]) !== undefined ||
+          this.externalService(node.arguments[0]) === '@nocobase/db')
       )
         return true;
       const next = new Set(seen).add(node);
@@ -239,7 +297,8 @@ export class SourceEvidence {
           ts.isPropertyAccessExpression(value.expression) &&
           value.expression.name.text === 'resolve' &&
           value.arguments.length === 1 &&
-          this.serviceFactories(value.arguments[0]) !== undefined
+          (this.serviceFactories(value.arguments[0]) !== undefined ||
+            this.externalService(value.arguments[0]) === '@nocobase/db')
         );
       });
     };
@@ -353,7 +412,7 @@ export class SourceEvidence {
         complete = false;
         return;
       }
-      const key = contextKey(bindings, active);
+      const key = contextualCalls ? contextKey(bindings, active) : '';
       const contexts = visited.get(node) ?? new Set<string>();
       if (contexts.has(key)) return;
       if (contexts.size >= 32) {
@@ -415,11 +474,9 @@ export class SourceEvidence {
         return;
       }
       if (ts.isPropertyAccessExpression(node)) {
-        for (const root of this.serviceMethod(
-          node.expression,
-          node.name.text,
-          bindings,
-        )) {
+        for (const root of contextualCalls
+          ? []
+          : this.serviceMethod(node.expression, node.name.text, bindings)) {
           if (contextualCalls && ts.isFunctionLike(root))
             rootFunctions.add(root);
           visit(root, bindings, active);
@@ -469,16 +526,81 @@ export class SourceEvidence {
           else references.add(argument.text);
         } else complete = false;
       }
-      if (ts.isCallExpression(node)) {
+      if (contextualCalls && ts.isCallExpression(node)) {
         const evaluator = new StaticValues(this, bindings, captures);
+        // An operation on a service another package provides, reached through local values: the call's receiver
+        // is what `resolve(token)` returned for that package's token. Resolving the token alone is no evidence.
+        if (ts.isPropertyAccessExpression(node.expression))
+          for (const value of evaluator.values(node.expression.expression)) {
+            const provided =
+              ts.isCallExpression(value) &&
+              ts.isPropertyAccessExpression(value.expression) &&
+              value.expression.name.text === 'resolve' &&
+              value.arguments.length === 1
+                ? this.externalService(value.arguments[0])
+                : undefined;
+            if (provided) references.add(provided);
+          }
+        const database = (
+          value: ts.Node,
+          seen = new Set<ts.Node>(),
+        ): boolean => {
+          if (seen.has(value) || seen.size >= 32) return false;
+          const next = new Set(seen).add(value);
+          if (
+            ts.isCallExpression(value) &&
+            ts.isPropertyAccessExpression(value.expression)
+          ) {
+            if (
+              value.expression.name.text === 'resolve' &&
+              value.arguments.length === 1
+            )
+              return (
+                this.externalService(value.arguments[0]) === '@nocobase/db'
+              );
+            if (
+              ['connection', 'query', 'repository'].includes(
+                value.expression.name.text,
+              )
+            )
+              return database(value.expression.expression, next);
+          }
+          if (
+            ts.isPropertyAccessExpression(value) &&
+            value.name.text === 'query'
+          )
+            return database(value.expression, next);
+          return evaluator
+            .values(value)
+            .some(
+              (candidate) => candidate !== value && database(candidate, next),
+            );
+        };
+        if (
+          ts.isPropertyAccessExpression(node.expression) &&
+          [
+            'repository',
+            'selectFrom',
+            'insertInto',
+            'updateTable',
+            'deleteFrom',
+          ].includes(node.expression.name.text) &&
+          database(node.expression.expression)
+        ) {
+          references.add('@nocobase/db');
+          const names = node.arguments[0]
+            ? evaluator.strings(node.arguments[0])
+            : [];
+          if (names.length === 1) collections.add(names[0]);
+        }
         const invocations = evaluator.invocations(node);
         const serviceCall =
-          ts.isPropertyAccessExpression(node.expression) &&
-          this.serviceMethod(
-            node.expression.expression,
-            node.expression.name.text,
-            bindings,
-          ).length > 0;
+          invocations.length > 0 ||
+          (ts.isPropertyAccessExpression(node.expression) &&
+            ['connection', 'query', 'repository', 'transaction'].includes(
+              node.expression.name.text,
+            ) &&
+            database(node.expression.expression));
         const safeParser =
           ts.isPropertyAccessExpression(node.expression) &&
           node.expression.name.text === 'safeParse';
@@ -584,6 +706,7 @@ export class SourceEvidence {
     }
     return {
       references,
+      collections,
       nodes,
       complete,
       unsafeCapability: unsafeCapabilityEscaped,
@@ -661,6 +784,26 @@ export class SourceEvidence {
     if (symbol && symbol.flags & ts.SymbolFlags.Alias)
       symbol = this.checker.getAliasedSymbol(symbol);
     return symbol?.declarations ?? [];
+  }
+
+  /** The package exporting a service token that no local code registers: the host or that package provides it. */
+  public externalService(token: ts.Node): string | undefined {
+    if (!ts.isIdentifier(token)) return undefined;
+    const imported = this.symbol(token)?.declarations?.find(
+      ts.isImportSpecifier,
+    );
+    if (!imported || imported.isTypeOnly) return undefined;
+    const statement = imported.parent.parent.parent;
+    if (
+      !ts.isImportDeclaration(statement) ||
+      statement.importClause?.isTypeOnly ||
+      !this.isExternalImport(statement) ||
+      !ts.isStringLiteralLike(statement.moduleSpecifier)
+    )
+      return undefined;
+    const declaration = this.declarations(token)[0];
+    if (declaration && this.services.get(declaration)?.length) return undefined;
+    return statement.moduleSpecifier.text;
   }
 
   /** Only one locally registered implementation can prove a resolved service value. */

@@ -34,7 +34,10 @@ export function apiDependencies(
     readonly ast: ts.SourceFile;
   }[],
   analysis: SourceEvidence,
-  providers: (file: string, nodes: readonly ts.Node[]) => readonly string[],
+  providers: (
+    file: string,
+    nodes: readonly ts.Node[],
+  ) => { providers: readonly string[]; collections: readonly string[] },
 ): EndpointEvidence[] {
   type Bindings = ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
   const endpoints: EndpointEvidence[] = [];
@@ -77,6 +80,92 @@ export function apiDependencies(
   const visited = new Set<ts.Node>();
   const imported = (node: ts.Node, module: string, name: string): boolean =>
     importedContract(node, analysis, module, name);
+  let writtenDeclarations: Set<ts.Declaration> | undefined;
+  const written = (node: ts.Node): boolean => {
+    if (!writtenDeclarations) {
+      writtenDeclarations = new Set();
+      const inspect = (value: ts.Node): void => {
+        let target: ts.Node | undefined =
+          ts.isBinaryExpression(value) &&
+          value.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+          value.operatorToken.kind <= ts.SyntaxKind.LastAssignment
+            ? value.left
+            : ts.isDeleteExpression(value)
+              ? value.expression
+              : undefined;
+        while (
+          target &&
+          (ts.isPropertyAccessExpression(target) ||
+            ts.isElementAccessExpression(target))
+        )
+          target = target.expression;
+        if (target && ts.isIdentifier(target))
+          for (const declaration of analysis.declarations(target))
+            writtenDeclarations!.add(declaration);
+        ts.forEachChild(value, inspect);
+      };
+      for (const source of sources) inspect(source.ast);
+    }
+    return analysis
+      .declarations(node)
+      .some((declaration) => writtenDeclarations!.has(declaration));
+  };
+  const forwardedRouter = (node: ts.Node): ts.Node | false | undefined => {
+    while (
+      ts.isParenthesizedExpression(node) ||
+      ts.isAsExpression(node) ||
+      ts.isNonNullExpression(node)
+    )
+      node = node.expression;
+    if (ts.isIdentifier(node)) {
+      const declarations = analysis.declarations(node);
+      const declaration =
+        declarations.length === 1 ? declarations[0] : undefined;
+      if (
+        !declaration ||
+        !ts.isVariableDeclaration(declaration) ||
+        !declaration.initializer ||
+        !(ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const)
+      )
+        return undefined;
+      node = declaration.initializer;
+    }
+    if (!ts.isCallExpression(node)) return undefined;
+    const functions = analysis.functions(node.expression);
+    const fn = functions.length === 1 ? functions[0] : undefined;
+    if (!fn) return undefined;
+    if (
+      written(node.expression) ||
+      ts
+        .getModifiers(fn as ts.FunctionLikeDeclaration)
+        ?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword) ||
+      ('asteriskToken' in fn && fn.asteriskToken)
+    )
+      return false;
+    const declaration = analysis.declarations(node.expression)[0];
+    if (
+      declaration &&
+      ts.isVariableDeclaration(declaration) &&
+      !(ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const)
+    )
+      return false;
+    const results = returned(fn);
+    if (results.some(written)) return false;
+    const positions = results.map((result) => {
+      const declarations = ts.isIdentifier(result)
+        ? analysis.declarations(result)
+        : [];
+      return declarations.length === 1 &&
+        ts.isParameter(declarations[0]) &&
+        !written(result)
+        ? fn.parameters.indexOf(declarations[0])
+        : -1;
+    });
+    return positions.length > 0 &&
+      positions.every((position) => position >= 0 && position === positions[0])
+      ? node.arguments[positions[0]]
+      : undefined;
+  };
   const identity = (
     node: ts.Node,
     seen = new Set<ts.Node>(),
@@ -84,6 +173,14 @@ export function apiDependencies(
   ): ts.Node | undefined => {
     if (seen.has(node)) return undefined;
     seen.add(node);
+    // A local helper that registers on a router and returns that same parameter, such as `guard(new Hono())`. Its
+    // registrations are visited where the call is evaluated, with the parameter bound to the argument.
+    const forwarded = forwardedRouter(node);
+    if (forwarded === false) return undefined;
+    if (forwarded) {
+      const result = identity(forwarded, seen, bindings);
+      if (result) return result;
+    }
     for (const value of new StaticValues(analysis, bindings).values(node)) {
       if (
         ts.isNewExpression(value) &&
@@ -307,6 +404,12 @@ export function apiDependencies(
         );
         if (exit === 'unknown') pendingExit = true;
         else if (exit) return pendingExit ? 'unknown' : exit;
+        if (
+          (ts.isExpressionStatement(statement) ||
+            ts.isVariableStatement(statement)) &&
+          new StaticValues(analysis, bindings).definitelyTerminates(statement)
+        )
+          return pendingExit ? 'unknown' : 'throw';
       }
       return pendingExit ? 'unknown' : undefined;
     }
@@ -497,6 +600,9 @@ export function apiDependencies(
             for (const path of registeredPaths)
               for (const handler of expanded) {
                 const contract = middlewareContract(handler, analysis);
+                const evidence = contract
+                  ? undefined
+                  : providers(node.getSourceFile().fileName, [handler]);
                 router.entries.push({
                   path: join(router.base, path),
                   method:
@@ -505,7 +611,10 @@ export function apiDependencies(
                       : method.toUpperCase(),
                   providers: contract
                     ? (contract.providers ?? [])
-                    : providers(node.getSourceFile().fileName, [handler]),
+                    : (evidence?.providers ?? []),
+                  ...(evidence?.collections.length
+                    ? { collections: evidence.collections }
+                    : {}),
                   continuation: contract
                     ? 'next'
                     : handlerContinuation(handler, analysis),
