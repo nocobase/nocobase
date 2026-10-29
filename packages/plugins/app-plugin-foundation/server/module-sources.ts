@@ -18,8 +18,10 @@ import { StaticValues } from './static-values.js';
 import { RouteEvidence } from './route-evidence.js';
 import { sourceAliases, aliasMatches } from './source-aliases.js';
 
-const MAX_FILES = 400;
+// A larger application reports its module evidence as incomplete rather than being read without bound.
+const MAX_FILES = 2_000;
 const MAX_BYTES = 512_000;
+const MAX_TOTAL_BYTES = 32_000_000;
 const SOURCE_SUFFIXES = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 
 interface Source {
@@ -162,6 +164,7 @@ export async function collectModuleSources(
 /** A bounded package-local graph; symlinks, aliases and relative paths cannot escape the owning package. */
 class SourceGraph {
   private readonly files = new Map<string, Source | undefined>();
+  private bytes = 0;
   private analysis: SourceEvidence | undefined;
   private serverEntry: string | undefined;
   private constructor(
@@ -519,7 +522,10 @@ class SourceGraph {
     this.files.set(file, undefined);
     await this.observation?.watch(file);
     try {
-      if ((await stat(file)).size > MAX_BYTES) return undefined;
+      const size = (await stat(file)).size;
+      if (size > MAX_BYTES || this.bytes + size > MAX_TOTAL_BYTES)
+        return undefined;
+      this.bytes += size;
       const ast = ts.createSourceFile(
         file,
         await readFile(file, 'utf8'),

@@ -498,12 +498,12 @@ describe('static module dependencies', () => {
       'client/routes.ts': `export default [{name:'items',componentLoader:()=>import('./page.js')}];`,
       'client/page.ts':
         Array.from(
-          { length: 401 },
+          { length: 2001 },
           (_, i) => `import {v${i}} from '@/v${i}';`,
         ).join('') +
-        `export default ()=>[${Array.from({ length: 401 }, (_, i) => `v${i}`).join(',')}];`,
+        `export default ()=>[${Array.from({ length: 2001 }, (_, i) => `v${i}`).join(',')}];`,
     };
-    for (let i = 0; i < 401; i++)
+    for (let i = 0; i < 2001; i++)
       files[`client/v${i}.ts`] = `export const v${i}=${i};`;
     const result = await collectModuleSources(await fixture(files));
     expect(result.routes[0]).toMatchObject({ providers: [], complete: false });

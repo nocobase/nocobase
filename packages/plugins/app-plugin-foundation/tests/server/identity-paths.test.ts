@@ -464,3 +464,274 @@ it.each([
   const result = await collectModuleSources(await fixture(source));
   expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
 });
+
+// The authorization service and container may travel through local objects, classes and registrations; each use
+// is still checked, and any flow out of what this graph can see keeps the barrier.
+const holding = (
+  declarations: string,
+  body: string,
+): Record<string, string> => ({
+  'server/providers/index.js':
+    `import {authorizationToken} from '@nocobase/app-plugin-authorization/server';import {external} from 'unknown';\n` +
+    providers
+      .replace('class Provider', `${declarations}\nclass Provider`)
+      .replace(
+        'register(){',
+        `register(){const container=this.app.container;const authz=container.resolve(authorizationToken);${body}`,
+      ),
+});
+const scope = `.for({principal:{type:'user',id:'1'},subjects:[]})`;
+
+it.each([
+  [
+    'a dependencies object read by a local function',
+    holding(
+      `function inspect(deps){return deps.authz${scope};}`,
+      'inspect({authz});',
+    ),
+  ],
+  [
+    'a class instance holding the container',
+    holding(
+      `class Reader{constructor(container){this.container=container;}read(){return this.container.resolve(catalogToken);}}`,
+      'new Reader(container).read();',
+    ),
+  ],
+  [
+    'composed class instances',
+    holding(
+      `class Turn{constructor(c){this.c=c;}run(){return this.c.resolve(catalogToken);}}class Adapter{constructor(turn){this.turn=turn;}go(){return this.turn.run();}static label(x){return String(x);}}const adapterToken=createServiceToken('adapter');`,
+      'container.singleton(adapterToken,()=>new Adapter(new Turn(container)));Adapter.label(1);',
+    ),
+  ],
+  [
+    'a holder registered under an own token',
+    holding(
+      `const platformToken=createServiceToken('platform');`,
+      `container.singleton(platformToken,()=>({authz,label:'x'}));container.resolve(platformToken).authz${scope};`,
+    ),
+  ],
+  [
+    'a function returned from a local factory',
+    holding(
+      `function notifier(c){return async()=>c.has(catalogToken);}function createPlatform(deps){const {authz,notify}=deps;return {authz,notify};}`,
+      'const platform=createPlatform({authz,notify:notifier(container)});platform.notify();',
+    ),
+  ],
+  [
+    'iteration over a local array of holders',
+    holding(
+      `function check(a){return a${scope};}`,
+      'for(const item of [{authz}])check(item.authz);',
+    ),
+  ],
+])('follows %s', async (_name, extra) => {
+  const result = await collectModuleSources(await fixture(routes, extra));
+  expect(result.routes[0]?.apiProviders).toContain('@nocobase/db');
+});
+
+it.each([
+  [
+    'a nested object handed to unknown code',
+    holding('', 'external({deps:{authz}});'),
+  ],
+  [
+    'a closure returning the container to unknown code',
+    holding('', 'external(()=>container);'),
+  ],
+  [
+    'a function declaration returning it to unknown code',
+    holding('', 'function give(){return authz;}external(give);'),
+  ],
+  [
+    'an array alias calling use',
+    holding('', 'const list=[authz];list[0].use(()=>{});'),
+  ],
+  [
+    'an array method over holders',
+    holding('', 'const list=[authz];list.forEach(a=>a.use(()=>{}));'),
+  ],
+  ['a method alias', holding('', 'const add=authz.use;add(()=>{});')],
+  ['a destructured method', holding('', 'const {use}=authz;use(()=>{});')],
+  ['the identity step list', holding('', 'authz.middlewares.push(()=>{});')],
+  [
+    'a field of a holder calling use',
+    holding('', 'const deps={authz};deps.authz.use(()=>{});'),
+  ],
+  [
+    'a parameter calling use',
+    holding(
+      'function inspect(deps){deps.authz.use(()=>{});}',
+      'inspect({authz});',
+    ),
+  ],
+  [
+    'a holder field overwritten',
+    holding('', 'const deps={authz};deps.authz={};'),
+  ],
+  [
+    'an unknown method of a holder',
+    holding('', 'const deps={authz};deps.run(()=>{});'),
+  ],
+  [
+    'an instance handed to unknown code',
+    holding(
+      'class Holder{constructor(c){this.c=c;}}',
+      'external(new Holder(container));',
+    ),
+  ],
+  [
+    'a class capturing the service handed to unknown code',
+    holding('', 'class Holder{a=authz;}external(Holder);'),
+  ],
+  [
+    'an uncalled method returning the service',
+    holding('', 'const o={get(){return authz;}};external(o.get);'),
+  ],
+  [
+    'a copied method bound to another receiver',
+    holding(
+      '',
+      'const o={authz,run(){return this.authz;}};const copy={...o,authz:1};copy.run();',
+    ),
+  ],
+  [
+    'a holder registered under a foreign token',
+    holding(
+      "import {databaseManagerToken as foreign} from '@nocobase/db';",
+      'container.singleton(foreign,()=>({authz}));',
+    ),
+  ],
+  [
+    'a holder registered under a dynamic token',
+    holding('const tokens={};', 'container.instance(tokens.x,{authz});'),
+  ],
+  [
+    'Object.assign into an unknown target',
+    holding('const target={};', 'Object.assign(target,{authz});'),
+  ],
+  ['a callback returning a holder', holding('', '[1].map(()=>({authz}));')],
+  [
+    'a conditional alias calling use',
+    holding('', 'const a=Math.random()?authz:null;a.use(()=>{});'),
+  ],
+])('keeps the barrier for %s', async (_name, extra) => {
+  const result = await collectModuleSources(await fixture(routes, extra));
+  expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+});
+
+const plugins = (list: string, imports = ''): Record<string, string> => ({
+  'server/plugins.js': `import {defineServerPlugins} from '@nocobase/app-server/plugins';import authorization from '@nocobase/app-plugin-authorization/server';${imports}export default defineServerPlugins([${list}]);`,
+});
+const middleware = (handler: string): Record<string, string> => ({
+  'server/app.js': bootstrap
+    .replace(
+      "import {createAppFromRuntime} from '@nocobase/app-server/runtime';",
+      `import {createAppFromRuntime} from '@nocobase/app-server/runtime';import {defineHttpMiddleware} from '@nocobase/app-server/router';const headers=defineHttpMiddleware({name:'headers',register(router,app){const flag=app.config.get('headers');if(flag===false)return;router.use('*',${handler});}});`,
+    )
+    .replace(
+      'app.addRuntimeContributions',
+      'app.addHttpMiddleware(headers);app.addRuntimeContributions',
+    ),
+  'server/embedded.js': embedded,
+});
+
+it.each([
+  [
+    'the reviewed agents and knowledge plugins with a route override',
+    plugins(
+      `authorization,agents,{...knowledge,routes:[local]}`,
+      `import agents from '@nocobase/app-plugin-agents/server';import knowledge from '@nocobase/app-plugin-knowledge/server';import local from './local-routes.js';`,
+    ),
+  ],
+  [
+    'pure authorization helpers and configuration reads',
+    holding(
+      `import {condition,AuthorizationDeniedError} from '@nocobase/app-plugin-authorization/server';`,
+      `condition('id','$eq',1);String(AuthorizationDeniedError);String(this.app.appName+this.app.publicBasePath);authz.onGrantsChanged(()=>{});`,
+    ),
+  ],
+  [
+    'a local pass-through HTTP middleware',
+    middleware(
+      `async(c,next)=>{if(/api/.test(c.req.path))return next();await next();c.res.headers.set('x-test','1');}`,
+    ),
+  ],
+  [
+    'a container token read through import()',
+    holding(
+      '',
+      `container.resolve((await import('@nocobase/db')).databaseManagerToken);`,
+    ),
+  ],
+])('accepts %s', async (_name, extra) => {
+  const files = {
+    ...extra,
+    'server/local-routes.js': `import {defineApiRoutes} from '@nocobase/app-server/router';import {Hono} from 'hono';export default defineApiRoutes(()=>new Hono());`,
+  };
+  if (files['server/providers/index.js'])
+    files['server/providers/index.js'] = files[
+      'server/providers/index.js'
+    ].replace('register(){', 'async register(){');
+  const result = await collectModuleSources(await fixture(routes, files));
+  expect(result.routes[0]?.apiProviders).toContain('@nocobase/db');
+});
+
+it.each([
+  [
+    'a route override with providers',
+    plugins(
+      `authorization,{...knowledge,serviceProviders:[]}`,
+      `import knowledge from '@nocobase/app-plugin-knowledge/server';`,
+    ),
+  ],
+  [
+    'a route override computed elsewhere',
+    plugins(
+      `authorization,{...knowledge,routes:make()}`,
+      `import knowledge from '@nocobase/app-plugin-knowledge/server';`,
+    ),
+  ],
+  [
+    'an unreviewed authorization export',
+    holding(
+      `import {Authorization} from '@nocobase/app-plugin-authorization/server';`,
+      'String(Authorization);',
+    ),
+  ],
+  ['a written application name', holding('', "this.app.appName='other';")],
+  [
+    'a middleware that may stop the request',
+    middleware(
+      `async(c,next)=>{if(c.req.path==='/x')return c.text('stop');await next();}`,
+    ),
+  ],
+  [
+    'a middleware that sets a request variable',
+    middleware(`async(c,next)=>{c.set('auth',null);await next();}`),
+  ],
+  [
+    'a middleware calling next twice',
+    middleware(`async(c,next)=>{await next();await next();}`),
+  ],
+])('keeps the barrier for %s', async (_name, extra) => {
+  const result = await collectModuleSources(await fixture(routes, extra));
+  expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
+});
+
+it('reads an application larger than the former 400-file budget', async () => {
+  const imports = Array.from(
+    { length: 450 },
+    (_, i) => `import './f${i}.js';`,
+  ).join('');
+  const files = Object.fromEntries(
+    Array.from({ length: 450 }, (_, i) => [
+      `server/routes/f${i}.js`,
+      `export const value=${i};`,
+    ]),
+  );
+  const result = await collectModuleSources(
+    await fixture(imports + routes, files),
+  );
+  expect(result.routes[0]?.apiProviders).toContain('@nocobase/db');
+});
