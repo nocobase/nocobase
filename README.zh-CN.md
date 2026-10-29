@@ -2,7 +2,7 @@
 
 > 当前分支为 NocoBase 3。如果你在寻找 NocoBase 2 无代码开发平台，请访问 [NocoBase 2](https://nocode.nocobase.com/)。
 
-[English](./README.md) | 简体中文
+[English](./README.md) | [Español](./README.es-ES.md) | [Français](./README.fr-FR.md) | [Deutsch](./README.de-DE.md) | [Português](./README.pt-BR.md) | [Русский](./README.ru-RU.md) | [Bahasa Indonesia](./README.id-ID.md) | [Tiếng Việt](./README.vi-VN.md) | 简体中文 | [繁體中文](./README.zh-TW.md) | [日本語](./README.ja-JP.md) | [한국어](./README.ko-KR.md)
 
 **构建可靠的业务系统**
 

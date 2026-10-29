@@ -2,7 +2,7 @@
 
 > This branch contains NocoBase 3. Looking for the NocoBase 2 no-code platform? Visit [NocoBase 2](https://nocode.nocobase.com/).
 
-English | [简体中文](./README.zh-CN.md)
+English | [Español](./README.es-ES.md) | [Français](./README.fr-FR.md) | [Deutsch](./README.de-DE.md) | [Português](./README.pt-BR.md) | [Русский](./README.ru-RU.md) | [Bahasa Indonesia](./README.id-ID.md) | [Tiếng Việt](./README.vi-VN.md) | [简体中文](./README.zh-CN.md) | [繁體中文](./README.zh-TW.md) | [日本語](./README.ja-JP.md) | [한국어](./README.ko-KR.md)
 
 **Build reliable business systems**
 
