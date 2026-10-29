@@ -150,6 +150,10 @@ test('treats the declared Skill examples as source material while checking other
     const sources = {
       [`${appSkill}/assets/list-edit-example/server/routes/projects.ts`]:
         'app-example-only',
+      [`${appSkill}/assets/customer-contacts-example/server/providers/customers.ts`]:
+        'customer-example-only',
+      [`${appSkill}/assets/customer-contacts-example-extra/index.ts`]:
+        'customer-other-asset',
       [`${appSkill}/assets/list-edit-example-extra/index.ts`]:
         'app-other-asset',
       [`${appSkill}/scripts/verify.mjs`]: 'app-script-runtime',
@@ -173,6 +177,7 @@ test('treats the declared Skill examples as source material while checking other
       [
         'app-other-asset',
         'app-script-runtime',
+        'customer-other-asset',
         'other-asset',
         'other-skill-runtime',
         'script-runtime',
@@ -191,6 +196,8 @@ test('treats the declared Skill examples as source material while checking other
         'app-example-only',
         'app-other-asset',
         'app-script-runtime',
+        'customer-example-only',
+        'customer-other-asset',
         'example-only',
         'other-asset',
         'other-skill-runtime',

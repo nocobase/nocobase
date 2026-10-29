@@ -24,6 +24,7 @@ import {
   Settings,
   BookOpen,
   DatabaseZap,
+  UsersRound,
 } from 'lucide-react';
 import {
   defineAppRoutes,
@@ -31,6 +32,46 @@ import {
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  {
+    name: 'customer-contacts',
+    path: '/customer-contacts',
+    auth: 'required',
+    authz: {
+      resource: { type: 'page', id: 'customer-contacts' },
+      action: 'access',
+    },
+    navigation: { title: 'customerContacts.title', icon: UsersRound },
+    componentLoader: () => import('./pages/customer-contacts/index.js'),
+    children: [
+      {
+        name: 'customer-contacts-batch',
+        path: 'batch',
+        componentLoader: () => import('./pages/customer-contacts/batch.js'),
+      },
+      {
+        name: 'customer-contacts-detail',
+        path: ':customerId',
+        componentLoader: () => import('./pages/customer-contacts/detail.js'),
+        children: [
+          {
+            name: 'customer-contacts-edit',
+            path: 'edit',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+          {
+            name: 'customer-contacts-new-contact',
+            path: 'contacts/new',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+          {
+            name: 'customer-contacts-edit-contact',
+            path: 'contacts/:contactId/edit',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+        ],
+      },
+    ],
+  },
   {
     name: 'skill-projects',
     path: '/skill-projects',
