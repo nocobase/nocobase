@@ -1,8 +1,8 @@
+import type { DailyClaim } from './daily-reset.js';
 import type { DemoAgentAdapter, DemoAgentProxy } from './agent-proxy.js';
 import type { DemoSqlRule } from '../guard.js';
 import type {
   DemoConfigurationView,
-  DemoDailySchedule,
   DemoMockAdapter,
 } from '../../shared/configuration.js';
 
@@ -48,5 +48,11 @@ export interface DemoConfigurationRuntime extends DemoConfigurationService {
   initialize(): Promise<void>;
   runWithPolicy<T>(run: () => Promise<T>): Promise<T>;
   wholeCollectionRules(): Promise<readonly DemoSqlRule[]>;
-  claimDaily(now: Date): Promise<DemoDailySchedule | null>;
+  claimDaily(now: Date): Promise<DailyClaim | null>;
+  renewDaily(claim: DailyClaim): Promise<void>;
+  finishDaily(
+    claim: DailyClaim,
+    error?: unknown,
+    retryable?: boolean,
+  ): Promise<void>;
 }

@@ -1,0 +1,86 @@
+
+ RUN  v4.1.10 /Users/gchust/.t3/worktrees/nocobase/fix-demo-reset-resource-nocobase-20261029/packages/plugins/app-plugin-demo-mode
+
+ ❯ |resources| tests/resources/reset-resource.test.ts (1 test | 1 failed) 73732ms
+   × bounds repeated application resets with large tracking batches 73732ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |resources| tests/resources/reset-resource.test.ts > bounds repeated application resets with large tracking batches
+AssertionError: expected 1799045120 to be less than 1258291200
+ ❯ tests/resources/reset-resource.test.ts:169:30
+    167|         expect.soft(elapsedMs).toBeLessThan(60_000);
+    168|         expect.soft(peakHeap).toBeLessThan(768 * 1024 ** 2);
+    169|         expect.soft(peakRss).toBeLessThan(1200 * 1024 ** 2);
+       |                              ^
+    170|         expect.soft(retainedHeap - warmHeap).toBeLessThan(128 * 1024 *…
+    171|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  |resources| tests/resources/reset-resource.test.ts > bounds repeated application resets with large tracking batches
+AssertionError: expected 1814167552 to be less than 1258291200
+ ❯ tests/resources/reset-resource.test.ts:169:30
+    167|         expect.soft(elapsedMs).toBeLessThan(60_000);
+    168|         expect.soft(peakHeap).toBeLessThan(768 * 1024 ** 2);
+    169|         expect.soft(peakRss).toBeLessThan(1200 * 1024 ** 2);
+       |                              ^
+    170|         expect.soft(retainedHeap - warmHeap).toBeLessThan(128 * 1024 *…
+    171|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  |resources| tests/resources/reset-resource.test.ts > bounds repeated application resets with large tracking batches
+AssertionError: expected 1808416768 to be less than 1258291200
+ ❯ tests/resources/reset-resource.test.ts:169:30
+    167|         expect.soft(elapsedMs).toBeLessThan(60_000);
+    168|         expect.soft(peakHeap).toBeLessThan(768 * 1024 ** 2);
+    169|         expect.soft(peakRss).toBeLessThan(1200 * 1024 ** 2);
+       |                              ^
+    170|         expect.soft(retainedHeap - warmHeap).toBeLessThan(128 * 1024 *…
+    171|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  |resources| tests/resources/reset-resource.test.ts > bounds repeated application resets with large tracking batches
+AssertionError: expected 1806254080 to be less than 1258291200
+ ❯ tests/resources/reset-resource.test.ts:169:30
+    167|         expect.soft(elapsedMs).toBeLessThan(60_000);
+    168|         expect.soft(peakHeap).toBeLessThan(768 * 1024 ** 2);
+    169|         expect.soft(peakRss).toBeLessThan(1200 * 1024 ** 2);
+       |                              ^
+    170|         expect.soft(retainedHeap - warmHeap).toBeLessThan(128 * 1024 *…
+    171|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  |resources| tests/resources/reset-resource.test.ts > bounds repeated application resets with large tracking batches
+AssertionError: expected 1796980736 to be less than 1258291200
+ ❯ tests/resources/reset-resource.test.ts:169:30
+    167|         expect.soft(elapsedMs).toBeLessThan(60_000);
+    168|         expect.soft(peakHeap).toBeLessThan(768 * 1024 ** 2);
+    169|         expect.soft(peakRss).toBeLessThan(1200 * 1024 ** 2);
+       |                              ^
+    170|         expect.soft(retainedHeap - warmHeap).toBeLessThan(128 * 1024 *…
+    171|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  |resources| tests/resources/reset-resource.test.ts > bounds repeated application resets with large tracking batches
+AssertionError: expected 1784032 to be less than 1228800
+ ❯ tests/resources/reset-resource.test.ts:195:51
+    193|       );
+    194|       expect.soft(applicationPeakHeap).toBeLessThan(768 * 1024 ** 2);
+    195|       expect.soft(process.resourceUsage().maxRSS).toBeLessThan(1200 * …
+       |                                                   ^
+    196|     } finally {
+    197|       clearInterval(timer);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  15:48:57
+   Duration  75.73s (transform 1.36s, setup 0ms, import 1.89s, tests 73.73s, environment 0ms)
+

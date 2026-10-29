@@ -1,0 +1,2 @@
+# Preserve raw runner output, including its trailing blank lines.
+*.log whitespace=-blank-at-eof

@@ -1,3 +1,4 @@
+import { DailyResetClaims, type DailyClaim } from './daily-reset.js';
 import type { DemoConfigurationRuntime } from './contract.js';
 import {
   DefaultDemoAgentProxy,
@@ -18,7 +19,6 @@ import {
 import type {
   DemoConfiguration,
   DemoConfigurationView,
-  DemoDailySchedule,
   DemoMockAdapter,
 } from '../../shared/configuration.js';
 
@@ -85,6 +85,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
   }
   /** Async workers must not inherit the originating HTTP request's stale policy snapshot. */
   public withFreshPolicy<T>(run: () => Promise<T>): Promise<T> {
+    this.cached = undefined;
     return this.policy.exit(() => this.runWithPolicy(run));
   }
   public async initialize(): Promise<void> {
@@ -385,29 +386,50 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       );
     return (await adapter.invoke(input)) as T;
   }
-  /** A durable claim prevents repeated DST minutes and multiple processes from resetting the same local day twice. */
-  public async claimDaily(now: Date): Promise<DemoDailySchedule | null> {
+  /** Admission uses deployment policy and the database, independently of the request policy cache. */
+  public async claimDaily(now: Date): Promise<DailyClaim | null> {
     if (!this.enabled) return null;
     const row = await this.row();
     if (!row) return null;
-    const config = this.decode(row);
     const schedule = { ...this.settings.dailyReset };
     const local = localMinute(now, schedule.timezone);
     if (
-      local.hour !== schedule.hour ||
-      local.minute !== schedule.minute ||
+      !schedule.enabled ||
+      local.hour * 60 + local.minute < schedule.hour * 60 + schedule.minute ||
       row.lastDay === local.day ||
       !firstWallMinute(now, schedule.timezone)
     )
       return null;
-    const result = await this.database
-      .query()
-      .updateTable('demoModeConfiguration')
-      .set({ lastDay: local.day })
-      .where('id', '=', 'default')
-      .where('revision', '=', config.revision)
-      .where('lastDay', row.lastDay === null ? 'is' : '=', row.lastDay)
-      .execute();
-    return result.updatedCount === 1 ? schedule : null;
+    // A brief admission window lets a database/claim failure recover without manufacturing a run in a DST gap.
+    let allowCreate = false;
+    for (let ago = 0; ago <= 15; ago++) {
+      const candidate = new Date(now.getTime() - ago * 60_000);
+      const wall = localMinute(candidate, schedule.timezone);
+      if (
+        wall.day === local.day &&
+        wall.hour === schedule.hour &&
+        wall.minute === schedule.minute &&
+        firstWallMinute(candidate, schedule.timezone)
+      ) {
+        allowCreate = true;
+        break;
+      }
+    }
+    return new DailyResetClaims(this.database).claim(
+      local.day,
+      schedule,
+      now,
+      allowCreate,
+    );
+  }
+  public renewDaily(claim: DailyClaim): Promise<void> {
+    return new DailyResetClaims(this.database).renew(claim);
+  }
+  public finishDaily(
+    claim: DailyClaim,
+    error?: unknown,
+    retryable = false,
+  ): Promise<void> {
+    return new DailyResetClaims(this.database).finish(claim, error, retryable);
   }
 }

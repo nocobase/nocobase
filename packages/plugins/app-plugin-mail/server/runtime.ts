@@ -385,7 +385,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   public processAccountRemoval(): Promise<void> {
     if (this.removalPromise) return this.removalPromise;
     this.removalPromise = this.tasks
-      .run(() => this.removals.runBatch(), undefined)
+      .run(() => this.removals.drain(() => this.closed), undefined)
       .finally(() => {
         this.removalPromise = undefined;
       });

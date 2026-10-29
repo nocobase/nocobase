@@ -1,3 +1,4 @@
+import { ApiError } from '@nocobase/app-server/router';
 import { demoConfigurationRuntimeToken } from '../configuration/runtime-token.js';
 import { resolveDemoAgents, type DemoAgents } from '../integrations/agents.js';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
@@ -195,7 +196,7 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
     return {
       name: DEMO_DATA_RESET_JOB,
       options: {
-        cron: `${schedule.minute} ${schedule.hour} * * *`,
+        cron: '* * * * *',
         tz: schedule.timezone,
       },
       payload: {},
@@ -203,25 +204,72 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
       execute: (context) =>
         this.app.container
           .resolve(demoConfigurationRuntimeToken)
-          .withFreshPolicy(() => this.runDailyReset(context.scheduledAt)),
+          .withFreshPolicy(() => this.runDailyReset(context.runAt)),
     };
   }
 
   private async runDailyReset(scheduledAt: Date): Promise<void> {
-    const service = this.service!;
-    // Nothing to reset before the first generation, which also names the account resets run as.
-    if ((await service.status()).state === null) return;
-    const due = await this.app.container
-      .resolve(demoConfigurationRuntimeToken)
-      .claimDaily(scheduledAt);
-    if (!due) return;
-    await service.reset(undefined, due.language, { wait: true });
-    const status = await service.status();
-    if (status.failure)
+    const configuration = this.app.container.resolve(
+      demoConfigurationRuntimeToken,
+    );
+    let claim: Awaited<ReturnType<typeof configuration.claimDaily>> = null;
+    let renewing: Promise<void> | undefined;
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
+    try {
+      const status = await this.service!.status();
+      if (status.state === null) return;
+      // A lease cannot fence arbitrary application callbacks. Require manual recovery of an uncertain operation.
+      if (status.failure?.code === 'DEMO_DATA_INTERRUPTED') {
+        this.logger()?.warn(
+          { dataset: status.datasetId },
+          'Daily demo reset requires manual recovery of an interrupted operation',
+        );
+        return;
+      }
+      claim = await configuration.claimDaily(scheduledAt);
+      if (!claim) return;
+      const owned = claim;
+      heartbeat = setInterval(() => {
+        if (renewing) return;
+        renewing = configuration
+          .renewDaily(owned)
+          .catch((err: unknown) => {
+            this.logger()?.warn(
+              { err, day: owned.day, attempt: owned.attempt },
+              'Could not renew daily demo reset claim',
+            );
+          })
+          .finally(() => {
+            renewing = undefined;
+          });
+      }, 30_000);
+      heartbeat.unref();
+      await this.service!.reset(undefined, claim.language, {
+        wait: true,
+        scheduled: true,
+      });
+      await configuration.finishDaily(claim);
+    } catch (err) {
       this.logger()?.warn(
-        { failure: status.failure },
+        { err, day: claim?.day, attempt: claim?.attempt },
         'The daily demo data reset failed',
       );
+      if (claim) {
+        // Only a settled cleanup/generation failure or admission contention is safe to retry. Lease loss and
+        // validation/policy errors require intervention. Never retry an uncertain successful completion.
+        const status = await this.service!.status();
+        const retryable =
+          err instanceof ApiError
+            ? err.reason === 'DEMO_DATA_BUSY'
+            : status.state === 'failed' &&
+              status.failure?.code !== 'DEMO_DATA_INTERRUPTED';
+        await configuration.finishDaily(claim, err, retryable);
+      }
+      throw err;
+    } finally {
+      if (heartbeat) clearInterval(heartbeat);
+      await renewing;
+    }
   }
 
   /** This process's own address, so the gateway's calls to the simulated model never leave the machine. */

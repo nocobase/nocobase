@@ -1,0 +1,26 @@
+{
+  "revision": "8f3e54db4f50146fd8b0376c603d09b486058249",
+  "baseOverlay": true,
+  "productionSha256": "bc5861c25e5531cf793372c2b80f8959c2632ed82606dc18fdc324d78e05726b",
+  "fixtureSha256": "cc16484cbf88958fc7ae99d810fbe1c0d92fdc20a87f5d01498e2d6bf265f22d",
+  "command": [
+    "node",
+    "--expose-gc",
+    "/Users/gchust/.t3/worktrees/nocobase/fix-demo-reset-resource-nocobase-20261029/packages/plugins/app-plugin-demo-mode/node_modules/vitest/vitest.mjs",
+    "run",
+    "tests/resources/reset-resource.test.ts",
+    "--project",
+    "resources",
+    "--no-file-parallelism",
+    "--maxWorkers",
+    "1"
+  ],
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "hardware": "Apple M4\n17179869184",
+  "cpuCount": 10,
+  "sharedLock": "/tmp/demo-reset-resource-benchmark.lock",
+  "nodeHeapLimitMiB": 1536,
+  "backup": "/var/folders/9c/5r5n_ymj6ll2s7d1nlbfv2p80000gn/T/demo-reset-source-backup-z63hdxey",
+  "elapsedSeconds": 76.09533023834229,
+  "exitCode": 1
+}

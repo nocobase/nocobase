@@ -53,3 +53,21 @@ describeMigration('202610200001_demo_mode_create_data_tables', {
       await expectCollection(name).not.toExist();
   },
 });
+
+describeMigration('202610290001_demo_mode_daily_resets', {
+  sources,
+  up: async ({ expectCollection }) => {
+    await expectCollection('demoModeDailyResets').toHaveField('token', {
+      type: 'string',
+      length: 36,
+      nullable: false,
+    });
+    await expectCollection('demoModeDailyResets').toHaveField('attempt', {
+      type: 'integer',
+      nullable: false,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('demoModeDailyResets').not.toExist();
+  },
+});

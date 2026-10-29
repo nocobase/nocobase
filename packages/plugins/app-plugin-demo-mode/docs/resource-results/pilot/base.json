@@ -1,0 +1,44 @@
+{
+  "node": "v24.22.1",
+  "rows": 20000,
+  "rounds": [
+    {
+      "round": 1,
+      "elapsedMs": 11149.560666999998,
+      "peakHeap": 151289144,
+      "peakRss": 1799045120,
+      "retainedHeap": 89494472
+    },
+    {
+      "round": 2,
+      "elapsedMs": 10231.359834000003,
+      "peakHeap": 156133248,
+      "peakRss": 1814167552,
+      "retainedHeap": 87733568
+    },
+    {
+      "round": 3,
+      "elapsedMs": 10538.992249999996,
+      "peakHeap": 161405888,
+      "peakRss": 1808416768,
+      "retainedHeap": 87918664
+    },
+    {
+      "round": 4,
+      "elapsedMs": 10817.509208000003,
+      "peakHeap": 158400496,
+      "peakRss": 1806254080,
+      "retainedHeap": 88129736
+    },
+    {
+      "round": 5,
+      "elapsedMs": 10256.273667000009,
+      "peakHeap": 175120056,
+      "peakRss": 1796980736,
+      "retainedHeap": 88214984
+    }
+  ],
+  "warmHeap": 90685488,
+  "maxRssKiB": 1784032,
+  "applicationPeakHeap": 193548352
+}

@@ -423,3 +423,15 @@ describe('simulated model', () => {
     expect(cleared.status).toBe(401);
   });
 });
+
+it('keeps date and DST semantics when a clock is reused across a long history', () => {
+  const clock = createDemoClock(
+    new Date('2026-03-10T18:00:00Z'),
+    'America/New_York',
+  );
+  expect(clock.isoAgo(3, 10)).toBe('2026-03-07T15:00:00.000Z');
+  expect(clock.isoAgo(2, 10)).toBe('2026-03-08T14:00:00.000Z');
+  expect(clock.isoAgo(0, 23)).toBe('2026-03-10T17:59:00.000Z');
+  expect(clock.isoAgo(-1, 10)).toBe('2026-03-11T14:00:00.000Z');
+  expect(clock.dateAgo(90)).toBe('2025-12-10');
+});

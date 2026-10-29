@@ -137,9 +137,9 @@ it('claims one daily reset, skips DST gaps and does not repeat a folded minute',
     timezone: 'America/New_York',
     language: 'en-US',
   };
-  expect(await config.claimDaily(new Date('2026-11-01T05:30:00Z'))).toEqual(
-    schedule,
-  );
+  expect(
+    await config.claimDaily(new Date('2026-11-01T05:30:00Z')),
+  ).toMatchObject(schedule);
   expect(await config.claimDaily(new Date('2026-11-01T06:30:00Z'))).toBeNull();
   expect(
     nextDailyRun({ ...schedule, hour: 2 }, new Date('2026-03-08T05:00:00Z')),
@@ -179,9 +179,9 @@ it('uses deployment defaults even when an old saved schedule disables resets', a
     schedule,
     nextRun: expect.any(String),
   });
-  expect(await config.claimDaily(new Date('2026-10-23T03:00:00Z'))).toEqual(
-    schedule,
-  );
+  expect(
+    await config.claimDaily(new Date('2026-10-23T03:00:00Z')),
+  ).toMatchObject(schedule);
   // Saving another policy still leaves the schedule owned by the deployment.
   await config.save('collections', 0, []);
   expect((await config.read()).schedule).toEqual(schedule);
@@ -206,11 +206,13 @@ it('shares durable daily claims across service instances', async () => {
   );
   const due = new Date('2026-10-21T20:00:00Z');
   expect(await other.claimDaily(new Date('2026-10-21T19:59:00Z'))).toBeNull();
-  expect(await config.claimDaily(due)).toEqual(schedule);
+  const claim = await config.claimDaily(due);
+  expect(claim).toMatchObject(schedule);
   expect(await other.claimDaily(due)).toBeNull();
-  expect(await other.claimDaily(new Date('2026-10-22T20:00:00Z'))).toEqual(
-    schedule,
-  );
+  await config.finishDaily(claim!);
+  expect(
+    await other.claimDaily(new Date('2026-10-22T20:00:00Z')),
+  ).toMatchObject(schedule);
 });
 it('provides deterministic daily samples independent of record iteration order', () => {
   const a = createDemoClock(
@@ -620,4 +622,18 @@ it('resolves allowed collections once instead of introspecting the schema on eve
   // The guarded routes' own queries still resolve their tables; the allowed rules add no lookups.
   expect(get.mock.calls.map(([name]) => name)).not.toContain('verification');
   expect(get.mock.calls.map(([name]) => name)).not.toContain('demonotes');
+});
+
+it('bounds initial admission recovery and skips nonexistent DST wall minutes', async () => {
+  const { config } = await setup({
+    NOCOBASE_DEMO_RESET_HOUR: '2',
+    NOCOBASE_DEMO_RESET_MINUTE: '55',
+    NOCOBASE_DEMO_RESET_TIMEZONE: 'America/New_York',
+  });
+  // 02:55 does not exist on the spring-forward day, even though 03:00 is only five wall minutes later.
+  expect(await config.claimDaily(new Date('2026-03-08T07:00:00Z'))).toBeNull();
+  expect(await config.claimDaily(new Date('2026-03-09T07:11:00Z'))).toBeNull();
+  expect(
+    await config.claimDaily(new Date('2026-03-10T06:56:00Z')),
+  ).toMatchObject({ attempt: 1, day: '2026-03-10' });
 });

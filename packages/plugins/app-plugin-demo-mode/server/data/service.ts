@@ -195,7 +195,16 @@ export class DefaultDemoDataService implements DemoDataService {
         ? 'failed'
         : row.state
       : null;
-    const records = row ? await this.records(row.id) : [];
+    // Only custom application counts require the legacy complete records context.
+    const records =
+      row && dataset?.counts && state === 'ready'
+        ? await this.records(row.id)
+        : [];
+    const summary = row ? await this.recordCounts(row.id) : {};
+    const recordCount = Object.values(summary).reduce(
+      (total, count) => total + count,
+      0,
+    );
     const language = row?.language ?? null;
     const accountsByLanguage = Object.fromEntries(
       (dataset?.languages ?? []).map((candidate) => [
@@ -206,7 +215,7 @@ export class DefaultDemoDataService implements DemoDataService {
     const counts =
       row && dataset?.counts && state === 'ready'
         ? await dataset.counts(this.clearContext(row, records))
-        : this.countsOf(records);
+        : this.countsOf(summary);
     return {
       available: Boolean(dataset),
       datasetId: dataset?.id ?? null,
@@ -216,12 +225,10 @@ export class DefaultDemoDataService implements DemoDataService {
       language,
       createdAt: iso(row?.createdAt),
       finishedAt: iso(row?.finishedAt),
-      records: records.length,
+      records: recordCount,
       counts,
       accounts:
-        state === 'ready' &&
-        language &&
-        records.some((r) => r.collection === USER)
+        state === 'ready' && language && Boolean(summary[USER])
           ? (accountsByLanguage[language] ?? [])
           : [],
       accountsByLanguage,
@@ -241,13 +248,12 @@ export class DefaultDemoDataService implements DemoDataService {
           : null,
       failure:
         state === 'failed'
-          ? (row?.failure ??
-            (stale
-              ? {
-                  code: 'DEMO_DATA_INTERRUPTED',
-                  message: 'The last import was interrupted.',
-                }
-              : null))
+          ? stale
+            ? {
+                code: 'DEMO_DATA_INTERRUPTED',
+                message: 'The last demo data operation was interrupted.',
+              }
+            : (row?.failure ?? null)
           : null,
       enabled: this.deps.enabled(),
       model: {
@@ -273,6 +279,7 @@ export class DefaultDemoDataService implements DemoDataService {
     await (
       await this.claim(actorId, language)
     ).job;
+    await this.recoverDaily();
     return this.status();
   }
 
@@ -306,7 +313,7 @@ export class DefaultDemoDataService implements DemoDataService {
   public async reset(
     actorId?: string,
     language?: string,
-    options: { readonly wait?: boolean } = {},
+    options: { readonly wait?: boolean; readonly scheduled?: boolean } = {},
   ): Promise<DemoDataStatus> {
     const dataset = this.requireDataset();
     if (this.running)
@@ -348,9 +355,10 @@ export class DefaultDemoDataService implements DemoDataService {
         operationId: await this.claimRemoval(dataset, current, actor, 'reset'),
       };
     })();
-    const job = claiming.then(({ current, operationId }) =>
-      this.replace(dataset, current, actor, chosen, operationId),
-    );
+    const job = claiming.then(async ({ current, operationId }) => {
+      await this.replace(dataset, current, actor, chosen, operationId);
+      if (!options.scheduled) await this.recoverDaily();
+    });
     this.running = job
       .catch(() => undefined)
       .finally(() => {
@@ -556,7 +564,7 @@ export class DefaultDemoDataService implements DemoDataService {
       // Reset identities and accounts retained by an earlier clear share the same reuse path.
       const carried: Carried = {
         records: new Set(
-          (await this.records(dataset.id)).map((record) =>
+          (await this.records(dataset.id, true)).map((record) =>
             carriedKey(record.collection, record.recordId),
           ),
         ),
@@ -581,7 +589,13 @@ export class DefaultDemoDataService implements DemoDataService {
         message: error instanceof Error ? error.message : String(error),
       };
       this.deps.logger?.warn(
-        { dataset: dataset.id, failure },
+        {
+          dataset: dataset.id,
+          operationId,
+          phase: 'generate',
+          failure,
+          err: error,
+        },
         'Demo data import failed; taking back what it wrote',
       );
       const row = await this.row();
@@ -621,10 +635,13 @@ export class DefaultDemoDataService implements DemoDataService {
     const total = steps.reduce((sum, step) => sum + (step.weight ?? 1), 0) || 1;
     let done = 0;
     // After the records a reset carries, which keep their places.
-    let ordinal = (await this.records(dataset.id)).reduce(
-      (next, record) => Math.max(next, record.ordinal + 1),
-      0,
-    );
+    const last = await this.deps.database
+      .query()
+      .selectFrom('demoModeRecords')
+      .select(({ fn }) => [fn.max('ordinal').as('ordinal')])
+      .where('datasetId', '=', dataset.id)
+      .executeTakeFirst<{ ordinal: number | null }>();
+    let ordinal = last?.ordinal == null ? 0 : Number(last.ordinal) + 1;
     let data: Record<string, unknown> = {};
     const reached = async (fraction: number): Promise<void> => {
       this.percent = Math.min(99, Math.floor(fraction * 100));
@@ -640,26 +657,35 @@ export class DefaultDemoDataService implements DemoDataService {
       keyField = 'id',
     ): Promise<void> => {
       await this.lease.assertLease(dataset.id, operationId);
-      const list = (typeof ids === 'string' ? [ids] : [...ids]).map(String);
-      for (const recordId of list) {
+      const list = typeof ids === 'string' ? [ids] : ids;
+      // Bound SQL parameters and temporary allocations even when an application tracks a large batch.
+      for (let offset = 0; offset < list.length; offset += 100) {
         await this.lease.assertLease(dataset.id, operationId);
-        const key = carriedKey(collection, recordId);
-        if (carried?.records.has(key)) {
-          carried.touched.add(key);
-          continue;
-        }
-        await this.deps.database
-          .query()
-          .insertInto('demoModeRecords')
-          .values({
+        const values = [];
+        for (const id of list.slice(offset, offset + 100)) {
+          const recordId = String(id);
+          const key = carriedKey(collection, recordId);
+          if (carried?.records.has(key)) {
+            carried.touched.add(key);
+            continue;
+          }
+          values.push({
             datasetId: dataset.id,
             collection,
             recordId,
             keyField,
             ordinal: ordinal++,
             createdAt: new Date(),
-          })
-          .execute();
+          });
+        }
+        if (values.length)
+          await this.deps.database
+            .query()
+            .insertInto('demoModeRecords')
+            .values(values)
+            .execute();
+        // Synchronous drivers still need an event-loop turn for lease renewal and status requests.
+        await new Promise<void>((resolve) => setImmediate(resolve));
       }
     };
     const clock = createDemoClock(
@@ -714,7 +740,7 @@ export class DefaultDemoDataService implements DemoDataService {
     }
     if (carried) {
       // What the cleared import had and this one did not create again goes as a clear would take it.
-      const left = (await this.records(dataset.id)).filter(
+      const left = (await this.records(dataset.id, true)).filter(
         (record) =>
           carried.records.has(carriedKey(record.collection, record.recordId)) &&
           !carried.touched.has(carriedKey(record.collection, record.recordId)),
@@ -747,6 +773,31 @@ export class DefaultDemoDataService implements DemoDataService {
       { dataset: dataset.id, language },
       'Imported demo data',
     );
+  }
+
+  private async recoverDaily(): Promise<void> {
+    // An operator must first stop the old owner. Successful manual generation settles uncertain daily attempts;
+    // they remain terminal for their day, and tomorrow's schedule can run again.
+    await this.deps.database
+      .query()
+      .updateTable('demoModeDailyResets')
+      .set({ state: 'recovered', updatedAt: new Date() })
+      .where((eb) =>
+        eb.or([
+          eb('state', '=', 'interrupted'),
+          eb.and([
+            eb('state', '=', 'running'),
+            eb('updatedAt', '<', new Date(Date.now() - STALE_MS)),
+          ]),
+        ]),
+      )
+      .execute()
+      .catch((err: unknown) => {
+        this.deps.logger?.warn(
+          { err },
+          'Could not settle interrupted daily demo resets',
+        );
+      });
   }
 
   /** Clears everything the import created and forgets it. */
@@ -817,6 +868,10 @@ export class DefaultDemoDataService implements DemoDataService {
       try {
         await this.undo(dataset, row, actorId, operationId, carry);
       } catch (cause) {
+        this.deps.logger?.warn(
+          { dataset: dataset.id, operationId, phase: 'clear', err: cause },
+          'Demo data cleanup failed',
+        );
         await this.lease.touch(dataset.id, operationId, {
           state: 'failed',
           failure: JSON.stringify({
@@ -824,8 +879,7 @@ export class DefaultDemoDataService implements DemoDataService {
               cause instanceof ApiError
                 ? cause.reason
                 : 'DEMO_DATA_CLEAR_FAILED',
-            message:
-              'Demo data cleanup did not complete. Retry to finish cleanup.',
+            message: cause instanceof Error ? cause.message : String(cause),
           }),
         });
         throw cause;
@@ -915,14 +969,26 @@ export class DefaultDemoDataService implements DemoDataService {
     };
   }
 
-  private countsOf(
-    records: readonly DemoTrackedRecord[],
-  ): Record<string, number> {
+  private async recordCounts(
+    datasetId: string,
+  ): Promise<Record<string, number>> {
+    const rows = await this.deps.database
+      .query()
+      .selectFrom('demoModeRecords')
+      .select(({ fn }) => ['collection', fn.countAll().as('count')])
+      .where('datasetId', '=', datasetId)
+      .groupBy('collection')
+      .execute<{ collection: string; count: number }>();
+    return Object.fromEntries(
+      rows.map((row) => [row.collection, Number(row.count)]),
+    );
+  }
+
+  private countsOf(summary: Record<string, number>): Record<string, number> {
     const counts: Record<string, number> = {};
-    for (const record of records) {
-      const name = record.collection === USER ? 'accounts' : record.collection;
-      if (name.startsWith('@')) continue;
-      counts[name] = (counts[name] ?? 0) + 1;
+    for (const [collection, count] of Object.entries(summary)) {
+      const name = collection === USER ? 'accounts' : collection;
+      if (!name.startsWith('@')) counts[name] = (counts[name] ?? 0) + count;
     }
     return counts;
   }
@@ -946,19 +1012,25 @@ export class DefaultDemoDataService implements DemoDataService {
 
   private async records(
     datasetId: string,
+    identitiesOnly = false,
   ): Promise<(DemoTrackedRecord & { keyField: string; ordinal: number })[]> {
-    const rows = await this.deps.database
+    let query = this.deps.database
       .query()
       .selectFrom('demoModeRecords')
       .select(['collection', 'recordId', 'keyField', 'ordinal'])
-      .where('datasetId', '=', datasetId)
-      .orderBy('ordinal', 'asc')
-      .execute<{
-        collection: string;
-        recordId: string;
-        keyField: string;
-        ordinal: unknown;
-      }>();
+      .where('datasetId', '=', datasetId);
+    if (identitiesOnly)
+      query = query.where('collection', 'in', [
+        USER,
+        PERMISSION_SET,
+        ASSIGNMENT,
+      ]);
+    const rows = await query.orderBy('ordinal', 'asc').execute<{
+      collection: string;
+      recordId: string;
+      keyField: string;
+      ordinal: unknown;
+    }>();
     return rows.map((row) => ({
       collection: String(row.collection),
       recordId: String(row.recordId),

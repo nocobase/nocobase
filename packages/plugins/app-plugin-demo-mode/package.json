@@ -82,7 +82,8 @@
     "dist",
     "README.md",
     "CHANGELOG.md",
-    "skills"
+    "skills",
+    "docs"
   ],
   "publishConfig": {
     "access": "public",

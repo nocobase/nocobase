@@ -1,0 +1,45 @@
+{
+  "node": "v24.22.1",
+  "measurementScope": "reset-to-idle; verification outside",
+  "rows": 20000,
+  "rounds": [
+    {
+      "round": 1,
+      "elapsedMs": 639.3777500000006,
+      "peakHeap": 149993800,
+      "peakRss": 402833408,
+      "retainedHeap": 92329480
+    },
+    {
+      "round": 2,
+      "elapsedMs": 587.6759580000007,
+      "peakHeap": 149961328,
+      "peakRss": 403144704,
+      "retainedHeap": 92618312
+    },
+    {
+      "round": 3,
+      "elapsedMs": 588.476834,
+      "peakHeap": 148530632,
+      "peakRss": 403259392,
+      "retainedHeap": 92893024
+    },
+    {
+      "round": 4,
+      "elapsedMs": 650.2804580000002,
+      "peakHeap": 150460416,
+      "peakRss": 403554304,
+      "retainedHeap": 92926280
+    },
+    {
+      "round": 5,
+      "elapsedMs": 656.6219579999997,
+      "peakHeap": 150006272,
+      "peakRss": 386940928,
+      "retainedHeap": 93040632
+    }
+  ],
+  "warmHeap": 92185728,
+  "maxRssKiB": 394144,
+  "applicationPeakHeap": 163208408
+}

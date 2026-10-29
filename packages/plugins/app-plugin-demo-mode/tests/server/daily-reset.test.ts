@@ -43,7 +43,7 @@ it('schedules the default reset for a dataset registered after the plugin is rea
   const { rule } = await setup();
   await expect
     .poll(async () => (await rule())?.options)
-    .toEqual({ cron: '0 3 * * *', tz: 'UTC' });
+    .toEqual({ cron: '* * * * *', tz: 'UTC' });
 });
 
 it('uses the environment schedule independently of the last generated language', async () => {
@@ -56,7 +56,7 @@ it('uses the environment schedule independently of the last generated language',
   await data.importNow('1', 'zh-CN');
   await data.whenIdle();
   expect((await rule())?.options).toEqual({
-    cron: '30 4 * * *',
+    cron: '* * * * *',
     tz: 'Asia/Shanghai',
   });
   expect((await config.read()).schedule).toEqual({
