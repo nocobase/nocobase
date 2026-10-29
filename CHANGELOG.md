@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to NocoBase 3 are documented in this file, one section per release: `release-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
+All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
-## [release-beta/2026-10-28.2](https://github.com/nocobase/nocobase/releases/tag/release-beta%2F2026-10-28.2)
+## [nocobase-v3-beta/2026-10-28.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-28.2)
 
 ### 🎉 New Features
 

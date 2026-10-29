@@ -394,6 +394,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
         this.sessionId,
         {
           agentId: input?.agentId,
+          effort: input?.effort,
           content: text,
           attachmentIds: input?.attachmentIds?.[0],
           clientId: input?.clientId,
@@ -487,6 +488,7 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
         projectId: options.projectId,
         title: options.title,
         showInChatList: options.showInChatList,
+        effort: options.effort,
       },
       initial.config,
     );
