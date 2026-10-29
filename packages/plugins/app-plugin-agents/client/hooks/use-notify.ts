@@ -32,6 +32,12 @@ export function errorText(
 ): string {
   if (!(error instanceof ApiClientError)) return fallback;
   if (error.status === 403) return t('common.forbidden');
+  if (
+    error.reason === 'CONFLICT' &&
+    (error.payload as { error?: { metadata?: { reason?: unknown } } })?.error
+      ?.metadata?.reason === 'boundRunnerIncompatible'
+  )
+    return t('errors.boundRunnerIncompatible');
   if (error.reason)
     return t(`errors.${error.reason}`, {
       defaultValue: error.message || fallback,

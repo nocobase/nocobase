@@ -53,6 +53,8 @@ const frFR: LocaleResource<typeof enUS> = {
     title: 'Supprimer les modifications non enregistrées ?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'Ce runner ne peut pas exécuter l’Agent sélectionné. Changez de runner ou démarrez une nouvelle conversation.',
     CONFLICT: 'Entre-temps, cela a changé. Rechargez et réessayez.',
     REVISION_CONFLICT: 'Entre-temps, cela a changé. Rechargez et réessayez.',
     FORBIDDEN: "Vous n'êtes pas autorisé à faire cela.",
