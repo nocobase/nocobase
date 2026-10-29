@@ -86,9 +86,7 @@ export class CollectionRegistry
   }
 
   async get(name: string): Promise<CollectionDefinition | undefined> {
-    const result = await this.getResolutionInternal(name);
-    // Callers of get() do not need a copy of inspection diagnostics and warnings.
-    return result ? structuredClone(result.collection) : undefined;
+    return (await this.getResolution(name))?.collection;
   }
 
   /** Resolve Query's relative table identifiers without treating them as logical names. */

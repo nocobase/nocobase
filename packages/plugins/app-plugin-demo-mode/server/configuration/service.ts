@@ -1,4 +1,9 @@
-import { DailyResetClaims, type DailyClaim } from './daily-reset.js';
+import {
+  DailyResetClaims,
+  type DailyAdmission,
+  type DailyClaim,
+  type DailySettledData,
+} from './daily-reset.js';
 import type { DemoConfigurationRuntime } from './contract.js';
 import {
   DefaultDemoAgentProxy,
@@ -388,26 +393,26 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
     return (await adapter.invoke(input)) as T;
   }
   /** Admission uses deployment policy and the database, independently of the request policy cache. */
-  private async dailyAdmission(now: Date): Promise<{
-    readonly day: string;
-    readonly schedule: DemoDailySchedule;
-    readonly allowCreate: boolean;
-  } | null> {
+  private async dailyAdmission(now: Date): Promise<
+    | (DailyAdmission & {
+        readonly day: string;
+        readonly schedule: DemoDailySchedule;
+      })
+    | null
+  > {
     if (!this.enabled) return null;
     const row = await this.row();
     if (!row) return null;
     const schedule = { ...this.settings.dailyReset };
+    if (!schedule.enabled) return null;
     const local = localMinute(now, schedule.timezone);
-    if (
-      !schedule.enabled ||
-      local.hour * 60 + local.minute < schedule.hour * 60 + schedule.minute ||
-      row.lastDay === local.day ||
-      !firstWallMinute(now, schedule.timezone)
-    )
-      return null;
+    // Retries stay admitted through a repeated DST hour; only creating a day's first attempt needs its first wall minute.
+    const due =
+      local.hour * 60 + local.minute >= schedule.hour * 60 + schedule.minute &&
+      row.lastDay !== local.day;
     // A brief admission window lets a database/claim failure recover without manufacturing a run in a DST gap.
     let allowCreate = false;
-    for (let ago = 0; ago <= 15; ago++) {
+    for (let ago = 0; due && ago <= 15; ago++) {
       const candidate = new Date(now.getTime() - ago * 60_000);
       const wall = localMinute(candidate, schedule.timezone);
       if (
@@ -420,7 +425,7 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
         break;
       }
     }
-    return { day: local.day, schedule, allowCreate };
+    return { day: local.day, schedule, due, allowCreate };
   }
   public async dailyDue(now: Date): Promise<boolean> {
     const admission = await this.dailyAdmission(now);
@@ -428,13 +433,13 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       ? new DailyResetClaims(this.database).pending(
           admission.day,
           now,
-          admission.allowCreate,
+          admission,
         )
       : false;
   }
   public async claimDaily(
     now: Date,
-    options: { readonly dataSettled?: boolean } = {},
+    options: { readonly settled?: DailySettledData } = {},
   ): Promise<DailyClaim | null> {
     const admission = await this.dailyAdmission(now);
     if (!admission) return null;
@@ -442,8 +447,8 @@ export class DefaultDemoConfigurationService implements DemoConfigurationRuntime
       admission.day,
       admission.schedule,
       now,
-      admission.allowCreate,
-      options.dataSettled,
+      admission,
+      options.settled,
     );
   }
   public renewDaily(claim: DailyClaim): Promise<void> {

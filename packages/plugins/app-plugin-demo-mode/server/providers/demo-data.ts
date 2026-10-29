@@ -53,6 +53,8 @@ export function demoModelLoopbackUrl(
   return `http://${host}:${server.port ?? 13000}${base}/api/demoMode/models/v1`;
 }
 
+const INTERRUPTION_RECHECK_MS = 10 * 60_000;
+
 /**
  * The demo dataset service. Applications register their dataset on `demoDataToken`; this provider gives it the
  * accounts, roles and model services of the official plugins it finds, the settings item that guards its routes,
@@ -63,7 +65,8 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   private service: DefaultDemoDataService | undefined;
   private agents: DemoAgents | undefined;
   private resetJobs: ScheduleExecutor | undefined;
-  private interruptionReported = false;
+  /** When an interrupted operation was last seen, so the paused schedule rereads the data status only rarely. */
+  private interruptionSeenAt: number | undefined;
 
   public override register(): void {
     const container = this.app.container;
@@ -219,22 +222,36 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
     const configuration = this.app.container.resolve(
       demoConfigurationRuntimeToken,
     );
+    // Only manual recovery ends an interruption, and it settles the daily claims itself; until then, recheck rarely.
+    if (
+      this.interruptionSeenAt !== undefined &&
+      Date.now() - this.interruptionSeenAt < INTERRUPTION_RECHECK_MS
+    )
+      return;
     const status = await this.service!.status();
     if (status.state === null) return;
     // A lease cannot fence arbitrary application callbacks. Require manual recovery of an uncertain operation.
     if (status.failure?.code === 'DEMO_DATA_INTERRUPTED') {
       // The management page shows the interruption; report it once instead of every minute.
-      if (!this.interruptionReported)
+      if (this.interruptionSeenAt === undefined)
         this.logger()?.warn(
           { dataset: status.datasetId },
           'Daily demo reset requires manual recovery of an interrupted operation',
         );
-      this.interruptionReported = true;
+      this.interruptionSeenAt = Date.now();
       return;
     }
-    this.interruptionReported = false;
+    this.interruptionSeenAt = undefined;
     const claim = await configuration.claimDaily(scheduledAt, {
-      dataSettled: status.state === 'ready' || status.state === 'failed',
+      settled:
+        status.state === 'ready' || status.state === 'failed'
+          ? {
+              ready: status.state === 'ready',
+              finishedAt: status.finishedAt
+                ? new Date(status.finishedAt)
+                : null,
+            }
+          : undefined,
     });
     if (!claim) return;
     let renewing: Promise<void> | undefined;
@@ -287,7 +304,12 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
     }
     // Outside the failure path: a reset that completed is never recorded as failed. If this acknowledgement fails,
     // the claim goes stale and is closed without repetition once the settled data is seen.
-    await configuration.finishDaily(claim);
+    await configuration.finishDaily(claim).catch((err: unknown) => {
+      this.logger()?.warn(
+        { err, day: claim.day, attempt: claim.attempt },
+        'Could not acknowledge the completed daily demo reset',
+      );
+    });
   }
 
   /** This process's own address, so the gateway's calls to the simulated model never leave the machine. */

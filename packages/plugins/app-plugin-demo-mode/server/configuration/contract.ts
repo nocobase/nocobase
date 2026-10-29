@@ -1,4 +1,4 @@
-import type { DailyClaim } from './daily-reset.js';
+import type { DailyClaim, DailySettledData } from './daily-reset.js';
 import type { DemoAgentAdapter, DemoAgentProxy } from './agent-proxy.js';
 import type { DemoSqlRule } from '../guard.js';
 import type {
@@ -50,10 +50,10 @@ export interface DemoConfigurationRuntime extends DemoConfigurationService {
   wholeCollectionRules(): Promise<readonly DemoSqlRule[]>;
   /** Cheap admission check, so idle minutes of the per-minute schedule read no demo data status. */
   dailyDue(now: Date): Promise<boolean>;
-  /** `dataSettled` lets an unacknowledged claim whose data operation has settled be closed without repeating it. */
+  /** `settled` lets an unacknowledged claim be closed, or retried when its reset did not complete, by data outcome. */
   claimDaily(
     now: Date,
-    options?: { readonly dataSettled?: boolean },
+    options?: { readonly settled?: DailySettledData },
   ): Promise<DailyClaim | null>;
   renewDaily(claim: DailyClaim): Promise<void>;
   finishDaily(

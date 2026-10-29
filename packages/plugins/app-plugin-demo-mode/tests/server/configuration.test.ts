@@ -269,7 +269,16 @@ it('retries settled failures after a delay, at most three attempts per day', asy
   expect(await dailyRow('2026-10-22')).toMatchObject({ state: 'failed' });
   expect(await config.dailyDue(at('2026-10-22T03:10:00Z'))).toBe(false);
 });
-it('closes an unacknowledged claim once its data settled, without repeating its day', async () => {
+async function lastDay() {
+  return (
+    await app.connection.query
+      .selectFrom('demoModeConfiguration')
+      .select('lastDay')
+      .where('id', '=', 'default')
+      .executeTakeFirst<{ lastDay: string | null }>()
+  )?.lastDay;
+}
+it('closes an unacknowledged claim whose reset completed, without repeating its day', async () => {
   const { config } = await setup();
   const lost = await config.claimDaily(at('2026-10-21T03:00:00Z'));
   // The owner stopped renewing. While its data operation may still run, nothing starts and nothing throws.
@@ -278,13 +287,52 @@ it('closes an unacknowledged claim once its data settled, without repeating its 
   expect(await dailyRow('2026-10-21')).toMatchObject({ state: 'interrupted' });
   const tomorrow = at('2026-10-22T03:00:00Z');
   expect(await config.claimDaily(tomorrow)).toBeNull();
-  // Settled data shows the operation ended; the next day proceeds and the old day stays terminal.
-  const next = await config.claimDaily(tomorrow, { dataSettled: true });
+  // Data that settled ready after the claim started shows the reset completed; the old day stays terminal.
+  const next = await config.claimDaily(tomorrow, {
+    settled: { ready: true, finishedAt: new Date('2026-10-21T03:20:00Z') },
+  });
   expect(next).toMatchObject({ day: '2026-10-22', attempt: 1 });
   expect(await dailyRow('2026-10-21')).toMatchObject({ state: 'recovered' });
-  await expect(config.finishDaily(lost!)).rejects.toThrow(/lost/u);
+  expect(await lastDay()).toBe('2026-10-21');
+  // A late failure report never overrides the settlement, but the owner's own success is still acknowledged.
+  await expect(config.finishDaily(lost!, new Error('late'))).rejects.toThrow(
+    /lost/u,
+  );
+  await config.finishDaily(lost!);
+  expect(await dailyRow('2026-10-21')).toMatchObject({ state: 'succeeded' });
   await config.finishDaily(next!);
   expect(await dailyRow('2026-10-22')).toMatchObject({ state: 'succeeded' });
+  expect(await lastDay()).toBe('2026-10-22');
+});
+it('retries an unacknowledged claim whose reset never completed', async () => {
+  const { config } = await setup();
+  await config.claimDaily(at('2026-10-21T03:00:00Z'));
+  // The owner stopped before its reset reached the data, which still shows the import before the claim.
+  const now = at('2026-10-21T03:11:00Z');
+  expect(
+    await config.claimDaily(now, {
+      settled: { ready: true, finishedAt: new Date('2026-10-20T03:05:00Z') },
+    }),
+  ).toMatchObject({ day: '2026-10-21', attempt: 2 });
+  expect(await lastDay()).toBeNull();
+});
+it('runs a retry scheduled across local midnight before the next scheduled time', async () => {
+  const { config } = await setup({
+    NOCOBASE_DEMO_RESET_HOUR: '23',
+    NOCOBASE_DEMO_RESET_MINUTE: '58',
+  });
+  const claim = await config.claimDaily(at('2026-10-21T23:58:00Z'));
+  await config.finishDaily(claim!, new Error('generation failed'), true);
+  expect(await config.dailyDue(at('2026-10-22T00:02:00Z'))).toBe(false);
+  const now = at('2026-10-22T00:03:00Z');
+  expect(await config.dailyDue(now)).toBe(true);
+  const retry = await config.claimDaily(now);
+  expect(retry).toMatchObject({ day: '2026-10-21', attempt: 2 });
+  await config.finishDaily(retry!);
+  expect(await lastDay()).toBe('2026-10-21');
+  expect(await config.dailyDue(at('2026-10-22T00:04:00Z'))).toBe(false);
+  // The next day still runs at its own time.
+  expect(await config.dailyDue(at('2026-10-22T23:58:00Z'))).toBe(true);
 });
 it('never starts a later day while an earlier owner still renews its claim', async () => {
   const { config } = await setup({ NOCOBASE_DEMO_RESET_HOUR: '23' });
@@ -295,7 +343,11 @@ it('never starts a later day while an earlier owner still renews its claim', asy
   await config.renewDaily(late!);
   const now = at('2026-10-22T23:00:00Z');
   expect(await config.dailyDue(now)).toBe(false);
-  expect(await config.claimDaily(now, { dataSettled: true })).toBeNull();
+  expect(
+    await config.claimDaily(now, {
+      settled: { ready: true, finishedAt: new Date('2026-10-22T22:00:00Z') },
+    }),
+  ).toBeNull();
 });
 it('provides deterministic daily samples independent of record iteration order', () => {
   const a = createDemoClock(

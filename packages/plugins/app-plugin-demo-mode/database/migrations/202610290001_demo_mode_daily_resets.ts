@@ -12,6 +12,7 @@ const migration: MigrationDefinition = defineMigration({
       collection.string('token', { length: 36, nullable: false });
       collection.string('state', { length: 16, nullable: false });
       collection.integer('attempt', { nullable: false });
+      collection.datetimeTz('startedAt', { nullable: false });
       collection.datetimeTz('updatedAt', { nullable: false });
       collection.datetimeTz('nextAt');
       collection.json('failure');

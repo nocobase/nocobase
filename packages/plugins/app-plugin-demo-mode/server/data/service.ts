@@ -879,7 +879,8 @@ export class DefaultDemoDataService implements DemoDataService {
               cause instanceof ApiError
                 ? cause.reason
                 : 'DEMO_DATA_CLEAR_FAILED',
-            message: cause instanceof Error ? cause.message : String(cause),
+            message:
+              'Demo data cleanup did not complete. Retry to finish cleanup.',
           }),
         });
         throw cause;
