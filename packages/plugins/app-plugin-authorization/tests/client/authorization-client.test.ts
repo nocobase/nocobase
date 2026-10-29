@@ -265,8 +265,9 @@ describe('permission snapshot lifecycle', () => {
       const client = new AuthorizationClient({ request } as never);
       const oldCheck = client.can({ resource, action: 'access' });
       await vi.waitFor(() => expect(request).toHaveBeenCalledOnce());
-      client.invalidate();
+      client.resetSession();
       const nextCheck = client.can({ resource, action: 'access' });
+      expect(await nextCheck).toBe(false);
       if (outcome === 'resolve') old.resolve(granted);
       else old.reject(new Error('Previous session expired'));
       expect(await nextCheck).toBe(false);
@@ -275,6 +276,25 @@ describe('permission snapshot lifecycle', () => {
       expect(request).toHaveBeenCalledTimes(2);
     },
   );
+
+  it('collapses queued obsolete permission reads into one trailing snapshot', async () => {
+    const blocked = Promise.withResolvers<typeof granted>();
+    const request = vi
+      .fn()
+      .mockReturnValueOnce(blocked.promise)
+      .mockResolvedValue(denied);
+    const client = new AuthorizationClient({ request } as never);
+    const first = client.snapshot();
+    await vi.waitFor(() => expect(request).toHaveBeenCalledOnce());
+    client.invalidate();
+    const second = client.snapshot();
+    client.invalidate();
+    const third = client.snapshot();
+    blocked.resolve(granted);
+    const values = await Promise.all([first, second, third]);
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(values).toEqual([denied.data, denied.data, denied.data]);
+  });
 
   it('calls the /api/authorization endpoints and unwraps lists', async () => {
     const request = vi.fn().mockResolvedValue({

@@ -290,7 +290,7 @@ export class AuthorizationClient {
   private cached?: Promise<AuthorizationSnapshot>;
   private currentRevision = 0;
   private waitUntilReady: () => Promise<void> = () => Promise.resolve();
-  private inFlight?: Promise<DataResponse<AuthorizationSnapshot>>;
+  private inFlight?: Promise<DataResponse<AuthorizationSnapshot> | undefined>;
 
   /** Coordinate the initial permission read with acknowledged subscription readiness. */
   waitForRealtime(wait: () => Promise<void>): void {
@@ -322,14 +322,17 @@ export class AuthorizationClient {
         .catch(() => undefined)
         .then(() => this.waitUntilReady())
         .then(() =>
-          this.api.request<DataResponse<AuthorizationSnapshot>>({
-            path: 'authorization/permissions',
-          }),
+          this.cached === request
+            ? this.api.request<DataResponse<AuthorizationSnapshot>>({
+                path: 'authorization/permissions',
+              })
+            : undefined,
         );
+
       this.inFlight = response;
       const request: Promise<AuthorizationSnapshot> = response.then(
         (response) =>
-          this.cached === request ? response.data : this.snapshot(),
+          this.cached === request && response ? response.data : this.snapshot(),
         (error: unknown) => {
           // A request from an earlier session must not evict its successor.
           if (this.cached !== request) return this.snapshot();
@@ -345,6 +348,12 @@ export class AuthorizationClient {
   /** Changes whenever the snapshot is invalidated. */
   revision(): number {
     return this.currentRevision;
+  }
+
+  /** Drop the previous identity's queue without waiting for its HTTP response. */
+  resetSession(): void {
+    this.inFlight = undefined;
+    this.invalidate();
   }
 
   invalidate(): void {
