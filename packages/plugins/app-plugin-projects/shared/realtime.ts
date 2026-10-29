@@ -11,11 +11,12 @@ export interface PmChangeEvent {
   readonly kind: 'pm.changed';
   readonly domain: PmChangeDomain;
   /**
-   * The issues that changed, when every change named one and none moved an issue into or out of a list (created,
-   * deleted, restored, owner, status, project, parent or executor changed). Absent, any issue may have changed, and
-   * which issues a list or a project holds may have changed too.
+   * The issues that changed, including creation, deletion and list membership changes. Lists must still refresh.
+   * Absent, any issue may have changed (for example a visibility or settings change).
    */
   readonly issueIds?: readonly string[];
+  /** Known issue changes may also change list membership or project counts. */
+  readonly listsChanged?: true;
   /** Only comment threads and activity changed; absent or mixed changes require the full snapshot. */
   readonly discussionOnly?: true;
 }

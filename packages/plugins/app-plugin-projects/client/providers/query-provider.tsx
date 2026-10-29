@@ -21,6 +21,7 @@ import {
 import {
   announcedIssueIds,
   changedIssueSegments,
+  embeddedIssueSegments,
   isIssueRead,
 } from '../api/changed-issues.js';
 import { PmQueryClient } from '../api/invalidate-queries.js';
@@ -96,18 +97,26 @@ function RealtimeRefresh(): null {
             return;
           }
           const named = issues.map(announcedIssueIds);
-          if (named.some((ids) => !ids)) {
+          if (
+            named.some((ids) => !ids) ||
+            issues.some((change) => change.listsChanged)
+          )
             invalidate(pmKeys.projects);
+          if (named.some((ids) => !ids)) {
             invalidate(['pm', 'issue']);
           } else {
             const ids = new Set(named.flatMap((ids) => (ids ? [...ids] : [])));
             const segments = changedIssueSegments(queryClient, ids);
+            const embedded = embeddedIssueSegments(queryClient, ids);
             requests.push(
               refreshRealtimeQueries(
                 queryClient,
                 {
                   queryKey: ['pm', 'issue'],
-                  predicate: (query) => isIssueRead(query.queryKey, segments),
+                  predicate: (query) =>
+                    isIssueRead(query.queryKey, segments) ||
+                    (query.queryKey.length === 3 &&
+                      embedded.has(String(query.queryKey[2]))),
                 },
                 signal,
               ),

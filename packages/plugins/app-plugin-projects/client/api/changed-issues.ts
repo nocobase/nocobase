@@ -5,6 +5,7 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 import type { PmChangeEvent } from '../../shared/realtime.js';
+import type { IssueDetail } from '../../shared/issues.js';
 
 /** The issue ids an announcement names, or null when any issue may have changed. */
 export function announcedIssueIds(
@@ -33,6 +34,33 @@ export function changedIssueSegments(
       issueIds.has(id)
     )
       segments.add(segment);
+  }
+  return segments;
+}
+
+/** Detail snapshots embedding a changed issue; do not expand transitively or refresh their discussions. */
+export function embeddedIssueSegments(
+  client: Pick<QueryClient, 'getQueryCache'>,
+  issueIds: ReadonlySet<string>,
+): Set<string> {
+  const segments = new Set<string>();
+  for (const query of client.getQueryCache().findAll({
+    queryKey: ['pm', 'issue'],
+    exact: false,
+    predicate: (query) => query.queryKey.length === 3,
+  })) {
+    const detail = query.state.data as Partial<IssueDetail> | undefined;
+    const mentions =
+      (detail?.parent && issueIds.has(detail.parent.id)) ||
+      detail?.subtasks?.some((issue) => issueIds.has(issue.id)) ||
+      [
+        detail?.blockedBy,
+        detail?.blocks,
+        detail?.relatedTo,
+        detail?.blockers,
+      ].some((issues) => issues?.some((issue) => issueIds.has(issue.issueId)));
+    const segment = query.queryKey[2];
+    if (mentions && typeof segment === 'string') segments.add(segment);
   }
   return segments;
 }
