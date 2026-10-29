@@ -1166,3 +1166,37 @@ it('initializes one shared stream while multiple surfaces follow it', async () =
   expect(receive).toHaveBeenCalledTimes(2);
   reopened();
 });
+
+it('keeps an initial history read alive while the initial detail is reconciled', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.conversation('c1'),
+    queryFn: async () => f.state.detail,
+  });
+  const off = observer.subscribe(() => {});
+  await observer.refetch();
+  const blocked = Promise.withResolvers<{
+    data: never[];
+    meta: { lastSeq: number };
+  }>();
+  const original = f.request.getMockImplementation()!;
+  f.request.mockImplementation((options) =>
+    options.path.endsWith('/messages') ? blocked.promise : original(options),
+  );
+  const loading = f.controller.loadHistory('c1');
+  const refreshing = f.controller.refresh('c1', false);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(
+    f.request.mock.calls.filter(([options]) =>
+      options.path.endsWith('/messages'),
+    ),
+  ).toHaveLength(1);
+  blocked.resolve({ data: [], meta: { lastSeq: 0 } });
+  await Promise.all([loading, refreshing]);
+  off();
+});

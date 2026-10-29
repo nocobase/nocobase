@@ -1215,7 +1215,8 @@ export class ChatController {
         : undefined;
     const detail = cached ?? (await this.readDetail(id, fresh));
     if (!active()) return;
-    if (ordered()) await this.reconcile(id, detail);
+    if (ordered() && (fresh || this.history(id).state.loaded))
+      await this.reconcile(id, detail);
     if (!active()) return;
     // A newer detail query must not discard this refresh's message catch-up.
     // loadHistory coalesces overlapping reads independently of detail ordering.
