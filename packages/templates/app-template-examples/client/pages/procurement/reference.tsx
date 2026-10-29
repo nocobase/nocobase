@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useListData } from '#hooks/use-list-data';
 import { Input } from '#components/ui/input';
@@ -73,8 +73,13 @@ export function Reference({
   const { t } = useTranslation();
   const [q, setQ] = useState('');
   const [active, setActive] = useState('true');
+  const [query, setQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setQuery(q), 250);
+    return () => clearTimeout(timer);
+  }, [q]);
   const request = useListData<{ data: Candidate[] }>(
-    `procurement/candidates?${new URLSearchParams({ kind, q, active })}`,
+    `procurement/candidates?${new URLSearchParams({ kind, q: query, active })}`,
     { active: !disabled },
   );
   return (
@@ -108,7 +113,7 @@ export function Reference({
           { id: '', name: t('procurement.select') },
           ...(request.data?.data ?? []),
         ]}
-        disabled={disabled || request.loading}
+        disabled={disabled || q !== query || request.loading}
         onChange={(id) =>
           onChange(
             id,

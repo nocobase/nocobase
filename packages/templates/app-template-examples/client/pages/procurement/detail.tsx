@@ -23,6 +23,7 @@ import { useListData } from '#hooks/use-list-data';
 import {
   ProcurementInput,
   amount,
+  minorUnits,
   type ProcurementDetail,
 } from '../../../shared/procurement.js';
 import { Reference } from './reference.js';
@@ -58,7 +59,7 @@ function Editor({
   detail?: ProcurementDetail;
   refresh: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const api = useApiClient();
   const { session } = useAuthentication();
   const navigate = useNavigate();
@@ -258,6 +259,9 @@ function Editor({
           {t(`procurement.${detail.record.status}`)}
         </p>
       ) : null}
+      <p className='text-sm text-muted-foreground'>
+        {t('procurement.quoteHint')}
+      </p>
       <FeedbackForm
         id={formId}
         error={error}
@@ -332,6 +336,9 @@ function Editor({
                       materialId: id,
                       materialName: option?.name ?? id,
                       unitPrice: option?.unitPrice ?? line.unitPrice,
+                      currentCatalogPriceMinor: option?.unitPrice
+                        ? minorUnits(option.unitPrice)
+                        : null,
                     })
                   }
                 />
@@ -365,6 +372,29 @@ function Editor({
                     />
                   </div>
                 </div>
+                <dl className='space-y-1 text-sm text-muted-foreground'>
+                  <div className='flex flex-wrap justify-between gap-x-3'>
+                    <dt>{t('procurement.catalogPrice')}</dt>
+                    <dd>
+                      <output aria-label={t('procurement.catalogPrice')}>
+                        {line.currentCatalogPriceMinor === null
+                          ? t('procurement.catalogUnavailable')
+                          : (line.currentCatalogPriceMinor / 100).toFixed(2)}
+                      </output>
+                    </dd>
+                  </div>
+                  <div className='flex flex-wrap justify-between gap-x-3'>
+                    <dt>{t('procurement.priceDifference')}</dt>
+                    <dd>
+                      <output aria-label={t('procurement.priceDifference')}>
+                        {priceDifference(
+                          line.unitPrice,
+                          line.currentCatalogPriceMinor,
+                        )}
+                      </output>
+                    </dd>
+                  </div>
+                </dl>
                 {editable ? (
                   <Button
                     type='button'
@@ -399,6 +429,7 @@ function Editor({
                         unitPrice: '0.00',
                         unitPriceMinor: 0,
                         amountMinor: 0,
+                        currentCatalogPriceMinor: null,
                       },
                     ]),
                   )
@@ -433,8 +464,8 @@ function Editor({
                   ),
                   from: h.from ? t(`procurement.${h.from}`) : '—',
                   to: t(`procurement.${h.to}`),
-                  actor: h.actorId,
-                  at: h.at,
+                  actor: h.actorName || h.actorId,
+                  at: new Date(h.at).toLocaleString(i18n.language),
                 })}
               </li>
             ))}
@@ -443,4 +474,14 @@ function Editor({
       ) : null}
     </RouteDrawer>
   );
+}
+
+function priceDifference(quote: string, reference: number | null) {
+  if (reference === null) return '—';
+  try {
+    const difference = minorUnits(quote) - reference;
+    return `${difference > 0 ? '+' : ''}${(difference / 100).toFixed(2)}`;
+  } catch {
+    return '—';
+  }
 }

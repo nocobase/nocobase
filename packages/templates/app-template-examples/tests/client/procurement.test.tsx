@@ -7,6 +7,7 @@ import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
 import ProcurementPage from '../../client/pages/procurement/index.js';
 import ProcurementDetailPage from '../../client/pages/procurement/detail.js';
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import type { TestApp } from '@nocobase/app-testing/server';
 import { amount } from '../../shared/procurement.js';
 
 it('calculates exact minor units and refuses unsupported precision or overflow', () => {
@@ -23,6 +24,8 @@ it('calculates exact minor units and refuses unsupported precision or overflow',
 });
 
 it('adds, edits and removes lines with a live total, preserving the real saved request', async () => {
+  let app: TestApp;
+  const materialId = randomUUID();
   await renderAuthenticatedClient(
     <Routes>
       <Route path='/procurement' element={<ProcurementPage />}>
@@ -44,7 +47,7 @@ it('adds, edits and removes lines with a live total, preserving the real saved r
         },
       ],
       async prepare(server) {
-        const materialId = randomUUID();
+        app = server;
         await server.connection.repository('procurementMaterials').createOne({
           values: {
             id: materialId,
@@ -95,10 +98,54 @@ it('adds, edits and removes lines with a live total, preserving the real saved r
   await userEvent.click(
     screen.getAllByRole('button', { name: 'Remove line', exact: true })[1],
   );
+  const quote = screen.getByRole('textbox', {
+    name: 'Applicant quote snapshot (USD/unit)',
+    exact: true,
+  });
+  await userEvent.clear(quote);
+  await userEvent.type(quote, '-1');
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+  await userEvent.clear(quote);
+  await userEvent.type(quote, '0.001');
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+  await userEvent.clear(quote);
+  await userEvent.type(quote, '10.25');
+  expect(
+    screen.getByLabelText('Current catalog reference (USD/unit)'),
+  ).toHaveTextContent('12.34');
+  expect(
+    screen.getByLabelText('Quote minus catalog (USD/unit)'),
+  ).toHaveTextContent('-2.09');
   await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   expect(await screen.findByText('History', { exact: true })).toBeVisible();
   expect(
     screen.getByRole('textbox', { name: 'Title', exact: true }),
   ).toHaveValue('Client purchase');
-  expect(screen.getByLabelText('Total (USD)')).toHaveTextContent('24.68');
+  expect(screen.getByLabelText('Total (USD)')).toHaveTextContent('20.50');
+  await app!.connection
+    .repository('procurementMaterials')
+    .updateOne({
+      filter: { id: materialId },
+      values: { unitPriceMinor: 1800 },
+    });
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Close', exact: true }),
+  );
+  await userEvent.click(
+    await screen.findByRole('link', { name: 'Client purchase', exact: true }),
+  );
+  expect(
+    await screen.findByRole('textbox', {
+      name: 'Applicant quote snapshot (USD/unit)',
+      exact: true,
+    }),
+  ).toHaveValue('10.25');
+  expect(
+    screen.getByLabelText('Current catalog reference (USD/unit)'),
+  ).toHaveTextContent('18.00');
+  expect(
+    screen.getByLabelText('Quote minus catalog (USD/unit)'),
+  ).toHaveTextContent('-7.75');
+  expect(screen.getByLabelText('Total (USD)')).toHaveTextContent('20.50');
+  expect(await screen.findByText(/Created:.*Test member/)).toBeVisible();
 });

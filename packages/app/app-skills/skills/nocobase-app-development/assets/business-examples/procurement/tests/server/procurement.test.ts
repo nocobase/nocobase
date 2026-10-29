@@ -442,6 +442,102 @@ test('rejects invalid amounts, incomplete submissions and stale/concurrent opera
   expect((await f.get(id)).history).toHaveLength(3);
 });
 
+test('applicant quotes are validated snapshots while catalog references and actor names stay current', async ({
+  testApp,
+}) => {
+  const f = await fixture(testApp);
+  const quoted = {
+    ...f.input,
+    lines: [{ materialId: f.materialId, quantity: 2, unitPrice: '0.01' }],
+    totalMinor: 2,
+  };
+  for (const unitPrice of ['-0.01', '0.001', '1e2', 'NaN', '']) {
+    expect(
+      (
+        await f.create({
+          ...quoted,
+          lines: [{ ...quoted.lines[0], unitPrice }],
+        })
+      ).status,
+    ).toBe(400);
+  }
+  expect((await f.create({ ...quoted, totalMinor: 2500 })).status).toBe(400);
+  const response = await f.create(quoted);
+  expect(response.status).toBe(200);
+  const id = (await response.json()).data.id;
+  let detail = await f.get(id);
+  expect(detail.lines[0]).toMatchObject({
+    unitPrice: '0.01',
+    unitPriceMinor: 1,
+    amountMinor: 2,
+    currentCatalogPriceMinor: 1250,
+  });
+  const snapshot = { ...detail.lines[0], currentCatalogPriceMinor: undefined };
+  await testApp.connection
+    .repository('procurementMaterials')
+    .updateOne({
+      filter: { id: f.materialId },
+      values: { unitPriceMinor: 1800 },
+    });
+  expect(
+    (await f.fire(id, 'submit', detail.record.lifecycleVersion)).status,
+  ).toBe(200);
+  detail = await f.get(id, f.users.reviewer);
+  expect({ ...detail.lines[0], currentCatalogPriceMinor: undefined }).toEqual(
+    snapshot,
+  );
+  expect(detail.lines[0].currentCatalogPriceMinor).toBe(1800);
+  expect(detail.record.totalMinor).toBe(2);
+  expect(detail.history.every((h) => h.actorName === 'owner')).toBe(true);
+  expect(
+    (
+      await f.fire(
+        id,
+        'approve',
+        detail.record.lifecycleVersion,
+        f.users.reviewer,
+      )
+    ).status,
+  ).toBe(200);
+  detail = await f.get(id);
+  expect(detail.history.at(-1)?.actorName).toBe('reviewer');
+  expect(detail.record.totalMinor).toBe(2);
+  // Zero is a valid applicant quote; it is not replaced by a catalog price.
+  expect(
+    (
+      await f.create({
+        ...quoted,
+        lines: [{ ...quoted.lines[0], unitPrice: '0.00' }],
+        totalMinor: 0,
+      })
+    ).status,
+  ).toBe(200);
+});
+
+test('reviewer choices include eligible users beyond the first hundred ordinary users', async ({
+  testApp,
+}) => {
+  const f = await fixture(testApp);
+  await testApp.connection.repository('user').createMany({
+    values: Array.from({ length: 120 }, (_, i) => ({
+      id: `000-ordinary-${String(i).padStart(3, '0')}`,
+      name: `Ordinary ${i}`,
+      email: `ordinary-${i}@procurement.example.test`,
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })),
+  });
+  const response = await f.users.owner.fetch(
+    '/procurement/candidates?kind=reviewers',
+  );
+  expect(response.status).toBe(200);
+  const choices = (await response.json()).data as { id: string }[];
+  expect(choices.map((u) => u.id)).toContain(f.users.reviewer.user.id);
+  expect(choices.map((u) => u.id)).not.toContain(f.users.member.user.id);
+  expect(choices.some((u) => u.id.startsWith('000-ordinary'))).toBe(false);
+});
+
 test('a failure after the first real child insert rolls back creation and editing including history', async ({
   testApp,
 }) => {

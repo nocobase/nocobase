@@ -45,6 +45,7 @@ export const ProcurementLine = ProcurementLineInput.extend({
   materialName: z.string(),
   unitPriceMinor: z.number(),
   amountMinor: z.number(),
+  currentCatalogPriceMinor: z.number().nullable(),
 });
 export const ProcurementRecord = z.object({
   id: z.string(),
@@ -75,6 +76,7 @@ export const ProcurementDetail = z.object({
       from: z.string().nullable(),
       to: z.string(),
       actorId: z.string(),
+      actorName: z.string().nullable(),
       at: z.string(),
     }),
   ),

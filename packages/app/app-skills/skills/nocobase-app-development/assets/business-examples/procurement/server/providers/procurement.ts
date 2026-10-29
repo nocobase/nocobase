@@ -128,22 +128,33 @@ export class ProcurementService {
   ) {
     this.require(actor, 'request');
     if (kind === 'reviewers') {
-      const users = await this.connection.repository('user').findMany({
-        filter: (f) =>
-          f.and([
-            f.string('id').ne(actor.id),
-            ...(q ? [f.string('name').includes(q)] : []),
-          ]),
-        limit: 100,
-      });
-      const eligible = await Promise.all(
-        users.map(async (u) =>
-          (await this.actor(scalar(u.id))).review
-            ? { id: scalar(u.id), name: scalar(u.name) }
-            : null,
-        ),
-      );
-      return eligible.filter((u) => u !== null);
+      const eligible: { id: string; name: string }[] = [];
+      let offset = 0;
+      // Filter permissions before applying the 100-result limit so reviewers
+      // remain reachable after any number of ordinary users.
+      while (eligible.length < 100) {
+        const users = await this.connection.repository('user').findMany({
+          filter: (f) =>
+            f.and([
+              f.string('id').ne(actor.id),
+              ...(q ? [f.string('name').includes(q)] : []),
+            ]),
+          sort: (s) => s.field('id').asc(),
+          limit: 100,
+          offset,
+        });
+        const matches = await Promise.all(
+          users.map(async (u) =>
+            (await this.actor(scalar(u.id))).review
+              ? { id: scalar(u.id), name: scalar(u.name) }
+              : null,
+          ),
+        );
+        eligible.push(...matches.filter((u) => u !== null));
+        if (users.length < 100) break;
+        offset += users.length;
+      }
+      return eligible.slice(0, 100);
     }
     // Inactive entries are never selectable, even if a caller asks for them.
     if (!active) return [];
@@ -198,14 +209,30 @@ export class ProcurementService {
           .repository('procurementSuppliers')
           .findOne({ filter: { id: scalar(row.supplierId) } })
       : null;
-    const reviewer = row.reviewerId
-      ? await this.connection
-          .repository('user')
-          .findOne({ filter: { id: scalar(row.reviewerId) } })
-      : null;
+    const userIds = [
+      ...new Set([
+        ...view.history.transitions.map((h) => h.actorId),
+        ...(row.reviewerId ? [scalar(row.reviewerId)] : []),
+      ]),
+    ];
+    const users = userIds.length
+      ? await this.connection.repository('user').findMany({
+          filter: (f) => f.or(userIds.map((id) => f.string('id').eq(id))),
+        })
+      : [];
+    const names = new Map(users.map((u) => [scalar(u.id), scalar(u.name)]));
+    const materialIds = [...new Set(lines.map((l) => scalar(l.materialId)))];
+    const materials = materialIds.length
+      ? await this.connection.repository('procurementMaterials').findMany({
+          filter: (f) => f.or(materialIds.map((id) => f.string('id').eq(id))),
+        })
+      : [];
+    const catalog = new Map(
+      materials.map((m) => [scalar(m.id), Number(m.unitPriceMinor)]),
+    );
     return {
       supplierName: supplier ? scalar(supplier.name) : null,
-      reviewerName: reviewer ? scalar(reviewer.name) : null,
+      reviewerName: names.get(scalar(row.reviewerId)) ?? null,
       record: serializeRecord(row),
       lines: lines.map((l) => ({
         id: scalar(l.id),
@@ -215,6 +242,7 @@ export class ProcurementService {
         unitPriceMinor: Number(l.unitPriceMinor),
         unitPrice: (Number(l.unitPriceMinor) / 100).toFixed(2),
         amountMinor: Number(l.amountMinor),
+        currentCatalogPriceMinor: catalog.get(scalar(l.materialId)) ?? null,
       })),
       actions: {
         edit: editable,
@@ -228,6 +256,7 @@ export class ProcurementService {
         from: h.from,
         to: h.to,
         actorId: h.actorId,
+        actorName: names.get(h.actorId) ?? null,
         at: h.at,
       })),
     };
@@ -296,6 +325,7 @@ export class ProcurementService {
         'procurementMaterials',
         line.materialId,
       );
+      // Save the applicant's quote; the catalog is a live review reference.
       const unitPriceMinor = minorUnits(line.unitPrice);
       lines.push({
         id: line.id ?? randomUUID(),

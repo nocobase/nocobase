@@ -140,9 +140,18 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
       .getByRole('textbox', { name: 'Quantity', exact: true })
       .fill('2');
     await owner
-      .getByRole('textbox', { name: 'Unit price (USD)', exact: true })
+      .getByRole('textbox', {
+        name: 'Applicant quote snapshot (USD/unit)',
+        exact: true,
+      })
       .fill('10.25');
     await expect(owner.getByLabel('Total (USD)')).toHaveText('20.50');
+    await expect(
+      owner.getByLabel('Current catalog reference (USD/unit)'),
+    ).toHaveText('12.50');
+    await expect(owner.getByLabel('Quote minus catalog (USD/unit)')).toHaveText(
+      '-2.25',
+    );
     await owner.getByRole('button', { name: 'Add line', exact: true }).click();
     await owner
       .getByRole('button', { name: 'Remove line', exact: true })
@@ -197,6 +206,18 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
     await expect(
       reviewer.getByRole('button', { name: 'Save draft', exact: true }),
     ).toHaveCount(0);
+    await expect(
+      reviewer.getByRole('textbox', {
+        name: 'Applicant quote snapshot (USD/unit)',
+        exact: true,
+      }),
+    ).toHaveValue('10.25');
+    await expect(
+      reviewer.getByLabel('Current catalog reference (USD/unit)'),
+    ).toHaveText('12.50');
+    await expect(
+      reviewer.getByLabel('Quote minus catalog (USD/unit)'),
+    ).toHaveText('-2.25');
     await snapshot(reviewer, 'procurement-submitted-review.png');
     await reviewer.getByRole('button', { name: 'Reject', exact: true }).click();
     await expect(
@@ -225,6 +246,9 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
     await expect(
       reviewer.getByRole('textbox', { name: 'Title', exact: true }),
     ).toBeDisabled();
+    await expect(
+      reviewer.getByText(new RegExp(`Approve:.*${actors.reviewer.name}`)),
+    ).toBeVisible();
     await snapshot(reviewer, 'procurement-approved-history.png');
     console.info('Procurement approved after resubmission.');
     await reviewer.setViewportSize({ width: 390, height: 844 });
@@ -236,6 +260,42 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
           document.documentElement.clientWidth,
       ),
     ).toBe(true);
+    await reviewer.goto(app + '/procurement');
+    await reviewer
+      .getByRole('button', { name: 'Appearance', exact: true })
+      .hover();
+    await reviewer
+      .getByRole('radiogroup', { name: 'Color mode' })
+      .getByText('Dark', { exact: true })
+      .click();
+    await reviewer.keyboard.press('Escape');
+    await reviewer.goto(detailUrl);
+    await expect(reviewer.locator('html')).toHaveClass(/dark/);
+    await expect(
+      reviewer.getByLabel('Quote minus catalog (USD/unit)'),
+    ).toHaveText('-2.25');
+    await snapshot(reviewer, 'procurement-quotes-dark-mobile.png');
+    await reviewer.goto(app + '/procurement');
+    await reviewer.getByRole('button', { name: 'Open account menu' }).click();
+    await reviewer.getByRole('menuitem', { name: /Language/ }).hover();
+    await reviewer
+      .getByRole('menuitemradio', { name: '中文', exact: true })
+      .click();
+    await expect(reviewer.locator('html')).toHaveAttribute('lang', 'zh-CN');
+    await reviewer.goto(detailUrl);
+    await expect(
+      reviewer.getByRole('textbox', {
+        name: '申请报价快照（美元/单位）',
+        exact: true,
+      }),
+    ).toHaveValue('10.25');
+    await expect(reviewer.getByLabel('当前目录参考价（美元/单位）')).toHaveText(
+      '12.50',
+    );
+    await expect(reviewer.getByLabel('报价减目录价（美元/单位）')).toHaveText(
+      '-2.25',
+    );
+    await snapshot(reviewer, 'procurement-quotes-zh-mobile.png');
     expect(errors).toEqual([]);
   } catch (error) {
     for (const [index, context] of contexts.entries()) {
