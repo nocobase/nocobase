@@ -1,4 +1,4 @@
-# AI + NocoBase
+# NocoBase 3
 
 English | [简体中文](./READMD.zh-CN.md)
 
