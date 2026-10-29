@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 2,
+  "node": "v24.22.1",
+  "appPid": 32741,
+  "measurementScope": "reset-to-idle; verification outside",
+  "maxRssScope": "through_workload and through_app_close; not worker exit",
+  "rows": 20000,
+  "rounds": [
+    {
+      "round": 1,
+      "elapsedMs": 597.3780409999999,
+      "peakHeap": 147942656,
+      "peakRss": 405192704,
+      "retainedHeap": 92356536
+    },
+    {
+      "round": 2,
+      "elapsedMs": 581.9383750000006,
+      "peakHeap": 149021896,
+      "peakRss": 405995520,
+      "retainedHeap": 92677264
+    },
+    {
+      "round": 3,
+      "elapsedMs": 629.9745000000003,
+      "peakHeap": 149024968,
+      "peakRss": 406437888,
+      "retainedHeap": 93151776
+    },
+    {
+      "round": 4,
+      "elapsedMs": 578.8035420000006,
+      "peakHeap": 148912608,
+      "peakRss": 406683648,
+      "retainedHeap": 92954200
+    },
+    {
+      "round": 5,
+      "elapsedMs": 652.3397500000001,
+      "peakHeap": 149717976,
+      "peakRss": 406765568,
+      "retainedHeap": 93066832
+    }
+  ],
+  "warmHeap": 92279192,
+  "afterAppStartup": {
+    "rss": 303398912,
+    "heapTotal": 220004352,
+    "heapUsed": 116207488,
+    "external": 5259196,
+    "arrayBuffers": 1122794
+  },
+  "sampledHeapAfterStartupThroughWorkload": 164228632,
+  "maxRssThroughWorkloadKiB": 397280,
+  "maxRssThroughAppCloseKiB": 397312,
+  "workloadCompleted": true,
+  "appCloseState": "completed"
+}
