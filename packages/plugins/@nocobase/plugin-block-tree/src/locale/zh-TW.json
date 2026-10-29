@@ -3,5 +3,13 @@
   "Root records per page": "每頁根記錄數量",
   "Search": "搜尋",
   "Searchable": "搜尋",
-  "Tree": "樹"
+  "Tree": "樹",
+  "Connect data blocks": "Connect data blocks",
+  "Configured": "Configured",
+  "Foreign key": "Foreign key",
+  "No supported data blocks": "No supported data blocks",
+  "Select field": "Select 欄位",
+  "Tree settings": "Tree settings",
+  "Unconnected": "Unconnected",
+  "Include child nodes when filtering": "Include child nodes when filtering"
 }

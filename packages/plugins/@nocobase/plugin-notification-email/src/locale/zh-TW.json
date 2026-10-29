@@ -19,5 +19,9 @@
   "Subject": "主題",
   "The email address that will be used as the sender": "發件人郵件地址",
   "To": "收件人",
-  "Transport": "傳輸方式"
+  "Transport": "傳輸方式",
+  "Email address": "Email address",
+  "No": "No",
+  "The field value is required": "The 欄位 value is required",
+  "Yes": "Yes"
 }

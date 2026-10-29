@@ -1,7 +1,7 @@
 {
-  "Add link": "添加連結",
-  "Add page": "添加頁面",
-  "Add tab": "添加標籤頁",
+  "Add link": "新增連結",
+  "Add page": "新增頁面",
+  "Add tab": "新增標籤頁",
   "App settings": "應用設定",
   "Back": "返回",
   "Cancel": "取消",
@@ -31,7 +31,7 @@
   "Select time": "選擇時間",
   "Selected icon": "選中時圖示",
   "Settings": "設定",
-  "This might be due to permission configuration issues": "這可能是權限配置的問題",
+  "This might be due to permission configuration issues": "這可能是權限設定的問題",
   "Title": "標題",
   "Title field is required": "標題必填"
 }

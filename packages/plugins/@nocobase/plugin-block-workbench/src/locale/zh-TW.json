@@ -1,12 +1,12 @@
 {
-  "Action panel": "操作面板",
-  "Action panel settings": "操作面板設定",
+  "Action panel": "動作面板",
+  "Action panel settings": "動作面板設定",
   "Action setting": "按鈕設定",
-  "Add custom request": "添加自定義請求",
-  "Add popup": "添加彈窗",
+  "Add custom request": "新增自定義請求",
+  "Add popup": "新增彈窗",
   "Album": "相冊",
   "At least 1, up to 6": "最多6個，最少一個",
-  "Ellipsis action title": "省略超出長度的操作標題",
+  "Ellipsis action title": "省略超出長度的動作標題",
   "General settings": "通用設定",
   "Grid": "柵格",
   "Items per row": "每行顯示個數",
@@ -20,5 +20,9 @@
   "Scan QR code action settings": "掃碼按鈕設定",
   "The image size is too large. Please compress it to below 1MB before uploading": "圖片尺寸過大，請壓縮到1MB以下上傳",
   "Unknown error": "未知錯誤",
-  "You have not granted permission to use the camera": "您未授權使用攝像頭"
+  "You have not granted permission to use the camera": "您未授權使用攝像頭",
+  "Horizontal": "Horizontal",
+  "Icon and label layout": "Icon and label layout",
+  "The image size is too large. Please compress it to below 10MB before uploading": "The image size is too large. Please compress it to below 10MB before uploading",
+  "Vertical": "Vertical"
 }

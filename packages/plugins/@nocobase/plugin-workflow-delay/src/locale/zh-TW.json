@@ -6,5 +6,7 @@
   "Fail and exit": "失敗並退出",
   "Select status": "選擇狀態",
   "Succeed and continue": "通過並繼續",
-  "Unit": "單位"
+  "Unit": "單位",
+  "Delay duration must be a finite number greater than or equal to 1": "Delay duration must be a finite number greater than or equal to 1",
+  "Duration must be at least 1": "Duration must be at least 1"
 }

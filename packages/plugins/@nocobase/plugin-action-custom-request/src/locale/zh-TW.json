@@ -1,8 +1,8 @@
 {
   "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" 請求頭僅支援 \"application/json\"，無需填寫",
   "Access control": "權限控制",
-  "Add parameter": "添加參數",
-  "Add request header": "添加請求頭",
+  "Add parameter": "新增參數",
+  "Add request header": "新增請求頭",
   "Body": "請求體",
   "Custom Request": "自定義請求",
   "Enter description info": "輸入描述資訊",
@@ -14,7 +14,7 @@
   "Insert": "插入",
   "Only support standard JSON data": "僅支援標準 JSON 資料",
   "Parameters": "參數",
-  "Please configure the request settings first": "請先配置請求設定",
+  "Please configure the request settings first": "請先設定請求設定",
   "Request settings": "請求設定",
   "Roles": "角色",
   "Timeout config": "逾時設定",
@@ -22,5 +22,16 @@
   "URL": "URL",
   "Use variable": "使用變量",
   "When the HTTP method is Post, Put or Patch, and this custom request inside the form, the request body will be automatically filled in with the form data": "當請求方法為 Post、Put 或 Patch 時，且此自定義請求在表單內，請求體將自動填充表單資料",
-  "ms": "毫秒"
+  "ms": "毫秒",
+  "Custom request": "Custom request",
+  "If not set, all roles can access this request": "If not set, all roles can access this request",
+  "Key": "Key",
+  "Name": "Name",
+  "Please confirm custom request": "Please confirm custom request",
+  "Are you sure you want to send this custom request?": "Are you sure you want to send this custom request?",
+  "Response type": "Response type",
+  "Runtime request options cannot override the request target": "Runtime request options cannot override the request target",
+  "Stream": "Stream",
+  "You do not have permission to access this custom request": "You do not have permission to access this custom request",
+  "Value": "Value"
 }

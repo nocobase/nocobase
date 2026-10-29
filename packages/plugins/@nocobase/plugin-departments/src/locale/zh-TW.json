@@ -1,7 +1,7 @@
 {
-  "Add department": "添加部門",
-  "Add departments": "添加部門",
-  "Add members": "添加成員",
+  "Add department": "新增部門",
+  "Add departments": "新增部門",
+  "Add members": "新增成員",
   "All users": "所有使用者",
   "Are you sure you want to remove it?": "你確定要移除嗎？",
   "Are you sure you want to remove these departments?": "你確定要移除這些部門嗎？",
@@ -38,5 +38,14 @@
   "Superior department": "上級部門",
   "The department has members, please remove them first": "部門下有成員，請先移除",
   "The department has sub-departments, please delete them first": "部門下有子部門，請先刪除子部門",
-  "This field is currently not supported for use in form blocks.": "該欄位目前不支援在表單區塊中使用。"
+  "This field is currently not supported for use in form blocks.": "該欄位目前不支援在表單區塊中使用。",
+  "Actions": "Actions",
+  "Are you sure you want to delete it?": "Are you sure you want to delete it?",
+  "Deleted successfully": "Deleted successfully",
+  "Configure": "Configure",
+  "Filter": "Filter",
+  "Select Departments": "Select Departments",
+  "Set successfully": "Set successfully",
+  "Total {{count}} members": "Total {{count}} members",
+  "{{count}} filter items": "{{count}} filter items"
 }

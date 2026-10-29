@@ -1,12 +1,12 @@
 {
-  "Add new": "添加",
+  "Add new": "新增",
   "Agenda": "列表",
   "All events": "所有日程",
   "Calendar": "日曆",
   "Calendar collection": "日曆資料表",
   "Color field": "顏色欄位",
-  "Configure actions": "配置操作",
-  "Configure calendar": "配置日曆",
+  "Configure actions": "設定動作",
+  "Configure calendar": "設定日曆",
   "Create calendar block": "建立日曆區塊",
   "Custom request": "自定義請求",
   "Custom title": "自定義標題",
@@ -21,7 +21,7 @@
   "Delete this event?": "是否刪除這個日程？",
   "Details": "詳情",
   "Edit": "編輯",
-  "Enable actions": "啟用操作",
+  "Enable actions": "啟用動作",
   "End date field": "結束日期欄位",
   "Event": "事件",
   "Event open mode": "事項打開方式",
@@ -52,5 +52,9 @@
   "Weekly": "每週",
   "Work week": "工作日",
   "Yearly": "每年",
-  "{{count}} more items": "{{count}} 更多事項"
+  "{{count}} more items": "{{count}} 更多事項",
+  "Event popup settings": "Event popup settings",
+  "Monday": "Monday",
+  "Quick create popup settings": "Quick create popup settings",
+  "Sunday": "Sunday"
 }

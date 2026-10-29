@@ -1,3 +1,4 @@
 {
-  "Markdown block settings": "Markdown 區塊設定"
+  "Markdown block settings": "Markdown 區塊設定",
+  "vditor.uploadError.message": "Unable to upload files to the current 儲存. You are trying to upload files to the Markdown editor, but the current 儲存 configuration does not support this operation. To enable upload functionality, please complete the following settings: 1. Go to \"File Manager\". 2. Select the 儲存 currently in use ({{儲存Title}}). 3. Set \"Base URL\" and enable the \"Public access\" option."
 }

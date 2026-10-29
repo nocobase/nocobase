@@ -1,5 +1,5 @@
 {
-  "Actions": "操作",
+  "Actions": "動作",
   "Cancel": "取消",
   "Cancelled": "已取消",
   "Cancelling": "取消中",
@@ -42,5 +42,7 @@
   "Updated records": "已更新記錄",
   "View result": "查看結果",
   "Waiting": "等待中",
-  "Confirm cancel description": "確定要取消這個任務嗎？"
+  "Confirm cancel description": "確定要取消這個任務嗎？",
+  "Stop": "Stop",
+  "Stopping...": "Stopping..."
 }

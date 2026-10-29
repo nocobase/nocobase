@@ -24,10 +24,10 @@
   "Record": "開始錄音/結束錄音",
   "Redo": "重做",
   "Response data is empty": "API返回的資料為空",
-  "Storage configuration not found. Please configure a storage provider first.": "儲存配置未找到。請先配置儲存提供程序。",
+  "Storage configuration not found. Please configure a storage provider first.": "儲存設定未找到。請先設定儲存供應商。",
   "Strike": "刪除線",
   "Table": "表格",
-  "Toolbar": "編輯器工具列配置",
+  "Toolbar": "編輯器工具列設定",
   "Undo": "撤銷",
   "Upload": "上傳圖片或檔案",
   "Used to store files uploaded in the Markdown editor": "用於儲存在Markdown編輯器中上傳的檔案",
@@ -35,5 +35,9 @@
   "Vditor": "Markdown(Vditor)",
   "upload failed": "上傳失敗",
   "uploading": "上傳中...",
-  "vditor.uploadError.message": "無法上傳檔案到目前儲存。您正在嘗試上傳檔案到 Markdown 編輯器，但目前的儲存配置不支援此操作。要啟用上傳功能，請完成以下設定：1. 前往「檔案管理器」。2. 選擇目前正在使用的儲存（{{storageTitle}}）。3. 設定「基礎 URL」並啟用「公開存取」選項。"
+  "vditor.uploadError.message": "無法上傳檔案到目前儲存。您正在嘗試上傳檔案到 Markdown 編輯器，但目前的儲存設定不支援此動作。要啟用上傳功能，請完成以下設定：1. 前往「檔案管理器」。2. 選擇目前正在使用的儲存（{{storageTitle}}）。3. 設定「基礎 URL」並啟用「公開存取」選項。",
+  "Default Edit Mode": "預設 Edit Mode",
+  "What You See Is What You Get": "What You See Is What You Get",
+  "Instant Rendering": "Instant Rendering",
+  "Split View": "Split View"
 }

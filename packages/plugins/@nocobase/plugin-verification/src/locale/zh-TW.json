@@ -1,15 +1,15 @@
 {
   "Access Key ID": "存取金鑰 ID",
   "Access Key Secret": "存取金鑰密文",
-  "Aliyun SMS": "阿里雲簡訊服務",
+  "Aliyun SMS": "阿裡雲簡訊服務",
   "Bind": "綁定",
   "Bound successfully": "綁定成功",
-  "Configured": "已配置",
+  "Configured": "已設定",
   "Endpoint": "接入點",
   "Get one-time codes sent to your phone via SMS to complete authentication requests.": "獲取一次性簡訊驗證碼，以完成身分驗證請求。",
   "Go to": "前往",
   "Not a valid cellphone number, please re-enter": "不是有效的手機號，請重新輸入",
-  "Not configured": "未配置",
+  "Not configured": "未設定",
   "Please don't retry in {{time}} seconds": "請 {{time}} 秒後再試",
   "Provider": "服務商",
   "Provider type": "提供商類型",
@@ -35,6 +35,6 @@
   "Verification type": "驗證類型",
   "Verifier": "驗證器",
   "Verifiers": "驗證器",
-  "You are trying so frequently, please slow down": "您的操作太頻繁，請稍後再試",
+  "You are trying so frequently, please slow down": "您的動作太頻繁，請稍後再試",
   "create verifiers": "建立驗證器"
 }

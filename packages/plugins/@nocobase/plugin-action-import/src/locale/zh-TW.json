@@ -1,6 +1,6 @@
 {
-  "Add importable field": "添加可匯入欄位",
-  "Columns configuration is empty": "列配置為空",
+  "Add importable field": "新增可匯入欄位",
+  "Columns configuration is empty": "列設定為空",
   "Custom column title": "自定義列標題",
   "Done": "完成",
   "Download template": "下載範本",
@@ -49,5 +49,6 @@
   "can not find value": "找不到對應值",
   "import-error": "匯入第 {{rowIndex}} 行失敗，行資料：{{rowData}}, 原因：{{causeMessage}}",
   "password is empty": "密碼為空",
-  "{{successCount}} records have been successfully imported": "已成功匯入 {{successCount}} 條資料"
+  "{{successCount}} records have been successfully imported": "已成功匯入 {{successCount}} 條資料",
+  "Import failed": "匯入 failed"
 }

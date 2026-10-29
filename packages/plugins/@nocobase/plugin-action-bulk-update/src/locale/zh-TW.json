@@ -1,7 +1,8 @@
 {
-  "After successful bulk update": "批量成功更新後",
-  "Bulk update": "批量更新",
-  "Bulk update action settings": "批量更新操作設定",
+  "After successful bulk update": "批次成功更新後",
+  "Bulk update": "批次更新",
+  "Bulk update action settings": "批次更新動作設定",
   "Entire collection": "全表",
-  "Please select the records to be updated": "請選擇要更新的記錄"
+  "Please select the records to be updated": "請選擇要更新的記錄",
+  "The configured field value is no longer available": "The configured 欄位 value is no longer available"
 }

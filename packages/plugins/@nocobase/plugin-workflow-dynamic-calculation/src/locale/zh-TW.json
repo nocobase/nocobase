@@ -8,7 +8,7 @@
   "Expression": "表達式",
   "Select dynamic expression": "選擇動態表達式",
   "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.": "從上游節點中選擇查詢出來的動態表達式。你需要從動態表達式類型的資料表中查詢。",
-  "Unconfigured": "未配置",
+  "Unconfigured": "未設定",
   "Used to store expressions for use in workflows so that different expressions can be called for different data.": "用於儲存表達式，在工作流中使用，以便針對不同的資料呼叫不同的表達式。",
   "Variable datasource": "變量資料來源"
 }

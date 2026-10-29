@@ -7,7 +7,7 @@
   "Block template": "區塊範本",
   "Block templates (deprecated)": "區塊範本(已棄用)",
   "Cancel": "取消",
-  "Configure": "配置",
+  "Configure": "設定",
   "Convert to normal block": "轉換成普通區塊",
   "Converted successfully": "轉換成功",
   "Current": "目前記錄",
@@ -38,5 +38,7 @@
   "This block is using some reference templates, please convert to duplicate template first.": "該區塊使用了引用範本，請先將其轉換為複製範本。",
   "This is part of a template, deletion is not allowed": "這是範本的一部分，不允許刪除",
   "Title": "標題",
-  "Type": "類型"
+  "Type": "類型",
+  "Reference template (v1)": "Reference 範本 (v1)",
+  "Inherited template (v1)": "Inherited 範本 (v1)"
 }

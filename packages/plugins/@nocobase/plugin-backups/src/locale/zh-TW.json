@@ -13,7 +13,7 @@
   "Database dialect mismatch": "無法還原：資料庫種類不匹配",
   "Database schema mismatch": "無法還原：資料庫schema不匹配",
   "Database table prefix mismatch": "無法還原：資料庫表前綴不匹配",
-  "Database underscored mismatch": "無法還原：資料庫underscroed配置不匹配",
+  "Database underscored mismatch": "無法還原：資料庫underscroed設定不匹配",
   "Database version is lower than the backup, if you really want to restore, please enable the tolerent mode.": "資料庫版本低於建立備份時的資料庫版本，如果您確定要還原，請啟用容錯模式。",
   "ERROR_COMPRESSING_FILES": "檔案壓縮失敗: {{detail}}",
   "ERROR_CREATING_LOCK_FILE": "建立lock檔案失敗: {{detail}}",
@@ -34,7 +34,7 @@
   "Maximum number of backups": "最大備份數",
   "NEW_BACKUPS_CREATED": "新備份[{{names}}]建立成功",
   "New backup": "建立備份",
-  "New backup operation started": "建立備份操作已開始",
+  "New backup operation started": "建立備份動作已開始",
   "Not a valid backup file": "無效的備份檔案",
   "PG_DUMP_SERVER_VERSION_MISMATCH": "pg_dump 版本低於 postgres 伺服器版本，請安裝正確版本的pg_dump。請參考: https://docs.nocobase.com/cn/ops-management/backup-manager/",
   "Please select a backup file": "請選擇一個備份檔案",
@@ -48,5 +48,7 @@
   "TOLERENT_MODE_TIP": "允許將高版本資料庫的備份還原到低版本資料庫，並忽略不重要的錯誤。請謹慎使用，強烈建議在還原前先備份目前系統資料。",
   "The maximum number of backups to keep, older backups are automatically deleted.": "要保留的最大備份數量，舊備份會被自動刪除。",
   "Tolerent mode": "容錯模式",
-  "WARN_RESTORING_BACKUP_MISSING_PLUGINS": "目前應用缺失 {{detail}} 外掛"
+  "WARN_RESTORING_BACKUP_MISSING_PLUGINS": "目前應用缺失 {{detail}} 外掛",
+  "Maximum number of backups must be an integer between {{min}} and {{max}}": "Maximum number of backups must be an integer between {{min}} and {{max}}",
+  "Restore failed": "Re儲存 failed"
 }

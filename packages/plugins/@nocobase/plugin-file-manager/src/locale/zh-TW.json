@@ -1,7 +1,7 @@
 {
   "Access base URL": "存取 URL 基礎",
-  "Aliyun OSS": "阿里雲 OSS",
-  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "阿里雲 OSS 儲存桶所在區域。例如：\"oss-cn-beijing\"。",
+  "Aliyun OSS": "阿裡雲 OSS",
+  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "阿裡雲 OSS 儲存桶所在區域。例如：\"oss-cn-beijing\"。",
   "Allow uploading multiple files": "允許上傳多個檔案",
   "Amazon S3": "亞馬遜 S3",
   "Attachment": "附件",
@@ -25,7 +25,7 @@
   "File storage": "檔案儲存器",
   "File type allowed (in MIME type format)": "允許的檔案類型（MIME 類型格式）",
   "Filename": "檔案名",
-  "Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.": "只有在刪除檔案表記錄時，檔案才會被刪除。當刪除其他表的記錄包含指向檔案表的關係欄位時，除非關係中配置了級聯刪除，否則檔案不會被刪除。",
+  "Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.": "只有在刪除檔案表記錄時，檔案才會被刪除。當刪除其他表的記錄包含指向檔案表的關係欄位時，除非關係中設定了級聯刪除，否則檔案不會被刪除。",
   "Keep file in storage when destroy record": "刪除記錄時保留檔案",
   "Keep file in storage when destroy the file record": "刪除檔案記錄時保留檔案",
   "Local storage": "本地儲存",
@@ -63,5 +63,8 @@
   "Will be used for API": "將用於 API",
   "File type (in MIME type format)": "檔案類型（MIME 格式）",
   "Minimum from 1 byte, maximum up to 1GB.": "最小為 1 字節，最大為 1GB。",
-  "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "多個類型用逗號分隔，例如：\"image/*\", \"image/png\", \"image/*, application/pdf\" 等。"
+  "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "多個類型用逗號分隔，例如：\"image/*\", \"image/png\", \"image/*, application/pdf\" 等。",
+  "Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.": "Additional options for HTTP requests when fetching files from remote 儲存 on server side, such as headers.",
+  "File download failed": "File download failed",
+  "Request options": "Request options"
 }

@@ -1,6 +1,6 @@
 {
   "1. Select notification channel": "1. 選擇通知渠道",
-  "2. Configure reset email": "2. 配置重置郵件",
+  "2. Configure reset email": "2. 設定重置郵件",
   "Allow to sign in with": "允許使用以下方式登入",
   "Allow to sign up": "允許註冊",
   "At least one of the username or email fields is required": "至少需要設定使用者名或信箱中的一個欄位為必填欄位",
@@ -78,8 +78,10 @@
   "User not found. Please sign in again to continue.": "使用者不存在。請重新登入以繼續。",
   "Username/Email": "使用者名/信箱",
   "Your session has expired. Please sign in again.": "您的會話已過期，請重新登入。",
-  "add one first": "先添加一個",
+  "add one first": "先新增一個",
   "defaultResetPasswordEmailContentHTML": "<p>您好 {{$user.username}}，</p>\n\n<p>我們收到了重置您 {{$systemSettings.title}} 帳戶密碼的請求。</p>\n\n<p>請點擊下面的連結設定您的新密碼：</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">重置您的密碼</a>\n</p>\n\n<p>\n  如果您沒有請求重置密碼，請忽略此郵件。您的密碼將保持不變。\n</p>\n\n<p>\n  請注意：為了您的安全，此密碼重置連結將在 <strong>{{$resetLinkExpiration}} 分鐘</strong>後過期。\n</p>\n\n<p>如果您在重置密碼時遇到任何問題，請聯絡我們的支援團隊。</p>\n\n<p>\n  謝謝，<br>\n  {{$systemSettings.title}} 團隊\n</p>",
   "defaultResetPasswordEmailContentText": "您好 {{$user.username}}，\n\n我們收到了重置您 {{$systemSettings.title}} 帳戶密碼的請求。\n\n請點擊下面的連結設定您的新密碼：\n\n{{$resetLink}}\n\n如果您沒有請求重置密碼，請忽略此郵件。您的密碼將保持不變。\n\n請注意：為了您的安全，此密碼重置連結將在 {{$resetLinkExpiration}} 分鐘後過期。\n\n如果您在重置密碼時遇到任何問題，請聯絡我們的支援團隊。\n\n謝謝，{{$systemSettings.title}} 團隊",
-  "defaultResetPasswordEmailSubject": "重置您的 {{$systemSettings.title}} 密碼"
+  "defaultResetPasswordEmailSubject": "重置您的 {{$systemSettings.title}} 密碼",
+  "Failed to load authenticator": "Failed to load authenticator",
+  "Invalid CSRF token": "Invalid CSRF token"
 }

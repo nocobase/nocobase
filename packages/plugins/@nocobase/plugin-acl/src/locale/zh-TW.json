@@ -18,5 +18,22 @@
   "Roles union only": "僅角色並集",
   "Saved successfully": "保存成功",
   "The current user has no roles. Please try another account.": "目前使用者沒有角色，請使用其他帳號。",
-  "The user role does not exist. Please try signing in again": "使用者角色不存在，請嘗試重新登入。"
+  "The user role does not exist. Please try signing in again": "使用者角色不存在，請嘗試重新登入。",
+  "Invalid system permission": "Invalid system permission",
+  "Role not found": "Role not found",
+  "Accessible": "Accessible",
+  "Allow access": "Allow access",
+  "Allows to clear cache, reboot application": "Allows to clear cache, reboot application",
+  "Allows to configure interface": "Allows to configure interface",
+  "Allows to configure plugins": "Allows to configure 外掛s",
+  "Allows to install, activate, disable plugins": "Allows to install, 啟用, disable 外掛s",
+  "Desktop routes": "Desktop routes",
+  "Configure permissions": "Configure permissions",
+  "New routes are allowed to be accessed by default": "New routes are allowed to be accessed by 預設",
+  "Plugin name": "外掛 name",
+  "Route name": "Route name",
+  "Route permissions": "Route permissions",
+  "Select a role to configure permissions": "Select a role to configure permissions",
+  "System": "System",
+  "Users & Permissions": "使用者s & Permissions"
 }

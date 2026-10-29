@@ -20,5 +20,6 @@
   "SMTP host": "SMTP 服務主機名",
   "Subject": "主題",
   "To": "收件人",
-  "User": "使用者名"
+  "User": "使用者名",
+  "Please enter at least one email address": "Please enter at least one email address"
 }

@@ -1,9 +1,9 @@
 {
   "\"Content-Type\" only support \"application/json\", and no need to specify": "僅支援 \"Content-Type\" 為 \"application/json\",且無需指定",
-  "\"Content-Type\" will be ignored from headers.": "請求頭中配置的 \"Content-Type\" 將被忽略。",
-  "Add key-value pairs": "添加鍵值對",
-  "Add parameter": "添加參數",
-  "Add request header": "添加請求頭",
+  "\"Content-Type\" will be ignored from headers.": "請求頭中設定的 \"Content-Type\" 將被忽略。",
+  "Add key-value pairs": "新增鍵值對",
+  "Add parameter": "新增參數",
+  "Add request header": "新增請求頭",
   "Body": "請求體",
   "Data": "資料",
   "Format": "格式化",
@@ -20,8 +20,9 @@
   "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "向指定 URL 發送 HTTP 請求。可以使用上游節點裡的變量作為請求頭、參數和請求體。",
   "Status code": "狀態碼",
   "Timeout": "逾時設定",
-  "Timeout config": "逾時配置",
+  "Timeout config": "逾時設定",
   "URL": "地址",
   "Use variable": "使用變量",
-  "ms": "毫秒"
+  "ms": "毫秒",
+  "Only return response data": "Only return response data"
 }

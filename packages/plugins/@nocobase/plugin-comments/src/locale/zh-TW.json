@@ -3,7 +3,7 @@
   "Comment": "評論",
   "Comment Collection": "評論表",
   "Comment Content": "評論內容",
-  "Comment action": "評論操作",
+  "Comment action": "評論動作",
   "Comments": "評論",
   "Delete": "刪除",
   "Edit": "編輯",
@@ -11,5 +11,9 @@
   "Quote Reply": "引用並回復",
   "Quote reply": "引用並回復",
   "Update Comment": "更新評論",
-  "commented": "評論於"
+  "commented": "評論於",
+  "Failed to create comment": "Failed to create comment",
+  "Failed to delete comment": "Failed to delete comment",
+  "Failed to update comment": "Failed to update comment",
+  "Render error": "Render error"
 }

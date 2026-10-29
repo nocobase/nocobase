@@ -1,3 +1,6 @@
 {
-  "Please configure the duplicate fields in duplicate mode configuration": "請在複製模式配置中配置複製欄位"
+  "Please configure the duplicate fields in duplicate mode configuration": "請在複製模式設定中設定複製欄位",
+  "Bulk edit": "Bulk edit",
+  "Data will be updated": "Data will be updated",
+  "Entire collection": "Entire 資料表"
 }

@@ -1,6 +1,6 @@
 {
   "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.": "# 提交成功!\n這是一段演示文本，**支援 Markdown 語法**。",
-  "Add New": "添加",
+  "Add New": "新增",
   "After successful submission": "提交成功後",
   "Copy link": "複製連結",
   "Enable form": "啟用表單",
@@ -14,5 +14,22 @@
   "Set password": "設定密碼",
   "The form is not enabled and cannot be accessed": "該表單未啟用,無法存取",
   "The form is not found": "未找到該表單",
-  "Type": "類型"
+  "Type": "類型",
+  "Actions": "Actions",
+  "Are you sure you want to delete it?": "Are you sure you want to delete it?",
+  "Cancel": "Cancel",
+  "Collection": "資料表",
+  "Configure": "Configure",
+  "Configure form": "Configure form",
+  "Delete": "Delete",
+  "Description": "Description",
+  "Edit": "Edit",
+  "Enabled": "Enabled",
+  "Incorrect password": "Incorrect password",
+  "No": "No",
+  "Password": "Password",
+  "Settings": "Settings",
+  "Submit": "Submit",
+  "Title": "Title",
+  "Yes": "Yes"
 }

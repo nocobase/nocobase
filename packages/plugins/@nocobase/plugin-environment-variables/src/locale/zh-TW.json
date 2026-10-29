@@ -1,6 +1,6 @@
 {
-  "Add variable": "添加變量",
-  "Bulk import": "批量匯入",
+  "Add variable": "新增變量",
+  "Bulk import": "批次匯入",
   "Delete variable": "刪除變量",
   "Encrypted": "加密",
   "Environment": "環境",
@@ -12,5 +12,11 @@
   "Value": "值",
   "Variables": "變量",
   "Variables and secrets": "變量和密鑰",
-  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "檢測到變量和密鑰有更新，需重啟應用才能生效。"
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "檢測到變量和密鑰有更新，需重啟應用才能生效。",
+  "Bulk import failed": "Bulk 匯入 failed",
+  "Filter failed": "Filter failed",
+  "Line {{line}}: an equals sign is required.": "Line {{line}}: an equals sign is required.",
+  "Line {{line}}: only letters, numbers and underscores are allowed, and it must start with a letter.": "Line {{line}}: only letters, numbers and underscores are allowed, and it must start with a letter.",
+  "Line {{line}}: variable name cannot be empty.": "Line {{line}}: variable name cannot be empty.",
+  "Line {{line}}: variable value cannot be empty.": "Line {{line}}: variable value cannot be empty."
 }

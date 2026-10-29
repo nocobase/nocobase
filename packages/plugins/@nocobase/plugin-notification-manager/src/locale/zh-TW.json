@@ -1,8 +1,8 @@
 {
-  "Actions": "操作",
+  "Actions": "動作",
   "Add new": "新增",
   "Add new receiver": "新增接收人",
-  "Add user": "添加使用者",
+  "Add user": "新增使用者",
   "Are you sure you want to delete it?": "確定要刪除嗎？",
   "Channel": "渠道",
   "Channel display name": "渠道名稱",
@@ -44,5 +44,7 @@
   "Title": "標題",
   "Trigger From": "觸發來源",
   "Trigger from": "觸發來源",
-  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "隨機生成，不可修改。支援英文、數字和下劃線，必須以英文字母開頭。"
+  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "隨機生成，不可修改。支援英文、數字和下劃線，必須以英文字母開頭。",
+  "Randomly generated and can be modified when creating. Support letters, numbers and underscores, must start with a letter.": "Randomly generated and can be modified when creating. Support letters, numbers and underscores, must start with a letter.",
+  "Support letters, numbers and underscores, must start with a letter.": "Support letters, numbers and underscores, must start with a letter."
 }
