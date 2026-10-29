@@ -1135,7 +1135,10 @@ export class ChatController {
   }
   async refresh(id: string): Promise<void> {
     if (this.disposed) return;
-    const active = this.lifetime(),
+    const lifetime = this.lifetime(),
+      commandVersion = this.commandVersions.get(id),
+      active = () =>
+        lifetime() && this.commandVersions.get(id) === commandVersion,
       ordered = this.detailRequest(id);
     const submittedOwner = this.chat(id);
     const submittedInput =
@@ -1154,7 +1157,7 @@ export class ChatController {
     // A newer detail query must not discard this refresh's message catch-up.
     // loadHistory coalesces overlapping reads independently of detail ordering.
     await this.loadHistory(id, false, true);
-    if (!active() || !ordered()) return;
+    if (!active()) return;
     const history = this.history(id);
     if (history.error)
       throw history.error instanceof Error

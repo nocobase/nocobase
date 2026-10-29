@@ -1031,3 +1031,63 @@ it.each(['command', 'identity'])(
     ).toEqual(newer);
   },
 );
+
+it.each(['none', 'reread', 'detail'])(
+  'preserves completion revision when markRead overlaps %s',
+  async (phase) => {
+    const f = fixture();
+    const initial = uiMessage(2, 'assistant', 'Completed answer');
+    f.state.messages = [initial];
+    await f.controller.loadHistory('c1');
+    f.state.detail = {
+      ...f.state.detail,
+      execution: {
+        status: 'idle',
+        outcome: 'completed',
+        messageId: initial.id,
+      },
+    };
+    const saved = {
+      ...initial,
+      metadata: { ...initial.metadata!, revision: 2 },
+      parts: [
+        ...initial.parts,
+        { type: 'data-turn' as const, data: { durationMs: 4200 } },
+      ],
+    };
+    f.state.messages = [saved];
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    if (phase === 'detail') {
+      vi.spyOn(f.api, 'conversation').mockImplementationOnce(async () => {
+        await gate;
+        return f.state.detail;
+      });
+      const refreshing = f.controller.refresh('c1');
+      await f.controller.markRead('c1');
+      release();
+      await refreshing;
+    } else if (phase === 'reread') {
+      const original = f.api.messages.bind(f.api);
+      let reading!: () => void;
+      const started = new Promise<void>((done) => {
+        reading = done;
+      });
+      vi.spyOn(f.api, 'messages').mockImplementationOnce(async (id, query) => {
+        reading();
+        await gate;
+        return original(id, query);
+      });
+      const refreshing = f.controller.refresh('c1');
+      await started;
+      await f.controller.markRead('c1');
+      release();
+      await refreshing;
+    } else {
+      await f.controller.refresh('c1');
+    }
+    expect(f.controller.chat('c1').messages).toEqual([saved]);
+  },
+);
