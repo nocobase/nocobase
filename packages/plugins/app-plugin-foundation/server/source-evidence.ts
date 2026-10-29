@@ -225,7 +225,15 @@ export class SourceEvidence {
               ? capability(property.initializer, bindings, seen)
               : ts.isShorthandPropertyAssignment(property)
                 ? capability(property.name, bindings, seen)
-                : true,
+                : ts.isSpreadAssignment(property)
+                  ? literals.values(property.expression).length === 0 ||
+                    literals
+                      .values(property.expression)
+                      .some(
+                        (spread) => !ts.isObjectLiteralExpression(spread),
+                      ) ||
+                    capability(property.expression, bindings, seen)
+                  : true,
           );
         if (ts.isArrayLiteralExpression(value))
           return value.elements.some(

@@ -1153,3 +1153,31 @@ it.each([
     expect(result.routes[0]?.apiProviders ?? []).not.toContain('@nocobase/db');
   },
 );
+
+it.each([
+  [
+    'closed data object',
+    "const step={type:'course'};external({...step});",
+    true,
+  ],
+  [
+    'closed object carrying database',
+    'const step={database:platform.database};external({...step});',
+    false,
+  ],
+  ['unknown object spread', 'external({...unknown});', false],
+])(
+  'distinguishes %s from a capability escape inside a service method',
+  async (_name, prefix, expected) => {
+    const source = factoryProviders.replace(
+      'async list(){return',
+      `async list(){${prefix}return`,
+    );
+    const result = await collectModuleSources(
+      await fixture(routes, { 'server/providers/index.js': source }),
+    );
+    expect(
+      (result.routes[0]?.apiProviders ?? []).includes('@nocobase/db'),
+    ).toBe(expected);
+  },
+);
