@@ -1,5 +1,7 @@
 # NocoBase 3
 
+> 当前分支为 NocoBase 3。如果你在寻找 NocoBase 2 无代码开发平台，请访问 [NocoBase 2](https://nocode.nocobase.com/)。
+
 [English](./READMD.md) | 简体中文
 
 **构建可靠的业务系统**
@@ -9,8 +11,6 @@ NocoBase 是用 AI 持续开发和运行业务系统的开源平台。Agent 写�
 [▶ 观看演示](https://static-docs.nocobase.com/nocobase-3-zh.mp4)
 
 [官网](https://www.nocobase.com/) · [文档](https://docs.nocobase.com/) · [快速开始](#快速开始) · [社区](https://forum.nocobase.com/)
-
-> 当前分支为 NocoBase 3。如果你在寻找 NocoBase 2 无代码开发平台，请访问 [NocoBase 2](https://nocode.nocobase.com/)。
 
 ## 为什么需要 NocoBase
 
