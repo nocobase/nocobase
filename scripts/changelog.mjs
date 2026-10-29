@@ -6,8 +6,8 @@
 // Everything that decides what the section says is an exported pure function, so tests need neither git nor gh.
 //
 // Which pull requests a release contains:
-//   - beta (`release-beta/<batch>`): those merged into the release source since the previous beta. Release commits
-//     never reach v3-develop (their pull request is squashed), so the range starts at the merge base of the previous
+//   - beta (`nocobase-v3-beta/<batch>`, or legacy `release-beta/<batch>`): changes since the previous beta. Release
+//     commits never reach v3-develop (their pull request is squashed), so the range starts at the merge base of the previous
 //     beta tag and the release source rather than at the tag itself.
 //   - stable (`release/<batch>`): those merged into the release source since the previous stable release in the same
 //     way, which covers direct patches, plus every pull request the betas listed in CHANGELOG.md that no stable section
@@ -52,15 +52,16 @@ export const CHANGELOG_FILES = { en: 'CHANGELOG.md', zh: 'CHANGELOG.zh-CN.md' };
 export const CHANGELOG_HEADERS = {
   en: `# Changelog
 
-All notable changes to NocoBase 3 are documented in this file, one section per release: \`release-beta/<date>.<n>\` for a beta and \`release/<date>.<n>\` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
+All notable changes to NocoBase 3 are documented in this file, one section per release: \`nocobase-v3-beta/<date>.<n>\` for a beta and \`release/<date>.<n>\` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 `,
   zh: `# 更新日志
 
-本文件记录 NocoBase 3 的所有重要变更，每次发布一节：\`release-beta/<日期>.<序号>\` 是预览版，\`release/<日期>.<序号>\` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
+本文件记录 NocoBase 3 的所有重要变更，每次发布一节：\`nocobase-v3-beta/<日期>.<序号>\` 是预览版，\`release/<日期>.<序号>\` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 `,
 };
 
-const AGGREGATE = /^(release(?:-beta)?)\/(\d{4}-\d{2}-\d{2})\.(\d+)$/u;
+const AGGREGATE =
+  /^(nocobase-v3-beta|release(?:-beta)?)\/(\d{4}-\d{2}-\d{2})\.(\d+)$/u;
 
 /**
  * Parses an aggregate release tag.
@@ -72,14 +73,14 @@ export function parseTag(tag) {
   if (!match) return null;
   return {
     prefix: match[1],
-    channel: match[1] === 'release-beta' ? 'beta' : 'stable',
+    channel: match[1] === 'release' ? 'stable' : 'beta',
     date: match[2],
     sequence: Number(match[3]),
   };
 }
 
 /**
- * The previous release of `tag` in its channel: the latest tag among `tags` with the same prefix whose batch comes
+ * The previous release of `tag` in its channel: the latest tag among `tags` in the same channel whose batch comes
  * before `tag`'s. `tag` itself need not be among them.
  * @param {string[]} tags
  * @param {string} tag
@@ -94,7 +95,7 @@ export function selectPreviousTag(tags, tag) {
   let bestParsed = null;
   for (const candidate of tags) {
     const parsed = parseTag(candidate);
-    if (!parsed || parsed.prefix !== current.prefix) continue;
+    if (!parsed || parsed.channel !== current.channel) continue;
     if (!before(parsed, current)) continue;
     if (!bestParsed || before(bestParsed, parsed)) {
       best = candidate;
@@ -396,7 +397,7 @@ function options(argv) {
   }
   if (!parseTag(values.tag))
     throw new UsageError(
-      '--tag must be an aggregate release tag, release-beta/<date>.<n> or release/<date>.<n>.',
+      '--tag must be nocobase-v3-beta/<date>.<n>, release-beta/<date>.<n> or release/<date>.<n>.',
     );
   if (!/^[\w.-]+\/[\w.-]+$/u.test(values.repo))
     throw new UsageError('--repo must be owner/name.');

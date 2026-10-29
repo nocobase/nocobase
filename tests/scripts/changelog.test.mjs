@@ -218,3 +218,52 @@ test('the GitHub Release opens with the changelog section when the tagged commit
   assert.deepEqual(renderChangelogLines(changelog, 'release/2026-10-26.2'), []);
   assert.deepEqual(renderChangelogLines(undefined, 'release/2026-10-26.1'), []);
 });
+
+test('Beta changelogs continue across old and new aggregate tag names', () => {
+  const tags = [
+    'release-beta/2026-10-28.2',
+    'nocobase-v3-beta/2026-10-28.10',
+    'release/2026-10-28.20',
+  ];
+  assert.equal(
+    selectPreviousTag(tags, 'nocobase-v3-beta/2026-10-28.3'),
+    'release-beta/2026-10-28.2',
+  );
+  assert.equal(
+    selectPreviousTag(tags, 'nocobase-v3-beta/2026-10-28.11'),
+    'nocobase-v3-beta/2026-10-28.10',
+  );
+  assert.equal(
+    selectPreviousTag(tags, 'release-beta/2026-10-29.1'),
+    'nocobase-v3-beta/2026-10-28.10',
+  );
+  assert.equal(
+    selectPreviousTag(tags, 'release/2026-10-29.1'),
+    'release/2026-10-28.20',
+  );
+  const changelog = `## [nocobase-v3-beta/2026-10-28.10](x)
+- Fix [#2](https://github.com/nocobase/nocobase/pull/2)
+## [release-beta/2026-10-28.2](x)
+- Fix [#1](https://github.com/nocobase/nocobase/pull/1)
+`;
+  assert.deepEqual(pendingBetaPullRequests(changelog), [2, 1]);
+});
+
+test('renamed historical Beta releases retain their immutable changelog section', () => {
+  const changelog =
+    '## [release-beta/2026-10-28.2](old-url)\n\nOriginal notes.\n';
+  assert.deepEqual(
+    renderChangelogLines(changelog, 'nocobase-v3-beta/2026-10-28.2'),
+    ['Original notes.', '', '## Packages', ''],
+  );
+  assert.deepEqual(
+    renderChangelogLines(changelog, 'nocobase-v3-beta/2026-10-28.3'),
+    [],
+  );
+  const updated =
+    '## [nocobase-v3-beta/2026-10-28.2](new-url)\n\nNew notes.\n' + changelog;
+  assert.deepEqual(
+    renderChangelogLines(updated, 'nocobase-v3-beta/2026-10-28.2'),
+    ['New notes.', '', '## Packages', ''],
+  );
+});
