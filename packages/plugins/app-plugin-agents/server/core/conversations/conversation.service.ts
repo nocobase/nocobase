@@ -1224,7 +1224,6 @@ export function createConversationService(
       },
     },
     private: true,
-    path: '?chat={id}',
     title: { key: 'subjects.conversation', ns: ACCESS_NAMESPACE },
     triggers: CONVERSATION_TRIGGERS,
     // "Preview full prompt": a new conversation of the previewer's, with one message, both made up.
