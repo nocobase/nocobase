@@ -1288,6 +1288,17 @@ export class ChatController {
     agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
     void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
   }
+  async markRead(id: string): Promise<ConversationDetail> {
+    const active = this.detailRequest(id);
+    const detail = await this.api.markRead(id);
+    if (active()) {
+      // Read receipts do not change execution or invalidate pending history.
+      this.nextDetailVersion(id);
+      agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
+      void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
+    }
+    return detail;
+  }
   async command<T>(
     id: string,
     request: () => Promise<T>,
