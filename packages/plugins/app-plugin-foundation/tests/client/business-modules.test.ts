@@ -49,6 +49,148 @@ const inventory: FoundationProviderInventory = {
 };
 
 describe('automatic business modules', () => {
+  it('merges matching static top-level navigation groups and deduplicates pages by route id', () => {
+    const routes = [
+      page('settingsA', {
+        id: 'plugin:settings-a',
+        packageName: '@vendor/hr',
+        path: '/settings/',
+        componentLoader: undefined,
+        navigation: { title: 'settings.title' },
+        breadcrumb: { title: 'settings.title' },
+        children: [
+          page('users', {
+            id: 'plugin:user-list',
+            packageName: '@vendor/hr',
+          }),
+        ],
+      }),
+      page('settingsB', {
+        id: 'plugin:settings-b',
+        packageName: '@vendor/hr',
+        path: '/settings',
+        componentLoader: undefined,
+        navigation: { title: 'settings.title' },
+        breadcrumb: { title: 'settings.title' },
+        children: [
+          page('usersDuplicate', {
+            id: 'plugin:user-list',
+            packageName: '@vendor/hr',
+          }),
+          page('roles', { id: 'plugin:roles', packageName: '@vendor/hr' }),
+        ],
+      }),
+    ];
+    const sources = {
+      complete: false,
+      routes: [
+        {
+          packageName: '@vendor/hr',
+          routeName: 'users',
+          providers: ['@nocobase/app-plugin-file'],
+          complete: true,
+        },
+        {
+          packageName: '@vendor/hr',
+          routeName: 'usersDuplicate',
+          providers: ['@vendor/pro'],
+          complete: true,
+        },
+        {
+          packageName: '@vendor/hr',
+          routeName: 'roles',
+          providers: [],
+          complete: false,
+        },
+      ],
+    };
+
+    expect(
+      businessModules(routes, inventory, sources, [
+        'interface',
+        'files',
+        'extension:@vendor/pro',
+      ]),
+    ).toEqual([
+      {
+        id: 'plugin:settings-a',
+        title: { key: 'settings.title', ns: '@vendor/hr' },
+        pageCount: 2,
+        complete: false,
+        links: [
+          { capability: 'interface', evidence: ['page'], providers: [] },
+          {
+            capability: 'files',
+            evidence: ['source'],
+            providers: ['@nocobase/app-plugin-file'],
+          },
+          {
+            capability: 'extension:@vendor/pro',
+            evidence: ['source'],
+            providers: ['@vendor/pro'],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('does not merge groups with another package, path, title, descriptor, dynamic path, or loader', () => {
+    const shared = {
+      componentLoader: undefined,
+      breadcrumb: { title: 'settings.title' },
+    } as const;
+    const routes = [
+      page('one', {
+        id: 'a:one',
+        packageName: '@vendor/a',
+        path: '/settings',
+        ...shared,
+        children: [page('onePage')],
+      }),
+      page('otherPackage', {
+        id: 'b:one',
+        packageName: '@vendor/b',
+        path: '/settings',
+        ...shared,
+        children: [page('otherPackagePage')],
+      }),
+      page('otherPath', {
+        id: 'a:other-path',
+        packageName: '@vendor/a',
+        path: '/settings/:tab',
+        ...shared,
+        children: [page('otherPathPage')],
+      }),
+      page('otherTitle', {
+        id: 'a:other-title',
+        packageName: '@vendor/a',
+        path: '/settings',
+        navigation: { title: 'nav.different' },
+        ...shared,
+        children: [page('otherTitlePage')],
+      }),
+      page('otherDescriptor', {
+        id: 'a:other-descriptor',
+        packageName: '@vendor/a',
+        path: '/settings',
+        ...shared,
+        breadcrumb: { title: 'settings.other' },
+        children: [page('otherDescriptorPage')],
+      }),
+      page('pageWithLoader', {
+        id: 'a:page-with-loader',
+        packageName: '@vendor/a',
+        path: '/settings',
+        ...shared,
+        componentLoader: loader,
+      }),
+    ];
+
+    expect(
+      businessModules(routes, inventory, undefined, ['interface']),
+    ).toHaveLength(6);
+  });
+
   it('groups descendants, preserves translated menu titles and links only evidence present in the current capability list', () => {
     const routes = [
       page('customOrders', {

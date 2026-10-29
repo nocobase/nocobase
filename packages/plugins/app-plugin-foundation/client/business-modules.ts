@@ -13,6 +13,44 @@ import type {
 
 const SELF = '@nocobase/app-plugin-foundation';
 
+function normalizedStaticPath(path: string): string | undefined {
+  if (!path.startsWith('/') || /[:*?#[\]{}]/.test(path)) return undefined;
+  return path.replace(/\/{2,}/g, '/').replace(/\/+$/, '') || '/';
+}
+
+function mergeTopLevelGroups(
+  routes: readonly AppClientRegisteredRoute[],
+): AppClientRegisteredRoute[] {
+  const merged: AppClientRegisteredRoute[] = [];
+  const groups = new Map<string, number>();
+  for (const route of [...routes].sort(compareNavigationOrder)) {
+    const path =
+      route.componentLoader === undefined && route.navigation
+        ? normalizedStaticPath(route.path)
+        : undefined;
+    const key = path
+      ? JSON.stringify([
+          route.packageName,
+          path,
+          route.navigation?.title,
+          route.breadcrumb?.title,
+        ])
+      : undefined;
+    const previousIndex = key === undefined ? undefined : groups.get(key);
+    if (previousIndex === undefined) {
+      if (key !== undefined) groups.set(key, merged.length);
+      merged.push(route);
+      continue;
+    }
+    const previous = merged[previousIndex];
+    merged[previousIndex] = {
+      ...previous,
+      children: [...(previous.children ?? []), ...(route.children ?? [])],
+    };
+  }
+  return merged;
+}
+
 /** Navigation supplies module identity and titles; child pages belong to their nearest top-level menu module. */
 export function businessModules(
   routes: readonly AppClientRegisteredRoute[],
@@ -35,7 +73,9 @@ export function businessModules(
         visit(node.children ?? []);
         continue;
       }
-      const pages = descendants(node).filter((route) => route.componentLoader);
+      const pages = descendants(node).filter((route) => {
+        return route.componentLoader !== undefined;
+      });
       if (!pages.length) continue;
       const links = new Map<
         string,
@@ -111,7 +151,7 @@ export function businessModules(
       modules.push({
         id: node.id,
         title: { key: node.navigation.title, ns: node.packageName },
-        pageCount: pages.length,
+        pageCount: new Set(pages.map((page) => page.id)).size,
         complete,
         links: [...links].map(([capability, link]) => ({
           capability,
@@ -125,6 +165,6 @@ export function businessModules(
       });
     }
   };
-  visit(routes);
+  visit(mergeTopLevelGroups(routes));
   return modules;
 }
