@@ -5,6 +5,30 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.35](https://github.com/nocobase/nocobase/compare/v2.2.34...v2.2.35) - 2026-10-28
+
+### 🐛 修复
+
+- **[用户认证]** 修复认证器选项在认证类型插件加载完成前被渲染，导致应用重载后 LDAP 登录报 "must either provide a buffer via raw or some value" 的问题 ([#11182](https://github.com/nocobase/nocobase/pull/11182)) by @hongboji
+
+## [v2.2.34](https://github.com/nocobase/nocobase/compare/v2.2.33...v2.2.34) - 2026-10-27
+
+### 🚀 优化
+
+- **[钉钉]** 修复文件式安装插件后钉钉 Stream 模式启动失败；全量同步接口调用量降低约 90%；同步撞钉钉调用总量配额时在失败消息中显示配额重置时间 by @chenzhizdt
+
+### 🐛 修复
+
+- **[AI 员工]** 为 OpenAI Responses 服务增加可选的“无状态请求”模式，用于规避网关跨 Azure OpenAI 资源路由时的响应条目错误。 ([#11183](https://github.com/nocobase/nocobase/pull/11183)) by @cgyrock
+
+- **[飞书 / Lark]** 修复配置 `APP_PUBLIC_PATH` 后飞书 OAuth 回调地址缺少前缀导致授权失败；修复 v2 客户端自动登录不触发及回跳 404 by @chenzhizdt
+
+## [v2.2.33](https://github.com/nocobase/nocobase/compare/v2.2.32...v2.2.33) - 2026-10-25
+
+### 🐛 修复
+
+- **[工作流：抄送]** 限制工作流任务读取范围，仅允许读取本人任务及支持的关联数据。 ([#11097](https://github.com/nocobase/nocobase/pull/11097)) by @mytharcher
+
 ## [v2.2.32](https://github.com/nocobase/nocobase/compare/v2.2.31...v2.2.32) - 2026-10-25
 
 ### 🚀 优化

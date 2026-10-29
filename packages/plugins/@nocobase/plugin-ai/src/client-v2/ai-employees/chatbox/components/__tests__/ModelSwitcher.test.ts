@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { LLMServiceItem } from '../../../../repositories/AIConfigRepository';
-import { getVisibleModelServices } from '../ModelSwitcher';
+import { getModelLabel, getVisibleModelServices } from '../ModelSwitcher';
 
 const services: LLMServiceItem[] = [
   {
@@ -51,5 +51,11 @@ describe('ModelSwitcher helpers', () => {
         enabledModels: [{ label: 'Qwen Max', value: 'qwen-max' }],
       },
     ]);
+  });
+
+  it('uses configured display labels for the compact summary and falls back to the model ID', () => {
+    expect(getModelLabel(services, { llmService: 'openai', model: 'gpt-5' })).toBe('GPT 5');
+    expect(getModelLabel(services, { llmService: 'openai', model: 'custom-model' })).toBe('custom-model');
+    expect(getModelLabel(services, null)).toBe('');
   });
 });

@@ -54,10 +54,13 @@ export const AddContextButton: React.FC<{
   contextItems?: ContextItem[];
   onAdd: (item: ContextItem) => void;
   onRemove: (type: string, uid: string) => void;
+  onSelect?: (key: string) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   disabled?: boolean;
   ignore?: (key: string, workContext: WorkContextOptions) => boolean;
   runtime?: ChatBoxRuntime;
-}> = ({ contextItems, onAdd, onRemove, disabled, ignore, runtime }) => {
+}> = ({ contextItems, onAdd, onRemove, onSelect, disabled, ignore, runtime, open, onOpenChange }) => {
   const t = useT();
   const app = useApp();
   const ctx = useFlowContext();
@@ -105,6 +108,7 @@ export const AddContextButton: React.FC<{
       event.domEvent.stopPropagation();
       const key = String(event.key);
       const workContextItem = contextItemMapping.get(key);
+      onSelect?.(key);
       workContextItem?.menu?.onClick?.({
         ctx,
         contextItems,
@@ -123,10 +127,12 @@ export const AddContextButton: React.FC<{
     };
 
     return [menuItems, handleClick] as const;
-  }, [contextItems, ctx, ignore, onAdd, onRemove, syncContextAttachments, t, workContext]);
+  }, [contextItems, ctx, ignore, onAdd, onRemove, onSelect, syncContextAttachments, t, workContext]);
 
   return (
     <Dropdown
+      open={open}
+      onOpenChange={onOpenChange}
       menu={{ items, onClick }}
       placement="topLeft"
       disabled={disabled || !items.length}
@@ -135,7 +141,12 @@ export const AddContextButton: React.FC<{
         zIndex: 2000,
       }}
     >
-      <Button type="text" icon={<AppstoreAddOutlined />} disabled={disabled || !items.length} />
+      <Button
+        type="text"
+        aria-label={t('Work context')}
+        icon={<AppstoreAddOutlined />}
+        disabled={disabled || !items.length}
+      />
     </Dropdown>
   );
 };

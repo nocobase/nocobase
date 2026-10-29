@@ -691,6 +691,17 @@ export const LLMServiceForm: React.FC<{
           <EnvVariableInput placeholder={t('Base URL is optional, leave blank to use default (recommended)')} />
         </Form.Item>
       ) : null}
+      {providerKey === 'openai' ? (
+        <Form.Item
+          name={['options', 'zdrEnabled']}
+          label={t('Stateless requests')}
+          tooltip={t('Stateless requests description')}
+          valuePropName="checked"
+          initialValue={false}
+        >
+          <Switch aria-label={t('Stateless requests')} />
+        </Form.Item>
+      ) : null}
       {providerKey ? (
         <Form.Item name="enabledModels" label={labelWithColon(t('Enabled Models'))}>
           <EnabledModelsInput />
