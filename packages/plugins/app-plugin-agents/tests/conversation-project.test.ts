@@ -11,10 +11,19 @@ afterEach(async () => {
   await h?.services.onlineAgent.shutdown();
   await h?.close();
 });
-async function fixture() {
+async function fixture(withCodex = false) {
   h = await createHarness();
   const agentId = await h.createAgent({ name: 'First', source: 'runner' });
-  const runner = await h.registerRunner();
+  const runner = await h.registerRunner(
+    withCodex
+      ? {
+          tools: [
+            { kind: 'claude', authenticated: true },
+            { kind: 'codex', authenticated: true },
+          ],
+        }
+      : {},
+  );
   let visible = true;
   h.services.conversations.workspace.provide({
     prepare: async (userId) => userId,
@@ -283,9 +292,12 @@ it.each(['switchAgent', 'send', 'fallback', 'restore'] as const)(
 it.each(['switchAgent', 'send', 'fallback', 'restore'] as const)(
   '%s keeps a compatible project runner and subsequent work can be claimed',
   async (operation) => {
-    const { agentId, runner } = await fixture();
+    const { agentId, runner } = await fixture(true);
     const service = h.services.conversations;
-    const target = await h.createAgent({ source: 'runner' });
+    const target = await h.createAgent({
+      source: 'runner',
+      modelEntries: [{ tool: 'codex', model: null }],
+    });
     const { id, native } = await bindProject(
       agentId,
       runner,
@@ -316,6 +328,7 @@ it.each(['switchAgent', 'send', 'fallback', 'restore'] as const)(
       await service.send('alice', id, { content: 'Continue' });
     const [next] = await claim(h, runner);
     expect(next.agent.id).toBe(target);
+    expect(JSON.stringify(next.prompt)).toContain('Read project');
     expect(next.workspace.dirs).toMatchObject([{ branch: 'chat/test' }]);
   },
 );
