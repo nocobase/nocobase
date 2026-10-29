@@ -106,6 +106,7 @@ export type OnlineAgentInitialConfiguration = {
 };
 
 export type OnlineAgentSendOptions = {
+  effort?: string | null;
   /** Pending Runner selection, committed atomically with message admission. */
   agentId?: string;
   attachmentIds?: string[][];
@@ -116,6 +117,8 @@ export type OnlineAgentSendOptions = {
   selectedModel?: ModelRef;
 };
 export type OnlineAgentRealtimeOptions = OnlineAgentOptions & {
+  projectId?: string | null;
+  effort?: string | null;
   sessionId?: string;
   selectedModel?: ModelRef;
   source?: string;

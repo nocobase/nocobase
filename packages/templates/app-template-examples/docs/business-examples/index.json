@@ -64,22 +64,30 @@
   {
     "id": "customers",
     "title": "Customers and contacts",
-    "status": "planned",
+    "status": "runnable",
     "sources": [
-      "client/pages/customers/",
-      "server/routes/customers.ts",
-      "server/providers/customers.ts",
-      "database/main/migrations/",
-      "database/main/seeds/",
-      "tests/client/customers.test.tsx",
-      "tests/server/customers.test.ts",
-      "tests/database/customers.test.ts",
-      "tests/playwright/customers.test.ts"
+      "client/pages/customer-contacts/index.tsx",
+      "client/pages/customer-contacts/detail.tsx",
+      "client/pages/customer-contacts/edit.tsx",
+      "client/pages/customer-contacts/batch.tsx",
+      "client/pages/customer-contacts/model.ts",
+      "client/pages/customer-contacts/shared.tsx",
+      "client/pages/customer-contacts/relation-picker.tsx",
+      "client/pages/customer-contacts/locales.ts",
+      "server/routes/customer-contacts.ts",
+      "server/providers/customer-contacts.ts",
+      "server/providers/customer-contacts-authorization.ts",
+      "server/providers/customer-contacts-data.ts",
+      "database/main/migrations/202611030002_create_customer_contacts.ts",
+      "database/main/seeds/202611030002_customer_contacts.ts",
+      "tests/client/customer-contacts.test.tsx",
+      "tests/server/customer-contacts.test.ts",
+      "tests/database/customer-contacts-migration.test.ts"
     ],
-    "destination": "assets/business-examples/customers/",
+    "destination": "assets/customer-contacts-example/",
     "entries": {
-      "page": "/customers",
-      "api": []
+      "page": "/customer-contacts",
+      "api": ["/api/customerContacts"]
     },
     "dependencies": [
       "Default registered authentication, Users and authorization capabilities"
@@ -87,17 +95,20 @@
     "commands": {
       "install": "pnpm install",
       "start": "pnpm dev",
-      "test": "pnpm test && pnpm test:e2e",
-      "reset": "implementation must supply isolated test-data reset"
+      "test": "pnpm exec vitest run tests/client/customer-contacts.test.tsx tests/server/customer-contacts.test.ts tests/database/customer-contacts-migration.test.ts",
+      "reset": "POST <application-base>/api/customerContacts/reset (native unrestricted administrator session; also available as Reset example data on the page)"
     },
     "applicability": "Application-owned business feature in the Examples template",
     "replacementPoints": [
-      "Business fields and labels",
-      "Reference scope",
-      "Ownership and action permission rules"
+      "Customer and contact fields and labels",
+      "Ownership and permitted relation scope",
+      "Batch field allowlist and per-record outcomes"
     ],
     "limitations": [
-      "Not implemented or published by this collection-material change"
+      "Current-page batches contain at most 100 unique IDs",
+      "The existing example installs fictional users; replace demonstration accounts and data before production adaptation",
+      "Batch writes use one transaction without persistent receipts; inspect saved rows after an uncertain response",
+      "See docs/customer-contacts.md and the relation/batch Skill reference for integration and independent adaptation guidance"
     ]
   },
   {

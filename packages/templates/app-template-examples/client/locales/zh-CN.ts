@@ -1,4 +1,5 @@
 import { zhCN as procurement } from '../pages/procurement/locales.js';
+import { zhCN as customerContacts } from '../pages/customer-contacts/locales.js';
 import { zhCN as skillProjectszhCN } from '../pages/skill-projects/locales.js';
 import { workflowNamesZhCN } from '../../shared/workflow-names.js';
 import type { AppResource } from './en-US.js';
@@ -7,6 +8,7 @@ import systemZhCN from './system/zh-CN.js';
 
 const zhCN: AppResource = {
   procurement,
+  customerContacts,
   skillProjects: skillProjectszhCN,
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
@@ -210,6 +212,10 @@ const zhCN: AppResource = {
     copyFailed: '复制失败，请选中译文后复制。',
     tryExample: '试试示例',
     examples: {
+      procurement: {
+        title: procurement.title,
+        description: procurement.description,
+      },
       product: {
         title: '产品介绍',
         text: 'NocoBase 是一个可扩展的应用开发平台，让团队更快地构建和交付业务应用。',
@@ -594,9 +600,9 @@ const zhCN: AppResource = {
     },
   },
   examples: {
-    procurement: {
-      title: procurement.title,
-      description: procurement.description,
+    customerContacts: {
+      title: '客户关联与批量编辑',
+      description: customerContacts.description,
     },
     aiFormFill: {
       title: 'AI 辅助填表',

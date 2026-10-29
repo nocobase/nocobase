@@ -15,15 +15,18 @@ import {
 
 import {
   PM_REALTIME_TOPIC,
+  isDiscussionOnly,
   type PmChangeEvent,
 } from '../../shared/realtime.js';
 import {
   announcedIssueIds,
   changedIssueSegments,
+  embeddedIssueSegments,
   isIssueRead,
 } from '../api/changed-issues.js';
 import { PmQueryClient } from '../api/invalidate-queries.js';
 import { pmKeys } from '../api/keys.js';
+import { usePmApi } from '../hooks/use-pm-api.js';
 
 /** A refusal (4xx) will not change on a retry; anything else gets one more try. */
 function retry(failures: number, error: unknown): boolean {
@@ -51,6 +54,7 @@ function isChange(payload: unknown): payload is PmChangeEvent {
 function RealtimeRefresh(): null {
   const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
+  const api = usePmApi();
   useEffect(() => {
     let full = false;
     let pending: PmChangeEvent[] = [];
@@ -81,19 +85,38 @@ function RealtimeRefresh(): null {
         const issues = changes.filter((change) => change.domain === 'issues');
         if (issues.length) {
           invalidate(pmKeys.issues);
+          if (
+            changes.every(isDiscussionOnly) &&
+            queryClient instanceof PmQueryClient
+          ) {
+            await queryClient.refreshDiscussions(
+              api,
+              new Set(issues.flatMap((change) => change.issueIds ?? [])),
+            );
+            await Promise.all(requests);
+            return;
+          }
           const named = issues.map(announcedIssueIds);
-          if (named.some((ids) => !ids)) {
+          if (
+            named.some((ids) => !ids) ||
+            issues.some((change) => change.listsChanged)
+          )
             invalidate(pmKeys.projects);
+          if (named.some((ids) => !ids)) {
             invalidate(['pm', 'issue']);
           } else {
             const ids = new Set(named.flatMap((ids) => (ids ? [...ids] : [])));
             const segments = changedIssueSegments(queryClient, ids);
+            const embedded = embeddedIssueSegments(queryClient, ids);
             requests.push(
               refreshRealtimeQueries(
                 queryClient,
                 {
                   queryKey: ['pm', 'issue'],
-                  predicate: (query) => isIssueRead(query.queryKey, segments),
+                  predicate: (query) =>
+                    isIssueRead(query.queryKey, segments) ||
+                    (query.queryKey.length === 3 &&
+                      embedded.has(String(query.queryKey[2]))),
                 },
                 signal,
               ),
@@ -126,7 +149,7 @@ function RealtimeRefresh(): null {
       subscription.close();
       scheduled.close();
     };
-  }, [realtime, queryClient]);
+  }, [realtime, queryClient, api]);
   return null;
 }
 

@@ -10,6 +10,32 @@ import applicationRoutes from '../../client/routes.ts';
 import { buildRouteNavigation } from '../../client/routing/route-navigation.ts';
 
 describe('app client routes', () => {
+  it('keeps procurement and customer relations as separate protected route trees', () => {
+    const routes = resolveRoutes().routes;
+    const procurement = routes.find((route) => route.name === 'procurement');
+    expect(procurement).toMatchObject({
+      path: '/procurement',
+      auth: 'required',
+      authz: {
+        resource: { type: 'page', id: 'procurement' },
+        action: 'access',
+      },
+    });
+    expect(procurement?.children?.map((route) => route.name)).toEqual([
+      'procurement-new',
+      'procurement-detail',
+    ]);
+    expect(
+      routes.find((route) => route.name === 'customer-contacts'),
+    ).toMatchObject({
+      path: '/customer-contacts',
+      auth: 'required',
+      authz: {
+        resource: { type: 'page', id: 'customer-contacts' },
+        action: 'access',
+      },
+    });
+  });
   it('keeps the landing page and the authentication pages', () => {
     // The authentication plugin and this application have to agree on these paths: it sends an unknown visitor to
     // /login, sends a signed-in user who opens a guest page back to /, and mails a reset link to /reset-password,
@@ -191,6 +217,14 @@ describe('app client routes', () => {
     const resolved = resolveRoutes();
 
     expect(pageAuthorizations(resolved.routes)).toEqual([
+      ...[
+        'customer-contacts',
+        'customer-contacts-batch',
+        'customer-contacts-detail',
+        'customer-contacts-edit',
+        'customer-contacts-new-contact',
+        'customer-contacts-edit-contact',
+      ].map((name) => ({ name, authorizedAs: 'customer-contacts' })),
       { name: 'skill-projects', authorizedAs: 'skill-projects' },
       { name: 'skill-projects-new', authorizedAs: 'skill-projects' },
       { name: 'skill-projects-edit', authorizedAs: 'skill-projects' },

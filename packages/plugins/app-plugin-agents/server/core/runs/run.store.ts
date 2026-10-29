@@ -528,7 +528,7 @@ const summaryRead = transactionRead<string | null>();
 export async function lastSummary(
   conn: DatabaseConnection,
   key: {
-    readonly agentId: string;
+    readonly agentId?: string;
     readonly subjectKind: string;
     readonly subjectId: string;
   },
@@ -541,7 +541,7 @@ export async function lastSummary(
       const records = await runsRepo(conn).findMany({
         filter: (f) =>
           f.and([
-            f.string('agentId').eq(key.agentId),
+            ...(key.agentId ? [f.string('agentId').eq(key.agentId)] : []),
             f.string('subjectKind').eq(key.subjectKind),
             f.string('subjectId').eq(key.subjectId),
             f.string('status').eq('completed'),

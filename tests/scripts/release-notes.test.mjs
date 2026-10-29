@@ -44,6 +44,10 @@ test('lists every published package with a link to its changelog at the tagged c
 });
 
 test('parses beta and stable aggregate tags', () => {
+  assert.deepEqual(parseAggregateTag('nocobase-v3-beta/2026-10-28.2'), {
+    batch: '2026-10-28.2',
+    channel: 'beta',
+  });
   assert.deepEqual(parseAggregateTag('release-beta/2026-08-26.5'), {
     batch: '2026-08-26.5',
     channel: 'beta',
@@ -58,6 +62,9 @@ test('rejects tags that are not aggregate release tags', () => {
   for (const tag of [
     '@nocobase/create-app@0.1.0-beta.4',
     'release-beta/2026-08-26',
+    'nocobase-v3-beta/2026-10-28',
+    'nocobase-v3-beta/not-a-date.2',
+    'nocobase3-beta/2026-10-28.2',
     'v1.0.0',
     'release/not-a-date.1',
   ]) {

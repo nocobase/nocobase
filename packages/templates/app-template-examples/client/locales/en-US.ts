@@ -1,4 +1,5 @@
 import { enUS as procurement } from '../pages/procurement/locales.js';
+import { enUS as customerContacts } from '../pages/customer-contacts/locales.js';
 import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
 import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
@@ -8,6 +9,7 @@ import systemEnUS from './system/en-US.js';
 
 const enUS = {
   procurement,
+  customerContacts,
   skillProjects: skillProjectsenUS,
   knowledge: {
     indexing: 'Knowledge indexing',
@@ -439,6 +441,10 @@ const enUS = {
     copyFailed: 'Could not copy. Select the translation and copy it manually.',
     tryExample: 'Try an example',
     examples: {
+      procurement: {
+        title: procurement.title,
+        description: procurement.description,
+      },
       product: {
         title: 'Product introduction',
         text: 'NocoBase is an extensible application development platform that helps teams build and deliver business applications faster.',
@@ -628,9 +634,9 @@ const enUS = {
     },
   },
   examples: {
-    procurement: {
-      title: procurement.title,
-      description: procurement.description,
+    customerContacts: {
+      title: 'Customer relations and batch editing',
+      description: customerContacts.description,
     },
     aiFormFill: {
       title: 'AI form assistance',

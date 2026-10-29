@@ -11,6 +11,7 @@ import AIFormFillProvider from './ai-form-fill.js';
 import ExternalCrmProvider from './external-crm.js';
 import KnowledgeAccessProvider from './knowledge-access.js';
 import KnowledgeChatProvider from './knowledge-chat.js';
+import CustomerContactsAuthorizationProvider from './customer-contacts-authorization.js';
 
 export {
   appExampleServiceToken,
@@ -27,6 +28,7 @@ const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
   ExternalCrmProvider,
   KnowledgeAccessProvider,
   KnowledgeChatProvider,
+  CustomerContactsAuthorizationProvider,
 ];
 
 export default serviceProviders;

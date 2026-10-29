@@ -146,7 +146,7 @@ function Item({
             </div>
           )}
           {item.text && (
-            <div className='bg-accent rounded-[12px_12px_4px_12px] px-3.5 py-2 text-sm whitespace-pre-wrap'>
+            <div className='bg-accent max-w-full rounded-[12px_12px_4px_12px] px-3.5 py-2 text-sm wrap-anywhere whitespace-pre-wrap'>
               <MentionedText text={item.text} links={session.links} />
             </div>
           )}

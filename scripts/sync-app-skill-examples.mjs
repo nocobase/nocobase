@@ -40,8 +40,31 @@ const procurement = [
   'tests/playwright/procurement.test.ts',
   'docs/procurement.md',
 ];
+const customerContacts = [
+  'client/pages/customer-contacts/index.tsx',
+  'client/pages/customer-contacts/detail.tsx',
+  'client/pages/customer-contacts/edit.tsx',
+  'client/pages/customer-contacts/batch.tsx',
+  'client/pages/customer-contacts/model.ts',
+  'client/pages/customer-contacts/shared.tsx',
+  'client/pages/customer-contacts/relation-picker.tsx',
+  'client/pages/customer-contacts/locales.ts',
+  'server/routes/customer-contacts.ts',
+  'server/providers/customer-contacts.ts',
+  'server/providers/customer-contacts-authorization.ts',
+  'server/providers/customer-contacts-data.ts',
+  'database/main/migrations/202611030002_create_customer_contacts.ts',
+  'database/main/seeds/202611030002_customer_contacts.ts',
+  'tests/client/customer-contacts.test.tsx',
+  'tests/server/customer-contacts.test.ts',
+  'tests/database/customer-contacts-migration.test.ts',
+];
 const mappings = [
   ...files.map((file) => [file, `list-edit-example/${file}`]),
+  ...customerContacts.map((file) => [
+    file,
+    `customer-contacts-example/${file}`,
+  ]),
   ...procurement.map((file) => [file, `business-examples/procurement/${file}`]),
   ['docs/business-examples/index.json', 'business-examples/index.json'],
 ];
@@ -84,7 +107,11 @@ async function list(directory, prefix = '') {
   }
   return result;
 }
-for (const directory of ['list-edit-example', 'business-examples']) {
+for (const directory of [
+  'list-edit-example',
+  'customer-contacts-example',
+  'business-examples',
+]) {
   for (const file of await list(path.join(skill, directory))) {
     if (!mappings.some(([, target]) => target === `${directory}/${file}`)) {
       console.error(`Unexpected Skill example file: ${directory}/${file}`);

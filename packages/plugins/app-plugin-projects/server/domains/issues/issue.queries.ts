@@ -18,6 +18,7 @@ import {
   ISSUE_PAGE_LIMIT,
   type ActivityPage,
   type Issue,
+  type IssueSummary,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -25,7 +26,7 @@ import {
   type IssuePage,
   type StatusDefinition,
 } from '../../../shared/issues.js';
-import type { Viewer } from '../../access/viewer.js';
+import { requireAction, type Viewer } from '../../access/viewer.js';
 import {
   AGENT_VIA_KIND,
   readActivities,
@@ -42,6 +43,7 @@ import {
   visibleIssueIds,
 } from './issue.access.js';
 import {
+  findIssueSummaries,
   findIssue,
   findIssueRefs,
   findIssueRow,
@@ -58,6 +60,8 @@ import { FIXED_STATUSES } from '../../../shared/statuses.js';
 import { oneOf } from '../../kernel/db.js';
 
 export interface IssueQueries {
+  /** At most 100 IDs or identifiers, filtered by current visibility in one read. */
+  summaries(viewer: Viewer, refs: readonly string[]): Promise<IssueSummary[]>;
   /** Reauthorize explicit ids without hydrating issue rows, children or dependency counts. */
   visibleIds(
     viewer: Viewer,
@@ -372,7 +376,64 @@ function unknownStatus(key: string): StatusDefinition {
 }
 
 export function createIssueQueries(deps: QueryDeps): IssueQueries {
+  /** The caller has already checked visibility for this issue in the same read. */
+  async function activityPage(
+    conn: DatabaseConnection,
+    issueId: string,
+    viewer: Viewer,
+    options: Parameters<IssueQueries['activities']>[2],
+  ): Promise<ActivityPage> {
+    const limit = pageLimit(
+      options.limit,
+      ACTIVITY_PAGE_LIMIT.default,
+      ACTIVITY_PAGE_LIMIT.max,
+    );
+    const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
+    const rows = await readActivities(
+      conn,
+      issueId,
+      limit,
+      cursor
+        ? { createdAt: String(cursor.createdAt), id: String(cursor.id) }
+        : undefined,
+    );
+    const result = pageOf(rows, limit, (row) => ({
+      createdAt: row.createdAt,
+      id: row.id,
+    }));
+    const name = await deps.kinds.nameAll(conn, [
+      ...result.rows.map((row) => ({ type: row.actorType, id: row.actorId })),
+      ...tracedAgents(result.rows),
+    ]);
+    return {
+      // Oldest first, as the timeline reads.
+      data: result.rows.reverse().map((row) => ({
+        id: row.id,
+        actorType: row.actorType,
+        actorId: row.actorId,
+        actorName: name(row.actorType, row.actorId),
+        action: row.action,
+        ...splitVia(
+          row.details,
+          (agentId) => name(AGENT_VIA_KIND, agentId),
+          viewer,
+        ),
+        createdAt: row.createdAt,
+      })),
+      nextCursor: result.nextCursor,
+    };
+  }
+
   return {
+    summaries: (viewer, refs) => {
+      requireAction(viewer, 'pm.issues', 'view', 'You may not view issues.');
+      return findIssueSummaries(deps.tx.read(), (f) =>
+        f.and([
+          visibleIssues(f, viewer),
+          f.or([oneOf(f, 'id', refs), oneOf(f, 'identifier', refs)]),
+        ]),
+      );
+    },
     visibleIds: (viewer, ids) => visibleIssueIds(deps.tx.read(), viewer, ids),
     hierarchySource: (viewer, query) =>
       hierarchySource(deps.tx.read(), viewer, query),
@@ -551,7 +612,7 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         ? await findIssue(conn, issue.parentIssueId)
         : undefined;
       const catalog = deps.statuses.catalog();
-      const activities = await this.activities(viewer, issue.id, {});
+      const activities = await activityPage(conn, issue.id, viewer, {});
       const threads = await deps.extras().threads(conn, issue, viewer);
       return {
         ...item,
@@ -630,45 +691,7 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
     async activities(viewer, idOrKey, options) {
       const conn = deps.tx.read();
       const issue = await requireVisible(conn, viewer, idOrKey);
-      const limit = pageLimit(
-        options.limit,
-        ACTIVITY_PAGE_LIMIT.default,
-        ACTIVITY_PAGE_LIMIT.max,
-      );
-      const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
-      const rows = await readActivities(
-        conn,
-        issue.id,
-        limit,
-        cursor
-          ? { createdAt: String(cursor.createdAt), id: String(cursor.id) }
-          : undefined,
-      );
-      const result = pageOf(rows, limit, (row) => ({
-        createdAt: row.createdAt,
-        id: row.id,
-      }));
-      const name = await deps.kinds.nameAll(conn, [
-        ...result.rows.map((row) => ({ type: row.actorType, id: row.actorId })),
-        ...tracedAgents(result.rows),
-      ]);
-      return {
-        // Oldest first, as the timeline reads.
-        data: result.rows.reverse().map((row) => ({
-          id: row.id,
-          actorType: row.actorType,
-          actorId: row.actorId,
-          actorName: name(row.actorType, row.actorId),
-          action: row.action,
-          ...splitVia(
-            row.details,
-            (agentId) => name(AGENT_VIA_KIND, agentId),
-            viewer,
-          ),
-          createdAt: row.createdAt,
-        })),
-        nextCursor: result.nextCursor,
-      };
+      return activityPage(conn, issue.id, viewer, options);
     },
   };
 }

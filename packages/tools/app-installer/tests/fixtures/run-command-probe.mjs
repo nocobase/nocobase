@@ -21,12 +21,19 @@ if (mode === 'leaf') {
   beat();
   setInterval(beat, 10);
   writeFileSync(pidFile, String(process.pid));
+  process.send?.('ready');
 } else if (mode === 'leader') {
   // No exit handler: TERM must close the direct child before a resistant leaf exits.
-  spawn(process.execPath, [import.meta.filename, 'leaf', dir], {
-    stdio: process.env.INHERIT === '1' ? 'inherit' : 'ignore',
+  const earlyExit = process.env.EARLY_EXIT === '1';
+  const child = spawn(process.execPath, [import.meta.filename, 'leaf', dir], {
+    stdio:
+      process.env.INHERIT === '1'
+        ? earlyExit
+          ? ['inherit', 'inherit', 'inherit', 'ipc']
+          : 'inherit'
+        : 'ignore',
   });
-  if (process.env.EARLY_EXIT === '1') process.exit(7);
+  if (earlyExit) child.once('message', () => process.exit(7));
   setInterval(() => {}, 1000);
 } else {
   const remove = installInterruptHandlers({ write: () => true });

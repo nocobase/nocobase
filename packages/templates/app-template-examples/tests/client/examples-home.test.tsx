@@ -43,8 +43,23 @@ it.each(['en-US', 'zh-CN'])(
       }),
     ).toHaveAttribute('href', '/demo/template-print-example');
     expect(
+      screen.getByRole('link', {
+        name:
+          locale === 'zh-CN'
+            ? /^客户关联与批量编辑/u
+            : /^Customer relations and batch editing/u,
+      }),
+    ).toHaveAttribute('href', '/demo/customer-contacts');
+    expect(
+      screen.getByRole('link', {
+        name: locale === 'zh-CN' ? /^采购申请/u : /^Procurement/u,
+      }),
+    ).toHaveAttribute('href', '/demo/procurement');
+    expect(
       screen.getAllByRole('link').map((link) => link.getAttribute('href')),
     ).toEqual([
+      '/demo/procurement',
+      '/demo/customer-contacts',
       '/demo/ai-form-fill',
       '/demo/route-overlays',
       '/demo/articles',

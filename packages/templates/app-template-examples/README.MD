@@ -47,6 +47,10 @@ Business lists reuse the template's standard `DataTable` and companions from `#c
 
 Open **Agents → Models** to configure a service and enable a chat model, then open the header chat button, press Cmd/Ctrl+J or use the homepage Online Agent card. [OnlineAgent usage and verification](online-agent.md) explains model configuration, permissions, saved history and the distinction between the local HTTP fixture and a real model service.
 
+## Customers and contacts example
+
+Open **Customers and contacts** to practice protected relation search, paging and association changes, then assign one status or owner to selected customers on the current page. The [setup and reset guide](docs/customer-contacts.md) includes fictional accounts, native permission boundaries, partial-result semantics, test commands and adaptation checks.
+
 ## Internationalization example
 
 Open **Internationalization** from the homepage or sidebar (`/i18n-examples`, relative to the application's mount path). Like the other protected examples, this page requires sign-in and its page permission; administrators can explore it directly.

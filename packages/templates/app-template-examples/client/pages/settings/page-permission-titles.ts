@@ -7,6 +7,11 @@ import type { PagePermissionTitles } from './page-permissions.js';
 export const pagePermissionTitles: PagePermissionTitles = {
   'procurement-new': 'procurement.new',
   'procurement-detail': 'procurement.open',
+  'customer-contacts-batch': 'customerContacts.batchTitle',
+  'customer-contacts-detail': 'customerContacts.customer',
+  'customer-contacts-edit': 'customerContacts.editCustomer',
+  'customer-contacts-new-contact': 'customerContacts.newContact',
+  'customer-contacts-edit-contact': 'customerContacts.editContact',
   'skill-projects-new': 'skillProjects.create',
   'skill-projects-edit': 'skillProjects.edit',
   'runtimes-connect': 'onlineAgent.connectRuntime',
