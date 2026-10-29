@@ -7,6 +7,7 @@ import {
   realtimeClientToken,
   createRealtimeRefresh,
   refreshRealtimeQueries,
+  useRealtimeReadiness,
   useApiClient,
   useService,
 } from '@nocobase/app-client';
@@ -33,7 +34,7 @@ import {
   type InboxListResponse,
   type InboxMutationAction,
 } from '../api.js';
-import { subscribeToInboxInvalidations } from '../subscription.js';
+import { IN_APP_NOTIFICATION_REALTIME_TOPIC } from '../../shared/realtime.js';
 import { INBOX_PAGE_SIZE, inboxKeys } from './keys.js';
 
 /** The pages `useInboxItems` has loaded. */
@@ -54,7 +55,9 @@ export function useInboxItems(
   pageSize: number = INBOX_PAGE_SIZE,
 ): UseInfiniteQueryResult<InboxPages> {
   const client = useApiClient();
+  const ready = useInboxReadiness();
   return useInfiniteQuery({
+    enabled: ready,
     queryKey: inboxKeys.page(pageSize),
     queryFn: ({ pageParam, signal }) =>
       fetchInbox(
@@ -71,7 +74,9 @@ export function useInboxItems(
 /** How many of the viewer's messages are unread. */
 export function useInboxUnreadCount(): UseQueryResult<number> {
   const client = useApiClient();
+  const ready = useInboxReadiness();
   return useQuery({
+    enabled: ready,
     queryKey: inboxKeys.unread,
     queryFn: ({ signal }) => fetchUnreadCount(client, signal),
     retry: false,
@@ -209,25 +214,88 @@ export function useInboxActions(): InboxActions {
  * reopens, or the window regains focus. `extraTopics` are further realtime topics whose events refresh it too, such
  * as an application's own topic for what it adds to each message.
  */
+/** Sources wait for their own topics as well as the native inbox topic. */
+export function useInboxReadiness(
+  extraTopics: readonly string[] = [],
+): boolean {
+  return useRealtimeReadiness([
+    IN_APP_NOTIFICATION_REALTIME_TOPIC,
+    ...extraTopics,
+  ]);
+}
+
+const refreshOwners = new WeakMap<
+  QueryClient,
+  Map<string, { count: number; close: () => void }>
+>();
+
 export function useInboxRefresh(extraTopics: readonly string[] = []): void {
   const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
-  const topics = extraTopics.join('\n');
+  const topics = [
+    ...new Set([IN_APP_NOTIFICATION_REALTIME_TOPIC, ...extraTopics]),
+  ]
+    .sort()
+    .join('\n');
   useEffect(() => {
-    const refresh = (signal: AbortSignal): Promise<void> =>
-      refreshRealtimeQueries(queryClient, { queryKey: inboxKeys.all }, signal);
-    const scheduled = createRealtimeRefresh(refresh);
-    const stops = [subscribeToInboxInvalidations(realtime, window, refresh)];
-    for (const topic of topics ? topics.split('\n') : []) {
-      const subscription = realtime.watch<unknown>(topic, {
-        onReady: scheduled.retry,
-        onEvent: scheduled.request,
-      });
-      stops.push(subscription.close);
+    let owners = refreshOwners.get(queryClient);
+    if (!owners) {
+      owners = new Map();
+      refreshOwners.set(queryClient, owners);
     }
+    let shared = owners.get(topics);
+    if (!shared) {
+      const scheduled = createRealtimeRefresh((signal) =>
+        refreshRealtimeQueries(
+          queryClient,
+          { queryKey: inboxKeys.all },
+          signal,
+        ),
+      );
+      const names = topics.split('\n');
+      const ready = new Set<string>();
+      let acknowledged = false;
+      let fallback = false;
+      const timer = setTimeout(() => {
+        fallback = true;
+      }, 1000);
+      const subscriptions = names.map((topic) =>
+        realtime.watch(topic, {
+          onEvent: scheduled.request,
+          onReady: () => {
+            ready.add(topic);
+            if (ready.size !== names.length) return;
+            clearTimeout(timer);
+            if (acknowledged || fallback) scheduled.retry();
+            acknowledged = true;
+          },
+          onStateChange: (state) => {
+            if (state !== 'subscribed') ready.delete(topic);
+          },
+          onError: () => {
+            fallback = true;
+          },
+        }),
+      );
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- The shared owner's close releases this listener after the last surface unmounts.
+      window.addEventListener('focus', scheduled.request);
+      shared = {
+        count: 0,
+        close: () => {
+          clearTimeout(timer);
+          subscriptions.forEach((subscription) => subscription.close());
+          window.removeEventListener('focus', scheduled.request);
+          scheduled.close();
+        },
+      };
+      owners.set(topics, shared);
+    }
+    shared.count++;
     return () => {
-      for (const stop of stops) stop();
-      scheduled.close();
+      if (--shared.count === 0) {
+        shared.close();
+        owners.delete(topics);
+      }
     };
   }, [realtime, queryClient, topics]);
 }
