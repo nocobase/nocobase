@@ -170,8 +170,17 @@ export class SourceEvidence {
     let unsafeCapabilityEscaped = false;
     let unsafeValueEscaped = false;
     let visits = 0;
-    const nodeKey = (node: ts.Node): string =>
-      `${node.getSourceFile().fileName}:${node.getStart()}`;
+    const locations = new Map<string, number>();
+    const nodeKeys = new WeakMap<ts.Node, number>();
+    const nodeKey = (node: ts.Node): number => {
+      const known = nodeKeys.get(node);
+      if (known !== undefined) return known;
+      const location = `${node.getSourceFile().fileName}:${node.getStart()}`;
+      const key = locations.get(location) ?? locations.size;
+      locations.set(location, key);
+      nodeKeys.set(node, key);
+      return key;
+    };
     // Invocation environments are immutable during traversal. Reuse the existing canonical key
     // rather than rebuilding and retaining the same long string at every syntax node.
     const contextKeys = new WeakMap<
