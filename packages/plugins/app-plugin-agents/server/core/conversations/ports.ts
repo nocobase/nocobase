@@ -354,10 +354,11 @@ export interface ConversationService {
    * counting what an agent changed in a turn counts under it); false when it does not exist.
    */
   lock(conn: DatabaseConnection, id: string): Promise<boolean>;
-  /** Where plugins add sections to the system layer of conversation runs. */
+  /** Where the application supplies authorized project directories and scopes. */
   readonly workspace: {
     provide(provider: ConversationWorkspaceProvider): () => void;
   };
+  /** Where plugins add sections to the system layer of conversation runs. */
   readonly rules: {
     provide(source: ConversationRules): () => void;
   };
