@@ -1,32 +1,38 @@
-# NocoBase 3
+# AI + NocoBase
 
 English | [简体中文](./READMD.zh-CN.md)
 
-**The open-source foundation for AI-built business systems.**
+**Build reliable business systems**
 
-Build business applications with AI on a foundation of ready-made capabilities, consistent architecture, and development Skills. NocoBase provides the building blocks so you and your coding agents can focus on your business logic.
+NocoBase is the open-source platform for building, running, and evolving business systems with AI. Agents write the code and do the work, NocoBase provides the foundation and governance, and people make the decisions.
 
-Run applications on your own infrastructure, keep your code and data under your control, and work with the coding agents and models you choose.
+[▶ Watch the Demo](https://static-docs.nocobase.com/nocobase-3-en.mp4)
 
 [Website](https://www.nocobase.com/) · [Documentation](https://docs.nocobase.com/) · [Quick Start](#quick-start) · [Community](https://forum.nocobase.com/)
 
 > This branch contains NocoBase 3. Looking for the NocoBase 2 no-code platform? Visit [NocoBase 2](https://nocode.nocobase.com/).
 
-## Why NocoBase?
+## Why NocoBase
 
-### Start with the foundation in place
+**AI writes code fast. Building reliable business systems is still hard.**
 
-Business systems need more than pages and forms. NocoBase provides reusable capabilities for authentication, permissions, data, files, workflows, notifications, and more, so each application starts with a shared foundation. Some plugins require a commercial license; check their documentation and licensing terms before use.
+Your team is already developing with AI or vibe coding. Code gets written fast, but new problems come with it.
 
-### Give coding agents a consistent way to build
+### 01 Every project rebuilds the foundation
 
-Every application comes with a project structure, development rules, and Skills. Agents can read these instructions to understand where code belongs, which capabilities to reuse, and how to implement and verify changes.
+Even with AI writing the code, permissions, workflow engines, and approvals are hard to design from scratch. They are full of edge cases and take a lot of work to maintain.
 
-The same conventions stay with the project as developers, agents, and models change.
+### 02 Architecture drifts out of control
 
-### Own your application
+Switch developers, models, or even sessions, and the AI may improvise differently each time. The system gets harder and harder to maintain.
 
-Your business code lives in your repository, and your application runs on your infrastructure. Choose your coding tools and models, extend the application with plugins, and evolve it around your business.
+### 03 Parallel work outpaces human review
+
+You juggle several projects and issues, switching between terminals and chats, while agents hand back more and more changes. There is more than anyone can review, but letting go feels too risky.
+
+### 04 Know-how is hard to capture and share
+
+Requirement context, business documents, and lessons learned are scattered across chat sessions on different computers. When people or agents change, they are hard to find.
 
 ## Quick Start
 
