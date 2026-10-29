@@ -167,6 +167,38 @@ it('keeps the selected label while searching and paging and discards a late pick
   );
 });
 
+it('filters picker options by status from the first page and shows the empty state', async () => {
+  const calls: ApiCall[] = [];
+  await mount(
+    (call) => {
+      if (call.path !== 'customerContacts/customers/options')
+        throw new Error(`Unexpected ${call.path}`);
+      calls.push(call);
+      return call.query?.status === 'closed'
+        ? list([])
+        : list([customer], Number(call.query?.page), 12);
+    },
+    '/picker',
+    'en-US',
+    <RelationPicker
+      kind='customers'
+      value=''
+      onChange={() => undefined}
+      label='Customer'
+    />,
+  );
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Customer' }),
+  );
+  await screen.findByText('12 results');
+  await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+  await screen.findByText('Page 2 of 3');
+  await userEvent.click(screen.getByRole('button', { name: 'Closed' }));
+  await screen.findByText('No results');
+  expect(calls.at(-1)?.query).toMatchObject({ status: 'closed', page: '1' });
+  expect(screen.getByText('0 results')).toBeInTheDocument();
+});
+
 it.each(['en-US', 'zh-CN'])(
   'shows no hidden selected label in %s',
   async (locale) => {
