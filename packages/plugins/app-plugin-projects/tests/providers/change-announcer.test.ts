@@ -20,6 +20,29 @@ function announcer() {
 }
 
 describe('change announcements', () => {
+  it('keeps named task scope when opaque executor announcements accompany status changes', () => {
+    const { it: changes, published } = announcer();
+    changes.add({ type: 'work.announced' });
+    changes.flush();
+    expect(published).toEqual([]);
+    changes.add({ type: 'issue.changed', issueId: 'a' });
+    changes.add({ type: 'work.announced' });
+    changes.add({
+      type: 'issue.updated',
+      issueId: 'a',
+      changes: { status: { from: 'backlog', to: 'in_progress' } },
+    });
+    changes.flush();
+    expect(published).toEqual([
+      {
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: ['a'],
+        listsChanged: true,
+      },
+    ]);
+  });
+
   it('narrows only a confirmed discussion batch, and resets its classification after flushing', () => {
     const { it: changes, published } = announcer();
     changes.add({ type: 'issue.changed', issueId: 'a', discussionOnly: true });

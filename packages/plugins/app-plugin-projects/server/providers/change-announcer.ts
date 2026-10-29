@@ -93,9 +93,9 @@ export function createChangeAnnouncer(
 
   return {
     add(event) {
-      // Notices remain delivery events, not an additional refresh source. A waiting,
-      // mention or unknown notice nevertheless prevents narrowing this batch.
-      if (event.type.startsWith('notice.')) {
+      // Notices and opaque executor announcements are delivery events. The issue
+      // events own their scope; waiting or work still prevents a discussion-only read.
+      if (event.type.startsWith('notice.') || event.type === 'work.announced') {
         if (!(
           event.type === 'notice.planned' &&
           event.notice?.kind === 'info' &&
