@@ -62,6 +62,7 @@ import {
 } from '@nocobase/agent-protocol';
 import type { DistService } from '../../distribution/index.js';
 import {
+  chatEffortCapabilities,
   runnerLowOnDisk,
   runsEntry,
   toolLimit,
@@ -1084,8 +1085,17 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       claim,
       prepared.get('subject'),
     );
-    if (assembly.effort !== undefined)
+    if (assembly.effort !== undefined) {
       entry = { ...entry, effort: assembly.effort };
+      if (entry.effort) {
+        const efforts = chatEffortCapabilities(entry, [runner]);
+        if (efforts === undefined) throw new NotForThisRunner();
+        if (!efforts.includes(entry.effort))
+          throw new Error(
+            `The reasoning effort "${entry.effort}" is not supported by this runtime for the selected model.`,
+          );
+      }
+    }
     // workspace.key is required for coordinating runs; old runners must not silently ignore it.
     if (
       (await assemblyCompatibility(

@@ -2,7 +2,7 @@ import { afterEach, expect, it } from 'vitest';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
 import { asJson } from '../server/kernel/values.js';
-import { chatEffortsFor } from '../shared/runners.js';
+import { chatEffortsFor, chatEffortCapabilities } from '../shared/runners.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 let h: Harness;
@@ -48,6 +48,17 @@ it('intersects exact-model reports with executable efforts and treats unknown an
   ).toEqual(['medium']);
   expect(chatEffortsFor(entry, [{ tools: tools(undefined) }])).toEqual([]);
   expect(chatEffortsFor(entry, [{ tools: tools([]) }])).toEqual([]);
+  expect(chatEffortCapabilities(entry, [])).toBeUndefined();
+  expect(
+    chatEffortCapabilities(entry, [{ tools: tools(undefined) }]),
+  ).toBeUndefined();
+  expect(chatEffortCapabilities(entry, [{ tools: tools([]) }])).toEqual([]);
+  expect(
+    chatEffortCapabilities(entry, [
+      { tools: tools(['low']) },
+      { tools: tools(['high']) },
+    ]),
+  ).toEqual([]);
   expect(
     chatEffortsFor(entry, [
       {
@@ -150,7 +161,54 @@ it('saves defaults and selected efforts, dispatches two distinct turns and prese
   );
 });
 
-it('refuses stale preferences and invalid explicit input without admitting a message, and permits explicit reset when capabilities become unknown', async () => {
+it('queues a saved effort offline, waits for capabilities and executes it after recovery', async () => {
+  const { id, runner } = await fixture();
+  const agent = await h.services.onlineAgent.realtime(context, {
+    agentId: id,
+    effort: 'high',
+  });
+  const runners = h.database.connection().repository('agRunners');
+  await runners.updateMany({
+    filter: { id: runner.runnerId },
+    values: { lastSeenAt: '2000-01-01T00:00:00.000Z' },
+  });
+  await agent.send([{ role: 'user', content: 'Wait for my runtime' }]);
+  await (await agent.receive())!.cancel();
+  const conversation = await h.services.conversations.get(
+    'alice',
+    agent.sessionId,
+  );
+  expect(conversation.effort).toBe('high');
+  expect(conversation.run?.status).toBe('queued');
+  expect(
+    (await agent.history()).filter((message) => message.role === 'user'),
+  ).toHaveLength(1);
+  await runners.updateMany({
+    filter: { id: runner.runnerId },
+    values: {
+      lastSeenAt: new Date().toISOString(),
+      tools: asJson(tools(undefined)),
+    },
+  });
+  expect(await claim(h, runner)).toEqual([]);
+  expect(
+    (
+      await h.database
+        .connection()
+        .repository('agRuns')
+        .findOne({ filter: { id: conversation.run!.id } })
+    )?.claimFailures,
+  ).toBe(0);
+  await runners.updateMany({
+    filter: { id: runner.runnerId },
+    values: { tools: asJson(tools(['high'])) },
+  });
+  const [run] = await claim(h, runner);
+  expect(run.tool.effort).toBe('high');
+  expect(run.run.id).toBe(conversation.run!.id);
+});
+
+it('rejects a saved effort when known reports have no common effort', async () => {
   const { id, runner } = await fixture();
   const agent = await h.services.onlineAgent.realtime(context, {
     agentId: id,
@@ -161,21 +219,85 @@ it('refuses stale preferences and invalid explicit input without admitting a mes
     .repository('agRunners')
     .updateMany({
       filter: { id: runner.runnerId },
-      values: { tools: asJson(tools(undefined)) },
+      values: { tools: asJson(tools(['high'])) },
     });
+  await h.registerRunner({ tools: tools(['low']) });
   await expect(
-    agent.send([{ role: 'user', content: 'stale' }]),
-  ).rejects.toMatchObject({ details: { reason: 'EFFORT_UNSUPPORTED' } });
-  await expect(
-    agent.send([{ role: 'user', content: 'explicit' }], { effort: 'ultra' }),
-  ).rejects.toMatchObject({ details: { reason: 'EFFORT_UNSUPPORTED' } });
+    agent.send([{ role: 'user', content: 'No common effort' }]),
+  ).rejects.toMatchObject({
+    details: { reason: 'EFFORT_UNSUPPORTED', efforts: [] },
+  });
   expect(await agent.history()).toEqual([]);
-  await agent.send([{ role: 'user', content: 'Use default deliberately' }], {
+});
+
+it('rejects a known empty report and preserves default reset while capabilities are unknown', async () => {
+  const { id, runner } = await fixture();
+  const agent = await h.services.onlineAgent.realtime(context, {
+    agentId: id,
+    effort: 'high',
+  });
+  const runners = h.database.connection().repository('agRunners');
+  await runners.updateMany({
+    filter: { id: runner.runnerId },
+    values: { tools: asJson(tools([])) },
+  });
+  await expect(
+    agent.send([{ role: 'user', content: 'No efforts supported' }]),
+  ).rejects.toMatchObject({
+    details: { reason: 'EFFORT_UNSUPPORTED', efforts: [] },
+  });
+  await runners.updateMany({
+    filter: { id: runner.runnerId },
+    values: { tools: asJson(tools(undefined)) },
+  });
+  await agent.send([{ role: 'user', content: 'Restore default' }], {
     effort: null,
   });
   await (await agent.receive())!.cancel();
+  expect(
+    (await h.services.conversations.get('alice', agent.sessionId)).effort,
+  ).toBeNull();
+  expect(await claim(h, runner)).toEqual([]);
+  await runners.updateMany({
+    filter: { id: runner.runnerId },
+    values: { tools: asJson(tools(['medium'])) },
+  });
   const [run] = await claim(h, runner);
   expect(run.tool.effort).toBe('medium');
+});
+
+it('reports unsupported effort through existing assembly failures after offline admission', async () => {
+  const { id, runner } = await fixture();
+  const agent = await h.services.onlineAgent.realtime(context, {
+    agentId: id,
+    effort: 'high',
+  });
+  const runners = h.database.connection().repository('agRunners');
+  await runners.updateMany({
+    filter: { id: runner.runnerId },
+    values: { tools: asJson(tools(undefined)) },
+  });
+  await agent.send([{ role: 'user', content: 'Keep high' }]);
+  await (await agent.receive())!.cancel();
+  const conversation = await h.services.conversations.get(
+    'alice',
+    agent.sessionId,
+  );
+  await runners.updateMany({
+    filter: { id: runner.runnerId },
+    values: { tools: asJson(tools(['low'])) },
+  });
+  for (let attempt = 0; attempt < 3; attempt++)
+    expect(await claim(h, runner)).toEqual([]);
+  const run = await h.services.runs.get(conversation.run!.id);
+  expect(run.status).toBe('failed');
+  expect(run.failureReason).toBe('setupFailed');
+  expect(run.failureDetail).toContain(
+    'reasoning effort "high" is not supported',
+  );
+  expect(
+    (await h.services.conversations.get('alice', agent.sessionId)).effort,
+  ).toBe('high');
 });
 
 it('enforces authentication, ownership and agent permissions for explicit effort requests', async () => {
@@ -200,9 +322,9 @@ it('enforces authentication, ownership and agent permissions for explicit effort
   );
 });
 
-it('preserves default execution for unknown and empty capabilities, rejects an invalid known default and leaves task runs unchanged', async () => {
+it('preserves default execution for unknown capabilities, rejects an invalid known default and leaves task runs unchanged', async () => {
   const { id, runner } = await fixture();
-  for (const capabilities of [undefined, []]) {
+  for (const capabilities of [undefined]) {
     await h.database
       .connection()
       .repository('agRunners')

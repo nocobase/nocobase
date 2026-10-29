@@ -25,7 +25,11 @@ import {
  *   and bumps `thread`, so every switch starts a new session.
  */
 import { isDeepStrictEqual } from 'node:util';
-import { quotaForAgent, chatEffortsFor } from '../../../shared/runners.js';
+import {
+  quotaForAgent,
+  chatEffortsFor,
+  chatEffortCapabilities,
+} from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -578,11 +582,11 @@ export function createConversationService(
     conn: DatabaseConnection,
     agent: Agent,
     userId: string,
-  ): Promise<readonly string[]> {
+  ): Promise<readonly string[] | undefined> {
     const eligible = await deps.eligibility.runnersFor(conn, agent, {
       actorUserId: userId,
     });
-    return chatEffortsFor(agent.modelEntries[0], eligible);
+    return chatEffortCapabilities(agent.modelEntries[0], eligible);
   }
 
   async function validateEffort(
@@ -598,20 +602,25 @@ export function createConversationService(
           ? saved
           : null
         : selected;
-    // Unknown capabilities preserve default execution, but never silently replace an explicit preference.
+    // Keep saved preferences while offline; the claiming runner validates its own report.
     const options = await effortOptions(conn, agent, userId);
     const effective = preference ?? agent.modelEntries[0]?.effort ?? null;
     if (
-      (preference !== null && !options.includes(preference)) ||
-      (options.length > 0 && effective !== null && !options.includes(effective))
+      options !== undefined &&
+      effective !== null &&
+      !options.includes(effective)
     )
       throw invalid(
         'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
-        { reason: 'EFFORT_UNSUPPORTED', effort: effective, efforts: options },
+        {
+          reason: 'EFFORT_UNSUPPORTED',
+          effort: effective,
+          efforts: options,
+        },
       );
     return (
       preference ??
-      (effective && options.includes(effective) ? effective : null)
+      (effective && options?.includes(effective) ? effective : null)
     );
   }
 
