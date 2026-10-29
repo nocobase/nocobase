@@ -85,6 +85,7 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
       const context = await browser.newContext({
         viewport: { width: 1440, height: 1000 },
         locale: 'en-US',
+        ...(actor === 'reviewer' ? { isMobile: true, hasTouch: true } : {}),
       });
       contexts.push(context);
       const email = `${actor}-${randomUUID()}@procurement.example.test`;
@@ -367,8 +368,22 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
           document.documentElement.clientWidth,
       ),
     ).toBe(true);
-    await reviewer.getByRole('button', { name: 'Close', exact: true }).click();
+    await reviewer.getByRole('button', { name: 'Close', exact: true }).tap();
+    await expect(reviewer).toHaveURL(app + '/procurement');
+    await expect(reviewer.getByRole('dialog')).toHaveCount(0);
+    await expect(reviewer.getByRole('menu')).toHaveCount(0);
+    await expect(
+      reviewer.getByRole('button', { name: 'Open account menu' }),
+    ).toHaveAttribute('aria-expanded', 'false');
+    await snapshot(reviewer, 'procurement-mobile-touch-close.png');
+    console.info(
+      'Touch Close returned to the mobile list without opening the account menu.',
+    );
+    await reviewer.setViewportSize({ width: 1440, height: 1000 });
+    // Move away before dismissing hover menus so the pointer cannot reopen them.
+    await reviewer.mouse.move(0, 0);
     await reviewer.keyboard.press('Escape');
+    await expect(reviewer.getByRole('menu')).toHaveCount(0);
     await reviewer
       .getByRole('button', { name: 'Appearance', exact: true })
       .hover();
@@ -378,13 +393,18 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
       .click();
     await reviewer.keyboard.press('Escape');
     await reviewer.getByRole('link', { name: title, exact: true }).click();
+    await reviewer.setViewportSize({ width: 390, height: 844 });
     await expect(reviewer.locator('html')).toHaveClass(/dark/);
     await expect(
       reviewer.getByLabel('Quote minus catalog (USD/unit)'),
     ).toHaveText('-2.25');
     await snapshot(reviewer, 'procurement-quotes-dark-mobile.png');
+    await reviewer.setViewportSize({ width: 1440, height: 1000 });
     await reviewer.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(reviewer.getByRole('dialog')).toHaveCount(0);
+    await reviewer.mouse.move(0, 0);
     await reviewer.keyboard.press('Escape');
+    await expect(reviewer.getByRole('menu')).toHaveCount(0);
     await reviewer.getByRole('button', { name: 'Open account menu' }).click();
     await reviewer.getByRole('menuitem', { name: /Language/ }).hover();
     await reviewer
@@ -392,6 +412,7 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
       .click();
     await expect(reviewer.locator('html')).toHaveAttribute('lang', 'zh-CN');
     await reviewer.getByRole('link', { name: title, exact: true }).click();
+    await reviewer.setViewportSize({ width: 390, height: 844 });
     await expect(
       reviewer.getByRole('textbox', {
         name: '申请报价快照（美元/单位）',
