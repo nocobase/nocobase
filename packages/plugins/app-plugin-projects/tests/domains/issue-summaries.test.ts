@@ -12,7 +12,10 @@ it('reads only authorized live card fields in one query for 1, 12 and 100 refere
   await h.addUser('admin');
   await h.addUser('alice');
   const admin = h.viewer('admin', 'admin');
-  const project = await h.services.projects.create(admin, { name: 'Private', visibility: 'members' });
+  const project = await h.services.projects.create(admin, {
+    name: 'Private',
+    visibility: 'members',
+  });
   const privateIssue = await h.services.issues.create(admin, {
     title: 'Secret',
     projectId: project.id,
