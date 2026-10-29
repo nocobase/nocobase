@@ -4,5 +4,5 @@
     "rootDir": ".",
     "outDir": "dist"
   },
-  "include": ["src", "server", "shared", "config"]
+  "include": ["server", "shared", "config"]
 }

@@ -7,8 +7,8 @@ import {
 } from '@nocobase/concurrency';
 import type { BackendContext } from '@nocobase/concurrency/backend';
 import { ManualTime, deferred } from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '../src/index.ts';
-import { LocalResourceRegistry } from '../src/registry.ts';
+import { LocalConcurrentBackend } from '../server/index.ts';
+import { LocalResourceRegistry } from '../server/mutex/registry.ts';
 
 function context(time: ManualTime): BackendContext {
   return {

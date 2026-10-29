@@ -8,13 +8,7 @@
     "node": ">=24.0.0"
   },
   "sideEffects": false,
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
-    },
     "./server": {
       "types": "./server/index.ts",
       "import": "./server/index.ts"
@@ -32,10 +26,6 @@
   "publishConfig": {
     "access": "public",
     "exports": {
-      ".": {
-        "types": "./dist/src/index.d.ts",
-        "import": "./dist/src/index.js"
-      },
       "./server": {
         "types": "./dist/server/index.d.ts",
         "import": "./dist/server/index.js"

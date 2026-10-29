@@ -21,8 +21,11 @@ import type {
   Scheduler,
   BackendContext,
 } from '@nocobase/concurrency/backend';
-import { LocalConcurrentBackend } from '../src/index.ts';
-import { LocalResourceRegistry, type ResourceState } from '../src/registry.ts';
+import { LocalConcurrentBackend } from '../server/index.ts';
+import {
+  LocalResourceRegistry,
+  type ResourceState,
+} from '../server/mutex/registry.ts';
 
 async function flush() {
   for (let i = 0; i < 40; i++) await Promise.resolve();

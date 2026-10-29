@@ -5,7 +5,7 @@ import {
   ConcurrentAbortError,
 } from '@nocobase/concurrency';
 import { defaultScheduler } from '@nocobase/concurrency/backend';
-import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency';
+import { LocalConcurrentBackend } from '../../server/mutex/index.ts';
 const watchdog = setTimeout(() => process.exit(2), 1500);
 const mode = process.argv[2];
 const cause = new Error('Retry cancellation failed');

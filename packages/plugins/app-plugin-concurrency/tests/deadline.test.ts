@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createConcurrentRuntime } from '@nocobase/concurrency';
 import type { Scheduler } from '@nocobase/concurrency/backend';
 import { ManualTime } from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '../src/index.ts';
+import { LocalConcurrentBackend } from '../server/index.ts';
 
 async function flush(): Promise<void> {
   for (let i = 0; i < 50; i++) await Promise.resolve();

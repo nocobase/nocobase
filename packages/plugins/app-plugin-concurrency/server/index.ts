@@ -1,6 +1,10 @@
 export { default } from './plugin.js';
 export { concurrencyServiceToken } from './tokens.js';
 export {
+  LocalConcurrentBackend,
+  type LocalConcurrentBackendOptions,
+} from './mutex/index.js';
+export {
   ConcurrencyServiceProvider,
   type ConcurrencyServiceProviderOptions,
 } from './providers/concurrency.js';

@@ -32,6 +32,8 @@ Inject the service into business objects during boot when needed. getManager(nam
 
 ## Backend and lifecycle ownership
 
+For deliberate low-level construction, import LocalConcurrentBackend and LocalConcurrentBackendOptions from @nocobase/app-plugin-concurrency/server and use the core createConcurrentRuntime factory. There is no package-root runtime export or public deep import into server/mutex; its registry is internal. Importing the Server entry does not register the plugin or start a runtime.
+
 The plugin owns runtime initialization and shutdown. Consumers end their own tasks and return their own leases before host cleanup. They must not close the manager or a shared transport. Only the startup owner retries service.shutdown() after failure; app.shutdown() itself is cached and does not repeat Provider shutdown. Runtime close must succeed before disposing its owned transport. Failure retains the original handles. No hot reconfiguration is supported: the full boot snapshot survives reload, including not-yet-initialized items. Restart and coordinate instances when changing namespaces or connections.
 
 Mutex is process-local even when namespaces match across instances. Multi-instance Redis support comes from @nocobase/app-plugin-concurrency-redis, which owns the Redis backend, original-client release, dedicated connection, implementation registration and Redis-specific pure validator. It must import this OSS plugin's service Token and extension contract; do not add a second Redis thin plugin, copy core state machines, or reuse active Queue/Jobs/Caching clients. Read that plugin's version-matched Skill before configuring Redis. Do not migrate an existing business lock merely by enabling this plugin.

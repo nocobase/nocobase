@@ -4,7 +4,7 @@ import {
   ConcurrentCloseError,
   ConcurrentConfigurationError,
 } from '@nocobase/concurrency';
-import { LocalConcurrentBackend } from '../../src/index.ts';
+import { LocalConcurrentBackend } from '../../server/index.ts';
 import { ManagedConcurrencyService } from '../../server/services/concurrency.js';
 
 describe('concurrency host lifecycle', () => {

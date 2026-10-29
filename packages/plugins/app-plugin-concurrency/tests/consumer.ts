@@ -6,7 +6,7 @@ import type { ConcurrentBackend } from '@nocobase/concurrency/backend';
 import {
   LocalConcurrentBackend,
   type LocalConcurrentBackendOptions,
-} from '../src/index.ts';
+} from '../server/index.ts';
 
 export async function consume(): Promise<ConcurrentRuntime> {
   const options: LocalConcurrentBackendOptions = { retryIntervalMs: 10 };
@@ -34,3 +34,10 @@ export async function consume(): Promise<ConcurrentRuntime> {
   new LocalConcurrentBackend({ priority: 0 });
   return runtime;
 }
+
+// @ts-expect-error The plugin has no library-style package-root entry.
+export type { LocalConcurrentBackend as LegacyBackend } from '@nocobase/app-plugin-concurrency';
+// @ts-expect-error Mutex implementation directories are not public subpaths.
+export type { LocalConcurrentBackend as DeepBackend } from '@nocobase/app-plugin-concurrency/server/mutex';
+// @ts-expect-error The registry remains a private implementation detail.
+export type { LocalResourceRegistry } from '@nocobase/app-plugin-concurrency/server';

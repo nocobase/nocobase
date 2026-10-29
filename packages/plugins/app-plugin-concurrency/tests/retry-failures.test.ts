@@ -8,8 +8,8 @@ import {
 } from '@nocobase/concurrency';
 import type { BackendContext, Scheduler } from '@nocobase/concurrency/backend';
 import { ManualTime } from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '../src/index.ts';
-import { LocalResourceRegistry } from '../src/registry.ts';
+import { LocalConcurrentBackend } from '../server/index.ts';
+import { LocalResourceRegistry } from '../server/mutex/registry.ts';
 async function flush(): Promise<void> {
   for (let i = 0; i < 60; i++) await Promise.resolve();
 }

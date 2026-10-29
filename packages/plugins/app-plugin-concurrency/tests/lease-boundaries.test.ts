@@ -6,7 +6,7 @@ import {
 } from '@nocobase/concurrency';
 import type { Clock, Scheduler } from '@nocobase/concurrency/backend';
 import { ManualTime } from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '../src/index.ts';
+import { LocalConcurrentBackend } from '../server/index.ts';
 afterEach(() => vi.restoreAllMocks());
 
 describe('Mutex executor finalization', () => {

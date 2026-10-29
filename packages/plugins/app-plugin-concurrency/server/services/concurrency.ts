@@ -7,7 +7,7 @@ import {
   type ConcurrentRuntime,
   type ConcurrentOptions,
 } from '@nocobase/concurrency';
-import { LocalConcurrentBackend } from '../../src/index.js';
+import { LocalConcurrentBackend } from '../mutex/index.js';
 import {
   resolveConcurrencyConfig,
   type ConcurrencySnapshot,

@@ -7,7 +7,7 @@ import {
 import type { AcquireOptions, Lease } from '@nocobase/concurrency';
 import type { BackendAcquireRequest } from '@nocobase/concurrency/backend';
 import { ManualTime, deferred } from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '../src/index.ts';
+import { LocalConcurrentBackend } from '../server/index.ts';
 function makeBackend() {
   return new LocalConcurrentBackend();
 }

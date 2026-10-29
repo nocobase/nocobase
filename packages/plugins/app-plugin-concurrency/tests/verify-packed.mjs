@@ -15,6 +15,16 @@ if (metadata.name !== '@nocobase/app-plugin-concurrency')
 const coreMetadata = JSON.parse(
   readFileSync(join(coreRoot, 'package.json'), 'utf8'),
 );
+const cohortFile = process.argv[3];
+if (!cohortFile)
+  throw new Error(
+    'Usage: node tests/verify-packed.mjs <artifact-directory> <host-cohort.json>',
+  );
+const cohort = JSON.parse(readFileSync(resolve(cohortFile), 'utf8'));
+for (const peer of Object.keys(metadata.peerDependencies)) {
+  if (typeof cohort[peer] !== 'string')
+    throw new Error('Missing required host peer tarball: ' + peer);
+}
 const artifacts = resolve(
   process.argv[2] ??
     mkdtempSync(join(tmpdir(), 'concurrency-mutex-artifacts-')),
@@ -36,6 +46,8 @@ execFileSync('pnpm', ['pack', '--out', mutexTarball], {
   cwd: root,
   stdio: 'inherit',
 });
+cohort[metadata.name] = mutexTarball;
+cohort[coreMetadata.name] = coreTarball;
 const consumer = mkdtempSync(join(tmpdir(), 'concurrency-mutex-consumer-'));
 writeFileSync(
   join(consumer, 'package.json'),
@@ -48,6 +60,9 @@ writeFileSync(
 const tsVersion = JSON.parse(
   readFileSync(join(root, 'node_modules/typescript/package.json'), 'utf8'),
 ).version;
+const nodeTypesVersion = JSON.parse(
+  readFileSync(join(root, 'node_modules/@types/node/package.json'), 'utf8'),
+).version;
 execFileSync(
   'npm',
   [
@@ -55,17 +70,17 @@ execFileSync(
     '--ignore-scripts',
     '--no-audit',
     '--no-fund',
-    coreTarball,
-    mutexTarball,
+    ...Object.values(cohort),
     `typescript@${tsVersion}`,
+    `@types/node@${nodeTypesVersion}`,
   ],
   { cwd: consumer, stdio: 'inherit' },
 );
 writeFileSync(
   join(consumer, 'consumer.ts'),
   readFileSync(join(root, 'tests/consumer.ts'), 'utf8').replaceAll(
-    '../src/index.ts',
-    '@nocobase/app-plugin-concurrency',
+    '../server/index.ts',
+    '@nocobase/app-plugin-concurrency/server',
   ),
 );
 writeFileSync(
@@ -77,6 +92,7 @@ writeFileSync(
       module: 'NodeNext',
       noEmit: true,
       skipLibCheck: false,
+      types: ['node'],
     },
     include: ['consumer.ts'],
   }),
@@ -95,10 +111,15 @@ import {setImmediate} from 'node:timers/promises';
 import * as core from '@nocobase/concurrency';
 import * as port from '@nocobase/concurrency/backend';
 import * as testing from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency';
-for(const entry of ['@nocobase/concurrency','@nocobase/concurrency/backend','@nocobase/concurrency/testing','@nocobase/app-plugin-concurrency']) assert.match(import.meta.resolve(entry),/node_modules.*dist/);
+import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency/server';
+for(const entry of ['@nocobase/concurrency','@nocobase/concurrency/backend','@nocobase/concurrency/testing','@nocobase/app-plugin-concurrency/server']) assert.match(import.meta.resolve(entry),/node_modules.*dist/);
 const installed = JSON.parse(await (await import('node:fs/promises')).readFile(new URL(import.meta.resolve('@nocobase/app-plugin-concurrency/package.json')), 'utf8'));
 assert.equal(installed.name,'@nocobase/app-plugin-concurrency');
+assert.equal('.' in installed.exports,false);
+for(const entry of ['@nocobase/app-plugin-concurrency','@nocobase/app-plugin-concurrency/src/index.ts','@nocobase/app-plugin-concurrency/server/mutex','@nocobase/app-plugin-concurrency/server/mutex/registry.ts']) assert.throws(()=>import.meta.resolve(entry),{code:'ERR_PACKAGE_PATH_NOT_EXPORTED'});
+const server=await import('@nocobase/app-plugin-concurrency/server');
+assert.equal(server.LocalConcurrentBackend,LocalConcurrentBackend);
+assert.equal('LocalResourceRegistry' in server,false);
 assert.equal(installed.peerDependencies['@nocobase/concurrency'], '^' + ${JSON.stringify(coreMetadata.version)});
 for(const name of ['ConcurrentConfigurationError','ConcurrentAcquireError','ConcurrentAbortError','ConcurrentLeaseLostError','ConcurrentReleaseError','ConcurrentCloseError']) {assert.equal(core[name],port[name]);assert.equal(core[name],testing[name]);}
 const contract = await testing.runBackendContract({createBackend:()=>new LocalConcurrentBackend()});
@@ -244,7 +265,13 @@ console.log(JSON.stringify({contract,faults,ordinaryWaitsBeyond30Seconds:ordinar
 );
 writeFileSync(
   join(consumer, 'retry-failure.mjs'),
-  readFileSync(join(root, 'tests/fixtures/retry-failure.mjs'), 'utf8'),
+  readFileSync(
+    join(root, 'tests/fixtures/retry-failure.mjs'),
+    'utf8',
+  ).replaceAll(
+    '../../server/mutex/index.ts',
+    '@nocobase/app-plugin-concurrency/server',
+  ),
 );
 for (const mode of ['timer', 'abort', 'deadline'])
   execFileSync(process.execPath, ['retry-failure.mjs', mode], {

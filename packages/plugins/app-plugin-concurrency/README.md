@@ -36,16 +36,16 @@ Redis support is contributed by the commercial @nocobase/app-plugin-concurrency-
 
 ## Public exports
 
-- /server: the static Server definition, original Token, service/extension contracts and Provider.
+- /server: the static Server definition, original Token, service/extension contracts, Provider, LocalConcurrentBackend and LocalConcurrentBackendOptions.
 - /config: defineConcurrencyConfig, common types and pure validation, without importing Server registration.
 - /package.json: package metadata.
-- Root: LocalConcurrentBackend and LocalConcurrentBackendOptions for deliberate low-level runtime construction. It does not bind a host service or register a plugin automatically.
+  There is no package-root runtime export. Server APIs are exported deliberately from server/index.ts; server/mutex contains the backend implementation and its private registry, not additional public deep-import paths. Importing /server alone does not bind a host service or register the plugin.
 
 ## Low-level backend
 
 ```ts
 import { createConcurrentRuntime } from '@nocobase/concurrency';
-import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency';
+import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency/server';
 
 const runtime = await createConcurrentRuntime({
   backend: new LocalConcurrentBackend(),
@@ -72,7 +72,7 @@ TTL defaults to 30000ms. Every successful attempt uses a new token and actual mo
 
 A registry reference is pinned synchronously before waiting for a real Mutex gate. Critical sections never await business/I/O or publish scheduler/signal effects. Effects run after unlocking, while references and effect counts protect the state against reclamation. Empty state is deleted only if it has no holder/reference/timer/effect and the map still points to it. Facades resolve the registry on each call instead of caching reclaimable state pointers.
 
-Each grant releases only its original token. Repeated and concurrent release are idempotent; failed gate entry can be retried without affecting a newer token. No private core classes, copied public errors, leases or executors are used. The root entry exports `LocalConcurrentBackend` and `LocalConcurrentBackendOptions`; adapter implementation modules are not public exports.
+Each grant releases only its original token. Repeated and concurrent release are idempotent; failed gate entry can be retried without affecting a newer token. No private core classes, copied public errors, leases or executors are used. The /server entry exports `LocalConcurrentBackend` and `LocalConcurrentBackendOptions`; adapter implementation modules are not public exports.
 
 Runtime close belongs to core: it refuses new work, cancels only undelivered acquisition, waits for real runners/manual returns, retains failed executor cleanup and then closes its owned backend. Applications call only `runtime.close()`. The backend directly implements `initialize`, `validateResource`, `acquire` and `close`; no session layer remains. Initialization is single-use. Backend close aborts pending attempts, rejects while grants or releases remain, drains visible timer/gate promises and marks closed only after successful drain. Failed or timed-out runtime close can be retried without duplicating in-flight backend cleanup. No global lock singleton or implicit application/environment configuration is installed.
 
@@ -82,4 +82,4 @@ Only fixed-TTL Lock and SynchronousExecutor are exposed, with both provided by e
 
 ## Verification
 
-Run scoped `fix`, `lint`, `typecheck`, `test` and `build`. Tests run the published framework-neutral backend/fault drivers, deterministic Clock/Scheduler races, actual Mutex gate blocking, old timer/token checks, release failures, business/cause/logger edge cases, owned backend close/retry and dynamic-name reclamation. A real event-loop integration case runs competing callbacks using the actual async-mutex implementation. `node tests/verify-packed.mjs <artifact-directory>` packs this package, installs it with a freshly packed core in a temporary directory outside the workspace, checks declarations/public entries and executes real same-runtime handle competition and public contract drivers. Tests never imply cross-process coordination or Redis correctness.
+Run scoped `fix`, `lint`, `typecheck`, `test` and `build`. Tests run the published framework-neutral backend/fault drivers, deterministic Clock/Scheduler races, actual Mutex gate blocking, old timer/token checks, release failures, business/cause/logger edge cases, owned backend close/retry and dynamic-name reclamation. A real event-loop integration case runs competing callbacks using the actual async-mutex implementation. `node tests/verify-packed.mjs <artifact-directory> <host-cohort.json>` packs this package, installs it with a freshly packed core and the exact host peer tarballs supplied by a package-name-to-tarball JSON map in a temporary directory outside the workspace, checks declarations/public entries and executes real same-runtime handle competition and public contract drivers. Tests never imply cross-process coordination or Redis correctness.
