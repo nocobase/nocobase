@@ -217,6 +217,9 @@ describe('app client routes', () => {
     const resolved = resolveRoutes();
 
     expect(pageAuthorizations(resolved.routes)).toEqual([
+      ...['procurement', 'procurement-new', 'procurement-detail'].map(
+        (name) => ({ name, authorizedAs: 'procurement' }),
+      ),
       ...[
         'customer-contacts',
         'customer-contacts-batch',

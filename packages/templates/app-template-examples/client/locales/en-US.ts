@@ -441,10 +441,6 @@ const enUS = {
     copyFailed: 'Could not copy. Select the translation and copy it manually.',
     tryExample: 'Try an example',
     examples: {
-      procurement: {
-        title: procurement.title,
-        description: procurement.description,
-      },
       product: {
         title: 'Product introduction',
         text: 'NocoBase is an extensible application development platform that helps teams build and deliver business applications faster.',
@@ -634,6 +630,10 @@ const enUS = {
     },
   },
   examples: {
+    procurement: {
+      title: procurement.title,
+      description: procurement.description,
+    },
     customerContacts: {
       title: 'Customer relations and batch editing',
       description: customerContacts.description,

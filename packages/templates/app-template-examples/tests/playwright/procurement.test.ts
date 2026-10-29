@@ -49,6 +49,16 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
       .fill(process.env.E2E_PASSWORD!);
     await admin.getByRole('button', { name: 'Sign in', exact: true }).click();
     await admin.waitForURL((url) => !url.pathname.endsWith('/login'));
+    await expect(
+      admin.getByRole('heading', { name: 'Procurement', exact: true }),
+    ).toBeVisible();
+    await expect(
+      admin.getByRole('heading', {
+        name: 'Customer relations and batch editing',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await snapshot(admin, 'examples-merged-home.png');
     const document = await (
       await adminContext.request.get(app + '/api/swagger')
     ).json();
