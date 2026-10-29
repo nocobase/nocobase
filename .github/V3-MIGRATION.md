@@ -20,6 +20,12 @@ PR checks are selected from the pull request's workflow context, not from the de
 
 `release-beta/*` and `release/*` remain internal release candidate branch names. New OSS Beta aggregate tags use `nocobase-v3-beta/*`, with GitHub Release titles `NocoBase v3 Beta · <batch>`; stable tags remain `release/*`. Batch numbering and changelog selection accept both Beta tag prefixes. Renamed historical tags read the original changelog headings from their immutable commits. They are not replacements for the long-lived v3 branches. The Pro submodule path `vendor/nocobase3` remains a directory name, not an OSS repository address.
 
+## V2 workflow entries on v3-develop
+
+`main` is currently the default branch, and `v3-develop` is planned to replace it. GitHub only lets a `workflow_dispatch` workflow be run manually when a file of that name exists on the default branch, so `v3-develop` already carries a thin entry for each v1/v2 manual workflow still in use: `auto-merge.yml`, `build-pro-image.yml`, `changelog-and-release.yml`, `manual-build-pro-image.yml`, `manual-build-pro-plugin-image.yml`, `manual-merge.yml`, `manual-npm-publish-license-kit.yml`, `manual-npm-publish.yml`, `manual-release-develop.yml`, `manual-release-next.yml`, `manual-release-v1.yml`, `manual-release.yml`, `nocobase-test-backend.yml`, `rebuild-docker-nodefix.yml`, `release.yml` and `test-feishu-notify.yml`. They keep their v1/v2 filenames, without the `v3-` prefix that v3 workflows use, and each one dispatches the same file on `main` with the same inputs; the implementation stays on `main` and is not copied. To run one on `next`, `develop`, `v1` or a feature branch, choose that branch in "Use workflow from". These entries do nothing before the switch, because the default branch's own file is the one that runs.
+
+When a v1/v2 workflow on `main` adds, removes or renames a `workflow_dispatch` workflow, or changes its name or inputs, update the entry on `v3-develop` in the same delivery.
+
 ## Repository configuration to confirm
 
 The source workflows already target the new OSS repository and public npm. Repository-level settings are separate from committed YAML; a maintainer must confirm the following on `nocobase/nocobase` before treating a release as operational. Local checks do not prove that secrets exist or that publishing permissions have been granted.

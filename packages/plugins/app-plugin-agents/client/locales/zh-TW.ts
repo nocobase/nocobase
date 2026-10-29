@@ -64,6 +64,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     title: '放棄未儲存的變更？',
   },
   errors: {
+    boundRunnerIncompatible:
+      '此執行機無法執行所選 Agent。請更換執行機或建立新對話。',
     CONFLICT: '同時，它發生了變化。重新載入並重試。',
     REVISION_CONFLICT: '同時，它發生了變化。重新載入並重試。',
     FORBIDDEN: '您不可以這樣做。',

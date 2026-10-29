@@ -66,6 +66,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     title: '保存されていない変更を破棄しますか?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'このランナーは選択した Agent を実行できません。ランナーを切り替えるか、新しい会話を開始してください。',
     CONFLICT: 'そのうちに変わりました。リロードして再試行してください。',
     REVISION_CONFLICT:
       'そのうちに変わりました。リロードして再試行してください。',

@@ -69,6 +69,8 @@ const deDE: LocaleResource<typeof enUS> = {
     title: 'Nicht gespeicherte Änderungen verwerfen?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'Dieser Runner kann den ausgewählten Agent nicht ausführen. Wechseln Sie den Runner oder starten Sie eine neue Unterhaltung.',
     CONFLICT:
       'Das hat sich inzwischen geändert. Laden Sie es neu und versuchen Sie es erneut.',
     REVISION_CONFLICT:

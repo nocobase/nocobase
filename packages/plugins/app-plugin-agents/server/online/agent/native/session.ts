@@ -47,6 +47,7 @@ abstract class NativeAgentSession implements OnlineAgent {
       source: _source,
       title: _title,
       showInChatList: _showInChatList,
+      projectId: _projectId,
       ...requested
     } = options;
     this.requestedModel = sessionId ? selectedModel : undefined;
