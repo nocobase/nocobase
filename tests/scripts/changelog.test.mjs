@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   CHANGELOG_HEADERS,
@@ -266,4 +271,42 @@ test('renamed historical Beta releases retain their immutable changelog section'
     renderChangelogLines(updated, 'nocobase-v3-beta/2026-10-28.2'),
     ['New notes.', '', '## Packages', ''],
   );
+});
+
+test('changelog CLI discovers legacy tags for the first new Beta release', (t) => {
+  const cwd = mkdtempSync(path.join(tmpdir(), 'v3-changelog-tags-'));
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  const git = (...args) => execFileSync('git', args, { cwd, stdio: 'pipe' });
+  git('init', '-b', 'main');
+  git(
+    '-c',
+    'user.name=Test',
+    '-c',
+    'user.email=test@example.com',
+    'commit',
+    '--allow-empty',
+    '-m',
+    'fixture',
+  );
+  git('tag', 'release-beta/2026-10-28.2');
+  const script = fileURLToPath(
+    new URL('../../scripts/changelog.mjs', import.meta.url),
+  );
+  for (const [tag, previous] of [
+    ['nocobase-v3-beta/2026-10-28.3', 'release-beta/2026-10-28.2'],
+    ['nocobase-v3-beta/2026-10-28.4', 'nocobase-v3-beta/2026-10-28.3'],
+  ]) {
+    const output = execFileSync(
+      process.execPath,
+      [script, '--root', cwd, '--tag', tag, '--repo', repo],
+      { encoding: 'utf8' },
+    );
+    assert.ok(output.includes(`Previous beta release: ${previous}`));
+    assert.ok(
+      readFileSync(path.join(cwd, 'CHANGELOG.md'), 'utf8').includes(
+        `## [${tag}]`,
+      ),
+    );
+    git('tag', tag);
+  }
 });

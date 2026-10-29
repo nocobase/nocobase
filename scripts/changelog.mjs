@@ -434,7 +434,10 @@ async function main(argv) {
 
   let from = values.from ?? null;
   if (!from) {
-    const tags = git(['tag', '--list', `${parseTag(tag).prefix}/*`], root)
+    const tags = git(
+      ['tag', '--list', 'release/*', 'release-beta/*', 'nocobase-v3-beta/*'],
+      root,
+    )
       .split('\n')
       .filter(Boolean);
     const previous = selectPreviousTag(tags, tag);
