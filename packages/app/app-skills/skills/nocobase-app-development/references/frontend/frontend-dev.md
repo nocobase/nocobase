@@ -61,6 +61,7 @@ Verify UUID generation and copy actions on a non-secure HTTP origin where `windo
 | A record's own page with tabs, and what its header opens                                 | ["A record detail page with tabs" in `child-routes.md`](references/child-routes.md#a-record-detail-page-with-tabs), [`example/detail-page-tabs.md`](references/example/detail-page-tabs.md)                                                                                                    |
 | Dialogs and drawers, confirmations, temporary panels                                     | [`overlay.md`](references/overlay.md) [§1](references/overlay.md#1-choosing-an-overlay), [§2](references/overlay.md#2-overlays-as-child-routes), [§4](references/overlay.md#4-delete-confirmation-alertdialog), [§5](references/overlay.md#5-sheet-temporary-panels)                           |
 | Forms: fields, dependent fields and steps, validation, server errors, where a form goes  | [`form.md`](references/form.md): [Field types](references/form.md#field-types), [Dependent fields and steps](references/form.md#dependent-fields-and-steps), [Server errors](references/form.md#server-errors), [Where forms go](references/form.md#where-forms-go)                            |
+| File uploads, attachment lists and previews                                              | [`form.md` §File uploads and attachments](references/form.md#file-uploads-and-attachments); [`ui-library.md`](references/ui-library.md) `file-component-ui` and `attachment-list`                                                                                                              |
 | Calling endpoints, loading data, errors, writes, toasts                                  | [`api.md`](references/api.md): [Loading data](references/api.md#loading-data-in-a-component), [Error handling](references/api.md#error-handling), [Write operations](references/api.md#write-operations), [Toasts](references/api.md#toasts)                                                   |
 | Lists: search and filters, states, columns and row actions, selection, server pagination | [`table.md`](references/table.md) [§1](references/table.md#1-choosing-a-table-component), [§5](references/table.md#5-writing-search-and-filters-to-the-url), [§7](references/table.md#7-the-four-list-states), [§8](references/table.md#8-column-definitions-and-row-actions)                  |
 | A dashboard; a record opened from a page other than its list                             | Guideline T5 in [`ui-guidelines.md`](ui-guidelines.md), [`example/project-dashboard.md`](references/example/project-dashboard.md), ["The same drawer over another page" in `overlay.md`](references/overlay.md#the-same-drawer-over-another-page)                                              |
@@ -77,6 +78,8 @@ Verify UUID generation and copy actions on a non-secure HTTP origin where `windo
 
 Each is explained where the pointer leads:
 
+- Overlays recreated during loading or retry ([overlay lifecycle](references/overlay.md#asynchronous-overlay-lifecycle)).
+- Navigation metadata cleared with every list request, or old results retained across resource or authorization changes ([data invalidation boundaries](references/api.md#data-invalidation-boundaries)).
 - A hook called outside a component or custom hook, in a handler, a condition or a loop.
 - A create, edit or detail view opened from component state instead of a child route ([`references/overlay.md`](references/overlay.md)).
 - A child route that returns its own `PageContainer` without `RouteChildPage`: it renders at the parent's `Outlet`, below the parent's content, instead of covering it ([section 3 of `references/child-routes.md`](references/child-routes.md#3-four-ways-to-present-a-child-route)).
@@ -103,10 +106,11 @@ Each is explained where the pointer leads:
 - `setState` called synchronously in an effect, which fails lint (`react-hooks/set-state-in-effect`, with `--max-warnings 0`); set state in request callbacks, or compare with the previous value during render ([`references/api.md`](references/api.md)).
 - A confirmation dialog that clears its target when closing, so its title flickers ([section 4 of `references/overlay.md`](references/overlay.md#4-delete-confirmation-alertdialog)).
 - A form whose dirty flag is not cleared before `close()` after a successful save, so the close asks to discard the changes that were just saved ([section 2.5 of `references/overlay.md`](references/overlay.md#25-beforeclose-checks-before-closing)).
+- A file upload or attachment list built by hand as an `<input type='file'>` plus filenames, instead of the preinstalled `file-component-ui` block ([File uploads and attachments](references/form.md#file-uploads-and-attachments)).
 
 ## Self-check before finishing
 
-This is the one list of checks every workflow runs, scoped to the changed files and the tests that cover them; do not run full checks every time. [`ui-workflow.md`](ui-workflow.md) then adds what each workflow checks in the browser: a quick change looks at the changed element once, a theme change follows [`references/theme.md` section 7](references/theme.md#7-verify), and the full workflow does the acceptance review.
+This is the one list of checks every workflow runs, scoped to the changed files and the tests that cover them; do not run full checks every time. [`ui-workflow.md`](ui-workflow.md) then adds what each workflow checks in the browser: a quick change verifies the changed element and affected interactions, a theme change follows [`references/theme.md` section 7](references/theme.md#7-verify), and the full workflow does the acceptance review.
 
 ```bash
 pnpm exec tsc -p tsconfig.json --noEmit
@@ -117,7 +121,9 @@ pnpm exec vitest run <related-test-files>
 
 - Give ESLint only the changed `.ts`, `.tsx`, `.js` and `.mjs` files, test files included; it has no configuration for `.css` or `.md` and exits nonzero on them. Prettier takes every changed file, CSS and Markdown too.
 - Primitives the change added are changed files too: formatted with Prettier, their built-in English translated as ["English built into primitives"](references/shadcn.md#english-built-into-primitives) lists, and otherwise exactly what the CLI wrote.
+- Run the [targeted component checker](component-selection.md#run-the-targeted-check) on the changed client source in each owning package. Review actual imports and local wrappers against the component source list; resolve findings and review every native/custom exception. Record the command and scanned scope; a missing parser or failed scan is Not verified.
 - Lint does not check the shadcn skill's "Critical Rules". Read the changed components against them: items inside their groups, `gap-*` rather than `space-*`, `data-icon` and no sizing classes on icons inside components, full `Card` structure, semantic tokens ([`references/shadcn.md`](references/shadcn.md)).
+- For changed asynchronous UI, verify affected intermediate states with [controlled transition tests](references/testing.md#asynchronous-transitions).
 - Choose the related tests by searching `tests/` for the changed component, page or route name.
 - A changed route always includes `tests/client/client-routes.test.ts`.
 - A changed `t()` key or route title always includes `tests/client/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).

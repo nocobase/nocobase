@@ -116,11 +116,6 @@ import {
   type ModelServices,
 } from './online/index.js';
 import {
-  createVectors,
-  type Vectors,
-  type VectorsConfig,
-} from './vectors/index.js';
-import {
   createBriefPreviewer,
   createBriefSectionRegistry,
   createClaimEligibility,
@@ -191,13 +186,6 @@ export interface AgentsDeps {
   /** The application's public base path (`/app`, or empty), for the URLs of files sent in chat. */
   readonly basePath?: () => string;
   readonly onError?: (message: string, error: unknown) => void;
-  /**
-   * The vector store of vector collections (`agents.vectors`), apart from the application's database: sqlite-vec in
-   * `storage/vectors.sqlite` by default.
-   */
-  readonly vectors?: VectorsConfig;
-  /** The application's root and storage directories, which the vector store's relative paths resolve against. */
-  readonly paths?: { readonly root: string; readonly storage: string };
 }
 
 export interface Agents {
@@ -312,12 +300,6 @@ export interface Agents {
     readonly services: ModelServices;
     readonly gateway: ModelGateway;
   };
-  /**
-   * Vector collections the application keeps (`collection(spec)`), embedded with the model services' embedding models
-   * through a queue, over a pluggable vector store (`stores`; pgvector by default). The provider starts the queue's
-   * worker at boot.
-   */
-  readonly vectors: Vectors;
 }
 
 /** The application work comes from when nothing names it: the CLI's name, else a neutral one. */
@@ -381,22 +363,6 @@ export function createAgents(deps: AgentsDeps): Agents {
   // Embeddings, reranking and utility texts the application asks for are recorded apart from runs (`agModelUsage`).
   const gateway = createModelGateway(modelServices, {
     usage: createModelUsageRecorder({ tx, ids, clock }),
-    onError,
-  });
-  const vectors = createVectors({
-    tx,
-    ids,
-    clock,
-    embed: (request) => gateway.embed(request),
-    dimensionsOf: async (ref) => {
-      try {
-        return (await modelServices.endpointFor(ref, 'embedding')).dimensions;
-      } catch {
-        return null;
-      }
-    },
-    ...(deps.vectors ? { config: deps.vectors } : {}),
-    ...(deps.paths ? { paths: deps.paths } : {}),
     onError,
   });
   const actions = createAgentActionCatalog();
@@ -700,7 +666,13 @@ export function createAgents(deps: AgentsDeps): Agents {
     app,
     cli,
     runners,
-    runnerView: createRunnerView({ agents, subjects, tx, clock }),
+    runnerView: createRunnerView({
+      agents,
+      conversations,
+      subjects,
+      tx,
+      clock,
+    }),
     workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,
@@ -752,7 +724,6 @@ export function createAgents(deps: AgentsDeps): Agents {
       services: modelServices,
       gateway,
     },
-    vectors,
   };
 }
 

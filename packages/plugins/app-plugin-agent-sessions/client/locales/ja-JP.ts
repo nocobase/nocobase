@@ -26,6 +26,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   list: {
     panelEmpty: '会話はありません',
+    fold: 'セッションを非表示',
     expand: 'ショーセッション',
     label: 'セッション',
     title: '私のエージェント',

@@ -461,30 +461,35 @@ describe('App variable alerts', () => {
     expect(screen.queryByRole('link')).toBeNull();
   });
 
-  it('shows the first administrator masked, and deletes it once saved', async () => {
-    const sent = serve([], {
-      deploymentId: 'd1',
-      username: 'nocobase',
-      email: 'admin@nocobase.com',
-      password: 'Secret123Secret1',
-      expiresAt: new Date(Date.now() + 5 * 3_600_000).toISOString(),
-    });
-    render(<InitialAdminAlert appId='shop' />);
-    expect(await screen.findByText('nocobase')).toBeInTheDocument();
-    expect(screen.queryByText('Secret123Secret1')).toBeNull();
-    expect(screen.getByText(/deleted in 5 h/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
-    expect(screen.getByText('Secret123Secret1')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'I’ve saved it' }));
-    await waitFor(() => expect(screen.queryByText('nocobase')).toBeNull());
-    expect(
-      sent.some(
-        (item) =>
-          item.method === 'POST' &&
-          item.path === 'releases/apps/shop/initialAdmin/dismiss',
-      ),
-    ).toBe(true);
-  });
+  it.each([null, '2026-01-01T00:00:00.000Z'])(
+    'shows the retained first administrator masked, and deletes it once saved (legacy expiry: %s)',
+    async (expiresAt) => {
+      const sent = serve([], {
+        deploymentId: 'd1',
+        username: 'nocobase',
+        email: 'admin@nocobase.com',
+        password: 'Secret123Secret1',
+        expiresAt,
+      });
+      render(<InitialAdminAlert appId='shop' />);
+      expect(await screen.findByText('nocobase')).toBeInTheDocument();
+      expect(screen.queryByText('Secret123Secret1')).toBeNull();
+      expect(
+        screen.getByText(/kept until the app is removed/),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+      expect(screen.getByText('Secret123Secret1')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'I’ve saved it' }));
+      await waitFor(() => expect(screen.queryByText('nocobase')).toBeNull());
+      expect(
+        sent.some(
+          (item) =>
+            item.method === 'POST' &&
+            item.path === 'releases/apps/shop/initialAdmin/dismiss',
+        ),
+      ).toBe(true);
+    },
+  );
 
   it('shows nothing when there is no first administrator', async () => {
     const sent = serve([]);

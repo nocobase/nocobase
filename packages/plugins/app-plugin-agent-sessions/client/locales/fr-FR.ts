@@ -26,6 +26,7 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   list: {
     panelEmpty: 'Aucune conversation',
+    fold: 'Masquer les sessions',
     expand: 'Afficher les sessions',
     label: 'Séances',
     title: 'Mes agents',

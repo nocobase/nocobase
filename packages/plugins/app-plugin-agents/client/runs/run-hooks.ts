@@ -21,6 +21,7 @@ import { useTriggerLabel } from '../hooks/use-vocabulary.js';
 import { isOpen } from '../lib/runs.js';
 import { agentsQueryClient } from '../query.js';
 import { EVENT_POLL_MS, useRunEvents } from './use-run-events.js';
+import { refreshRunDetail } from './refresh-run.js';
 
 function isRunChanged(payload: unknown): payload is RunChanged {
   return (
@@ -62,7 +63,7 @@ export function useRunWithTranscript(runId: string): RunWithTranscript {
     if (!isRunChanged(payload) || payload.kind === 'run.events')
       events.fetchMore();
     if (!isRunChanged(payload) || payload.kind !== 'run.events') {
-      void client.invalidateQueries({ queryKey: agentsKeys.run(runId) });
+      void refreshRunDetail(client, runId);
       void client.invalidateQueries({ queryKey: ['agents', 'runs'] });
     }
   });

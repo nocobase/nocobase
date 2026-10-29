@@ -22,4 +22,4 @@ export {
 export * from './tokens.js';
 export * from './user-administration.js';
 
-export type { AuthConfig } from './config.js';
+export type { AuthConfig, AuthEmailConfig } from './config.js';

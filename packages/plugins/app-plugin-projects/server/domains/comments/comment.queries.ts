@@ -33,6 +33,7 @@ import {
   type CommentRecord,
 } from './comment.store.js';
 import type { CommentAttachments, CommentReader } from './ports.js';
+import { CommentMessageSchema } from './comment.message.js';
 
 const iso = (value: Date | string | null): string | null =>
   value === null ? null : new Date(value).toISOString();
@@ -97,6 +98,9 @@ export async function mapComments(
   return records.map((row) => {
     const deleted = row.deletedAt !== null;
     const origin = originOf(row.origin);
+    const message = deleted
+      ? undefined
+      : CommentMessageSchema.safeParse(origin.message);
     return {
       id: row.id,
       issueId: row.issueId,
@@ -105,6 +109,7 @@ export async function mapComments(
       authorName: name(row.authorType, row.authorId),
       kind: row.kind,
       content: deleted ? '' : row.content,
+      ...(message?.success ? { message: message.data } : {}),
       note: !deleted && isNote(row.content),
       parentId: row.parentId,
       rootId: row.rootId,

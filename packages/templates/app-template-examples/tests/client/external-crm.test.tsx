@@ -7,7 +7,8 @@ import ExternalCrmPage from '../../client/pages/external-crm.tsx';
 import enUS from '../../client/locales/en-US.ts';
 
 const { request } = vi.hoisted(() => ({ request: vi.fn() }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (original) => ({
+  ...(await original<typeof import('@nocobase/app-client')>()),
   useApiClient: () => ({ request }),
 }));
 
@@ -129,7 +130,7 @@ it('reports a failed load and offers a retry', async () => {
     );
   await mount();
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Unable to load orders',
+    'Unable to load list',
   );
-  expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible();
 });

@@ -90,7 +90,7 @@ const announce = (payload: unknown) =>
     publishedAt: '2026-10-15T08:00:00Z',
   });
 
-it('refreshes projects only for an announcement naming no issues', async () => {
+it('refreshes lists and project counts for named changes while preserving unrelated details', async () => {
   const view = await renderQueries(
     <>
       <Reader name='projects' queryKey={pmKeys.projects} />
@@ -111,8 +111,74 @@ it('refreshes projects only for an announcement naming no issues', async () => {
   await waitFor(() =>
     expect(reads).toEqual({ projects: 2, list: 3, a: 3, b: 2 }),
   );
+  announce({
+    kind: 'pm.changed',
+    domain: 'issues',
+    issueIds: ['a'],
+    listsChanged: true,
+  });
+  await waitFor(() =>
+    expect(reads).toEqual({ projects: 3, list: 4, a: 4, b: 2 }),
+  );
   await view.unmount();
 });
+
+it.each(['parent', 'subtasks', 'blockedBy', 'blocks', 'relatedTo', 'blockers'])(
+  'refreshes details embedding a changed %s without expanding to unrelated reads',
+  async (field) => {
+    const reference =
+      field === 'parent'
+        ? { id: 'a' }
+        : field === 'subtasks'
+          ? [{ id: 'a' }]
+          : [{ issueId: 'a' }, { issueId: 'still-blocking' }];
+    const direct = vi.fn(async () => ({ id: 'a' }));
+    const embedded = vi.fn(async () => ({ id: 'd', [field]: reference }));
+    const unrelated = vi.fn(async () => ({ id: 'b', parent: { id: 'd' } }));
+    const history = vi.fn(async () => []);
+    function DetailReader({
+      queryKey,
+      read,
+    }: {
+      readonly queryKey: readonly unknown[];
+      readonly read: () => Promise<unknown>;
+    }) {
+      useQuery({ queryKey, queryFn: read, staleTime: Infinity });
+      return null;
+    }
+    const view = await renderQueries(
+      <>
+        <DetailReader queryKey={pmKeys.issue('PM-A')} read={direct} />
+        <DetailReader queryKey={pmKeys.issue('PM-D')} read={embedded} />
+        <DetailReader queryKey={pmKeys.issue('b')} read={unrelated} />
+        <DetailReader
+          queryKey={[...pmKeys.issue('PM-D'), 'threads']}
+          read={history}
+        />
+      </>,
+    );
+    try {
+      await waitFor(() => {
+        for (const read of [direct, embedded, unrelated, history])
+          expect(read).toHaveBeenCalledOnce();
+      });
+      announce({
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: ['a'],
+        listsChanged: true,
+      });
+      await waitFor(() => {
+        expect(direct).toHaveBeenCalledTimes(2);
+        expect(embedded).toHaveBeenCalledTimes(2);
+      });
+      expect(unrelated).toHaveBeenCalledOnce();
+      expect(history).toHaveBeenCalledOnce();
+    } finally {
+      await view.unmount();
+    }
+  },
+);
 
 it.each(['labels', 'ready'] as const)(
   'recovers a failed %s refresh when another domain changes during the read',

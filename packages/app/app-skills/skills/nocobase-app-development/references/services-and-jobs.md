@@ -83,6 +83,8 @@ const realtime = useService(realtimeClientToken);
 
 Both executors come from the application's jobs service and run on the `jobs` configuration; queues run on the separate `queue` configuration. An application running more than one instance sets `jobs.default`, and `queue.default` if it uses queues, to a `redis` configuration. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
 
+Redis Queue support requires installation and explicit Server registration of `@nocobase/app-plugin-queue-redis/server`. The OSS templates declare Memory only. Add the plugin's typed Redis configuration to the existing `queue` section before selecting it; Jobs configuration is independent. Unselected legacy Redis entries do not prevent Memory startup, but selecting Redis without its implementation fails explicitly.
+
 ## Ordinary one-off tasks
 
 Use `JobExecutor` from `@nocobase/jobs` for immediate one-off tasks with payload-only classes. Resolve the existing `jobExecutorServiceToken` from `@nocobase/app-server/jobs` and call `getJobExecutor(scope, name?)`; do not add another provider, token, global registry or service container.
@@ -219,6 +221,8 @@ await app.container
 - **IDs and batches.** A `jobIdProducer` in publish options or configuration gives stable IDs, and publishing an ID that still exists adds nothing. `publishMany()` prepares every entry before writing any.
 - **Retries and cancellation.** `attempts` and `backoff` (`fixed` or `exponential`) come from the configuration key, `manager(queue).configure()`, or publish options. `manager(queue).cancelJob(jobId)` fails a job running on this instance without a retry.
 - **Configuration.** `server/config/queue.ts` declares keys such as `memory` and `redis`; `queue.default` picks one, and a queue can name another as the second argument of `producer()`, `consumer()` and `manager()`. Without a default, queues run on the built-in memory configuration, which serves one process and writes pending jobs under `storage/queue` at shutdown. Set `queue.default: redis` before running more than one instance.
+
+Redis Queue support requires installation and explicit Server registration of `@nocobase/app-plugin-queue-redis/server`. The OSS templates declare Memory only. Add the plugin's typed Redis configuration to the existing `queue` section before selecting it; Jobs configuration is independent. Unselected legacy Redis entries do not prevent Memory startup, but selecting Redis without its implementation fails explicitly.
 
 See the `@nocobase/queue` README for the full contract.
 

@@ -92,6 +92,8 @@ export function publicUIPageContext(
 
 /** Public identity and ordering only; configuration and credentials are private. */
 export interface AppUIMessageMetadata {
+  /** Reasoning effort accepted for this turn, independent of later conversation preferences. */
+  effort?: string;
   conversationId: string;
   createdAt: string;
   agentId?: string;
@@ -131,6 +133,7 @@ export const appUIMessageMetadataSchema: z.ZodType<AppUIMessageMetadata> =
     sourceUserMessageId: identity.optional(),
     clientId: identity.optional(),
     executionId: identity.optional(),
+    effort: z.string().min(1).max(40).optional(),
     /** Absent before the first save. Never used as an update cursor. */
     seq: z.number().int().positive().optional(),
     /** Zero before saving; increases when the same message is updated. */

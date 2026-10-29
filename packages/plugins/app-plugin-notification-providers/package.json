@@ -33,7 +33,11 @@
       "types": "./server/im/index.ts",
       "import": "./server/im/index.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./config": {
+      "types": "./server/email/config.ts",
+      "import": "./server/email/config.ts"
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -54,7 +58,11 @@
         "types": "./dist/server/im/index.d.ts",
         "import": "./dist/server/im/index.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./config": {
+        "types": "./dist/server/email/config.d.ts",
+        "import": "./dist/server/email/config.js"
+      }
     }
   },
   "scripts": {

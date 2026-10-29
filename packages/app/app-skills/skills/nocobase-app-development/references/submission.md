@@ -2,20 +2,24 @@
 
 New Default and Examples applications register `SubmissionProvider`: standard Repository `createOne`, `updateOne` and `deleteOne` endpoints require `Idempotency-Key`. The receipt migration must be installed on the same managed connection as the business write. A missing key is rejected. Native user account administration (including role assignment, deletion, password reset and session revocation), Permission Set create/update/delete, and default-access create/update/delete also use the same receipt contract and retain their native authorization checks. Reads and unadapted custom HTTP routes are unchanged. The standard form pattern uses `useSubmission` from `@nocobase/app-client`; disabling a button or relying on React Hook Form's `isSubmitting` alone does not coordinate Enter, an external footer, confirmation and programmatic entry points.
 
+For a complete runnable form and list, use the [executable list and edit example](frontend/references/executable-list-edit.md).
+
 ## One form, one operation
 
-Create one `useSubmission({ scope })` controller for a form, scoped by the server-authenticated identity, action, target and stable form instance. All entry points call its `run(snapshot, execute)` before asynchronous validation. `submitting` drives buttons, spinners and close guards. Validate inside `execute`; return without sending if invalid. Do not generate ids or timestamps afresh on a retry: derive them from the operation key or retain them in the original snapshot. Use a separate controller for an independent form.
+Create one `useSubmission({ scope })` controller for a form, scoped by the server-authenticated identity, action, target and stable form instance. All entry points call its `run(snapshot, execute)` before asynchronous validation. `submitting` drives buttons, spinners and close guards. Run `form.handleSubmit` inside `execute`; return without sending if invalid. Unlike `trigger()`, `handleSubmit` records a submission attempt, so React Hook Form revalidates corrected fields on change after a failed submission. Do not generate ids or timestamps afresh on a retry: derive them from the operation key or retain them in the original snapshot. Use a separate controller for an independent form.
 
 ```tsx
 const submission = useSubmission({ scope: `${userId}:orders:${formId}` });
 const submit = async () => {
   const snapshot = { name: form.getValues('name'), id: order?.id };
   try {
-    const saved = await submission.run(snapshot, async (key, signal) => {
-      if (!await form.trigger()) return;
-      const values = { name: snapshot.name.trim() };
-      return order
-        ? api.repository('orders').updateOne({ filter: { id: order.id }, values, idempotencyKey: key, signal })
+    const saved = await submission.run(snapshot, async (key, signal, input) => {
+      let valid = false;
+      await form.handleSubmit(() => { valid = true; })();
+      if (!valid) return;
+      const values = { name: input.name.trim() };
+      return input.id
+        ? api.repository('orders').updateOne({ filter: { id: input.id }, values, idempotencyKey: key, signal })
         : api.repository('orders').createOne({ values, idempotencyKey: key, signal });
     });
     if (!saved) return; // Another entry owns the lock, or validation failed.

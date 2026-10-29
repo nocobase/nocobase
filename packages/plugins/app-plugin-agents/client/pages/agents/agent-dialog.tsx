@@ -1,14 +1,12 @@
 /**
- * Changing an enabled or disabled agent: what it is good at (started from the model
- * catalog's suggestion in the viewer's language when the agent has none), its default reasoning effort, and, when
- * editing, whether it is enabled. Enabling needs a description; the server refuses one without it too.
+ * Edit the saved description, default reasoning effort and enabled state of an agent.
+ * Enabling needs a description; the server refuses one without it too.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import type { AgentView } from '../../../shared/agents.js';
-import { modelSuggestion } from '../../model-suggestion.js';
 import { agentsKeys } from '../../api/keys.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -37,6 +35,7 @@ import { Switch } from '../../components/ui/switch.js';
 import { Textarea } from '../../components/ui/textarea.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
+import { GoodAtTemplates } from './good-at-templates.js';
 
 /** The value the effort select holds for the tool's default. */
 const DEFAULT_EFFORT = '__default__';
@@ -77,13 +76,11 @@ function AgentForm({
   readonly agent: AgentView;
   readonly onClose: () => void;
 }): ReactElement {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const api = useAgentsApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
-  const [goodAt, setGoodAt] = useState(
-    () => agent.description ?? modelSuggestion(agent, i18n.language, t),
-  );
+  const [goodAt, setGoodAt] = useState(() => agent.description ?? '');
   const [effort, setEffort] = useState<string>(agent.effort ?? DEFAULT_EFFORT);
   const [enabled, setEnabled] = useState(agent.status !== 'disabled');
   const [submitted, setSubmitted] = useState(false);
@@ -141,9 +138,16 @@ function AgentForm({
       >
         <FieldGroup>
           <Field data-invalid={submitted && missing ? true : undefined}>
-            <FieldLabel htmlFor='agent-good-at'>
-              {t('agents.columns.goodAt')}
-            </FieldLabel>
+            <div className='flex flex-wrap items-center justify-between gap-2'>
+              <FieldLabel htmlFor='agent-good-at'>
+                {t('agents.columns.goodAt')}
+              </FieldLabel>
+              <GoodAtTemplates
+                value={goodAt}
+                onChange={setGoodAt}
+                disabled={save.isPending}
+              />
+            </div>
             <Textarea
               id='agent-good-at'
               rows={4}

@@ -544,8 +544,6 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     initialAdmin: {
       title: 'Primeiro administrador',
-      expires:
-        'Gerado para a primeira implantação. Salve-o agora: ele será excluído em {{hours}} h.',
       kept: 'Gerado para a primeira implantação; ele é mantido até que o aplicativo seja removido.',
       username: 'Nome de usuário',
       email: 'E-mail',

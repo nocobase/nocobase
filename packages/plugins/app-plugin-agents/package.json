@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-agents",
   "displayName": "Agents",
   "description": "Agents for NocoBase applications: agents, the model services online agents call, their runs and conversations, and the runners people connect to run them (registration, the long-poll claim, slots, the sweeper, build jobs, and the runner and CLI tarballs the application serves).",
-  "version": "1.0.0-beta.29",
+  "version": "2.0.0-beta",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -293,15 +293,11 @@
     "ai": "catalog:",
     "ajv": "catalog:",
     "ajv-formats": "^3.0.1",
-    "better-sqlite3": "catalog:",
     "hono": "catalog:",
     "ioredis": "catalog:",
-    "knex": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
-    "pg": "^8.23.0",
     "re2js": "^2.8.6",
     "resumable-stream": "2.2.13",
-    "sqlite-vec": "^0.1.9",
     "yaml": "catalog:",
     "zod": "catalog:",
     "@nocobase/acp-bridge": "workspace:^"
@@ -351,6 +347,8 @@
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "knex": "catalog:",
+    "pg": "^8.23.0"
   }
 }

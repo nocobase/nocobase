@@ -234,6 +234,16 @@ export interface RunService {
     readonly run: Run;
     readonly inputs: readonly RunInput[];
   } | null>;
+  /** Like identityInputs, batched by unique run id on the caller's connection. Missing runs are omitted. */
+  identityInputsMany(
+    conn: DatabaseConnection,
+    runIds: readonly string[],
+  ): Promise<
+    ReadonlyMap<
+      string,
+      { readonly run: Run; readonly inputs: readonly RunInput[] }
+    >
+  >;
   /** Work waiting for the subject's responsible to confirm it: confirming, rejecting, withdrawing, handing it on. */
   readonly requests: RunRequestService;
   /** Adds input to a run that has not ended. */
@@ -1385,6 +1395,31 @@ export function createRunService(deps: RunServiceDeps): RunService {
       if (!run) return null;
       const inputs = await inputsRepo(conn).findMany({ filter: { runId } });
       return { run: toRun(run), inputs: inputs.map(toInput) };
+    },
+
+    identityInputsMany: async (conn, runIds) => {
+      const result = new Map<string, { run: Run; inputs: RunInput[] }>();
+      const ids = [...new Set(runIds)];
+      // Bound parameter counts also on SQLite; progress reads need at most 100 ids.
+      for (let offset = 0; offset < ids.length; offset += 500) {
+        const runs = await runsRepo(conn).findMany({
+          filter: (f) =>
+            f.or(
+              ids
+                .slice(offset, offset + 500)
+                .map((id) => f.string('id').eq(id)),
+            ),
+        });
+        if (!runs.length) continue;
+        for (const run of runs)
+          result.set(run.id, { run: toRun(run), inputs: [] });
+        const inputs = await inputsRepo(conn).findMany({
+          filter: (f) => f.or(runs.map((run) => f.string('runId').eq(run.id))),
+        });
+        for (const input of inputs)
+          result.get(input.runId)!.inputs.push(toInput(input));
+      }
+      return result;
     },
 
     addInput: (runId, input, outer) =>

@@ -59,6 +59,11 @@ const idID: LocaleResource<typeof enUS> = {
       },
     },
   },
+  runnerConversation: {
+    title: 'Percakapan: {{title}}',
+    other: 'Percakapan orang lain',
+    untitled: 'Percakapan baru',
+  },
 };
 
 export default idID;

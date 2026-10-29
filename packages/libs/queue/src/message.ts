@@ -16,12 +16,6 @@ export interface PreparedJob {
   readonly options: ResolvedJobOptions;
 }
 
-/** What BullMQ stores in `job.data`; the message itself is opaque JSON text. */
-export interface QueueMessageEnvelope {
-  readonly version: 1;
-  readonly payload: string;
-}
-
 export function assertChannel(value: unknown): asserts value is Channel {
   if (typeof value !== 'string' || value === '') {
     throw new TypeError('A queue channel must be a non-empty string.');
@@ -39,23 +33,6 @@ export function serializeMessage(message: unknown): string {
     throw new TypeError('A queue message must serialize to JSON.');
   }
   return text;
-}
-
-export function encodeEnvelope(text: string): QueueMessageEnvelope {
-  return { version: 1, payload: text };
-}
-
-/** Accepts only the envelope this package writes. */
-export function decodeEnvelope(data: unknown): string {
-  if (
-    typeof data !== 'object' ||
-    data === null ||
-    (data as { version?: unknown }).version !== 1 ||
-    typeof (data as { payload?: unknown }).payload !== 'string'
-  ) {
-    throw new TypeError('The queued job does not hold a version 1 envelope.');
-  }
-  return (data as QueueMessageEnvelope).payload;
 }
 
 export function parseMessage(text: string): unknown {

@@ -878,6 +878,20 @@
           "target": "client/extensions/nocobase-feedback-form-demo/feedback-form.tsx"
         }
       ]
+    },
+    {
+      "name": "list-feedback-demo",
+      "type": "registry:example",
+      "title": "List Feedback Demo",
+      "description": "List feedback states with static demonstration data.",
+      "registryDependencies": ["@nocobase/list-feedback"],
+      "files": [
+        {
+          "path": "components/list-feedback.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-list-feedback-demo/list-feedback.tsx"
+        }
+      ]
     }
   ]
 }

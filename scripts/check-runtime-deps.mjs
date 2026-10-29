@@ -56,13 +56,18 @@ const SKIPPED_DIRECTORIES = new Set([
   'template',
 ]);
 
-// This private workspace fixture ships as Skill source material, not code the app-skills package executes.
-// Its own manifest and verification command provide its dependencies. Keep the exemption scoped to this package
-// and directory: executable Skill scripts and other assets still need their runtime dependencies declared.
+// These examples ship as Skill source material, not code the app-skills package executes.
+// Their workspace fixture or canonical Examples application provides and verifies their dependencies.
+// Keep exemptions scoped to this package and these directories: executable Skill scripts and other assets
+// still need their runtime dependencies declared.
 const SOURCE_MATERIAL_DIRECTORIES = new Map([
   [
     '@nocobase/app-skills',
-    ['skills/nocobase-app-plugin-development/assets/testing-example'],
+    [
+      'skills/nocobase-app-plugin-development/assets/testing-example',
+      'skills/nocobase-app-development/assets/list-edit-example',
+      'skills/nocobase-app-development/assets/customer-contacts-example',
+    ],
   ],
 ]);
 

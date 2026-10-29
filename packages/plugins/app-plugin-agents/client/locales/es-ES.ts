@@ -7,15 +7,26 @@ import type enUS from './en-US.js';
 const esES: LocaleResource<typeof enUS> = {
   modelSuggestions: {
     design:
-      'Diseño, arquitectura, investigación de problemas complejos y revisión de cambios importantes.',
-    routine:
-      'Implementaciones con un alcance claro, pequeños arreglos, pruebas y redacción.',
-    small: 'Cambios pequeños y mecánicos, rápidos y económicos.',
-    explanation:
-      'Comprensión de requisitos y redacción de propuestas y explicaciones.',
+      'Razonamiento más potente: propuestas, arquitectura, investigaciones difíciles y revisión de cambios importantes; también implementación habitual y cambios entre paquetes.',
     large:
-      'Implementaciones grandes, cambios entre paquetes y refactorización.',
-    review: 'Revisión de código y análisis de fallos de CI.',
+      'Implementaciones grandes, cambios entre paquetes, refactorización e implementación habitual; también propuestas, revisión de código y cambios pequeños.',
+    review:
+      'Revisión de código y análisis de fallos de CI; también propuestas e investigaciones difíciles.',
+    routine:
+      'Implementación habitual, pequeños arreglos, pruebas y textos; también análisis de fallos de CI.',
+    small:
+      'Cambios pequeños, ediciones mecánicas y pruebas, económicos y rápidos; también análisis de fallos de CI.',
+    explanation: 'Comprender requisitos, explicar y redactar propuestas.',
+  },
+  goodAtTemplates: {
+    fill: 'Rellenar desde plantilla',
+    design: 'Diseño y revisión',
+    large: 'Implementación grande',
+    review: 'Revisión de código y CI',
+    routine: 'Implementación habitual',
+    small: 'Cambios pequeños',
+    explanation: 'Explicaciones y propuestas',
+    undo: 'Deshacer',
   },
   actions: {
     back: 'Volver',
@@ -53,6 +64,8 @@ const esES: LocaleResource<typeof enUS> = {
     title: '¿Descartar cambios no guardados?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'Este ejecutor no puede ejecutar el Agent seleccionado. Cambie de ejecutor o inicie una conversación nueva.',
     CONFLICT: 'Entretanto cambió. Vuelva a cargar y vuelva a intentarlo.',
     REVISION_CONFLICT:
       'Entretanto cambió. Vuelva a cargar y vuelva a intentarlo.',
@@ -100,7 +113,7 @@ const esES: LocaleResource<typeof enUS> = {
     unavailableNow: 'No disponible ahora',
     title: 'Agentes',
     description:
-      'Añada agentes a partir de los modelos que informan los ejecutores. El director del proyecto asigna cada paso de una tarea al agente cuya descripción encaja con ella.',
+      'Añada agentes a partir de los modelos que informan los ejecutores. El Lead Agent asigna cada paso de una tarea al agente cuya descripción encaja con ella.',
     fromRunners: 'Agentes de ejecutores',
     display: {
       search: 'Búsqueda de modelos o proveedores',
@@ -167,12 +180,11 @@ const esES: LocaleResource<typeof enUS> = {
         'Reportado por ejecutores {{count}} en línea: {{names}}.',
       noRunnerNow: 'Ningún ejecutor que lo tenga está en línea ahora.',
       goodAtHint:
-        'El director del proyecto decide qué entregarle a este agente con estas palabras. Di lo que conviene y lo que no.',
+        'El Lead Agent decide qué entregarle a este agente con estas palabras. Di lo que conviene y lo que no.',
       goodAtRequired: 'Escriba en qué es bueno antes de habilitarlo.',
-      effortHint:
-        'El director del proyecto no puede cambiarlo cuando entrega el trabajo.',
+      effortHint: 'El Lead Agent no puede cambiarlo cuando entrega el trabajo.',
       personalOnly:
-        'Sólo lo tienen los ejecutores personales: el director del proyecto lo entrega trabajo sólo en los problemas que inician sus propietarios.',
+        'Sólo lo tienen los ejecutores personales: el Lead Agent lo entrega trabajo sólo en los problemas que inician sus propietarios.',
       reportedBy_many:
         'Reportado por ejecutores {{count}} en línea: {{names}}.',
     },
@@ -821,6 +833,11 @@ const esES: LocaleResource<typeof enUS> = {
       version: 'Ejecutor {{version}}',
       runs: 'Ejecuciones recientes',
       runsEmpty: 'Aún no hay ejecuciones.',
+      runsTotal: '{{count}} ejecuciones',
+      runsPagination: 'Paginación del historial',
+      runsPrevious: 'Anterior',
+      runsNext: 'Siguiente',
+      runsPage: 'Página {{page}} de {{pageCount}}',
       runsFailed: 'No se pudieron cargar sus ejecuciones.',
       readOnly: 'Sólo su propietario puede cambiarlo.',
       owner: 'Propietario {{name}}',

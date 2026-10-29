@@ -107,12 +107,6 @@ describe('application config', () => {
         adapter: 'inMemory',
         persistence: { path: runtime.paths.storage('queue') },
       },
-      redis: {
-        adapter: 'redis',
-        connection: { host: '127.0.0.1', port: 6379, db: 0 },
-        removeOnComplete: { count: 1000 },
-        removeOnFail: { age: 604_800 },
-      },
     });
     expect(runtime.config.get<AppJobsConfig>('jobs')).toEqual({
       memory: {
@@ -208,7 +202,8 @@ describe('application config', () => {
     });
     expect(runtime.config.get('server.port')).toBe(14001);
     expect(runtime.config.get('server.startLog')).toBe(false);
-    expect(runtime.config.get('queue.redis.connection.host')).toBe('127.0.0.1');
+    expect(runtime.config.get('queue.redis')).toBeUndefined();
+    expect(runtime.config.get('queue.memory.adapter')).toBe('inMemory');
     expect(runtime.config.get('session.stores.redis.host')).toBe('127.0.0.1');
     expect(runtime.config.get('logging.console.pretty')).toBe(false);
     expect(runtime.config.get('session.cookie.secure')).toBe(true);

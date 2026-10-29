@@ -59,6 +59,36 @@ For a primitive that needs translations alone, `createTestI18nRuntime()` and `Te
 
 `packages/libs/i18n/README.md` in the `@nocobase/i18n` package documents every option.
 
+## Asynchronous transitions
+
+Choose cases for the changed behavior rather than applying a complete matrix to every edit. Hold relevant requests pending: assert that navigation and the current overlay remain present, then release success or failure and retry. Cover empty results, rapid switching and late responses where applicable. Same-resource refresh should preserve drafts, selection and scroll; record, user or permission changes must clear content that no longer belongs to the current scope.
+
+The [complete component example](../../testing/client/page.md#test-submission-failure-retry-and-pending-state) demonstrates `Promise.withResolvers<Response>()` with `answerApi()` and cleanup in `finally`. Adapt that setup to the real page. For an overlay expected to keep its container, add this pattern after arranging its pending response and rendering through `renderWithApp()`; `screen`, `act` and `waitFor` come from Testing Library, and `response` is the deferred response supplied to the relevant endpoint:
+
+```tsx
+try {
+  const panel = await screen.findByRole('dialog', { name: 'Project details' });
+  expect(screen.getByText('Loading project')).toBeInTheDocument();
+  await act(async () => {
+    response.resolve(Response.json({ data: project }));
+    await response.promise;
+  });
+  await waitFor(() =>
+    expect(screen.getByText(project.name)).toBeInTheDocument(),
+  );
+  expect(screen.getByRole('dialog', { name: 'Project details' })).toBe(panel);
+} finally {
+  await act(async () => {
+    response.resolve(Response.json({ data: project }));
+    await response.promise;
+  });
+}
+```
+
+Use the page's actual translated labels and response shape. Node identity is useful when stable ownership is the intended contract; a deliberate container handoff instead needs assertions for uninterrupted presentation and correct focus. Check failure → retry → success, cancellation, unsaved-close protection, repeat opening and nested layers as relevant. Backdrop counts must match intended layers, not always one. Never use arbitrary sleeps to stand in for controlled responses.
+
+jsdom verifies DOM continuity and request behavior, not layout or visible animation. In the actual application browser, exercise the affected flow from its entry through loading, completion and closing, with controlled slow responses or failures where relevant. Observe layout, animation, focus and scroll throughout; inspect animation events or computed animation when checking entrance replay. A final screenshot or CSS class assertion is insufficient. Distinguish component or synthetic fixture checks from actual application checks, which also cover routing, permissions and business APIs. Follow the workflow's session rules and report unavailable browser checks as unverified.
+
 ## Running tests
 
 Run the related test files with the application's matching React configuration, then lint them. Inspect its tsconfig includes before claiming the tests were typechecked; many templates exclude Vitest tests from their build configs. The complete client example uses `--config vitest.client.config.ts`:

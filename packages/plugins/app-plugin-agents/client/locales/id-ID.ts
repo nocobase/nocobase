@@ -7,14 +7,26 @@ import type enUS from './en-US.js';
 const idID: LocaleResource<typeof enUS> = {
   modelSuggestions: {
     design:
-      'Desain, arsitektur, penyelidikan masalah rumit, dan peninjauan perubahan penting.',
+      'Penalaran terkuat: usulan, arsitektur, penyelidikan rumit dan peninjauan perubahan penting; juga implementasi rutin dan perubahan lintas paket.',
+    large:
+      'Implementasi besar, perubahan lintas paket, refaktorisasi dan implementasi rutin; juga usulan, peninjauan kode dan perubahan kecil.',
+    review:
+      'Peninjauan kode dan analisis kegagalan CI; juga usulan dan penyelidikan rumit.',
     routine:
-      'Implementasi dengan cakupan jelas, perbaikan kecil, pengujian, dan penulisan teks.',
-    small: 'Perubahan kecil dan mekanis; hemat biaya dan cepat.',
-    explanation:
-      'Memahami kebutuhan, menulis usulan, dan memberikan penjelasan.',
-    large: 'Implementasi besar, perubahan lintas paket, dan refaktorisasi.',
-    review: 'Peninjauan kode dan analisis kegagalan CI.',
+      'Implementasi rutin, perbaikan kecil, pengujian dan teks; juga analisis kegagalan CI.',
+    small:
+      'Perubahan kecil, suntingan mekanis dan pengujian, murah dan cepat; juga analisis kegagalan CI.',
+    explanation: 'Memahami kebutuhan, penjelasan dan penulisan usulan.',
+  },
+  goodAtTemplates: {
+    fill: 'Isi dari templat',
+    design: 'Desain dan peninjauan',
+    large: 'Implementasi besar',
+    review: 'Peninjauan kode dan CI',
+    routine: 'Implementasi rutin',
+    small: 'Perubahan kecil',
+    explanation: 'Penjelasan dan usulan',
+    undo: 'Urungkan',
   },
   actions: {
     back: 'Kembali',
@@ -52,6 +64,8 @@ const idID: LocaleResource<typeof enUS> = {
     title: 'Buang perubahan yang belum disimpan?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'Runner ini tidak dapat menjalankan Agent yang dipilih. Ganti runner atau mulai percakapan baru.',
     CONFLICT: 'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',
     REVISION_CONFLICT:
       'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',
@@ -98,7 +112,7 @@ const idID: LocaleResource<typeof enUS> = {
     unavailableNow: 'Tidak tersedia saat ini',
     title: 'Agen',
     description:
-      'Tambahkan agen dari model yang dilaporkan runner. Manajer proyek menugaskan setiap langkah tugas kepada agen yang deskripsinya sesuai.',
+      'Tambahkan agen dari model yang dilaporkan runner. Lead Agent menugaskan setiap langkah tugas kepada agen yang deskripsinya sesuai.',
     fromRunners: 'Agen dari runner',
     display: {
       search: 'Model atau penyedia pencarian',
@@ -161,12 +175,12 @@ const idID: LocaleResource<typeof enUS> = {
       reportedBy_other: 'Dilaporkan oleh runner online {{count}}: {{names}}.',
       noRunnerNow: 'Tidak ada runner yang memilikinya yang online sekarang.',
       goodAtHint:
-        'Manajer proyek memutuskan apa yang akan diserahkan kepada agen ini dengan kata-kata ini. Katakan apa yang cocok dan apa yang tidak.',
+        'Lead Agent memutuskan apa yang akan diserahkan kepada agen ini dengan kata-kata ini. Katakan apa yang cocok dan apa yang tidak.',
       goodAtRequired: 'Tulis kelebihannya sebelum mengaktifkannya.',
       effortHint:
-        'Manajer proyek tidak dapat mengubahnya ketika penyerahan pekerjaan.',
+        'Lead Agent tidak dapat mengubahnya ketika penyerahan pekerjaan.',
       personalOnly:
-        'Hanya runner pribadi yang memilikinya: manajer proyek menyerahkan pekerjaan hanya pada masalah yang dimulai oleh pemiliknya.',
+        'Hanya runner pribadi yang memilikinya: Lead Agent menyerahkan pekerjaan hanya pada masalah yang dimulai oleh pemiliknya.',
     },
     edit: {
       button: 'Edit',
@@ -790,6 +804,11 @@ const idID: LocaleResource<typeof enUS> = {
       version: 'Runner {{version}}',
       runs: 'Berjalan baru-baru ini',
       runsEmpty: 'Belum berjalan.',
+      runsTotal: '{{count}} proses',
+      runsPagination: 'Paginasi riwayat proses',
+      runsPrevious: 'Sebelumnya',
+      runsNext: 'Berikutnya',
+      runsPage: 'Halaman {{page}} dari {{pageCount}}',
       runsFailed: 'Tidak dapat memuat jalannya.',
       readOnly: 'Hanya pemiliknya yang dapat mengubahnya.',
       owner: 'Pemilik {{name}}',
