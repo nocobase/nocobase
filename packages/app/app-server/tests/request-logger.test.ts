@@ -154,7 +154,7 @@ describe('requestLogger', () => {
   });
 
   it.each([200, 400, 500] as const)(
-    'bounds allowlisted query values and omits secrets at every log level (%s)',
+    'validates query values and omits secrets at every log level (%s)',
     async (status) => {
       const output = createMemoryDestination();
       const router = new Hono();
@@ -164,7 +164,7 @@ describe('requestLogger', () => {
       );
       router.get('/runs', (context) => context.json({}, status));
       const query = new URLSearchParams({
-        subjectId: 'i'.repeat(1000),
+        subjectId: '394741478850560',
         limit: '20',
         status: 'running',
         token: 'token-value',
@@ -179,7 +179,11 @@ describe('requestLogger', () => {
       expect(output.records()).toHaveLength(2);
       for (const record of output.records()) {
         expect(record.req).toMatchObject({
-          query: { subjectId: 'i'.repeat(100), limit: '20', status: 'running' },
+          query: {
+            subjectId: '394741478850560',
+            limit: '20',
+            status: 'running',
+          },
           caller: 'agentRun',
         });
       }
@@ -188,6 +192,102 @@ describe('requestLogger', () => {
       );
     },
   );
+
+  it.each([200, 400, 500] as const)(
+    'rejects invalid values on start and completion (%s)',
+    async (status) => {
+      const output = createMemoryDestination();
+      const router = new Hono();
+      router.use(
+        '*',
+        requestLogger({ logger: createLogger({ level: 'debug' }, output) }),
+      );
+      router.get('/', (context) => context.json({}, status));
+      const query = new URLSearchParams({
+        limit: 'private-text',
+        offset: '-1',
+        page: '1.5',
+        pageSize: '1001',
+        mode: 'private-mode',
+        view: 'private-view',
+        status: '任意正文',
+        statusKey: 'private-status',
+        subjectKind: 'private-kind',
+        subjectId: 'i'.repeat(1000),
+        agentId: 'private-agent',
+        runnerId: 'private-runner',
+        projectId: '123\nsecret',
+        issueId: '123 secret',
+        appId: 'private-app',
+        environmentId: 'private-environment',
+        sort: 'private-sort',
+        direction: 'private-direction',
+        purpose: 'private-purpose',
+        includeArchived: 'private-boolean',
+      });
+      await router.request(`/?${query}`);
+      expect(output.records()).toHaveLength(2);
+      for (const record of output.records())
+        expect(record.req).toMatchObject({ query: {} });
+      expect(JSON.stringify(output.records())).not.toMatch(
+        /private-|任意正文|secret|iiii/,
+      );
+    },
+  );
+
+  it('accepts bounded numeric, boolean, enum and structured identifier values', async () => {
+    const output = createMemoryDestination();
+    const router = new Hono();
+    router.use('*', requestLogger({ logger: createLogger({}, output) }));
+    router.get('/', (context) => context.text('ok'));
+    const query = {
+      limit: '100',
+      offset: '0',
+      page: '1',
+      pageSize: '50',
+      mode: 'table',
+      view: 'board',
+      status: 'queued',
+      statusKey: 'backlog',
+      subjectKind: 'issue',
+      subjectId: '123',
+      agentId: 'dba9a7e6-79f5-4cd0-bf2a-f24f87184461',
+      runnerId: '124',
+      projectId: '125',
+      issueId: '126',
+      appId: '127',
+      environmentId: '128',
+      sort: 'updated',
+      direction: 'desc',
+      purpose: 'preview',
+      includeArchived: 'false',
+    };
+    await router.request(`/?${new URLSearchParams(query)}`);
+    expect(output.records()[0].req).toMatchObject({ query });
+  });
+
+  it('applies the same validation when downstream middleware throws', async () => {
+    const output = createMemoryDestination();
+    const router = new Hono();
+    const middleware = requestLogger({
+      logger: createLogger({ level: 'debug' }, output),
+    });
+    router.get('/runs', async (context) => {
+      await expect(
+        middleware(context, async () => {
+          throw new Error('failed');
+        }),
+      ).rejects.toThrow('failed');
+      return context.text('ok');
+    });
+    await router.request(
+      '/runs?limit=private-text&status=running&subjectId=' + '1'.repeat(1000),
+    );
+    expect(output.records()).toHaveLength(2);
+    for (const record of output.records())
+      expect(record.req).toMatchObject({ query: { status: 'running' } });
+    expect(JSON.stringify(output.records())).not.toContain('private-text');
+  });
 
   it.each([
     [

@@ -22,36 +22,69 @@ const defaultRequestHeaders = [
   'user-agent',
 ] as const;
 
-// Free text, opaque cursors and authentication parameters never enter request logs.
-const safeQueryParameters = new Set([
-  'limit',
-  'offset',
-  'page',
-  'pageSize',
-  'mode',
-  'view',
-  'status',
-  'statusKey',
-  'subjectKind',
-  'subjectId',
-  'agentId',
-  'runnerId',
-  'projectId',
-  'issueId',
-  'appId',
-  'environmentId',
-  'sort',
-  'direction',
-  'purpose',
-  'includeArchived',
-]);
+const oneOf = (...values: string[]) => {
+  const allowed = new Set(values);
+  return (value: string) => allowed.has(value);
+};
+const integer = (minimum: number, maximum: number) => (value: string) =>
+  /^(?:0|[1-9]\d*)$/u.test(value) &&
+  Number(value) >= minimum &&
+  Number(value) <= maximum;
+// Log only a diagnostic subset of route contracts. Custom kinds, slugs, free
+// text and opaque identifiers are omitted even when a route accepts them.
+const identifier = (value: string) =>
+  /^[1-9]\d{0,19}$/u.test(value) ||
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
+const safeQueryParameters: Readonly<
+  Record<string, (value: string) => boolean>
+> = {
+  limit: integer(1, 1000),
+  offset: integer(0, 1_000_000_000),
+  page: integer(1, 1_000_000_000),
+  pageSize: integer(1, 1000),
+  mode: oneOf('split', 'table'),
+  view: oneOf('table', 'board', 'list'),
+  status: oneOf(
+    'queued',
+    'dispatched',
+    'running',
+    'completed',
+    'failed',
+    'cancelled',
+  ),
+  statusKey: oneOf(
+    'backlog',
+    'in_progress',
+    'blocked',
+    'in_review',
+    'done',
+    'cancelled',
+  ),
+  subjectKind: oneOf('issue', 'conversation'),
+  subjectId: identifier,
+  agentId: identifier,
+  runnerId: identifier,
+  projectId: identifier,
+  issueId: identifier,
+  appId: identifier,
+  environmentId: identifier,
+  sort: oneOf('updated', 'created', 'number', 'priority'),
+  direction: oneOf('asc', 'desc'),
+  purpose: oneOf('preview', 'production'),
+  includeArchived: oneOf('true', 'false'),
+};
 
 function safeQuery(context: Context): Record<string, string> {
   const query: Record<string, string> = {};
   const values = context.req.query();
-  for (const key of safeQueryParameters) {
+  for (const [key, accepts] of Object.entries(safeQueryParameters)) {
     const value = values[key];
-    if (value !== undefined) query[key] = value.slice(0, 100);
+    // Check length before validating; never turn a rejected value into a valid
+    // prefix by truncating it.
+    if (value !== undefined && value.length <= 100 && accepts(value))
+      query[key] = value;
   }
   return query;
 }
