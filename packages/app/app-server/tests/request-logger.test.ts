@@ -173,6 +173,15 @@ describe('requestLogger', () => {
         authorization: 'bearer',
         signature: 'signed',
         password: 'pass',
+        code: 'abcdef1234567890abcd',
+        state: 'oauthState123',
+        session: 'sessionValue',
+        ticket: 'ticketValue',
+        otp: '123456',
+        nonce: 'nonceValue',
+        key: 'keyValue',
+        sessionId: 'sessionIdValue',
+        CoDe: 'mixedCaseCode',
         q: 'private search',
         filter: '{"secret":"private-filter"}',
         cursor: 'opaque+cursor==',
@@ -189,9 +198,22 @@ describe('requestLogger', () => {
           status: 'running',
         });
       }
-      expect(JSON.stringify(output.records())).not.toMatch(
+      const serialized = JSON.stringify(output.records());
+      expect(serialized).not.toMatch(
         /private search|private-filter|opaque\+cursor|run-secret/,
       );
+      for (const name of [
+        'code',
+        'state',
+        'session',
+        'ticket',
+        'otp',
+        'nonce',
+        'key',
+        'sessionId',
+        'CoDe',
+      ])
+        expect(serialized).not.toContain(query.get(name));
     },
   );
 
@@ -251,6 +273,8 @@ describe('requestLogger', () => {
       upperUuid: 'DBA9A7E6-79F5-4CD0-BF2A-F24F87184461',
       customKind: 'customKind_2-archived',
       arbitraryFlag: 'false',
+      statusKey: 'customState',
+      keyboard: 'safe',
       singleLetter: 'a',
       longestWord: 'a'.repeat(32),
       largestId: '1'.repeat(20),
@@ -296,7 +320,7 @@ describe('requestLogger', () => {
       return context.text('ok');
     });
     await router.request(
-      '/runs?limit=private-text&customKind=customRun&token=abc&subjectId=' +
+      '/runs?limit=private-text&customKind=customRun&token=abc&code=abcdef1234567890abcd&state=oauthState123&subjectId=' +
         '1'.repeat(1000),
     );
     expect(output.records()).toHaveLength(2);
@@ -304,7 +328,9 @@ describe('requestLogger', () => {
       expect((record.req as { query: unknown }).query).toEqual({
         customKind: 'customRun',
       });
-    expect(JSON.stringify(output.records())).not.toContain('private-text');
+    expect(JSON.stringify(output.records())).not.toMatch(
+      /private-text|abcdef1234567890abcd|oauthState123/,
+    );
   });
 
   it.each([

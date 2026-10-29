@@ -41,7 +41,7 @@ const scalarQueryValue = (value: string) =>
   ) ||
   /^[a-z][a-zA-Z0-9_-]{0,31}$/u.test(value);
 const sensitiveQueryName =
-  /password|passwd|token|secret|authorization|cookie|api[-_]?key|credential|signature/iu;
+  /password|passwd|token|secret|authorization|cookie|api[-_]?key|credential|signature|code|state|session|ticket|otp|nonce|^key$/iu;
 
 function safeQuery(context: Context): Record<string, string> {
   const query = Object.create(null) as Record<string, string>;
