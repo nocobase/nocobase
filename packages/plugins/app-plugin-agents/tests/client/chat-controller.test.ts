@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { QueryObserver } from '@tanstack/react-query';
 import type { AppUIMessage } from '../../client/chat.js';
 import { appUIMessageText } from '../../client/chat.js';
 import { agentsQueryClient } from '../../client/query.js';
@@ -1113,4 +1114,40 @@ it('shares initial conversation reads and keeps one trailing refresh for concurr
       ([options]) => options.path === 'agents/conversations/c1',
     ),
   ).toHaveLength(2);
+});
+
+it('uses an active detail snapshot for initial messages without rereading the conversation or loaded history', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.conversation('c1'),
+    queryFn: async () => f.state.detail,
+  });
+  const off = observer.subscribe(() => {});
+  await observer.refetch();
+  try {
+    await f.controller.refresh('c1', false);
+    await f.controller.refresh('c1', false);
+    expect(
+      f.request.mock.calls.filter(
+        ([options]) => options.path === 'agents/conversations/c1',
+      ),
+    ).toHaveLength(0);
+    expect(
+      f.request.mock.calls.filter(([options]) =>
+        options.path.endsWith('/messages'),
+      ),
+    ).toHaveLength(1);
+    await f.controller.refresh('c1');
+    expect(
+      f.request.mock.calls.filter(
+        ([options]) => options.path === 'agents/conversations/c1',
+      ),
+    ).toHaveLength(1);
+  } finally {
+    off();
+  }
 });

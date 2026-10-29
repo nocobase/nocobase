@@ -1192,13 +1192,21 @@ export class ChatController {
                 message.role === 'user' && message.metadata?.seq !== undefined,
             )
         : undefined;
-    const detail = await this.readDetail(id, fresh);
+    const query = agentsQueryClient()
+      .getQueryCache()
+      .find({ queryKey: chatKeys.conversation(id), exact: true });
+    const cached =
+      !fresh && query?.isActive() && query.state.fetchStatus === 'idle'
+        ? (query.state.data as ConversationDetail | undefined)
+        : undefined;
+    const detail = cached ?? (await this.readDetail(id, fresh));
     if (!active()) return;
     if (ordered()) await this.reconcile(id, detail);
     if (!active()) return;
     // A newer detail query must not discard this refresh's message catch-up.
     // loadHistory coalesces overlapping reads independently of detail ordering.
-    await this.loadHistory(id, false, fresh);
+    if (fresh || !this.history(id).state.loaded)
+      await this.loadHistory(id, false, fresh);
     if (!active()) return;
     const history = this.history(id);
     if (history.error)
@@ -1330,8 +1338,13 @@ export class ChatController {
   private remember(detail: ConversationDetail, refresh = true): void {
     this.nextDetailVersion(detail.id);
     this.observeDetail(detail, refresh);
-    agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
-    void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
+    const client = agentsQueryClient();
+    const previous = client.getQueryData<ConversationDetail>(
+      chatKeys.conversation(detail.id),
+    );
+    client.setQueryData(chatKeys.conversation(detail.id), detail);
+    if (JSON.stringify(previous) !== JSON.stringify(detail))
+      void client.invalidateQueries({ queryKey: chatKeys.lists });
   }
   async markRead(id: string): Promise<ConversationDetail> {
     const active = this.lifetime(),
