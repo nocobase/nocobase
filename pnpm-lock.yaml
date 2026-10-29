@@ -983,6 +983,9 @@ importers:
       '@nocobase/app-plugin-authorization':
         specifier: workspace:*
         version: link:../../../../../../plugins/app-plugin-authorization
+      '@nocobase/app-plugin-notification-providers':
+        specifier: workspace:*
+        version: link:../../../../../../plugins/app-plugin-notification-providers
       '@nocobase/app-server':
         specifier: workspace:*
         version: link:../../../../../app-server
@@ -4961,6 +4964,9 @@ importers:
       '@nocobase/app-plugin-authorization':
         specifier: workspace:*
         version: link:../app-plugin-authorization
+      '@nocobase/app-plugin-notification-providers':
+        specifier: workspace:*
+        version: link:../app-plugin-notification-providers
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../tools/app-testing

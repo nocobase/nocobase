@@ -19,6 +19,7 @@ import {
 } from '@nocobase/app-server/runtime';
 
 import authenticationPlugin, { defineAuthConfig } from '../../../../index.js';
+// Legacy recovery still uses the host factory. Importing notification providers here would create a dependency cycle.
 import { defineMailChannelsConfig } from '@nocobase/app-server/mailer';
 
 const appRuntime: AppRuntimeDefinition = defineAppRuntime({

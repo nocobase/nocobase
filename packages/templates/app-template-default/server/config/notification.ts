@@ -1,4 +1,4 @@
-import { defineMailChannelsConfig } from '@nocobase/app-server/mailer';
+import { defineMailChannelsConfig } from '@nocobase/app-plugin-notification-providers/config';
 import { type AppConfigFactory } from '@nocobase/app-server/config';
 import type { NotificationConfig } from '@nocobase/app-plugin-notification/server';
 

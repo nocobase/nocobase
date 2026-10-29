@@ -76,3 +76,5 @@ export function isMailChannelConfig(
     return false;
   }
 }
+
+export type * from './types.js';

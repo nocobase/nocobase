@@ -28,6 +28,10 @@ notification:
 
 Each named Channel owns one flat configuration and defaults to enabled. Multiple Channels can use the same type with independent credentials. The `provider` alias remains supported; if both discriminators are supplied, they must match. YAML values are literal; the host maps environment variables to configuration paths. The separate in-app plugin supplies the inbox in this example. Feishu and DingTalk accept their official HTTPS Webhook hosts and reject redirects.
 
+Declare the application's `notification` section with `defineMailChannelsConfig` from `@nocobase/app-plugin-notification-providers/config`. This pure configuration export provides `validateMailChannels` and `MailChannelsConfig` without loading notification delivery code, email transports or provider SDKs, and requires no plugin startup. The same helpers are also exported from `/email` for existing email integrations. Replace imports of these helpers from the deprecated `@nocobase/app-server/mailer`; that frozen compatibility module remains available for existing applications.
+
+The factory validates enabled SMTP/Resend channels and merges application validators after built-in validation. Its optional private `SMTP_PASSWORD` and `RESEND_API_KEY` mappings target `channels.system-email.auth.pass` and `channels.system-email.apiKey`; application `env` entries override matching defaults. Custom channel providers retain their own validation. No configuration is public by default.
+
 ```ts
 const notification = app.container.resolve(notificationServiceToken);
 await notification.send({
