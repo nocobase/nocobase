@@ -417,6 +417,27 @@ export function createConversationService(
     return record;
   }
 
+  /** Titles for the current owner's conversations, read together for runner history. */
+  async function ownedTitles(
+    conn: DatabaseConnection,
+    userId: string,
+    ids: readonly string[],
+  ): Promise<ReadonlyMap<string, string>> {
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length === 0) return new Map();
+    const records = await conversationsRepo(conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('userId').eq(userId),
+          f.or(uniqueIds.map((id) => f.string('id').eq(id))),
+        ]),
+      select: (s) => s.fields('id', 'title'),
+    });
+    return new Map(
+      records.map((record) => [String(record.id), record.title ?? '']),
+    );
+  }
+
   /** Locks the conversation if `userId` owns it; 404 otherwise. */
   async function lockOwned(
     unit: Tx,
@@ -1833,6 +1854,7 @@ export function createConversationService(
     binding,
     contextKinds: deps.contextKinds,
     sources,
+    ownedTitles,
 
     async list(userId, query) {
       const conn = tx.read();

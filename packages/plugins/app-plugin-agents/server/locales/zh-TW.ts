@@ -54,6 +54,11 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
     },
   },
+  runnerConversation: {
+    title: '對話：{{title}}',
+    other: '他人對話',
+    untitled: '新對話',
+  },
 };
 
 export default zhTW;

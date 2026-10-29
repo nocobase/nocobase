@@ -20,6 +20,7 @@ import {
   resetApi,
 } from './fake-client.js';
 import { runner } from './fixtures.js';
+import { ChatPanelScope, useChatPanel } from '../../client/chat/provider.js';
 import { renderPage, renderRoute } from './render.js';
 import { RunnersRefresh } from '../../client/components/runners-refresh.js';
 
@@ -73,17 +74,20 @@ describe('runtimes page', () => {
       'agents/runners/r2': () => runners[1],
       'agents/runners/r1/workspaces': () =>
         workspacePage(runners[0]?.workspaceUsage),
-      'agents/runners/r1/runs': () => [
-        {
-          id: 'run1',
-          title: 'Coder',
-          status: 'completed',
-          startedAt: '2026-10-01T08:00:00.000Z',
-          finishedAt: '2026-10-01T08:10:00.000Z',
-          createdAt: '2026-10-01T08:00:00.000Z',
-          path: '/samples/1',
-        },
-      ],
+      'agents/runners/r1/runs': () => ({
+        data: [
+          {
+            id: 'run1',
+            title: 'Coder',
+            status: 'completed',
+            startedAt: '2026-10-01T08:00:00.000Z',
+            finishedAt: '2026-10-01T08:10:00.000Z',
+            createdAt: '2026-10-01T08:00:00.000Z',
+            path: '/samples/1',
+          },
+        ],
+        meta: { nextCursor: null, total: 1 },
+      }),
       'PATCH agents/runners/r1': (request) => ({
         ...runners[0],
         ...(request.json as object),
@@ -181,6 +185,91 @@ describe('runtimes page', () => {
     await openWorkspaces(sheet);
     expect(callsTo('GET', 'agents/runners/r1')).toHaveLength(1);
     expect(within(sheet).getByText('PM-396')).toBeInTheDocument();
+  });
+
+  it('uses the shared numbered pagination for workspaces and returns to cached pages', async () => {
+    const measuredAt = new Date().toISOString();
+    const usage = {
+      disk: null,
+      count: 51,
+      unpushedCount: 0,
+      measuredAt,
+      counts: { all: 51, active: 0, retained: 0, ended: 51 },
+      workspaces: [],
+    };
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: usage,
+    };
+    const workspace = (id: number) => ({
+      workDir: `/workspace/${id}`,
+      unpushed: false,
+      lastUsedAt: measuredAt,
+      subjectKind: 'task',
+      subjectId: String(id),
+      subjectKey: `Task ${id}`,
+      settled: true,
+    });
+    api.routes['agents/runners/r1/workspaces'] = ({ query }) => {
+      const page = Number(query.page ?? 1);
+      return {
+        data:
+          page === 1
+            ? Array.from({ length: 50 }, (_, index) => workspace(index + 1))
+            : [workspace(51)],
+        meta: {
+          page,
+          pageSize: 50,
+          total: 51,
+          usage: {
+            disk: null,
+            count: 51,
+            unpushedCount: 0,
+            measuredAt,
+            counts: usage.counts,
+          },
+        },
+      };
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await openWorkspaces(sheet);
+
+    const nav = within(sheet).getByRole('navigation', {
+      name: 'runtimes.quota.workspaces',
+    });
+    const previous = within(nav).getByRole('button', {
+      name: 'runtimes.quota.previous',
+    });
+    const next = within(nav).getByRole('button', {
+      name: 'runtimes.quota.next',
+    });
+    expect(previous).toBeDisabled();
+    expect(next).toHaveClass('h-7');
+    expect(nav.parentElement).toHaveClass('mt-3', 'px-2');
+    expect(
+      within(sheet).getByText('runtimes.detail.runsPage(page=1,pageCount=2)'),
+    ).toBeInTheDocument();
+    expect(within(sheet).getByText('Task 1')).toBeInTheDocument();
+
+    await userEvent.click(next);
+    expect(
+      await within(sheet).findByText(
+        'runtimes.detail.runsPage(page=2,pageCount=2)',
+      ),
+    ).toBeInTheDocument();
+    expect(within(sheet).getByText('Task 51')).toBeInTheDocument();
+    expect(next).toBeDisabled();
+    expect(previous).toBeEnabled();
+
+    await userEvent.click(previous);
+    expect(
+      await within(sheet).findByText(
+        'runtimes.detail.runsPage(page=1,pageCount=2)',
+      ),
+    ).toBeInTheDocument();
+    expect(within(sheet).getByText('Task 1')).toBeInTheDocument();
   });
 
   it('updates disk state from a fresh heartbeat while retaining the older directory collection time', async () => {
@@ -555,6 +644,223 @@ describe('runtimes page', () => {
       '/samples/1',
     );
     within(runs).getByText('runs.status.completed');
+  });
+
+  it.each([false, true])(
+    'uses the native conversation entry (full page: %s) and leaves other conversations unlinked',
+    async (fullPage) => {
+      api.routes['agents/runners/r1/runs'] = () => ({
+        data: [
+          {
+            id: 'mine',
+            title: 'Coder',
+            subjectLabel: 'Conversation: Release plan',
+            path: '?chat=mine',
+            status: 'completed',
+            startedAt: null,
+            finishedAt: null,
+            createdAt: '2026-10-01T08:00:00Z',
+          },
+          {
+            id: 'other',
+            title: 'Coder',
+            subjectLabel: "Someone else's conversation",
+            path: null,
+            status: 'completed',
+            startedAt: null,
+            finishedAt: null,
+            createdAt: '2026-10-01T08:00:00Z',
+          },
+        ],
+        meta: { nextCursor: null, total: 1 },
+      });
+      function Host() {
+        const panel = useChatPanel();
+        return (
+          <ChatPanelScope
+            value={{
+              ...panel,
+              conversationPath: fullPage ? (id) => `/sessions/${id}` : null,
+            }}
+          >
+            <RuntimesPage />
+          </ChatPanelScope>
+        );
+      }
+      renderPage(<Host />);
+      const sheet = await openSheet();
+      await userEvent.click(
+        within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' }),
+      );
+      const table = await within(sheet).findByTestId('runner-runs');
+      expect(
+        within(table).getByRole('link', { name: 'Conversation: Release plan' }),
+      ).toHaveAttribute(
+        'href',
+        fullPage ? '/sessions/mine' : '/config?chat=mine',
+      );
+      expect(
+        within(table).getByText("Someone else's conversation").closest('a'),
+      ).toBeNull();
+      await userEvent.click(
+        within(table).getByRole('link', { name: 'Conversation: Release plan' }),
+      );
+      await waitFor(() =>
+        expect(screen.queryByTestId('runner-sheet')).toBeNull(),
+      );
+    },
+  );
+
+  it('pages twenty runs with an exact count, retries without losing the page, and returns to cached pages', async () => {
+    runners[0] = { ...runners[0]!, recentRunsCount: 41 };
+    const row = (id: string) => ({
+      id,
+      title: id,
+      subjectLabel: id,
+      status: 'completed',
+      startedAt: null,
+      finishedAt: null,
+      createdAt: '2026-10-01T08:00:00.000Z',
+      path: null,
+    });
+    let fail = true;
+    api.routes['agents/runners/r1/runs'] = ({ query }) => {
+      if (!query.cursor)
+        return {
+          data: Array.from({ length: 20 }, (_, i) => row(`first-${i}`)),
+          meta: { nextCursor: 'second', total: 41 },
+        };
+      if (fail) throw new FakeApiError(500);
+      return query.cursor === 'second'
+        ? {
+            data: Array.from({ length: 20 }, (_, i) => row(`second-${i}`)),
+            meta: { nextCursor: 'last', total: 41 },
+          }
+        : { data: [row('last-run')], meta: { nextCursor: null, total: 41 } };
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    const tab = within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' });
+    expect(tab).toHaveTextContent('41');
+    await userEvent.click(tab);
+    const table = await within(sheet).findByTestId('runner-runs');
+    const previous = within(table).getByRole('button', {
+      name: 'runtimes.detail.runsPrevious',
+    });
+    const next = within(table).getByRole('button', {
+      name: 'runtimes.detail.runsNext',
+    });
+    expect(previous).toBeDisabled();
+    expect(next.closest('nav')?.parentElement?.closest('.border')).toBeNull();
+    expect(next.closest('nav')?.parentElement).toHaveClass('mt-3');
+    expect(next).toHaveClass('h-7');
+    expect(
+      within(table).getByText('runtimes.detail.runsTotal(count=41)'),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByText('runtimes.detail.runsPage(page=1,pageCount=3)'),
+    ).toBeInTheDocument();
+    expect(within(table).getAllByRole('row')).toHaveLength(21);
+    expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(1);
+    await userEvent.click(next);
+    await within(table).findByRole('alert');
+    expect(
+      within(table).getByText('first-0', { selector: 'td.max-w-44' }),
+    ).toBeInTheDocument();
+    fail = false;
+    await userEvent.click(next);
+    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    expect(within(table).queryByText('first-0')).toBeNull();
+    expect(within(table).getAllByRole('row')).toHaveLength(21);
+    expect(
+      within(table).getByText('runtimes.detail.runsPage(page=2,pageCount=3)'),
+    ).toBeInTheDocument();
+    await userEvent.click(previous);
+    await within(table).findByText('first-0', { selector: 'td.max-w-44' });
+    const before = callsTo('GET', 'agents/runners/r1/runs').length;
+    await userEvent.click(next);
+    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(before);
+    await userEvent.click(next);
+    await within(table).findByText('last-run', { selector: 'td.max-w-44' });
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(next).toBeDisabled();
+    expect(
+      within(table).getByText('runtimes.detail.runsPage(page=3,pageCount=3)'),
+    ).toBeInTheDocument();
+    expect(callsTo('GET', 'agents/runners/r1/runs').at(-1)?.query.cursor).toBe(
+      'last',
+    );
+  });
+
+  it('shows zero total and disables both directions for an empty history', async () => {
+    api.routes['agents/runners/r1/runs'] = () => ({
+      data: [],
+      meta: { total: 0, nextCursor: null },
+    });
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await userEvent.click(
+      within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' }),
+    );
+    const history = await within(sheet).findByTestId('runner-runs');
+    expect(
+      within(history).getByText('runtimes.detail.runsEmpty'),
+    ).toBeInTheDocument();
+    expect(
+      within(history).getByText('runtimes.detail.runsTotal(count=0)'),
+    ).toBeInTheDocument();
+    expect(
+      within(history).getByText('runtimes.detail.runsPage(page=1,pageCount=1)'),
+    ).toBeInTheDocument();
+    for (const button of within(history).getAllByRole('button'))
+      expect(button).toBeDisabled();
+  });
+
+  it('shows dates outside today in the browser timezone, including the created-time fallback', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 29, 0, 5));
+    try {
+      api.routes['agents/runners/r1/runs'] = () => ({
+        data: [
+          {
+            id: 'today',
+            title: 'Today',
+            status: 'completed',
+            startedAt: new Date(2026, 9, 29, 0, 2).toISOString(),
+            createdAt: new Date(2026, 9, 28, 23, 58).toISOString(),
+          },
+          {
+            id: 'yesterday',
+            title: 'Yesterday',
+            status: 'completed',
+            startedAt: new Date(2026, 9, 28, 23, 2).toISOString(),
+            createdAt: new Date(2026, 9, 28, 23, 2).toISOString(),
+          },
+          {
+            id: 'fallback',
+            title: 'No start',
+            status: 'completed',
+            startedAt: null,
+            createdAt: new Date(2026, 9, 28, 22, 2).toISOString(),
+          },
+        ],
+        meta: { nextCursor: null, total: 1 },
+      });
+      renderPage(<RuntimesPage />);
+      const sheet = await openSheet();
+      await userEvent.click(
+        within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' }),
+      );
+      const table = await within(sheet).findByTestId('runner-runs');
+      expect(within(table).getByText('00:02')).toBeInTheDocument();
+      expect(within(table).getByText('Oct 28 23:02')).toHaveClass(
+        'whitespace-nowrap',
+      );
+      expect(within(table).getByText('Oct 28 22:02')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('opens the same settings from the row’s Edit item', async () => {
