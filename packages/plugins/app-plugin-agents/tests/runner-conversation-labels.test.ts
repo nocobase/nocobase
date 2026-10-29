@@ -7,7 +7,7 @@ describe('runner conversation descriptions', () => {
   let h: Harness;
   afterEach(async () => h?.close());
 
-  it('uses current ownership for names and links across viewers, including held work and reports', async () => {
+  it('uses current ownership for names and links without changing report visibility', async () => {
     h = await createHarness();
     const { runnerId } = await h.registerRunner();
     const agentId = await h.createAgent();
@@ -101,26 +101,29 @@ describe('runner conversation descriptions', () => {
     const report = await h.services.reporting.runRecords(
       { userId: 'admin', allRuns: true },
       {
-        subjects: { kind: CONVERSATION_SUBJECT, ids: [own.id, other.id] },
+        subjects: {
+          kind: CONVERSATION_SUBJECT,
+          ids: [own.id, other.id, untitled.id, gone],
+        },
         groupId: null,
       },
     );
-    expect(report).toEqual([]);
+    expect(report.map((run) => run.subjectId).sort()).toEqual(
+      [own.id, other.id, untitled.id, gone].sort(),
+    );
     const ownReport = await h.services.reporting.runRecords(
-      { userId: 'alice', allRuns: true },
+      { userId: 'alice', allRuns: false },
       {
-        subjects: { kind: CONVERSATION_SUBJECT, ids: [own.id, other.id] },
+        subjects: {
+          kind: CONVERSATION_SUBJECT,
+          ids: [own.id, other.id, untitled.id, gone],
+        },
         groupId: null,
       },
     );
-    expect(ownReport.map((run) => run.subjectId)).toEqual([own.id]);
-    const binding = h.services.subjects.get(CONVERSATION_SUBJECT)!;
-    const facts = await binding.reports!.describe(
-      h.database.connection(),
-      'alice',
-      [own.id, other.id, gone],
+    expect(ownReport.map((run) => run.subjectId).sort()).toEqual(
+      [own.id, other.id, untitled.id, gone].sort(),
     );
-    expect([...facts.keys()]).toEqual([own.id]);
     // Historical actor and owner remain Alice; current ownership changes to Bob.
     await h.database
       .connection()
@@ -142,6 +145,19 @@ describe('runner conversation descriptions', () => {
     expect((await h.services.conversations.get('bob', own.id)).title).toBe(
       'Release notes',
     );
+    const afterTransfer = await h.services.reporting.runRecords(
+      { userId: 'alice', allRuns: false },
+      {
+        subjects: {
+          kind: CONVERSATION_SUBJECT,
+          ids: [own.id, other.id, untitled.id, gone],
+        },
+        groupId: null,
+      },
+    );
+    expect(afterTransfer.map((run) => run.subjectId).sort()).toEqual(
+      [own.id, other.id, untitled.id, gone].sort(),
+    );
 
     const knex = await h.database.connection().client<Knex>();
     const statements: string[] = [];
@@ -152,7 +168,7 @@ describe('runner conversation descriptions', () => {
     } finally {
       knex.off('query', listener);
     }
-    expect(statements.filter((sql) => /^select/iu.test(sql))).toHaveLength(6); // Two history ranges plus runner visibility, roster, names and descriptions.
+    expect(statements.filter((sql) => /^select/iu.test(sql))).toHaveLength(6); // Two history ranges plus runner visibility, roster, agent names and owned conversation titles.
     expect(
       statements.filter((sql) => /\bag_conversations\b/iu.test(sql)),
     ).toHaveLength(1);
@@ -161,6 +177,22 @@ describe('runner conversation descriptions', () => {
         /^(insert|update|delete|begin)\b|for update/iu.test(sql),
       ),
     ).toBe(false);
+
+    // A deleted conversation may still have an open run. Its report visibility is not tied to title lookup.
+    await h.services.conversations.delete('alice', untitled.id);
+    const afterDelete = await h.services.reporting.runRecords(
+      { userId: 'admin', allRuns: true },
+      {
+        subjects: {
+          kind: CONVERSATION_SUBJECT,
+          ids: [own.id, other.id, untitled.id, gone],
+        },
+        groupId: null,
+      },
+    );
+    expect(afterDelete.map((run) => run.subjectId).sort()).toEqual(
+      [own.id, other.id, untitled.id, gone].sort(),
+    );
   });
 
   it('localizes owned, untitled and inaccessible descriptions without a new response field', async () => {

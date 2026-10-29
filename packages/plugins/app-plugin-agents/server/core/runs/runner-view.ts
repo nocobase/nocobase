@@ -22,6 +22,7 @@ import type { Run } from '../../../shared/runs.js';
 import type { AgentService } from '../agents/agent.service.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
+import type { ConversationService } from '../conversations/ports.js';
 
 import { ACTIVE, runsRepo, toRun, type RunRecord } from './run.store.js';
 
@@ -144,6 +145,7 @@ export interface RunnerView {
 export function createRunnerView(deps: {
   readonly clock: Clock;
   readonly agents: Pick<AgentService, 'list' | 'names'>;
+  readonly conversations: Pick<ConversationService, 'ownedTitles'>;
   readonly subjects: Pick<SubjectRegistry, 'get'>;
   readonly tx: TxRunner;
 }): RunnerView {
@@ -181,6 +183,15 @@ export function createRunnerView(deps: {
           run.subject.id,
         ]);
     for (const [kind, ids] of byKind) {
+      if (kind === CONVERSATION_SUBJECT) {
+        const titles = await deps.conversations.ownedTitles(
+          deps.tx.read(),
+          viewerUserId,
+          [...new Set(ids)],
+        );
+        for (const [id, title] of titles) labels.set(`${kind}:${id}`, title);
+        continue;
+      }
       const facts = await deps.subjects
         .get(kind)
         ?.reports?.describe(deps.tx.read(), viewerUserId, [...new Set(ids)]);

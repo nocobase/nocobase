@@ -183,6 +183,13 @@ export interface ConversationService {
   /** Where the application registers the places conversations are started from besides the panel. */
   readonly sources: ConversationSources;
 
+  /** The titles currently owned by `userId`, for a bounded read such as runner history. */
+  ownedTitles(
+    conn: DatabaseConnection,
+    userId: string,
+    ids: readonly string[],
+  ): Promise<ReadonlyMap<string, string>>;
+
   list(userId: string, query: ConversationListQuery): Promise<ConversationPage>;
   /** Starts no run; the first message does. */
   create(
