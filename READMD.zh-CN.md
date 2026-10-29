@@ -87,23 +87,23 @@ pnpm dev
 
 ## NocoBase 生态
 
-### NocoBase Core
+- **[NocoBase Core](https://www.nocobase.com/zh-CN/core/)**
 
-本仓库提供的应用底座，包括可复用业务能力、项目脚手架、架构规范和开发 Skills。
+  **让 Agent 专心写业务，底座已经就绪。**
 
-[了解 Core](https://www.nocobase.com/core/)
+  NocoBase Core 是 AI 开发和运行业务系统的开源应用底座。权限、流程、文件等基础能力现成可用，Agent 在统一架构上只开发企业自己的业务。
 
-### NocoBase Studio
+- **[NocoBase Studio](https://www.nocobase.com/zh-CN/studio/)**
 
-人与 Agent 协作开发的治理平台，用于协调开发工作、跟踪进度，并让人参与关键决策。Studio 包含在商业版本中。
+  **Agent 自主推进，团队掌控全局。**
 
-[了解 Studio](https://www.nocobase.com/studio/)
+  NocoBase Studio 是人与 Agent 协同开发的治理平台。把 Claude Code、Codex、OpenCode 组成一支 Agent 团队自主推进任务，进展一目了然，关键处由人做决策。
 
-### NocoBase Solutions
+- **[NocoBase Solution](https://www.nocobase.com/zh-CN/solutions/)**
 
-基于 Core 构建的业务应用。你可以从现成应用开始使用，再根据自己的业务需求进行调整。
+  **开源业务应用，AI 驱动，开箱即用。**
 
-[了解 Solutions](https://www.nocobase.com/solutions/)
+  NocoBase Solution 是由 Agent 驱动的、基于 Core 构建的一系列企业业务应用，Agent 做大部分执行工作，人只做关键决策。
 
 ## 社区与贡献
 
