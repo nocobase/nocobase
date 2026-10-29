@@ -11,7 +11,7 @@ import * as cp from 'child_process';
 import archiver from 'archiver';
 import path from 'path';
 import { storagePathJoin } from '@nocobase/utils';
-import { BACKUP_EXTENSION, getDBVersion, SETTINGS } from '../../utils';
+import { BACKUP_EXTENSION, ENCRYPTION_FIELD_KEYS_DIRECTORY, getDBVersion, SETTINGS } from '../../utils';
 import { getApp } from '..';
 import fs from 'fs';
 import { MockServer, sleep } from '@nocobase/test/server';
@@ -58,11 +58,23 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-const backupFilesFolder = storagePathJoin('backups', 'main');
+const restoreAppName = 'restore-manager-unit-tests';
+const backupFilesFolder = storagePathJoin('backups', restoreAppName);
 const schemaMismatchBackupFilePath = path.join(backupFilesFolder, `backup_schema_mismatch.${BACKUP_EXTENSION}`);
+const encryptionFieldKeysFolder = storagePathJoin('apps', restoreAppName, ENCRYPTION_FIELD_KEYS_DIRECTORY);
+const encryptionFieldKeysParentFolder = path.dirname(encryptionFieldKeysFolder);
+const restoreTempFolder = storagePathJoin('tmp', 'backups', restoreAppName);
 const createdBackupFilePaths = new Set<string>();
+const sourceEncryptionFieldKey = Buffer.alloc(32, 1).toString('base64');
+const existingEncryptionFieldKey = Buffer.alloc(32, 2).toString('base64');
+const tolerentModeUploadFileName = `${restoreAppName}-tolerent-mode.txt`;
+const tolerentModeUploadFilePath = storagePathJoin('uploads', tolerentModeUploadFileName);
 
-async function createBackupArchive(filePath: string, metadata: Record<string, any>) {
+async function createBackupArchive(
+  filePath: string,
+  metadata: Record<string, unknown>,
+  extraFiles: Record<string, string> = {},
+) {
   createdBackupFilePaths.add(filePath);
   await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
   await new Promise<void>((resolve, reject) => {
@@ -77,6 +89,9 @@ async function createBackupArchive(filePath: string, metadata: Record<string, an
     archive.pipe(output);
     archive.append('mocked database backup', { name: 'data' });
     archive.append(JSON.stringify(metadata, null, 2), { name: '_metadata.json' });
+    for (const [name, content] of Object.entries(extraFiles)) {
+      archive.append(content, { name });
+    }
     archive.finalize().catch(reject);
   });
 }
@@ -91,6 +106,38 @@ function createBackupFile(caseName: string) {
   };
 }
 
+async function expectNoExtractedDirectory(backupFileBaseName: string) {
+  const entries = await fs.promises.readdir(restoreTempFolder, { withFileTypes: true }).catch((error) => {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  });
+  expect(entries.some((entry) => entry.isDirectory() && entry.name.startsWith(`${backupFileBaseName}-`))).toBe(false);
+}
+
+async function findEncryptionFieldKeysReplacementDirectories() {
+  const entries = await fs.promises.readdir(encryptionFieldKeysParentFolder, { withFileTypes: true }).catch((error) => {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  });
+  return entries
+    .filter(
+      (entry) =>
+        entry.isDirectory() &&
+        (entry.name.startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`) ||
+          entry.name.startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-`)),
+    )
+    .map((entry) => path.join(encryptionFieldKeysParentFolder, entry.name));
+}
+
+async function cleanupEncryptionFieldKeysReplacementDirectories() {
+  const directories = await findEncryptionFieldKeysReplacementDirectories();
+  await Promise.all(directories.map((directory) => fs.promises.rm(directory, { recursive: true, force: true })));
+}
+
 describe('RestoreManager', () => {
   let app: MockServer;
   const defaultBackupSettings: BackupSettings = {
@@ -102,9 +149,13 @@ describe('RestoreManager', () => {
   };
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({ name: restoreAppName });
     await fs.promises.mkdir(backupFilesFolder, { recursive: true });
     await fs.promises.unlink(schemaMismatchBackupFilePath).catch(() => {});
+    await fs.promises.rm(encryptionFieldKeysFolder, { recursive: true, force: true });
+    await cleanupEncryptionFieldKeysReplacementDirectories();
+    await fs.promises.rm(restoreTempFolder, { recursive: true, force: true });
+    await fs.promises.rm(tolerentModeUploadFilePath, { force: true });
 
     mockExecImplementation = (command, _options, callback) => {
       if (command.includes('-f')) {
@@ -169,6 +220,10 @@ describe('RestoreManager', () => {
       await fs.promises.unlink(backupFilePath).catch(() => {});
     }
     createdBackupFilePaths.clear();
+    await fs.promises.rm(encryptionFieldKeysFolder, { recursive: true, force: true });
+    await cleanupEncryptionFieldKeysReplacementDirectories();
+    await fs.promises.rm(restoreTempFolder, { recursive: true, force: true });
+    await fs.promises.rm(tolerentModeUploadFilePath, { force: true });
   });
 
   afterAll(async () => {
@@ -210,6 +265,18 @@ describe('RestoreManager', () => {
         body: requestBody,
       },
     };
+  }
+
+  function createRestoreManager() {
+    return new RestoreManager(createCtx(), {
+      dialect: 'postgres',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 5432,
+      schema: 'source_schema',
+    });
   }
 
   function createStatusCache() {
@@ -254,7 +321,8 @@ describe('RestoreManager', () => {
       i18n: app.i18n,
     };
     const restoreManager = new RestoreManager(ctx);
-    const siblingDir = path.join(path.dirname(backupFilesFolder), 'main_evil');
+    const siblingDirectoryName = `${restoreAppName}_evil`;
+    const siblingDir = path.join(path.dirname(backupFilesFolder), siblingDirectoryName);
     const siblingFileName = `prefix-collision.${BACKUP_EXTENSION}`;
     const siblingFilePath = path.join(siblingDir, siblingFileName);
 
@@ -262,9 +330,9 @@ describe('RestoreManager', () => {
       await fs.promises.mkdir(siblingDir, { recursive: true });
       await fs.promises.writeFile(siblingFilePath, 'malicious sibling file');
 
-      await expect(restoreManager.restoreFromBackup(`../main_evil/${siblingFileName}`, 'task_id')).rejects.toThrow(
-        /(FILE_NOT_FOUND|not found)/,
-      );
+      await expect(
+        restoreManager.restoreFromBackup(`../${siblingDirectoryName}/${siblingFileName}`, 'task_id'),
+      ).rejects.toThrow(/(FILE_NOT_FOUND|not found)/);
     } finally {
       await fs.promises.unlink(siblingFilePath).catch(() => {});
       await fs.promises.rm(siblingDir, { recursive: true, force: true }).catch(() => {});
@@ -327,9 +395,945 @@ describe('RestoreManager', () => {
     expect(settings.encryptionPassword).toBe('');
   });
 
+  it('should restore encryption field keys through the CLI restore flow', async () => {
+    const { backupFileBaseName, backupFilePath } = createBackupFile('restore-cli-encryption-field-keys');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(restoredKeyFile, existingEncryptionFieldKey);
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restoreCLI(backupFilePath);
+
+    await expect(fs.promises.readFile(restoredKeyFile, 'utf8')).resolves.toBe(sourceEncryptionFieldKey);
+    expect(fs.existsSync(existingKeyFile)).toBe(false);
+    await expectNoExtractedDirectory(backupFileBaseName);
+  });
+
+  it('should replace encryption field keys before upgrading and ignore invalid entries', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const secondaryKeyFile = path.join(encryptionFieldKeysFolder, 'secondary.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    const ignoredTextFile = path.join(encryptionFieldKeysFolder, 'ignored.txt');
+    const nestedKeyFile = path.join(encryptionFieldKeysFolder, 'nested', 'nested.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/secondary.key`]: existingEncryptionFieldKey,
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/ignored.txt`]: 'not a key',
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/nested/nested.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(path.dirname(nestedKeyFile), { recursive: true });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    await fs.promises.writeFile(restoredKeyFile, existingEncryptionFieldKey);
+    await fs.promises.writeFile(ignoredTextFile, 'existing text');
+    await fs.promises.writeFile(nestedKeyFile, 'existing nested key');
+    let restoredKeyAtUpgrade: string | undefined;
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockImplementation(async () => {
+      restoredKeyAtUpgrade = await fs.promises.readFile(restoredKeyFile, 'utf8');
+    });
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restore(backupFilePath, 'task_id');
+
+    await vi.waitFor(async () => {
+      expect(runCommandSpy).toHaveBeenCalledWith('upgrade');
+      await expect(fs.promises.readFile(restoredKeyFile, 'utf8')).resolves.toBe(sourceEncryptionFieldKey);
+    });
+    expect(restoredKeyAtUpgrade).toBe(sourceEncryptionFieldKey);
+    await expect(fs.promises.readFile(secondaryKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+    expect(fs.existsSync(existingKeyFile)).toBe(false);
+    expect(fs.existsSync(ignoredTextFile)).toBe(false);
+    expect(fs.existsSync(nestedKeyFile)).toBe(false);
+  });
+
+  it('should preserve existing encryption field keys when restoring a legacy backup', async () => {
+    const { backupFilePath } = createBackupFile('restore-legacy-encryption-field-keys');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb());
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restore(backupFilePath, 'task_id');
+
+    await vi.waitFor(() => {
+      expect(runCommandSpy).toHaveBeenCalledWith('upgrade');
+    });
+    await expect(fs.promises.readFile(existingKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+  });
+
+  it('should clear existing encryption field keys when the backup contains an empty key directory', async () => {
+    const { backupFilePath } = createBackupFile('restore-empty-encryption-field-keys');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/`]: '',
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restoreCLI(backupFilePath);
+
+    await expect(fs.promises.readdir(encryptionFieldKeysFolder)).resolves.toEqual([]);
+  });
+
+  it('should not restore stale extracted encryption field keys from a legacy backup', async () => {
+    const { backupFileBaseName, backupFilePath } = createBackupFile('restore-legacy-with-stale-extracted-key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    const staleExtractedKeyFile = path.join(
+      restoreTempFolder,
+      backupFileBaseName,
+      ENCRYPTION_FIELD_KEYS_DIRECTORY,
+      'stale.key',
+    );
+    const staleTargetKeyFile = path.join(encryptionFieldKeysFolder, 'stale.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb());
+    await fs.promises.mkdir(path.dirname(staleExtractedKeyFile), { recursive: true });
+    await fs.promises.writeFile(staleExtractedKeyFile, sourceEncryptionFieldKey);
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restore(backupFilePath, 'task_id');
+
+    await vi.waitFor(() => {
+      expect(runCommandSpy).toHaveBeenCalledWith('upgrade');
+    });
+    await expect(fs.promises.readFile(existingKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+    expect(fs.existsSync(staleTargetKeyFile)).toBe(false);
+  });
+
+  it('should set restrictive permissions on restored encryption field keys', async () => {
+    if (process.platform === 'win32') {
+      return;
+    }
+
+    const { backupFilePath } = createBackupFile('restore-encryption-field-key-permissions');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restore(backupFilePath, 'task_id');
+
+    await vi.waitFor(async () => {
+      expect(runCommandSpy).toHaveBeenCalledWith('upgrade');
+      expect(fs.existsSync(restoredKeyFile)).toBe(true);
+    });
+    const directoryMode = (await fs.promises.stat(encryptionFieldKeysFolder)).mode & 0o777;
+    const fileMode = (await fs.promises.stat(restoredKeyFile)).mode & 0o777;
+    expect(directoryMode).toBe(0o700);
+    expect(fileMode).toBe(0o600);
+  });
+
+  it('should replace encryption field keys without renaming across filesystems', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-same-filesystem');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      if (path.dirname(oldPath.toString()) !== path.dirname(newPath.toString())) {
+        const error = new Error('Cross-device link not permitted') as NodeJS.ErrnoException;
+        error.code = 'EXDEV';
+        throw error;
+      }
+      await rename(oldPath, newPath);
+    });
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restoreCLI(backupFilePath);
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    await expect(fs.promises.readFile(restoredKeyFile, 'utf8')).resolves.toBe(sourceEncryptionFieldKey);
+    expect(fs.existsSync(existingKeyFile)).toBe(false);
+  });
+
+  it('should preserve previous encryption field keys when installation and rollback both fail', async () => {
+    const { backupFileBaseName, backupFilePath } = createBackupFile('restore-encryption-field-keys-rollback-failure');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    const revertDatabaseFile = path.join(restoreTempFolder, 'before-restore', 'data');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    await fs.promises.mkdir(path.dirname(revertDatabaseFile), { recursive: true });
+    await fs.promises.writeFile(revertDatabaseFile, 'mocked database backup');
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      const source = oldPath.toString();
+      const destination = newPath.toString();
+      if (
+        destination === encryptionFieldKeysFolder &&
+        source.startsWith(path.join(encryptionFieldKeysParentFolder, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`))
+      ) {
+        throw new Error('mock rollback failure');
+      }
+      if (
+        destination === encryptionFieldKeysFolder &&
+        source.startsWith(path.join(encryptionFieldKeysParentFolder, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-`))
+      ) {
+        throw new Error('mock installation failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+
+    try {
+      const restoreManager = createRestoreManager();
+      await expect(restoreManager.restoreCLI(backupFilePath)).rejects.toThrow(
+        'Failed to roll back the encryption field keys',
+      );
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    if (!previousDirectory) {
+      throw new Error('Previous encryption field keys directory was not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+    expect(fs.existsSync(encryptionFieldKeysFolder)).toBe(false);
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining(`The keys were preserved at "${previousDirectory}"`),
+      expect.any(Object),
+    );
+    await expectNoExtractedDirectory(backupFileBaseName);
+  });
+
+  it('should fail CLI restore when restored encryption field keys cannot be activated', async () => {
+    const { backupFilePath } = createBackupFile('restore-cli-encryption-field-keys-activation-failure');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      const sourceName = path.basename(oldPath.toString());
+      if (
+        newPath.toString() === encryptionFieldKeysFolder &&
+        sourceName.startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-`) &&
+        !sourceName.startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`)
+      ) {
+        throw new Error('mock encryption field key activation failure');
+      }
+      await rename(oldPath, newPath);
+    });
+
+    try {
+      const restoreManager = createRestoreManager();
+      await expect(restoreManager.restoreCLI(backupFilePath, undefined, false, true)).rejects.toThrow(
+        'Failed to activate the restored encryption field keys',
+      );
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    await expect(fs.promises.readFile(existingKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const restoredDirectory = replacementDirectories.find(
+      (directory) =>
+        !path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`) &&
+        !path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-discarded-`),
+    );
+    expect(restoredDirectory).toBeDefined();
+    if (!restoredDirectory) {
+      throw new Error('Restored encryption field keys directory was not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(restoredDirectory, 'source.key'), 'utf8')).resolves.toBe(
+      sourceEncryptionFieldKey,
+    );
+  });
+
+  it('should stop recovery when encryption field key staging fails and the database is not reverted', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-staging-failure');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const copyFile = fs.promises.copyFile.bind(fs.promises);
+    const copyFileSpy = vi.spyOn(fs.promises, 'copyFile').mockImplementation(async (source, destination, mode) => {
+      if (destination.toString().endsWith(`${path.sep}source.key`)) {
+        throw new Error('mock encryption field key staging failure');
+      }
+      await copyFile(source, destination, mode);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id', undefined, false, true);
+
+      await vi.waitFor(() => {
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Restored encryption field keys are unavailable'),
+          expect.any(Object),
+        );
+      });
+    } finally {
+      copyFileSpy.mockRestore();
+    }
+
+    expect(runCommandSpy).not.toHaveBeenCalled();
+    await expect(fs.promises.readFile(existingKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+  });
+
+  it('should preserve uploads and the AES key when encryption field key staging fails', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-staging-failure-file-order');
+    const uploadFileName = `${restoreAppName}-staging-failure.txt`;
+    const uploadFilePath = storagePathJoin('uploads', uploadFileName);
+    const aesKeyPath = storagePathJoin('apps', restoreAppName, 'aes_key.dat');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    const revertDatabaseFile = path.join(restoreTempFolder, 'before-restore', 'data');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`uploads/${uploadFileName}`]: 'restored upload',
+      'aes_key.dat': 'restored AES key',
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.mkdir(path.dirname(uploadFilePath), { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    await fs.promises.writeFile(uploadFilePath, 'existing upload');
+    await fs.promises.writeFile(aesKeyPath, 'existing AES key');
+    await fs.promises.mkdir(path.dirname(revertDatabaseFile), { recursive: true });
+    await fs.promises.writeFile(revertDatabaseFile, 'mocked database backup');
+    const copyFile = fs.promises.copyFile.bind(fs.promises);
+    const copyFileSpy = vi.spyOn(fs.promises, 'copyFile').mockImplementation(async (source, destination, mode) => {
+      if (destination.toString().endsWith(`${path.sep}source.key`)) {
+        throw new Error('mock encryption field key staging failure');
+      }
+      await copyFile(source, destination, mode);
+    });
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restoreCLI(backupFilePath);
+
+      await expect(fs.promises.readFile(uploadFilePath, 'utf8')).resolves.toBe('existing upload');
+      await expect(fs.promises.readFile(aesKeyPath, 'utf8')).resolves.toBe('existing AES key');
+      await expect(fs.promises.readFile(existingKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+    } finally {
+      copyFileSpy.mockRestore();
+      await fs.promises.rm(uploadFilePath, { force: true });
+      await fs.promises.rm(aesKeyPath, { force: true });
+    }
+  });
+
+  it('should stop recovery when active encryption field keys cannot be preserved', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-preserve-active-failure');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      if (
+        oldPath.toString() === encryptionFieldKeysFolder &&
+        path.basename(newPath.toString()).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`)
+      ) {
+        throw new Error('mock preserving active encryption field keys failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id', undefined, false, true);
+
+      await vi.waitFor(() => {
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to preserve the active encryption field keys'),
+          expect.any(Object),
+        );
+      });
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    expect(runCommandSpy).not.toHaveBeenCalled();
+    await expect(fs.promises.readFile(existingKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const restoredDirectory = replacementDirectories.find(
+      (directory) =>
+        !path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`) &&
+        !path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-discarded-`),
+    );
+    expect(restoredDirectory).toBeDefined();
+    if (!restoredDirectory) {
+      throw new Error('Restored encryption field keys directory was not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(restoredDirectory, 'source.key'), 'utf8')).resolves.toBe(
+      sourceEncryptionFieldKey,
+    );
+  });
+
+  it('should stop recovery when encryption field key installation and rollback both fail', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-installation-rollback-failure');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      const source = oldPath.toString();
+      const destination = newPath.toString();
+      if (
+        destination === encryptionFieldKeysFolder &&
+        (source.startsWith(
+          path.join(encryptionFieldKeysParentFolder, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+        ) ||
+          source.startsWith(path.join(encryptionFieldKeysParentFolder, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-`)))
+      ) {
+        throw new Error('mock encryption field key installation and rollback failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id');
+
+      await vi.waitFor(() => {
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to roll back encryption field keys.'),
+          expect.any(Object),
+        );
+      });
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    expect(runCommandSpy).not.toHaveBeenCalled();
+    expect(fs.existsSync(encryptionFieldKeysFolder)).toBe(false);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    if (!previousDirectory) {
+      throw new Error('Previous encryption field keys directory was not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+  });
+
+  it('should stop recovery and preserve both key sets when installation fails and database revert is skipped', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-installation-failure-skip-revert');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      const source = oldPath.toString();
+      const destination = newPath.toString();
+      if (
+        destination === encryptionFieldKeysFolder &&
+        (source.startsWith(
+          path.join(encryptionFieldKeysParentFolder, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+        ) ||
+          source.startsWith(path.join(encryptionFieldKeysParentFolder, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-`)))
+      ) {
+        throw new Error('mock encryption field key activation failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id', undefined, false, true);
+
+      await vi.waitFor(() => {
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to activate the restored encryption field keys.'),
+          expect.any(Object),
+        );
+      });
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    expect(runCommandSpy).not.toHaveBeenCalled();
+    expect(fs.existsSync(encryptionFieldKeysFolder)).toBe(false);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    const restoredDirectory = replacementDirectories.find(
+      (directory) =>
+        !path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`) &&
+        !path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-discarded-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    expect(restoredDirectory).toBeDefined();
+    if (!previousDirectory || !restoredDirectory) {
+      throw new Error('Encryption field key recovery directories were not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+    await expect(fs.promises.readFile(path.join(restoredDirectory, 'source.key'), 'utf8')).resolves.toBe(
+      sourceEncryptionFieldKey,
+    );
+  });
+
+  it('should stop recovery and preserve both key sets when installation and database revert both fail', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-installation-and-db-revert-failure');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    const revertDatabaseFile = path.join(restoreTempFolder, 'before-restore', 'data');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    let installationFailed = false;
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      const source = oldPath.toString();
+      const destination = newPath.toString();
+      if (
+        destination === encryptionFieldKeysFolder &&
+        (source.startsWith(
+          path.join(encryptionFieldKeysParentFolder, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+        ) ||
+          source.startsWith(path.join(encryptionFieldKeysParentFolder, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-`)))
+      ) {
+        if (!installationFailed) {
+          installationFailed = true;
+          await fs.promises.rm(revertDatabaseFile, { force: true });
+        }
+        throw new Error('mock encryption field key activation failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id');
+
+      await vi.waitFor(() => {
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to activate the restored encryption field keys.'),
+          expect.any(Object),
+        );
+      });
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    expect(runCommandSpy).not.toHaveBeenCalled();
+    expect(fs.existsSync(encryptionFieldKeysFolder)).toBe(false);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    const restoredDirectory = replacementDirectories.find(
+      (directory) =>
+        !path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`) &&
+        !path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-discarded-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    expect(restoredDirectory).toBeDefined();
+    if (!previousDirectory || !restoredDirectory) {
+      throw new Error('Encryption field key recovery directories were not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+    await expect(fs.promises.readFile(path.join(restoredDirectory, 'source.key'), 'utf8')).resolves.toBe(
+      sourceEncryptionFieldKey,
+    );
+  });
+
+  it('should restore previous encryption field keys when upgrade fails and the database is reverted', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-upgrade-failure');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const runCommandSpy = vi
+      .spyOn(app, 'runCommand')
+      .mockRejectedValueOnce(new Error('mock upgrade failure'))
+      .mockResolvedValue(undefined);
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restore(backupFilePath, 'task_id');
+
+    await vi.waitFor(() => {
+      expect(runCommandSpy).toHaveBeenCalledTimes(2);
+    });
+    await expect(fs.promises.readFile(existingKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+    expect(fs.existsSync(restoredKeyFile)).toBe(false);
+  });
+
+  it('should stop recovery when restored encryption field keys cannot be moved for rollback', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-active-rollback-failure');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      if (
+        oldPath.toString() === encryptionFieldKeysFolder &&
+        path.basename(newPath.toString()).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-discarded-`)
+      ) {
+        throw new Error('mock active keys rollback failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+    const runCommandSpy = vi
+      .spyOn(app, 'runCommand')
+      .mockRejectedValueOnce(new Error('mock upgrade failure'))
+      .mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id');
+
+      await vi.waitFor(() => {
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to remove the restored encryption field keys while rolling back.'),
+          expect.any(Object),
+        );
+      });
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    expect(runCommandSpy).toHaveBeenCalledTimes(1);
+    await expect(fs.promises.readFile(restoredKeyFile, 'utf8')).resolves.toBe(sourceEncryptionFieldKey);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    if (!previousDirectory) {
+      throw new Error('Previous encryption field keys directory was not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+  });
+
+  it('should stop recovery and reactivate restored keys when previous encryption field keys cannot be restored', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-previous-rollback-failure');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      if (
+        newPath.toString() === encryptionFieldKeysFolder &&
+        path.basename(oldPath.toString()).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`)
+      ) {
+        throw new Error('mock previous keys rollback failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+    const runCommandSpy = vi
+      .spyOn(app, 'runCommand')
+      .mockRejectedValueOnce(new Error('mock upgrade failure'))
+      .mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id');
+
+      await vi.waitFor(() => {
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('The restored keys remain active.'),
+          expect.any(Object),
+        );
+      });
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    expect(runCommandSpy).toHaveBeenCalledTimes(1);
+    await expect(fs.promises.readFile(restoredKeyFile, 'utf8')).resolves.toBe(sourceEncryptionFieldKey);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    if (!previousDirectory) {
+      throw new Error('Previous encryption field keys directory was not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+  });
+
+  it('should stop recovery and preserve both key sets when encryption field key rollback cannot reactivate either set', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-complete-rollback-failure');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      const sourceName = path.basename(oldPath.toString());
+      if (
+        newPath.toString() === encryptionFieldKeysFolder &&
+        (sourceName.startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`) ||
+          sourceName.startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-discarded-`))
+      ) {
+        throw new Error('mock encryption field keys reactivation failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const loggerErrorSpy = vi.spyOn(app.logger, 'error');
+    const runCommandSpy = vi
+      .spyOn(app, 'runCommand')
+      .mockRejectedValueOnce(new Error('mock upgrade failure'))
+      .mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id');
+
+      await vi.waitFor(() => {
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('but could not be reinstalled'),
+          expect.any(Object),
+        );
+      });
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    expect(runCommandSpy).toHaveBeenCalledTimes(1);
+    expect(fs.existsSync(encryptionFieldKeysFolder)).toBe(false);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    const discardedDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-discarded-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    expect(discardedDirectory).toBeDefined();
+    if (!previousDirectory || !discardedDirectory) {
+      throw new Error('Encryption field key rollback directories were not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+    await expect(fs.promises.readFile(path.join(discardedDirectory, 'source.key'), 'utf8')).resolves.toBe(
+      sourceEncryptionFieldKey,
+    );
+  });
+
+  it('should keep restored encryption field keys when database revert is skipped after an upgrade failure', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-skip-revert');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const runCommandSpy = vi
+      .spyOn(app, 'runCommand')
+      .mockRejectedValueOnce(new Error('mock upgrade failure'))
+      .mockResolvedValue(undefined);
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restore(backupFilePath, 'task_id', undefined, false, true);
+
+    await vi.waitFor(() => {
+      expect(runCommandSpy).toHaveBeenCalledTimes(2);
+    });
+    await expect(fs.promises.readFile(restoredKeyFile, 'utf8')).resolves.toBe(sourceEncryptionFieldKey);
+    expect(fs.existsSync(existingKeyFile)).toBe(false);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    if (!previousDirectory) {
+      throw new Error('Previous encryption field keys directory was not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+  });
+
+  it('should keep restored encryption field keys when database revert fails after an upgrade failure', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-revert-failure');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    const revertDatabaseFile = path.join(restoreTempFolder, 'before-restore', 'data');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const runCommandSpy = vi
+      .spyOn(app, 'runCommand')
+      .mockImplementationOnce(async () => {
+        await fs.promises.rm(revertDatabaseFile, { force: true });
+        throw new Error('mock upgrade failure');
+      })
+      .mockResolvedValue(undefined);
+
+    const restoreManager = createRestoreManager();
+    await restoreManager.restore(backupFilePath, 'task_id');
+
+    await vi.waitFor(() => {
+      expect(runCommandSpy).toHaveBeenCalledTimes(2);
+    });
+    await expect(fs.promises.readFile(restoredKeyFile, 'utf8')).resolves.toBe(sourceEncryptionFieldKey);
+    expect(fs.existsSync(existingKeyFile)).toBe(false);
+    const replacementDirectories = await findEncryptionFieldKeysReplacementDirectories();
+    const previousDirectory = replacementDirectories.find((directory) =>
+      path.basename(directory).startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`),
+    );
+    expect(previousDirectory).toBeDefined();
+    if (!previousDirectory) {
+      throw new Error('Previous encryption field keys directory was not preserved');
+    }
+    await expect(fs.promises.readFile(path.join(previousDirectory, 'existing.key'), 'utf8')).resolves.toBe(
+      existingEncryptionFieldKey,
+    );
+  });
+
+  it('should revert encryption field keys even when restore diagnostics fail', async () => {
+    const { backupFilePath } = createBackupFile('restore-encryption-field-keys-diagnostics-failure');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const querySpy = vi.spyOn(app.db.sequelize, 'query').mockRejectedValueOnce(new Error('mock diagnostics failure'));
+    const runCommandSpy = vi
+      .spyOn(app, 'runCommand')
+      .mockRejectedValueOnce(new Error('mock upgrade failure'))
+      .mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id', undefined, true);
+
+      await vi.waitFor(() => {
+        expect(runCommandSpy).toHaveBeenCalledTimes(2);
+      });
+    } finally {
+      querySpy.mockRestore();
+    }
+
+    await expect(fs.promises.readFile(existingKeyFile, 'utf8')).resolves.toBe(existingEncryptionFieldKey);
+    expect(fs.existsSync(restoredKeyFile)).toBe(false);
+  });
+
+  it('should activate staged encryption field keys before continuing a tolerent restore', async () => {
+    const { backupFilePath } = createBackupFile('restore-tolerent-mode-encryption-field-key-installation-failure');
+    const restoredKeyFile = path.join(encryptionFieldKeysFolder, 'source.key');
+    const existingKeyFile = path.join(encryptionFieldKeysFolder, 'existing.key');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb(), {
+      [`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/source.key`]: sourceEncryptionFieldKey,
+    });
+    await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+    await fs.promises.writeFile(existingKeyFile, existingEncryptionFieldKey);
+    const rename = fs.promises.rename.bind(fs.promises);
+    let installationFailed = false;
+    const renameSpy = vi.spyOn(fs.promises, 'rename').mockImplementation(async (oldPath, newPath) => {
+      const sourceName = path.basename(oldPath.toString());
+      if (
+        !installationFailed &&
+        newPath.toString() === encryptionFieldKeysFolder &&
+        sourceName.startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-`) &&
+        !sourceName.startsWith(`.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-`)
+      ) {
+        installationFailed = true;
+        throw new Error('ignored encryption field key installation failure');
+      }
+      await rename(oldPath, newPath);
+    });
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue(undefined);
+
+    try {
+      const restoreManager = createRestoreManager();
+      await restoreManager.restore(backupFilePath, 'task_id', undefined, true);
+
+      await vi.waitFor(async () => {
+        expect(runCommandSpy).toHaveBeenCalledTimes(1);
+        await expect(fs.promises.readFile(restoredKeyFile, 'utf8')).resolves.toBe(sourceEncryptionFieldKey);
+      });
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    expect(fs.existsSync(existingKeyFile)).toBe(false);
+    await expect(findEncryptionFieldKeysReplacementDirectories()).resolves.toEqual([]);
+  });
+
   it('restore with tolerentMode', async () => {
-    const { backupFilePath } = createBackupFile('restore-tolerent-mode');
-    await createBackupArchive(backupFilePath, createMetadata());
+    const { backupFileBaseName, backupFilePath } = createBackupFile('restore-tolerent-mode');
+    await createBackupArchive(backupFilePath, createMetadata(), {
+      [`uploads/${tolerentModeUploadFileName}`]: 'restored upload',
+    });
     const ctx = {
       app: app,
       logger: app.logger,
@@ -363,6 +1367,8 @@ describe('RestoreManager', () => {
     await vi.waitFor(() => {
       expect(runCommandSpy).toHaveBeenCalledTimes(2);
     });
+    await expect(fs.promises.readFile(tolerentModeUploadFilePath, 'utf8')).resolves.toBe('restored upload');
+    await expectNoExtractedDirectory(backupFileBaseName);
     settings = await app.db.getRepository(SETTINGS).findOne();
     // after the restore, the backup encryption should be disabled
     expect(settings.encryptionPassword).toBe('');
@@ -383,6 +1389,7 @@ describe('RestoreManager', () => {
     await expect(
       restoreManager.restore(schemaMismatchBackupFilePath, 'task_id', undefined, true, true),
     ).rejects.toThrow(/database schema mismatch/i);
+    await expectNoExtractedDirectory('backup_schema_mismatch');
   });
 
   it('allows PostgreSQL schema mismatch with force schema restore', async () => {
