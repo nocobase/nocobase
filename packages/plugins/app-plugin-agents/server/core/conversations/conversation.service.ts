@@ -25,7 +25,7 @@ import {
  *   and bumps `thread`, so every switch starts a new session.
  */
 import { isDeepStrictEqual } from 'node:util';
-import { quotaForAgent } from '../../../shared/runners.js';
+import { quotaForAgent, chatEffortsFor } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -559,6 +559,47 @@ export function createConversationService(
     );
   }
 
+  async function effortOptions(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+  ): Promise<readonly string[]> {
+    const eligible = await deps.eligibility.runnersFor(conn, agent, {
+      actorUserId: userId,
+    });
+    return chatEffortsFor(agent.modelEntries[0], eligible);
+  }
+
+  async function validateEffort(
+    conn: DatabaseConnection,
+    agent: Agent,
+    userId: string,
+    selected: string | null | undefined,
+    saved: unknown,
+  ): Promise<string | null> {
+    const preference =
+      selected === undefined
+        ? typeof saved === 'string'
+          ? saved
+          : null
+        : selected;
+    // Unknown capabilities preserve default execution, but never silently replace an explicit preference.
+    const options = await effortOptions(conn, agent, userId);
+    const effective = preference ?? agent.modelEntries[0]?.effort ?? null;
+    if (
+      (preference !== null && !options.includes(preference)) ||
+      (options.length > 0 && effective !== null && !options.includes(effective))
+    )
+      throw invalid(
+        'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
+        { reason: 'EFFORT_UNSUPPORTED', effort: effective, efforts: options },
+      );
+    return (
+      preference ??
+      (effective && options.includes(effective) ? effective : null)
+    );
+  }
+
   async function canAnswer(
     conn: DatabaseConnection,
     agent: Agent | null,
@@ -611,6 +652,10 @@ export function createConversationService(
     const target = await fallbackTarget(conn, record);
     return {
       ...summary,
+      effort:
+        typeof jsonObject(record.metadata).effort === 'string'
+          ? (jsonObject(record.metadata).effort as string)
+          : null,
       availability: await availabilityFor(conn, agent, record.userId),
       canFallback: Boolean(target),
       canRestore:
@@ -1315,10 +1360,17 @@ export function createConversationService(
           history,
           previousSummary,
         );
+        const preference =
+          jsonObject(record.metadata).turnEffort ??
+          jsonObject(record.metadata).effort;
+        const withEffort =
+          typeof preference === 'string'
+            ? { ...assembly, effort: preference }
+            : assembly;
         const config = runnerBinding(record.metadata)?.config;
         return config
           ? {
-              ...assembly,
+              ...withEffort,
               system: [
                 assembly.system,
                 config.systemPrompt,
@@ -1329,7 +1381,7 @@ export function createConversationService(
                 .filter(Boolean)
                 .join('\n\n'),
             }
-          : assembly;
+          : withEffort;
       },
     },
     runnerPin: {
@@ -1509,6 +1561,11 @@ export function createConversationService(
   ): Promise<
     SendMessageResult | Awaited<ReturnType<ConversationService['sendRealtime']>>
   > {
+    if (request.effort !== undefined && !realtime)
+      throw invalid(
+        'Reasoning effort selection requires a Runner realtime message.',
+        { reason: 'EFFORT_UNSUPPORTED' },
+      );
     if (request.agentId !== undefined && (!realtime || !request.agentId.trim()))
       throw invalid('Agent selection requires a Runner realtime message.');
     const content = request.content;
@@ -1556,6 +1613,7 @@ export function createConversationService(
     const sent = await measuredAdmission(async (unit) => {
       let record = await lockOwned(unit, userId, id, Boolean(realtime));
       let binding = runnerBinding(record.metadata);
+      let turnEffort: string | null = null;
       if (realtime) {
         if (!binding)
           throw invalid('This is not a Runner OnlineAgent conversation.');
@@ -1596,6 +1654,37 @@ export function createConversationService(
             !(await canAnswer(unit.conn, agent, userId)))
         )
           throw conflict('This agent has no available execution environment.');
+        turnEffort =
+          (typeof jsonObject(record.metadata).effort === 'string'
+            ? (jsonObject(record.metadata).effort as string)
+            : null) ??
+          agent.modelEntries[0]?.effort ??
+          null;
+        if (!realtime.queue) {
+          const effort = await validateEffort(
+            unit.conn,
+            agent,
+            userId,
+            request.effort,
+            switching ? null : jsonObject(record.metadata).effort,
+          );
+          turnEffort = effort ?? agent.modelEntries[0]?.effort ?? null;
+          if (
+            effort !== (jsonObject(record.metadata).effort ?? null) ||
+            turnEffort !== (jsonObject(record.metadata).turnEffort ?? null)
+          ) {
+            const metadata = asJson({
+              ...jsonObject(record.metadata),
+              effort,
+              turnEffort,
+            });
+            await conversationsRepo(unit.conn).updateMany({
+              filter: { id },
+              values: { metadata },
+            });
+            record = { ...record, metadata };
+          }
+        }
         if (switching) {
           record = await rebind(
             unit,
@@ -1644,6 +1733,7 @@ export function createConversationService(
         workContext: realtime?.workContext ?? context,
         metadata: {
           ...(request.clientId ? { clientId: request.clientId } : {}),
+          ...(turnEffort ? { effort: turnEffort } : {}),
           ...(realtime?.queue ? { queued: true } : {}),
         },
       });
@@ -1814,6 +1904,13 @@ export function createConversationService(
           throw invalid('Select a callable Runner agent.');
         if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
           throw conflict('This agent has no available execution environment.');
+        const effort = await validateEffort(
+          unit.conn,
+          agent,
+          userId,
+          request.effort,
+          null,
+        );
         const title =
           request.title === undefined
             ? null
@@ -1826,13 +1923,12 @@ export function createConversationService(
         await conversationsRepo(unit.conn).createOne({
           values: {
             id: conversationId,
-            ...(runnerConfig
-              ? {
-                  metadata: asJson({
-                    runnerOnlineAgent: { version: 1, config: runnerConfig },
-                  }),
-                }
-              : {}),
+            metadata: asJson({
+              effort,
+              ...(runnerConfig
+                ? { runnerOnlineAgent: { version: 1, config: runnerConfig } }
+                : {}),
+            }),
             userId,
             agentId: agent.id,
             mode: 'runner',
@@ -2602,7 +2698,14 @@ export function createConversationService(
             const fitting = runners.filter((runner) =>
               runnerTakesAgent(runner, agent, now),
             );
+            const eligible = await deps.eligibility.runnersFor(conn, agent, {
+              actorUserId: userId,
+              runners,
+              variableState: variableStates?.get(agent.id),
+            });
             return {
+              efforts: chatEffortsFor(agent.modelEntries[0], eligible),
+              effort: agent.modelEntries[0]?.effort ?? null,
               id: agent.id,
               name: agent.name,
               description: agent.description,
@@ -2611,12 +2714,12 @@ export function createConversationService(
               avatar: agent.avatar,
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
-              availability: await availabilityFor(
-                conn,
+              availability: availabilityOf(
                 agent,
                 userId,
-                runners,
-                variableStates?.get(agent.id),
+                deps.agents.mayInvoke,
+                eligible.length,
+                fitting.length > 0,
               ),
               quota: quotaForAgent(runners, agent, userId, now),
               runnerNames: fitting

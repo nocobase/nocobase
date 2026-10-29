@@ -114,6 +114,13 @@ const SelectedModel = z.strictObject({
   model: z.string().min(1),
 });
 const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
+  effort: z
+    .string()
+    .min(1)
+    .max(40)
+    .nullable()
+    .optional()
+    .describe('Runner reasoning effort; null restores the Agent default.'),
   agentId: z
     .string()
     .min(1)
@@ -181,6 +188,15 @@ const NativeSendSchema = z.strictObject({
   selectedModel: SelectedModel.optional(),
 });
 const SendSchema = NativeSendSchema.extend({
+  effort: z
+    .string()
+    .min(1)
+    .max(40)
+    .nullable()
+    .optional()
+    .describe(
+      'Runner reasoning effort; omit to retain the conversation preference, null restores the Agent default.',
+    ),
   agentId: z
     .string()
     .min(1)
@@ -379,6 +395,7 @@ export function createChatRoutes(
                 ...request.config,
                 ...(request.agentId ? { agentId: request.agentId } : {}),
                 selectedModel: request.selectedModel,
+                effort: request.effort,
                 source: request.source ?? 'panel',
                 title: title?.text || undefined,
                 showInChatList: request.showInChatList,
@@ -622,8 +639,14 @@ export function createChatRoutes(
         throw invalid(
           'Only Runner conversations can select an agent when sending.',
         );
+      if (request.effort !== undefined && agent.backend !== 'runner')
+        throw invalid(
+          'Online agents do not support conversation reasoning effort.',
+          { reason: 'EFFORT_UNSUPPORTED' },
+        );
       await agent.send([{ role: 'user', content: parts }], {
         agentId: request.agentId,
+        effort: request.effort,
         attachmentIds: [[...(request.attachmentIds ?? [])]],
         clientId: request.message.id,
         messageId: request.message.id,

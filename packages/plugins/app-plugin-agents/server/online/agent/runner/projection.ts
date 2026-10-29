@@ -251,6 +251,9 @@ export function runnerUIMessages(
           seq: row.seq,
           ...(row.metadata.clientId ? { clientId: row.metadata.clientId } : {}),
           ...(row.metadata.agentId ? { agentId: row.metadata.agentId } : {}),
+          ...(typeof row.metadata.effort === 'string'
+            ? { effort: row.metadata.effort }
+            : {}),
           ...(row.runId ? { executionId: row.runId, turnId: row.runId } : {}),
           sourceRecords: [],
           ...(row.workContext

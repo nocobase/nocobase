@@ -363,6 +363,8 @@ export const CONVERSATION_LINK_KIND_PATTERN: RegExp =
 
 /** One conversation as the panel opens it. */
 export interface ConversationDetail extends ConversationSummary {
+  /** Saved per-conversation preference; null uses the current Agent default. */
+  readonly effort?: string | null;
   readonly availability: ChatAvailability;
   /** Another agent may take over (`POST …/fallback`): the system default agent, when it can answer. */
   readonly canFallback: boolean;
@@ -478,6 +480,7 @@ export type ConversationNoticeCode = ConversationNotice['code'];
 
 /** `aiMessages.metadata`. */
 export interface MessageMetadata {
+  readonly effort?: string;
   readonly output?: OutputBlock;
   readonly parentToolUseId?: string;
   readonly childSessionId?: string;
@@ -666,6 +669,8 @@ export interface OnlineChatConfigSnapshot {
   readonly variable?: OnlineChatJson;
 }
 export interface CreateConversationRequest {
+  /** Runner reasoning effort; null explicitly restores the Agent default. */
+  readonly effort?: string | null;
   /** Defaults to true; background SDK sessions are always hidden. */
   readonly showInChatList?: boolean;
   readonly config?: {
@@ -717,6 +722,8 @@ export interface MessagePage {
 
 /** `POST messages`. */
 export interface SendMessageRequest {
+  /** Runner reasoning effort; null explicitly restores the Agent default. */
+  readonly effort?: string | null;
   /** Confirm this Runner agent only if the message is accepted while idle. */
   readonly agentId?: string;
   /** Markdown, at most `MESSAGE_CONTENT_MAX` characters; empty only when files are sent. */
@@ -769,6 +776,10 @@ export interface StartConversationRequest {
 
 /** An agent the person may chat with (`GET agents`). */
 export interface ChatAgent {
+  /** Known efforts shared by all eligible runners for the current model. Empty or absent hides selection. */
+  readonly efforts?: readonly string[];
+  /** The Agent default; it can become unsupported after a capability update. */
+  readonly effort?: string | null;
   readonly quota?: readonly QuotaLocation[];
   /** Viewer-visible eligible runtimes, for partial quota availability. */
   readonly runnerNames: readonly string[];
