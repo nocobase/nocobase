@@ -143,6 +143,7 @@ export { useNavigationGuard } from './navigation-guard.js';
 
 export {
   useRealtimeTopic,
+  useRealtimeReadiness,
   useRealtimeRefresh,
   useRealtimeConnectionState,
   createRealtimeRefresh,
