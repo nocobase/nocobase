@@ -65,13 +65,6 @@
       "retrieval": "nb-studio issue attachment download 4035eebe-bd90-443a-bb24-2de12ec0d425"
     },
     {
-      "artifactId": "4035eebe-bd90-443a-bb24-2de12ec0d425",
-      "filename": "results.json",
-      "sha256": "eb5604b529b7bd4e7f36da59526d3b6f49cf7a4d4a587e4638cef8cf9621fd4d",
-      "bytes": 19839,
-      "retrieval": "nb-studio issue attachment download 4035eebe-bd90-443a-bb24-2de12ec0d425"
-    },
-    {
       "artifactId": "41b05983-aef9-441c-83f1-38e441d4a2c7",
       "filename": "sealed-source.tar.gz",
       "sha256": "30c572c67484eb15d762d76aa15f90708399247a24a0fb292e265bd07dbd9f5c",
@@ -98,13 +91,6 @@
       "sha256": "3763a8b6f705c94cdd0badc2351ae5fe3f0feb494dd4fd3da472e97acff0272b",
       "bytes": 104,
       "retrieval": "nb-studio issue attachment download 5ff77c57-a978-4053-92e7-24f57e3990bc"
-    },
-    {
-      "artifactId": "6e1ff126-eb0a-495d-a4d2-524a78ccf89f",
-      "filename": "results.json",
-      "sha256": "178be1ed25ccf0b515a9cf3f444c0cfd92e5d2569e804d4257ea4b73bb3d300b",
-      "bytes": 7558,
-      "retrieval": "nb-studio issue attachment download 6e1ff126-eb0a-495d-a4d2-524a78ccf89f"
     },
     {
       "artifactId": "6e1ff126-eb0a-495d-a4d2-524a78ccf89f",
@@ -189,13 +175,6 @@
       "sha256": "2544fdcb722202f68a94494994f871a76960d80f5a440ea0d49400aa359137f9",
       "bytes": 87,
       "retrieval": "nb-studio issue attachment download fc87ca12-355a-4b2e-ac18-d9b2fa8538d1"
-    },
-    {
-      "artifactId": "fe086e1f-038f-4f8a-ab2a-4862ebeb7163",
-      "filename": "results.json",
-      "sha256": "87e6bfdf8a7a4f42aad15812a21c19ab78fbbff5806f9b30f8f74557538fcb61",
-      "bytes": 15817,
-      "retrieval": "nb-studio issue attachment download fe086e1f-038f-4f8a-ab2a-4862ebeb7163"
     },
     {
       "artifactId": "fe086e1f-038f-4f8a-ab2a-4862ebeb7163",

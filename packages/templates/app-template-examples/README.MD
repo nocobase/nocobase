@@ -187,11 +187,11 @@ The three files named `runtime.ts`, `plugins.ts`, and `routes.ts` are compositio
 
 ### Everyday development
 
-| Script             | What it does                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| `pnpm dev`         | Start the API server and client with hot reload                                      |
-| `pnpm build`       | Build the client and server into `dist/`                                             |
-| `pnpm start`       | Run the built server; requires `pnpm build` first                                    |
+| Script             | What it does                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`         | Start the API server and client with hot reload                                                                                 |
+| `pnpm build`       | Build the client and server into `dist/`                                                                                        |
+| `pnpm start`       | Run the built server; requires `pnpm build` first                                                                               |
 | `pnpm build --tar` | Build, then pack `dist/`, `config.example.yml` and the `Dockerfile` with its `.dockerignore` into `storage/exports/dist.tar.gz` |
 
 ### Database
@@ -705,3 +705,7 @@ Foundation identifies the Articles database dependency on the proven normal-succ
 ## Internal workspace packages
 
 The application can also be the root of a pnpm workspace, with internal packages under `packages/*` and the existing `client/`, `server/` and `database/` directories unchanged. New projects receive this workspace pattern automatically. Internal packages use `workspace:*` dependencies and may remain private. Run installation, development and deployment builds from the application root; `pnpm check` includes the internal packages' own checks. See [internal packages](.agents/rules/workspace.md) for configuration and development conventions.
+
+## Procurement business example
+
+The [procurement guide](docs/procurement.md) covers scoped references, atomic parent/line saves, exact amounts, native roles, a designated reviewer and test-data reset. The [business scenario index](docs/business-examples/index.json) identifies runnable resources and integration dependencies. Existing before-change experiment records remain separate from example verification and later Default adaptation results.

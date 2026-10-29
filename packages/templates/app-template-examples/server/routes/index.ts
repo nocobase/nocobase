@@ -1,3 +1,4 @@
+import { procurementRoutes } from './procurement.js';
 import { skillProjectsRoutes } from './skill-projects.js';
 import type { Application } from '@nocobase/app-server/application';
 import {
@@ -86,6 +87,7 @@ export const rootRoutes: AppRootRouteContribution<Application> =
 
 const routes: readonly AppRouteContribution<Application>[] = [
   apiRoutes,
+  procurementRoutes,
   skillProjectsRoutes,
   rootRoutes,
   articlesRoutes,

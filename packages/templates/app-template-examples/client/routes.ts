@@ -7,6 +7,7 @@ import {
   skillsRoute,
 } from '@nocobase/app-plugin-agents/client/routes';
 import {
+  ShoppingCart,
   BrainCircuit,
   BotMessageSquare,
   Bot,
@@ -31,6 +32,26 @@ import {
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  {
+    name: 'procurement',
+    path: '/procurement',
+    auth: 'required',
+    authz: { resource: { type: 'page', id: 'procurement' }, action: 'access' },
+    navigation: { title: 'procurement.title', icon: ShoppingCart },
+    componentLoader: () => import('./pages/procurement/index.js'),
+    children: [
+      {
+        name: 'procurement-new',
+        path: 'new',
+        componentLoader: () => import('./pages/procurement/detail.js'),
+      },
+      {
+        name: 'procurement-detail',
+        path: ':id',
+        componentLoader: () => import('./pages/procurement/detail.js'),
+      },
+    ],
+  },
   {
     name: 'skill-projects',
     path: '/skill-projects',
