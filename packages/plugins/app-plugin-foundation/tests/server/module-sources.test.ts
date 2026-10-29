@@ -984,6 +984,109 @@ describe('static module dependencies', () => {
     ]);
   });
 
+  it.each([
+    'selected-tool',
+    'unselected-candidate',
+    'unknown-candidate',
+    'registry-write',
+    'returned-registry-write',
+    'returned-registry-escape',
+    'object-write',
+    'returned-object-write',
+    'returned-object-alias-write',
+    'captured-container-escape',
+    'terminal-handler',
+    'oversized-registry',
+  ])(
+    'follows only a proven %s tool chain to its database service',
+    async (kind) => {
+      const registry = `import {bindGetMyHrProfile} from './profile.js';export function collectTools(container){const profile=bindGetMyHrProfile(container);return [profile];}export function findTool(tools,name){for(const tool of tools){if(tool.definition.name===name)return tool;}throw new Error('TOOL_NOT_AVAILABLE');}export function executeTool(tools,name,actor,input){const tool=findTool(tools,name);return tool.execute(actor,input);}`;
+      const effectiveRegistry =
+        kind === 'returned-registry-write'
+          ? registry.replace(
+              'const tool=findTool(tools,name);',
+              `tools.push({definition:{name:'injected'},execute(){return undefined;}});const tool=findTool(tools,name);`,
+            )
+          : kind === 'returned-registry-escape'
+            ? registry.replace(
+                'const tool=findTool(tools,name);',
+                `external(tools);const tool=findTool(tools,name);`,
+              )
+            : kind === 'returned-object-write'
+              ? registry.replace(
+                  'const tool=findTool(tools,name);',
+                  `tools[0].definition.name='other';const tool=findTool(tools,name);`,
+                )
+              : kind === 'returned-object-alias-write'
+                ? registry.replace(
+                    'const tool=findTool(tools,name);',
+                    `const selected=tools[0];selected.definition.name='other';const tool=findTool(tools,name);`,
+                  )
+                : registry;
+      const toolObject = `{definition:{name:'getMyHrProfile'},execute(actor,input){if(input.invalid)throw new Error('invalid');${kind === 'captured-container-escape' ? `external(container);` : ''}const deps=resolveDependencies(container);return invoke({actor,deps});}}`;
+      const toolValue =
+        kind === 'object-write'
+          ? `const tool=${toolObject};tool.definition.name='other';return tool;`
+          : `return ${toolObject};`;
+      const profile = `import {authorizationToken} from '@nocobase/app-plugin-authorization/server';import {hrCoreServiceToken} from './tokens.js';function resolveDependencies(container){return {core:container.resolve(hrCoreServiceToken),authz:container.resolve(authorizationToken)};}function invoke(ctx){return ctx.deps.core.myHrProfile({userId:ctx.actor.id,authz:ctx.deps.authz},'en');}export function bindGetMyHrProfile(container){${toolValue}}${kind === 'captured-container-escape' ? `import {external} from 'unknown';` : ''}`;
+      const toolElements =
+        kind === 'oversized-registry'
+          ? Array.from({ length: 33 }, () => 'profile').join(',')
+          : 'profile';
+      const registrySource =
+        kind === 'returned-registry-escape'
+          ? `import {external} from 'unknown';${effectiveRegistry}`
+          : kind === 'unselected-candidate'
+            ? `import {unselected} from '@nocobase/unselected-db';${registry.replace(
+                'return [profile];',
+                `return [profile,{definition:{name:'other'},execute(){return unselected();}}];`,
+              )}`
+            : kind === 'unknown-candidate'
+              ? registry.replace(
+                  'return [profile];',
+                  'return [profile, unknownTool];',
+                )
+              : kind === 'registry-write'
+                ? registry.replace(
+                    'return [profile];',
+                    `const tools=[profile];tools.push({definition:{name:'other'},execute(){return undefined;}});return tools;`,
+                  )
+                : kind === 'oversized-registry'
+                  ? registry.replace(
+                      'return [profile];',
+                      `return [${toolElements}];`,
+                    )
+                  : effectiveRegistry;
+      const routeSource =
+        kind === 'terminal-handler'
+          ? `import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {executeTool} from '../tools/registry.js';import {toolCatalogToken,catalogToken} from '../providers/index.js';export default defineApiRoutes(app=>{const router=new Hono();const child=new Hono();const catalog=app.container.resolve(catalogToken);child.get('/profile',()=>{throw new Error('stopped');return executeTool(app.container.resolve(toolCatalogToken),'getMyHrProfile',{id:'fixture-user'},{});});child.get('/',()=>catalog.list());return router.route('/catalog',child);});`
+          : `import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {executeTool} from '../tools/registry.js';import {toolCatalogToken,catalogToken} from '../providers/index.js';export default defineApiRoutes(app=>{const router=new Hono();const child=new Hono();const catalog=app.container.resolve(catalogToken);child.get('/profile',()=>executeTool(app.container.resolve(toolCatalogToken),'getMyHrProfile',{id:'fixture-user'},{}));child.get('/',()=>catalog.list());return router.route('/catalog',child);});`;
+      const root = await fixture({
+        'client/routes.ts': `export default [{name:'profile-tool',componentLoader:()=>import('./page.js')},{name:'catalog-witness',componentLoader:()=>import('./witness.js')}];`,
+        'client/page.js': `import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'catalog/profile'});`,
+        'client/witness.js': `import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'catalog'});`,
+        'server/routes/index.ts': routeSource,
+        'server/tools/registry.ts': registrySource,
+        'server/tools/profile.ts': profile,
+        'server/tools/tokens.ts': `import {createServiceToken} from '@nocobase/service-provider';export const hrCoreServiceToken=createServiceToken('hr/core');`,
+        'server/providers/index.ts': `import {createServiceToken} from '@nocobase/service-provider';import {databaseManagerToken} from '@nocobase/db';import {hrCoreServiceToken} from '../tools/tokens.js';import {collectTools} from '../tools/registry.js';export const toolCatalogToken=createServiceToken('tools');export const catalogToken=createServiceToken('catalog');class Core{constructor(db){this.db=db;}myHrProfile(ctx,locale){return this.db.connection().repository('employees').findMany();}}class Catalog{constructor(db){this.db=db;}list(){return this.db.connection().repository('catalog').findMany();}}export default class Provider{register(){this.app.container.singleton(hrCoreServiceToken,()=>new Core(this.app.container.resolve(databaseManagerToken)));this.app.container.singleton(toolCatalogToken,()=>collectTools(this.app.container));this.app.container.singleton(catalogToken,()=>new Catalog(this.app.container.resolve(databaseManagerToken)));}}`,
+      });
+      const result = await collectModuleSources(root);
+      const toolProviders =
+        result.routes.find((route) => route.routeName === 'profile-tool')
+          ?.apiProviders ?? [];
+      if (kind === 'selected-tool' || kind === 'unselected-candidate')
+        expect(toolProviders).toContain('@nocobase/db');
+      else expect(toolProviders).not.toContain('@nocobase/db');
+      if (kind === 'unselected-candidate')
+        expect(toolProviders).not.toContain('@nocobase/unselected-db');
+      expect(
+        result.routes.find((route) => route.routeName === 'catalog-witness')
+          ?.apiProviders,
+      ).toEqual(['@nocobase/db', '@nocobase/service-provider']);
+    },
+  );
+
   it('keeps API client bindings scoped and excludes an unreferenced router', async () => {
     const root = await fixture({
       'client/routes.ts': `export default [{name:'page',componentLoader:()=>import('./page.js')}];`,

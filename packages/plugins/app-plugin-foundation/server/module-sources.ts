@@ -323,18 +323,23 @@ class SourceGraph {
   public evidence(
     file: string,
     roots?: readonly ts.Node[],
+    contextualCalls = false,
   ): {
     sources: (Source & { nodes: ReadonlySet<ts.Node> })[];
     providers: Set<string>;
     complete: boolean;
+    unsafeCapability: boolean;
+    unsafeValue: boolean;
   } {
-    const slice = this.analysis?.collect(file, roots);
+    const slice = this.analysis?.collect(file, roots, contextualCalls);
     const providers = new Set<string>();
     for (const reference of slice?.references ?? [])
       addProvider(providers, reference);
     return {
       providers,
       complete: slice?.complete ?? false,
+      unsafeCapability: slice?.unsafeCapability ?? true,
+      unsafeValue: slice?.unsafeValue ?? true,
       sources: [...(slice?.nodes ?? [])].flatMap(([name, nodes]) => {
         const source = this.files.get(name);
         return source ? [{ ...source, nodes }] : [];
@@ -406,7 +411,12 @@ class SourceGraph {
       source.ast,
       (await this.walk(source.file, false)).sources,
       this.analysis,
-      (file, nodes) => [...this.evidence(file, nodes).providers].sort(),
+      (file, nodes) => {
+        const evidence = this.evidence(file, nodes, true);
+        return evidence.unsafeCapability || evidence.unsafeValue
+          ? []
+          : [...evidence.providers].sort();
+      },
     );
   }
 

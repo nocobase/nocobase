@@ -3,14 +3,33 @@ import type { SourceEvidence } from './source-evidence.js';
 
 type Atom = string | number | boolean | null;
 type Bindings = ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
+interface Invocation {
+  readonly fn: ts.SignatureDeclaration;
+  readonly bindings: Bindings;
+}
+interface Flow {
+  readonly values: readonly ts.Node[];
+  readonly continues: boolean;
+  readonly unknown: boolean;
+}
 const MAX_VALUES = 32;
+const MAX_CALL_DEPTH = 32;
 
-/** A bounded literal evaluator. Calls, getters, spreads and unknown conditions are never executed or guessed. */
+/** Resolves bounded local values and returns without loading or executing application code. */
 export class StaticValues {
+  private readonly captures: Map<ts.SignatureDeclaration, Bindings>;
+  private readonly activeCalls: Set<ts.CallExpression>;
+
   public constructor(
     private readonly analysis: SourceEvidence,
     private readonly bindings: Bindings = new Map(),
-  ) {}
+    captures?: Map<ts.SignatureDeclaration, Bindings>,
+    activeCalls?: Set<ts.CallExpression>,
+    private readonly expandServices = true,
+  ) {
+    this.captures = captures ?? new Map<ts.SignatureDeclaration, Bindings>();
+    this.activeCalls = activeCalls ?? new Set();
+  }
 
   public values(
     node: ts.Node,
@@ -101,6 +120,29 @@ export class StaticValues {
           .slice(0, MAX_VALUES);
       return [];
     }
+    if (ts.isCallExpression(node)) {
+      if (this.activeCalls.has(node) || this.activeCalls.size >= MAX_CALL_DEPTH)
+        return [];
+      const nested = new Set(this.activeCalls).add(node);
+      const evaluator = new StaticValues(
+        this.analysis,
+        this.bindings,
+        this.captures,
+        nested,
+        this.expandServices,
+      );
+      const service = this.expandServices
+        ? evaluator.serviceValues(node)
+        : undefined;
+      if (service) return service;
+      const invocations = evaluator.invocations(node);
+      if (!invocations.length) return [node];
+      return invocations
+        .flatMap((invocation) =>
+          evaluator.invoke(invocation, new Set(), this.activeCalls.size),
+        )
+        .slice(0, MAX_VALUES);
+    }
     if (
       ts.isParenthesizedExpression(node) ||
       ts.isAsExpression(node) ||
@@ -116,7 +158,394 @@ export class StaticValues {
       return this.values(node.expression, seen)
         .flatMap((value) => this.property(value, node.name.text, seen))
         .slice(0, MAX_VALUES);
+    if (ts.isElementAccessExpression(node)) {
+      const key = node.argumentExpression;
+      const names = key ? this.strings(key) : [];
+      const indices = key
+        ? this.atoms(key, seen).filter(
+            (value): value is number =>
+              typeof value === 'number' &&
+              Number.isInteger(value) &&
+              value >= 0 &&
+              value < MAX_VALUES,
+          )
+        : [];
+      if (!names.length && !indices.length) return [];
+      return this.values(node.expression, seen)
+        .flatMap((value) => [
+          ...names.flatMap((name) => this.property(value, name, seen)),
+          ...(ts.isArrayLiteralExpression(value) &&
+          !value.elements.some(ts.isSpreadElement)
+            ? indices.flatMap((index) =>
+                value.elements[index]
+                  ? this.values(value.elements[index], seen)
+                  : [],
+              )
+            : []),
+        ])
+        .slice(0, MAX_VALUES);
+    }
     return [node];
+  }
+
+  /** Local calls are interpreted only through bounded arguments and explicit return paths. */
+  public invocations(node: ts.CallExpression): readonly Invocation[] {
+    const functions = new Set<ts.SignatureDeclaration>([
+      ...this.analysis.functions(node.expression),
+      ...this.values(node.expression).filter(ts.isFunctionLike),
+    ]);
+    const result: Invocation[] = [];
+    for (const fn of functions) {
+      if (!('body' in fn) || !fn.body) continue;
+      const captured =
+        this.captures.get(fn) ?? new Map<ts.Declaration, readonly ts.Node[]>();
+      const bindings = new Map(captured);
+      for (const [declaration, values] of this.bindings)
+        bindings.set(declaration, values);
+      fn.parameters.forEach((parameter, index) => {
+        const argument = node.arguments[index] ?? parameter.initializer;
+        bindings.set(parameter, argument ? [argument] : []);
+      });
+      if (
+        node.arguments.some(ts.isSpreadElement) ||
+        fn.parameters.some((parameter) => parameter.dotDotDotToken)
+      )
+        continue;
+      result.push({ fn, bindings });
+      if (result.length >= MAX_VALUES) break;
+    }
+    return result;
+  }
+
+  private serviceValues(
+    node: ts.CallExpression,
+  ): readonly ts.Node[] | undefined {
+    if (
+      !ts.isPropertyAccessExpression(node.expression) ||
+      node.expression.name.text !== 'resolve' ||
+      node.arguments.length !== 1 ||
+      node.questionDotToken ||
+      node.expression.questionDotToken
+    )
+      return undefined;
+    const factories = this.analysis.serviceFactories(node.arguments[0]);
+    if (!factories) return [];
+    const result: ts.Node[] = [];
+    for (const factory of factories) {
+      const values = this.values(factory);
+      for (const value of values) {
+        if (ts.isFunctionLike(value) && 'body' in value && value.body) {
+          const invocation = {
+            fn: value,
+            bindings: new Map(this.bindings),
+          };
+          if (value.parameters[0])
+            invocation.bindings.set(value.parameters[0], [
+              node.expression.expression,
+            ]);
+          result.push(...this.invoke(invocation, new Set(), 0));
+        } else result.push(value);
+      }
+    }
+    return result.slice(0, MAX_VALUES);
+  }
+
+  private invoke(
+    invocation: Invocation,
+    seen: ReadonlySet<ts.Node>,
+    depth: number,
+  ): readonly ts.Node[] {
+    if (depth >= MAX_CALL_DEPTH || !('body' in invocation.fn)) return [];
+    const body = invocation.fn.body;
+    if (!body) return [];
+    const evaluator = new StaticValues(
+      this.analysis,
+      invocation.bindings,
+      this.captures,
+      this.activeCalls,
+      this.expandServices,
+    );
+    const flow =
+      ts.isArrowFunction(invocation.fn) && !ts.isBlock(body)
+        ? {
+            values: evaluator.values(body, new Set(seen)),
+            continues: false,
+            unknown: false,
+          }
+        : evaluator.flow(body, seen, depth + 1);
+    if (flow.unknown) return [];
+    for (const value of flow.values)
+      evaluator.capture(value, invocation.bindings);
+    return [...new Set(flow.values)].slice(0, MAX_VALUES);
+  }
+
+  private flow(node: ts.Node, seen: ReadonlySet<ts.Node>, depth: number): Flow {
+    if (depth >= MAX_CALL_DEPTH || seen.has(node))
+      return { values: [], continues: false, unknown: true };
+    const nextSeen = new Set(seen).add(node);
+    if (ts.isArrowFunction(node) && !ts.isBlock(node.body))
+      return {
+        values: this.values(node.body, new Set(nextSeen)),
+        continues: false,
+        unknown: false,
+      };
+    if (ts.isBlock(node)) {
+      let continues = true;
+      let unknown = false;
+      const values: ts.Node[] = [];
+      for (const statement of node.statements) {
+        if (!continues) break;
+        const flow = this.flow(statement, nextSeen, depth + 1);
+        values.push(...flow.values);
+        unknown ||= flow.unknown;
+        continues = flow.continues;
+      }
+      return { values, continues, unknown };
+    }
+    if (ts.isReturnStatement(node))
+      return {
+        values: node.expression
+          ? this.values(node.expression, new Set(nextSeen))
+          : [],
+        continues: false,
+        unknown: !node.expression,
+      };
+    if (ts.isThrowStatement(node))
+      return { values: [], continues: false, unknown: false };
+    if (ts.isBreakStatement(node) || ts.isContinueStatement(node))
+      return { values: [], continues: false, unknown: true };
+    if (ts.isIfStatement(node)) {
+      const branches = [...new Set(this.atoms(node.expression).map(Boolean))];
+      if (branches.length === 1)
+        return branches[0]
+          ? this.flow(node.thenStatement, nextSeen, depth + 1)
+          : node.elseStatement
+            ? this.flow(node.elseStatement, nextSeen, depth + 1)
+            : { values: [], continues: true, unknown: false };
+      if (!branches.length) {
+        const then = this.flow(node.thenStatement, nextSeen, depth + 1);
+        const otherwise = node.elseStatement
+          ? this.flow(node.elseStatement, nextSeen, depth + 1)
+          : { values: [], continues: true, unknown: false };
+        return {
+          values: [...then.values, ...otherwise.values].slice(0, MAX_VALUES),
+          continues: then.continues || otherwise.continues,
+          unknown:
+            then.unknown ||
+            otherwise.unknown ||
+            (then.values.length > 0 && otherwise.continues) ||
+            (otherwise.values.length > 0 && then.continues),
+        };
+      }
+      return { values: [], continues: true, unknown: true };
+    }
+    if (ts.isForOfStatement(node)) {
+      const arrays = this.values(node.expression).filter(
+        ts.isArrayLiteralExpression,
+      );
+      const declaration =
+        ts.isVariableDeclarationList(node.initializer) &&
+        node.initializer.declarations.length === 1
+          ? node.initializer.declarations[0]
+          : undefined;
+      if (
+        !declaration ||
+        !arrays.length ||
+        arrays.length > MAX_VALUES ||
+        arrays.some(
+          (array) =>
+            array.elements.length > MAX_VALUES ||
+            array.elements.some(ts.isSpreadElement) ||
+            !this.stableCollection(array) ||
+            array.elements.some((element) => !this.completeCandidate(element)),
+        )
+      )
+        return { values: [], continues: true, unknown: true };
+      const values: ts.Node[] = [];
+      let unknown = false;
+      let continues = true;
+      for (const array of arrays) {
+        for (const element of array.elements) {
+          if (!continues) break;
+          const bindings = new Map(this.bindings).set(declaration, [element]);
+          const flow = new StaticValues(
+            this.analysis,
+            bindings,
+            this.captures,
+            this.activeCalls,
+            this.expandServices,
+          ).flow(node.statement, nextSeen, depth + 1);
+          values.push(...flow.values);
+          unknown ||= flow.unknown;
+          continues = flow.continues;
+        }
+      }
+      return {
+        values: values.slice(0, MAX_VALUES),
+        continues,
+        unknown,
+      };
+    }
+    if (
+      ts.isFunctionLike(node) ||
+      ts.isClassDeclaration(node) ||
+      ts.isClassExpression(node) ||
+      ts.isTypeNode(node)
+    )
+      return { values: [], continues: true, unknown: false };
+    return { values: [], continues: true, unknown: false };
+  }
+
+  private stableCollection(
+    node: ts.ArrayLiteralExpression | ts.ObjectLiteralExpression,
+  ): boolean {
+    if (
+      (ts.isArrayLiteralExpression(node) &&
+        (node.elements.length > MAX_VALUES ||
+          node.elements.some(ts.isSpreadElement))) ||
+      (ts.isObjectLiteralExpression(node) &&
+        node.properties.some(ts.isSpreadAssignment))
+    )
+      return false;
+    const parent = node.parent;
+    return ts.isVariableDeclaration(parent) ? this.stableBinding(parent) : true;
+  }
+
+  private stableBinding(declaration: ts.VariableDeclaration): boolean {
+    if (
+      !ts.isIdentifier(declaration.name) ||
+      !ts.isVariableDeclarationList(declaration.parent) ||
+      !(declaration.parent.flags & ts.NodeFlags.Const) ||
+      this.analysis.isExported(declaration)
+    )
+      return false;
+    const symbol = this.analysis.symbol(declaration.name);
+    let stable = true;
+    const visit = (current: ts.Node): void => {
+      if (!stable || ts.isTypeNode(current)) return;
+      if (
+        ts.isIdentifier(current) &&
+        current !== declaration.name &&
+        this.analysis.symbol(current) === symbol
+      ) {
+        let owner: ts.Node = current;
+        while (
+          (ts.isPropertyAccessExpression(owner.parent) &&
+            owner.parent.expression === owner) ||
+          (ts.isElementAccessExpression(owner.parent) &&
+            owner.parent.expression === owner)
+        )
+          owner = owner.parent;
+        const use = owner.parent;
+        if (ts.isCallExpression(use)) {
+          if (use.expression === owner) {
+            stable =
+              ts.isPropertyAccessExpression(owner) &&
+              owner.name.text === 'safeParse';
+          } else stable = false;
+        } else if (
+          ts.isBinaryExpression(use) &&
+          use.left === owner &&
+          use.operatorToken.kind === ts.SyntaxKind.EqualsToken
+        )
+          stable = false;
+        else if (
+          ts.isPrefixUnaryExpression(use) ||
+          ts.isPostfixUnaryExpression(use)
+        )
+          stable = false;
+      }
+      ts.forEachChild(current, visit);
+    };
+    visit(declaration.getSourceFile());
+    return stable;
+  }
+
+  private completeCandidate(node: ts.Node, seen = new Set<ts.Node>()): boolean {
+    if (seen.has(node) || seen.size >= MAX_VALUES) return false;
+    const next = new Set(seen).add(node);
+    if (
+      ts.isIdentifier(node) &&
+      this.analysis
+        .declarations(node)
+        .some(
+          (declaration) =>
+            ts.isVariableDeclaration(declaration) &&
+            !this.stableBinding(declaration),
+        )
+    )
+      return false;
+    const values = this.values(node);
+    if (!values.length) return false;
+    return values.every((value) => {
+      if (ts.isObjectLiteralExpression(value))
+        return (
+          this.stableCollection(value) &&
+          value.properties.length <= MAX_VALUES &&
+          value.properties.every((property) => {
+            if (
+              ts.isSpreadAssignment(property) ||
+              ts.isGetAccessorDeclaration(property) ||
+              ts.isSetAccessorDeclaration(property) ||
+              !property.name ||
+              ts.isComputedPropertyName(property.name)
+            )
+              return false;
+            if (ts.isPropertyAssignment(property)) {
+              const nested = this.values(property.initializer);
+              return (
+                nested.length > 0 &&
+                nested.every((item) =>
+                  ts.isObjectLiteralExpression(item) ||
+                  ts.isArrayLiteralExpression(item)
+                    ? this.completeCandidate(item, next)
+                    : true,
+                )
+              );
+            }
+            return (
+              ts.isShorthandPropertyAssignment(property) ||
+              ts.isMethodDeclaration(property)
+            );
+          })
+        );
+      if (ts.isArrayLiteralExpression(value))
+        return (
+          value.elements.length <= MAX_VALUES &&
+          value.elements.every(
+            (element) =>
+              !ts.isSpreadElement(element) &&
+              this.completeCandidate(element, next),
+          )
+        );
+      return (
+        ts.isFunctionLike(value) ||
+        ts.isStringLiteralLike(value) ||
+        ts.isNumericLiteral(value) ||
+        value.kind === ts.SyntaxKind.TrueKeyword ||
+        value.kind === ts.SyntaxKind.FalseKeyword ||
+        value.kind === ts.SyntaxKind.NullKeyword ||
+        ts.isNoSubstitutionTemplateLiteral(value)
+      );
+    });
+  }
+
+  private capture(node: ts.Node, bindings: Bindings): void {
+    if (ts.isFunctionLike(node)) {
+      this.captures.set(node, new Map(bindings));
+      return;
+    }
+    if (ts.isObjectLiteralExpression(node))
+      for (const property of node.properties) {
+        if (ts.isPropertyAssignment(property))
+          this.capture(property.initializer, bindings);
+        else if (ts.isShorthandPropertyAssignment(property))
+          this.capture(property.name, bindings);
+        else if (ts.isMethodDeclaration(property))
+          this.capture(property, bindings);
+      }
+    else if (ts.isArrayLiteralExpression(node))
+      node.elements.forEach((element) => this.capture(element, bindings));
   }
 
   private hasSpread(node: ts.Node): boolean {
@@ -144,7 +573,9 @@ export class StaticValues {
           ? entry.initializer
           : entry && ts.isShorthandPropertyAssignment(entry)
             ? entry.name
-            : undefined;
+            : entry && ts.isMethodDeclaration(entry)
+              ? entry
+              : undefined;
       return value ? this.values(value, seen) : [];
     }
     if (ts.isJsxAttributes(node)) {
