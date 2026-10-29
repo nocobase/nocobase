@@ -26,8 +26,11 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { useApiClient } from '@nocobase/app-client';
-import type { ConversationDetail } from '../../shared/conversations.js';
+import { useApiClient, useRealtimeReadiness } from '@nocobase/app-client';
+import {
+  CONVERSATIONS_TOPIC,
+  type ConversationDetail,
+} from '../../shared/conversations.js';
 import type {
   AppUIMessage,
   AppUIToolApprovalInput,
@@ -86,6 +89,7 @@ export class ChatController {
     string,
     { accepted: boolean; gate: ReturnType<typeof deferred<ResendResult>> }
   >();
+  private streamFollowers = new Map<string, number>();
   private detailReads = new Map<string, Promise<ConversationDetail>>();
   private refreshes = new Map<
     string,
@@ -958,6 +962,16 @@ export class ChatController {
       ''
     );
   }
+  followStream(id: string): () => void {
+    const count = (this.streamFollowers.get(id) ?? 0) + 1;
+    this.streamFollowers.set(id, count);
+    if (count === 1) this.receive(id);
+    return () => {
+      const remaining = (this.streamFollowers.get(id) ?? 1) - 1;
+      if (remaining === 0) this.streamFollowers.delete(id);
+      else this.streamFollowers.set(id, remaining);
+    };
+  }
   receive(id: string, known?: ConversationDetail): void {
     if (this.disposed) return;
     const detail =
@@ -1415,6 +1429,7 @@ export class ChatController {
     this.historyEpochs.clear();
     this.replacements.clear();
     this.reconciles.clear();
+    this.streamFollowers.clear();
     for (const watch of this.watches.values()) clearInterval(watch.timer);
     this.watches.clear();
     this.messageVersions.clear();
@@ -1483,6 +1498,7 @@ export function useChatController(): ChatController {
 }
 export function useChatStream(id: string | null): StreamState | undefined {
   const controller = useChatController();
+  const ready = useRealtimeReadiness([CONVERSATIONS_TOPIC]);
   useSDKChat({ chat: controller.chat(id ?? 'draft') });
   useSyncExternalStore(
     controller.subscribe,
@@ -1490,8 +1506,8 @@ export function useChatStream(id: string | null): StreamState | undefined {
     controller.snapshot,
   );
   useEffect(() => {
-    if (id) controller.receive(id);
-  }, [controller, id]);
+    if (ready && id) return controller.followStream(id);
+  }, [controller, id, ready]);
   return id ? controller.state(id) : undefined;
 }
 export function useChatStreamState(id: string | null): StreamState | undefined {

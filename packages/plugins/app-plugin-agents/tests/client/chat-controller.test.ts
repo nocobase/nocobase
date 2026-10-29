@@ -1151,3 +1151,18 @@ it('uses an active detail snapshot for initial messages without rereading the co
     off();
   }
 });
+
+it('initializes one shared stream while multiple surfaces follow it', async () => {
+  const f = fixture();
+  const receive = vi
+    .spyOn(f.controller, 'receive')
+    .mockImplementation(() => {});
+  const one = f.controller.followStream('c1');
+  const two = f.controller.followStream('c1');
+  expect(receive).toHaveBeenCalledOnce();
+  one();
+  two();
+  const reopened = f.controller.followStream('c1');
+  expect(receive).toHaveBeenCalledTimes(2);
+  reopened();
+});
