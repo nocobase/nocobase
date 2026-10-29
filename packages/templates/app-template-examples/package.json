@@ -135,7 +135,8 @@
     "scripts/check-packages.mjs",
     "docs/ui/pages/skill-projects.md",
     "docs/ui/pages/customer-contacts.md",
-    "docs/customer-contacts.md"
+    "docs/customer-contacts.md",
+    "docs/customer-contacts/*.png"
   ],
   "publishConfig": {
     "access": "public"

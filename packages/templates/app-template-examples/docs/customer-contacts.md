@@ -49,3 +49,15 @@ Sign in as the unrestricted administrator and use **Reset example data**, then c
 The [page design and acceptance criteria](ui/pages/customer-contacts.md) describe the UI contract. The synchronized [relation/batch reference](../.agents/skills/nocobase-app-development/references/frontend/references/executable-relation-batch.md) provides independent entry points, dependencies, source registration and adaptation guidance. Canonical source is under `client/pages/customer-contacts/`, `server/providers/customer-contacts*`, `server/routes/customer-contacts.ts`, the matching migration/seed and the three test suites. Edit canonical source first, then synchronize the Skill assets from the repository root; do not maintain a second implementation in generated Skills.
 
 For independent Default acceptance, substitute another business object such as suppliers, use separate native identities/data scopes and record requirements, installed versions, commands, observed data and manual corrections. Verify search/paging, permitted association changes, hidden source/target rejection, full/partial batch outcomes and illegal fields against actual saved rows. Record this separately from the example's own tests; shared baseline measurement and combined scenario acceptance belong to their own work.
+
+## Screenshots
+
+These English screenshots show the running Examples application with fictional data. The failed-delete view uses a simulated unavailable response without deleting the contact.
+
+![Customer list with scoped selection](customer-contacts/customers-list.png)
+
+![Customer relation picker with search, status and pagination](customer-contacts/relation-picker.png)
+
+![A batch result with one updated customer and one closed-customer failure](customer-contacts/batch-result.png)
+
+![Failure feedback inside the delete confirmation](customer-contacts/delete-error-visible.png)
