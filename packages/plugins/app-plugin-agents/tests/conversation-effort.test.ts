@@ -26,14 +26,14 @@ const tools = (efforts: readonly string[] | undefined) => [
     ],
   },
 ];
-async function fixture() {
+async function fixture(effort = 'medium') {
   h = await createHarness();
   const runner = await h.registerRunner({
     tools: tools(['low', 'medium', 'high']),
   });
   const id = await h.createAgent({
     source: 'runner',
-    modelEntries: [{ tool: 'claude', model: 'test-model', effort: 'medium' }],
+    modelEntries: [{ tool: 'claude', model: 'test-model', effort }],
   });
   return { runner, id };
 }
@@ -95,35 +95,48 @@ it('uses only eligible model reports and excludes another owner personal runner'
   expect(agent.effort).toBe('medium');
 });
 
-it.each([['low', 'medium', 'high'], undefined])(
-  'omits an unselected Agent default with capabilities %j',
-  async (capabilities) => {
-    const { id, runner } = await fixture();
-    await h.database
-      .connection()
-      .repository('agRunners')
-      .updateMany({
-        filter: { id: runner.runnerId },
-        values: { tools: asJson(tools(capabilities)) },
-      });
-    const session = await h.services.onlineAgent.realtime(context, {
-      agentId: id,
+it('delivers a known Agent default without saving it as a conversation preference', async () => {
+  const { id, runner } = await fixture('high');
+  const session = await h.services.onlineAgent.realtime(context, {
+    agentId: id,
+  });
+  await session.send([{ role: 'user', content: 'Use the Agent default' }]);
+  await (await session.receive())!.cancel();
+  const [run] = await claim(h, runner);
+  expect(run.tool.effort).toBe('high');
+  expect((await h.services.runs.get(run.run.id)).effort).toBe('high');
+  expect(
+    (await h.services.conversations.get('alice', session.sessionId)).effort,
+  ).toBeNull();
+  const user = (await session.history()).find(
+    (message) => message.role === 'user',
+  )!;
+  expect(user.metadata?.effort).toBeUndefined();
+});
+
+it('omits an unselected Agent default when the runtime effort report is unknown', async () => {
+  const { id, runner } = await fixture('high');
+  await h.database
+    .connection()
+    .repository('agRunners')
+    .updateMany({
+      filter: { id: runner.runnerId },
+      values: { tools: asJson(tools(undefined)) },
     });
-    expect(
-      (await h.services.conversations.get('alice', session.sessionId)).effort,
-    ).toBeNull();
-    await session.send([{ role: 'user', content: 'Use the tool default' }]);
-    await (await session.receive())!.cancel();
-    const [run] = await claim(h, runner);
-    expect(run.tool).not.toHaveProperty('effort');
-    expect((await h.services.runs.get(run.run.id)).effort).toBeNull();
-    const user = (await session.history()).find(
-      (message) => message.role === 'user',
-    )!;
-    expect(user.metadata?.effort).toBeUndefined();
-    expect(user.parts.some((part) => part.type === 'data-notice')).toBe(false);
-  },
-);
+  const session = await h.services.onlineAgent.realtime(context, {
+    agentId: id,
+  });
+  await session.send([{ role: 'user', content: 'Use the tool default' }]);
+  await (await session.receive())!.cancel();
+  const [run] = await claim(h, runner);
+  expect(run.tool).not.toHaveProperty('effort');
+  expect((await h.services.runs.get(run.run.id)).effort).toBeNull();
+  const user = (await session.history()).find(
+    (message) => message.role === 'user',
+  )!;
+  expect(user.metadata?.effort).toBeUndefined();
+  expect(user.parts.some((part) => part.type === 'data-notice')).toBe(false);
+});
 
 it('saves only a selected non-default effort and clears it on a later omitted/default send', async () => {
   const { id, runner } = await fixture();
@@ -164,7 +177,7 @@ it('saves only a selected non-default effort and clears it on a later omitted/de
   await selected.send([{ role: 'user', content: 'Use default now' }]);
   await (await selected.receive())!.cancel();
   const [second] = await claim(h, runner);
-  expect(second.tool).not.toHaveProperty('effort');
+  expect(second.tool.effort).toBe('medium');
   expect(
     (await h.services.conversations.get('alice', selected.sessionId)).effort,
   ).toBeNull();
@@ -188,7 +201,7 @@ it.each(['medium', null])(
     expect(
       (await h.services.conversations.get('alice', session.sessionId)).effort,
     ).toBeNull();
-    expect((await claim(h, runner))[0].tool).not.toHaveProperty('effort');
+    expect((await claim(h, runner))[0].tool.effort).toBe('medium');
   },
 );
 
@@ -409,5 +422,5 @@ it('does not save an Agent default on a switch', async () => {
   expect(
     (await h.services.conversations.get('alice', session.sessionId)).effort,
   ).toBeNull();
-  expect((await claim(h, runner))[0].tool).not.toHaveProperty('effort');
+  expect((await claim(h, runner))[0].tool.effort).toBe('high');
 });

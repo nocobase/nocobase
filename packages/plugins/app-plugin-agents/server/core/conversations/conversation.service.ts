@@ -1391,10 +1391,21 @@ export function createConversationService(
         const preference =
           jsonObject(record.metadata).turnEffort ??
           jsonObject(record.metadata).effort;
-        const withEffort = {
-          ...assembly,
-          effort: typeof preference === 'string' ? preference : null,
-        };
+        const defaultEffort = claim.agent.modelEntries[0]?.effort;
+        const capabilities = chatEffortCapabilities(
+          claim.agent.modelEntries[0],
+          claim.runner ? [claim.runner] : [],
+        );
+        const effort =
+          typeof preference === 'string'
+            ? preference
+            : capabilities === undefined
+              ? null
+              : defaultEffort && !capabilities.includes(defaultEffort)
+                ? defaultEffort
+                : undefined;
+        const withEffort =
+          effort === undefined ? assembly : { ...assembly, effort };
         const config = runnerBinding(record.metadata)?.config;
         return config
           ? {
