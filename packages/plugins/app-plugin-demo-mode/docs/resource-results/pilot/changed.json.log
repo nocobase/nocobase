@@ -1,9 +1,0 @@
-
- RUN  v4.1.10 /Users/gchust/.t3/worktrees/nocobase/fix-demo-reset-resource-nocobase-20261029/packages/plugins/app-plugin-demo-mode
-
-
- Test Files  1 passed (1)
-      Tests  1 passed (1)
-   Start at  15:53:41
-   Duration  6.98s (transform 1.28s, setup 0ms, import 1.77s, tests 5.14s, environment 0ms)
-

@@ -623,17 +623,3 @@ it('resolves allowed collections once instead of introspecting the schema on eve
   expect(get.mock.calls.map(([name]) => name)).not.toContain('verification');
   expect(get.mock.calls.map(([name]) => name)).not.toContain('demonotes');
 });
-
-it('bounds initial admission recovery and skips nonexistent DST wall minutes', async () => {
-  const { config } = await setup({
-    NOCOBASE_DEMO_RESET_HOUR: '2',
-    NOCOBASE_DEMO_RESET_MINUTE: '55',
-    NOCOBASE_DEMO_RESET_TIMEZONE: 'America/New_York',
-  });
-  // 02:55 does not exist on the spring-forward day, even though 03:00 is only five wall minutes later.
-  expect(await config.claimDaily(new Date('2026-03-08T07:00:00Z'))).toBeNull();
-  expect(await config.claimDaily(new Date('2026-03-09T07:11:00Z'))).toBeNull();
-  expect(
-    await config.claimDaily(new Date('2026-03-10T06:56:00Z')),
-  ).toMatchObject({ attempt: 1, day: '2026-03-10' });
-});

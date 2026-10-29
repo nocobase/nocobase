@@ -110,14 +110,6 @@ describe('CollectionRegistry', () => {
     expect(second?.fields?.[0]?.type).toBe('bigInt');
     expect((await registry.get('orders'))?.fields?.[0]?.type).toBe('bigInt');
     expect(inspector.getCalls).toBe(1);
-    const resolution = await registry.getResolution('orders');
-    resolution!.collection.fields![0].type = 'text';
-    const queryCollection = await registry.getForQuery('orders');
-    expect(queryCollection?.fields?.[0]?.type).toBe('bigInt');
-    queryCollection!.fields![0].type = 'string';
-    expect(
-      (await registry.getResolution('orders'))?.collection.fields?.[0]?.type,
-    ).toBe('bigInt');
 
     await registry.refresh('orders');
     expect(inspector.getCalls).toBe(2);

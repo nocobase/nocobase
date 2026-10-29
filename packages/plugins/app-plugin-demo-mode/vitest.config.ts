@@ -12,16 +12,7 @@ export default defineConfig({
         test: {
           name: 'node',
           include: ['tests/**/*.test.{ts,tsx}'],
-          exclude: ['tests/client/**', 'tests/resources/**'],
-        },
-      }),
-      createNodeVitestConfig({
-        test: {
-          name: 'resources',
-          include: ['tests/resources/**/*.test.ts'],
-          pool: 'forks',
-          execArgv: ['--expose-gc', '--max-old-space-size=1536'],
-          maxWorkers: 1,
+          exclude: ['tests/client/**'],
         },
       }),
       createReactVitestConfig({

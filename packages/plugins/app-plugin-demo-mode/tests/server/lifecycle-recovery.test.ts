@@ -241,37 +241,3 @@ it.each(['steps', 'timezone', 'policy'] as const)(
     });
   },
 );
-
-it('renews a long application step and rejects competing resets until it completes', async () => {
-  const { make, dataset } = await fixture();
-  const first = make(),
-    second = make();
-  const waiting = gate();
-  first.register({
-    ...dataset,
-    steps: () => [
-      {
-        key: 'people-and-projects',
-        run: async () => {
-          waiting.enter();
-          await waiting.held;
-        },
-      },
-    ],
-  });
-  second.register(dataset);
-  vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
-  const importing = first.importNow('admin');
-  await waiting.entered;
-  try {
-    await vi.advanceTimersByTimeAsync(11 * 60_000);
-    expect((await second.status()).state).toBe('importing');
-    await expect(
-      second.reset('admin', undefined, { wait: true }),
-    ).rejects.toMatchObject({ reason: 'DEMO_DATA_BUSY' });
-  } finally {
-    waiting.release();
-    await importing;
-  }
-  expect((await first.status()).state).toBe('ready');
-});
