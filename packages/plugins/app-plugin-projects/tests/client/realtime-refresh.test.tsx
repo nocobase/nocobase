@@ -90,7 +90,7 @@ const announce = (payload: unknown) =>
     publishedAt: '2026-10-15T08:00:00Z',
   });
 
-it('refreshes projects only for an announcement naming no issues', async () => {
+it('refreshes lists and project counts for named changes while preserving unrelated details', async () => {
   const view = await renderQueries(
     <>
       <Reader name='projects' queryKey={pmKeys.projects} />
@@ -110,6 +110,15 @@ it('refreshes projects only for an announcement naming no issues', async () => {
   announce({ kind: 'pm.changed', domain: 'issues' });
   await waitFor(() =>
     expect(reads).toEqual({ projects: 2, list: 3, a: 3, b: 2 }),
+  );
+  announce({
+    kind: 'pm.changed',
+    domain: 'issues',
+    issueIds: ['a'],
+    listsChanged: true,
+  });
+  await waitFor(() =>
+    expect(reads).toEqual({ projects: 3, list: 4, a: 4, b: 2 }),
   );
   await view.unmount();
 });

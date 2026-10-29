@@ -96,8 +96,12 @@ function RealtimeRefresh(): null {
             return;
           }
           const named = issues.map(announcedIssueIds);
-          if (named.some((ids) => !ids)) {
+          if (
+            named.some((ids) => !ids) ||
+            issues.some((change) => change.listsChanged)
+          )
             invalidate(pmKeys.projects);
+          if (named.some((ids) => !ids)) {
             invalidate(['pm', 'issue']);
           } else {
             const ids = new Set(named.flatMap((ids) => (ids ? [...ids] : [])));

@@ -288,3 +288,9 @@ Invitation emails use `notificationService.sendTransient()` so credentials never
 Manual issue descriptions accept pasted images through the existing protected attachment upload. Creation accepts optional `attachmentIds` of the caller's own unattached uploads and requires `pm.attachments` `upload` in addition to issue creation permission. Files are bound in the creation transaction before work starts, so the first agent context includes them. Descriptions remain Markdown; image nodes survive detail edits. Uploading blocks submission; cancelling leaves unattached files to the existing purge.
 
 Applications can provide `ExecutorPresentationContext` from the client kit to render the identity and availability of their registered executor kind in new issue and subtask selectors. It changes presentation only; the server still supplies candidates and enforces qualifications.
+
+### Issue card summaries
+
+`GET /api/projects/issues/summaries?refs=PM-12,123` accepts 1–100 IDs or identifiers and returns `{ data: [{ id, identifier, title, statusKey }], meta: { total } }`. It requires authentication and `pm.issues/view`; deleted, invisible and credential-project-excluded issues are omitted without distinguishing them from missing references. Duplicate references return one row. The batch performs one business query with the existing visibility predicate and no comment, member or relation hydration. Browser consumers may call `PmApi.issueSummaries(refs)` and use `FIXED_STATUSES` for labels and colors.
+
+`pm.changed` preserves known `issueIds` for creation, deletion and membership changes too. `listsChanged: true` means lists and project counts must refresh while issue details remain scoped to those IDs. Batches larger than 100 IDs are split; events with unknown scope still omit `issueIds`. Re-read after each subscription acknowledgement to recover missed events.

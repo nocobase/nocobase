@@ -91,7 +91,7 @@ describe('change announcements', () => {
     expect(published).toHaveLength(1);
   });
 
-  it('names no issue once a change may move issues between lists, or names none', () => {
+  it('keeps task scope when a change moves issues between lists, with unknown scope as fallback', () => {
     for (const event of [
       { type: 'issue.created', issueId: 'c' },
       { type: 'issue.deleted', issueId: 'c' },
@@ -115,7 +115,16 @@ describe('change announcements', () => {
       changes.add(event);
       changes.add({ type: 'issue.changed', issueId: 'b' });
       changes.flush();
-      expect(published).toEqual([{ kind: 'pm.changed', domain: 'issues' }]);
+      expect(published).toEqual([
+        event.type === 'member.changed'
+          ? { kind: 'pm.changed', domain: 'issues' }
+          : {
+              kind: 'pm.changed',
+              domain: 'issues',
+              issueIds: ['a', 'c', 'b'],
+              listsChanged: true,
+            },
+      ]);
       changes.close();
     }
   });
@@ -133,7 +142,7 @@ describe('change announcements', () => {
     ]);
   });
 
-  it('announces each kind of data once, and too many issues without naming them', () => {
+  it('announces each kind of data and splits large batches without losing task scope', () => {
     const { it: changes, published } = announcer();
     changes.add({ type: 'label.changed' });
     changes.add({ type: 'plan.changed' });
@@ -144,7 +153,19 @@ describe('change announcements', () => {
     expect(published).toEqual([
       { kind: 'pm.changed', domain: 'labels' },
       { kind: 'pm.changed', domain: 'plans' },
-      { kind: 'pm.changed', domain: 'issues' },
+      {
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: Array.from(
+          { length: ANNOUNCED_ISSUES_MAX },
+          (_, at) => `i${at}`,
+        ),
+      },
+      {
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: [`i${ANNOUNCED_ISSUES_MAX}`],
+      },
     ]);
   });
 
