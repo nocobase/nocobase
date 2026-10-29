@@ -1172,10 +1172,16 @@ export class ChatController {
     if (this.disposed) return Promise.resolve();
     const pending = this.refreshes.get(id);
     if (pending) {
-      pending.trailing ||= fresh;
+      if (fresh) {
+        pending.trailing = true;
+        this.nextDetailVersion(id);
+      }
       return pending.task;
     }
-    const active = this.lifetime();
+    const lifetime = this.lifetime(),
+      commandVersion = this.commandVersions.get(id),
+      active = () =>
+        lifetime() && this.commandVersions.get(id) === commandVersion;
     const owner = { trailing: false, task: Promise.resolve() };
     const run = async () => {
       do {
@@ -1390,6 +1396,9 @@ export class ChatController {
     const active = this.lifetime(),
       version = (this.commandVersions.get(id) ?? 0) + 1;
     this.commandVersions.set(id, version);
+    // A command replaces the snapshot generation; its reads must not wait on obsolete HTTP.
+    this.detailReads.delete(id);
+    this.refreshes.delete(id);
     this.nextDetailVersion(id);
     this.invalidateHistoryReads(id);
     const recovery = this.recoveries.get(id);
