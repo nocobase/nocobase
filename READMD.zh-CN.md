@@ -48,7 +48,9 @@ npx skills@latest add nocobase/skills-v3 --skill nocobase-create-app -g
 
 安装时选择当前使用的 Agent；若未识别到新 Skill，重新开启会话。然后发送：
 
-> 请按照 nocobase-create-app Skill，在当前空目录中创建并启动 NocoBase 3 应用，使用默认模板和 SQLite。
+```text
+请按照 nocobase-create-app Skill，在当前空目录中创建并启动 NocoBase 3 应用，使用默认模板和 SQLite。
+```
 
 ### 使用终端
 
