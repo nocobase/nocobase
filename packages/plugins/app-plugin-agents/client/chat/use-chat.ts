@@ -647,15 +647,9 @@ export function useConversationActions(): ConversationActions {
 
   const markRead = useCallback(
     (id: string) => {
-      void controller
-        .command(
-          id,
-          () => api.markRead(id),
-          (detail) => detail,
-        )
-        .catch(() => undefined);
+      void controller.markRead(id).catch(() => undefined);
     },
-    [api, controller],
+    [controller],
   );
 
   return { rename, archive, stop, remove, markRead };
