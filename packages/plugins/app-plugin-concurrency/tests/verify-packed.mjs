@@ -10,7 +10,7 @@ const coreRoot = dirname(
   dirname(fileURLToPath(import.meta.resolve('@nocobase/concurrency'))),
 );
 const metadata = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-if (metadata.name !== '@nocobase/concurrency-mutex')
+if (metadata.name !== '@nocobase/app-plugin-concurrency')
   throw new Error('Unexpected mutex package name');
 const coreMetadata = JSON.parse(
   readFileSync(join(coreRoot, 'package.json'), 'utf8'),
@@ -26,7 +26,7 @@ const coreTarball = join(
 );
 const mutexTarball = join(
   artifacts,
-  `nocobase-concurrency-mutex-${metadata.version}.tgz`,
+  `nocobase-app-plugin-concurrency-${metadata.version}.tgz`,
 );
 execFileSync('pnpm', ['pack', '--out', coreTarball], {
   cwd: coreRoot,
@@ -65,7 +65,7 @@ writeFileSync(
   join(consumer, 'consumer.ts'),
   readFileSync(join(root, 'tests/consumer.ts'), 'utf8').replaceAll(
     '../src/index.ts',
-    '@nocobase/concurrency-mutex',
+    '@nocobase/app-plugin-concurrency',
   ),
 );
 writeFileSync(
@@ -95,10 +95,10 @@ import {setImmediate} from 'node:timers/promises';
 import * as core from '@nocobase/concurrency';
 import * as port from '@nocobase/concurrency/backend';
 import * as testing from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '@nocobase/concurrency-mutex';
-for(const entry of ['@nocobase/concurrency','@nocobase/concurrency/backend','@nocobase/concurrency/testing','@nocobase/concurrency-mutex']) assert.match(import.meta.resolve(entry),/node_modules.*dist/);
-const installed = JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../package.json', import.meta.resolve('@nocobase/concurrency-mutex')), 'utf8'));
-assert.equal(installed.name,'@nocobase/concurrency-mutex');
+import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency';
+for(const entry of ['@nocobase/concurrency','@nocobase/concurrency/backend','@nocobase/concurrency/testing','@nocobase/app-plugin-concurrency']) assert.match(import.meta.resolve(entry),/node_modules.*dist/);
+const installed = JSON.parse(await (await import('node:fs/promises')).readFile(new URL(import.meta.resolve('@nocobase/app-plugin-concurrency/package.json')), 'utf8'));
+assert.equal(installed.name,'@nocobase/app-plugin-concurrency');
 assert.equal(installed.peerDependencies['@nocobase/concurrency'], '^' + ${JSON.stringify(coreMetadata.version)});
 for(const name of ['ConcurrentConfigurationError','ConcurrentAcquireError','ConcurrentAbortError','ConcurrentLeaseLostError','ConcurrentReleaseError','ConcurrentCloseError']) {assert.equal(core[name],port[name]);assert.equal(core[name],testing[name]);}
 const contract = await testing.runBackendContract({createBackend:()=>new LocalConcurrentBackend()});

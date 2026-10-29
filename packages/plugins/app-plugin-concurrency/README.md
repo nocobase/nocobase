@@ -1,28 +1,62 @@
-# @nocobase/concurrency-mutex
+# @nocobase/app-plugin-concurrency
 
-Retry-timer registration and cancellation failures settle the acquisition Promise instead of escaping timer or native abort callbacks; abort listeners are removed even on failure. If cancellation arrives during registration, settlement waits until the cancellation handle is available. A failed resource-grant transition compensates its holder and ticket under the real Mutex gate, guarded by state identity, version and token. Failed compensation remains retained for retryable backend drain; it never clears a successor holder.
+Application-owned concurrency services and an in-process fixed-TTL Mutex backend for NocoBase 3. This package replaces the unpublished @nocobase/concurrency-mutex package; do not install both names. Requires Node 24 ESM and compatible @nocobase/app-server, @nocobase/service-provider and @nocobase/concurrency peers.
 
-An in-process fixed-TTL backend for `@nocobase/concurrency`, using the public `Mutex` from `async-mutex@0.5.0` only for short synchronous state transitions. Requires Node 24 ESM. Install core alongside this adapter; core is a peer so errors, backend contracts, leases and execution logic share one identity.
+## Application integration
 
-The package lives at `packages/plugins/concurrency-mutex` in the source repository. It is a backend adapter for the concurrency contract, not an application plugin requiring registration. Its public constructor remains `LocalConcurrentBackend`.
+Install the plugin and its peers, then register the Server definition before business consumers in the application's server/plugins.ts:
 
-```js
+```ts
+import concurrency from '@nocobase/app-plugin-concurrency/server';
+import { defineServerPlugins } from '@nocobase/app-server/plugins';
+
+export default defineServerPlugins([
+  concurrency,
+  // Other application plugins.
+]);
+```
+
+Register configuration separately in the application's existing configuration aggregator:
+
+```ts
+import { defineConcurrencyConfig } from '@nocobase/app-plugin-concurrency/config';
+
+export default defineConcurrencyConfig();
+```
+
+The factory supplies { default: 'memory', memory: { adapter: 'mutex' } }, maps CONCURRENCY_DEFAULT to the section's default selector, validates without I/O and publishes no browser configuration. Register this factory under concurrency. File and environment precedence remain application-owned. Both OSS templates already perform these two registration steps. A manually composed host with no section uses a built-in Mutex item. Unknown names or invalid defaults never fall back. Unused named adapters need not be installed, but common fields and every registered implementation are validated at boot.
+
+## Business consumers and lifecycle
+
+Import the original concurrencyServiceToken and ConcurrencyService from @nocobase/app-plugin-concurrency/server. Resolve and inject the service during boot; call getManager() or getManager(name) only in ready or normal running work. The same configuration name shares one manager/runtime. Its createLock/createSynchronous methods only apply the configured default TTL and return core objects; they do not wrap acquisition or execution. Leases belong to callers and must be returned. A fixed TTL is not renewal or an acquisition timeout. See the packaged [integration Skill](skills/nocobase-app-plugin-concurrency/SKILL.md) for a complete consumption example.
+
+The Provider owns initialization and shutdown. A failed close retains the original runtime/backend for explicit service.shutdown() retry; the application's cached shutdown Promise does not repeat Provider cleanup. Business consumers must not close shared resources. Boot freezes all entries, including lazy ones. Reload only warns; applying a changed lock domain requires coordinated restart. Two enabled Mutex entries with the same namespace are rejected: reuse the same item instead. Local locks never coordinate separate processes. Non-development use emits a local-scope warning.
+
+Redis support is contributed by the commercial @nocobase/app-plugin-concurrency-redis plugin, not enabled by installation alone. That plugin owns its backend, registration, dedicated connection and Redis-specific validator. OSS applications do not depend on it.
+
+## Public exports
+
+- /server: the static Server definition, original Token, service/extension contracts and Provider.
+- /config: defineConcurrencyConfig, common types and pure validation, without importing Server registration.
+- /package.json: package metadata.
+- Root: LocalConcurrentBackend and LocalConcurrentBackendOptions for deliberate low-level runtime construction. It does not bind a host service or register a plugin automatically.
+
+## Low-level backend
+
+```ts
 import { createConcurrentRuntime } from '@nocobase/concurrency';
-import { LocalConcurrentBackend } from '@nocobase/concurrency-mutex';
+import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency';
 
-const backend = new LocalConcurrentBackend();
 const runtime = await createConcurrentRuntime({
-  backend,
+  backend: new LocalConcurrentBackend(),
   namespace: 'orders:local',
 });
 const executor = await runtime.manager.createSynchronous('order:123', {
   ttl: 30000,
 });
-const value = await executor.run(async ({ signal }) => {
+await executor.run(async ({ signal }) => {
   signal.throwIfAborted();
-  return 42;
 });
-console.log(value);
 await runtime.close();
 ```
 

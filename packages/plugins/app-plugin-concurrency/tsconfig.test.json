@@ -1,0 +1,5 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/node-tooling.json",
+  "compilerOptions": { "lib": ["ES2024"] },
+  "include": ["src", "server", "shared", "config", "tests", "vitest.config.ts"]
+}

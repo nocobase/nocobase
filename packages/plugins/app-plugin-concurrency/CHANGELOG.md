@@ -1,4 +1,4 @@
-# @nocobase/concurrency-mutex
+# @nocobase/app-plugin-concurrency
 
 ## 0.0.1
 
