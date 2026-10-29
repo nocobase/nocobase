@@ -133,7 +133,9 @@
     "CLAUDE.md",
     "playwright.config.ts",
     "scripts/check-packages.mjs",
-    "docs/ui/pages/skill-projects.md"
+    "docs/ui/pages/skill-projects.md",
+    "docs/ui/pages/customer-contacts.md",
+    "docs/customer-contacts.md"
   ],
   "publishConfig": {
     "access": "public"
