@@ -72,8 +72,8 @@ export class AuthorizationServiceProvider extends ServiceProvider<ClientApplicat
           resolve();
         },
       });
-    this.unsubscribePermissionsChanged = watch(topics[0]!).close;
-    this.unsubscribeGlobalPermissionsChanged = watch(topics[1]!).close;
+    this.unsubscribePermissionsChanged = watch(topics[0]).close;
+    this.unsubscribeGlobalPermissionsChanged = watch(topics[1]).close;
     return Promise.resolve();
   }
 
