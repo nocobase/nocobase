@@ -187,6 +187,91 @@ describe('runtimes page', () => {
     expect(within(sheet).getByText('PM-396')).toBeInTheDocument();
   });
 
+  it('uses the shared numbered pagination for workspaces and returns to cached pages', async () => {
+    const measuredAt = new Date().toISOString();
+    const usage = {
+      disk: null,
+      count: 51,
+      unpushedCount: 0,
+      measuredAt,
+      counts: { all: 51, active: 0, retained: 0, ended: 51 },
+      workspaces: [],
+    };
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: usage,
+    };
+    const workspace = (id: number) => ({
+      workDir: `/workspace/${id}`,
+      unpushed: false,
+      lastUsedAt: measuredAt,
+      subjectKind: 'task',
+      subjectId: String(id),
+      subjectKey: `Task ${id}`,
+      settled: true,
+    });
+    api.routes['agents/runners/r1/workspaces'] = ({ query }) => {
+      const page = Number(query.page ?? 1);
+      return {
+        data:
+          page === 1
+            ? Array.from({ length: 50 }, (_, index) => workspace(index + 1))
+            : [workspace(51)],
+        meta: {
+          page,
+          pageSize: 50,
+          total: 51,
+          usage: {
+            disk: null,
+            count: 51,
+            unpushedCount: 0,
+            measuredAt,
+            counts: usage.counts,
+          },
+        },
+      };
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await openWorkspaces(sheet);
+
+    const nav = within(sheet).getByRole('navigation', {
+      name: 'runtimes.quota.workspaces',
+    });
+    const previous = within(nav).getByRole('button', {
+      name: 'runtimes.quota.previous',
+    });
+    const next = within(nav).getByRole('button', {
+      name: 'runtimes.quota.next',
+    });
+    expect(previous).toBeDisabled();
+    expect(next).toHaveClass('h-7');
+    expect(nav.parentElement).toHaveClass('mt-3', 'px-2');
+    expect(
+      within(sheet).getByText('runtimes.detail.runsPage(page=1,pageCount=2)'),
+    ).toBeInTheDocument();
+    expect(within(sheet).getByText('Task 1')).toBeInTheDocument();
+
+    await userEvent.click(next);
+    expect(
+      await within(sheet).findByText(
+        'runtimes.detail.runsPage(page=2,pageCount=2)',
+      ),
+    ).toBeInTheDocument();
+    expect(within(sheet).getByText('Task 51')).toBeInTheDocument();
+    expect(next).toBeDisabled();
+    expect(previous).toBeEnabled();
+
+    await userEvent.click(previous);
+    expect(
+      await within(sheet).findByText(
+        'runtimes.detail.runsPage(page=1,pageCount=2)',
+      ),
+    ).toBeInTheDocument();
+    expect(within(sheet).getByText('Task 1')).toBeInTheDocument();
+  });
+
   it('updates disk state from a fresh heartbeat while retaining the older directory collection time', async () => {
     runners[0] = {
       ...runners[0]!,

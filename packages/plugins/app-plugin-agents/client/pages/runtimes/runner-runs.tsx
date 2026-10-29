@@ -1,12 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-} from '../../components/ui/pagination.js';
 import { Link } from 'react-router';
 import { useChatPanel } from '../../chat/provider.js';
 import { agentsKeys } from '../../api/keys.js';
@@ -17,11 +11,11 @@ import {
   compactDateTime,
 } from '../../lib/format.js';
 import { RUN_STATUS_TONE } from '../../lib/runs.js';
-import { Button } from '../../components/ui/button.js';
 import { Spinner } from '../../components/ui/spinner.js';
 import { TONE_CLASS } from '../../components/ag-tag-tones.js';
 import { Badge } from '../../components/ui/badge.js';
 import { QuotaLabel } from '../../components/quota-status.js';
+import { RunnerPagination } from './runner-pagination.js';
 import {
   Table,
   TableBody,
@@ -163,50 +157,25 @@ export function RunnerRuns({
           </TableBody>
         </Table>
       </div>
-      <div className='mt-3 flex flex-wrap items-center justify-between gap-3 px-2'>
-        <p className='text-sm text-muted-foreground' aria-live='polite'>
-          {t('runtimes.detail.runsTotal', { count: page.meta.total })}
-        </p>
-        <Pagination
-          className='mx-0 w-auto'
-          aria-label={t('runtimes.detail.runsPagination')}
-        >
-          <PaginationContent className='gap-2'>
-            <PaginationItem>
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={pageIndex === 0 || runs.isFetching}
-                onClick={() => setSelectedPage(pageIndex - 1)}
-              >
-                <ChevronLeftIcon data-icon='inline-start' />
-                {t('runtimes.detail.runsPrevious')}
-              </Button>
-            </PaginationItem>
-            <PaginationItem
-              className='text-sm font-medium whitespace-nowrap tabular-nums'
-              aria-current='page'
-            >
-              {t('runtimes.detail.runsPage', {
-                page: pageIndex + 1,
-                pageCount,
-              })}
-            </PaginationItem>
-            <PaginationItem>
-              <Button
-                variant='outline'
-                size='sm'
-                disabled={!page.meta.nextCursor || runs.isFetching}
-                onClick={() => void next()}
-              >
-                {runs.isFetchingNextPage ? <Spinner /> : null}
-                {t('runtimes.detail.runsNext')}
-                <ChevronRightIcon data-icon='inline-end' />
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+      <RunnerPagination
+        ariaLabel={t('runtimes.detail.runsPagination')}
+        pageLabel={t('runtimes.detail.runsPage', {
+          page: pageIndex + 1,
+          pageCount,
+        })}
+        previousLabel={t('runtimes.detail.runsPrevious')}
+        nextLabel={t('runtimes.detail.runsNext')}
+        canGoPrevious={pageIndex > 0 && !runs.isFetching}
+        canGoNext={Boolean(page.meta.nextCursor) && !runs.isFetching}
+        nextLoading={runs.isFetchingNextPage}
+        summary={
+          <p className='text-sm text-muted-foreground' aria-live='polite'>
+            {t('runtimes.detail.runsTotal', { count: page.meta.total })}
+          </p>
+        }
+        onPrevious={() => setSelectedPage(pageIndex - 1)}
+        onNext={() => void next()}
+      />
       {runs.isFetchNextPageError && pageIndex === runs.data.pages.length - 1 ? (
         <p role='alert' className='mt-2 text-sm text-destructive'>
           {t('runtimes.detail.runsFailed')}
