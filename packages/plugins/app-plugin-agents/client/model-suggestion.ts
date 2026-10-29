@@ -14,13 +14,39 @@ export const MODEL_SUGGESTION_KEYS: Readonly<Record<string, string>> = {
   'gpt-6-luna': 'modelSuggestions.small',
 };
 
+/** Exact catalog entries take precedence over guesses for newer models in a known family. */
+export function modelTemplateKey(
+  tool: AgentView['tool'],
+  model: string | null,
+): string | undefined {
+  if (!model) return undefined;
+  const entry = tool ? catalogEntry(tool, model) : undefined;
+  const exact = entry && MODEL_SUGGESTION_KEYS[entry.id];
+  if (exact) return exact;
+  const name = model.split('/').at(-1)!.toLowerCase();
+  if (/^(?:claude-)?opus(?:-|$)/u.test(name)) return 'modelSuggestions.design';
+  if (/^(?:claude-)?sonnet(?:-|$)/u.test(name))
+    return 'modelSuggestions.routine';
+  if (/^(?:claude-)?haiku(?:-|$)/u.test(name)) return 'modelSuggestions.small';
+  if (/^(?:gpt-[\d.]+-)?sol(?:-|$)/u.test(name))
+    return 'modelSuggestions.large';
+  if (/^(?:gpt-[\d.]+-)?astra(?:-|$)/u.test(name))
+    return 'modelSuggestions.review';
+  if (/^(?:gpt-[\d.]+-)?luna(?:-|$)/u.test(name))
+    return 'modelSuggestions.small';
+  return undefined;
+}
+
 /** Catalog-owned suggestions use the same complete locale resources as the rest of the dialog. */
 export function modelSuggestion(
   agent: Pick<AgentView, 'tool' | 'model' | 'suggestion'>,
   locale: string,
   t: Translator,
 ): string {
-  if (!agent.suggestion) return '';
+  if (!agent.suggestion) {
+    const key = modelTemplateKey(agent.tool, agent.model);
+    return key ? t(key) : '';
+  }
   const entry =
     agent.tool && agent.model
       ? catalogEntry(agent.tool, agent.model)
