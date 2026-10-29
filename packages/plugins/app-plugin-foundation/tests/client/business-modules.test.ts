@@ -134,6 +134,58 @@ describe('automatic business modules', () => {
     ]);
   });
 
+  it('keeps required pages when a matching guest group appears first', () => {
+    const group = (
+      name: string,
+      auth: 'guest' | 'required',
+      childName: string,
+    ): AppClientRegisteredRoute =>
+      page(name, {
+        id: `plugin:${name}`,
+        packageName: '@vendor/hr',
+        path: '/settings',
+        auth,
+        componentLoader: undefined,
+        navigation: { title: 'settings.title' },
+        breadcrumb: { title: 'settings.title' },
+        children: [
+          page(childName, {
+            id: `plugin:${childName}`,
+            packageName: '@vendor/hr',
+          }),
+        ],
+      });
+    const guest = group('guest-settings', 'guest', 'guest-page');
+    const required = group('required-settings', 'required', 'people-page');
+
+    for (const routes of [
+      [guest, required],
+      [required, guest],
+    ] satisfies AppClientRegisteredRoute[][]) {
+      expect(
+        businessModules(routes, inventory, undefined, [
+          'interface',
+          'usersAndOrganizations',
+        ]),
+      ).toMatchObject([
+        {
+          id: 'plugin:required-settings',
+          pageCount: 1,
+          links: [
+            { capability: 'interface', evidence: ['page'] },
+            {
+              capability: 'usersAndOrganizations',
+              evidence: ['authentication'],
+            },
+          ],
+        },
+      ]);
+    }
+    expect(
+      businessModules([guest], inventory, undefined, ['interface']),
+    ).toEqual([]);
+  });
+
   it('does not merge groups with another package, path, title, descriptor, dynamic path, or loader', () => {
     const shared = {
       componentLoader: undefined,
