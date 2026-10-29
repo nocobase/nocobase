@@ -86,7 +86,7 @@ describe('runtimes page', () => {
             path: '/samples/1',
           },
         ],
-        meta: { nextCursor: null },
+        meta: { nextCursor: null, total: 1 },
       }),
       'PATCH agents/runners/r1': (request) => ({
         ...runners[0],
@@ -587,7 +587,7 @@ describe('runtimes page', () => {
             createdAt: '2026-10-01T08:00:00Z',
           },
         ],
-        meta: { nextCursor: null },
+        meta: { nextCursor: null, total: 1 },
       });
       function Host() {
         const panel = useChatPanel();
@@ -626,8 +626,8 @@ describe('runtimes page', () => {
     },
   );
 
-  it('loads the next twenty runs only on request and retains rows when that request fails', async () => {
-    runners[0] = { ...runners[0]!, recentRunsCount: 21 };
+  it('pages twenty runs with an exact count, retries without losing the page, and returns to cached pages', async () => {
+    runners[0] = { ...runners[0]!, recentRunsCount: 41 };
     const row = (id: string) => ({
       id,
       title: id,
@@ -642,47 +642,94 @@ describe('runtimes page', () => {
     api.routes['agents/runners/r1/runs'] = ({ query }) => {
       if (!query.cursor)
         return {
-          data: Array.from({ length: 20 }, (_, i) => row(`run-${i}`)),
-          meta: { nextCursor: 'older' },
+          data: Array.from({ length: 20 }, (_, i) => row(`first-${i}`)),
+          meta: { nextCursor: 'second', total: 41 },
         };
       if (fail) throw new FakeApiError(500);
-      return { data: [row('last-run')], meta: { nextCursor: null } };
+      return query.cursor === 'second'
+        ? {
+            data: Array.from({ length: 20 }, (_, i) => row(`second-${i}`)),
+            meta: { nextCursor: 'last', total: 41 },
+          }
+        : { data: [row('last-run')], meta: { nextCursor: null, total: 41 } };
     };
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
     const tab = within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' });
-    expect(tab).toHaveTextContent('20+');
+    expect(tab).toHaveTextContent('41');
     await userEvent.click(tab);
     const table = await within(sheet).findByTestId('runner-runs');
-    expect(within(table).getAllByRole('row')).toHaveLength(21);
-    const more = within(table).getByRole('button', { name: 'agents.loadMore' });
-    expect(more.parentElement?.closest('.border')).toBeNull();
-    expect(more.parentElement).toHaveClass('mt-3');
-    expect(more).toHaveClass('h-7');
+    const previous = within(table).getByRole('button', {
+      name: 'runtimes.detail.runsPrevious',
+    });
+    const next = within(table).getByRole('button', {
+      name: 'runtimes.detail.runsNext',
+    });
+    expect(previous).toBeDisabled();
+    expect(next.closest('nav')?.parentElement?.closest('.border')).toBeNull();
+    expect(next.closest('nav')?.parentElement).toHaveClass('mt-3');
+    expect(next).toHaveClass('h-7');
     expect(
-      within(table).getByText('runtimes.detail.runsShown(count=20)'),
+      within(table).getByText('runtimes.detail.runsTotal(count=41)'),
     ).toBeInTheDocument();
+    expect(
+      within(table).getByText('runtimes.detail.runsPage(page=1,pageCount=3)'),
+    ).toBeInTheDocument();
+    expect(within(table).getAllByRole('row')).toHaveLength(21);
     expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(1);
-    await userEvent.click(
-      within(table).getByRole('button', { name: 'agents.loadMore' }),
-    );
+    await userEvent.click(next);
     await within(table).findByRole('alert');
-    expect(within(table).getAllByRole('row')).toHaveLength(21);
-    fail = false;
-    await userEvent.click(
-      within(table).getByRole('button', { name: 'agents.loadMore' }),
-    );
-    await within(table).findByText('last-run', { selector: 'td.max-w-44' });
-    expect(within(table).getAllByRole('row')).toHaveLength(22);
     expect(
-      within(table).getByText('runtimes.detail.runsShownAll(count=21)'),
+      within(table).getByText('first-0', { selector: 'td.max-w-44' }),
+    ).toBeInTheDocument();
+    fail = false;
+    await userEvent.click(next);
+    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    expect(within(table).queryByText('first-0')).toBeNull();
+    expect(within(table).getAllByRole('row')).toHaveLength(21);
+    expect(
+      within(table).getByText('runtimes.detail.runsPage(page=2,pageCount=3)'),
+    ).toBeInTheDocument();
+    await userEvent.click(previous);
+    await within(table).findByText('first-0', { selector: 'td.max-w-44' });
+    const before = callsTo('GET', 'agents/runners/r1/runs').length;
+    await userEvent.click(next);
+    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(before);
+    await userEvent.click(next);
+    await within(table).findByText('last-run', { selector: 'td.max-w-44' });
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(next).toBeDisabled();
+    expect(
+      within(table).getByText('runtimes.detail.runsPage(page=3,pageCount=3)'),
+    ).toBeInTheDocument();
+    expect(callsTo('GET', 'agents/runners/r1/runs').at(-1)?.query.cursor).toBe(
+      'last',
+    );
+  });
+
+  it('shows zero total and disables both directions for an empty history', async () => {
+    api.routes['agents/runners/r1/runs'] = () => ({
+      data: [],
+      meta: { total: 0, nextCursor: null },
+    });
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await userEvent.click(
+      within(sheet).getByRole('tab', { name: 'runtimes.quota.runs' }),
+    );
+    const history = await within(sheet).findByTestId('runner-runs');
+    expect(
+      within(history).getByText('runtimes.detail.runsEmpty'),
     ).toBeInTheDocument();
     expect(
-      within(table).queryByRole('button', { name: 'agents.loadMore' }),
-    ).toBeNull();
-    expect(callsTo('GET', 'agents/runners/r1/runs').at(-1)?.query.cursor).toBe(
-      'older',
-    );
+      within(history).getByText('runtimes.detail.runsTotal(count=0)'),
+    ).toBeInTheDocument();
+    expect(
+      within(history).getByText('runtimes.detail.runsPage(page=1,pageCount=1)'),
+    ).toBeInTheDocument();
+    for (const button of within(history).getAllByRole('button'))
+      expect(button).toBeDisabled();
   });
 
   it('shows dates outside today in the browser timezone, including the created-time fallback', async () => {
@@ -713,7 +760,7 @@ describe('runtimes page', () => {
             createdAt: new Date(2026, 9, 28, 22, 2).toISOString(),
           },
         ],
-        meta: { nextCursor: null },
+        meta: { nextCursor: null, total: 1 },
       });
       renderPage(<RuntimesPage />);
       const sheet = await openSheet();

@@ -1,6 +1,12 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+} from '../../components/ui/pagination.js';
 import { Link } from 'react-router';
 import { useChatPanel } from '../../chat/provider.js';
 import { agentsKeys } from '../../api/keys.js';
@@ -35,6 +41,7 @@ export function RunnerRuns({
   const api = useAgentsApi();
   const { conversationPath } = useChatPanel();
   const format = useFormatters();
+  const [selectedPage, setSelectedPage] = useState(0);
   const runs = useInfiniteQuery({
     queryKey: agentsKeys.runnerRuns(runnerId),
     initialPageParam: undefined as string | undefined,
@@ -53,12 +60,18 @@ export function RunnerRuns({
         {t('runtimes.detail.runsFailed')}
       </p>
     );
-  if (runs.data.pages[0]?.data.length === 0)
-    return (
-      <p className='text-sm text-muted-foreground'>
-        {t('runtimes.detail.runsEmpty')}
-      </p>
-    );
+  const pageIndex = Math.min(selectedPage, runs.data.pages.length - 1);
+  const page = runs.data.pages[pageIndex];
+  const pageCount = Math.max(1, Math.ceil(page.meta.total / 20));
+  const next = async () => {
+    if (runs.data.pages[pageIndex + 1]) {
+      setSelectedPage(pageIndex + 1);
+      return;
+    }
+    const result = await runs.fetchNextPage();
+    if (!result.isFetchNextPageError && result.data?.pages[pageIndex + 1])
+      setSelectedPage(pageIndex + 1);
+  };
   return (
     <div className='min-w-0' data-testid='runner-runs'>
       <div className='rounded-lg border'>
@@ -79,96 +92,122 @@ export function RunnerRuns({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {runs.data.pages
-              .flatMap((page) => page.data)
-              .map((run) => (
-                <TableRow key={run.id}>
-                  <TableCell
-                    className='max-w-44 truncate'
-                    title={run.subjectLabel ?? undefined}
-                  >
-                    {run.path ? (
-                      <Link
-                        to={
-                          run.path.startsWith('?chat=') && conversationPath
-                            ? conversationPath(
-                                new URLSearchParams(run.path).get('chat')!,
-                              )
-                            : run.path
-                        }
-                        onClick={onNavigate}
-                        className='hover:underline'
-                      >
-                        {run.subjectLabel ?? run.title}
-                      </Link>
-                    ) : (
-                      (run.subjectLabel ?? '—')
-                    )}
-                  </TableCell>
-                  <TableCell className='max-w-40 truncate' title={run.title}>
-                    {run.title}
-                  </TableCell>
-                  <TableCell>
-                    <div className='flex flex-wrap items-center gap-1.5'>
-                      <Badge
-                        variant='secondary'
-                        className={TONE_CLASS[RUN_STATUS_TONE[run.status]]}
-                      >
-                        <span
-                          aria-hidden='true'
-                          className='size-1.5 rounded-full bg-current'
-                        />
-                        {t(`runs.status.${run.status}`)}
-                      </Badge>
-                      {run.failureReason === 'toolQuota' ? (
-                        <QuotaLabel usage warning />
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell
-                    className='whitespace-nowrap text-xs text-muted-foreground'
-                    title={format.dateTime(run.startedAt ?? run.createdAt)}
-                  >
-                    {compactDateTime(
-                      run.startedAt ?? run.createdAt,
-                      i18n.language,
-                    )}
-                  </TableCell>
-                  <TableCell className='text-xs tabular-nums'>
-                    {durationText(run.startedAt, run.finishedAt) ?? '—'}
-                  </TableCell>
-                </TableRow>
-              ))}
+            {page.data.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className='text-center text-muted-foreground'
+                >
+                  {t('runtimes.detail.runsEmpty')}
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {page.data.map((run) => (
+              <TableRow key={run.id}>
+                <TableCell
+                  className='max-w-44 truncate'
+                  title={run.subjectLabel ?? undefined}
+                >
+                  {run.path ? (
+                    <Link
+                      to={
+                        run.path.startsWith('?chat=') && conversationPath
+                          ? conversationPath(
+                              new URLSearchParams(run.path).get('chat')!,
+                            )
+                          : run.path
+                      }
+                      onClick={onNavigate}
+                      className='hover:underline'
+                    >
+                      {run.subjectLabel ?? run.title}
+                    </Link>
+                  ) : (
+                    (run.subjectLabel ?? '—')
+                  )}
+                </TableCell>
+                <TableCell className='max-w-40 truncate' title={run.title}>
+                  {run.title}
+                </TableCell>
+                <TableCell>
+                  <div className='flex flex-wrap items-center gap-1.5'>
+                    <Badge
+                      variant='secondary'
+                      className={TONE_CLASS[RUN_STATUS_TONE[run.status]]}
+                    >
+                      <span
+                        aria-hidden='true'
+                        className='size-1.5 rounded-full bg-current'
+                      />
+                      {t(`runs.status.${run.status}`)}
+                    </Badge>
+                    {run.failureReason === 'toolQuota' ? (
+                      <QuotaLabel usage warning />
+                    ) : null}
+                  </div>
+                </TableCell>
+                <TableCell
+                  className='whitespace-nowrap text-xs text-muted-foreground'
+                  title={format.dateTime(run.startedAt ?? run.createdAt)}
+                >
+                  {compactDateTime(
+                    run.startedAt ?? run.createdAt,
+                    i18n.language,
+                  )}
+                </TableCell>
+                <TableCell className='text-xs tabular-nums'>
+                  {durationText(run.startedAt, run.finishedAt) ?? '—'}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
-      <div className='mt-3 flex items-center justify-between gap-3'>
-        <p className='text-xs text-muted-foreground' aria-live='polite'>
-          {t(
-            runs.hasNextPage
-              ? 'runtimes.detail.runsShown'
-              : 'runtimes.detail.runsShownAll',
-            {
-              count: runs.data.pages.reduce(
-                (sum, page) => sum + page.data.length,
-                0,
-              ),
-            },
-          )}
+      <div className='mt-3 flex flex-wrap items-center justify-between gap-3 px-2'>
+        <p className='text-sm text-muted-foreground' aria-live='polite'>
+          {t('runtimes.detail.runsTotal', { count: page.meta.total })}
         </p>
-        {runs.hasNextPage ? (
-          <Button
-            variant='outline'
-            size='sm'
-            disabled={runs.isFetching}
-            onClick={() => void runs.fetchNextPage()}
-          >
-            {runs.isFetchingNextPage ? <Spinner /> : null}
-            {t('agents.loadMore')}
-          </Button>
-        ) : null}
+        <Pagination
+          className='mx-0 w-auto'
+          aria-label={t('runtimes.detail.runsPagination')}
+        >
+          <PaginationContent className='gap-2'>
+            <PaginationItem>
+              <Button
+                variant='outline'
+                size='sm'
+                disabled={pageIndex === 0 || runs.isFetching}
+                onClick={() => setSelectedPage(pageIndex - 1)}
+              >
+                <ChevronLeftIcon data-icon='inline-start' />
+                {t('runtimes.detail.runsPrevious')}
+              </Button>
+            </PaginationItem>
+            <PaginationItem
+              className='text-sm font-medium whitespace-nowrap tabular-nums'
+              aria-current='page'
+            >
+              {t('runtimes.detail.runsPage', {
+                page: pageIndex + 1,
+                pageCount,
+              })}
+            </PaginationItem>
+            <PaginationItem>
+              <Button
+                variant='outline'
+                size='sm'
+                disabled={!page.meta.nextCursor || runs.isFetching}
+                onClick={() => void next()}
+              >
+                {runs.isFetchingNextPage ? <Spinner /> : null}
+                {t('runtimes.detail.runsNext')}
+                <ChevronRightIcon data-icon='inline-end' />
+              </Button>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
-      {runs.isFetchNextPageError ? (
+      {runs.isFetchNextPageError && pageIndex === runs.data.pages.length - 1 ? (
         <p role='alert' className='mt-2 text-sm text-destructive'>
           {t('runtimes.detail.runsFailed')}
         </p>

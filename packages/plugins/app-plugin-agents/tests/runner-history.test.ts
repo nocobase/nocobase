@@ -42,7 +42,7 @@ describe('runner history pagination', () => {
     const detail = await h.request('GET', `/agents/runners/${runnerId}`, {
       user: 'owner',
     });
-    expect(detail.body.data.recentRunsCount).toBe(21);
+    expect(detail.body.data.recentRunsCount).toBe(85);
     const client = await h.database.connection().client<Knex>();
     await h.request('GET', url, { user: 'owner' });
     const seen: string[] = [];
@@ -62,7 +62,7 @@ describe('runner history pagination', () => {
         client.off('query', listen);
       }
       expect(statements.filter((sql) => /^select/iu.test(sql))).toHaveLength(
-        [3, 4, 5, 3, 3][page]!,
+        [4, 5, 6, 4, 4][page]!,
       );
       expect(
         statements.some((sql) =>
@@ -70,6 +70,7 @@ describe('runner history pagination', () => {
         ),
       ).toBe(false);
       expect(response.status).toBe(200);
+      expect(response.body.meta.total).toBe(85);
       expect(response.body.data).toHaveLength(page === 4 ? 5 : 20);
       seen.push(...response.body.data.map((run: { id: string }) => run.id));
       cursor = response.body.meta.nextCursor;
@@ -109,11 +110,14 @@ describe('runner history pagination', () => {
     expect(bad.status).toBe(400);
     expect(bad.body.error.reason).toBe('INVALID_INPUT');
     const empty = await h.request('GET', url, { user: 'owner' });
-    expect(empty.body).toMatchObject({ data: [], meta: { nextCursor: null } });
+    expect(empty.body).toMatchObject({
+      data: [],
+      meta: { nextCursor: null, total: 0 },
+    });
   });
 
-  it.each([20, 21])(
-    'caps the tab count and continuation at the %i-row boundary',
+  it.each([20, 21, 45])(
+    'reports the exact tab count and continuation at the %i-row boundary',
     async (count) => {
       h = await createHarness();
       const { runnerId } = await h.registerRunner();

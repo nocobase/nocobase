@@ -2178,7 +2178,7 @@ const runnerSummaryObject = runnerObject
       .int()
       .nonnegative()
       .describe(
-        'Recent run rows shown by the Runs tab, capped at 21; 21 means more than twenty.',
+        'Exact number of runs assigned to this runner, shown by the Runs tab.',
       ),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
@@ -2502,6 +2502,11 @@ export const RunnerRunsQuery: z.ZodType<
 
 export const RunnerRunsPageMetaSchema: z.ZodType<RunnerRunsPage['meta']> =
   z.object({
+    total: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe('Exact number of runs assigned to this runner.'),
     nextCursor: z
       .string()
       .nullable()

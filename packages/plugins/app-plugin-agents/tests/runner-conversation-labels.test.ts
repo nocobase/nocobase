@@ -168,7 +168,7 @@ describe('runner conversation descriptions', () => {
     } finally {
       knex.off('query', listener);
     }
-    expect(statements.filter((sql) => /^select/iu.test(sql))).toHaveLength(6); // Two history ranges plus runner visibility, roster, agent names and owned conversation titles.
+    expect(statements.filter((sql) => /^select/iu.test(sql))).toHaveLength(7); // Two history ranges plus runner visibility, roster, agent names, owned titles and exact count.
     expect(
       statements.filter((sql) => /\bag_conversations\b/iu.test(sql)),
     ).toHaveLength(1);

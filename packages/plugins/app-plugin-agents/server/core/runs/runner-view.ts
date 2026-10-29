@@ -222,13 +222,7 @@ export function createRunnerView(deps: {
   };
   return {
     async recentCount(runnerId) {
-      return (
-        await runsRepo(deps.tx.read()).findMany({
-          filter: { runnerId },
-          select: (s) => s.fields('id'),
-          limit: RECENT_RUNS + 1,
-        })
-      ).length;
+      return runsRepo(deps.tx.read()).count({ filter: { runnerId } });
     },
     async takes(runners) {
       const now = deps.clock.now().getTime();
@@ -332,7 +326,7 @@ export function createRunnerView(deps: {
       const runs = records.map(toRun);
       const labels = await subjectLabels(runs, viewerUserId);
       return {
-        meta: { nextCursor },
+        meta: { nextCursor, total: await this.recentCount(runner.id) },
         data: runs.map((run) => ({
           ...subjectView(run, viewerUserId, labels, conversationLabel),
           failureReason: run.failureReason,

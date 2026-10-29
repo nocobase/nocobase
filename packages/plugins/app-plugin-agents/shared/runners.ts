@@ -286,7 +286,10 @@ export interface RunnerRunsCursor {
 
 export interface RunnerRunsPage {
   readonly data: RunnerRecentRun[];
-  readonly meta: { readonly nextCursor: string | null };
+  readonly meta: {
+    readonly nextCursor: string | null;
+    readonly total: number;
+  };
 }
 
 /**
@@ -326,7 +329,7 @@ export interface RunnerSummary extends Omit<
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
   readonly canClearQuota: boolean;
-  /** Run count capped at 21 (shown as 20+), without loading row details. */
+  /** Exact run count, without loading row details. */
   readonly recentRunsCount: number;
   /**
    * A newer runner version the application serves for its platform, which the runner installs on its own between

@@ -549,7 +549,7 @@ export function createAdminRoutes(
         columns: ['id', 'title', 'status', 'createdAt'],
       }),
       description:
-        'Twenty runs ordered by startedAt descending then id descending, with null start times last. Pass meta.nextCursor to load more. Private run links are hidden from other viewers.',
+        'Twenty runs ordered by startedAt descending then id descending, with null start times last. Pass meta.nextCursor for the next page; meta.total is the exact run count. Private run links are hidden from other viewers.',
       responses: {
         200: listResponse(RunnerRecentRunSchema, RunnerRunsPageMetaSchema),
         ...apiErrorResponses,
