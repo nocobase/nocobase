@@ -54,6 +54,8 @@ export function demoModelLoopbackUrl(
 }
 
 const INTERRUPTION_RECHECK_MS = 10 * 60_000;
+/** An operation interrupted this long is presumed abandoned, as after a restart, and the schedule takes it over. */
+const INTERRUPTION_TAKEOVER_MS = 60 * 60_000;
 
 /**
  * The demo dataset service. Applications register their dataset on `demoDataToken`; this provider gives it the
@@ -65,8 +67,10 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   private service: DefaultDemoDataService | undefined;
   private agents: DemoAgents | undefined;
   private resetJobs: ScheduleExecutor | undefined;
-  /** When an interrupted operation was last seen, so the paused schedule rereads the data status only rarely. */
-  private interruptionSeenAt: number | undefined;
+  /** When the paused schedule rereads the data status next, so an interruption is not reread every minute. */
+  private interruptionRecheckAt: number | undefined;
+  /** Whether this interruption was logged, so it is reported once instead of every recheck. */
+  private interruptionReported = false;
 
   public override register(): void {
     const container = this.app.container;
@@ -222,26 +226,45 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
     const configuration = this.app.container.resolve(
       demoConfigurationRuntimeToken,
     );
-    // Only manual recovery ends an interruption, and it settles the daily claims itself; until then, recheck rarely.
+    // Manual recovery settles the daily claims itself; until it or the takeover is due, recheck rarely.
     if (
-      this.interruptionSeenAt !== undefined &&
-      Date.now() - this.interruptionSeenAt < INTERRUPTION_RECHECK_MS
+      this.interruptionRecheckAt !== undefined &&
+      Date.now() < this.interruptionRecheckAt
     )
       return;
     const status = await this.service!.status();
     if (status.state === null) return;
-    // A lease cannot fence arbitrary application callbacks. Require manual recovery of an uncertain operation.
+    // A lease cannot fence arbitrary application callbacks, so a recent interruption waits for manual recovery. One
+    // that has not moved for an hour is presumed abandoned and taken over, so unattended demos keep resetting.
     if (status.failure?.code === 'DEMO_DATA_INTERRUPTED') {
-      // The management page shows the interruption; report it once instead of every minute.
-      if (this.interruptionSeenAt === undefined)
-        this.logger()?.warn(
-          { dataset: status.datasetId },
-          'Daily demo reset requires manual recovery of an interrupted operation',
+      const since = await this.service!.interruptedSince();
+      // The operation moved on since the status was read; the next minute sees its current state.
+      if (!since) return;
+      const takeoverAt = since.getTime() + INTERRUPTION_TAKEOVER_MS;
+      if (Date.now() < takeoverAt) {
+        // The management page shows the interruption; report it once instead of every minute.
+        if (!this.interruptionReported)
+          this.logger()?.warn(
+            {
+              dataset: status.datasetId,
+              takeoverAt: new Date(takeoverAt).toISOString(),
+            },
+            'Daily demo reset paused by an interrupted operation; recover it manually or it is taken over later',
+          );
+        this.interruptionReported = true;
+        this.interruptionRecheckAt = Math.min(
+          Date.now() + INTERRUPTION_RECHECK_MS,
+          takeoverAt,
         );
-      this.interruptionSeenAt = Date.now();
-      return;
+        return;
+      }
+      this.logger()?.warn(
+        { dataset: status.datasetId, interruptedSince: since.toISOString() },
+        'Daily demo reset is taking over an abandoned interrupted operation',
+      );
     }
-    this.interruptionSeenAt = undefined;
+    this.interruptionRecheckAt = undefined;
+    this.interruptionReported = false;
     const claim = await configuration.claimDaily(scheduledAt, {
       settled:
         status.state === 'ready' || status.state === 'failed'

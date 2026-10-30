@@ -331,4 +331,4 @@ Agents is an optional peer, resolved when demo mode is enabled or an existing de
 
 Start with the Skill's [prerequisites](skills/nocobase-app-plugin-demo-mode/SKILL.md#required-host-capabilities) and [executable non-AI example](skills/nocobase-app-plugin-demo-mode/references/minimal-example.md). It supplies application-owned schema, business services, dataset, provider, permissions, protected API and page composition. Daily reset uses plugin defaults on the application's jobs service; add AI only when requested.
 
-Daily reset attempts use bounded retries and require explicit recovery after uncertain interruption. See the [reset policy](skills/nocobase-app-plugin-demo-mode/references/policies.md) for retry and manual recovery behavior.
+Daily reset attempts use bounded retries. After an uncertain interruption they wait for manual recovery, and take over an operation that has not moved for an hour. See the [reset policy](skills/nocobase-app-plugin-demo-mode/references/policies.md) for retry and manual recovery behavior.

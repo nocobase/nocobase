@@ -426,6 +426,12 @@ export class DefaultDemoDataService implements DemoDataService {
     );
   }
 
+  /** When an interrupted operation last renewed its lease; null when none is interrupted. */
+  public async interruptedSince(): Promise<Date | null> {
+    const row = this.dataset ? await this.row() : undefined;
+    return row && this.stale(row) ? new Date(row.updatedAt) : null;
+  }
+
   private async exclusive<T>(work: () => Promise<T>): Promise<T> {
     if (this.running)
       throw demoDataError(
