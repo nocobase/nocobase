@@ -18,14 +18,12 @@ it.each([undefined, false])(
       pageClient = useQueryClient();
       return <span>Work page</span>;
     }
-    const watch = vi
-      .fn()
-      .mockReturnValue({
-        state: 'subscribed',
-        error: undefined,
-        retry: () => {},
-        close: () => {},
-      });
+    const watch = vi.fn().mockReturnValue({
+      state: 'subscribed',
+      error: undefined,
+      retry: () => {},
+      close: () => {},
+    });
     const Provider = projects({
       routes: false,
       realtime,

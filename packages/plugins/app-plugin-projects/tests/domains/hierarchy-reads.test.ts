@@ -253,3 +253,63 @@ it('keeps database hierarchy relations equivalent to authorized filter matches',
     }
   }
 });
+
+it('keeps the blocker relation equivalent to hierarchy waits without exposing invisible blockers', async () => {
+  const h = await harness();
+  await h.addUser('bob');
+  const issues = await seed(h, 2);
+  const secret = await h.services.projects.create(admin(h), {
+    name: 'Hidden blockers',
+    visibility: 'members',
+  });
+  for (const issue of [issues[0]!, issues[2]!]) {
+    const current = await h.services.issueQueries.visible(admin(h), issue.id);
+    await h.services.issues.update(admin(h), issue.id, {
+      revision: current.revision,
+      projectId: secret.id,
+    });
+  }
+  const self = issues.at(-1)!;
+  await h.database
+    .connection()
+    .query.insertInto('pmIssueDependencies')
+    .values({
+      id: 'historical-self',
+      issueId: self.id,
+      dependsOnIssueId: self.id,
+      type: 'blockedBy',
+      createdByType: 'user',
+      createdById: 'admin',
+      createdAt: new Date().toISOString(),
+    })
+    .execute();
+  await move(h, issues[0]!, 'backlog');
+  const viewer = h.viewer('bob', 'member');
+  const client = await h.database.connection().client<Knex>();
+  for (const state of ['open', 'done', 'deleted', 'restored'] as const) {
+    if (state === 'done') await move(h, issues[2]!, 'done');
+    if (state === 'deleted')
+      await h.services.issues.remove(admin(h), issues[0]!.id);
+    if (state === 'restored')
+      await h.services.issues.restore(admin(h), issues[0]!.id);
+    const hierarchy = await h.services.issueQueries.hierarchy(
+      viewer,
+      {},
+      { unfinishedOnly: true },
+    );
+    const source = await h.services.issueQueries.hierarchySource(viewer, {});
+    const rows = (await client.raw(source.blocked.sql, [
+      ...source.blocked.parameters,
+    ] as Knex.RawBinding[])) as { id: string }[];
+    const unfinished = new Set(
+      hierarchy.issues
+        .filter((i) => !['done', 'cancelled'].includes(i.statusKey))
+        .map((i) => i.id),
+    );
+    expect(rows.map((r) => r.id).sort()).toEqual(
+      [...hierarchy.blockedIds].filter((id) => unfinished.has(id)).sort(),
+    );
+    expect(rows.map((r) => r.id)).not.toContain(issues[0]!.id);
+    expect(rows.map((r) => r.id)).not.toContain(issues[2]!.id);
+  }
+});
