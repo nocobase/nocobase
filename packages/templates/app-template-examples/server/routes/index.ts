@@ -1,3 +1,4 @@
+import { onboardingRoutes } from './onboarding.js';
 import { procurementRoutes } from './procurement.js';
 import { skillProjectsRoutes } from './skill-projects.js';
 import { customerContactsRoutes } from './customer-contacts.js';
@@ -89,6 +90,7 @@ export const rootRoutes: AppRootRouteContribution<Application> =
 const routes: readonly AppRouteContribution<Application>[] = [
   apiRoutes,
   procurementRoutes,
+  onboardingRoutes,
   skillProjectsRoutes,
   customerContactsRoutes,
   rootRoutes,

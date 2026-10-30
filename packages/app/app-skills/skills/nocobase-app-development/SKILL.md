@@ -39,7 +39,7 @@ Do not infer the application's capabilities from a template name or from this Sk
 
 ## Choose where the feature belongs
 
-For a complete parent/child business flow with scoped references, amounts and single-person review, consult the [business example catalogue](references/business-examples.md) and its runnable scenario index. Its resources supplement the existing list/edit patterns; read each scenario's integration dependencies before adapting it.
+For parent/child business flows, scoped references, single-person review or multi-step forms with private recoverable drafts, consult the [business example catalogue](references/business-examples.md) and its runnable scenario index. Its resources supplement the existing list/edit patterns; read each scenario's integration dependencies before adapting it.
 
 Build application-specific features directly in the application by default. Use a plugin when the user requests one or when code reuse or modular organization calls for a separately registered, maintainable feature. Create local plugins under `packages/` with the project plugin development Skill; do not use the source repository's `packages/plugins/` layout. The App builds and packages registered local plugins for deployment without an npm release. Publish only when distributing the plugin through a package registry.
 

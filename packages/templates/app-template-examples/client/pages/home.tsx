@@ -17,12 +17,14 @@ import {
   Plug,
   ShieldCheck,
   Users,
+  UsersRound,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 import { Button } from '#components/ui/button';
 
 const examples = [
+  { key: 'onboarding', path: '/onboarding', icon: UsersRound },
   { key: 'procurement', path: '/procurement', icon: ShoppingCart },
   { key: 'customerContacts', path: '/customer-contacts', icon: Users },
   { key: 'aiFormFill', path: '/ai-form-fill', icon: FilePenLine },
