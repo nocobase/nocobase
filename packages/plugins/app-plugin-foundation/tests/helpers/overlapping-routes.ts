@@ -19,33 +19,6 @@ const uncertain =
   "router.get('/items/:id', async (c, next) => { read(); if (c.req.query('forward')) await next(); else return c.text('db'); });";
 export const overlapCases = [
   {
-    name: 'disjoint literal parameter constraint',
-    registration:
-      "router.get('/items/:action{signals:ingest}', c => { read(); return c.text('db'); });" +
-      fixed,
-    calls: ['mail'],
-    providers: ['mail'],
-    complete: true,
-  },
-  {
-    name: 'matching finite parameter constraint',
-    registration:
-      "router.get('/items/:action{export|download}', c => { read(); return c.text('db'); });" +
-      fixed,
-    calls: ['db'],
-    providers: ['db'],
-    complete: true,
-  },
-  {
-    name: 'unknown regular expression constraint',
-    registration:
-      "router.get('/items/:action{[a-z]+}', c => { read(); return c.text('db'); });" +
-      fixed,
-    calls: ['db'],
-    providers: [],
-    complete: false,
-  },
-  {
     name: 'fixed first',
     registration: fixed + parameter,
     calls: ['mail'],

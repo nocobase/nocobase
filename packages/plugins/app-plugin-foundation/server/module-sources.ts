@@ -327,7 +327,6 @@ class SourceGraph {
   ): {
     sources: (Source & { nodes: ReadonlySet<ts.Node> })[];
     providers: Set<string>;
-    collections: Set<string>;
     complete: boolean;
     unsafeCapability: boolean;
     unsafeValue: boolean;
@@ -338,7 +337,6 @@ class SourceGraph {
       addProvider(providers, reference);
     return {
       providers,
-      collections: slice?.collections ?? new Set(),
       complete: slice?.complete ?? false,
       unsafeCapability: slice?.unsafeCapability ?? true,
       unsafeValue: slice?.unsafeValue ?? true,
@@ -416,11 +414,8 @@ class SourceGraph {
       (file, nodes) => {
         const evidence = this.evidence(file, nodes, true);
         return evidence.unsafeCapability || evidence.unsafeValue
-          ? { providers: [], collections: [] }
-          : {
-              providers: [...evidence.providers].sort(),
-              collections: [...evidence.collections].sort(),
-            };
+          ? []
+          : [...evidence.providers].sort();
       },
     );
   }

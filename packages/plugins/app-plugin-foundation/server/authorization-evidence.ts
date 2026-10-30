@@ -582,14 +582,6 @@ export function authorizationProgram(
     return undefined;
   };
   const localClass = (node: ts.Node): ts.ClassLikeDeclaration | undefined => {
-    // A class destructured from a local module's `import()`.
-    const binding = importedBinding(node);
-    if (binding) {
-      const exported = analysis
-        .namespaceExport(binding.source, binding.name)
-        .filter((declaration) => ts.isClassLike(declaration));
-      return exported.length === 1 ? exported[0] : undefined;
-    }
     const classes = analysis.values(node).filter(ts.isClassLike);
     return classes.length === 1 ? classes[0] : undefined;
   };
@@ -618,29 +610,7 @@ export function authorizationProgram(
     return classWrites.get(site)?.get(name) ?? [];
   };
   const members = new Map<ts.Node, Map<string | undefined, ts.Node[]>>();
-  // Spreads and views may refer back to the literal being read; such a cycle adds nothing, and too deep a chain
-  // exhausts the proof.
-  const reading = new Set<string>();
-  const readingIds = new Map<ts.Node, number>();
   const memberValues = (site: Site, name: string | undefined): ts.Node[] => {
-    const id = readingIds.get(site) ?? readingIds.size;
-    readingIds.set(site, id);
-    const key = `${id}\0${name ?? ''}\0${name === undefined ? 1 : 0}`;
-    if (reading.has(key)) return [];
-    if (reading.size >= 256) {
-      exhausted = true;
-      return [];
-    }
-    reading.add(key);
-    try {
-      return readMembers(site, name);
-    } finally {
-      reading.delete(key);
-    }
-  };
-  const readMembers = (site: Site, name: string | undefined): ts.Node[] => {
-    const viewed = viewMembers(site, name);
-    if (viewed) return viewed;
     const known = members.get(site)?.get(name);
     if (known) return known;
     const values = computeMembers(site, name);
@@ -659,17 +629,6 @@ export function authorizationProgram(
     return values;
   };
   const computeMembers = (site: Site, name: string | undefined): ts.Node[] => {
-    // A position of an array literal without spreads is exactly that element.
-    if (
-      ts.isArrayLiteralExpression(site) &&
-      name !== undefined &&
-      /^\d+$/.test(name) &&
-      !site.elements.some(ts.isSpreadElement)
-    ) {
-      const element = site.elements[Number(name)];
-      return element && !ts.isOmittedExpression(element) ? [element] : [];
-    }
-    if (ts.isArrayLiteralExpression(site) && name !== undefined) return [];
     if (ts.isArrayLiteralExpression(site))
       return site.elements.flatMap((element) =>
         ts.isSpreadElement(element)
@@ -759,55 +718,6 @@ export function authorizationProgram(
         ]);
     }
   };
-  // The strings a computed key can hold: literals, const bindings, and parameters every caller passes such a key.
-  const keyStrings = (node: ts.Node, depth = 0): string[] | undefined => {
-    node = strip(node);
-    if (depth > 8) return undefined;
-    if (ts.isStringLiteralLike(node)) return [node.text];
-    if (!ts.isIdentifier(node)) return undefined;
-    const declarations = analysis.declarations(node);
-    if (declarations.length !== 1) return undefined;
-    const declaration = declarations[0];
-    if (
-      ts.isVariableDeclaration(declaration) &&
-      declaration.initializer &&
-      constList(declaration.parent)
-    )
-      return keyStrings(declaration.initializer, depth + 1);
-    // An element destructured from local tuples, such as `for (const [path, kind] of [['a', 'b']] as const)`.
-    if (
-      ts.isBindingElement(declaration) &&
-      ts.isArrayBindingPattern(declaration.parent) &&
-      !declaration.dotDotDotToken
-    ) {
-      const position = String(declaration.parent.elements.indexOf(declaration));
-      const values = allocations(declaration.parent.parent).flatMap((site) =>
-        memberValues(site, position),
-      );
-      if (!values.length) return undefined;
-      const keys: string[] = [];
-      for (const value of values) {
-        const found = keyStrings(value, depth + 1);
-        if (!found) return undefined;
-        keys.push(...found);
-      }
-      return unique(keys);
-    }
-    if (ts.isParameter(declaration) && !declaration.dotDotDotToken) {
-      const position = declaration.parent.parameters.indexOf(declaration);
-      const calls = callers(declaration.parent);
-      if (!calls.length) return undefined;
-      const keys: string[] = [];
-      for (const call of calls) {
-        const argument = call.arguments?.[position];
-        const values = argument && keyStrings(argument, depth + 1);
-        if (!values) return undefined;
-        keys.push(...values);
-      }
-      return unique(keys);
-    }
-    return undefined;
-  };
   // Local functions a call reaches: resolved functions, methods of the receiver's allocations, or a class constructor.
   const callTargets = (call: Call): ts.SignatureDeclaration[] | undefined => {
     if (ts.isNewExpression(call)) {
@@ -827,17 +737,6 @@ export function authorizationProgram(
             ts.isFunctionDeclaration(declaration) && !!declaration.body,
         );
       return exported.length === 1 ? exported : undefined;
-    }
-    // `receiver[key](...)` with every possible key known reaches exactly those members.
-    if (ts.isElementAccessExpression(callee)) {
-      const keys = keyStrings(callee.argumentExpression);
-      if (!keys?.length) return undefined;
-      const functions = unique(
-        allocations(callee.expression)
-          .flatMap((site) => keys.flatMap((key) => memberValues(site, key)))
-          .flatMap((value) => functionValues(value, 0)),
-      );
-      return functions.length ? functions : undefined;
     }
     if (!ts.isPropertyAccessExpression(callee)) return undefined;
     // A module namespace from `import()` exposes exactly the module's exports.
@@ -1041,421 +940,10 @@ export function authorizationProgram(
       : undefined;
     return (declaration && tokenRegistrations.get(declaration)) || [];
   };
-  // Built-in contracts with exact semantics, used only for local values the graph fully sees. A `new Map()` is a
-  // view whose values are every `set` it receives; `values()`, iteration and `[key, value]` entries are views of it;
-  // `.map` on a local collection is a view of its callback's results. A static token map resolved entry by entry is
-  // a view whose field `k` is what `resolve` returns for the token under `k` in every map that can reach it.
-  type ViewKind =
-    'map' | 'values' | 'entries' | 'entry' | 'mapped' | 'tokens' | 'resolved';
-  const views = new Map<ts.Node, { kind: ViewKind; of: ts.Node }>();
-  const viewNodes = new Map<
-    ts.Node,
-    Map<ViewKind, ts.ObjectLiteralExpression>
-  >();
-  const view = (kind: ViewKind, of: ts.Node): ts.ObjectLiteralExpression => {
-    const known = viewNodes.get(of)?.get(kind);
-    if (known) return known;
-    const node = ts.factory.createObjectLiteralExpression();
-    views.set(node, { kind, of });
-    const byKind =
-      viewNodes.get(of) ?? new Map<ViewKind, ts.ObjectLiteralExpression>();
-    viewNodes.set(of, byKind);
-    byKind.set(kind, node);
-    return node;
-  };
-  const changedBuiltins = new Set<string>();
-  for (const node of nodes) {
-    if (
-      !ts.isIdentifier(node) ||
-      !['Object', 'Map'].includes(node.text) ||
-      analysis.declarations(node).length
-    )
-      continue;
-    let access: ts.Node = node;
-    while (
-      (ts.isPropertyAccessExpression(access.parent) ||
-        ts.isElementAccessExpression(access.parent)) &&
-      access.parent.expression === access
-    )
-      access = access.parent;
-    const parent = access.parent;
-    if (
-      (ts.isBinaryExpression(parent) &&
-        parent.left === access &&
-        parent.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
-        parent.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
-      ts.isDeleteExpression(parent) ||
-      (ts.isCallExpression(parent) &&
-        parent.arguments.includes(access as ts.Expression))
-    )
-      changedBuiltins.add(node.text);
-  }
-  const builtin = (node: ts.Node, name: string): boolean =>
-    ts.isIdentifier(node) &&
-    node.text === name &&
-    !changedBuiltins.has(name) &&
-    analysis.declarations(node).length === 0;
-  const mapWrites = (map: ts.Node): { keys: ts.Node[]; values: ts.Node[] } => {
-    index();
-    const keys: ts.Node[] = [];
-    const values: ts.Node[] = [];
-    for (const call of methodCalls.get('set') ?? []) {
-      if (!ts.isCallExpression(call) || call.arguments.length !== 2) continue;
-      const receiver = (call.expression as ts.PropertyAccessExpression)
-        .expression;
-      if (!allocations(receiver).includes(view('map', map))) continue;
-      keys.push(call.arguments[0]);
-      values.push(call.arguments[1]);
-    }
-    return { keys, values };
-  };
-  const isMap = (site: ts.Node): boolean => views.get(site)?.kind === 'map';
-  // Sites a built-in collection operation may read: a local Map, array literal or one of their views.
-  const collection = (receiver: ts.Node, maps: boolean): Site[] | undefined => {
-    const sites = allocations(receiver);
-    if (!sites.length) return undefined;
-    return sites.every((site) =>
-      maps
-        ? isMap(site)
-        : ts.isArrayLiteralExpression(site) ||
-          ['values', 'entries', 'mapped'].includes(views.get(site)?.kind ?? ''),
-    )
-      ? sites
-      : undefined;
-  };
-  const MAP_METHODS = new Set([
-    'set',
-    'get',
-    'has',
-    'delete',
-    'values',
-    'entries',
-    'keys',
-  ]);
-  const ARRAY_METHODS = new Set(['map', 'filter', 'find', 'some', 'every']);
-  // A supported operation on a local collection: its receiver, name and whether it is a Map operation.
-  const collectionCall = (
-    call: ts.Node,
-  ): { receiver: ts.Expression; name: string; sites: Site[] } | undefined => {
-    if (
-      !ts.isCallExpression(call) ||
-      !ts.isPropertyAccessExpression(call.expression)
-    )
-      return undefined;
-    const name = call.expression.name.text;
-    const receiver = call.expression.expression;
-    if (MAP_METHODS.has(name)) {
-      const arity =
-        name === 'set' ? 2 : ['get', 'has', 'delete'].includes(name) ? 1 : 0;
-      if (
-        call.arguments.length !== arity ||
-        call.arguments.some(ts.isSpreadElement)
-      )
-        return undefined;
-      const sites = collection(receiver, true);
-      return sites ? { receiver, name, sites } : undefined;
-    }
-    if (
-      ARRAY_METHODS.has(name) &&
-      call.arguments.length === 1 &&
-      (ts.isArrowFunction(call.arguments[0]) ||
-        ts.isFunctionExpression(call.arguments[0]))
-    ) {
-      const sites = collection(receiver, false);
-      return sites ? { receiver, name, sites } : undefined;
-    }
-    return undefined;
-  };
-  // The elements a local collection callback receives as its first parameter.
-  const callbackElements = (parameter: ts.Node): ts.Node[] | undefined => {
-    if (!ts.isParameter(parameter)) return undefined;
-    const fn = parameter.parent;
-    if (fn.parameters[0] !== parameter) return undefined;
-    const call = fn.parent;
-    const operation = collectionCall(call);
-    if (
-      !operation ||
-      ARRAY_METHODS.has(operation.name) === false ||
-      (call as ts.CallExpression).arguments[0] !== fn
-    )
-      return undefined;
-    return operation.sites.flatMap((site) => memberValues(site, undefined));
-  };
-  const viewMembers = (
-    site: ts.Node,
-    name: string | undefined,
-  ): ts.Node[] | undefined => {
-    const described = views.get(site);
-    if (!described) return undefined;
-    switch (described.kind) {
-      case 'map':
-        return name === undefined ? [view('entry', described.of)] : [];
-      case 'values':
-        return mapWrites(described.of).values;
-      case 'entries':
-        return [view('entry', described.of)];
-      case 'entry': {
-        const writes = mapWrites(described.of);
-        return name === '0'
-          ? writes.keys
-          : name === '1'
-            ? writes.values
-            : [...writes.keys, ...writes.values];
-      }
-      case 'mapped': {
-        const call = described.of as ts.CallExpression;
-        return analysis
-          .functions(call.arguments[0])
-          .flatMap((fn) => [...returned(fn)]);
-      }
-      case 'tokens': {
-        const map = tokenMap(described.of);
-        return (map?.sites ?? []).flatMap((source) =>
-          source.properties.flatMap((property) => {
-            const key = staticName(property.name);
-            if (name !== undefined && key !== name) return [];
-            const token = ts.isPropertyAssignment(property)
-              ? property.initializer
-              : (property as ts.ShorthandPropertyAssignment).name;
-            return [view('resolved', token)];
-          }),
-        );
-      }
-      default:
-        return [];
-    }
-  };
-  // A token identifier the static analysis can name: the authorization token, an own service token, or an export of
-  // another package.
-  const staticToken = (token: ts.Node): boolean => {
-    if (!ts.isIdentifier(token)) return false;
-    if (authorizationToken(token, analysis) || ownToken(token)) return true;
-    const imported = analysis.symbol(token)?.declarations?.[0];
-    return (
-      !!imported &&
-      ts.isImportSpecifier(imported) &&
-      !imported.isTypeOnly &&
-      !imported.parent.parent.isTypeOnly &&
-      analysis.isExternalImport(
-        imported.parent.parent.parent as ts.ImportDeclaration,
-      )
-    );
-  };
-  type TokenMap = {
-    sites: ts.ObjectLiteralExpression[];
-    entries: ts.CallExpression;
-    resolve: ts.CallExpression;
-  };
-  const tokenMaps = new Map<ts.Node, TokenMap | null>();
-  const tokenMapSites = new Set<ts.Node>();
-  const tokenMapValues = new Set<ts.Node>();
-  const tokenEntries = new Set<ts.Node>();
-  const tokenResolves = new Set<ts.Node>();
-  const strip = (node: ts.Node): ts.Node => {
-    while (transparent(node)) node = node.expression;
-    return node;
-  };
-  // `Object.fromEntries(Object.entries(map).map(([key, token]) => [key, container.resolve(token)]))` over closed
-  // literals of static tokens. Anything else in this shape stays unknown.
-  const tokenMap = (call: ts.Node): TokenMap | undefined => {
-    if (tokenMaps.has(call)) return tokenMaps.get(call) ?? undefined;
-    tokenMaps.set(call, null);
-    if (
-      !ts.isCallExpression(call) ||
-      call.arguments.length !== 1 ||
-      !ts.isPropertyAccessExpression(call.expression) ||
-      call.expression.name.text !== 'fromEntries' ||
-      !builtin(call.expression.expression, 'Object')
-    )
-      return undefined;
-    const mapped = strip(call.arguments[0]);
-    if (
-      !ts.isCallExpression(mapped) ||
-      mapped.arguments.length !== 1 ||
-      !ts.isPropertyAccessExpression(mapped.expression) ||
-      mapped.expression.name.text !== 'map'
-    )
-      return undefined;
-    const entries = strip(mapped.expression.expression);
-    const callback = mapped.arguments[0];
-    if (
-      !ts.isCallExpression(entries) ||
-      entries.arguments.length !== 1 ||
-      !ts.isPropertyAccessExpression(entries.expression) ||
-      entries.expression.name.text !== 'entries' ||
-      !builtin(entries.expression.expression, 'Object') ||
-      !(ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)) ||
-      callback.parameters.length !== 1 ||
-      callback.parameters[0].initializer ||
-      callback.parameters[0].dotDotDotToken ||
-      ts.isBlock(callback.body) ||
-      ts
-        .getModifiers(callback)
-        ?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword) ||
-      !ts.isArrayBindingPattern(callback.parameters[0].name)
-    )
-      return undefined;
-    const pattern = callback.parameters[0].name;
-    const [keyElement, tokenElement] = pattern.elements;
-    if (
-      pattern.elements.length !== 2 ||
-      !keyElement ||
-      !tokenElement ||
-      !ts.isBindingElement(keyElement) ||
-      !ts.isBindingElement(tokenElement) ||
-      keyElement.dotDotDotToken ||
-      tokenElement.dotDotDotToken ||
-      keyElement.initializer ||
-      tokenElement.initializer ||
-      !ts.isIdentifier(keyElement.name) ||
-      !ts.isIdentifier(tokenElement.name)
-    )
-      return undefined;
-    const body = returned(callback);
-    const pair = body.length === 1 ? strip(body[0]) : undefined;
-    if (
-      !pair ||
-      !ts.isArrayLiteralExpression(pair) ||
-      pair.elements.length !== 2
-    )
-      return undefined;
-    const [key, resolved] = pair.elements.map(strip);
-    if (
-      !ts.isIdentifier(key) ||
-      analysis.symbol(key) !== analysis.symbol(keyElement.name) ||
-      !ts.isCallExpression(resolved) ||
-      resolved.arguments.length !== 1 ||
-      !ts.isPropertyAccessExpression(resolved.expression) ||
-      resolved.expression.name.text !== 'resolve' ||
-      !ts.isIdentifier(resolved.arguments[0]) ||
-      analysis.symbol(resolved.arguments[0]) !==
-        analysis.symbol(tokenElement.name) ||
-      kind(resolved.expression.expression) !== 'container'
-    )
-      return undefined;
-    const sites = allocations(entries.arguments[0]);
-    if (
-      !sites.length ||
-      !sites.every(
-        (site) =>
-          ts.isObjectLiteralExpression(site) &&
-          !views.has(site) &&
-          site.properties.every(
-            (property) =>
-              (ts.isPropertyAssignment(property) ||
-                ts.isShorthandPropertyAssignment(property)) &&
-              staticName(property.name) !== undefined &&
-              staticName(property.name) !== '__proto__' &&
-              staticToken(
-                ts.isPropertyAssignment(property)
-                  ? property.initializer
-                  : property.name,
-              ),
-          ),
-      )
-    )
-      return undefined;
-    const tokensByKey = new Map<string, ts.Declaration | string>();
-    for (const site of sites as ts.ObjectLiteralExpression[])
-      for (const property of site.properties) {
-        if (
-          !ts.isPropertyAssignment(property) &&
-          !ts.isShorthandPropertyAssignment(property)
-        )
-          return undefined;
-        const key = staticName(property.name)!;
-        const token = ts.isPropertyAssignment(property)
-          ? property.initializer
-          : property.name;
-        const imported = analysis
-          .symbol(token)
-          ?.declarations?.find(ts.isImportSpecifier);
-        const statement = imported?.parent.parent.parent;
-        const identity =
-          imported &&
-          statement &&
-          ts.isImportDeclaration(statement) &&
-          analysis.isExternalImport(statement) &&
-          ts.isStringLiteralLike(statement.moduleSpecifier)
-            ? `${statement.moduleSpecifier.text}#${imported.propertyName?.text ?? imported.name.text}`
-            : tokenDeclaration(token);
-        if (
-          !identity ||
-          (tokensByKey.has(key) && tokensByKey.get(key) !== identity)
-        )
-          return undefined;
-        tokensByKey.set(key, identity);
-      }
-    const result: TokenMap = {
-      sites: sites as ts.ObjectLiteralExpression[],
-      entries,
-      resolve: resolved,
-    };
-    for (const site of result.sites) {
-      if (!tokenMapSites.has(site)) changed = true;
-      tokenMapSites.add(site);
-      for (const property of site.properties)
-        tokenMapValues.add(
-          ts.isPropertyAssignment(property)
-            ? property.initializer
-            : (property as ts.ShorthandPropertyAssignment).name,
-        );
-    }
-    tokenEntries.add(entries);
-    tokenResolves.add(resolved);
-    tokenMaps.set(call, result);
-    return result;
-  };
-  // Sites whose members decide which local function receives a tracked value: they become tracked themselves, so a
-  // later write, push or hand-out of the collection or element is checked like any other.
-  const dispatch = new Set<ts.Node>();
-  const markDispatch = (call: Call): void => {
-    if (
-      !ts.isCallExpression(call) ||
-      !ts.isPropertyAccessExpression(call.expression)
-    )
-      return;
-    for (const site of allocations(call.expression.expression))
-      if (!dispatch.has(site) && !views.has(site)) {
-        dispatch.add(site);
-        changed = true;
-      }
-  };
   const results = (call: Call): ts.Node[] => {
     if (ts.isNewExpression(call)) {
-      if (builtin(call.expression, 'Map') && !call.arguments?.length)
-        return [view('map', call)];
       const target = localClass(call.expression);
       return target ? [target] : [];
-    }
-    if (tokenMap(call)) return [view('tokens', call)];
-    const operation = collectionCall(call);
-    if (operation) {
-      const [map] = operation.sites;
-      switch (operation.name) {
-        case 'get':
-          return operation.sites.flatMap(
-            (site) => mapWrites(views.get(site)!.of).values,
-          );
-        case 'values':
-          return operation.sites.map((site) =>
-            view('values', views.get(site)!.of),
-          );
-        case 'entries':
-          return operation.sites.map((site) =>
-            view('entries', views.get(site)!.of),
-          );
-        case 'filter':
-          return [operation.receiver];
-        case 'find':
-          return operation.sites.flatMap((site) =>
-            memberValues(site, undefined),
-          );
-        case 'map':
-          return [view('mapped', call)];
-        default:
-          return map ? [] : [];
-      }
     }
     if (
       ts.isPropertyAccessExpression(call.expression) &&
@@ -1474,10 +962,6 @@ export function authorizationProgram(
   );
   const locate = (node: ts.Node, get: (child: ts.Node) => Site[]): Site[] => {
     {
-      const described = views.get(node);
-      if (described?.kind === 'resolved')
-        return registeredValues(described.of).flatMap(get);
-      if (described) return [node as Site];
       if (transparent(node)) return get(node.expression);
       const options = alternatives(node);
       if (options) return options.flatMap(get);
@@ -1487,9 +971,10 @@ export function authorizationProgram(
         ts.isClassLike(node)
       )
         return [node];
-      // Every declaration counts: a JavaScript property assignment such as `value.field = x` adds one to `value`.
-      if (ts.isIdentifier(node))
-        return analysis.declarations(node).flatMap(get);
+      if (ts.isIdentifier(node)) {
+        const declarations = analysis.declarations(node);
+        return declarations.length === 1 ? get(declarations[0]) : [];
+      }
       if (node.kind === ts.SyntaxKind.ThisKeyword) {
         const site = thisSite(node);
         return site ? [site] : [];
@@ -1505,14 +990,12 @@ export function authorizationProgram(
         const owner = node.parent.parent;
         const name = ts.isObjectBindingPattern(node.parent)
           ? staticName(node.propertyName ?? (node.name as ts.Identifier))
-          : String(node.parent.elements.indexOf(node));
+          : undefined;
         return get(owner).flatMap((site) =>
           memberValues(site, name).flatMap(get),
         );
       }
       if (ts.isParameter(node)) {
-        const elements = callbackElements(node);
-        if (elements) return elements.flatMap(get);
         const fn = node.parent;
         const position = fn.parameters.indexOf(node);
         return callers(fn).flatMap((call) => {
@@ -1736,20 +1219,13 @@ export function authorizationProgram(
     (node, get) => {
       let result: Kind | undefined;
       const options = alternatives(node);
-      const described = views.get(node);
-      if (described?.kind === 'resolved')
-        // What `resolve` returns for one token of a static token map.
-        result = authorizationToken(described.of, analysis)
-          ? 'authorization'
-          : registeredValues(described.of).map(get).reduce(join, undefined);
-      else if (transparent(node)) result = get(node.expression);
+      if (transparent(node)) result = get(node.expression);
       else if (options) result = options.map(get).reduce(join, undefined);
       else if (ts.isIdentifier(node)) {
         const declarations = analysis.declarations(node);
-        // A class value is its constructor, not an instance; its references are checked separately. Every other
-        // declaration counts, as a JavaScript property assignment `value.field = x` adds one to `value`.
-        if (!declarations.some((declaration) => ts.isClassLike(declaration)))
-          result = declarations.map(get).reduce(join, undefined);
+        // A class value is its constructor, not an instance; its references are checked separately.
+        if (declarations.length === 1 && !ts.isClassLike(declarations[0]))
+          result = get(declarations[0]);
       } else if (node.kind === ts.SyntaxKind.ThisKeyword) {
         const site = thisSite(node);
         if (site) result = get(site);
@@ -1759,8 +1235,6 @@ export function authorizationProgram(
         ts.isClassLike(node)
       ) {
         if (
-          dispatch.has(node) ||
-          tokenMapSites.has(node) ||
           memberValues(node, undefined).some(
             (value) => get(value) || returnsTracked(value, get),
           )
@@ -1786,7 +1260,7 @@ export function authorizationProgram(
             owner,
             ts.isObjectBindingPattern(node.parent)
               ? staticName(name as ts.PropertyName)
-              : String(node.parent.elements.indexOf(node)),
+              : undefined,
             get,
           );
         else if (ownerKind) result = 'conflict';
@@ -1809,8 +1283,6 @@ export function authorizationProgram(
           fn.parameters.indexOf(node) === (isRegister(fn) ? 1 : 0)
         )
           result = 'app';
-        else if (callbackElements(node))
-          result = callbackElements(node)!.map(get).reduce(join, undefined);
         else {
           const position = fn.parameters.indexOf(node);
           for (const call of callers(fn)) {
@@ -1925,23 +1397,10 @@ export function authorizationProgram(
     const position = call.arguments?.indexOf(node as ts.Expression) ?? -1;
     const functions = callTargets(call);
     if (!functions?.length || position < 0) return false;
-    markDispatch(call);
     const expected = kind(node);
     return functions.every((fn) => {
       const parameter = fn.parameters[position];
-      // An argument past a function's parameters reaches nothing, unless a non-arrow function reads `arguments`.
-      if (!parameter)
-        return (
-          !fn.parameters.some((item) => item.dotDotDotToken) &&
-          (ts.isArrowFunction(fn) ||
-            !('body' in fn) ||
-            !fn.body ||
-            !mentions(
-              fn.body,
-              (child) => ts.isIdentifier(child) && child.text === 'arguments',
-            ))
-        );
-      if (parameter.dotDotDotToken) return false;
+      if (!parameter || parameter.dotDotDotToken) return false;
       capabilityFunctions.add(fn);
       return kind(parameter) === expected;
     });
@@ -2095,8 +1554,6 @@ export function authorizationProgram(
         return false;
       if (ts.isIdentifier(node) && authorizationToken(node, analysis)) {
         if (ts.isImportSpecifier(node.parent)) continue;
-        // A value of a recognized static token map, which only the entry-wise resolution reads.
-        if (tokenMapValues.has(node)) continue;
         const parent = node.parent;
         if (
           !ts.isCallExpression(parent) ||
@@ -2109,19 +1566,11 @@ export function authorizationProgram(
           return false;
       }
       if (!ts.isExpression(node)) continue;
-      // Names are not values: a declaration's own name, and the member name of `receiver.name`, whose access is
-      // checked as one expression. A shorthand property's name is a reference and stays checked.
       if (
         ts.isIdentifier(node) &&
         (ts.isVariableDeclaration(node.parent) ||
           ts.isParameter(node.parent) ||
-          ts.isBindingElement(node.parent) ||
-          ts.isPropertyAccessExpression(node.parent) ||
-          ts.isPropertyAssignment(node.parent) ||
-          ts.isPropertyDeclaration(node.parent) ||
-          ts.isMethodDeclaration(node.parent) ||
-          ts.isFunctionDeclaration(node.parent) ||
-          ts.isClassLike(node.parent)) &&
+          ts.isBindingElement(node.parent)) &&
         node.parent.name === node
       )
         continue;
@@ -2143,50 +1592,6 @@ export function authorizationProgram(
       const holder = authority === 'holder';
       // A discarded value goes nowhere.
       if (ts.isExpressionStatement(parent) || ts.isVoidExpression(parent))
-        continue;
-      // A class field initializer defines the instance's field, like `this.field = value` in the class.
-      if (
-        ts.isPropertyDeclaration(parent) &&
-        parent.initializer === node &&
-        ts.isClassLike(parent.parent) &&
-        !ts
-          .getModifiers(parent)
-          ?.some((item) => item.kind === ts.SyntaxKind.StaticKeyword) &&
-        kind(parent.parent) === 'holder'
-      )
-        continue;
-      // A tracked function value called directly: what it returns is tracked and checked like any other value.
-      if (
-        ts.isCallExpression(parent) &&
-        parent.expression === node &&
-        callTargets(parent)?.length
-      )
-        continue;
-      // A static token map read by its recognized entry-wise resolution.
-      if (
-        ts.isCallExpression(parent) &&
-        parent.arguments[0] === node &&
-        tokenEntries.has(parent)
-      )
-        continue;
-      // A value written into a local Map: later reads of the Map return it, and the Map is checked as a holder.
-      if (
-        ts.isCallExpression(parent) &&
-        parent.arguments.includes(node) &&
-        collectionCall(parent)?.name === 'set'
-      )
-        continue;
-      // A supported read of a local Map or array: the result and any callback parameter are modelled, so they are
-      // checked themselves; writes such as `push`, and every other operation, remain unknown.
-      if (
-        holder &&
-        ts.isPropertyAccessExpression(parent) &&
-        parent.expression === node &&
-        !written(parent) &&
-        (collectionCall(parent.parent)?.receiver === node ||
-          (parent.name.text === 'length' && collection(node, false)) ||
-          (parent.name.text === 'size' && collection(node, true)))
-      )
         continue;
       const noRest = (name: ts.BindingName): boolean =>
         ts.isIdentifier(name) ||
@@ -2281,8 +1686,11 @@ export function authorizationProgram(
             : undefined;
         if (call) {
           // The receiver becomes `this` of the method, which must be a local function of the holder.
-          if (!callTargets(call)?.length) return false;
-          markDispatch(call);
+          if (
+            !ts.isPropertyAccessExpression(parent) ||
+            !callTargets(call)?.length
+          )
+            return false;
           continue;
         }
         // Property and bracket reads inspect the same method candidates; an unknown bracket key checks them all.
@@ -2477,8 +1885,6 @@ export function authorizationProgram(
           ['resolve', 'has', 'singleton', 'instance'].includes(name)
         ) {
           const token = call.arguments[0];
-          // The entry-wise resolution of a recognized static token map; each token was checked as static.
-          if (name === 'resolve' && tokenResolves.has(call)) continue;
           // A token read from an external module's `import()` namespace: an exported token of another package.
           if (
             token &&
@@ -2620,11 +2026,7 @@ export function authorizationProgram(
       )
         continue;
       const parent = node.parent;
-      if (
-        (ts.isFunctionDeclaration(parent) || ts.isMethodDeclaration(parent)) &&
-        parent.name === node
-      )
-        continue;
+      if (ts.isFunctionDeclaration(parent) && parent.name === node) continue;
       if (ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent))
         continue;
       if (
@@ -2642,14 +2044,6 @@ export function authorizationProgram(
       )
         continue;
       if (ts.isCallExpression(parent) && parent.expression === node) continue;
-      // The name of a method called through its receiver, `receiver.method(...)`.
-      if (
-        ts.isPropertyAccessExpression(parent) &&
-        parent.name === node &&
-        ts.isCallExpression(parent.parent) &&
-        parent.parent.expression === parent
-      )
-        continue;
       if (
         ts.isShorthandPropertyAssignment(parent) &&
         ts.isObjectLiteralExpression(parent.parent) &&
@@ -2705,13 +2099,6 @@ export function authorizationProgram(
       if (ts.isClassLike(parent) && parent.name === node) continue;
       if (ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent))
         continue;
-      // The runtime's own provider list: the host constructs each checked service provider itself.
-      if (
-        ts.isArrayLiteralExpression(parent) &&
-        !!entries.providers &&
-        parent === exported(entries.providers)
-      )
-        continue;
       if (ts.isImportClause(parent)) continue;
       if (ts.isNewExpression(parent) && parent.expression === node) continue;
       // A static member belongs to the class value, which never carries an instance's fields.
@@ -2743,22 +2130,7 @@ export function authorizationProgram(
     pass++;
     changed = false;
     callerCache.clear();
-    tokenMaps.clear();
-    tokenMapValues.clear();
-    tokenEntries.clear();
-    tokenResolves.clear();
-    for (const node of nodes) {
-      if (!ts.isExpression(node)) continue;
-      if (
-        ts.isIdentifier(node) &&
-        node.parent &&
-        'name' in node.parent &&
-        node.parent.name === node &&
-        !ts.isShorthandPropertyAssignment(node.parent)
-      )
-        continue;
-      kind(node);
-    }
+    for (const node of nodes) if (ts.isExpression(node)) kind(node);
     if (changed) continue;
     const proven = verify();
     if (!changed) return proven && visits <= LIMIT && !exhausted;
