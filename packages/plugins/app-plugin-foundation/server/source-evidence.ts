@@ -269,28 +269,6 @@ export class SourceEvidence {
     return file ? this.sources.get(file)?.ast : undefined;
   }
 
-  /** The declarations of one export of the local module an `import()` call loads. */
-  public namespaceExport(
-    call: ts.CallExpression,
-    name: string,
-  ): readonly ts.Declaration[] {
-    const specifier = call.arguments[0];
-    if (!specifier || !ts.isStringLiteralLike(specifier)) return [];
-    const file = this.resolutions.get(
-      `${call.getSourceFile().fileName}\0${specifier.text}`,
-    );
-    const source = file ? this.sources.get(file)?.ast : undefined;
-    const module = source && this.checker.getSymbolAtLocation(source);
-    let symbol = module
-      ? this.checker
-          .getExportsOfModule(module)
-          .find((item) => item.name === name)
-      : undefined;
-    if (symbol && symbol.flags & ts.SymbolFlags.Alias)
-      symbol = this.checker.getAliasedSymbol(symbol);
-    return symbol?.declarations ?? [];
-  }
-
   public symbol(node: ts.Node): ts.Symbol | undefined {
     if (
       node.parent &&

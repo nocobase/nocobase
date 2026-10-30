@@ -4,16 +4,7 @@ import { returned } from './request-evidence.js';
 import type { EvidenceSource, SourceEvidence } from './source-evidence.js';
 
 const AUTHORIZATION = '@nocobase/app-plugin-authorization';
-// Syntax nodes and dependent queries one identity proof may visit; a larger application is reported incomplete.
-const LIMIT = 1_000_000;
-// Official exports returning route contributions whose `createRouter` takes the application, exactly as the host
-// calls it. A wrapper may call them with the application it received.
-const ROUTE_FACTORIES = [
-  ['@nocobase/app-plugin-file/server', 'defineFileRepositoryApiRoutes'],
-] as const;
-const QUERY_LIMIT = 4_000_000;
-// These official default plugin contracts do not add an opaque identity step. API Keys adds a step with a final
-// unconditional next(); Agents adds authentication credential resolvers only, and Knowledge registers resources only.
+// These official default plugin contracts do not add an opaque identity step. API Keys adds a step with a final unconditional next().
 const PLUGINS = new Set(
   [
     'authentication',
@@ -32,8 +23,6 @@ const PLUGINS = new Set(
     'scheduler',
     'mail',
     'foundation',
-    'agents',
-    'knowledge',
   ].map((name) => `@nocobase/app-plugin-${name}/server`),
 );
 const NAMESPACES = new Set([
@@ -49,12 +38,6 @@ const NAMESPACES = new Set([
   'subjects',
   'routes',
 ]);
-
-function staticKey(name: ts.PropertyName): string | undefined {
-  return ts.isIdentifier(name) || ts.isStringLiteralLike(name)
-    ? name.text
-    : undefined;
-}
 
 export function authorizationToken(
   node: ts.Node,
@@ -81,12 +64,12 @@ export function authorizationProgram(
   let visits = 0;
   const nodes: ts.Node[] = [];
   const scan = (node: ts.Node): void => {
-    if (++visits > LIMIT || ts.isTypeNode(node)) return;
+    if (++visits > 100_000 || ts.isTypeNode(node)) return;
     nodes.push(node);
     ts.forEachChild(node, scan);
   };
   sources.forEach((source) => scan(source.ast));
-  if (visits > LIMIT) return false;
+  if (visits > 100_000) return false;
   const protectedBindings = new Set<ts.Declaration>();
   const protectedValues = new Set<ts.Node>();
   const value = (node: ts.Node): ts.Node | undefined => {
@@ -175,44 +158,7 @@ export function authorizationProgram(
     return false;
   let official = 0;
   const registrations = new Set<string>();
-  // `{ ...plugin, routes: [...] }` replaces only the plugin's route contributions; their code is part of this graph.
-  const overrides = new Set<ts.Node>();
-  for (const element of list.elements) {
-    let plugin: ts.Node = element;
-    if (ts.isObjectLiteralExpression(element)) {
-      const [base, ...rest] = element.properties;
-      if (
-        !base ||
-        !ts.isSpreadAssignment(base) ||
-        !ts.isIdentifier(base.expression) ||
-        rest.length > 1 ||
-        !rest.every(
-          (p) =>
-            ts.isPropertyAssignment(p) &&
-            staticKey(p.name) === 'routes' &&
-            ts.isArrayLiteralExpression(p.initializer) &&
-            p.initializer.elements.every(
-              (route) =>
-                ts.isIdentifier(route) &&
-                analysis
-                  .values(route)
-                  .every(
-                    (value) =>
-                      ts.isCallExpression(value) &&
-                      importedContract(
-                        value.expression,
-                        analysis,
-                        '@nocobase/app-server/router',
-                        'defineApiRoutes',
-                      ),
-                  ),
-            ),
-        )
-      )
-        return false;
-      plugin = base.expression;
-      overrides.add(base);
-    }
+  for (const plugin of list.elements) {
     const declarations = analysis.symbol(plugin)?.declarations ?? [];
     if (
       declarations.length !== 1 ||
@@ -366,12 +312,6 @@ export function authorizationProgram(
             'defineDatabasePermission',
             'defineCompositeResource',
             'defineRecordAccess',
-            // Pure filter builders, title codecs and the denial error class.
-            'condition',
-            'anyScope',
-            'encodeAuthorizationTitle',
-            'decodeAuthorizationTitle',
-            'AuthorizationDeniedError',
           ].includes(name)
         )
           return false;
@@ -401,7 +341,6 @@ export function authorizationProgram(
       continue;
     if (ts.isImportSpecifier(parent)) continue;
     if (ts.isExportAssignment(parent)) continue;
-    if (ts.isSpreadAssignment(parent) && overrides.has(parent)) continue;
     if (ts.isExpressionWithTypeArguments(parent)) continue;
     if (ts.isArrayLiteralExpression(parent) && protectedValues.has(parent))
       continue;
@@ -447,1680 +386,482 @@ export function authorizationProgram(
     return false;
   }
 
-  type Authority = 'app' | 'container' | 'config' | 'authorization' | 'runtime';
-  // A holder is a local object literal, array literal or class instance with an authority (or another holder) in a
-  // field. Its fields are known only from the allocation, so every later use of a holder is checked like an authority.
-  // Conflict marks a value whose sources disagree; no use of it is accepted.
-  type Kind = Authority | 'holder' | 'conflict';
-  type Site =
-    | ts.ObjectLiteralExpression
-    | ts.ArrayLiteralExpression
-    | ts.ClassLikeDeclaration;
-  type Call = ts.CallExpression | ts.NewExpression;
-  const join = (a: Kind | undefined, b: Kind | undefined): Kind | undefined =>
-    !a ? b : !b || a === b ? a : 'conflict';
-  let exhausted = false;
-  let queries = 0;
-  // Monotone fixpoint queries over passes. Within a pass each node is computed once; a query still in progress reads
-  // its previous approximation. Passes repeat until nothing changes, and the proof is decided only on a stable pass.
-  let pass = 0;
-  let changed: boolean;
-  const solver = <T>(
-    compute: (node: ts.Node, get: (child: ts.Node) => T) => T,
-    empty: T,
-    same: (a: T, b: T) => boolean,
-  ): ((node: ts.Node) => T) => {
-    const cache = new Map<ts.Node, T>();
-    const stamp = new Map<ts.Node, number>();
-    let depth = 0;
-    const get = (node: ts.Node): T => {
-      if (
-        ts.isLiteralExpression(node) ||
-        ts.isTemplateExpression(node) ||
-        ts.isFunctionLike(node) ||
-        ts.isTypeNode(node) ||
-        node.kind === ts.SyntaxKind.TrueKeyword ||
-        node.kind === ts.SyntaxKind.FalseKeyword ||
-        node.kind === ts.SyntaxKind.NullKeyword
-      )
-        return empty;
-      if (stamp.get(node) === pass)
-        return cache.has(node) ? (cache.get(node) as T) : empty;
-      if (++queries > QUERY_LIMIT || depth >= 512) {
-        exhausted = true;
-        return cache.has(node) ? (cache.get(node) as T) : empty;
-      }
-      stamp.set(node, pass);
-      depth++;
-      const result = compute(node, get);
-      depth--;
-      const previous = cache.has(node) ? (cache.get(node) as T) : empty;
-      if (!same(previous, result)) changed = true;
-      cache.set(node, result);
-      return result;
-    };
-    return get;
-  };
-  const sameSites = (a: readonly ts.Node[], b: readonly ts.Node[]): boolean =>
-    a.length === b.length && a.every((site) => b.includes(site));
-  const unique = <T>(items: T[]): T[] => [...new Set(items)];
-  const transparent = (
-    node: ts.Node,
-  ): node is
-    | ts.ParenthesizedExpression
-    | ts.AsExpression
-    | ts.SatisfiesExpression
-    | ts.TypeAssertion
-    | ts.NonNullExpression
-    | ts.AwaitExpression =>
-    ts.isParenthesizedExpression(node) ||
-    ts.isAsExpression(node) ||
-    ts.isSatisfiesExpression(node) ||
-    ts.isTypeAssertionExpression(node) ||
-    ts.isNonNullExpression(node) ||
-    ts.isAwaitExpression(node);
-  const alternatives = (node: ts.Node): ts.Node[] | undefined => {
-    if (ts.isConditionalExpression(node))
-      return [node.whenTrue, node.whenFalse];
-    if (
-      ts.isBinaryExpression(node) &&
-      [
-        ts.SyntaxKind.QuestionQuestionToken,
-        ts.SyntaxKind.BarBarToken,
-        ts.SyntaxKind.AmpersandAmpersandToken,
-      ].includes(node.operatorToken.kind)
-    )
-      return [node.left, node.right];
-    return undefined;
-  };
-  const staticName = (name: ts.PropertyName | undefined): string | undefined =>
-    name &&
-    (ts.isIdentifier(name) ||
-      ts.isPrivateIdentifier(name) ||
-      ts.isStringLiteralLike(name) ||
-      ts.isNumericLiteral(name))
-      ? name.text
-      : undefined;
-  // The receiver a `this` denotes: the instance for class members and the literal for its own methods.
-  const thisSite = (node: ts.Node): Site | undefined => {
-    let fn: ts.Node | undefined = node.parent;
-    while (
-      fn &&
-      !ts.isClassLike(fn) &&
-      !(ts.isFunctionLike(fn) && !ts.isArrowFunction(fn))
-    )
-      fn = fn.parent;
-    if (!fn) return undefined;
-    if (ts.isClassLike(fn)) return fn;
-    const modifiers = ts.canHaveModifiers(fn) ? ts.getModifiers(fn) : undefined;
-    if (modifiers?.some((m) => m.kind === ts.SyntaxKind.StaticKeyword))
+  type Kind = 'app' | 'container' | 'config' | 'authorization' | 'runtime';
+  const memo = new Map<ts.Node, Kind | undefined>();
+  const kind = (node: ts.Node, seen = new Set<ts.Node>()): Kind | undefined => {
+    if (memo.has(node)) return memo.get(node);
+    if (++visits > 100_000 || seen.has(node) || seen.size >= 32)
       return undefined;
+    const next = new Set(seen).add(node);
+    const get = (child: ts.Node): Kind | undefined => kind(child, next);
+    let result: Kind | undefined;
     if (
-      (ts.isConstructorDeclaration(fn) ||
-        ts.isMethodDeclaration(fn) ||
-        ts.isGetAccessorDeclaration(fn) ||
-        ts.isSetAccessorDeclaration(fn)) &&
-      (ts.isClassLike(fn.parent) || ts.isObjectLiteralExpression(fn.parent))
+      ts.isParenthesizedExpression(node) ||
+      ts.isAsExpression(node) ||
+      ts.isNonNullExpression(node) ||
+      ts.isAwaitExpression(node)
     )
-      return fn.parent;
-    if (
-      ts.isFunctionExpression(fn) &&
-      ts.isPropertyAssignment(fn.parent) &&
-      ts.isObjectLiteralExpression(fn.parent.parent)
-    )
-      return fn.parent.parent;
-    return undefined;
-  };
-  const localClass = (node: ts.Node): ts.ClassLikeDeclaration | undefined => {
-    const classes = analysis.values(node).filter(ts.isClassLike);
-    return classes.length === 1 ? classes[0] : undefined;
-  };
-  // Assignments to `this.<name>` belong to the field model of the class whose instance `this` denotes.
-  let classWrites: Map<ts.Node, Map<string, ts.Expression[]>> | undefined;
-  const writesOf = (site: Site, name: string): ts.Expression[] => {
-    if (!classWrites) {
-      classWrites = new Map();
-      for (const candidate of nodes) {
-        if (
-          !ts.isBinaryExpression(candidate) ||
-          candidate.operatorToken.kind !== ts.SyntaxKind.EqualsToken ||
-          !ts.isPropertyAccessExpression(candidate.left) ||
-          candidate.left.expression.kind !== ts.SyntaxKind.ThisKeyword
-        )
-          continue;
-        const owner = thisSite(candidate.left.expression);
-        if (!owner || !ts.isClassLike(owner)) continue;
-        const fields =
-          classWrites.get(owner) ?? new Map<string, ts.Expression[]>();
-        classWrites.set(owner, fields);
-        const field = candidate.left.name.text;
-        fields.set(field, [...(fields.get(field) ?? []), candidate.right]);
-      }
-    }
-    return classWrites.get(site)?.get(name) ?? [];
-  };
-  const members = new Map<ts.Node, Map<string | undefined, ts.Node[]>>();
-  const memberValues = (site: Site, name: string | undefined): ts.Node[] => {
-    const known = members.get(site)?.get(name);
-    if (known) return known;
-    const values = computeMembers(site, name);
-    // Spread members depend on other allocations, which may still be in progress; only closed literals are cached.
-    if (
-      !ts.isClassLike(site) &&
-      (ts.isArrayLiteralExpression(site)
-        ? site.elements.some(ts.isSpreadElement)
-        : site.properties.some(ts.isSpreadAssignment))
-    )
-      return values;
-    const fields =
-      members.get(site) ?? new Map<string | undefined, ts.Node[]>();
-    members.set(site, fields);
-    fields.set(name, values);
-    return values;
-  };
-  const computeMembers = (site: Site, name: string | undefined): ts.Node[] => {
-    if (ts.isArrayLiteralExpression(site))
-      return site.elements.flatMap((element) =>
-        ts.isSpreadElement(element)
-          ? allocations(element.expression).flatMap((inner) =>
-              memberValues(inner, undefined),
-            )
-          : [element],
-      );
-    if (ts.isObjectLiteralExpression(site))
-      return site.properties.flatMap((property): ts.Node[] => {
-        if (ts.isSpreadAssignment(property))
-          return allocations(property.expression).flatMap((inner) =>
-            memberValues(inner, name),
-          );
-        const key = staticName(property.name);
-        if (name !== undefined && key !== undefined && key !== name) return [];
-        if (ts.isPropertyAssignment(property)) return [property.initializer];
-        if (ts.isShorthandPropertyAssignment(property)) return [property.name];
-        return [property];
-      });
-    const values: ts.Node[] = [];
-    for (const member of site.members) {
-      const modifiers = ts.canHaveModifiers(member)
-        ? ts.getModifiers(member)
-        : undefined;
-      if (modifiers?.some((m) => m.kind === ts.SyntaxKind.StaticKeyword))
-        continue;
-      if (ts.isConstructorDeclaration(member)) {
-        for (const parameter of member.parameters)
-          if (
-            ts.getModifiers(parameter)?.length &&
-            ts.isIdentifier(parameter.name) &&
-            (name === undefined || parameter.name.text === name)
-          )
-            values.push(parameter);
-        continue;
-      }
-      const key = staticName(member.name);
-      if (name !== undefined && key !== undefined && key !== name) continue;
-      if (ts.isPropertyDeclaration(member)) {
-        if (member.initializer) values.push(member.initializer);
-      } else values.push(member);
-    }
-    if (name !== undefined) values.push(...writesOf(site, name));
-    else {
-      writesOf(site, '');
-      for (const fields of classWrites?.get(site)?.values() ?? [])
-        values.push(...fields);
-    }
-    return values;
-  };
-  const methodCalls = new Map<string, Call[]>();
-  const directCalls = new Map<ts.Node, Call[]>();
-  let indexed = false;
-  const index = (): void => {
-    if (indexed) return;
-    indexed = true;
-    for (const candidate of nodes) {
-      if (!ts.isCallExpression(candidate) && !ts.isNewExpression(candidate))
-        continue;
-      const callee = candidate.expression;
-      if (
-        ts.isCallExpression(candidate) &&
-        ((ts.isPropertyAccessExpression(callee) &&
-          namespaceImport(callee.expression)) ||
-          importedBinding(callee))
-      )
-        for (const target of callTargets(candidate) ?? [])
-          directCalls.set(target, [
-            ...(directCalls.get(target) ?? []),
-            candidate,
-          ]);
-      if (ts.isPropertyAccessExpression(callee))
-        methodCalls.set(callee.name.text, [
-          ...(methodCalls.get(callee.name.text) ?? []),
-          candidate,
-        ]);
-      const targets = ts.isNewExpression(candidate)
-        ? [localClass(callee)].flatMap((c) =>
-            c ? c.members.filter(ts.isConstructorDeclaration) : [],
-          )
-        : analysis.functions(callee);
-      for (const target of targets)
-        directCalls.set(target, [
-          ...(directCalls.get(target) ?? []),
-          candidate,
-        ]);
-    }
-  };
-  // Local functions a call reaches: resolved functions, methods of the receiver's allocations, or a class constructor.
-  const callTargets = (call: Call): ts.SignatureDeclaration[] | undefined => {
-    if (ts.isNewExpression(call)) {
-      const target = localClass(call.expression);
-      if (!target) return undefined;
-      return target.members.filter(ts.isConstructorDeclaration);
-    }
-    const direct = analysis.functions(call.expression);
-    if (direct.length) return [...direct];
-    const callee = call.expression;
-    const binding = importedBinding(callee);
-    if (binding) {
-      const exported = analysis
-        .namespaceExport(binding.source, binding.name)
-        .filter(
-          (declaration): declaration is ts.FunctionDeclaration =>
-            ts.isFunctionDeclaration(declaration) && !!declaration.body,
-        );
-      return exported.length === 1 ? exported : undefined;
-    }
-    if (!ts.isPropertyAccessExpression(callee)) return undefined;
-    // A module namespace from `import()` exposes exactly the module's exports.
-    const namespace = namespaceImport(callee.expression);
-    if (namespace) {
-      const exported = analysis
-        .namespaceExport(namespace, callee.name.text)
-        .filter(
-          (declaration): declaration is ts.FunctionDeclaration =>
-            ts.isFunctionDeclaration(declaration) && !!declaration.body,
-        );
-      return exported.length === 1 ? exported : undefined;
-    }
-    const functions = unique(
-      allocations(callee.expression)
-        .flatMap((site) => memberValues(site, callee.name.text))
-        .flatMap((value) => functionValues(value, 0)),
-    );
-    return functions.length ? functions : undefined;
-  };
-  // Functions a member value denotes: a literal function, a resolved local function, or another member holding one.
-  const functionValues = (
-    value: ts.Node,
-    depth: number,
-  ): ts.SignatureDeclaration[] => {
-    if (depth > 8) return [];
-    if (ts.isFunctionLike(value)) return [value];
-    const direct = analysis.functions(value);
-    if (direct.length) return [...direct];
-    if (transparent(value)) return functionValues(value.expression, depth + 1);
-    if (ts.isIdentifier(value)) {
-      const declarations = analysis.declarations(value);
-      if (declarations.length !== 1) return [];
-      const declaration = declarations[0];
-      if (ts.isVariableDeclaration(declaration) && declaration.initializer)
-        return functionValues(declaration.initializer, depth + 1);
-      if (ts.isBindingElement(declaration)) {
-        const name = ts.isObjectBindingPattern(declaration.parent)
-          ? staticName(
-              declaration.propertyName ?? (declaration.name as ts.Identifier),
-            )
-          : undefined;
-        return allocations(declaration.parent.parent)
-          .flatMap((site) => memberValues(site, name))
-          .flatMap((member) => functionValues(member, depth + 1));
-      }
-      if (ts.isParameter(declaration)) {
-        const position = declaration.parent.parameters.indexOf(declaration);
-        return callers(declaration.parent).flatMap((call) => {
-          const argument = call.arguments?.[position];
-          return argument ? functionValues(argument, depth + 1) : [];
-        });
-      }
-      return [];
-    }
-    if (ts.isCallExpression(value))
-      return (callTargets(value) ?? []).flatMap((fn) =>
-        returned(fn).flatMap((result) => functionValues(result, depth + 1)),
-      );
-    if (ts.isPropertyAccessExpression(value))
-      return allocations(value.expression)
-        .flatMap((site) => memberValues(site, value.name.text))
-        .flatMap((member) => functionValues(member, depth + 1));
-    return [];
-  };
-  const namespaceImport = (node: ts.Node): ts.CallExpression | undefined => {
-    while (transparent(node)) node = node.expression;
-    return ts.isCallExpression(node) &&
-      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-      node.arguments.length === 1 &&
-      ts.isStringLiteralLike(node.arguments[0])
-      ? node
-      : undefined;
-  };
-  // The `import()` call and export name a const binding destructures, if it does.
-  const importedBinding = (
-    node: ts.Node,
-  ): { source: ts.CallExpression; name: string } | undefined => {
-    const declarations = ts.isIdentifier(node)
-      ? analysis.declarations(node)
-      : [];
-    const declaration = declarations.length === 1 ? declarations[0] : undefined;
-    if (
-      !declaration ||
-      !ts.isBindingElement(declaration) ||
-      !ts.isObjectBindingPattern(declaration.parent) ||
-      !ts.isVariableDeclaration(declaration.parent.parent) ||
-      !declaration.parent.parent.initializer
-    )
-      return undefined;
-    const source = namespaceImport(declaration.parent.parent.initializer);
-    const name = staticName(
-      declaration.propertyName ?? (declaration.name as ts.Identifier),
-    );
-    return source && name ? { source, name } : undefined;
-  };
-  // The declaration a token identifier denotes, also when destructured from a local module's `import()`.
-  const tokenDeclaration = (token: ts.Node): ts.Declaration | undefined => {
-    const declarations = analysis.declarations(token);
-    const declaration = declarations.length === 1 ? declarations[0] : undefined;
-    if (
-      declaration &&
-      ts.isBindingElement(declaration) &&
-      ts.isObjectBindingPattern(declaration.parent) &&
-      ts.isVariableDeclaration(declaration.parent.parent) &&
-      declaration.parent.parent.initializer
+      result = get(node.expression);
+    else if (ts.isIdentifier(node)) {
+      const declarations = analysis.declarations(node);
+      if (declarations.length === 1) result = get(declarations[0]);
+    } else if (ts.isVariableDeclaration(node) && node.initializer)
+      result = get(node.initializer);
+    else if (
+      ts.isBindingElement(node) &&
+      ts.isObjectBindingPattern(node.parent)
     ) {
-      const source = namespaceImport(declaration.parent.parent.initializer);
-      const name = staticName(
-        declaration.propertyName ?? (declaration.name as ts.Identifier),
-      );
-      const exported =
-        source && name ? analysis.namespaceExport(source, name) : [];
-      return exported.length === 1 ? exported[0] : undefined;
-    }
-    return declaration;
-  };
-  // An element of an official route factory's result, read as the parameter of a `.map` callback over it.
-  const officialContribution = (node: ts.Node): boolean => {
-    const declarations = ts.isIdentifier(node)
-      ? analysis.declarations(node)
-      : [];
-    const parameter = declarations.length === 1 ? declarations[0] : undefined;
-    if (!parameter || !ts.isParameter(parameter)) return false;
-    const fn = parameter.parent;
-    const call = fn.parent;
-    return (
-      fn.parameters[0] === parameter &&
-      ts.isCallExpression(call) &&
-      call.arguments.length === 1 &&
-      call.arguments[0] === fn &&
-      ts.isPropertyAccessExpression(call.expression) &&
-      call.expression.name.text === 'map' &&
-      analysis.values(call.expression.expression).length === 1 &&
-      analysis
-        .values(call.expression.expression)
-        .every(
-          (source) =>
-            ts.isCallExpression(source) &&
-            ROUTE_FACTORIES.some(([module, name]) =>
-              importedContract(source.expression, analysis, module, name),
-            ),
-        )
-    );
-  };
-  const callerCache = new Map<ts.Node, Call[]>();
-  const callers = (fn: ts.SignatureDeclaration): Call[] => {
-    const known = callerCache.get(fn);
-    if (known) return known;
-    const found = findCallers(fn);
-    callerCache.set(fn, found);
-    return found;
-  };
-  const findCallers = (fn: ts.SignatureDeclaration): Call[] => {
-    index();
-    const name =
-      ts.isMethodDeclaration(fn) ||
-      ts.isGetAccessorDeclaration(fn) ||
-      ts.isSetAccessorDeclaration(fn)
-        ? staticName(fn.name)
-        : (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) &&
-            ts.isPropertyAssignment(fn.parent)
-          ? staticName(fn.parent.name)
-          : undefined;
-    const byName = name
-      ? (methodCalls.get(name) ?? []).filter((call) =>
-          callTargets(call)?.includes(fn),
-        )
-      : [];
-    return [...new Set([...(directCalls.get(fn) ?? []), ...byName])];
-  };
-  // Container registrations by token declaration: what a later `resolve(token)` returns.
-  let tokenRegistrations: Map<ts.Declaration, ts.Node[]> | undefined;
-  const registeredValues = (token: ts.Node): ts.Node[] => {
-    if (!tokenRegistrations) {
-      tokenRegistrations = new Map();
-      for (const candidate of nodes) {
-        if (
-          !ts.isCallExpression(candidate) ||
-          !ts.isPropertyAccessExpression(candidate.expression) ||
-          !['singleton', 'instance'].includes(candidate.expression.name.text) ||
-          candidate.arguments.length < 2 ||
-          !ts.isIdentifier(candidate.arguments[0])
-        )
-          continue;
-        const declaration = tokenDeclaration(candidate.arguments[0]);
-        if (!declaration) continue;
-        const value = candidate.arguments[1];
-        const produced =
-          candidate.expression.name.text === 'singleton'
-            ? analysis.functions(value).flatMap((fn) => [...returned(fn)])
-            : [value];
-        tokenRegistrations.set(declaration, [
-          ...(tokenRegistrations.get(declaration) ?? []),
-          ...produced,
-        ]);
-      }
-    }
-    const declaration = ts.isIdentifier(token)
-      ? tokenDeclaration(token)
-      : undefined;
-    return (declaration && tokenRegistrations.get(declaration)) || [];
-  };
-  const results = (call: Call): ts.Node[] => {
-    if (ts.isNewExpression(call)) {
-      const target = localClass(call.expression);
-      return target ? [target] : [];
-    }
-    if (
-      ts.isPropertyAccessExpression(call.expression) &&
-      call.expression.name.text === 'resolve' &&
-      call.arguments.length === 1
-    ) {
-      const values = registeredValues(call.arguments[0]);
-      if (values.length) return values;
-    }
-    return (callTargets(call) ?? []).flatMap((fn) => [...returned(fn)]);
-  };
-  const allocations: (node: ts.Node) => Site[] = solver<Site[]>(
-    (node, get) => unique(locate(node, get)),
-    [],
-    sameSites,
-  );
-  const locate = (node: ts.Node, get: (child: ts.Node) => Site[]): Site[] => {
-    {
-      if (transparent(node)) return get(node.expression);
-      const options = alternatives(node);
-      if (options) return options.flatMap(get);
+      const owner = get(node.parent.parent);
+      const name = node.propertyName ?? node.name;
       if (
-        ts.isObjectLiteralExpression(node) ||
-        ts.isArrayLiteralExpression(node) ||
-        ts.isClassLike(node)
+        owner === 'app' &&
+        ts.isIdentifier(name) &&
+        ['container', 'config'].includes(name.text)
       )
-        return [node];
-      if (ts.isIdentifier(node)) {
-        const declarations = analysis.declarations(node);
-        return declarations.length === 1 ? get(declarations[0]) : [];
-      }
-      if (node.kind === ts.SyntaxKind.ThisKeyword) {
-        const site = thisSite(node);
-        return site ? [site] : [];
-      }
-      if (ts.isVariableDeclaration(node)) {
-        if (ts.isForOfStatement(node.parent.parent))
-          return get(node.parent.parent.expression).flatMap((site) =>
-            memberValues(site, undefined).flatMap(get),
-          );
-        return node.initializer ? get(node.initializer) : [];
-      }
-      if (ts.isBindingElement(node)) {
-        const owner = node.parent.parent;
-        const name = ts.isObjectBindingPattern(node.parent)
-          ? staticName(node.propertyName ?? (node.name as ts.Identifier))
-          : undefined;
-        return get(owner).flatMap((site) =>
-          memberValues(site, name).flatMap(get),
-        );
-      }
-      if (ts.isParameter(node)) {
-        const fn = node.parent;
-        const position = fn.parameters.indexOf(node);
-        return callers(fn).flatMap((call) => {
-          const argument = call.arguments?.[position];
-          return argument ? get(argument) : [];
-        });
-      }
-      if (ts.isNewExpression(node) || ts.isCallExpression(node))
-        return results(node).flatMap(get);
-      if (ts.isPropertyAccessExpression(node))
-        return get(node.expression).flatMap((site) =>
-          memberValues(site, node.name.text).flatMap(get),
-        );
-      if (ts.isElementAccessExpression(node))
-        return get(node.expression).flatMap((site) =>
-          memberValues(site, undefined).flatMap(get),
-        );
-      return [];
-    }
-  };
-  // Functions the host calls with the application: route contributions' `createRouter` in the runtime's route list
-  // (directly, spread or produced by `.map`) and local HTTP middleware's `register`.
-  const hostCalled = new Set<ts.Node>();
-  const contributions = (node: ts.Node, depth: number): void => {
-    if (depth > 8) return;
-    for (const item of analysis.values(node)) {
-      if (ts.isArrayLiteralExpression(item))
-        for (const element of item.elements)
-          contributions(
-            ts.isSpreadElement(element) ? element.expression : element,
-            depth + 1,
-          );
+        result = name.text as Kind;
+    } else if (ts.isParameter(node)) {
+      const fn = node.parent;
+      if (
+        ts.isArrowFunction(fn) &&
+        fn.parameters[0] === node &&
+        ts.isCallExpression(fn.parent) &&
+        importedContract(
+          fn.parent.expression,
+          analysis,
+          '@nocobase/app-server/router',
+          'defineApiRoutes',
+        )
+      )
+        result = 'app';
       else if (
-        ts.isCallExpression(item) &&
-        ts.isPropertyAccessExpression(item.expression) &&
-        item.expression.name.text === 'map' &&
-        item.arguments.length === 1
-      )
-        for (const fn of analysis.functions(item.arguments[0]))
-          for (const result of returned(fn)) contributions(result, depth + 1);
-      else if (ts.isObjectLiteralExpression(item)) {
-        const factory = property(item, 'createRouter');
-        for (const fn of factory ? analysis.functions(factory) : [])
-          hostCalled.add(fn);
-      }
-    }
-  };
-  const routeList = property(definition, 'routes');
-  if (routeList) contributions(routeList, 0);
-  const httpRegisters = new Set<ts.Node>();
-  const isRegister = (fn: ts.Node): boolean => httpRegisters.has(fn);
-  const mentions = (node: ts.Node, test: (child: ts.Node) => boolean) => {
-    let found = false;
-    const visit = (child: ts.Node): void => {
-      if (found) return;
-      if (test(child)) found = true;
-      else ts.forEachChild(child, visit);
-    };
-    visit(node);
-    return found;
-  };
-  // A pass-through handler: optional `if (...) return next();` guards, then an unconditional `await next()`, never
-  // touching `next` again and never setting request variables other steps read, such as the session.
-  const passThrough = (handler: ts.Node): boolean => {
-    const fn = ts.isFunctionLike(handler)
-      ? handler
-      : analysis.functions(handler)[0];
-    if (
-      !fn ||
-      !('body' in fn) ||
-      !fn.body ||
-      !ts.isBlock(fn.body) ||
-      fn.parameters.length !== 2
-    )
-      return false;
-    const [context, next] = fn.parameters;
-    if (!ts.isIdentifier(context.name) || !ts.isIdentifier(next.name))
-      return false;
-    const nextSymbol = analysis.symbol(next.name);
-    const contextSymbol = analysis.symbol(context.name);
-    const isNext = (child: ts.Node): boolean =>
-      ts.isIdentifier(child) && analysis.symbol(child) === nextSymbol;
-    const direct = (child: ts.Node): boolean => {
-      while (ts.isAwaitExpression(child) || ts.isParenthesizedExpression(child))
-        child = child.expression;
-      return (
-        ts.isCallExpression(child) &&
-        isNext(child.expression) &&
-        child.arguments.length === 0
-      );
-    };
-    let reached = false;
-    for (const statement of fn.body.statements) {
-      if (reached) {
-        if (mentions(statement, isNext)) return false;
-        continue;
-      }
-      if (
-        ts.isIfStatement(statement) &&
-        !statement.elseStatement &&
-        ts.isReturnStatement(statement.thenStatement) &&
-        statement.thenStatement.expression &&
-        direct(statement.thenStatement.expression) &&
-        !mentions(statement.expression, isNext)
-      )
-        continue;
-      if (ts.isExpressionStatement(statement) && direct(statement.expression)) {
-        reached = true;
-        continue;
-      }
-      if (
-        (ts.isVariableStatement(statement) ||
-          ts.isExpressionStatement(statement)) &&
-        !mentions(statement, isNext)
-      )
-        continue;
-      return false;
-    }
-    return (
-      reached &&
-      !mentions(
-        fn.body,
-        (child) =>
-          ts.isPropertyAccessExpression(child) &&
-          ts.isIdentifier(child.expression) &&
-          analysis.symbol(child.expression) === contextSymbol &&
-          ['set', 'var', 'env'].includes(child.name.text),
-      )
-    );
-  };
-  // A local HTTP middleware is accepted when its router only receives pass-through handlers.
-  const localMiddleware = (argument: ts.Node): boolean => {
-    const values = analysis.values(argument);
-    const call = values.length === 1 ? values[0] : undefined;
-    if (
-      !call ||
-      !ts.isCallExpression(call) ||
-      call.arguments.length !== 1 ||
-      !importedContract(
-        call.expression,
-        analysis,
-        '@nocobase/app-server/router',
-        'defineHttpMiddleware',
-      )
-    )
-      return false;
-    const options = analysis.values(call.arguments[0]);
-    if (options.length !== 1 || !ts.isObjectLiteralExpression(options[0]))
-      return false;
-    const member = options[0].properties.find(
-      (item) => staticName(item.name) === 'register',
-    );
-    const register =
-      member && ts.isMethodDeclaration(member)
-        ? member
-        : member && ts.isPropertyAssignment(member)
-          ? analysis.functions(member.initializer)[0]
-          : undefined;
-    if (
-      !register ||
-      !('body' in register) ||
-      !register.body ||
-      !ts.isBlock(register.body)
-    )
-      return false;
-    const router = register.parameters[0];
-    if (!router || !ts.isIdentifier(router.name)) return false;
-    const symbol = analysis.symbol(router.name);
-    const misuse = mentions(register.body, (child) => {
-      if (!ts.isIdentifier(child) || analysis.symbol(child) !== symbol)
-        return false;
-      const access = child.parent;
-      const use = access.parent;
-      return !(
-        ts.isPropertyAccessExpression(access) &&
-        access.expression === child &&
-        access.name.text === 'use' &&
-        ts.isCallExpression(use) &&
-        use.expression === access &&
-        use.arguments.length === 2 &&
-        ts.isStringLiteralLike(use.arguments[0]) &&
-        passThrough(use.arguments[1])
-      );
-    });
-    if (misuse) return false;
-    httpRegisters.add(register);
-    hostCalled.add(register);
-    return true;
-  };
-  const middlewares = new Set<ts.Node>();
-  for (const candidate of nodes)
-    if (
-      ts.isCallExpression(candidate) &&
-      ts.isPropertyAccessExpression(candidate.expression) &&
-      candidate.expression.name.text === 'addHttpMiddleware' &&
-      candidate.arguments.length === 1 &&
-      localMiddleware(candidate.arguments[0])
-    )
-      middlewares.add(candidate.arguments[0]);
-  const fieldKind = (
-    owner: ts.Node,
-    name: string | undefined,
-    get: (node: ts.Node) => Kind | undefined,
-  ): Kind | undefined =>
-    allocations(owner)
-      .flatMap((site) => memberValues(site, name))
-      .reduce<Kind | undefined>(
-        (kind, value) => join(kind, get(value)),
-        undefined,
-      );
-  // A function that hands out a tracked value makes the object holding it a holder: reading the method is a capability.
-  const returnsTracked = (
-    fn: ts.Node,
-    get: (node: ts.Node) => Kind | undefined,
-  ) => ts.isFunctionLike(fn) && returned(fn).some((value) => get(value));
-  const kind: (node: ts.Node) => Kind | undefined = solver<Kind | undefined>(
-    (node, get) => {
-      let result: Kind | undefined;
-      const options = alternatives(node);
-      if (transparent(node)) result = get(node.expression);
-      else if (options) result = options.map(get).reduce(join, undefined);
-      else if (ts.isIdentifier(node)) {
-        const declarations = analysis.declarations(node);
-        // A class value is its constructor, not an instance; its references are checked separately.
-        if (declarations.length === 1 && !ts.isClassLike(declarations[0]))
-          result = get(declarations[0]);
-      } else if (node.kind === ts.SyntaxKind.ThisKeyword) {
-        const site = thisSite(node);
-        if (site) result = get(site);
-      } else if (
-        ts.isObjectLiteralExpression(node) ||
-        ts.isArrayLiteralExpression(node) ||
-        ts.isClassLike(node)
+        ts.isFunctionDeclaration(fn) ||
+        ts.isArrowFunction(fn) ||
+        ts.isFunctionExpression(fn)
       ) {
-        if (
-          memberValues(node, undefined).some(
-            (value) => get(value) || returnsTracked(value, get),
-          )
-        )
-          result = 'holder';
-      } else if (ts.isVariableDeclaration(node)) {
-        if (ts.isForOfStatement(node.parent.parent))
-          result = fieldKind(node.parent.parent.expression, undefined, get);
-        else if (node.initializer) result = get(node.initializer);
-      } else if (ts.isBindingElement(node)) {
-        const owner = node.parent.parent;
-        const ownerKind = get(owner);
-        const name = node.propertyName ?? node.name;
-        if (
-          ts.isObjectBindingPattern(node.parent) &&
-          ownerKind === 'app' &&
-          ts.isIdentifier(name) &&
-          ['container', 'config'].includes(name.text)
-        )
-          result = name.text as Kind;
-        else if (ownerKind === 'holder')
-          result = fieldKind(
-            owner,
-            ts.isObjectBindingPattern(node.parent)
-              ? staticName(name as ts.PropertyName)
-              : undefined,
-            get,
-          );
-        else if (ownerKind) result = 'conflict';
-      } else if (ts.isParameter(node)) {
-        const fn = node.parent;
-        if (
-          ts.isArrowFunction(fn) &&
-          fn.parameters[0] === node &&
-          ts.isCallExpression(fn.parent) &&
-          importedContract(
-            fn.parent.expression,
-            analysis,
-            '@nocobase/app-server/router',
-            'defineApiRoutes',
-          )
-        )
-          result = 'app';
-        else if (
-          hostCalled.has(fn) &&
-          fn.parameters.indexOf(node) === (isRegister(fn) ? 1 : 0)
-        )
-          result = 'app';
-        else {
-          const position = fn.parameters.indexOf(node);
-          for (const call of callers(fn)) {
-            const argument = call.arguments?.[position];
-            if (argument) result = join(result, get(argument));
-          }
-        }
-      } else if (ts.isPropertyAccessExpression(node)) {
-        const owner = get(node.expression);
-        if (owner === 'app' && node.name.text === 'container')
-          result = 'container';
-        else if (owner === 'app' && node.name.text === 'config')
-          result = 'config';
-        else if (owner === 'runtime' && node.name.text === 'app')
-          result = 'app';
-        else if (owner === 'holder')
-          result = fieldKind(node.expression, node.name.text, get);
-        if (
-          node.expression.kind === ts.SyntaxKind.ThisKeyword &&
-          node.name.text === 'app'
-        ) {
-          let parent: ts.Node | undefined = node.parent;
-          while (parent && !ts.isClassDeclaration(parent))
-            parent = parent.parent;
-          if (
-            parent &&
-            ts.isClassDeclaration(parent) &&
-            parent.heritageClauses?.some(
-              (clause) =>
-                clause.token === ts.SyntaxKind.ExtendsKeyword &&
-                clause.types.some((type) =>
-                  importedContract(
-                    type.expression,
-                    analysis,
-                    '@nocobase/service-provider',
-                    'ServiceProvider',
-                  ),
-                ),
-            )
-          )
-            result = 'app';
-        }
-      } else if (ts.isElementAccessExpression(node)) {
-        if (get(node.expression) === 'holder')
-          result = fieldKind(node.expression, undefined, get);
-      } else if (ts.isCallExpression(node)) {
-        if (
-          importedContract(
-            node.expression,
-            analysis,
-            '@nocobase/app-server/runtime',
-            'createAppFromRuntime',
-          )
-        )
-          result =
-            node.arguments.length === 1 && get(node.arguments[0]) === 'runtime'
-              ? 'app'
-              : undefined;
-        if (
-          importedContract(
-            node.expression,
-            analysis,
-            '@nocobase/app-server/runtime',
-            'resolveAppRuntime',
-          ) &&
-          node.arguments[0] &&
-          analysis.values(node.arguments[0]).length === 1 &&
-          analysis.values(node.arguments[0])[0] === runtime
-        )
-          result = 'runtime';
-        if (
-          importedContract(
-            node.expression,
-            analysis,
-            '@nocobase/app-server/runtime',
-            'startApplicationInScope',
-          ) &&
-          node.arguments.length === 2 &&
-          get(node.arguments[1]) === 'app'
-        )
-          result = 'app';
-        if (
-          ts.isPropertyAccessExpression(node.expression) &&
-          get(node.expression.expression) === 'container' &&
-          node.expression.name.text === 'resolve' &&
-          node.arguments.length === 1 &&
-          authorizationToken(node.arguments[0], analysis)
-        )
-          result = 'authorization';
-        else if (!result)
-          result = results(node).map(get).reduce(join, undefined);
-      } else if (ts.isNewExpression(node)) {
-        if (
-          importedContract(
-            node.expression,
-            analysis,
-            '@nocobase/app-server/config',
-            'AppConfig',
-          )
-        )
-          result = 'config';
-        else result = results(node).map(get).reduce(join, undefined);
+        const calls = nodes.filter(
+          (candidate): candidate is ts.CallExpression =>
+            ts.isCallExpression(candidate) &&
+            analysis.functions(candidate.expression).includes(fn),
+        );
+        const index = fn.parameters.indexOf(node);
+        const kinds = calls.map(
+          (call) => call.arguments[index] && get(call.arguments[index]),
+        );
+        if (kinds.length && kinds.every((item) => item === kinds[0]))
+          result = kinds[0];
       }
-      return result;
-    },
-    undefined,
-    (a, b) => a === b,
-  );
-  const capabilityFunctions = new Set<ts.Node>();
-  // Every local function a call reaches must take the value in a parameter of the same kind.
-  const localArgument = (node: ts.Node, call: Call): boolean => {
-    const position = call.arguments?.indexOf(node as ts.Expression) ?? -1;
-    const functions = callTargets(call);
-    if (!functions?.length || position < 0) return false;
-    const expected = kind(node);
-    return functions.every((fn) => {
-      const parameter = fn.parameters[position];
-      if (!parameter || parameter.dotDotDotToken) return false;
-      capabilityFunctions.add(fn);
-      return kind(parameter) === expected;
-    });
-  };
-  const usesThis = (fn: ts.Node): boolean => {
-    let found = false;
-    const visit = (child: ts.Node): void => {
-      if (found) return;
-      if (child.kind === ts.SyntaxKind.ThisKeyword) found = true;
-      else if (!(ts.isFunctionLike(child) && !ts.isArrowFunction(child)))
-        ts.forEachChild(child, visit);
-    };
-    // An arrow function keeps the lexical `this` of its definition, whatever receiver later calls it.
-    if (ts.isArrowFunction(fn)) return false;
-    if ('body' in fn && fn.body) visit(fn.body as ts.Node);
-    return found;
-  };
-  const condition = (node: ts.Node): boolean => {
-    const parent = node.parent;
-    if (
-      (ts.isIfStatement(parent) ||
-        ts.isWhileStatement(parent) ||
-        ts.isDoStatement(parent)) &&
-      parent.expression === node
-    )
-      return true;
-    if (ts.isConditionalExpression(parent) && parent.condition === node)
-      return true;
-    if (
-      ts.isPrefixUnaryExpression(parent) &&
-      parent.operator === ts.SyntaxKind.ExclamationToken
-    )
-      return true;
-    if (ts.isTypeOfExpression(parent)) return true;
-    return (
-      ts.isBinaryExpression(parent) &&
-      [
-        ts.SyntaxKind.EqualsEqualsEqualsToken,
-        ts.SyntaxKind.ExclamationEqualsEqualsToken,
-        ts.SyntaxKind.EqualsEqualsToken,
-        ts.SyntaxKind.ExclamationEqualsToken,
-      ].includes(parent.operatorToken.kind)
-    );
-  };
-  const written = (target: ts.Node): boolean => {
-    const parent = target.parent;
-    return (
-      (ts.isBinaryExpression(parent) &&
-        parent.left === target &&
-        parent.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
-        parent.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
-      ((ts.isPrefixUnaryExpression(parent) ||
-        ts.isPostfixUnaryExpression(parent)) &&
-        [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(
-          parent.operator,
-        )) ||
-      ts.isDeleteExpression(parent)
-    );
-  };
-  const enclosing = (node: ts.Node): ts.SignatureDeclaration | undefined => {
-    let fn: ts.Node | undefined = node.parent;
-    while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
-    return fn && ts.isFunctionLike(fn) ? fn : undefined;
-  };
-  // A token the application declares itself, so no other package can resolve what is registered under it.
-  const ownToken = (token: ts.Node | undefined): boolean => {
-    if (
-      !token ||
-      !ts.isIdentifier(token) ||
-      authorizationToken(token, analysis)
-    )
-      return false;
-    const declaration = tokenDeclaration(token);
-    const initializer =
-      declaration &&
-      ts.isVariableDeclaration(declaration) &&
-      declaration.initializer;
-    return (
-      !!initializer &&
-      ts.isCallExpression(initializer) &&
-      importedContract(
-        initializer.expression,
-        analysis,
-        '@nocobase/service-provider',
-        'createServiceToken',
-      )
-    );
-  };
-  // Functions handing out a tracked value: every reference must be a direct call or a registration of an own token.
-  const strictFunctions = new Set<ts.Node>();
-  const registration = (fn: ts.Node): boolean => {
-    const call = fn.parent;
-    return (
-      ts.isCallExpression(call) &&
-      call.arguments[1] === fn &&
-      ts.isPropertyAccessExpression(call.expression) &&
-      call.expression.name.text === 'singleton' &&
-      kind(call.expression.expression) === 'container' &&
-      ownToken(call.arguments[0])
-    );
-  };
-  const returnable = (fn: ts.SignatureDeclaration): boolean => {
-    if (registration(fn)) return true;
-    if (ts.isFunctionDeclaration(fn) && fn.name) {
-      strictFunctions.add(fn);
-      return true;
-    }
-    if (
-      (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) &&
-      ts.isVariableDeclaration(fn.parent) &&
-      fn.parent.initializer === fn &&
-      ts.isIdentifier(fn.parent.name) &&
-      constList(fn.parent.parent)
-    ) {
-      strictFunctions.add(fn.parent);
-      return true;
-    }
-    // Methods and property functions make their object a holder; reading them uncalled is rejected above.
-    const owner =
-      ts.isMethodDeclaration(fn) ||
-      ts.isGetAccessorDeclaration(fn) ||
-      ts.isConstructorDeclaration(fn)
-        ? fn.parent
-        : (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) &&
-            ts.isPropertyAssignment(fn.parent)
-          ? fn.parent.parent
-          : undefined;
-    return (
-      !!owner &&
-      !ts.isConstructorDeclaration(fn) &&
-      (ts.isObjectLiteralExpression(owner) || ts.isClassLike(owner)) &&
-      kind(owner) === 'holder'
-    );
-  };
-  const constList = (list: ts.Node | undefined): boolean =>
-    !!list &&
-    ts.isVariableDeclarationList(list) &&
-    (list.flags & ts.NodeFlags.Const) !== 0;
-  const verify = (): boolean => {
-    for (const node of nodes) {
+    } else if (ts.isPropertyAccessExpression(node)) {
+      const owner = get(node.expression);
+      if (owner === 'app' && node.name.text === 'container')
+        result = 'container';
+      if (owner === 'app' && node.name.text === 'config') result = 'config';
+      if (owner === 'runtime' && node.name.text === 'app') result = 'app';
       if (
-        ts.isCallExpression(node) &&
+        node.expression.kind === ts.SyntaxKind.ThisKeyword &&
+        node.name.text === 'app'
+      ) {
+        let parent: ts.Node | undefined = node.parent;
+        while (parent && !ts.isClassDeclaration(parent)) parent = parent.parent;
+        if (
+          parent &&
+          ts.isClassDeclaration(parent) &&
+          parent.heritageClauses?.some(
+            (clause) =>
+              clause.token === ts.SyntaxKind.ExtendsKeyword &&
+              clause.types.some((type) =>
+                importedContract(
+                  type.expression,
+                  analysis,
+                  '@nocobase/service-provider',
+                  'ServiceProvider',
+                ),
+              ),
+          )
+        )
+          result = 'app';
+      }
+    } else if (ts.isCallExpression(node)) {
+      if (
         importedContract(
           node.expression,
           analysis,
           '@nocobase/app-server/runtime',
           'createAppFromRuntime',
-        ) &&
-        (node.arguments.length !== 1 || kind(node.arguments[0]) !== 'runtime')
-      )
-        return false;
-      if (ts.isIdentifier(node) && authorizationToken(node, analysis)) {
-        if (ts.isImportSpecifier(node.parent)) continue;
-        const parent = node.parent;
-        if (
-          !ts.isCallExpression(parent) ||
-          parent.arguments.length !== 1 ||
-          parent.arguments[0] !== node ||
-          !ts.isPropertyAccessExpression(parent.expression) ||
-          !['resolve', 'has'].includes(parent.expression.name.text) ||
-          kind(parent.expression.expression) !== 'container'
-        )
-          return false;
-      }
-      if (!ts.isExpression(node)) continue;
-      if (
-        ts.isIdentifier(node) &&
-        (ts.isVariableDeclaration(node.parent) ||
-          ts.isParameter(node.parent) ||
-          ts.isBindingElement(node.parent)) &&
-        node.parent.name === node
-      )
-        continue;
-      const authority = kind(node);
-      if (!authority) continue;
-      const parent = node.parent;
-      // The target of a class's own `this.field = ...` is part of the field model, not a read of it.
-      if (
-        ts.isPropertyAccessExpression(node) &&
-        node.expression.kind === ts.SyntaxKind.ThisKeyword &&
-        written(node) &&
-        ts.isBinaryExpression(parent) &&
-        parent.operatorToken.kind === ts.SyntaxKind.EqualsToken
-      ) {
-        const site = thisSite(node.expression);
-        if (site && ts.isClassLike(site)) continue;
-      }
-      if (authority === 'conflict') return false;
-      const holder = authority === 'holder';
-      // A discarded value goes nowhere.
-      if (ts.isExpressionStatement(parent) || ts.isVoidExpression(parent))
-        continue;
-      const noRest = (name: ts.BindingName): boolean =>
-        ts.isIdentifier(name) ||
-        name.elements.every(
-          (element) =>
-            !ts.isOmittedExpression(element) &&
-            !element.dotDotDotToken &&
-            noRest(element.name),
-        );
-      // A holder bound by const, including destructured fields: every binding is checked through the field model.
-      if (
-        holder &&
-        ts.isVariableDeclaration(parent) &&
-        parent.initializer === node &&
-        constList(parent.parent) &&
-        noRest(parent.name)
-      )
-        continue;
-      if (
-        holder &&
-        ts.isForOfStatement(parent) &&
-        parent.expression === node &&
-        constList(parent.initializer)
-      )
-        continue;
-      // A field or element of a local literal that is itself tracked as a holder.
-      if (
-        ((ts.isPropertyAssignment(parent) &&
-          parent.initializer === node &&
-          staticName(parent.name) !== undefined) ||
-          ts.isShorthandPropertyAssignment(parent)) &&
-        kind(parent.parent) === 'holder'
-      )
-        continue;
-      if (
-        holder &&
-        ts.isSpreadAssignment(parent) &&
-        kind(parent.parent) === 'holder' &&
-        // A copied method keeps `this` bound to the copy, which the field model does not follow.
-        !allocations(node).some((site) =>
-          memberValues(site, undefined).some(
-            (value) => ts.isFunctionLike(value) && usesThis(value),
-          ),
         )
       )
-        continue;
-      if (ts.isArrayLiteralExpression(parent) && kind(parent) === 'holder')
-        continue;
-      if (
-        holder &&
-        ts.isSpreadElement(parent) &&
-        ts.isArrayLiteralExpression(parent.parent) &&
-        kind(parent.parent) === 'holder'
-      )
-        continue;
-      // `this.field = value` inside a class defines the instance's field.
-      if (
-        ts.isBinaryExpression(parent) &&
-        parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-        parent.right === node &&
-        ts.isPropertyAccessExpression(parent.left) &&
-        parent.left.expression.kind === ts.SyntaxKind.ThisKeyword
-      ) {
-        const site = thisSite(parent.left.expression);
-        if (site && ts.isClassLike(site) && kind(site) === 'holder') continue;
-      }
-      if (ts.isNewExpression(parent) && localArgument(node, parent)) continue;
-      // Tests and comparisons read no member; alternatives pass the value to an expression checked itself.
-      if (condition(node) || alternatives(parent)?.includes(node)) continue;
-      if (
-        holder &&
-        (ts.isPropertyAccessExpression(parent) ||
-          ts.isElementAccessExpression(parent)) &&
-        parent.expression === node
-      ) {
-        if (written(parent)) {
-          // Only a class's own `this.field` writes belong to its field model.
-          const site =
-            node.kind === ts.SyntaxKind.ThisKeyword && thisSite(node);
-          if (
-            site &&
-            ts.isClassLike(site) &&
-            ts.isPropertyAccessExpression(parent)
-          )
-            continue;
-          return false;
-        }
-        const call =
-          ts.isCallExpression(parent.parent) &&
-          parent.parent.expression === parent
-            ? parent.parent
+        result =
+          node.arguments.length === 1 && get(node.arguments[0]) === 'runtime'
+            ? 'app'
             : undefined;
-        if (call) {
-          // The receiver becomes `this` of the method, which must be a local function of the holder.
-          if (
-            !ts.isPropertyAccessExpression(parent) ||
-            !callTargets(call)?.length
-          )
-            return false;
-          continue;
-        }
-        if (ts.isElementAccessExpression(parent)) continue;
-        // An uncalled method that hands out a tracked value would escape with it.
-        if (
-          allocations(node)
-            .flatMap((site) => memberValues(site, parent.name.text))
-            .some((value) => returnsTracked(value, kind))
-        )
-          return false;
-        continue;
-      }
-      // A registered instance: later resolutions of the token read the registration.
       if (
-        ts.isCallExpression(parent) &&
-        parent.arguments[1] === node &&
-        ts.isPropertyAccessExpression(parent.expression) &&
-        parent.expression.name.text === 'instance' &&
-        kind(parent.expression.expression) === 'container' &&
-        ownToken(parent.arguments[0])
-      )
-        continue;
-      if (
-        ts.isVariableDeclaration(parent) &&
-        parent.initializer === node &&
-        ts.isVariableDeclarationList(parent.parent) &&
-        parent.parent.flags & ts.NodeFlags.Const &&
-        (ts.isIdentifier(parent.name) ||
-          (ts.isObjectBindingPattern(parent.name) &&
-            parent.name.elements.every(
-              (element) =>
-                !element.dotDotDotToken &&
-                !element.initializer &&
-                ts.isIdentifier(element.propertyName ?? element.name) &&
-                ['container', 'config'].includes(
-                  (element.propertyName ?? element.name).getText(),
-                ),
-            )))
-      )
-        continue;
-      if (
-        ts.isParameter(parent) ||
-        ts.isBindingElement(parent) ||
-        ts.isImportSpecifier(parent)
-      )
-        continue;
-      if (
-        (ts.isParenthesizedExpression(parent) ||
-          ts.isAsExpression(parent) ||
-          ts.isNonNullExpression(parent) ||
-          ts.isAwaitExpression(parent)) &&
-        parent.expression === node
-      )
-        continue;
-      if (ts.isCallExpression(parent) && localArgument(node, parent)) continue;
-      if (ts.isCallExpression(parent) && authority === 'runtime') {
-        if (
-          importedContract(
-            parent.expression,
-            analysis,
-            '@nocobase/app-server/runtime',
-            'createAppFromRuntime',
-          ) &&
-          parent.arguments[0] === node
-        )
-          continue;
-        if (
-          ts.isPropertyAccessExpression(parent.expression) &&
-          parent.expression.name.text === 'addRuntimeContributions' &&
-          kind(parent.expression.expression) === 'app' &&
-          parent.arguments[0] === node
-        )
-          continue;
-      }
-      if (
-        ts.isCallExpression(parent) &&
-        authority === 'app' &&
         importedContract(
-          parent.expression,
+          node.expression,
+          analysis,
+          '@nocobase/app-server/runtime',
+          'resolveAppRuntime',
+        ) &&
+        node.arguments[0] &&
+        analysis.values(node.arguments[0]).length === 1 &&
+        analysis.values(node.arguments[0])[0] === runtime
+      )
+        result = 'runtime';
+      if (
+        importedContract(
+          node.expression,
           analysis,
           '@nocobase/app-server/runtime',
           'startApplicationInScope',
         ) &&
-        parent.arguments[1] === node
+        node.arguments.length === 2 &&
+        get(node.arguments[1]) === 'app'
       )
-        continue;
-      if (
-        authority === 'app' &&
-        ts.isCallExpression(parent) &&
-        parent.arguments.length === 1 &&
-        parent.arguments[0] === node &&
-        ts.isPropertyAccessExpression(parent.expression) &&
-        parent.expression.name.text === 'createRouter' &&
-        officialContribution(parent.expression.expression)
-      )
-        continue;
-      if (
-        ts.isReturnStatement(parent) &&
-        authority !== 'authorization' &&
-        authority !== 'container'
-      ) {
-        let fn: ts.Node | undefined = parent.parent;
-        while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
-        if (fn && ts.isFunctionDeclaration(fn)) {
-          capabilityFunctions.add(fn);
-          const configFactory = property(definition, 'createAppConfig');
-          if (
-            authority === 'config' &&
-            configFactory &&
-            value(configFactory) === fn
-          )
-            continue;
-          if (
-            authority === 'app' &&
-            [
-              entries.runtime?.replace(/runtime\.[^.]+$/, 'app'),
-              entries.runtime?.replace(/runtime\.[^.]+$/, 'embedded'),
-            ].some(
-              (stem) => stem && fn.getSourceFile().fileName.startsWith(stem),
-            )
-          )
-            continue;
+        result = 'app';
+      if (!result) {
+        const functions = analysis.functions(node.expression);
+        if (functions.length === 1) {
+          const results = returned(functions[0]);
+          if (results.length === 1) result = get(results[0]);
         }
       }
-      const origin =
-        ts.isReturnStatement(parent) && parent.expression === node
-          ? enclosing(parent)
-          : ts.isArrowFunction(parent) && parent.body === node
-            ? parent
-            : undefined;
-      if (origin && returnable(origin)) continue;
       if (
-        ts.isPropertyAccessExpression(parent) &&
-        parent.expression === node &&
-        !parent.questionDotToken
-      ) {
-        const name = parent.name.text;
+        ts.isPropertyAccessExpression(node.expression) &&
+        get(node.expression.expression) === 'container' &&
+        node.expression.name.text === 'resolve' &&
+        node.arguments.length === 1 &&
+        authorizationToken(node.arguments[0], analysis)
+      )
+        result = 'authorization';
+    } else if (
+      ts.isNewExpression(node) &&
+      importedContract(
+        node.expression,
+        analysis,
+        '@nocobase/app-server/config',
+        'AppConfig',
+      )
+    )
+      result = 'config';
+    memo.set(node, result);
+    return result;
+  };
+  const capabilityFunctions = new Set<ts.SignatureDeclaration>();
+  const localArgument = (node: ts.Node, call: ts.CallExpression): boolean => {
+    const functions = analysis.functions(call.expression);
+    const index = call.arguments.indexOf(node as ts.Expression);
+    if (functions.length !== 1 || index < 0 || !functions[0].parameters[index])
+      return false;
+    capabilityFunctions.add(functions[0]);
+    return kind(functions[0].parameters[index]) === kind(node);
+  };
+  for (const node of nodes) {
+    if (
+      ts.isCallExpression(node) &&
+      importedContract(
+        node.expression,
+        analysis,
+        '@nocobase/app-server/runtime',
+        'createAppFromRuntime',
+      ) &&
+      (node.arguments.length !== 1 || kind(node.arguments[0]) !== 'runtime')
+    )
+      return false;
+    if (ts.isIdentifier(node) && authorizationToken(node, analysis)) {
+      if (ts.isImportSpecifier(node.parent)) continue;
+      const parent = node.parent;
+      if (
+        !ts.isCallExpression(parent) ||
+        parent.arguments.length !== 1 ||
+        parent.arguments[0] !== node ||
+        !ts.isPropertyAccessExpression(parent.expression) ||
+        !['resolve', 'has'].includes(parent.expression.name.text) ||
+        kind(parent.expression.expression) !== 'container'
+      )
+        return false;
+    }
+    if (!ts.isExpression(node)) continue;
+    if (
+      ts.isIdentifier(node) &&
+      (ts.isVariableDeclaration(node.parent) ||
+        ts.isParameter(node.parent) ||
+        ts.isBindingElement(node.parent)) &&
+      node.parent.name === node
+    )
+      continue;
+    const authority = kind(node);
+    if (!authority) continue;
+    const parent = node.parent;
+    if (
+      ts.isVariableDeclaration(parent) &&
+      parent.initializer === node &&
+      ts.isVariableDeclarationList(parent.parent) &&
+      parent.parent.flags & ts.NodeFlags.Const &&
+      (ts.isIdentifier(parent.name) ||
+        (ts.isObjectBindingPattern(parent.name) &&
+          parent.name.elements.every(
+            (element) =>
+              !element.dotDotDotToken &&
+              !element.initializer &&
+              ts.isIdentifier(element.propertyName ?? element.name) &&
+              ['container', 'config'].includes(
+                (element.propertyName ?? element.name).getText(),
+              ),
+          )))
+    )
+      continue;
+    if (
+      ts.isParameter(parent) ||
+      ts.isBindingElement(parent) ||
+      ts.isImportSpecifier(parent)
+    )
+      continue;
+    if (
+      (ts.isParenthesizedExpression(parent) ||
+        ts.isAsExpression(parent) ||
+        ts.isNonNullExpression(parent) ||
+        ts.isAwaitExpression(parent)) &&
+      parent.expression === node
+    )
+      continue;
+    if (ts.isCallExpression(parent) && localArgument(node, parent)) continue;
+    if (ts.isCallExpression(parent) && authority === 'runtime') {
+      if (
+        importedContract(
+          parent.expression,
+          analysis,
+          '@nocobase/app-server/runtime',
+          'createAppFromRuntime',
+        ) &&
+        parent.arguments[0] === node
+      )
+        continue;
+      if (
+        ts.isPropertyAccessExpression(parent.expression) &&
+        parent.expression.name.text === 'addRuntimeContributions' &&
+        kind(parent.expression.expression) === 'app' &&
+        parent.arguments[0] === node
+      )
+        continue;
+    }
+    if (
+      ts.isCallExpression(parent) &&
+      authority === 'app' &&
+      importedContract(
+        parent.expression,
+        analysis,
+        '@nocobase/app-server/runtime',
+        'startApplicationInScope',
+      ) &&
+      parent.arguments[1] === node
+    )
+      continue;
+    if (
+      ts.isReturnStatement(parent) &&
+      authority !== 'authorization' &&
+      authority !== 'container'
+    ) {
+      let fn: ts.Node | undefined = parent.parent;
+      while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
+      if (fn && ts.isFunctionDeclaration(fn)) {
+        capabilityFunctions.add(fn);
+        const configFactory = property(definition, 'createAppConfig');
         if (
-          authority === 'runtime' &&
-          ['env', 'environment', 'paths'].includes(name)
-        ) {
-          let access: ts.Node = parent;
-          while (
-            ts.isPropertyAccessExpression(access.parent) &&
-            access.parent.expression === access
-          )
-            access = access.parent;
-          if (!(
-            ts.isBinaryExpression(access.parent) &&
-            access.parent.left === access
-          ))
-            continue;
-        }
-        if (authority === 'app' && ['container', 'config'].includes(name))
-          continue;
-        const call = parent.parent;
-        // Configuration-derived strings; reading one cannot change the application or its identity chain.
-        if (
-          authority === 'app' &&
-          ['appName', 'publicBasePath'].includes(name) &&
-          !written(parent) &&
-          !(ts.isCallExpression(call) && call.expression === parent)
+          authority === 'config' &&
+          configFactory &&
+          value(configFactory) === fn
         )
-          continue;
-        if (authority === 'authorization' && NAMESPACES.has(name)) {
-          // Namespace reads expose their own API, never the identity registry itself. Replacing one remains unknown.
-          if (
-            ts.isPropertyAccessExpression(call) &&
-            call.expression === parent &&
-            !ts.isBinaryExpression(call.parent)
-          )
-            continue;
-          return false;
-        }
-        if (
-          !ts.isCallExpression(call) ||
-          call.expression !== parent ||
-          call.questionDotToken
-        )
-          return false;
-        if (
-          authority === 'authorization' &&
-          ['middleware', 'for', 'onGrantsChanged'].includes(name)
-        ) {
-          if (name === 'middleware' && call.arguments.length) return false;
-          // A grant listener only receives change notices; its body is checked like any other local code.
-          if (name === 'onGrantsChanged' && call.arguments.length !== 1)
-            return false;
-          continue;
-        }
-        if (
-          authority === 'container' &&
-          ['resolve', 'has', 'singleton', 'instance'].includes(name)
-        ) {
-          const token = call.arguments[0];
-          // A token read from an external module's `import()` namespace: an exported token of another package.
-          if (
-            token &&
-            ['resolve', 'has'].includes(name) &&
-            ts.isPropertyAccessExpression(token) &&
-            token.name.text !== 'authorizationToken'
-          ) {
-            const source = namespaceImport(token.expression);
-            const specifier =
-              source && (source.arguments[0] as ts.StringLiteralLike).text;
-            if (
-              specifier &&
-              !/^[.#/]/.test(specifier) &&
-              !specifier.startsWith(AUTHORIZATION)
-            )
-              continue;
-          }
-          const loaded = token && importedBinding(token);
-          if (
-            loaded &&
-            ['resolve', 'has'].includes(name) &&
-            loaded.name !== 'authorizationToken'
-          ) {
-            const specifier = (
-              loaded.source.arguments[0] as ts.StringLiteralLike
-            ).text;
-            if (
-              !/^[.#/]/.test(specifier) &&
-              !specifier.startsWith(AUTHORIZATION)
-            )
-              continue;
-          }
-          if (!token || !ts.isIdentifier(token)) return false;
-          if (
-            authorizationToken(token, analysis) &&
-            !['resolve', 'has'].includes(name)
-          )
-            return false;
-          const declaration = tokenDeclaration(token);
-          const imported = analysis.symbol(token)?.declarations?.[0];
-          const own =
-            declaration &&
-            ts.isVariableDeclaration(declaration) &&
-            declaration.initializer;
-          if (
-            !authorizationToken(token, analysis) &&
-            !(
-              imported &&
-              ts.isImportSpecifier(imported) &&
-              analysis.isExternalImport(
-                imported.parent.parent.parent as ts.ImportDeclaration,
-              )
-            ) &&
-            !(
-              own &&
-              ts.isCallExpression(own) &&
-              importedContract(
-                own.expression,
-                analysis,
-                '@nocobase/service-provider',
-                'createServiceToken',
-              )
-            )
-          )
-            return false;
-          continue;
-        }
-        if (authority === 'config' && ['get', 'loadFile'].includes(name))
           continue;
         if (
           authority === 'app' &&
           [
-            'addServiceProvider',
-            'addHttpMiddleware',
-            'addRoutes',
-            'addRuntimeContributions',
-            'start',
-            'shutdown',
-          ].includes(name)
-        ) {
-          if (
-            name === 'addRuntimeContributions' &&
-            (call.arguments.length !== 1 ||
-              kind(call.arguments[0]) !== 'runtime')
-          )
-            return false;
-          if (
-            name === 'addRoutes' &&
-            (call.arguments.length !== 1 ||
-              ![
-                ['@nocobase/app-server/router', 'healthCheckApiRoutes'],
-                ['@nocobase/app-server/spa', 'spaRootRoutes'],
-              ].some(([module, exported]) =>
-                importedContract(call.arguments[0], analysis, module, exported),
-              ))
-          )
-            return false;
-          // The host entry uses the framework's contribution and provider contracts only.
-          if (
-            name === 'addHttpMiddleware' &&
-            call.arguments.length === 1 &&
-            middlewares.has(call.arguments[0])
-          )
-            continue;
-          if (name === 'addServiceProvider' || name === 'addHttpMiddleware') {
-            const arg = call.arguments[0];
-            const imported = arg && analysis.symbol(arg)?.declarations?.[0];
-            if (
-              !imported ||
-              !ts.isImportSpecifier(imported) ||
-              !analysis.isExternalImport(
-                imported.parent.parent.parent as ts.ImportDeclaration,
-              )
-            )
-              return false;
-            const statement = imported.parent.parent
-              .parent as ts.ImportDeclaration;
-            if (
-              !ts.isStringLiteralLike(statement.moduleSpecifier) ||
-              !statement.moduleSpecifier.text.startsWith(
-                '@nocobase/app-server/',
-              )
-            )
-              return false;
-          }
+            entries.runtime?.replace(/runtime\.[^.]+$/, 'app'),
+            entries.runtime?.replace(/runtime\.[^.]+$/, 'embedded'),
+          ].some((stem) => stem && fn.getSourceFile().fileName.startsWith(stem))
+        )
           continue;
-        }
       }
-      // An authority must not be returned, stored in an object, overwritten, or passed to an opaque extension.
-      return false;
     }
-    for (const node of nodes) {
-      if (!ts.isIdentifier(node)) continue;
-      const declarations = analysis.declarations(node);
+    if (
+      ts.isPropertyAccessExpression(parent) &&
+      parent.expression === node &&
+      !parent.questionDotToken
+    ) {
+      const name = parent.name.text;
       if (
-        !declarations.some((declaration) =>
-          capabilityFunctions.has(declaration),
+        authority === 'runtime' &&
+        ['env', 'environment', 'paths'].includes(name)
+      ) {
+        let access: ts.Node = parent;
+        while (
+          ts.isPropertyAccessExpression(access.parent) &&
+          access.parent.expression === access
         )
-      )
+          access = access.parent;
+        if (!(
+          ts.isBinaryExpression(access.parent) && access.parent.left === access
+        ))
+          continue;
+      }
+      if (authority === 'app' && ['container', 'config'].includes(name))
         continue;
-      const parent = node.parent;
-      if (ts.isFunctionDeclaration(parent) && parent.name === node) continue;
-      if (ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent))
-        continue;
-      if (
-        (ts.isShorthandPropertyAssignment(parent) ||
-          ts.isPropertyAssignment(parent)) &&
-        parent.parent === definition &&
-        parent.name.getText() === 'createAppConfig'
-      )
-        continue;
-      if (
-        ts.isExportAssignment(parent) &&
-        entries.runtime &&
-        node.getSourceFile().fileName.replace(/embedded\.[^.]+$/, 'runtime') ===
-          entries.runtime.replace(/\.[^.]+$/, '')
-      )
-        continue;
-      if (ts.isCallExpression(parent) && parent.expression === node) continue;
-      if (
-        ts.isShorthandPropertyAssignment(parent) &&
-        ts.isObjectLiteralExpression(parent.parent) &&
-        ts.isCallExpression(parent.parent.parent) &&
-        importedContract(
-          parent.parent.parent.expression,
-          analysis,
-          '@nocobase/app-server/node',
-          'defineStandaloneServer',
+      const call = parent.parent;
+      if (authority === 'authorization' && NAMESPACES.has(name)) {
+        // Namespace reads expose their own API, never the identity registry itself. Replacing one remains unknown.
+        if (
+          ts.isPropertyAccessExpression(call) &&
+          call.expression === parent &&
+          !ts.isBinaryExpression(call.parent)
         )
-      )
-        continue;
-      return false;
-    }
-    for (const node of nodes) {
-      if (!ts.isIdentifier(node)) continue;
-      const declarations = analysis.declarations(node);
-      if (!declarations.some((declaration) => strictFunctions.has(declaration)))
-        continue;
-      const parent = node.parent;
+          continue;
+        return false;
+      }
       if (
-        (ts.isFunctionDeclaration(parent) ||
-          ts.isVariableDeclaration(parent)) &&
-        parent.name === node
+        !ts.isCallExpression(call) ||
+        call.expression !== parent ||
+        call.questionDotToken
       )
-        continue;
-      if (ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent))
-        continue;
-      if (ts.isCallExpression(parent) && parent.expression === node) continue;
+        return false;
       if (
-        ts.isCallExpression(parent) &&
-        parent.arguments[1] === node &&
-        ts.isPropertyAccessExpression(parent.expression) &&
-        parent.expression.name.text === 'singleton' &&
-        kind(parent.expression.expression) === 'container' &&
-        ownToken(parent.arguments[0])
-      )
+        authority === 'authorization' &&
+        ['middleware', 'for'].includes(name)
+      ) {
+        if (name === 'middleware' && call.arguments.length) return false;
         continue;
-      return false;
-    }
-    // A class whose instances carry a tracked field is only instantiated here; handing out the class would let
-    // other code construct such an instance.
-    for (const node of nodes) {
-      if (!ts.isIdentifier(node)) continue;
-      const declarations = analysis.declarations(node);
+      }
       if (
-        declarations.length !== 1 ||
-        !ts.isClassLike(declarations[0]) ||
-        kind(declarations[0]) !== 'holder'
-      )
-        continue;
-      const parent = node.parent;
-      if (ts.isClassLike(parent) && parent.name === node) continue;
-      if (ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent))
-        continue;
-      if (ts.isImportClause(parent)) continue;
-      if (ts.isNewExpression(parent) && parent.expression === node) continue;
-      // A static member belongs to the class value, which never carries an instance's fields.
-      if (
-        ts.isPropertyAccessExpression(parent) &&
-        parent.expression === node &&
-        !written(parent) &&
-        declarations[0].members.some(
-          (member) =>
-            staticName(member.name) === parent.name.text &&
-            (ts.canHaveModifiers(member)
-              ? ts.getModifiers(member)
-              : undefined
-            )?.some((item) => item.kind === ts.SyntaxKind.StaticKeyword),
+        authority === 'container' &&
+        ['resolve', 'has', 'singleton', 'instance'].includes(name)
+      ) {
+        const token = call.arguments[0];
+        if (!token || !ts.isIdentifier(token)) return false;
+        if (
+          authorizationToken(token, analysis) &&
+          !['resolve', 'has'].includes(name)
         )
-      )
+          return false;
+        const declaration = analysis.declarations(token)[0];
+        const imported = analysis.symbol(token)?.declarations?.[0];
+        const own =
+          declaration &&
+          ts.isVariableDeclaration(declaration) &&
+          declaration.initializer;
+        if (
+          !authorizationToken(token, analysis) &&
+          !(
+            imported &&
+            ts.isImportSpecifier(imported) &&
+            analysis.isExternalImport(
+              imported.parent.parent.parent as ts.ImportDeclaration,
+            )
+          ) &&
+          !(
+            own &&
+            ts.isCallExpression(own) &&
+            importedContract(
+              own.expression,
+              analysis,
+              '@nocobase/service-provider',
+              'createServiceToken',
+            )
+          )
+        )
+          return false;
+        continue;
+      }
+      if (authority === 'config' && ['get', 'loadFile'].includes(name))
         continue;
       if (
-        ts.isBinaryExpression(parent) &&
-        parent.right === node &&
-        parent.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword
-      )
+        authority === 'app' &&
+        [
+          'addServiceProvider',
+          'addHttpMiddleware',
+          'addRoutes',
+          'addRuntimeContributions',
+          'start',
+          'shutdown',
+        ].includes(name)
+      ) {
+        if (
+          name === 'addRuntimeContributions' &&
+          (call.arguments.length !== 1 || kind(call.arguments[0]) !== 'runtime')
+        )
+          return false;
+        if (
+          name === 'addRoutes' &&
+          (call.arguments.length !== 1 ||
+            ![
+              ['@nocobase/app-server/router', 'healthCheckApiRoutes'],
+              ['@nocobase/app-server/spa', 'spaRootRoutes'],
+            ].some(([module, exported]) =>
+              importedContract(call.arguments[0], analysis, module, exported),
+            ))
+        )
+          return false;
+        // The host entry uses the framework's contribution and provider contracts only.
+        if (name === 'addServiceProvider' || name === 'addHttpMiddleware') {
+          const arg = call.arguments[0];
+          const imported = arg && analysis.symbol(arg)?.declarations?.[0];
+          if (
+            !imported ||
+            !ts.isImportSpecifier(imported) ||
+            !analysis.isExternalImport(
+              imported.parent.parent.parent as ts.ImportDeclaration,
+            )
+          )
+            return false;
+          const statement = imported.parent.parent
+            .parent as ts.ImportDeclaration;
+          if (
+            !ts.isStringLiteralLike(statement.moduleSpecifier) ||
+            !statement.moduleSpecifier.text.startsWith('@nocobase/app-server/')
+          )
+            return false;
+        }
         continue;
-      return false;
+      }
     }
-    return true;
-  };
-  for (let round = 0; round < 16; round++) {
-    pass++;
-    changed = false;
-    callerCache.clear();
-    for (const node of nodes) if (ts.isExpression(node)) kind(node);
-    if (changed) continue;
-    const proven = verify();
-    if (!changed) return proven && visits <= LIMIT && !exhausted;
+    // An authority must not be returned, stored in an object, overwritten, or passed to an opaque extension.
+    return false;
   }
-  return false;
+  for (const node of nodes) {
+    if (!ts.isIdentifier(node)) continue;
+    const declarations = analysis.declarations(node);
+    if (
+      !declarations.some((declaration) =>
+        capabilityFunctions.has(declaration as ts.SignatureDeclaration),
+      )
+    )
+      continue;
+    const parent = node.parent;
+    if (ts.isFunctionDeclaration(parent) && parent.name === node) continue;
+    if (ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent)) continue;
+    if (
+      (ts.isShorthandPropertyAssignment(parent) ||
+        ts.isPropertyAssignment(parent)) &&
+      parent.parent === definition &&
+      parent.name.getText() === 'createAppConfig'
+    )
+      continue;
+    if (
+      ts.isExportAssignment(parent) &&
+      entries.runtime &&
+      node.getSourceFile().fileName.replace(/embedded\.[^.]+$/, 'runtime') ===
+        entries.runtime.replace(/\.[^.]+$/, '')
+    )
+      continue;
+    if (ts.isCallExpression(parent) && parent.expression === node) continue;
+    if (
+      ts.isShorthandPropertyAssignment(parent) &&
+      ts.isObjectLiteralExpression(parent.parent) &&
+      ts.isCallExpression(parent.parent.parent) &&
+      importedContract(
+        parent.parent.parent.expression,
+        analysis,
+        '@nocobase/app-server/node',
+        'defineStandaloneServer',
+      )
+    )
+      continue;
+    return false;
+  }
+  return visits <= 100_000;
 }
