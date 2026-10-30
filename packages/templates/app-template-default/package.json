@@ -157,6 +157,8 @@
     ]
   },
   "dependencies": {
+    "@nocobase/concurrency": "workspace:^",
+    "@nocobase/app-plugin-concurrency": "workspace:^",
     "zod": "catalog:",
     "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
