@@ -132,6 +132,7 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/web-push": "^3.6.4",
-    "@nocobase/app-plugin-authorization": "workspace:*"
+    "@nocobase/app-plugin-authorization": "workspace:*",
+    "@nocobase/app-plugin-notification-providers": "workspace:*"
   }
 }

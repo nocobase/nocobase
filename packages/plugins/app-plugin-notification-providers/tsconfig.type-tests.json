@@ -4,5 +4,9 @@
     "noEmit": true,
     "rootDir": "../../.."
   },
-  "include": ["tests/named-channel-types.test.ts"]
+  "include": [
+    "tests/named-channel-types.test.ts",
+    "tests/config.test.ts",
+    "tests/config-import.test.ts"
+  ]
 }

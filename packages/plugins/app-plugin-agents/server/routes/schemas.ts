@@ -112,6 +112,8 @@ import {
   type Runner,
   type RunnerHeldItem,
   type RunnerRecentRun,
+  type RunnerRunsCursor,
+  type RunnerRunsPage,
   type RunnerPatch,
   type RunnerSummary,
   type RunnerListItem,
@@ -2179,7 +2181,9 @@ const runnerSummaryObject = runnerObject
       .number()
       .int()
       .nonnegative()
-      .describe('Recent run rows shown by the Runs tab, bounded to ten.'),
+      .describe(
+        'Exact number of runs assigned to this runner, shown by the Runs tab.',
+      ),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
       min: z.number().int(),
@@ -2468,3 +2472,49 @@ export const RunRequestOutcomeSchema: z.ZodType<{
     }),
   })
   .meta({ ref: 'AgentsRunRequestOutcome' });
+
+const RunnerRunsCursorSchema = z.object({
+  startedAt: z.iso.datetime({ offset: true }).nullable(),
+  id: z.string().min(1).max(64),
+});
+
+export const RunnerRunsQuery: z.ZodType<
+  { cursor?: RunnerRunsCursor },
+  { cursor?: string }
+> = z.object({
+  cursor: z
+    .string()
+    .max(1024)
+    .describe(
+      'Continuation from meta.nextCursor; omit for the first twenty runs.',
+    )
+    .optional()
+    .transform((value, ctx) => {
+      if (value === undefined) return undefined;
+      try {
+        const parsed = RunnerRunsCursorSchema.safeParse(
+          JSON.parse(Buffer.from(value, 'base64url').toString('utf8')),
+        );
+        if (parsed.success) return parsed.data;
+      } catch {
+        /* Invalid cursors are rejected at the HTTP boundary. */
+      }
+      ctx.addIssue({ code: 'custom', message: 'Invalid run cursor.' });
+      return z.NEVER;
+    }),
+});
+
+export const RunnerRunsPageMetaSchema: z.ZodType<RunnerRunsPage['meta']> =
+  z.object({
+    total: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe('Exact number of runs assigned to this runner.'),
+    nextCursor: z
+      .string()
+      .nullable()
+      .describe(
+        'Opaque continuation for the next twenty runs; null at the end.',
+      ),
+  });

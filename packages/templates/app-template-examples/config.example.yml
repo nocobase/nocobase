@@ -70,6 +70,26 @@ secrets:
       key: replace-with-a-unique-secret
 
 auth:
+  # Authentication owns this sender; notification and mailbox configuration are independent.
+  # Set app.publicOrigin (or APP_PUBLIC_ORIGIN) before enabling automatic recovery.
+  # passwordReset:
+  #   enabled: true
+  # email:
+  #   provider: smtp
+  #   host: smtp.example.com
+  #   port: 587
+  #   secure: false
+  #   auth:
+  #     user: noreply@example.com
+  #     pass: replace-with-the-smtp-password
+  #   from: App <noreply@example.com>
+  #   replyTo: support@example.com
+  # For Resend, replace the entire email block with these fields; do not mix SMTP fields:
+  # email:
+  #   provider: resend
+  #   apiKey: replace-with-the-resend-api-key
+  #   from: App <noreply@example.com>
+  # AUTH_EMAIL_PROVIDER/HOST/PORT/SECURE/USER/PASSWORD/FROM/REPLY_TO/API_KEY override auth.email.
   emailAndPassword:
     enabled: true
     autoSignIn: false
@@ -157,9 +177,13 @@ snowflake:
 # process that is killed loses what changed since it started. It serves one process: every other process or instance
 # would run its own copy. Set default to memory to keep that without the startup warning, or to redis to run several.
 # Redis must persist its data (AOF or RDB) and use maxmemory-policy noeviction, or schedules can be lost.
+# Install the commercial @nocobase/app-plugin-jobs-redis package and register its Server plugin
+# from @nocobase/app-plugin-jobs-redis/server in server/plugins.ts on every producer and consumer.
+# Upgrading deployments must set adapter: redis explicitly; templates no longer supply Redis defaults.
 # jobs:
 #   default: redis
 #   redis:
+#     adapter: redis
 #     connection:
 #       host: 127.0.0.1
 #       port: 6379

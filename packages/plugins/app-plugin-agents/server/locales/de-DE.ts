@@ -61,6 +61,11 @@ const deDE: LocaleResource<typeof enUS> = {
       },
     },
   },
+  runnerConversation: {
+    title: 'Unterhaltung: {{title}}',
+    other: 'Unterhaltung einer anderen Person',
+    untitled: 'Neue Unterhaltung',
+  },
 };
 
 export default deDE;

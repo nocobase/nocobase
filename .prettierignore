@@ -61,3 +61,7 @@ packages/app/app-skills/skills/nocobase-app-development/references/frontend/shad
 
 # Preserve the migrated plugin guide and its checked examples without unrelated reformatting.
 /packages/app/app-skills/skills/nocobase-app-plugin-development/
+
+# Byte-level baseline manifests are generated and sealed by materials.mjs.
+/dev/business-baseline/resources.json
+/dev/business-baseline/materials.json

@@ -303,7 +303,7 @@ export default class LifecycleProvider extends ServiceProvider<Application> {
 }
 ```
 
-Add the provider to `server/providers/index.ts`. Business services that create or move records take the runtime from `lifecycleRuntimeToken` rather than writing the table. Without a dispatcher, effects run in process before `fire()` returns; that is acceptable in a unit test, not in an application. A deployment with more than one instance sets `jobs.default` to `redis`, as [services and jobs](services-and-jobs.md) explains, so each effect and sweep runs once.
+Add the provider to `server/providers/index.ts`. Business services that create or move records take the runtime from `lifecycleRuntimeToken` rather than writing the table. Without a dispatcher, effects run in process before `fire()` returns; that is acceptable in a unit test, not in an application. A deployment with more than one instance sets `jobs.default` to `redis`, as [services and jobs](services-and-jobs.md) explains, so workers coordinate effect and sweep claims; recovery can replay work, so effects must be idempotent. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
 
 To react to changes elsewhere — refresh a page through realtime, keep a to-do list — subscribe with `runtime.on('completed' | 'entered' | 'announce', filter, listener)`. Delivery is best effort: work that must happen is an effect.
 
