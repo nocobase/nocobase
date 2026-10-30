@@ -672,7 +672,7 @@ export interface OnlineChatConfigSnapshot {
 }
 export interface CreateConversationRequest {
   readonly projectId?: string | null;
-  /** Runner reasoning effort; null explicitly restores the Agent default. */
+  /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
   readonly effort?: string | null;
   /** Defaults to true; background SDK sessions are always hidden. */
   readonly showInChatList?: boolean;
@@ -727,7 +727,7 @@ export interface MessagePage {
 
 /** `POST messages`. */
 export interface SendMessageRequest {
-  /** Runner reasoning effort; null explicitly restores the Agent default. */
+  /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
   readonly effort?: string | null;
   /** Confirm this Runner agent only if the message is accepted while idle. */
   readonly agentId?: string;
@@ -853,4 +853,6 @@ export type ConversationChanged =
   | {
       readonly kind: 'conversation.changed';
       readonly conversationId: string;
+      /** A read acknowledgement; other conversation data is unchanged. */
+      readonly seenSeq?: number;
     };

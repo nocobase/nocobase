@@ -13,7 +13,7 @@ Read the user's reference and existing design documentation before selecting a p
 | `docs/ui/references/`        | Reference assets the project keeps, with their source and intended use                                   |
 | `docs/ui/decisions.md`       | Decisions whose reasons are not apparent from the implementation; omit it when the page record is enough |
 
-Use [the system template](templates/system-design.md) when establishing a system, and the reference and exception sections of [the page design template](templates/design.md) for a page. A copy edit needs no new design dossier. If a repository already has `DESIGN.md` or another design record, extend it rather than introduce a competing source of truth.
+Use the applicable parts of [the system template](templates/system-design.md) when establishing system-wide decisions, and the reference and exception sections of [the page design template](templates/design.md) when a page has decisions worth retaining. A routine CRUD page that follows established patterns, or a copy edit, needs no new design dossier. If a repository already has `DESIGN.md` or another design record, extend it rather than introduce a competing source of truth.
 
 These records belong to the application, not `.agents/skills/`, `.claude/skills/`, `node_modules` or temporary `storage/`. Skills synchronization and package upgrades may replace package-owned guidance; they must not overwrite the application's design decisions. Update the durable record when an agreed decision changes. Do not preserve a duplicate description of every component or the entire conversation.
 
@@ -53,7 +53,7 @@ Record a departure as: guideline ID, old default, replacement, affected pages/co
 
 ## Design the system, not isolated screens
 
-When the task spans modules, establish only the business context needed for the change:
+For a new application or a feature spanning frontend and backend, establish the needed business context before implementing either side. Use a short plan for routine work and the full workflow's concise design for complex decisions. When the task spans modules, include only the context needed for the change:
 
 - Identify the roles, their tasks, the record lifecycle and which actions and data each role can access. Keep names and status labels consistent across modules.
 - Trace the changed journey across modules, such as lead → customer → opportunity: entry points, context carried in links, return paths, overlays, and which views refresh after a write.

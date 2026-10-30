@@ -1,6 +1,6 @@
 # Frontend development handbook
 
-When you write or change code under `client/`, first decide the workflow with [`ui-workflow.md`](ui-workflow.md), then read the documents listed here by topic. For what the UI should look like, see [`ui-guidelines.md`](ui-guidelines.md); this handbook covers only how to write the code.
+Use the workflow selected during feature planning with [`ui-workflow.md`](ui-workflow.md), or select it before a frontend-only change, then read the documents listed here by topic. For what the UI should look like, see [`ui-guidelines.md`](ui-guidelines.md); this handbook covers only how to write the code.
 
 All code examples use the example "projects" domain. The topic references hold the rules with focused snippets, none longer than a small component; [`references/example.md`](references/example.md) indexes the complete files of the feature, one document per file, by task. Every example is complete as code: hooks are called at the top level of a component, a snippet comes with the component or function it belongs to, and omitted parts are marked with `// …`. The translation keys an example calls are not all in the template: add the shared keys listed in `references/i18n.md` and your feature's own group before code that follows an example calls them.
 

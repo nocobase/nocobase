@@ -1800,6 +1800,39 @@ describe('the API document', () => {
 });
 
 describe('CLI session issue integration', () => {
+  it('computes detail progress only for CLI or delegated actors after visibility checks', async () => {
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Progress',
+    });
+    const progress = vi.fn(async () => ({ agent: 'Worker' }));
+    container.instance(projectsIssueSessionToken, { progress } as never);
+    const path = `/issues/${issue.identifier.toLowerCase()}`;
+    expect((await call(path)).status).toBe(401);
+    expect((await call(path, { role: 'none' })).status).toBe(404);
+    const browser = await call(path, { role: 'admin' });
+    expect(browser.status).toBe(200);
+    expect((await browser.json()).data).not.toHaveProperty('progress');
+    expect(progress).not.toHaveBeenCalled();
+    const cli = await call(path, {
+      role: 'admin',
+      headers: { 'x-nocobase-client': 'cli' },
+    });
+    expect((await cli.json()).data.progress).toEqual({ agent: 'Worker' });
+    expect(progress).toHaveBeenCalledOnce();
+    let actor: import('../server/tokens.js').Viewer['actor'] = {
+      type: 'user',
+      id: 'alice',
+      via: 'api_key',
+    };
+    container.instance(projectsRequestActorToken, () => Promise.resolve(actor));
+    const keyed = await call(path, { role: 'admin' });
+    expect((await keyed.json()).data.progress).toEqual({ agent: 'Worker' });
+    actor = { type: 'agent', id: 'worker' };
+    const agent = await call(path, { role: 'admin' });
+    expect((await agent.json()).data.progress).toEqual({ agent: 'Worker' });
+    expect(progress).toHaveBeenCalledTimes(3);
+  });
+
   it('keeps ordinary creation unchanged and rejects a session context without integration', async () => {
     const created = await call('/issues', {
       role: 'admin',
@@ -1879,7 +1912,10 @@ describe('CLI session issue integration', () => {
         statusKey: 'backlog',
       });
       expect(link).toHaveBeenCalledExactlyOnceWith(body.data.id);
-      const detail = await call(`/issues/${body.data.id}`, { role: 'admin' });
+      const detail = await call(`/issues/${body.data.id}`, {
+        role: 'admin',
+        headers: { 'x-nocobase-client': 'cli' },
+      });
       expect(await detail.json()).toMatchObject({
         data: {
           progress: {

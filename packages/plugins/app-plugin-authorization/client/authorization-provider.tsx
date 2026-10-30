@@ -25,7 +25,7 @@ export function AuthorizationProvider({
   }>();
 
   useEffect(() => {
-    authz.invalidate();
+    authz.resetSession();
     // Children must not check permissions until the previous session is cleared.
     // eslint-disable-next-line react-hooks/set-state-in-effect, @eslint-react/set-state-in-effect
     setPrepared({ client: authz, sessionKey });

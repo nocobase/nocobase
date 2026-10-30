@@ -12,7 +12,7 @@ type HistoryReplacement = Extract<
   ConversationChanged,
   { kind: 'conversation.historyReplaced' }
 >;
-import { CancelledError } from '@tanstack/react-query';
+import { CancelledError, hashKey } from '@tanstack/react-query';
 import { isToolUIPart } from 'ai';
 import { Chat, useChat as useSDKChat } from '@ai-sdk/react';
 import {
@@ -26,8 +26,11 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { useApiClient } from '@nocobase/app-client';
-import type { ConversationDetail } from '../../shared/conversations.js';
+import { useApiClient, useRealtimeReadiness } from '@nocobase/app-client';
+import {
+  CONVERSATIONS_TOPIC,
+  type ConversationDetail,
+} from '../../shared/conversations.js';
 import type {
   AppUIMessage,
   AppUIToolApprovalInput,
@@ -36,6 +39,7 @@ import { ChatApi } from './api.js';
 import { chatIsRunning } from './feedback.js';
 import { ChatSubmissions, type SubmissionSend } from './submissions.js';
 import { agentsQueryClient } from '../query.js';
+import { agentsKeys } from '../api/keys.js';
 import { chatKeys } from './keys.js';
 import {
   EMPTY_MESSAGES,
@@ -86,6 +90,12 @@ export class ChatController {
     string,
     { accepted: boolean; gate: ReturnType<typeof deferred<ResendResult>> }
   >();
+  private streamFollowers = new Map<string, number>();
+  private detailReads = new Map<string, Promise<ConversationDetail>>();
+  private refreshes = new Map<
+    string,
+    { task: Promise<void>; trailing: boolean }
+  >();
   private reconciles = new Map<string, Promise<void>>();
   readonly submissions: ChatSubmissions;
   private chats = new Map<string, Chat<AppUIMessage>>();
@@ -116,6 +126,10 @@ export class ChatController {
   private generation = 0;
   private detailVersions = new Map<string, number>();
   private receiptVersions = new Map<string, number>();
+  private pendingReceipts = new Map<
+    string,
+    { seenSeq: number; refresh?: () => void }
+  >();
   private commandVersions = new Map<string, number>();
   constructor(readonly api: ChatApi) {
     this.submissions = new ChatSubmissions(
@@ -753,10 +767,15 @@ export class ChatController {
           chatKeys.conversation(id),
         );
         const current = this.watches.get(id)!;
-        const interval = detail?.execution?.status === 'running' ? 5000 : 30000;
+        const status = this.chats.get(id)?.status;
+        const busy =
+          chatIsRunning(detail ?? null) ||
+          status === 'submitted' ||
+          status === 'streaming';
+        const interval = busy ? 5000 : 30000;
         if (Date.now() - current.last < interval) return;
         current.last = Date.now();
-        void this.refresh(id).catch(() => {});
+        void this.refresh(id, true, !busy).catch(() => {});
       }, 5000);
       watch = { refs: 0, timer, last: Date.now() };
       this.watches.set(id, watch);
@@ -953,6 +972,16 @@ export class ChatController {
       ''
     );
   }
+  followStream(id: string): () => void {
+    const count = (this.streamFollowers.get(id) ?? 0) + 1;
+    this.streamFollowers.set(id, count);
+    if (count === 1) this.receive(id);
+    return () => {
+      const remaining = (this.streamFollowers.get(id) ?? 1) - 1;
+      if (remaining === 0) this.streamFollowers.delete(id);
+      else this.streamFollowers.set(id, remaining);
+    };
+  }
   receive(id: string, known?: ConversationDetail): void {
     if (this.disposed) return;
     const detail =
@@ -1134,7 +1163,55 @@ export class ChatController {
     );
     if (active()) await this.refresh(id);
   }
-  async refresh(id: string): Promise<void> {
+  /** One detail request shared by the query observer and message reconciliation. */
+  readDetail(id: string, fresh = false): Promise<ConversationDetail> {
+    const pending = this.detailReads.get(id);
+    if (pending)
+      return fresh
+        ? pending.catch(() => undefined).then(() => this.readDetail(id))
+        : pending;
+    const task = this.api.conversation(id);
+    this.detailReads.set(id, task);
+    const clear = () => {
+      if (this.detailReads.get(id) === task) this.detailReads.delete(id);
+    };
+    void task.then(clear, clear);
+    return task;
+  }
+  refresh(id: string, fresh = true, idleProbe = false): Promise<void> {
+    if (this.disposed) return Promise.resolve();
+    const pending = this.refreshes.get(id);
+    if (pending) {
+      if (fresh) {
+        pending.trailing = true;
+        this.nextDetailVersion(id);
+      }
+      return pending.task;
+    }
+    const lifetime = this.lifetime(),
+      commandVersion = this.commandVersions.get(id),
+      active = () =>
+        lifetime() && this.commandVersions.get(id) === commandVersion;
+    const owner = { trailing: false, task: Promise.resolve() };
+    const run = async () => {
+      do {
+        owner.trailing = false;
+        await this.refreshOnce(id, fresh, idleProbe);
+        fresh = true;
+        idleProbe = false;
+      } while (owner.trailing && active());
+    };
+    owner.task = run().finally(() => {
+      if (this.refreshes.get(id) === owner) this.refreshes.delete(id);
+    });
+    this.refreshes.set(id, owner);
+    return owner.task;
+  }
+  private async refreshOnce(
+    id: string,
+    fresh: boolean,
+    idleProbe = false,
+  ): Promise<void> {
     if (this.disposed) return;
     const lifetime = this.lifetime(),
       commandVersion = this.commandVersions.get(id),
@@ -1151,13 +1228,52 @@ export class ChatController {
                 message.role === 'user' && message.metadata?.seq !== undefined,
             )
         : undefined;
-    const detail = await this.api.conversation(id);
+    const query = agentsQueryClient()
+      .getQueryCache()
+      .find({ queryKey: chatKeys.conversation(id), exact: true });
+    const cached =
+      !fresh && query?.isActive() && query.state.fetchStatus === 'idle'
+        ? (query.state.data as ConversationDetail | undefined)
+        : undefined;
+    const previous = query?.state.data as ConversationDetail | undefined;
+    const detail = cached ?? (await this.readDetail(id, fresh));
     if (!active()) return;
-    if (ordered()) await this.reconcile(id, detail);
+    if (
+      idleProbe &&
+      previous &&
+      !chatIsRunning(detail) &&
+      detail.lastSeq !== undefined &&
+      this.history(id).state.loaded &&
+      !this.history(id).error &&
+      this.history(id).loadedThrough >= detail.lastSeq &&
+      hashKey([previous]) === hashKey([detail])
+    ) {
+      // The durable cursor is current. Still reread revisions of the latest assistant response: a same-sequence
+      // update may have lost its announcement, even though the conversation snapshot did not change.
+      const latest = [...this.chat(id).messages]
+        .reverse()
+        .find((message) => message.role === 'assistant');
+      const ids = [
+        ...new Set([
+          ...(this.deferredReads.get(id) ?? []),
+          ...(latest ? [latest.id] : []),
+        ]),
+      ];
+      if (ids.length) await this.reread(id, ids);
+      if (active() && ordered()) {
+        this.remember(detail, false);
+        this.publish();
+      }
+      return;
+    }
+    if (!active()) return;
+    if (ordered() && (fresh || this.history(id).state.loaded))
+      await this.reconcile(id, detail);
     if (!active()) return;
     // A newer detail query must not discard this refresh's message catch-up.
     // loadHistory coalesces overlapping reads independently of detail ordering.
-    await this.loadHistory(id, false, true);
+    if (fresh || !this.history(id).state.loaded)
+      await this.loadHistory(id, false, fresh);
     if (!active()) return;
     const history = this.history(id);
     if (history.error)
@@ -1289,28 +1405,81 @@ export class ChatController {
   private remember(detail: ConversationDetail, refresh = true): void {
     this.nextDetailVersion(detail.id);
     this.observeDetail(detail, refresh);
-    agentsQueryClient().setQueryData(chatKeys.conversation(detail.id), detail);
-    void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
+    const client = agentsQueryClient();
+    const previous = client.getQueryData<ConversationDetail>(
+      chatKeys.conversation(detail.id),
+    );
+    client.setQueryData(chatKeys.conversation(detail.id), detail);
+    if (JSON.stringify(previous) !== JSON.stringify(detail))
+      void client.invalidateQueries({ queryKey: chatKeys.lists });
+  }
+  /** The HTTP receipt supplies this tab's snapshot; retain a newer read position for a trailing read. */
+  deferReadReceipt(id: string, seenSeq: number, refresh: () => void): boolean {
+    const pending = this.pendingReceipts.get(id);
+    if (!pending) return false;
+    pending.seenSeq = Math.max(pending.seenSeq, seenSeq);
+    pending.refresh = refresh;
+    return true;
   }
   async markRead(id: string): Promise<ConversationDetail> {
+    const client = agentsQueryClient();
+    const key = chatKeys.conversation(id);
+    const before = client.getQueryData<ConversationDetail>(key);
     const active = this.lifetime(),
       commandVersion = this.commandVersions.get(id),
       receiptVersion = (this.receiptVersions.get(id) ?? 0) + 1;
     // Detail reads must not suppress the read transition needed by a viewed conversation.
     this.receiptVersions.set(id, receiptVersion);
+    const pending: {
+      seenSeq: number;
+      refresh?: () => void;
+    } = { seenSeq: -1 };
+    this.pendingReceipts.set(id, pending);
     this.nextDetailVersion(id);
-    const detail = await this.api.markRead(id);
-    if (
-      active() &&
-      this.commandVersions.get(id) === commandVersion &&
-      this.receiptVersions.get(id) === receiptVersion
-    ) {
-      // Read receipts do not change execution or invalidate pending history.
-      this.nextDetailVersion(id);
-      agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
-      void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
+    try {
+      const detail = await this.api.markRead(id);
+      if (
+        active() &&
+        this.commandVersions.get(id) === commandVersion &&
+        this.receiptVersions.get(id) === receiptVersion
+      ) {
+        // Read receipts do not change execution or invalidate pending history.
+        this.nextDetailVersion(id);
+        client.setQueryData<ConversationDetail>(key, (current) => {
+          if (
+            !current ||
+            current === before ||
+            (current.lastSeq ?? 0) < (detail.lastSeq ?? 0) ||
+            (current.lastSeq === detail.lastSeq &&
+              current.updatedAt < detail.updatedAt)
+          )
+            return detail;
+          // A later snapshot may already contain the next reply or a metadata change.
+          const seenSeq = Math.max(current.seenSeq ?? 0, detail.seenSeq ?? 0);
+          return {
+            ...current,
+            seenSeq,
+            read: seenSeq >= (current.lastSeq ?? 0) || current.read,
+            needsYou:
+              current.needsYou &&
+              current.needsYou.reason !== 'confirm' &&
+              current.needsYou.seq <= seenSeq
+                ? null
+                : current.needsYou,
+          };
+        });
+      }
+      return detail;
+    } finally {
+      if (this.pendingReceipts.get(id) === pending) {
+        this.pendingReceipts.delete(id);
+        const current = agentsQueryClient().getQueryData<ConversationDetail>(
+          chatKeys.conversation(id),
+        );
+        if (active() && pending.seenSeq > (current?.seenSeq ?? -1))
+          pending.refresh?.();
+      }
     }
-    return detail;
   }
   async command<T>(
     id: string,
@@ -1320,6 +1489,9 @@ export class ChatController {
     const active = this.lifetime(),
       version = (this.commandVersions.get(id) ?? 0) + 1;
     this.commandVersions.set(id, version);
+    // A command replaces the snapshot generation; its reads must not wait on obsolete HTTP.
+    this.detailReads.delete(id);
+    this.refreshes.delete(id);
     this.nextDetailVersion(id);
     this.invalidateHistoryReads(id);
     const recovery = this.recoveries.get(id);
@@ -1361,6 +1533,9 @@ export class ChatController {
     this.historyEpochs.clear();
     this.replacements.clear();
     this.reconciles.clear();
+    this.streamFollowers.clear();
+    this.detailReads.clear();
+    this.refreshes.clear();
     for (const watch of this.watches.values()) clearInterval(watch.timer);
     this.watches.clear();
     this.messageVersions.clear();
@@ -1372,11 +1547,13 @@ export class ChatController {
     this.refreshAgain.clear();
     this.commandVersions.clear();
     this.receiptVersions.clear();
+    this.pendingReceipts.clear();
     this.stopRequests.clear();
     this.approvalRequests.clear();
     this.recoveries.clear();
     this.submissions.invalidate();
-    agentsQueryClient().removeQueries({ queryKey: chatKeys.all });
+    // All plugin snapshots are viewer-scoped, including fresh agent options.
+    agentsQueryClient().removeQueries({ queryKey: agentsKeys.all });
   }
   dispose(): void {
     this.invalidate();
@@ -1429,6 +1606,7 @@ export function useChatController(): ChatController {
 }
 export function useChatStream(id: string | null): StreamState | undefined {
   const controller = useChatController();
+  const ready = useRealtimeReadiness([CONVERSATIONS_TOPIC]);
   useSDKChat({ chat: controller.chat(id ?? 'draft') });
   useSyncExternalStore(
     controller.subscribe,
@@ -1436,8 +1614,8 @@ export function useChatStream(id: string | null): StreamState | undefined {
     controller.snapshot,
   );
   useEffect(() => {
-    if (id) controller.receive(id);
-  }, [controller, id]);
+    if (ready && id) return controller.followStream(id);
+  }, [controller, id, ready]);
   return id ? controller.state(id) : undefined;
 }
 export function useChatStreamState(id: string | null): StreamState | undefined {

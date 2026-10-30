@@ -215,7 +215,6 @@ function completionBindings(
     req: {
       method,
       path,
-      route: context.req.routePath,
       params: safeParameters(context.req.param(), true),
       query: safeQuery(context),
       caller: callerOf(context),

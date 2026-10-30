@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "scenario": "procurement",
+  "actors": {
+    "owner": "owner@baseline.invalid",
+    "otherOwner": "other-owner@baseline.invalid",
+    "reviewer": "reviewer@baseline.invalid",
+    "otherReviewer": "other-reviewer@baseline.invalid",
+    "outsider": "outsider@baseline.invalid"
+  },
+  "catalog": [
+    {
+      "alias": "allowed",
+      "name": "Alpha Office",
+      "active": true,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "allowedOther",
+      "name": "Beta Office",
+      "active": true,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "inactive",
+      "name": "Alpha Inactive",
+      "active": false,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "restricted",
+      "name": "Alpha Restricted",
+      "active": true,
+      "allowedActors": ["otherOwner", "otherReviewer"]
+    }
+  ],
+  "items": [
+    {
+      "alias": "paper",
+      "name": "Alpha Paper",
+      "active": true,
+      "unitMinor": 1234,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "pen",
+      "name": "Beta Pen",
+      "active": true,
+      "unitMinor": 682,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "inactiveItem",
+      "name": "Alpha Inactive Item",
+      "active": false,
+      "unitMinor": 100,
+      "allowedActors": ["owner"]
+    },
+    {
+      "alias": "restrictedItem",
+      "name": "Alpha Restricted Item",
+      "active": true,
+      "unitMinor": 100,
+      "allowedActors": ["otherOwner"]
+    }
+  ],
+  "roles": {
+    "owner": "applicant",
+    "otherOwner": "same-as-owner",
+    "reviewer": "designated-reviewer",
+    "otherReviewer": "same-as-reviewer",
+    "outsider": "no-business-grants"
+  },
+  "records": [
+    {
+      "alias": "draft",
+      "owner": "owner",
+      "state": "draft",
+      "record": {
+        "title": "Office supplies",
+        "reference": "allowed",
+        "reviewer": "reviewer",
+        "lines": [
+          {
+            "item": "paper",
+            "description": "Paper",
+            "quantity": 2,
+            "unitPrice": "12.34"
+          },
+          {
+            "item": "pen",
+            "description": "Pens",
+            "quantity": 1,
+            "unitPrice": "6.82"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "submitted",
+      "owner": "owner",
+      "state": "submitted",
+      "record": {
+        "title": "Office supplies",
+        "reference": "allowed",
+        "reviewer": "reviewer",
+        "lines": [
+          {
+            "item": "paper",
+            "description": "Paper",
+            "quantity": 2,
+            "unitPrice": "12.34"
+          },
+          {
+            "item": "pen",
+            "description": "Pens",
+            "quantity": 1,
+            "unitPrice": "6.82"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "rejected",
+      "owner": "owner",
+      "state": "rejected",
+      "record": {
+        "title": "Office supplies",
+        "reference": "allowed",
+        "reviewer": "reviewer",
+        "lines": [
+          {
+            "item": "paper",
+            "description": "Paper",
+            "quantity": 2,
+            "unitPrice": "12.34"
+          },
+          {
+            "item": "pen",
+            "description": "Pens",
+            "quantity": 1,
+            "unitPrice": "6.82"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "approved",
+      "owner": "owner",
+      "state": "approved",
+      "record": {
+        "title": "Office supplies",
+        "reference": "allowed",
+        "reviewer": "reviewer",
+        "lines": [
+          {
+            "item": "paper",
+            "description": "Paper",
+            "quantity": 2,
+            "unitPrice": "12.34"
+          },
+          {
+            "item": "pen",
+            "description": "Pens",
+            "quantity": 1,
+            "unitPrice": "6.82"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "foreignDocument",
+      "owner": "otherOwner",
+      "state": "submitted",
+      "record": {
+        "title": "Office supplies",
+        "reference": "restricted",
+        "reviewer": "otherReviewer",
+        "lines": [
+          {
+            "item": "paper",
+            "description": "Paper",
+            "quantity": 2,
+            "unitPrice": "12.34"
+          },
+          {
+            "item": "pen",
+            "description": "Pens",
+            "quantity": 1,
+            "unitPrice": "6.82"
+          }
+        ]
+      },
+      "childAlias": "foreignChild"
+    }
+  ],
+  "validRecord": {
+    "title": "Office supplies",
+    "reference": "allowed",
+    "reviewer": "reviewer",
+    "lines": [
+      {
+        "item": "paper",
+        "description": "Paper",
+        "quantity": 2,
+        "unitPrice": "12.34"
+      },
+      {
+        "item": "pen",
+        "description": "Pens",
+        "quantity": 1,
+        "unitPrice": "6.82"
+      }
+    ]
+  }
+}

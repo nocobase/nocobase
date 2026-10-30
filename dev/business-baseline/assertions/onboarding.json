@@ -1,0 +1,969 @@
+{
+  "version": 1,
+  "scenario": "onboarding",
+  "cases": [
+    {
+      "id": "ONBOARDING-001",
+      "label": "Save parent and children, then reread persisted data",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": true,
+            "childCount": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-002",
+      "label": "Search and filter actual page list and reference picker",
+      "category": "business",
+      "channel": "browser",
+      "steps": [
+        {
+          "action": "ui",
+          "input": {
+            "actor": "owner",
+            "flow": "search-filter",
+            "query": "Alpha",
+            "active": true
+          },
+          "expect": {
+            "listFiltered": true,
+            "candidates": ["allowed"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-003",
+      "label": "Add, edit and remove children through page, persist and reopen",
+      "category": "business",
+      "channel": "browser",
+      "steps": [
+        {
+          "action": "ui",
+          "input": {
+            "actor": "owner",
+            "flow": "edit-children",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "reopened": true,
+            "childCount": 2,
+            "editedChildVisible": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-004",
+      "label": "Other owner cannot read protected list",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "list",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-005",
+      "label": "Other owner cannot read protected detail",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-006",
+      "label": "Other owner cannot read protected children",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "children",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-007",
+      "label": "Anonymous and unassigned users cannot read protected records",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "anonymous",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        },
+        {
+          "action": "read",
+          "input": {
+            "actor": "outsider",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-008",
+      "label": "Other owner cannot update parent or child",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "otherOwner",
+            "target": "draft",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-009",
+      "label": "Candidate API searches and filters permitted active references",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "owner",
+            "surface": "candidates",
+            "query": {
+              "search": "Alpha",
+              "active": true
+            }
+          },
+          "expect": {
+            "visible": ["allowed"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-010",
+      "label": "Save rechecks inactive reference",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "inactive",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-011",
+      "label": "Save rechecks restricted reference",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "restricted",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-012",
+      "label": "Cannot steal a foreign child",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ],
+              "childId": "foreignChild"
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "foreignDocument"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-013",
+      "label": "Cannot forge ownership or protected workflow/assignment fields",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "record": {
+              "owner": "otherOwner",
+              "state": "completed",
+              "reviewer": "otherReviewer",
+              "assignee": "owner"
+            }
+          },
+          "expect": {
+            "forbiddenEffect": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-014",
+      "label": "Failure after first child write rolls back new parent and children",
+      "category": "consistency",
+      "channel": "database",
+      "steps": [
+        {
+          "action": "snapshot",
+          "input": {},
+          "expect": {
+            "fixtureIntact": true
+          }
+        },
+        {
+          "action": "failChildWrite",
+          "input": {
+            "actor": "owner",
+            "mode": "create",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false,
+            "firstChildWritten": true
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {},
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-015",
+      "label": "Failure after first child write preserves all existing values",
+      "category": "consistency",
+      "channel": "database",
+      "steps": [
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "fixtureIntact": true
+          }
+        },
+        {
+          "action": "failChildWrite",
+          "input": {
+            "actor": "owner",
+            "mode": "update",
+            "target": "draft",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false,
+            "firstChildWritten": true
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-016",
+      "label": "Incomplete draft saves but cannot activate",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "employee": "Incomplete"
+            }
+          },
+          "expect": {
+            "accepted": true,
+            "state": "draft"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "document",
+            "to": "active"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "draft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-017",
+      "label": "Tasks need titles and assignees before activation",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": ""
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-018",
+      "label": "Activate and complete own tasks through page; progress reaches complete",
+      "category": "business",
+      "channel": "browser",
+      "steps": [
+        {
+          "action": "ui",
+          "input": {
+            "flow": "completion-cycle",
+            "owner": "owner",
+            "assignees": ["reviewer", "otherReviewer"],
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "state": "completed",
+            "progress": 100,
+            "buttonsCorrect": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-019",
+      "label": "Coordinator activates own draft",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "to": "active"
+          },
+          "expect": {
+            "accepted": true,
+            "state": "active"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-020",
+      "label": "Assignee sees only own tasks and required parent information",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "reviewer",
+            "surface": "tasks",
+            "target": "active"
+          },
+          "expect": {
+            "visible": ["ownTask"]
+          }
+        },
+        {
+          "action": "read",
+          "input": {
+            "actor": "reviewer",
+            "surface": "detail",
+            "target": "foreignDocument"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-021",
+      "label": "Different assignee cannot complete task",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "otherReviewer",
+            "target": "ownTask",
+            "to": "completed"
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-022",
+      "label": "One complete task does not complete case",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "ownTask",
+            "to": "completed"
+          },
+          "expect": {
+            "accepted": true
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "active"
+          },
+          "expect": {
+            "state": "active",
+            "completedTasks": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-023",
+      "label": "Active and completed task definitions are immutable",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "active",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "completed",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-024",
+      "label": "Concurrent completion records one effect",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "concurrent",
+          "input": {
+            "actor": "reviewer",
+            "target": "ownTask",
+            "to": "completed"
+          },
+          "expect": {
+            "successes": 1,
+            "effectCount": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-025",
+      "label": "Repeated completion records one effect",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "ownTask",
+            "to": "completed"
+          },
+          "expect": {
+            "accepted": true
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "ownTask",
+            "to": "completed"
+          },
+          "expect": {
+            "effectCount": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-026",
+      "label": "Old draft edit cannot overwrite activation",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "to": "active"
+          },
+          "expect": {
+            "accepted": true,
+            "state": "active"
+          }
+        },
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "revision": "original",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false,
+            "state": "active"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-027",
+      "label": "Anonymous and unassigned actors cannot create edit or activate",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "anonymous",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "create",
+          "input": {
+            "actor": "outsider",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "update",
+          "input": {
+            "actor": "anonymous",
+            "target": "draft",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "update",
+          "input": {
+            "actor": "outsider",
+            "target": "draft",
+            "record": {
+              "employee": "Employee Alpha",
+              "reference": "allowed",
+              "tasks": [
+                {
+                  "title": "Prepare laptop",
+                  "assignee": "reviewer"
+                },
+                {
+                  "title": "Orientation",
+                  "assignee": "otherReviewer"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "anonymous",
+            "target": "draft",
+            "to": "active"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "draft"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "outsider",
+            "target": "draft",
+            "to": "active"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "draft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ONBOARDING-028",
+      "label": "Coordinator cannot complete another assignees task",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "ownTask",
+            "to": "completed"
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    }
+  ]
+}

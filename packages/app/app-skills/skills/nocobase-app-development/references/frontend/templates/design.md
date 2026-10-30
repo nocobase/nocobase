@@ -1,5 +1,7 @@
 # [Feature name] design
 
+Use this as a temporary design document only for the full workflow; durable design records may reuse individual sections when needed. Keep applicable decisions and acceptance criteria; omit irrelevant sections and link existing contracts, shared patterns and design records instead of duplicating them. A routine CRUD page needs no separate design document. Internal review does not imply a user approval step.
+
 | Item          | Details                                                                                                                                                                                                                                                                                                                                   |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status        | Draft / Pending review / Ready for implementation                                                                                                                                                                                                                                                                                         |
@@ -10,7 +12,7 @@
 
 ## 1. Goals
 
-Who uses this page and in what situation, and which tasks they need to complete (no more than 3).
+Summarize the requested user operations and scope, including subsequent user decisions and any explicit exclusions. Identify who uses the feature and in what situation. For a full application or feature, include both the pages and the backend behavior they require.
 
 For a cross-module change, link the existing business journey and name the affected roles, record states, entry points, return context and refresh behavior. Scope this to the requested change.
 
@@ -38,11 +40,11 @@ If there is no UI reference, say so and use the current system design and defaul
 | --------------- | ---------- | -------- | ------ |
 |                 |            |          |        |
 
-If an endpoint already exists, note its source (file path); if it does not, this is the contract the backend implements.
+If an endpoint already exists, link its contract and record only the gaps needed by the page; if it does not, this is the contract the backend implements. Plan the required data, permissions, validation and error behavior before either side is implemented.
 
 ## 3. Page structure
 
-Wireframe:
+Sketch only structure that established patterns and references do not already explain. For example:
 
 ```text
 ┌ PageHeader ─────────────────────────────────────┐
@@ -88,7 +90,7 @@ Also state which states are written to the URL, which actions need confirmation,
 
 ## 7. Copy
 
-One column per language in `client/locales/index.ts` (the template offers these two):
+Link existing copy keys for reused patterns; specify new or changed wording in every language in `client/locales/index.ts` (the template offers these two):
 
 | key | zh-CN | en-US |
 | --- | ----- | ----- |
@@ -100,7 +102,7 @@ How the page looks and behaves in the dark theme and on narrow screens (375px).
 
 ## 9. Acceptance criteria
 
-Each one must be checkable by an action or a screenshot:
+Each one must be checkable by an action or a screenshot. Cover the requested user operation across the UI and real endpoints, including saved results, refresh, permissions and failure handling. For a deliberately narrower deliverable, check that scope instead:
 
 - [ ] D1 …
 - [ ] D2 …
@@ -111,7 +113,7 @@ Every required reference detail, route, navigation entry (including its icon), p
 
 ## 10. Open questions
 
-Record assumptions and any blocking decisions that require user input; if there are none, write "None". Routine design choices do not require confirmation.
+Record reasonable assumptions and unresolved material business or scope decisions. For each necessary question, name the affected work and any prior user answer; do not ask again about resolved decisions. If the user explicitly requested review before implementation, record that here. Otherwise routine design choices and internal review do not require confirmation.
 
 ## 11. Change log
 

@@ -143,14 +143,32 @@ it('checks issue visibility once when reading detail and still protects older ac
     expect(detail.activities.map((item) => item.action)).toContain(
       'issue_created',
     );
+    expect(statements.length).toBeLessThanOrEqual(23);
     expect(
-      statements.filter(
+      statements.every(
         (sql) =>
-          sql.includes('`pm_issues` as `repository_root`') &&
-          sql.includes('where (`repository_root`.`id` = ?)') &&
-          !sql.includes('__repository_relation_owner'),
+          !/^(insert|update|delete|begin|commit)\b|\bfor\s+update\b/iu.test(
+            sql,
+          ),
       ),
-    ).toHaveLength(1);
+    ).toBe(true);
+    for (const idOrKey of [issue.id, issue.identifier]) {
+      statements.length = 0;
+      await expect(
+        scope.run(mark, () =>
+          h.services.issueQueries.detail(h.viewer('alice', 'none'), idOrKey),
+        ),
+      ).rejects.toMatchObject({ kind: 'notFound' });
+      // Identifiers add one failed id lookup before the associated row read.
+      expect(statements.length).toBeLessThanOrEqual(
+        idOrKey === issue.id ? 4 : 5,
+      );
+      expect(
+        statements.some((sql) =>
+          /pm_activities|pm_comments|pm_attachments/iu.test(sql),
+        ),
+      ).toBe(false);
+    }
   } finally {
     client.removeListener('query', listener);
   }

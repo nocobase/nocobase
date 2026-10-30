@@ -1,5 +1,23 @@
 # @nocobase/app-plugin-repository-example
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- d3f0c92: Show distinct list feedback states, keep Customers' empty copy concise and keep its search controls together at all widths.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+
 ## 2.0.0-beta.4
 
 ### Patch Changes

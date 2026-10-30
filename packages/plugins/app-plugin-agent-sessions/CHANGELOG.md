@@ -1,5 +1,25 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.14
+
+### Patch Changes
+
+- ab9d1c6: Align the session page toolbar with full session lists, and support folding and reopening the sidebar with shared layout preferences.
+- da84b86: Wrap long unbroken strings, such as hashes, URLs and words without spaces, inside a person's message bubble instead of letting the bubble grow past the conversation and cut off the start of each line.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
 ## 1.0.0-beta.13
 
 ### Patch Changes
