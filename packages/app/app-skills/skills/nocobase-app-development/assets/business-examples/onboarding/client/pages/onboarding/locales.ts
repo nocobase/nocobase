@@ -102,6 +102,11 @@ export const enUS = {
   saved: 'Draft saved',
   notSaved: 'Not saved yet',
   restored: 'Draft restored',
+  discard: 'Discard unsaved changes?',
+  discardDescription:
+    'Your changes have not been saved. Keep editing or discard them to leave this page.',
+  keepEditing: 'Keep editing',
+  discardAction: 'Discard changes',
   restoredDescription:
     'Continuing from {{step}}, the first step that still needs information.',
 };
@@ -200,5 +205,10 @@ export const zhCN: Record<keyof typeof enUS, string> = {
   saved: '草稿已保存',
   notSaved: '尚未保存',
   restored: '已恢复草稿',
+  discard: '放弃未保存的修改？',
+  discardDescription:
+    '你的修改尚未保存，可以继续编辑，或放弃修改后离开此页面。',
+  keepEditing: '继续编辑',
+  discardAction: '放弃修改',
   restoredDescription: '已从“{{step}}”继续，这是第一个还需补充信息的步骤。',
 };

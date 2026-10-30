@@ -142,6 +142,12 @@ it('retains input while changing steps, validates conditions and recovers a priv
   expect(screen.getByLabelText('Job title')).toHaveValue('Engineer');
   expect(writes).toEqual([]);
   await userEvent.click(
+    screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+  );
+  expect(await screen.findByRole('alertdialog')).toBeVisible();
+  await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+  expect(screen.getByLabelText('Job title')).toHaveValue('Engineer');
+  await userEvent.click(
     screen.getByRole('button', { name: 'Save draft', exact: true }),
   );
   expect(
@@ -242,6 +248,36 @@ it('retains input while changing steps, validates conditions and recovers a priv
     screen.queryByRole('button', { name: 'Save draft' }),
   ).not.toBeInTheDocument();
 });
+it('keeps unsaved child-page input until leaving is confirmed', async () => {
+  await renderAuthenticatedClient(
+    <Routes>
+      <Route path='/onboarding' element={<OnboardingPage />}>
+        <Route path='new' element={<OnboardingWizard />} />
+      </Route>
+    </Routes>,
+    { route: '/onboarding/new' },
+  );
+  await userEvent.type(
+    await screen.findByLabelText('Full name'),
+    'Unsaved example',
+  );
+  await userEvent.click(
+    screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+  );
+  expect(await screen.findByRole('alertdialog')).toBeVisible();
+  await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+  expect(screen.getByLabelText('Full name')).toHaveValue('Unsaved example');
+  await userEvent.click(
+    screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+  );
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Discard changes' }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByLabelText('Full name')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByRole('button', { name: 'New onboarding' })).toBeVisible();
+});
 it('locks save and submit through refresh and replays an uncertain submission without another employee', async () => {
   let id: string;
   let drop = true;
@@ -311,6 +347,10 @@ it('locks save and submit through refresh and replays an uncertain submission wi
     expect(
       screen.getByRole('button', { name: 'Submit onboarding' }),
     ).toBeDisabled();
+    await userEvent.click(
+      screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+    );
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
     await act(async () => refreshGate.resolve());
     await waitFor(() =>
       expect(
@@ -325,6 +365,12 @@ it('locks save and submit through refresh and replays an uncertain submission wi
         'The previous result is uncertain. Retry the same action with the original data before editing.',
       ),
     ).toBeVisible();
+    await userEvent.click(
+      screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Submit onboarding' }),
+    ).toBeEnabled();
     await userEvent.click(
       screen.getByRole('button', { name: 'Submit onboarding' }),
     );

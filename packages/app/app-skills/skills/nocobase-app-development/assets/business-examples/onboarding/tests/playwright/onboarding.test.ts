@@ -105,8 +105,43 @@ test('four-step form preserves values, restores drafts and submits one employee 
   const directory =
     process.env.E2E_EVIDENCE_DIR ?? testInfo.outputPath('screenshots');
   await mkdir(directory, { recursive: true });
-  const snapshot = async (name: string) =>
-    page.screenshot({ path: path.join(directory, name), fullPage: true });
+  const snapshot = async (name: string) => {
+    await page.screenshot({ path: path.join(directory, name), fullPage: true });
+    if (name.includes('mobile')) return;
+    const viewport = page.viewportSize()!;
+    await page.setViewportSize({ width: 390, height: 844 });
+    const layer = page.locator('[data-slot=route-child-page] > div');
+    if (
+      (await layer.count()) &&
+      !(await page.getByRole('alertdialog').count())
+    ) {
+      expect(
+        await layer.evaluate((el) => {
+          const scroller = el as unknown as {
+            scrollWidth: number;
+            clientWidth: number;
+          };
+          return scroller.scrollWidth <= scroller.clientWidth;
+        }),
+      ).toBe(true);
+      const primary = page.getByRole('button', {
+        name: /^(Next|Submit onboarding)$/,
+      });
+      if (await primary.count()) {
+        const bounds = await primary.boundingBox();
+        expect(bounds).not.toBeNull();
+        expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844);
+      }
+    }
+    await page.screenshot({
+      path: path.join(
+        directory,
+        name.replace('onboarding-', 'onboarding-mobile-'),
+      ),
+      fullPage: true,
+    });
+    await page.setViewportSize(viewport);
+  };
   try {
     await page.goto(f.app + '/onboarding');
     await expect(
@@ -170,10 +205,24 @@ test('four-step form preserves values, restores drafts and submits one employee 
     );
     expect(writes).toBe(0);
     await snapshot('onboarding-employment.png');
+    await page
+      .getByRole('link', { name: 'Back to onboarding', exact: true })
+      .click();
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+    await snapshot('onboarding-discard.png');
+    await page
+      .getByRole('button', { name: 'Keep editing', exact: true })
+      .click();
+    await expect(page.getByLabel('Job title', { exact: true })).toHaveValue(
+      'Engineer',
+    );
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
     await expect(
       page.getByRole('heading', { name: 'Documents', exact: true }),
     ).toBeVisible();
+    await expect(page.getByText('Draft restored', { exact: true })).toHaveCount(
+      0,
+    );
     const id = new URL(page.url()).pathname.split('/').pop()!;
     await page.reload();
     await expect(

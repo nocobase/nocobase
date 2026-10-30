@@ -10,6 +10,7 @@ import {
   useSubmission,
   ApiClientError,
   createUuid,
+  useNavigationGuard,
 } from '@nocobase/app-client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -24,6 +25,16 @@ import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
 import { Button } from '#components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '#components/ui/alert-dialog';
 import {
   Card,
   CardContent,
@@ -119,13 +130,17 @@ export default function OnboardingWizard() {
   const location = useLocation();
   const navigate = useNavigate();
   const created = !!(location.state as { created?: boolean } | null)?.created;
+  // Keep the creation origin until this page closes, even if detail arrives after the URL marker is cleared.
+  const [createdCaseId, setCreatedCaseId] = useState(created ? id : undefined);
+  if (created && createdCaseId !== id) setCreatedCaseId(id);
   useEffect(() => {
-    if (created)
+    if (created) {
       void navigate(
         { pathname: location.pathname, search: location.search },
         { replace: true, state: null },
       );
-  }, [created, location.pathname, location.search, navigate]);
+    }
+  }, [created, id, location.pathname, location.search, navigate]);
   if (version !== undefined && restoredVersion === undefined)
     setRestoredVersion(version);
   if (id && (!request.data || request.error)) {
@@ -156,6 +171,7 @@ export default function OnboardingWizard() {
       detail={detail}
       restored={
         !created &&
+        createdCaseId !== id &&
         (restoredVersion ?? version) === version &&
         detail?.record.status === 'draft'
       }
@@ -239,6 +255,12 @@ function Editor({
   const [error, setError] = useState<unknown>();
   const [writing, setWriting] = useState(false);
   const lockedRef = useRef(false);
+  const navigatingAfterSaveRef = useRef(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const discardRef = useRef<{
+    promise: Promise<boolean>;
+    resolve: (value: boolean) => void;
+  } | null>(null);
   const [pendingAction, setPendingAction] = useState<'save' | 'submit'>();
   const [documentKeys, setDocumentKeys] = useState(
     () => detail?.documents.map((doc) => doc.id) ?? [],
@@ -252,14 +274,36 @@ function Editor({
     'onboarding/candidates?kind=departments',
     { active: editable },
   );
-  // A page has no close guard: while there are unsaved changes, ask before a reload or closing the tab.
-  // In-app navigation through Back is not guarded; the action bar shows the unsaved state instead.
+  const decideDiscard = (discard: boolean) => {
+    discardRef.current?.resolve(discard);
+    discardRef.current = null;
+    setConfirmDiscard(false);
+  };
+  useEffect(
+    () => () => {
+      discardRef.current?.resolve(false);
+    },
+    [],
+  );
+  useNavigationGuard(() => {
+    if (navigatingAfterSaveRef.current) return true;
+    if (lockedRef.current || refreshing || submission.pending) return false;
+    if (!dirty) return true;
+    if (discardRef.current) return discardRef.current.promise;
+    let resolve!: (value: boolean) => void;
+    const promise = new Promise<boolean>((done) => {
+      resolve = done;
+    });
+    discardRef.current = { promise, resolve };
+    setConfirmDiscard(true);
+    return promise;
+  });
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !busy && !submission.pending) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
+  }, [dirty, busy, submission.pending]);
   const update = (patch: Partial<OnboardingInput>) => {
     setInput((old) => ({ ...old, ...patch }));
     setDirty(true);
@@ -339,11 +383,13 @@ function Editor({
         setDirty(false);
         reload();
         if (detail) refresh();
-        else
+        else {
+          navigatingAfterSaveRef.current = true;
           await navigate(
             { pathname: `../${result.data.id}`, search: location.search },
             { replace: true, state: { created: true } },
           );
+        }
       }
     } catch (e) {
       setError(e);
@@ -506,6 +552,27 @@ function Editor({
       status={detail?.record.status}
       description={description}
     >
+      <AlertDialog
+        open={confirmDiscard}
+        onOpenChange={(open) => {
+          if (!open) decideDiscard(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('onboarding.discard')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('onboarding.discardDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('onboarding.keepEditing')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => decideDiscard(true)}>
+              {t('onboarding.discardAction')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Below lg the step list collapses into the current step and a four-part progress bar. */}
       <div className='space-y-2 lg:hidden'>
         <p className='text-sm text-muted-foreground'>
