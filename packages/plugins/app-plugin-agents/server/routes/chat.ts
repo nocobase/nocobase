@@ -213,7 +213,7 @@ const SendSchema = NativeSendSchema.extend({
     .nullable()
     .optional()
     .describe(
-      'Runner reasoning effort; omit to retain the conversation preference, null restores the Agent default.',
+      'Runner reasoning effort; omit or null uses the Agent default. If the runtime cannot report or support that default, use the tool default. Only explicit non-default selections are saved.',
     ),
   agentId: z
     .string()

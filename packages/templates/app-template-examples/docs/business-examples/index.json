@@ -1,0 +1,186 @@
+[
+  {
+    "id": "procurement",
+    "title": "Purchasing request and decision",
+    "status": "runnable",
+    "sources": [
+      "client/pages/procurement/index.tsx",
+      "client/pages/procurement/detail.tsx",
+      "client/pages/procurement/reference.tsx",
+      "client/pages/procurement/locales.ts",
+      "shared/procurement.ts",
+      "server/routes/procurement.ts",
+      "server/providers/procurement.ts",
+      "server/providers/procurement-registration.ts",
+      "server/providers/procurement-reset.ts",
+      "server/lifecycles/procurement.ts",
+      "database/main/migrations/202611040001_create_procurement.ts",
+      "database/main/seeds/202611040001_procurement.ts",
+      "database/main/seeds/202611040002_procurement_samples.ts",
+      "cli/commands/procurement-reset.ts",
+      "tests/client/procurement.test.tsx",
+      "tests/server/procurement.test.ts",
+      "tests/database/procurement.test.ts",
+      "tests/playwright/procurement.test.ts",
+      "docs/procurement.md"
+    ],
+    "destination": "assets/business-examples/procurement/",
+    "entries": {
+      "page": "/procurement",
+      "api": [
+        "/api/procurement",
+        "/api/procurement/context",
+        "/api/procurement/candidates",
+        "/api/procurement/{id}",
+        "/api/procurement/{id}/fire"
+      ]
+    },
+    "dependencies": [
+      "Native authentication, Users and authorization with explicit per-user roles",
+      "Registered lifecycle example server runtime and its existing history collections, or the target application runtime/store adapted as documented",
+      "Existing submission provider/receipt migration and template-owned UI components"
+    ],
+    "commands": {
+      "install": "pnpm install",
+      "start": "pnpm dev",
+      "test": "pnpm exec vitest run tests/client/procurement.test.tsx tests/server/procurement.test.ts tests/database/procurement.test.ts && pnpm exec playwright test tests/playwright/procurement.test.ts",
+      "reset": "pnpm nocobase app procurement-reset --dry-run --json; pnpm nocobase app procurement-reset --force --json"
+    },
+    "applicability": "Application-owned business feature in the Examples template",
+    "replacementPoints": [
+      "Business fields and labels",
+      "Reference scope",
+      "Ownership and action permission rules",
+      "Lifecycle transitions"
+    ],
+    "limitations": [
+      "One currency, positive integer quantities, at most 50 lines and one designated non-self reviewer",
+      "No multi-level approvals, tax, stock reservation or workflow editor",
+      "Reference searches return at most 100 matches; reviewer membership is checked before the transaction",
+      "Default integration requires explicit runtime/store and UI registration; see docs/procurement.md",
+      "Example verification and independent agent adaptation outcomes are separate records"
+    ]
+  },
+  {
+    "id": "customers",
+    "title": "Customers and contacts",
+    "status": "runnable",
+    "sources": [
+      "client/pages/customer-contacts/index.tsx",
+      "client/pages/customer-contacts/detail.tsx",
+      "client/pages/customer-contacts/edit.tsx",
+      "client/pages/customer-contacts/batch.tsx",
+      "client/pages/customer-contacts/model.ts",
+      "client/pages/customer-contacts/shared.tsx",
+      "client/pages/customer-contacts/relation-picker.tsx",
+      "client/pages/customer-contacts/locales.ts",
+      "server/routes/customer-contacts.ts",
+      "server/providers/customer-contacts.ts",
+      "server/providers/customer-contacts-authorization.ts",
+      "server/providers/customer-contacts-data.ts",
+      "database/main/migrations/202611030002_create_customer_contacts.ts",
+      "database/main/seeds/202611030002_customer_contacts.ts",
+      "tests/client/customer-contacts.test.tsx",
+      "tests/server/customer-contacts.test.ts",
+      "tests/database/customer-contacts-migration.test.ts"
+    ],
+    "destination": "assets/customer-contacts-example/",
+    "entries": {
+      "page": "/customer-contacts",
+      "api": ["/api/customerContacts"]
+    },
+    "dependencies": [
+      "Default registered authentication, Users and authorization capabilities"
+    ],
+    "commands": {
+      "install": "pnpm install",
+      "start": "pnpm dev",
+      "test": "pnpm exec vitest run tests/client/customer-contacts.test.tsx tests/server/customer-contacts.test.ts tests/database/customer-contacts-migration.test.ts",
+      "reset": "POST <application-base>/api/customerContacts/reset (native unrestricted administrator session; also available as Reset example data on the page)"
+    },
+    "applicability": "Application-owned business feature in the Examples template",
+    "replacementPoints": [
+      "Customer and contact fields and labels",
+      "Ownership and permitted relation scope",
+      "Batch field allowlist and per-record outcomes"
+    ],
+    "limitations": [
+      "Current-page batches contain at most 100 unique IDs",
+      "The existing example installs fictional users; replace demonstration accounts and data before production adaptation",
+      "Batch writes use one transaction without persistent receipts; inspect saved rows after an uncertain response",
+      "See docs/customer-contacts.md and the relation/batch Skill reference for integration and independent adaptation guidance"
+    ]
+  },
+  {
+    "id": "onboarding",
+    "title": "Employee onboarding",
+    "status": "planned",
+    "sources": [
+      "client/pages/onboarding/",
+      "server/routes/onboarding.ts",
+      "server/providers/onboarding.ts",
+      "database/main/migrations/",
+      "database/main/seeds/",
+      "tests/client/onboarding.test.tsx",
+      "tests/server/onboarding.test.ts",
+      "tests/database/onboarding.test.ts",
+      "tests/playwright/onboarding.test.ts"
+    ],
+    "destination": "assets/business-examples/onboarding/",
+    "entries": {
+      "page": "/onboarding",
+      "api": []
+    },
+    "dependencies": [
+      "Default registered authentication, Users and authorization capabilities",
+      "lifecycle"
+    ],
+    "commands": {
+      "install": "pnpm install",
+      "start": "pnpm dev",
+      "test": "pnpm test && pnpm test:e2e",
+      "reset": "implementation must supply isolated test-data reset"
+    },
+    "applicability": "Application-owned business feature in the Examples template",
+    "replacementPoints": [
+      "Business fields and labels",
+      "Reference scope",
+      "Ownership and action permission rules",
+      "Lifecycle transitions"
+    ],
+    "limitations": [
+      "Not implemented or published by this collection-material change"
+    ]
+  },
+  {
+    "id": "expenses",
+    "title": "Expense reimbursement",
+    "status": "held-out",
+    "sources": [],
+    "destination": null,
+    "entries": {
+      "page": null,
+      "api": []
+    },
+    "dependencies": [
+      "Default registered authentication, Users and authorization capabilities",
+      "lifecycle"
+    ],
+    "commands": {
+      "install": "pnpm install",
+      "start": "pnpm dev",
+      "test": "pnpm test && pnpm test:e2e",
+      "reset": "implementation must supply isolated test-data reset"
+    },
+    "applicability": "Held-out business-model substitution from an available example",
+    "replacementPoints": [
+      "Business fields and labels",
+      "Reference scope",
+      "Ownership and action permission rules",
+      "Lifecycle transitions"
+    ],
+    "limitations": [
+      "Not implemented or published by this collection-material change"
+    ]
+  }
+]

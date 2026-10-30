@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Business example scenario entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "status",
+    "sources",
+    "destination",
+    "entries",
+    "dependencies",
+    "commands",
+    "applicability",
+    "replacementPoints",
+    "limitations"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": ["planned", "runnable", "held-out"]
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "destination": {
+      "type": ["string", "null"]
+    },
+    "entries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page", "api"],
+      "properties": {
+        "page": {
+          "type": ["string", "null"]
+        },
+        "api": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["install", "start", "test", "reset"],
+      "properties": {
+        "install": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start": {
+          "type": "string",
+          "minLength": 1
+        },
+        "test": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reset": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "applicability": {
+      "type": "string",
+      "minLength": 1
+    },
+    "replacementPoints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "runnable"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "minItems": 1
+          },
+          "destination": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entries": {
+            "properties": {
+              "page": {
+                "type": "string"
+              },
+              "api": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

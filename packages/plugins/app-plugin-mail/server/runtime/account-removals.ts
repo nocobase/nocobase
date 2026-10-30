@@ -1,9 +1,11 @@
+import { performance } from 'node:perf_hooks';
+import { setImmediate } from 'node:timers/promises';
 import type { MailRuntimeOptions } from '../runtime.js';
 import { closeAdapter } from '../services/provider-lifecycle.js';
 import { notifyMailMessageChange } from '../realtime.js';
 import { mailLogError, writeMailLog } from '../logging.js';
 
-/** The independent removal table is the durable work queue; each tick commits one batch. */
+/** The independent removal table is the durable work queue; each batch keeps its own transaction and lease. */
 export class MailAccountRemovals {
   public constructor(
     private readonly options: Pick<
@@ -12,19 +14,29 @@ export class MailAccountRemovals {
     >,
   ) {}
 
-  public async runBatch(): Promise<void> {
+  /** Bound each relay sweep, yielding between independently claimed batches so other work can run. */
+  public async drain(shouldStop: () => boolean = () => false): Promise<void> {
+    const started = performance.now();
+    for (let batch = 0; batch < 8 && !shouldStop(); batch++) {
+      if (batch > 0 && performance.now() - started >= 100) return;
+      if (!(await this.runBatch())) return;
+      await setImmediate();
+    }
+  }
+
+  public async runBatch(): Promise<boolean> {
     const { store } = this.options;
     const task = await store.claimAccountRemoval();
-    if (!task) return;
+    if (!task) return false;
     let renewal: Promise<void> | undefined;
     let timer: NodeJS.Timeout | undefined;
     const abort = new AbortController();
     try {
       if (!(await store.deleteAccountBatch(task))) {
         await store.releaseAccountRemoval(task, false);
-        return;
+        return true;
       }
-      if (!(await store.renewAccountRemoval(task))) return;
+      if (!(await store.renewAccountRemoval(task))) return true;
       timer = setInterval(() => {
         if (renewal) return;
         renewal = store
@@ -96,5 +108,6 @@ export class MailAccountRemovals {
       if (timer) clearInterval(timer);
       await renewal;
     }
+    return true;
   }
 }
