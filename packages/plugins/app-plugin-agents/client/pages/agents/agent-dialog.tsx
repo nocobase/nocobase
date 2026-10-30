@@ -93,7 +93,14 @@ function AgentForm({
         enabled,
         expectedRevision: target.revision,
       }),
-    onSuccess: (saved) => {
+    onSuccess: async (saved) => {
+      // A pending list read must not replace the saved values before reopening.
+      await queryClient.cancelQueries({ queryKey: agentsKeys.agents });
+      queryClient.setQueryData<AgentView[]>(agentsKeys.agents, (current) =>
+        current?.map((item) =>
+          item.id === saved.id ? { ...item, ...saved } : item,
+        ),
+      );
       notify.success(
         t('agents.edit.done', {
           name: saved.name,

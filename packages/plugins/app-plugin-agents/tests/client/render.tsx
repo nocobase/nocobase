@@ -7,10 +7,12 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 
 import { HeaderTrail } from './header-trail.js';
 
-export function renderPage(element: ReactElement): RenderResult {
-  const client = new QueryClient({
+export function renderPage(
+  element: ReactElement,
+  client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
-  });
+  }),
+): RenderResult {
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/config']}>{element}</MemoryRouter>

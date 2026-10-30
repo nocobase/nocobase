@@ -3,6 +3,10 @@
 // application only the descriptor.
 export { default } from './plugin.js';
 export {
+  AUTHORIZATION_PERMISSIONS_CHANGED_TOPIC,
+  AUTHORIZATION_GLOBAL_PERMISSIONS_CHANGED_TOPIC,
+} from '../shared.js';
+export {
   AuthorizationClient,
   type AuthorizationCheck,
   type AuthorizationDecision,
