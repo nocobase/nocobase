@@ -214,44 +214,6 @@ export class SourceEvidence {
       bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
     ): boolean =>
       new StaticValues(this, bindings, captures).definitelyTerminates(node);
-    // Unknown conditions can still choose only closed data objects. Inspect every arm;
-    // unresolved values and non-object arms remain an escape barrier.
-    const spreadObjects = (
-      node: ts.Node,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-      seen = new Set<ts.Node>(),
-    ): readonly ts.ObjectLiteralExpression[] | undefined => {
-      if (seen.has(node) || seen.size >= 32) return undefined;
-      const next = new Set(seen).add(node);
-      const values = new StaticValues(this, bindings, captures).values(node);
-      if (values.length)
-        return values.every(ts.isObjectLiteralExpression) ? values : undefined;
-      if (ts.isIdentifier(node)) {
-        const declarations = this.declarations(node);
-        const declaration =
-          declarations.length === 1 ? declarations[0] : undefined;
-        return declaration &&
-          !bindings.has(declaration) &&
-          ts.isVariableDeclaration(declaration) &&
-          declaration.initializer &&
-          ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const
-          ? spreadObjects(declaration.initializer, bindings, next)
-          : undefined;
-      }
-      if (
-        ts.isParenthesizedExpression(node) ||
-        ts.isAsExpression(node) ||
-        ts.isSatisfiesExpression(node) ||
-        ts.isNonNullExpression(node)
-      )
-        return spreadObjects(node.expression, bindings, next);
-      if (!ts.isConditionalExpression(node)) return undefined;
-      const yes = spreadObjects(node.whenTrue, bindings, next);
-      const no = spreadObjects(node.whenFalse, bindings, next);
-      return yes && no && yes.length + no.length <= 32
-        ? [...yes, ...no]
-        : undefined;
-    };
     const capability = (
       node: ts.Node,
       bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
@@ -293,18 +255,13 @@ export class SourceEvidence {
               : ts.isShorthandPropertyAssignment(property)
                 ? capability(property.name, bindings, seen)
                 : ts.isSpreadAssignment(property)
-                  ? (() => {
-                      const objects = spreadObjects(
-                        property.expression,
-                        bindings,
-                      );
-                      return (
-                        !objects ||
-                        objects.some((object) =>
-                          capability(object, bindings, seen),
-                        )
-                      );
-                    })()
+                  ? literals.values(property.expression).length === 0 ||
+                    literals
+                      .values(property.expression)
+                      .some(
+                        (spread) => !ts.isObjectLiteralExpression(spread),
+                      ) ||
+                    capability(property.expression, bindings, seen)
                   : true,
           );
         if (ts.isArrayLiteralExpression(value))
