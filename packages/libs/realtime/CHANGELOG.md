@@ -1,5 +1,11 @@
 # @nocobase/realtime
 
+## 1.0.0-beta
+
+### Breaking changes
+
+Remove the built-in Redis broker and its public factory and options type. Standalone Redis consumers must import them from `@nocobase/app-plugin-realtime-redis/broker`; host applications register its Server plugin. Memory, authorization, the browser protocol and generic recovery/control contracts remain open source. Deploy the compatible commercial cohort before this final-removal version.
+
 ## 0.1.0-beta.3
 
 ### Minor Changes

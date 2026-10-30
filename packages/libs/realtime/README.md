@@ -6,7 +6,7 @@ Realtime protocol, browser client and transport-independent server service. Impo
 
 Events are transient invalidations. Reconnect does not replay missed events: read authoritative state through an authorized API after each successful subscription. Publishing resolves to `{ eventId, topic }` when the broker operation finishes; this is neither a durable receipt nor proof that a browser processed the event. Publication failures reject the promise. Business operations that already committed must handle these failures separately. Counts and diagnostics describe this service's local connections only.
 
-The default `inMemory` broker isolates each service instance. Use the optional Redis Pub/Sub broker for multiple processes with the same namespace. A namespace alone does not connect memory brokers. Never suppress publication based on a local subscriber count: subscribers may be connected to another process. See [distributed delivery](docs/distributed.md).
+The default `inMemory` broker isolates each service instance. Install and explicitly register the commercial `@nocobase/app-plugin-realtime-redis/server` plugin to use Redis Pub/Sub for multiple processes with the same namespace. A namespace alone does not connect memory brokers. Never suppress publication based on a local subscriber count: subscribers may be connected to another process. See [distributed delivery](docs/distributed.md).
 
 ## Server lifecycle and declared topics
 

@@ -1,5 +1,11 @@
 # @nocobase/app-server
 
+## 4.0.0-beta
+
+### Breaking changes
+
+Select realtime brokers through an application-local registry. Redis is no longer built into the host: register `@nocobase/app-plugin-realtime-redis/server` before selecting `realtime.adapter: redis`. The original service token, Memory default and host lifecycle remain unchanged. This final-removal version must follow an installable commercial compatibility cohort.
+
 ## 3.0.0-beta.5
 
 ### Minor Changes
