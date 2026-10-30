@@ -4,6 +4,9 @@ import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   errors: {
+    retryUnavailable:
+      'Envie as entradas pendentes em ordem. Somente a última entrada interrompida ou a próxima retirada pode ser reenviada.',
+    stopTargetChanged: 'O turno atual mudou. Atualize antes de parar.',
     promptNotFound: 'Nenhuma mensagem com esta identidade existe na sessão.',
     promptStarted:
       'A mensagem iniciou o processamento e não pode ser retirada.',

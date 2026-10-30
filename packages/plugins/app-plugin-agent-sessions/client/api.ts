@@ -431,12 +431,13 @@ function useSessionWrite<Input>(
       const session = await write(api, input);
       if (session) client.setQueryData(keys.session(sessionId), session);
     },
-    onSettled: () => {
-      void client.invalidateQueries({ queryKey: keys.session(sessionId) });
-      void client.invalidateQueries({ queryKey: keys.transcript(sessionId) });
-      void client.invalidateQueries({
-        queryKey: ['agentSessions', 'sessions'],
-      });
+    onSettled: async () => {
+      // Reconcile accepted writes before a caller treats cached terminal events as confirmation.
+      await Promise.all([
+        client.invalidateQueries({ queryKey: keys.session(sessionId) }),
+        client.invalidateQueries({ queryKey: keys.transcript(sessionId) }),
+        client.invalidateQueries({ queryKey: ['agentSessions', 'sessions'] }),
+      ]);
     },
   });
 }
@@ -480,10 +481,13 @@ export function useCreateSession(): Mutation<
   });
 }
 
-export function usePrompt(
-  sessionId: string,
-): Mutation<
-  { content: PromptContent[]; mentions: Mention[]; submissionId: string },
+export function usePrompt(sessionId: string): Mutation<
+  {
+    content: PromptContent[];
+    mentions: Mention[];
+    submissionId: string;
+    retryOfPromptId?: string;
+  },
   TranscriptEvent
 > {
   const api = useApiClient();
@@ -514,11 +518,12 @@ export function usePrompt(
   });
 }
 
-export function useCancel(sessionId: string): Mutation<void> {
-  return useSessionWrite(sessionId, async (api) => {
+export function useCancel(sessionId: string): Mutation<string> {
+  return useSessionWrite(sessionId, async (api, promptId: string) => {
     await api.request({
       path: path('sessions', sessionId, 'cancel'),
       method: 'POST',
+      json: { promptId },
     });
   });
 }

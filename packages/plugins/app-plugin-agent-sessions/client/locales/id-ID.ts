@@ -180,6 +180,11 @@ const idID: LocaleResource<typeof enUS> = {
       'Catatan lengkapnya disimpan di sini, dan hanya Anda yang dapat melihatnya.',
   },
   composer: {
+    stopping: 'Menghentikan…',
+    stopUnconfirmed: 'Penghentian belum dikonfirmasi. Coba lagi.',
+    held: 'Kirim input yang menunggu di atas satu per satu sebelum pesan baru.',
+    previousAttempt: 'Percobaan sebelumnya',
+    newAttempt: 'Percobaan baru',
     unconfirmed:
       'Pengiriman belum dikonfirmasi. Coba lagi kiriman asli, atau edit sebagai pesan baru (pesan asli mungkin sudah tiba).',
     retrySubmission: 'Coba lagi penyerahan asli',
@@ -207,7 +212,7 @@ const idID: LocaleResource<typeof enUS> = {
       send: 'kirim',
       queue: 'kirim setelah giliran ini',
       newline: 'baris baru',
-      interrupt: 'hentikan giliran ini dan kirim sekarang',
+      interrupt: 'hentikan giliran ini',
     },
   },
   choices: {

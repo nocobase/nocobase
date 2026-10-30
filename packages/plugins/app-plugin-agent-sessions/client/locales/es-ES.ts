@@ -187,6 +187,11 @@ const esES: LocaleResource<typeof enUS> = {
     recordBody: 'El registro completo se guarda aquí y sólo usted puede verlo.',
   },
   composer: {
+    stopping: 'Deteniendo…',
+    stopUnconfirmed: 'No se confirmó la detención. Inténtalo de nuevo.',
+    held: 'Envía primero las entradas pendientes de arriba una por una.',
+    previousAttempt: 'Intento anterior',
+    newAttempt: 'Nuevo intento',
     unconfirmed:
       'La entrega no está confirmada. Vuelva a intentar el envío original o edítelo como un mensaje nuevo (es posible que el original ya haya llegado).',
     retrySubmission: 'Reintentar el envío original',
@@ -214,7 +219,7 @@ const esES: LocaleResource<typeof enUS> = {
       send: 'enviar',
       queue: 'enviar después de este turno',
       newline: 'nueva línea',
-      interrupt: 'detener este turno y enviar ahora',
+      interrupt: 'detener este turno',
     },
   },
   choices: {

@@ -2,6 +2,9 @@ import type { AgentSessionsResource } from './en-US.js';
 
 const zhCN: AgentSessionsResource = {
   errors: {
+    retryUnavailable:
+      '请按顺序发送待发送输入。只能重发最后一条被中断的输入或下一条已撤回的输入。',
+    stopTargetChanged: '当前轮次已改变，请刷新后再停止。',
     promptNotFound: '会话中没有找到这条消息。',
     promptStarted: '消息已开始处理，无法撤回。',
     withdrawalUnsupported:

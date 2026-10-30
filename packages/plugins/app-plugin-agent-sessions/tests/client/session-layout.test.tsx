@@ -456,3 +456,79 @@ it('says what the bridge is doing while the agent opens, then that the agent is 
   });
   await screen.findByText('The agent is working…');
 });
+
+it.each(['input', 'chat'])(
+  'stops only with %s focus, preserving the host and ignoring outside focus',
+  async (location) => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const outer = vi.fn();
+    const requests = vi.fn(({ path, method }: ApiCall): unknown => {
+      if (path === 'agentSessions/sessions/session' && method === 'GET')
+        return { data: { ...session, running: true } };
+      if (path.endsWith('/events'))
+        return {
+          meta: { hasMore: false },
+          data: [
+            {
+              kind: 'prompt',
+              seq: 1,
+              at: session.createdAt,
+              promptId: 'target',
+              content: [{ type: 'text', text: 'Question' }],
+            },
+            {
+              kind: 'turnStarted',
+              seq: 2,
+              at: session.createdAt,
+              promptId: 'target',
+            },
+          ],
+        };
+      return { data: [], meta: {} };
+    });
+    await renderWithApp(
+      <QueryClientProvider client={client}>
+        <div onKeyDown={outer}>
+          <input aria-label='Outside' />
+          <SessionView sessionId='session' />
+        </div>
+      </QueryClientProvider>,
+      {
+        plugins: [plugin({ routes: false })],
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(requests),
+        route: '/agent-sessions/session',
+      },
+    );
+    await screen.findByText('Question');
+    const outside = screen.getByRole('textbox', { name: 'Outside' });
+    outside.focus();
+    fireEvent.keyDown(outside, { key: 'Escape' });
+    expect(outer).toHaveBeenCalledOnce();
+    expect(
+      requests.mock.calls.filter(([call]) => call.path.endsWith('/cancel')),
+    ).toHaveLength(0);
+    const focus =
+      location === 'input'
+        ? document.querySelector<HTMLTextAreaElement>(
+            '[data-session-chat] textarea',
+          )!
+        : document.querySelector<HTMLElement>('[data-session-chat][tabindex]')!;
+    focus.focus();
+    fireEvent.keyDown(focus, { key: 'Escape' });
+    fireEvent.keyDown(focus, { key: 'Escape', repeat: true });
+    await waitFor(() =>
+      expect(
+        requests.mock.calls.filter(([call]) => call.path.endsWith('/cancel')),
+      ).toHaveLength(1),
+    );
+    expect(
+      requests.mock.calls.find(([call]) => call.path.endsWith('/cancel'))?.[0]
+        .json,
+    ).toEqual({ promptId: 'target' });
+    expect(outer).toHaveBeenCalledOnce();
+    expect(focus).toHaveFocus();
+  },
+);

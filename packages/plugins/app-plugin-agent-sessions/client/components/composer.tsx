@@ -1,6 +1,6 @@
 /**
  * Where a person writes to the agent. Enter sends, Shift+Enter breaks the line, and while the agent is answering a
- * message waits for the turn to end unless sent with ⌘↩ (Ctrl+Enter), which stops the turn first. Pasted, dropped or
+ * message waits for the turn to end; ⌘↩ (Ctrl+Enter) stops the turn and keeps the draft. Pasted, dropped or
  * picked images go with the message. A message that starts with `/` offers the agent's own commands, and `#` offers
  * what the message can mention, such as an issue, which then goes with it. What the host attached, such as the page
  * it was opened from, shows above the message until removed and goes with the next message sent.
@@ -10,6 +10,8 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
   ArrowUpIcon,
+  SquareIcon,
+  LoaderIcon,
   FileTextIcon,
   HashIcon,
   ImageIcon,
@@ -56,6 +58,8 @@ export interface ComposerProps {
   readonly sendDisabled?: boolean;
   /** The agent is answering: Enter queues the message, ⌘↩ interrupts. */
   readonly busy?: boolean;
+  readonly stopping?: boolean;
+  readonly onStop?: () => void;
   readonly sending?: boolean;
   readonly commands?: readonly {
     readonly name: string;
@@ -108,6 +112,8 @@ export function Composer({
   disabled,
   sendDisabled,
   busy,
+  stopping,
+  onStop,
   sending,
   commands = [],
   mentions,
@@ -148,6 +154,7 @@ export function Composer({
     [],
   );
   const [highlight, setHighlight] = useState(0);
+  const [dismissed, setDismissed] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
   useLayoutEffect(() => {
@@ -165,39 +172,43 @@ export function Composer({
     : null;
   const found = useMentions(hash?.[1], mentions?.projectId ?? null);
   const suggestions: Suggestion[] =
-    slash !== undefined
-      ? commands
-          .filter((command) => command.name.startsWith(slash))
-          .slice(0, 8)
-          .map((command) => ({
-            id: command.name,
-            label: <code className='text-xs'>/{command.name}</code>,
-            detail: command.description,
-            insert: `/${command.name} `,
-          }))
-      : hash
-        ? (found.data ?? []).map((reference) => ({
-            id: `${reference.kind}:${reference.refId}`,
-            label: (
-              <span className='flex min-w-0 items-center gap-2'>
-                {reference.key && (
-                  <code className='text-muted-foreground shrink-0 text-[11px]'>
-                    {reference.key}
-                  </code>
-                )}
-                <span className='truncate text-[13px]'>{reference.title}</span>
-              </span>
-            ),
-            detail: (
-              <span className='flex items-center gap-2'>
-                {reference.group}
-                {reference.status && <StatusPill status={reference.status} />}
-              </span>
-            ),
-            insert: `${mentionText(reference)} `,
-            mention: reference,
-          }))
-        : [];
+    dismissed === text
+      ? []
+      : slash !== undefined
+        ? commands
+            .filter((command) => command.name.startsWith(slash))
+            .slice(0, 8)
+            .map((command) => ({
+              id: command.name,
+              label: <code className='text-xs'>/{command.name}</code>,
+              detail: command.description,
+              insert: `/${command.name} `,
+            }))
+        : hash
+          ? (found.data ?? []).map((reference) => ({
+              id: `${reference.kind}:${reference.refId}`,
+              label: (
+                <span className='flex min-w-0 items-center gap-2'>
+                  {reference.key && (
+                    <code className='text-muted-foreground shrink-0 text-[11px]'>
+                      {reference.key}
+                    </code>
+                  )}
+                  <span className='truncate text-[13px]'>
+                    {reference.title}
+                  </span>
+                </span>
+              ),
+              detail: (
+                <span className='flex items-center gap-2'>
+                  {reference.group}
+                  {reference.status && <StatusPill status={reference.status} />}
+                </span>
+              ),
+              insert: `${mentionText(reference)} `,
+              mention: reference,
+            }))
+          : [];
   const empty = !text.trim() && images.length === 0;
 
   const type = (next: string, at: number): void => {
@@ -304,6 +315,12 @@ export function Composer({
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (event.nativeEvent.isComposing) return;
     if (suggestions.length > 0) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setDismissed(text);
+        return;
+      }
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
         setHighlight(
@@ -323,6 +340,10 @@ export function Composer({
     }
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
+      if (busy && (event.metaKey || event.ctrlKey) && onStop) {
+        onStop();
+        return;
+      }
       void send(event.metaKey || event.ctrlKey);
     }
   };
@@ -582,10 +603,22 @@ export function Composer({
             {trailing}
             <button
               type='button'
-              aria-label={busy ? t('composer.queue') : t('composer.send')}
-              title={busy ? t('composer.queue') : t('composer.send')}
-              disabled={empty || disabled || sendDisabled || sending}
-              onClick={() => void send(false)}
+              aria-label={
+                busy && onStop
+                  ? t(stopping ? 'composer.stopping' : 'session.stop')
+                  : t('composer.send')
+              }
+              title={
+                busy && onStop
+                  ? t(stopping ? 'composer.stopping' : 'session.stop')
+                  : t('composer.send')
+              }
+              disabled={
+                busy && onStop
+                  ? stopping
+                  : empty || disabled || sendDisabled || sending
+              }
+              onClick={() => (busy && onStop ? onStop() : void send(false))}
               className={cn(
                 'inline-flex size-9 shrink-0 items-center justify-center rounded-full transition-colors',
                 'disabled:bg-muted disabled:text-muted-foreground',
@@ -594,7 +627,15 @@ export function Composer({
                   : 'bg-primary text-primary-foreground hover:bg-primary/90',
               )}
             >
-              <ArrowUpIcon className='size-4' />
+              {busy && onStop ? (
+                stopping ? (
+                  <LoaderIcon className='size-4 animate-spin' />
+                ) : (
+                  <SquareIcon className='size-4 fill-current' />
+                )
+              ) : (
+                <ArrowUpIcon className='size-4' />
+              )}
             </button>
           </div>
         </div>

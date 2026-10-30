@@ -168,6 +168,11 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    stopping: 'Stopping…',
+    stopUnconfirmed: 'Stop was not confirmed. Try again.',
+    held: 'Send the waiting inputs above one at a time before sending a new message.',
+    previousAttempt: 'Previous attempt',
+    newAttempt: 'New attempt',
     unconfirmed:
       'Delivery is unconfirmed. Retry the original submission, or edit as a new message (the original may already have arrived).',
     retrySubmission: 'Retry original submission',
@@ -194,7 +199,7 @@ const enUS = {
       send: 'send',
       queue: 'send after this turn',
       newline: 'new line',
-      interrupt: 'stop this turn and send now',
+      interrupt: 'stop this turn',
     },
   },
   choices: { more: 'More options' },

@@ -184,6 +184,11 @@ const jaJP: LocaleResource<typeof enUS> = {
       '完全な記録はここに保管されており、あなただけが見ることができます。',
   },
   composer: {
+    stopping: '停止中…',
+    stopUnconfirmed: '停止を確認できませんでした。再試行してください。',
+    held: '新しいメッセージの前に、上の待機中の入力を一つずつ送信してください。',
+    previousAttempt: '前の試行',
+    newAttempt: '新しい試行',
     unconfirmed:
       '配送は未確認です。元の送信を再試行するか、新しいメッセージとして編集してください (元のメッセージがすでに到着している可能性があります)。',
     retrySubmission: '元の送信を再試行します',
@@ -211,7 +216,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       send: '送信',
       queue: 'このターンが終わったら送信',
       newline: '新しい行',
-      interrupt: 'このターンを停止して今すぐ送信',
+      interrupt: 'このターンを停止',
     },
   },
   choices: {

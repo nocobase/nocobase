@@ -210,7 +210,7 @@ export class BridgeSession {
         void this.#pump();
         return;
       case 'cancel':
-        this.#cancel();
+        this.#cancel(command.promptId);
         return;
       case 'permission':
         this.#permissions.get(command.requestId)?.(
@@ -334,8 +334,18 @@ export class BridgeSession {
     }
   }
 
-  #cancel(): void {
-    if (this.#pending && !this.#pending.cancelled) {
+  #cancel(promptId?: string): void {
+    if (
+      promptId !== undefined &&
+      this.#turn !== promptId &&
+      this.#pending?.promptId !== promptId
+    )
+      return;
+    if (
+      this.#pending &&
+      !this.#pending.cancelled &&
+      (promptId === undefined || this.#pending.promptId === promptId)
+    ) {
       // The server may already have committed this claim even when its response was lost. Settle by identity now;
       // the same session mutex either ends that claim or prevents a delayed claim from starting the cancelled item.
       this.#pending.cancelled = true;
@@ -349,7 +359,7 @@ export class BridgeSession {
         error: null,
       });
     }
-    for (const dropped of this.#queue.splice(0)) {
+    for (const dropped of promptId === undefined ? this.#queue.splice(0) : []) {
       this.#emit({
         kind: 'turnEnded',
         seq: dropped.seq,

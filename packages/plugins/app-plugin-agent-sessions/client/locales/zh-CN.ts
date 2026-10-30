@@ -154,6 +154,11 @@ const zhCN: AgentSessionsResource = {
     recordBody: '完整记录保存在这里，只有你能看到。',
   },
   composer: {
+    stopping: '正在停止…',
+    stopUnconfirmed: '尚未确认停止，请重试。',
+    held: '请先逐条发送上方待发送的输入，再发送新消息。',
+    previousAttempt: '上次尝试',
+    newAttempt: '新的尝试',
     unconfirmed:
       '发送结果尚未确认。可重试原提交，或编辑为新消息（原消息可能已送达）。',
     retrySubmission: '重试原提交',
@@ -179,7 +184,7 @@ const zhCN: AgentSessionsResource = {
       send: '发送',
       queue: '排队发送',
       newline: '换行',
-      interrupt: '停止这一轮并立即发送',
+      interrupt: '停止当前轮次',
     },
   },
   choices: { more: '更多选项' },

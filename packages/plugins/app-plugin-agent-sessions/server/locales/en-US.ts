@@ -2,6 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    retryUnavailable:
+      'Send waiting inputs in order. Only the latest interrupted input or the next withdrawn input can be resent.',
+    stopTargetChanged:
+      'This turn is no longer current. Refresh before stopping.',
     promptNotFound: 'No message with this identity exists in the session.',
     promptStarted:
       'The message has started processing and cannot be withdrawn.',

@@ -53,7 +53,6 @@ import type {
 import {
   type Mention,
   useAnswer,
-  useCancel,
   useWithdraw,
   useChoose,
   useComputers,
@@ -72,7 +71,11 @@ import { displayPath } from '../lib/paths.js';
 import { byIcon, linkIcon, linkNeedsYou } from '../lib/tones.js';
 import { StatusIcon } from './status-icon.js';
 import { WaitingCount } from './waiting-count.js';
-import { foldTranscript, type TranscriptItem } from '../transcript.js';
+import {
+  foldTranscript,
+  editablePrompts,
+  type TranscriptItem,
+} from '../transcript.js';
 import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
@@ -85,6 +88,7 @@ import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 import { TranscriptView } from './transcript-view.js';
 import { WithdrawnEditor } from './withdrawn-editor.js';
+import { useStop } from '../use-stop.js';
 
 export function SessionView({
   sessionId,
@@ -237,7 +241,6 @@ function Conversation({
   );
   const sending =
     useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
-  const cancel = useCancel(session.id);
   const withdraw = useWithdraw(session.id);
   const [editor, setEditor] = useState<{
     item: Extract<TranscriptItem, { type: 'prompt' }>;
@@ -259,6 +262,19 @@ function Conversation({
     });
 
   const sectionRef = useRef<HTMLElement>(null);
+  const stopping = useStop(session.id, items, (error) => {
+    void toaster.show({
+      type: 'error',
+      title: errorText(error, t('composer.stopUnconfirmed')),
+    });
+  });
+  const held =
+    items?.some(
+      (item) =>
+        item.type === 'prompt' &&
+        !item.superseded &&
+        (item.state === 'withdrawn' || item.state === 'withdrawing'),
+    ) ?? false;
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -322,11 +338,10 @@ function Conversation({
 
   const send = async (
     content: PromptContent[],
-    interrupt: boolean,
+    _interrupt: boolean,
     mentions: Mention[],
   ): Promise<void> => {
     try {
-      if (interrupt && session.running) await cancel.mutateAsync();
       await submission.send({ content, mentions });
       pinnedRef.current = true;
     } catch (error) {
@@ -346,6 +361,30 @@ function Conversation({
       ref={sectionRef}
       className='@container/agent-session flex min-h-0 min-w-0 flex-1 flex-col'
       aria-label={session.title}
+      onKeyDown={(event) => {
+        if (
+          event.key !== 'Escape' ||
+          event.defaultPrevented ||
+          event.nativeEvent.isComposing ||
+          (!session.running && !stopping.active)
+        )
+          return;
+        const focus = document.activeElement;
+        if (
+          !(focus instanceof HTMLElement) ||
+          !event.currentTarget.contains(focus) ||
+          !focus.closest('[data-session-chat]') ||
+          focus
+            .closest(
+              '[data-session-editor], [role="menu"], [role="listbox"], [role="dialog"]',
+            )
+            ?.closest('[data-session-chat]')
+        )
+          return;
+        event.preventDefault();
+        event.stopPropagation();
+        stopping.stop();
+      }}
     >
       <div ref={headerRef} className='shrink-0'>
         <Header
@@ -353,7 +392,7 @@ function Conversation({
           computer={computer}
           details={details}
           onToggleDetails={onToggleDetails}
-          onStop={() => cancel.mutate(undefined, { onError: fail })}
+          onStop={stopping.stop}
           collapsed={collapsed}
           onShowDetails={onSummary}
         />
@@ -383,6 +422,8 @@ function Conversation({
       )}
       <div
         ref={scrollerRef}
+        data-session-chat
+        tabIndex={0}
         className='min-h-0 flex-1 overflow-y-auto overscroll-y-contain'
         onWheel={(event) => {
           if (event.deltaY > 0) changeHeader(true);
@@ -424,6 +465,23 @@ function Conversation({
               agentName={agentName(session, computer)}
               writable={writable}
               actions={{
+                editor: editor
+                  ? {
+                      key: editor.item.key,
+                      node: (
+                        <WithdrawnEditor
+                          item={editor.item}
+                          session={session}
+                          draftKey={editor.key}
+                          close={() => setEditor(null)}
+                        />
+                      ),
+                    }
+                  : undefined,
+                canEdit: (item) =>
+                  !session.running &&
+                  !stopping.active &&
+                  editablePrompts(items).has(item.promptId),
                 withdraw: async (seq) => {
                   try {
                     await withdraw.mutateAsync(seq);
@@ -462,14 +520,14 @@ function Conversation({
           )}
         </div>
       </div>
-      <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 @md/agent-session:px-6 @md/agent-session:pb-4'>
-        {editor && (
-          <WithdrawnEditor
-            item={editor.item}
-            session={session}
-            draftKey={editor.key}
-            close={() => setEditor(null)}
-          />
+      <div
+        data-session-chat
+        className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 @md/agent-session:px-6 @md/agent-session:pb-4'
+      >
+        {held && (
+          <p className='text-muted-foreground mb-2 text-xs'>
+            {t('composer.held')}
+          </p>
         )}
         <SubmissionNotice
           pending={submission.pending}
@@ -492,7 +550,10 @@ function Conversation({
                   : t('composer.placeholder')
           }
           disabled={!writable || submission.pending}
-          busy={session.running}
+          busy={session.running || stopping.active}
+          stopping={stopping.pending}
+          onStop={stopping.stop}
+          sendDisabled={stopping.active || held}
           sending={sending}
           draftKey={`session:${session.id}`}
           commands={session.state?.commands}

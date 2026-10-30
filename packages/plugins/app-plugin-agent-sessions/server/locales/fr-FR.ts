@@ -4,6 +4,10 @@ import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
   errors: {
+    retryUnavailable:
+      'Envoyez les saisies en attente dans l’ordre. Seule la dernière saisie interrompue ou la prochaine saisie retirée peut être renvoyée.',
+    stopTargetChanged:
+      'Le tour en cours a changé. Actualisez avant de l’arrêter.',
     promptNotFound:
       "Aucun message avec cette identité n'existe dans la session.",
     promptStarted:

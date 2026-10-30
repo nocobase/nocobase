@@ -686,3 +686,73 @@ test('lists the sessions tied to one record, the viewer’s own only, and refuse
   expect(none.status).toBe(200);
   expect((await none.json()).data).toEqual([]);
 });
+
+test('authenticates targeted cancellation and validates retry sources', async ({
+  database,
+}) => {
+  const router = await mount(database);
+  const generation = {
+    protocol: BRIDGE_PROTOCOL_VERSION,
+    bridgeStartedAt: 'stop',
+  };
+  const {
+    data: { computerId },
+  } = await (
+    await call(router, 'POST', '/bridge/register', 'u1', {
+      ...generation,
+      computerId: null,
+      computer,
+    })
+  ).json();
+  const { data: session } = await (
+    await call(router, 'POST', '/sessions', 'u1', {
+      computerId,
+      agentId: 'codex',
+      cwd: '/home/zhou',
+      content: [{ type: 'text', text: 'Question' }],
+    })
+  ).json();
+  const {
+    data: [prompt],
+  } = await (
+    await call(router, 'GET', `/sessions/${session.id}/events`, 'u1')
+  ).json();
+  const route = `/sessions/${session.id}/cancel`;
+  const target = { promptId: prompt.promptId };
+  expect((await call(router, 'POST', route, undefined, target)).status).toBe(
+    401,
+  );
+  expect((await call(router, 'POST', route, 'u2', target)).status).toBe(404);
+  expect(
+    (await call(router, 'POST', route, 'u1', target, computerId)).status,
+  ).toBe(403);
+  expect((await call(router, 'POST', route, 'u1', {})).status).toBe(400);
+  expect(
+    (
+      await call(router, 'POST', `/sessions/${session.id}/prompt`, 'u1', {
+        content: [{ type: 'text', text: 'Edit' }],
+        retryOfPromptId: 'invalid',
+      })
+    ).status,
+  ).toBe(400);
+  await call(
+    router,
+    'POST',
+    '/bridge/claim',
+    'u1',
+    {
+      ...generation,
+      computerId,
+      sessionId: session.id,
+      promptId: prompt.promptId,
+      seq: prompt.seq,
+    },
+    computerId,
+  );
+  expect((await call(router, 'POST', route, 'u1', target)).status).toBe(204);
+  expect((await call(router, 'POST', route, 'u1', target)).status).toBe(204);
+  const history = await (
+    await call(router, 'GET', `/sessions/${session.id}/events`, 'u1')
+  ).json();
+  expect(JSON.stringify(history)).not.toContain('_stopRequested');
+});

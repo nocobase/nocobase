@@ -1247,12 +1247,14 @@ export class AgentSessionsService {
     content: readonly PromptContent[],
     mentions: readonly Mention[] = [],
     submissionId?: string,
+    retryOfPromptId?: string,
   ): Promise<TranscriptEvent> {
     const submission = submissionId
       ? {
           id: submissionId,
           digest: submissionDigest({
             operation: 'prompt',
+            retryOfPromptId,
             sessionId,
             content,
             mentions,
@@ -1268,6 +1270,7 @@ export class AgentSessionsService {
       content,
       await this.#mentioned(viewer, mentions),
       submission,
+      retryOfPromptId,
     );
   }
 
@@ -1334,6 +1337,7 @@ export class AgentSessionsService {
     content: readonly PromptContent[],
     mentioned: readonly (Mention & LinkView)[],
     submission?: { readonly id: string; readonly digest: string },
+    retryOfPromptId?: string,
   ): Promise<TranscriptEvent> {
     const session = await this.#session(viewer.userId, sessionId);
     const work = await this.#work(viewer, sessionId, mentioned);
@@ -1348,6 +1352,7 @@ export class AgentSessionsService {
           mentioned,
           work,
           submission,
+          retryOfPromptId,
         ),
       );
     } catch (error) {
@@ -1366,10 +1371,123 @@ export class AgentSessionsService {
     mentioned: readonly (Mention & LinkView)[],
     work: readonly WorkItem[],
     submission?: { readonly id: string; readonly digest: string },
+    retryOfPromptId?: string,
   ): Promise<TranscriptEvent> {
     const sessionId = session.id;
     const promptId = randomUUID();
     const locked = (await lockSession(conn, sessionId, now))!;
+    if (!retryOfPromptId) {
+      // Ordinary submissions need only withdrawal candidates, never completed prompt/image payloads.
+      const candidates = await events(conn).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('sessionId').eq(sessionId),
+            f.string('kind').eq('prompt'),
+            f.or([
+              f.json('data').path(['_execution', 'state']).eq('withdrawing'),
+              f.json('data').path(['_execution', 'state']).eq('withdrawn'),
+              f.and([
+                f.json('data').path(['_execution', 'state']).eq('claimed'),
+                f.json('data').path(['_stopRequested']).eq(true),
+              ]),
+            ]),
+          ]),
+      });
+      if (
+        candidates.some(
+          (row) => (row.data._execution as Execution).state === 'claimed',
+        )
+      )
+        throw new AgentSessionsError('retryUnavailable');
+      if (candidates.length) {
+        // Each source can have only one accepted retry, enforced under this same session mutex.
+        let retried = 0;
+        for (let offset = 0; offset < candidates.length; offset += 100) {
+          retried += await events(conn).count({
+            filter: (f) =>
+              f.and([
+                f.string('sessionId').eq(sessionId),
+                f.string('kind').eq('prompt'),
+                f.or(
+                  candidates.slice(offset, offset + 100).map((row) =>
+                    f
+                      .json('data')
+                      .path(['retryOfPromptId'])
+                      .eq(row.data.promptId as string),
+                  ),
+                ),
+              ]),
+          });
+        }
+        if (retried < candidates.length)
+          throw new AgentSessionsError('retryUnavailable');
+      }
+    } else {
+      const history = await events(conn).findMany({
+        filter: { sessionId, kind: 'prompt' },
+        sort: (sort) => sort.field('seq').asc(),
+      });
+      const byId = new Map(
+        history.map((row) => [row.data.promptId as string, row]),
+      );
+      const superseded = new Set(
+        history.map((row) => row.data.retryOfPromptId),
+      );
+      const rootSeq = (row: (typeof history)[number]): number => {
+        let current = row;
+        while (typeof current.data.retryOfPromptId === 'string') {
+          const previous = byId.get(current.data.retryOfPromptId);
+          if (!previous || Number(previous.seq) >= Number(current.seq)) break;
+          current = previous;
+        }
+        return Number(current.seq);
+      };
+      const waiting = history.filter(
+        (row) =>
+          !superseded.has(row.data.promptId) &&
+          ['withdrawn', 'withdrawing'].includes(
+            (row.data._execution as Execution | undefined)?.state ?? '',
+          ),
+      );
+      const source = byId.get(retryOfPromptId);
+      if (!source) throw new AgentSessionsError('promptNotFound');
+      const state = (source.data._execution as Execution | undefined)?.state;
+      if (
+        superseded.has(retryOfPromptId) ||
+        locked.running ||
+        (state !== 'withdrawn' && state !== 'ended')
+      )
+        throw new AgentSessionsError('retryUnavailable');
+      if (
+        history.some((row) =>
+          ['queued', 'claimed', 'withdrawing'].includes(
+            (row.data._execution as Execution | undefined)?.state ?? '',
+          ),
+        )
+      )
+        throw new AgentSessionsError('retryUnavailable');
+      if (waiting.some((row) => rootSeq(row) < rootSeq(source)))
+        throw new AgentSessionsError('retryUnavailable');
+      if (
+        history.some(
+          (row) =>
+            (row.data._execution as Execution | undefined)?.state === 'ended' &&
+            rootSeq(row) > rootSeq(source),
+        )
+      )
+        throw new AgentSessionsError('retryUnavailable');
+      if (state === 'ended') {
+        const lastEnd = await events(conn).findOne({
+          filter: { sessionId, kind: 'turnEnded' },
+          sort: (sort) => sort.field('seq').desc(),
+        });
+        if (
+          lastEnd?.data.promptId !== retryOfPromptId ||
+          lastEnd.data.stopReason !== 'cancelled'
+        )
+          throw new AgentSessionsError('retryUnavailable');
+      }
+    }
     const note = workNote(work, null);
     const currentInstructions = this.#instructionsFor(viewer);
     const toldInstructions =
@@ -1404,6 +1522,7 @@ export class AgentSessionsService {
           at: now,
           promptId,
           withdrawable: true,
+          ...(retryOfPromptId ? { retryOfPromptId } : {}),
           content: storesImages ? [] : content,
         },
       ],
@@ -1436,6 +1555,7 @@ export class AgentSessionsService {
             promptId,
             withdrawable: true,
             _execution: { state: 'queued' },
+            ...(retryOfPromptId ? { retryOfPromptId } : {}),
             content: kept.map((part) =>
               part.type === 'text'
                 ? { ...part, text: redactor.text(part.text) }
@@ -1504,6 +1624,7 @@ export class AgentSessionsService {
       at: changed.session.lastActivityAt,
       promptId,
       withdrawable: true,
+      ...(retryOfPromptId ? { retryOfPromptId } : {}),
       content: kept.map((part) =>
         part.type === 'text'
           ? { ...part, text: redactor.text(part.text) }
@@ -1513,12 +1634,93 @@ export class AgentSessionsService {
     };
   }
 
-  /** Stops the running turn and drops the messages waiting behind it. */
-  async cancel(userId: string, sessionId: string): Promise<void> {
+  /** Vetoes queued claims before requesting cancellation of exactly the selected turn. */
+  async cancel(
+    userId: string,
+    sessionId: string,
+    promptId: string,
+  ): Promise<void> {
     const session = await this.#writable(userId, sessionId);
-    await this.#command(session, {
-      type: 'cancel',
-      session: this.#target(session),
+    const computer = await computers(this.#conn()).findOne({
+      filter: { id: session.computerId },
+    });
+    if (computer?.protocol !== BRIDGE_PROTOCOL_VERSION)
+      throw new AgentSessionsError('upgradeRequired');
+    await this.#transaction(async (conn, now) => {
+      const locked = (await lockSession(conn, sessionId, now))!;
+      if (locked.archivedAt !== null)
+        throw new AgentSessionsError('sessionArchived');
+      const prompts = await events(conn).findMany({
+        filter: { sessionId, kind: 'prompt' },
+      });
+      const target = prompts.find((row) => row.data.promptId === promptId);
+      if (!target) throw new AgentSessionsError('promptNotFound');
+      const execution = target.data._execution as Execution | undefined;
+      if (!execution) throw new AgentSessionsError('withdrawalUnsupported');
+      // An accepted retry can resend the command, but must never sweep newly submitted inputs.
+      if (!target.data._stopRequested) {
+        if (
+          prompts.some(
+            (row) =>
+              row.id !== target.id &&
+              ((row.data._execution as Execution | undefined)?.state ===
+                'claimed' ||
+                ((row.data._execution as Execution | undefined)?.state ===
+                  'ended' &&
+                  Number(row.seq) > Number(target.seq))),
+          )
+        )
+          throw new AgentSessionsError('stopTargetChanged');
+        if (execution.state !== 'claimed' && execution.state !== 'ended')
+          throw new AgentSessionsError('stopTargetChanged');
+        const added: SessionEvent[] = [];
+        for (const row of prompts) {
+          if (
+            (row.data._execution as Execution | undefined)?.state !== 'queued'
+          )
+            continue;
+          await events(conn).updateMany({
+            filter: { id: row.id },
+            values: {
+              data: { ...row.data, _execution: { state: 'withdrawing' } },
+            },
+          });
+          const queuedId = row.data.promptId as string;
+          await enqueue(
+            conn,
+            session.computerId,
+            {
+              type: 'withdrawPrompt',
+              sessionId,
+              seq: Number(row.seq),
+              promptId: queuedId,
+            },
+            now,
+            withdrawalCommandId(row.id),
+          );
+          added.push({
+            kind: 'withdrawalRequested',
+            at: now,
+            promptId: queuedId,
+          });
+        }
+        await events(conn).updateMany({
+          filter: { id: target.id },
+          values: { data: { ...target.data, _stopRequested: true } },
+        });
+        if (added.length) {
+          const changed = await this.#append(conn, locked, added, now, {});
+          conn.afterCommit(() => this.#changed(changed));
+        }
+      }
+      if (execution.state === 'claimed')
+        await enqueue(
+          conn,
+          session.computerId,
+          { type: 'cancel', session: this.#target(locked), promptId },
+          now,
+        );
+      conn.afterCommit(() => this.#wake(session.computerId));
     });
   }
 

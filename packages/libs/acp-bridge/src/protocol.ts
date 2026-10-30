@@ -10,7 +10,7 @@
 import { z } from 'zod';
 
 /** Raised on every incompatible change; the server answers a bridge speaking another version with `upgradeRequired`. */
-export const BRIDGE_PROTOCOL_VERSION: number = 4;
+export const BRIDGE_PROTOCOL_VERSION: number = 5;
 
 /** Includes agent initialization and opening a prompt-free session. */
 export const DISCOVERY_TIMEOUT_MS: number = 150_000;
@@ -217,7 +217,11 @@ export type BridgeCommand =
       readonly promptId: string;
       readonly seq: number;
     }
-  | { readonly type: 'cancel'; readonly session: SessionTarget }
+  | {
+      readonly type: 'cancel';
+      readonly session: SessionTarget;
+      readonly promptId: string;
+    }
   | {
       readonly type: 'permission';
       readonly session: SessionTarget;
@@ -263,7 +267,11 @@ export const BridgeCommandSchema: z.ZodType<BridgeCommand> =
       promptId: id,
       seq: z.number().int().positive(),
     }),
-    z.object({ type: z.literal('cancel'), session: SessionTargetSchema }),
+    z.object({
+      type: z.literal('cancel'),
+      session: SessionTargetSchema,
+      promptId: id,
+    }),
     z.object({
       type: z.literal('permission'),
       session: SessionTargetSchema,
@@ -375,6 +383,7 @@ export type SessionEvent =
       readonly kind: 'prompt';
       /** Absent on messages delivered before execution claims were introduced. */
       readonly withdrawable?: boolean | undefined;
+      readonly retryOfPromptId?: string | undefined;
       readonly at: string;
       readonly promptId: string;
       readonly content: readonly PromptPart[];
