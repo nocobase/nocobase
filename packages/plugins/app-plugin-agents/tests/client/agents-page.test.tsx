@@ -194,6 +194,38 @@ describe('the Agent page', () => {
     );
   });
 
+  it('keeps the saved form pending until reopening can use the refreshed agent', async () => {
+    let refreshing = false;
+    const refreshed = Promise.withResolvers<AgentView[]>();
+    resetApi({
+      agents: () => (refreshing ? refreshed.promise : agents),
+      'PATCH agents/sonnet': (request) => {
+        agents = agents.map((row) =>
+          row.id === 'sonnet' ? { ...row, ...(request.json as object) } : row,
+        );
+        refreshing = true;
+        return agents[0];
+      },
+    });
+    renderPage(<AgentsPage />);
+    fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+    fireEvent.change(screen.getByTestId('agent-good-at'), {
+      target: { value: 'Saved description' },
+    });
+    fireEvent.click(screen.getByTestId('agent-dialog-save'));
+    await waitFor(() => expect(refreshing).toBe(true));
+    expect(screen.getByTestId('agent-dialog-save')).toBeDisabled();
+    expect(screen.getByTestId('agent-dialog')).toBeVisible();
+    await act(async () => refreshed.resolve(agents));
+    await waitFor(() =>
+      expect(screen.queryByTestId('agent-dialog')).not.toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId('agent-edit-sonnet'));
+    expect(screen.getByTestId('agent-good-at')).toHaveValue(
+      'Saved description',
+    );
+  });
+
   it('adds one model from the available models drawer through the confirm step, starting from the suggestion', async () => {
     renderPage(<AgentsPage />);
     fireEvent.click(await screen.findByTestId('agents-available-open'));
