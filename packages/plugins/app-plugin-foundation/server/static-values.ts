@@ -352,7 +352,11 @@ export class StaticValues {
         throws: false,
         unknown: true,
       };
-    if (this.analysis.nativeInitialization.accepts(node, this))
+    if (
+      this.analysis.nativeInitialization.accepts(node, (value) =>
+        this.values(value),
+      )
+    )
       return {
         values: [node],
         continues: true,
@@ -1214,7 +1218,7 @@ export class StaticValues {
   public booleans(node: ts.Node): boolean[] {
     const guarded = this.analysis.nativeInitialization.guardCondition(
       node,
-      this,
+      (value) => this.values(value),
     );
     return guarded === undefined
       ? [...new Set(this.atoms(node).map(Boolean))]

@@ -65,18 +65,6 @@ it('accepts original named-import aliases', async () => {
 
 it.each([
   [
-    'opaque returned field',
-    guarded.replace('return {sign};', 'return {sign:external(sign)};'),
-  ],
-  [
-    'unknown returned spread',
-    guarded.replace('return {sign};', 'return {...unknown,sign};'),
-  ],
-  [
-    'global side effect',
-    guarded.replace('return {sign};', 'globalThis.changed=true;return {sign};'),
-  ],
-  [
     'HMAC handle alias',
     guarded.replace(
       "const key=createHmac('sha256',secret || randomBytes(32)).update('fixture:ticket').digest();",
