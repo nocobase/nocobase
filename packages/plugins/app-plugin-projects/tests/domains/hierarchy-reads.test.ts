@@ -313,3 +313,35 @@ it('keeps the blocker relation equivalent to hierarchy waits without exposing in
     expect(rows.map((r) => r.id)).not.toContain(issues[2]!.id);
   }
 });
+
+it('hydrates narrow count candidates without materializing unrelated visible records', async () => {
+  const h = await harness();
+  const issues = await seed(h, 1);
+  const viewer = admin(h);
+  for (let n = 0; n < 24; n++)
+    await h.services.issues.create(viewer, { title: `Unrelated ${n}` });
+  const source = await h.services.issueQueries.hierarchySource(viewer, {});
+  const read = () =>
+    h.services.issueQueries.hierarchyItems(
+      viewer,
+      [issues[3]!.id],
+      source.visible,
+    );
+  await read();
+  const client = await h.database.connection().client<Knex>();
+  const mark = Symbol('narrow-counts');
+  const sizes: number[] = [];
+  const listener = (rows: unknown) => {
+    if (scope.getStore() === mark && Array.isArray(rows))
+      sizes.push(rows.length);
+  };
+  client.on('query-response', listener);
+  try {
+    const rows = await scope.run(mark, read);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.blockedCount).toBe(1);
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(4);
+  } finally {
+    client.removeListener('query-response', listener);
+  }
+});

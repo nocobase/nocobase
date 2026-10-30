@@ -6,6 +6,7 @@ import {
   hierarchySource,
   type IssueHierarchySource,
 } from './issue.hierarchy-source.js';
+import type { Knex } from 'knex';
 import type {
   DatabaseConnection,
   FilterBuilder,
@@ -88,12 +89,12 @@ export interface IssueQueries {
   /**
    * Hydrates a bounded set of IDs (at most `HIERARCHY_ITEMS_MAX`) after independently rechecking visibility, in a fixed
    * number of queries. `readableIds`, the ids `hierarchy` answered for the same viewer, saves reading them again for the
-   * sub-task counts.
+   * sub-task counts. An authorized visible relation instead limits count candidates to these rows' children, blockers and staged siblings.
    */
   hierarchyItems(
     viewer: Viewer,
     ids: readonly string[],
-    readableIds?: ReadonlySet<string>,
+    readableIds?: ReadonlySet<string> | IssueHierarchySource['visible'],
   ): Promise<IssueListItem[]>;
   /** A page per status column; with `statusKey`, that column only, continuing from `cursor`. */
   board(viewer: Viewer, query: IssueListQuery): Promise<IssueBoard>;
@@ -523,8 +524,45 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         direction: 'asc',
         limit: ids.length,
       });
+      let countIds: ReadonlySet<string> | undefined;
+      if (readableIds && 'sql' in readableIds) {
+        // The rows above are independently authorized. Scope count candidates without hydrating the hierarchy.
+        const client = await conn.client<Knex>();
+        const raw = (source: IssueHierarchySource['visible']) =>
+          client.raw(source.sql, [...source.parameters] as Knex.RawBinding[]);
+        const targets = conn.query
+          .selectFrom('pmIssueDependencies')
+          .select('dependsOnIssueId')
+          .where(
+            'issueId',
+            'in',
+            rows.map((row) => row.id),
+          )
+          .where('type', '=', 'blockedBy')
+          .compile();
+        const candidates = (await client
+          .with('visible', raw(readableIds))
+          .select('id')
+          .from('visible')
+          .where((w) => {
+            w.whereIn(
+              'parent',
+              rows.map((row) => row.id),
+            )
+              .orWhereIn(
+                'parent',
+                rows.flatMap((row) =>
+                  row.stage !== null && row.parentIssueId
+                    ? [row.parentIssueId]
+                    : [],
+                ),
+              )
+              .orWhereRaw('?? in (?)', ['id', raw(targets)]);
+          })) as { id: string }[];
+        countIds = new Set(candidates.map((row) => row.id));
+      } else countIds = readableIds;
       const readable =
-        readableIds ??
+        countIds ??
         new Set(
           (await hierarchyRecords(conn, (f) => visibleIssues(f, viewer))).map(
             (issue) => issue.id,
