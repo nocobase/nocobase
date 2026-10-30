@@ -261,7 +261,7 @@ const zhTW: FoundationResource = {
     applicationCollectionsPreview:
       '已識別 {{count}} 張資料表，包括 {{names}}。',
     applicationCollections: '已識別 {{count}} 張資料表：{{names}}。',
-    relations: '共 {{count}} 個關聯。',
+    relations: '共 {{count}} 個邏輯關聯欄位。',
     fileCollections: '共 {{count}} 個檔案資料表：{{names}}。',
     accounts: '{{count}} 個帳號透過 NocoBase 認證登入。',
     permissionSets: '除完整權限外，有 {{count}} 個權限集：{{names}}。',
@@ -307,7 +307,8 @@ const zhTW: FoundationResource = {
     businessCollections: '資料表',
     views: '個檢視表',
     fields: '個欄位',
-    relations: '個關聯',
+    relations: '個邏輯關聯欄位',
+    physicalForeignKeys: '個實體外鍵',
     systemCollections: '個 NocoBase 系統資料表',
     files: '個檔案',
     storedBytes: '已記錄的儲存容量',
