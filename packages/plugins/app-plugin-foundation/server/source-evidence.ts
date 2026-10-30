@@ -1,6 +1,5 @@
 import ts from 'typescript';
 import { StaticValues } from './static-values.js';
-import { NativeInitialization } from './native-initialization.js';
 
 export interface EvidenceSource {
   readonly file: string;
@@ -10,7 +9,6 @@ export interface EvidenceSource {
 /** Package-local value reachability. The host never loads dependencies, libraries or application code. */
 export class SourceEvidence {
   public authorizationIdentityResolved = false;
-  public readonly nativeInitialization: NativeInitialization;
   private readonly checker: ts.TypeChecker;
   private readonly symbols = new WeakMap<ts.Node, ts.Symbol | undefined>();
   private readonly declarationNodes = new WeakMap<
@@ -83,10 +81,6 @@ export class SourceEvidence {
     this.checker = ts
       .createProgram([...this.sources.keys()], options, host)
       .getTypeChecker();
-    this.nativeInitialization = new NativeInitialization(
-      this,
-      sources.map((source) => source.ast),
-    );
   }
 
   /** Only declarations reachable from the provider entry establish service registrations. */
