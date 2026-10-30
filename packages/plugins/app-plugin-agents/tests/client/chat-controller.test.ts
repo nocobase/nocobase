@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { QueryObserver } from '@tanstack/react-query';
 import type { AppUIMessage } from '../../client/chat.js';
 import { appUIMessageText } from '../../client/chat.js';
 import { agentsQueryClient } from '../../client/query.js';
@@ -1091,3 +1092,111 @@ it.each(['none', 'reread', 'detail'])(
     expect(f.controller.chat('c1').messages).toEqual([saved]);
   },
 );
+
+it('shares initial conversation reads and keeps one trailing refresh for concurrent changes', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const blocked = Promise.withResolvers<{ data: ConversationDetail }>();
+  f.request.mockImplementationOnce(() => blocked.promise);
+  const first = f.controller.refresh('c1', false);
+  const duplicate = f.controller.refresh('c1', false);
+  const changed = f.controller.refresh('c1');
+  expect(duplicate).toBe(first);
+  expect(changed).toBe(first);
+  expect(f.request).toHaveBeenCalledTimes(1);
+  blocked.resolve({ data: f.state.detail });
+  await first;
+  expect(
+    f.request.mock.calls.filter(
+      ([options]) => options.path === 'agents/conversations/c1',
+    ),
+  ).toHaveLength(2);
+});
+
+it('uses an active detail snapshot for initial messages without rereading the conversation or loaded history', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.conversation('c1'),
+    queryFn: async () => f.state.detail,
+  });
+  const off = observer.subscribe(() => {});
+  await observer.refetch();
+  try {
+    await f.controller.refresh('c1', false);
+    await f.controller.refresh('c1', false);
+    expect(
+      f.request.mock.calls.filter(
+        ([options]) => options.path === 'agents/conversations/c1',
+      ),
+    ).toHaveLength(0);
+    expect(
+      f.request.mock.calls.filter(([options]) =>
+        options.path.endsWith('/messages'),
+      ),
+    ).toHaveLength(1);
+    await f.controller.refresh('c1');
+    expect(
+      f.request.mock.calls.filter(
+        ([options]) => options.path === 'agents/conversations/c1',
+      ),
+    ).toHaveLength(1);
+  } finally {
+    off();
+  }
+});
+
+it('initializes one shared stream while multiple surfaces follow it', async () => {
+  const f = fixture();
+  const receive = vi
+    .spyOn(f.controller, 'receive')
+    .mockImplementation(() => {});
+  const one = f.controller.followStream('c1');
+  const two = f.controller.followStream('c1');
+  expect(receive).toHaveBeenCalledOnce();
+  one();
+  two();
+  const reopened = f.controller.followStream('c1');
+  expect(receive).toHaveBeenCalledTimes(2);
+  reopened();
+});
+
+it('keeps an initial history read alive while the initial detail is reconciled', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.conversation('c1'),
+    queryFn: async () => f.state.detail,
+  });
+  const off = observer.subscribe(() => {});
+  await observer.refetch();
+  const blocked = Promise.withResolvers<{
+    data: never[];
+    meta: { lastSeq: number };
+  }>();
+  const original = f.request.getMockImplementation()!;
+  f.request.mockImplementation((options) =>
+    options.path.endsWith('/messages') ? blocked.promise : original(options),
+  );
+  const loading = f.controller.loadHistory('c1');
+  const refreshing = f.controller.refresh('c1', false);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(
+    f.request.mock.calls.filter(([options]) =>
+      options.path.endsWith('/messages'),
+    ),
+  ).toHaveLength(1);
+  blocked.resolve({ data: [], meta: { lastSeq: 0 } });
+  await Promise.all([loading, refreshing]);
+  off();
+});

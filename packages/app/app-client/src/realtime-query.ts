@@ -25,7 +25,7 @@ export async function refreshRealtimeQueries(
       if (!query.isActive() || query.isDisabled()) return;
       try {
         await untilAborted(
-          client.refetchQueries(
+          client.invalidateQueries(
             { queryKey: query.queryKey, exact: true },
             { cancelRefetch: false, throwOnError: true },
           ),

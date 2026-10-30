@@ -853,4 +853,6 @@ export type ConversationChanged =
   | {
       readonly kind: 'conversation.changed';
       readonly conversationId: string;
+      /** A read acknowledgement; other conversation data is unchanged. */
+      readonly seenSeq?: number;
     };

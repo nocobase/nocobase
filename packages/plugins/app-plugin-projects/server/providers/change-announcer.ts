@@ -35,6 +35,8 @@ function movesLists(event: AnnouncedEvent): boolean {
 export interface AnnouncedEvent {
   readonly type: string;
   readonly issueId?: unknown;
+  readonly parentIssueId?: unknown;
+  readonly childIssueIds?: unknown;
   readonly changes?: unknown;
   readonly moved?: unknown;
   readonly discussionOnly?: unknown;
@@ -123,16 +125,21 @@ export function createChangeAnnouncer(
           event.discussionOnly === true &&
           event.moved !== true);
       const domain = domainOf(event.type);
-      const named =
-        domain === 'issues' &&
-        typeof event.issueId === 'string' &&
-        event.issueId.length > 0
-          ? event.issueId
-          : null;
+      const ids =
+        event.type === 'issue.batchDone' &&
+        typeof event.parentIssueId === 'string' &&
+        Array.isArray(event.childIssueIds) &&
+        event.childIssueIds.every(
+          (id) => typeof id === 'string' && id.length > 0,
+        )
+          ? [event.parentIssueId, ...(event.childIssueIds as string[])]
+          : typeof event.issueId === 'string' && event.issueId.length > 0
+            ? [event.issueId]
+            : null;
       const current = pending.get(domain);
-      if (named === null) pending.set(domain, null);
-      else if (current === undefined) pending.set(domain, new Set([named]));
-      else current?.add(named);
+      if (domain !== 'issues' || ids === null) pending.set(domain, null);
+      else if (current === undefined) pending.set(domain, new Set(ids));
+      else for (const id of ids) current?.add(id);
       if (!timer) {
         timer = setTimeout(flush, delayMs);
         timer.unref?.();

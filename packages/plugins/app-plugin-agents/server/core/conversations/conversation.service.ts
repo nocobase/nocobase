@@ -705,7 +705,10 @@ export function createConversationService(
   function changed(
     unit: Tx,
     record: ConversationRecord,
-    at?: number | { readonly messageId: string; readonly revision: number },
+    at?:
+      | number
+      | { readonly messageId: string; readonly revision: number }
+      | { readonly seenSeq: number },
   ) {
     unit.emit({
       type: 'conversation.changed',
@@ -2289,7 +2292,13 @@ export function createConversationService(
           filter: { id },
           values,
         });
-        changed(unit, record);
+        changed(
+          unit,
+          record,
+          values.seenSeq === undefined
+            ? undefined
+            : { seenSeq: values.seenSeq },
+        );
       });
       return detail(userId, id);
     },
