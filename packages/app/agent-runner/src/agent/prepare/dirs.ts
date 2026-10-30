@@ -7,6 +7,7 @@
 // or `checkoutFailed` for an application that does not announce it (`RunHeader.acceptedFailures`). Any failure that
 // comes after a retry, such as credentials refused once the network came back, records how many retries were made and
 // the last error.
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -93,6 +94,18 @@ export const dirsStep: PrepareStep = {
     const workDir = context.workspace?.workDir;
     if (workDir === undefined)
       throw new Error('The workspace was not prepared.');
+    if (
+      context.payload.workspace.dirs.some(
+        (dir) =>
+          dir.kind === 'repo' &&
+          !existsSync(path.resolve(workDir, dir.path, '.git')),
+      )
+    )
+      context.event({
+        type: 'status',
+        content: 'preparing',
+        meta: { phase: 'dirs' },
+      });
     const prepared = await prepare(context, workDir);
     context.onRelease(() => prepared.release());
     context.dirs = prepared.dirs;

@@ -359,7 +359,11 @@ describe('the dirs step', () => {
         meta: { retries: 3, lastError: expect.stringContaining('503') },
         message: expect.stringContaining('after 3 retries'),
       });
-      expect(events.map((event) => event.meta?.retry)).toEqual([1, 2, 3]);
+      expect(
+        events
+          .filter((event) => event.meta?.retry !== undefined)
+          .map((event) => event.meta?.retry),
+      ).toEqual([1, 2, 3]);
     } finally {
       await host.close();
     }
@@ -385,7 +389,7 @@ describe('the dirs step', () => {
         'prepareNetwork',
       ]);
       expect(error).not.toBeInstanceOf(PrepareError);
-      expect(events).toEqual([]);
+      expect(events).toMatchObject([{ content: 'preparing' }]);
       expect(host.requests()).toBe(1);
     } finally {
       await host.close();
@@ -407,7 +411,11 @@ describe('the dirs step', () => {
           /Hint:.*\n\(after 1 retry on this runner\)/su,
         ),
       });
-      expect(events.map((event) => event.meta?.retry)).toEqual([1]);
+      expect(
+        events
+          .filter((event) => event.meta?.retry !== undefined)
+          .map((event) => event.meta?.retry),
+      ).toEqual([1]);
     } finally {
       await host.close();
     }
@@ -422,7 +430,7 @@ describe('the dirs step', () => {
       expect(error).not.toBeInstanceOf(PrepareError);
       expect(dirsStep.failure).toBe('checkoutFailed');
       expect((error as Error).message).toMatch(/Hint:/u);
-      expect(events).toEqual([]);
+      expect(events).toMatchObject([{ content: 'preparing' }]);
     } finally {
       await host.close();
     }
