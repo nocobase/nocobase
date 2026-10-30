@@ -59,7 +59,29 @@ const customerContacts = [
   'tests/server/customer-contacts.test.ts',
   'tests/database/customer-contacts-migration.test.ts',
 ];
+const onboarding = [
+  'shared/onboarding.ts',
+  'client/pages/onboarding/index.tsx',
+  'client/pages/onboarding/wizard.tsx',
+  'client/pages/onboarding/choice.tsx',
+  'client/pages/onboarding/locales.ts',
+  'server/routes/onboarding.ts',
+  'server/providers/onboarding.ts',
+  'server/providers/onboarding-registration.ts',
+  'server/providers/onboarding-reset.ts',
+  'server/lifecycles/onboarding.ts',
+  'database/main/migrations/202611050001_create_onboarding.ts',
+  'database/main/seeds/202611050001_onboarding.ts',
+  'database/main/seeds/202611050002_onboarding_samples.ts',
+  'cli/commands/onboarding-reset.ts',
+  'tests/client/onboarding.test.tsx',
+  'tests/server/onboarding.test.ts',
+  'tests/database/onboarding.test.ts',
+  'tests/playwright/onboarding.test.ts',
+  'docs/onboarding.md',
+];
 const mappings = [
+  ...onboarding.map((file) => [file, `business-examples/onboarding/${file}`]),
   ...files.map((file) => [file, `list-edit-example/${file}`]),
   ...customerContacts.map((file) => [
     file,

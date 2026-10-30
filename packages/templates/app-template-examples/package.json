@@ -139,7 +139,9 @@
     "docs/customer-contacts/*.png",
     "docs/procurement.md",
     "docs/business-examples/index.json",
-    "docs/ui/pages/procurement.md"
+    "docs/ui/pages/procurement.md",
+    "docs/onboarding.md",
+    "docs/ui/pages/onboarding.md"
   ],
   "publishConfig": {
     "access": "public"
