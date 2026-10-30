@@ -154,6 +154,12 @@ test('treats the declared Skill examples as source material while checking other
         'customer-example-only',
       [`${appSkill}/assets/customer-contacts-example-extra/index.ts`]:
         'customer-other-asset',
+      [`${appSkill}/assets/business-examples/procurement/server/routes/procurement.ts`]:
+        'procurement-example-only',
+      [`${appSkill}/assets/business-examples/procurement-extra/index.ts`]:
+        'procurement-other-asset',
+      [`${appSkill}/assets/business-examples/unlisted/index.ts`]:
+        'unlisted-business-runtime',
       [`${appSkill}/assets/list-edit-example-extra/index.ts`]:
         'app-other-asset',
       [`${appSkill}/scripts/verify.mjs`]: 'app-script-runtime',
@@ -180,7 +186,9 @@ test('treats the declared Skill examples as source material while checking other
         'customer-other-asset',
         'other-asset',
         'other-skill-runtime',
+        'procurement-other-asset',
         'script-runtime',
+        'unlisted-business-runtime',
       ],
     );
 
@@ -201,7 +209,10 @@ test('treats the declared Skill examples as source material while checking other
         'example-only',
         'other-asset',
         'other-skill-runtime',
+        'procurement-example-only',
+        'procurement-other-asset',
         'script-runtime',
+        'unlisted-business-runtime',
       ],
     );
   } finally {

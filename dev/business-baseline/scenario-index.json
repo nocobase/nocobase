@@ -1,0 +1,155 @@
+[
+  {
+    "id": "procurement",
+    "title": "Purchasing request and decision",
+    "status": "planned",
+    "sources": [
+      "client/pages/procurement/",
+      "server/routes/procurement.ts",
+      "server/providers/procurement.ts",
+      "database/main/migrations/",
+      "database/main/seeds/",
+      "tests/client/procurement.test.tsx",
+      "tests/server/procurement.test.ts",
+      "tests/database/procurement.test.ts",
+      "tests/playwright/procurement.test.ts"
+    ],
+    "destination": "assets/business-examples/procurement/",
+    "entries": {
+      "page": "/procurement",
+      "api": []
+    },
+    "dependencies": [
+      "Default registered authentication, Users and authorization capabilities",
+      "lifecycle"
+    ],
+    "commands": {
+      "install": "pnpm install",
+      "start": "pnpm dev",
+      "test": "pnpm test && pnpm test:e2e",
+      "reset": "implementation must supply isolated test-data reset"
+    },
+    "applicability": "Application-owned business feature in the Examples template",
+    "replacementPoints": [
+      "Business fields and labels",
+      "Reference scope",
+      "Ownership and action permission rules",
+      "Lifecycle transitions"
+    ],
+    "limitations": [
+      "Not implemented or published by this collection-material change",
+      "One currency and one designated non-self reviewer"
+    ]
+  },
+  {
+    "id": "customers",
+    "title": "Customers and contacts",
+    "status": "planned",
+    "sources": [
+      "client/pages/customers/",
+      "server/routes/customers.ts",
+      "server/providers/customers.ts",
+      "database/main/migrations/",
+      "database/main/seeds/",
+      "tests/client/customers.test.tsx",
+      "tests/server/customers.test.ts",
+      "tests/database/customers.test.ts",
+      "tests/playwright/customers.test.ts"
+    ],
+    "destination": "assets/business-examples/customers/",
+    "entries": {
+      "page": "/customers",
+      "api": []
+    },
+    "dependencies": [
+      "Default registered authentication, Users and authorization capabilities"
+    ],
+    "commands": {
+      "install": "pnpm install",
+      "start": "pnpm dev",
+      "test": "pnpm test && pnpm test:e2e",
+      "reset": "implementation must supply isolated test-data reset"
+    },
+    "applicability": "Application-owned business feature in the Examples template",
+    "replacementPoints": [
+      "Business fields and labels",
+      "Reference scope",
+      "Ownership and action permission rules"
+    ],
+    "limitations": [
+      "Not implemented or published by this collection-material change"
+    ]
+  },
+  {
+    "id": "onboarding",
+    "title": "Employee onboarding",
+    "status": "planned",
+    "sources": [
+      "client/pages/onboarding/",
+      "server/routes/onboarding.ts",
+      "server/providers/onboarding.ts",
+      "database/main/migrations/",
+      "database/main/seeds/",
+      "tests/client/onboarding.test.tsx",
+      "tests/server/onboarding.test.ts",
+      "tests/database/onboarding.test.ts",
+      "tests/playwright/onboarding.test.ts"
+    ],
+    "destination": "assets/business-examples/onboarding/",
+    "entries": {
+      "page": "/onboarding",
+      "api": []
+    },
+    "dependencies": [
+      "Default registered authentication, Users and authorization capabilities",
+      "lifecycle"
+    ],
+    "commands": {
+      "install": "pnpm install",
+      "start": "pnpm dev",
+      "test": "pnpm test && pnpm test:e2e",
+      "reset": "implementation must supply isolated test-data reset"
+    },
+    "applicability": "Application-owned business feature in the Examples template",
+    "replacementPoints": [
+      "Business fields and labels",
+      "Reference scope",
+      "Ownership and action permission rules",
+      "Lifecycle transitions"
+    ],
+    "limitations": [
+      "Not implemented or published by this collection-material change"
+    ]
+  },
+  {
+    "id": "expenses",
+    "title": "Expense reimbursement",
+    "status": "held-out",
+    "sources": [],
+    "destination": null,
+    "entries": {
+      "page": null,
+      "api": []
+    },
+    "dependencies": [
+      "Default registered authentication, Users and authorization capabilities",
+      "lifecycle"
+    ],
+    "commands": {
+      "install": "pnpm install",
+      "start": "pnpm dev",
+      "test": "pnpm test && pnpm test:e2e",
+      "reset": "implementation must supply isolated test-data reset"
+    },
+    "applicability": "Held-out business-model substitution from an available example",
+    "replacementPoints": [
+      "Business fields and labels",
+      "Reference scope",
+      "Ownership and action permission rules",
+      "Lifecycle transitions"
+    ],
+    "limitations": [
+      "Not implemented or published by this collection-material change"
+    ]
+  }
+]

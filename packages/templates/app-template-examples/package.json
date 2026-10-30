@@ -136,7 +136,10 @@
     "docs/ui/pages/skill-projects.md",
     "docs/ui/pages/customer-contacts.md",
     "docs/customer-contacts.md",
-    "docs/customer-contacts/*.png"
+    "docs/customer-contacts/*.png",
+    "docs/procurement.md",
+    "docs/business-examples/index.json",
+    "docs/ui/pages/procurement.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -177,6 +180,8 @@
     ]
   },
   "dependencies": {
+    "@nocobase/concurrency": "workspace:^",
+    "@nocobase/app-plugin-concurrency": "workspace:^",
     "zod": "catalog:",
     "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
