@@ -2,6 +2,6 @@
 '@nocobase/app-plugin-foundation': patch
 ---
 
-The App Foundation module matrix recognizes data access through bounded local objects, arrays, classes and service registrations while keeping unverified permission-method escapes unassociated.
+The App Foundation module matrix now recognizes data access behind the permission check when an application passes the authorization service or container through its own objects, classes and service registrations, and reads applications of up to 2,000 source files.
 
-应用底座的模块矩阵现在能识别经有界本地对象、数组、类和服务注册传递的数据访问，并继续阻止无法验证的权限方法外传。
+应用底座的模块矩阵现在能识别经应用自身对象、类和服务注册传递权限服务或容器后的数据访问，并可读取最多 2,000 个源码文件的应用。

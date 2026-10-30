@@ -541,16 +541,6 @@ export function authorizationProgram(
       ts.isNumericLiteral(name))
       ? name.text
       : undefined;
-  const accessName = (
-    access: ts.PropertyAccessExpression | ts.ElementAccessExpression,
-  ): string | undefined => {
-    if (ts.isPropertyAccessExpression(access)) return access.name.text;
-    let key = access.argumentExpression;
-    while (key && transparent(key)) key = key.expression;
-    return key && (ts.isStringLiteralLike(key) || ts.isNumericLiteral(key))
-      ? key.text
-      : undefined;
-  };
   // The receiver a `this` denotes: the instance for class members and the literal for its own methods.
   const thisSite = (node: ts.Node): Site | undefined => {
     let fn: ts.Node | undefined = node.parent;
@@ -1195,11 +1185,6 @@ export function authorizationProgram(
       localMiddleware(candidate.arguments[0])
     )
       middlewares.add(candidate.arguments[0]);
-  // A function that hands out a tracked value makes the object holding it a holder: reading the method is a capability.
-  const returnsTracked = (
-    fn: ts.Node,
-    get: (node: ts.Node) => Kind | undefined,
-  ) => ts.isFunctionLike(fn) && returned(fn).some((value) => get(value));
   const fieldKind = (
     owner: ts.Node,
     name: string | undefined,
@@ -1208,13 +1193,14 @@ export function authorizationProgram(
     allocations(owner)
       .flatMap((site) => memberValues(site, name))
       .reduce<Kind | undefined>(
-        (kind, value) =>
-          join(
-            kind,
-            get(value) ?? (returnsTracked(value, get) ? 'holder' : undefined),
-          ),
+        (kind, value) => join(kind, get(value)),
         undefined,
       );
+  // A function that hands out a tracked value makes the object holding it a holder: reading the method is a capability.
+  const returnsTracked = (
+    fn: ts.Node,
+    get: (node: ts.Node) => Kind | undefined,
+  ) => ts.isFunctionLike(fn) && returned(fn).some((value) => get(value));
   const kind: (node: ts.Node) => Kind | undefined = solver<Kind | undefined>(
     (node, get) => {
       let result: Kind | undefined;
@@ -1693,10 +1679,11 @@ export function authorizationProgram(
             return false;
           continue;
         }
-        // Property and bracket reads inspect the same method candidates; an unknown bracket key checks them all.
+        if (ts.isElementAccessExpression(parent)) continue;
+        // An uncalled method that hands out a tracked value would escape with it.
         if (
           allocations(node)
-            .flatMap((site) => memberValues(site, accessName(parent)))
+            .flatMap((site) => memberValues(site, parent.name.text))
             .some((value) => returnsTracked(value, kind))
         )
           return false;

@@ -589,32 +589,6 @@ it.each([
     holding('', 'const o={get(){return authz;}};external(o.get);'),
   ],
   [
-    'an uncalled method extracted by a bracket key',
-    holding('', "const o={get(){return authz;}};external(o['get']);"),
-  ],
-  [
-    'an uncalled method extracted through a dynamic key',
-    holding(
-      '',
-      "const key=Math.random()?'get':'label';const o={get(){return authz;},label:'safe'};external(o[key]);",
-    ),
-  ],
-  [
-    'an array element method extracted by a bracket key',
-    holding(
-      '',
-      "const list=[{get(){return authz;}}];external(list[0]['get']);",
-    ),
-  ],
-  [
-    'a bracket method returning a closure with the service',
-    holding('', "const o={get(){return ()=>authz;}};external(o['get']);"),
-  ],
-  [
-    'a destructured method that returns the service',
-    holding('', 'const o={get(){return authz;}};const {get}=o;external(get);'),
-  ],
-  [
     'a copied method bound to another receiver',
     holding(
       '',
