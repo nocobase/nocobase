@@ -26,14 +26,14 @@ const tools = (efforts: readonly string[] | undefined) => [
     ],
   },
 ];
-async function fixture() {
+async function fixture(effort = 'medium') {
   h = await createHarness();
   const runner = await h.registerRunner({
     tools: tools(['low', 'medium', 'high']),
   });
   const id = await h.createAgent({
     source: 'runner',
-    modelEntries: [{ tool: 'claude', model: 'test-model', effort: 'medium' }],
+    modelEntries: [{ tool: 'claude', model: 'test-model', effort }],
   });
   return { runner, id };
 }
@@ -93,6 +93,25 @@ it('uses only eligible model reports and excludes another owner personal runner'
   )!;
   expect(agent.efforts).toEqual(['medium', 'high']);
   expect(agent.effort).toBe('medium');
+});
+
+it('delivers a known Agent default without saving it as a conversation preference', async () => {
+  const { id, runner } = await fixture('high');
+  const session = await h.services.onlineAgent.realtime(context, {
+    agentId: id,
+  });
+  await session.send([{ role: 'user', content: 'Use the Agent default' }]);
+  await (await session.receive())!.cancel();
+  const [run] = await claim(h, runner);
+  expect(run.tool.effort).toBe('high');
+  expect((await h.services.runs.get(run.run.id)).effort).toBe('high');
+  expect(
+    (await h.services.conversations.get('alice', session.sessionId)).effort,
+  ).toBeNull();
+  const user = (await session.history()).find(
+    (message) => message.role === 'user',
+  )!;
+  expect(user.metadata?.effort).toBeUndefined();
 });
 
 it.each([
