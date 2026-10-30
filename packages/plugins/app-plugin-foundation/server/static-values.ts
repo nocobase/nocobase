@@ -51,6 +51,12 @@ export class StaticValues {
         : [];
     }
     if (ts.isExportAssignment(node)) return next(node.expression);
+    if (
+      ts.isIdentifier(node) &&
+      ['undefined', 'NaN', 'Infinity'].includes(node.text) &&
+      !this.analysis.declarations(node).length
+    )
+      return [node];
     if (ts.isIdentifier(node))
       return this.analysis
         .declarations(node)
@@ -346,6 +352,18 @@ export class StaticValues {
         throws: false,
         unknown: true,
       };
+    if (
+      this.analysis.nativeInitialization.accepts(node, (value) =>
+        this.values(value),
+      )
+    )
+      return {
+        values: [node],
+        continues: true,
+        returns: false,
+        throws: false,
+        unknown: false,
+      };
     const activeCalls = new Set(this.activeCalls).add(node);
     const evaluator = new StaticValues(
       this.analysis,
@@ -468,7 +486,7 @@ export class StaticValues {
         continues: false,
         returns: true,
         throws: false,
-        unknown: false,
+        unknown: this.analysis.nativeInitialization.containsCall(node),
       };
     }
     if (ts.isBlock(node)) {
@@ -507,7 +525,11 @@ export class StaticValues {
         continues: false,
         returns: call ? call.continues : true,
         throws: call?.throws ?? false,
-        unknown: call?.unknown ?? false,
+        unknown:
+          call?.unknown ??
+          (node.expression
+            ? this.analysis.nativeInitialization.containsCall(node.expression)
+            : false),
       };
     }
     if (ts.isThrowStatement(node))
@@ -532,7 +554,12 @@ export class StaticValues {
       for (const declaration of node.declarationList.declarations) {
         if (!declaration.initializer) continue;
         const target = this.expressionCall(declaration.initializer);
-        if (!target) continue;
+        if (!target) {
+          unknown ||= this.analysis.nativeInitialization.containsCall(
+            declaration.initializer,
+          );
+          continue;
+        }
         const flow = this.callFlow(
           target.call,
           nextSeen,
@@ -571,8 +598,19 @@ export class StaticValues {
         return { ...flow, values: [], returns: false };
       }
     }
+    if (
+      ts.isExpressionStatement(node) &&
+      this.analysis.nativeInitialization.containsCall(node.expression)
+    )
+      return {
+        values: [],
+        continues: true,
+        returns: false,
+        throws: false,
+        unknown: true,
+      };
     if (ts.isIfStatement(node)) {
-      const branches = [...new Set(this.atoms(node.expression).map(Boolean))];
+      const branches = this.booleans(node.expression);
       if (branches.length === 1)
         return branches[0]
           ? this.flow(node.thenStatement, nextSeen, depth + 1)
@@ -1178,7 +1216,13 @@ export class StaticValues {
   }
 
   public booleans(node: ts.Node): boolean[] {
-    return [...new Set(this.atoms(node).map(Boolean))];
+    const guarded = this.analysis.nativeInitialization.guardCondition(
+      node,
+      (value) => this.values(value),
+    );
+    return guarded === undefined
+      ? [...new Set(this.atoms(node).map(Boolean))]
+      : [guarded];
   }
 
   public strings(node: ts.Node, dynamic = false): string[] {
