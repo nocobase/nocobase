@@ -1,0 +1,69 @@
+{
+  "name": "@nocobase/app-plugin-concurrency",
+  "version": "0.1.0-beta.0",
+  "description": "Application-owned concurrency services, configuration and an in-process fixed-TTL Mutex backend.",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    "./server": {
+      "types": "./server/index.ts",
+      "import": "./server/index.ts"
+    },
+    "./config": {
+      "types": "./config/index.ts",
+      "import": "./config/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./config": {
+        "types": "./dist/config/index.d.ts",
+        "import": "./dist/config/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "fix": "pnpm lint:fix && pnpm format",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@nocobase/dev-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@nocobase/app-testing": "workspace:*",
+    "hono": "catalog:"
+  },
+  "peerDependencies": {
+    "@nocobase/concurrency": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
+    "@nocobase/service-provider": "workspace:^"
+  },
+  "dependencies": {
+    "async-mutex": "0.5.0"
+  }
+}

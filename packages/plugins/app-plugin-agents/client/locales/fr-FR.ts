@@ -7,15 +7,27 @@ import type enUS from './en-US.js';
 const frFR: LocaleResource<typeof enUS> = {
   modelSuggestions: {
     design:
-      'Conception, architecture, investigation de problèmes complexes et revue de changements importants.',
-    routine:
-      'Implémentations au périmètre clair, petites corrections, tests et rédaction.',
-    small: 'Petits changements mécaniques, rapides et économiques.',
-    explanation:
-      'Compréhension des besoins, rédaction de propositions et d’explications.',
+      'Raisonnement le plus avancé : propositions, architecture, enquêtes difficiles et revue des modifications importantes ; aussi implémentation courante et modifications entre paquets.',
     large:
-      'Implémentations de grande ampleur, modifications entre paquets et refactorisation.',
-    review: 'Revue de code et analyse des échecs de CI.',
+      'Implémentations importantes, modifications entre paquets, refactorisation et implémentation courante ; aussi propositions, revue de code et petites modifications.',
+    review:
+      'Revue de code et analyse des échecs CI ; aussi propositions et enquêtes difficiles.',
+    routine:
+      'Implémentation courante, petites corrections, tests et textes ; aussi analyse des échecs CI.',
+    small:
+      'Petites modifications, éditions mécaniques et tests, économiques et rapides ; aussi analyse des échecs CI.',
+    explanation:
+      'Compréhension des besoins, explications et rédaction de propositions.',
+  },
+  goodAtTemplates: {
+    fill: 'Remplir avec un modèle',
+    design: 'Conception et revue',
+    large: 'Implémentation importante',
+    review: 'Revue de code et CI',
+    routine: 'Implémentation courante',
+    small: 'Petites modifications',
+    explanation: 'Explications et propositions',
+    undo: 'Annuler',
   },
   actions: {
     back: 'Retour',
@@ -101,7 +113,7 @@ const frFR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponible actuellement',
     title: 'Agents',
     description:
-      'Ajoutez des agents à partir des modèles signalés par les exécuteurs. Le chef de projet confie chaque étape d’une tâche à l’agent dont la description convient.',
+      'Ajoutez des agents à partir des modèles signalés par les exécuteurs. Le Lead Agent confie chaque étape d’une tâche à l’agent dont la description convient.',
     fromRunners: 'Agents des exécuteurs',
     display: {
       search: 'Rechercher des modèles ou des fournisseurs',
@@ -168,12 +180,12 @@ const frFR: LocaleResource<typeof enUS> = {
         'Rapporté par les exécuteurs de {{count}} en ligne : {{names}}.',
       noRunnerNow: "Aucun exécuteur qui l'a n'est en ligne actuellement.",
       goodAtHint:
-        "Le chef de projet décide ce qu'il doit donner à cet agent par ces mots. Dites ce qui convient et ce qui ne convient pas.",
+        "Le Lead Agent décide ce qu'il doit donner à cet agent par ces mots. Dites ce qui convient et ce qui ne convient pas.",
       goodAtRequired: "Écrivez ce pour quoi il est bon avant de l'activer.",
       effortHint:
-        "Le chef de projet ne peut pas le modifier lorsqu'il lui confie le travail.",
+        "Le Lead Agent ne peut pas le modifier lorsqu'il lui confie le travail.",
       personalOnly:
-        "Seuls les exécuteurs personnels l'ont : le chef de projet ne lui confie le travail que sur les problèmes lancés par ses propriétaires.",
+        "Seuls les exécuteurs personnels l'ont : le Lead Agent ne lui confie le travail que sur les problèmes lancés par ses propriétaires.",
       reportedBy_many:
         'Rapporté par les exécuteurs de {{count}} en ligne : {{names}}.',
     },
@@ -818,6 +830,11 @@ const frFR: LocaleResource<typeof enUS> = {
       version: 'Couloir {{version}}',
       runs: 'Exécutions récentes',
       runsEmpty: 'Aucune course pour l’instant.',
+      runsTotal: '{{count}} exécutions',
+      runsPagination: 'Pagination de l’historique',
+      runsPrevious: 'Précédent',
+      runsNext: 'Suivant',
+      runsPage: 'Page {{page}} sur {{pageCount}}',
       runsFailed: 'Impossible de charger ses exécutions.',
       readOnly: 'Seul son propriétaire peut le modifier.',
       owner: 'Propriétaire {{name}}',

@@ -25,7 +25,11 @@ import {
  *   and bumps `thread`, so every switch starts a new session.
  */
 import { isDeepStrictEqual } from 'node:util';
-import { quotaForAgent, chatEffortsFor } from '../../../shared/runners.js';
+import {
+  quotaForAgent,
+  chatEffortsFor,
+  chatEffortCapabilities,
+} from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -417,6 +421,27 @@ export function createConversationService(
     return record;
   }
 
+  /** Titles for the current owner's conversations, read together for runner history. */
+  async function ownedTitles(
+    conn: DatabaseConnection,
+    userId: string,
+    ids: readonly string[],
+  ): Promise<ReadonlyMap<string, string>> {
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length === 0) return new Map();
+    const records = await conversationsRepo(conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('userId').eq(userId),
+          f.or(uniqueIds.map((id) => f.string('id').eq(id))),
+        ]),
+      select: (s) => s.fields('id', 'title'),
+    });
+    return new Map(
+      records.map((record) => [String(record.id), record.title ?? '']),
+    );
+  }
+
   /** Locks the conversation if `userId` owns it; 404 otherwise. */
   async function lockOwned(
     unit: Tx,
@@ -578,11 +603,11 @@ export function createConversationService(
     conn: DatabaseConnection,
     agent: Agent,
     userId: string,
-  ): Promise<readonly string[]> {
+  ): Promise<readonly string[] | undefined> {
     const eligible = await deps.eligibility.runnersFor(conn, agent, {
       actorUserId: userId,
     });
-    return chatEffortsFor(agent.modelEntries[0], eligible);
+    return chatEffortCapabilities(agent.modelEntries[0], eligible);
   }
 
   async function validateEffort(
@@ -590,29 +615,18 @@ export function createConversationService(
     agent: Agent,
     userId: string,
     selected: string | null | undefined,
-    saved: unknown,
   ): Promise<string | null> {
+    // Only an explicitly selected non-default value is a conversation preference.
     const preference =
-      selected === undefined
-        ? typeof saved === 'string'
-          ? saved
-          : null
-        : selected;
-    // Unknown capabilities preserve default execution, but never silently replace an explicit preference.
+      selected && selected !== agent.modelEntries[0]?.effort ? selected : null;
+    if (preference === null) return null;
     const options = await effortOptions(conn, agent, userId);
-    const effective = preference ?? agent.modelEntries[0]?.effort ?? null;
-    if (
-      (preference !== null && !options.includes(preference)) ||
-      (options.length > 0 && effective !== null && !options.includes(effective))
-    )
+    if (options !== undefined && !options.includes(preference))
       throw invalid(
         'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
-        { reason: 'EFFORT_UNSUPPORTED', effort: effective, efforts: options },
+        { reason: 'EFFORT_UNSUPPORTED', effort: preference, efforts: options },
       );
-    return (
-      preference ??
-      (effective && options.includes(effective) ? effective : null)
-    );
+    return preference;
   }
 
   async function canAnswer(
@@ -691,7 +705,10 @@ export function createConversationService(
   function changed(
     unit: Tx,
     record: ConversationRecord,
-    at?: number | { readonly messageId: string; readonly revision: number },
+    at?:
+      | number
+      | { readonly messageId: string; readonly revision: number }
+      | { readonly seenSeq: number },
   ) {
     unit.emit({
       type: 'conversation.changed',
@@ -1398,10 +1415,21 @@ export function createConversationService(
         const preference =
           jsonObject(record.metadata).turnEffort ??
           jsonObject(record.metadata).effort;
-        const withEffort =
+        const defaultEffort = claim.agent.modelEntries[0]?.effort;
+        const capabilities = chatEffortCapabilities(
+          claim.agent.modelEntries[0],
+          claim.runner ? [claim.runner] : [],
+        );
+        const effort =
           typeof preference === 'string'
-            ? { ...assembly, effort: preference }
-            : assembly;
+            ? preference
+            : capabilities === undefined
+              ? null
+              : defaultEffort && !capabilities.includes(defaultEffort)
+                ? null
+                : undefined;
+        const withEffort =
+          effort === undefined ? assembly : { ...assembly, effort };
         const config = runnerBinding(record.metadata)?.config;
         return config
           ? {
@@ -1690,20 +1718,17 @@ export function createConversationService(
         )
           throw conflict('This agent has no available execution environment.');
         turnEffort =
-          (typeof jsonObject(record.metadata).effort === 'string'
-            ? (jsonObject(record.metadata).effort as string)
-            : null) ??
-          agent.modelEntries[0]?.effort ??
-          null;
+          typeof jsonObject(record.metadata).turnEffort === 'string'
+            ? (jsonObject(record.metadata).turnEffort as string)
+            : null;
         if (!realtime.queue) {
           const effort = await validateEffort(
             unit.conn,
             agent,
             userId,
             request.effort,
-            switching ? null : jsonObject(record.metadata).effort,
           );
-          turnEffort = effort ?? agent.modelEntries[0]?.effort ?? null;
+          turnEffort = effort;
           if (
             effort !== (jsonObject(record.metadata).effort ?? null) ||
             turnEffort !== (jsonObject(record.metadata).turnEffort ?? null)
@@ -1833,6 +1858,7 @@ export function createConversationService(
     binding,
     contextKinds: deps.contextKinds,
     sources,
+    ownedTitles,
 
     async list(userId, query) {
       const conn = tx.read();
@@ -1947,7 +1973,6 @@ export function createConversationService(
           agent,
           userId,
           request.effort,
-          null,
         );
         const title =
           request.title === undefined
@@ -2267,7 +2292,13 @@ export function createConversationService(
           filter: { id },
           values,
         });
-        changed(unit, record);
+        changed(
+          unit,
+          record,
+          values.seenSeq === undefined
+            ? undefined
+            : { seenSeq: values.seenSeq },
+        );
       });
       return detail(userId, id);
     },

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-scheduler",
   "displayName": "Scheduler App Plugin",
   "description": "Scheduler App Plugin.",
-  "version": "1.0.0-beta.20",
+  "version": "1.0.0-beta.21",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -61,7 +61,6 @@
     "build": "pnpm clean && tsc -p tsconfig.json && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests --exclude \"**/tests/integration/**\"",
-    "test:integration": "node ../../libs/jobs/scripts/test-integration.mjs",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",

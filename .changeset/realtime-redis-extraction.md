@@ -12,6 +12,7 @@
 '@nocobase/app-plugin-authz-default-access': patch
 '@nocobase/app-plugin-authz-restriction-rules': patch
 '@nocobase/app-plugin-authz-sharing-rules': patch
+'@nocobase/app-plugin-concurrency': patch
 '@nocobase/app-plugin-database-example': patch
 '@nocobase/app-plugin-database-explorer': patch
 '@nocobase/app-plugin-demo-mode': patch

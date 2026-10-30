@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const source = path.join(root, 'packages/templates/app-template-examples');
+const skill = path.join(
+  root,
+  'packages/app/app-skills/skills/nocobase-app-development/assets',
+);
 const files = [
   'client/pages/skill-projects/index.tsx',
   'client/pages/skill-projects/edit.tsx',
@@ -15,79 +19,124 @@ const files = [
   'tests/server/skill-projects.test.ts',
   'tests/database/skill-projects-migration.test.ts',
 ];
-const groups = [
-  { name: 'list-edit-example', files },
-  {
-    name: 'customer-contacts-example',
-    files: [
-      'client/pages/customer-contacts/index.tsx',
-      'client/pages/customer-contacts/detail.tsx',
-      'client/pages/customer-contacts/edit.tsx',
-      'client/pages/customer-contacts/batch.tsx',
-      'client/pages/customer-contacts/model.ts',
-      'client/pages/customer-contacts/shared.tsx',
-      'client/pages/customer-contacts/relation-picker.tsx',
-      'client/pages/customer-contacts/locales.ts',
-      'server/routes/customer-contacts.ts',
-      'server/providers/customer-contacts.ts',
-      'server/providers/customer-contacts-authorization.ts',
-      'server/providers/customer-contacts-data.ts',
-      'database/main/migrations/202611030002_create_customer_contacts.ts',
-      'database/main/seeds/202611030002_customer_contacts.ts',
-      'tests/client/customer-contacts.test.tsx',
-      'tests/server/customer-contacts.test.ts',
-      'tests/database/customer-contacts-migration.test.ts',
-    ],
-  },
+const procurement = [
+  'shared/procurement.ts',
+  'client/pages/procurement/index.tsx',
+  'client/pages/procurement/detail.tsx',
+  'client/pages/procurement/reference.tsx',
+  'client/pages/procurement/locales.ts',
+  'server/routes/procurement.ts',
+  'server/providers/procurement.ts',
+  'server/providers/procurement-registration.ts',
+  'server/providers/procurement-reset.ts',
+  'server/lifecycles/procurement.ts',
+  'database/main/migrations/202611040001_create_procurement.ts',
+  'database/main/seeds/202611040001_procurement.ts',
+  'database/main/seeds/202611040002_procurement_samples.ts',
+  'cli/commands/procurement-reset.ts',
+  'tests/client/procurement.test.tsx',
+  'tests/server/procurement.test.ts',
+  'tests/database/procurement.test.ts',
+  'tests/playwright/procurement.test.ts',
+  'docs/procurement.md',
+];
+const customerContacts = [
+  'client/pages/customer-contacts/index.tsx',
+  'client/pages/customer-contacts/detail.tsx',
+  'client/pages/customer-contacts/edit.tsx',
+  'client/pages/customer-contacts/batch.tsx',
+  'client/pages/customer-contacts/model.ts',
+  'client/pages/customer-contacts/shared.tsx',
+  'client/pages/customer-contacts/relation-picker.tsx',
+  'client/pages/customer-contacts/locales.ts',
+  'server/routes/customer-contacts.ts',
+  'server/providers/customer-contacts.ts',
+  'server/providers/customer-contacts-authorization.ts',
+  'server/providers/customer-contacts-data.ts',
+  'database/main/migrations/202611030002_create_customer_contacts.ts',
+  'database/main/seeds/202611030002_customer_contacts.ts',
+  'tests/client/customer-contacts.test.tsx',
+  'tests/server/customer-contacts.test.ts',
+  'tests/database/customer-contacts-migration.test.ts',
+];
+const onboarding = [
+  'shared/onboarding.ts',
+  'client/pages/onboarding/index.tsx',
+  'client/pages/onboarding/wizard.tsx',
+  'client/pages/onboarding/choice.tsx',
+  'client/pages/onboarding/locales.ts',
+  'server/routes/onboarding.ts',
+  'server/providers/onboarding.ts',
+  'server/providers/onboarding-registration.ts',
+  'server/providers/onboarding-reset.ts',
+  'server/lifecycles/onboarding.ts',
+  'database/main/migrations/202611050001_create_onboarding.ts',
+  'database/main/seeds/202611050001_onboarding.ts',
+  'database/main/seeds/202611050002_onboarding_samples.ts',
+  'cli/commands/onboarding-reset.ts',
+  'tests/client/onboarding.test.tsx',
+  'tests/server/onboarding.test.ts',
+  'tests/database/onboarding.test.ts',
+  'tests/playwright/onboarding.test.ts',
+  'docs/onboarding.md',
+];
+const mappings = [
+  ...onboarding.map((file) => [file, `business-examples/onboarding/${file}`]),
+  ...files.map((file) => [file, `list-edit-example/${file}`]),
+  ...customerContacts.map((file) => [
+    file,
+    `customer-contacts-example/${file}`,
+  ]),
+  ...procurement.map((file) => [file, `business-examples/procurement/${file}`]),
+  ['docs/business-examples/index.json', 'business-examples/index.json'],
 ];
 if (process.argv.slice(2).some((arg) => arg !== '--check'))
   throw new Error('Usage: node scripts/sync-app-skill-examples.mjs [--check]');
 const check = process.argv.includes('--check');
 let stale = false;
-for (const group of groups) {
-  const destination = path.join(
-    root,
-    'packages/app/app-skills/skills/nocobase-app-development/assets',
-    group.name,
+for (const [file, relative] of mappings) {
+  const content = await readFile(path.join(source, file), 'utf8');
+  const target = path.join(skill, relative);
+  if (check) {
+    const published = await readFile(target, 'utf8').catch((error) => {
+      if (error.code === 'ENOENT') return undefined;
+      throw error;
+    });
+    if (published !== content) {
+      console.error(`Stale Skill example: ${file}`);
+      stale = true;
+    }
+  } else {
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, content);
+  }
+}
+async function list(directory, prefix = '') {
+  const entries = await readdir(directory, { withFileTypes: true }).catch(
+    (error) => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    },
   );
-  for (const file of group.files) {
-    const content = await readFile(path.join(source, file), 'utf8');
-    const target = path.join(destination, file);
-    if (check) {
-      const published = await readFile(target, 'utf8').catch((error) => {
-        if (error.code === 'ENOENT') return undefined;
-        throw error;
-      });
-      if (published !== content) {
-        console.error(`Stale Skill example: ${file}`);
-        stale = true;
-      }
-    } else {
-      await mkdir(path.dirname(target), { recursive: true });
-      await writeFile(target, content);
-    }
+  const result = [];
+  for (const entry of entries) {
+    const name = prefix + entry.name;
+    if (entry.isDirectory())
+      result.push(
+        ...(await list(path.join(directory, entry.name), `${name}/`)),
+      );
+    else result.push(name);
   }
-  async function list(directory, prefix = '') {
-    const entries = await readdir(directory, { withFileTypes: true }).catch(
-      (error) => {
-        if (error.code === 'ENOENT') return [];
-        throw error;
-      },
-    );
-    const result = [];
-    for (const entry of entries) {
-      const name = prefix + entry.name;
-      if (entry.isDirectory())
-        result.push(
-          ...(await list(path.join(directory, entry.name), `${name}/`)),
-        );
-      else result.push(name);
-    }
-    return result;
-  }
-  for (const file of await list(destination)) {
-    if (!group.files.includes(file)) {
-      console.error(`Unexpected Skill example file: ${file}`);
+  return result;
+}
+for (const directory of [
+  'list-edit-example',
+  'customer-contacts-example',
+  'business-examples',
+]) {
+  for (const file of await list(path.join(skill, directory))) {
+    if (!mappings.some(([, target]) => target === `${directory}/${file}`)) {
+      console.error(`Unexpected Skill example file: ${directory}/${file}`);
       stale = true;
     }
   }
@@ -99,5 +148,5 @@ if (stale) {
   process.exitCode = 1;
 } else
   console.log(
-    `${check ? 'Checked' : 'Synchronized'} ${groups.reduce((sum, group) => sum + group.files.length, 0)} executable Skill example files.`,
+    `${check ? 'Checked' : 'Synchronized'} ${mappings.length} executable Skill example files.`,
   );

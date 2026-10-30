@@ -1,0 +1,15 @@
+# Business example catalogue
+
+Use the [scenario index](../assets/business-examples/index.json) to locate application-owned business examples by data model and behavior. It uses the common scenario-entry format: status, source files, published destination, page/API entries, dependencies, run/test/reset commands, replacement points and limitations. Only `runnable` entries have executable resources. Planned scenarios and the held-out reimbursement scenario are not implementations.
+
+The [procurement guide](../assets/business-examples/procurement/docs/procurement.md) describes a four-collection parent/child request, searchable references, exact amounts, native role isolation, atomic saves and a single designated reviewer's submit/reject/resubmit/approve loop. Read its integration requirements before copying: the source runs in Examples and reuses that application's lifecycle runtime/store and template-owned UI. A Default integration must deliberately supply/register those capabilities and merge composition roots. Copying a page alone does not install a business feature.
+
+The [onboarding guide](../assets/business-examples/onboarding/docs/onboarding.md) covers a four-step employee form, private recoverable drafts, shared conditional/cross-step validation and atomic employee creation protected by native receipts, versions and unique business keys. It records document types and reference numbers rather than uploading files. Read its Default integration requirements before adapting the fields, step grouping, roles or employee identity key.
+
+The catalogue also locates the existing [customer relation and batch example](frontend/references/executable-relation-batch.md). Its resources keep their existing `assets/customer-contacts-example/` destination and synchronization mapping; the catalogue adds discovery without copying the implementation into another directory.
+
+Adapt the business schema, references and permissions together. Keep native authentication, record scope at each server entry, transaction-bound writes, conditional versions, strict input fields and rollback tests. Do not infer production authorization from a page grant or a hidden action. Choose new migration names after the target application's current head and retain applied migration immutability.
+
+The authoritative sources and tests live in the Examples template. Maintainers run `node scripts/sync-app-skill-examples.mjs` to publish exact copies through the existing synchronization mechanism; `--check` rejects missing, changed and obsolete files. Installed applications receive them through the normal `pnpm nocobase skills sync` entry. Do not edit generated copies or introduce another synchronization service.
+
+The original before-change experiment inputs and outcomes remain outside published Skills. Passing these example tests verifies the example. A later Default business-model substitution requires its own recorded requirement, resource version, model configuration, time and correction log, and independent function/permission/consistency observations. Preserve missing usage as unknown; do not claim a measured improvement from example self-tests.

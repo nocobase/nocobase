@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification-web-push",
   "displayName": "Web Push App Plugin",
   "description": "Web Push App Plugin.",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -132,6 +132,7 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@types/web-push": "^3.6.4",
-    "@nocobase/app-plugin-authorization": "workspace:*"
+    "@nocobase/app-plugin-authorization": "workspace:*",
+    "@nocobase/app-plugin-notification-providers": "workspace:*"
   }
 }

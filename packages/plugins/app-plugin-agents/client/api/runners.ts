@@ -13,7 +13,7 @@ import type {
   Runner,
   RunnerHeldItem,
   RunnerPatch,
-  RunnerRecentRun,
+  RunnerRunsPage,
   RunnerSummary,
   RunnerListItem,
 } from '../../shared/runners.js';
@@ -62,8 +62,14 @@ export class RunnersApi {
   }
 
   /** Its latest runs, newest first. */
-  public runnerRuns(runnerId: string): Promise<RunnerRecentRun[]> {
-    return this.list(`${id(runnerId)}/runs`);
+  public runnerRuns(
+    runnerId: string,
+    cursor?: string,
+  ): Promise<RunnerRunsPage> {
+    return this.api.request<RunnerRunsPage>({
+      path: pathOf(`${id(runnerId)}/runs`),
+      query: { cursor },
+    });
   }
 
   public createRegistrationToken(

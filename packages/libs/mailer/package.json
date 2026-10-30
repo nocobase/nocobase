@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/mailer",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Bounded SMTP and Resend email submission with explicit resource ownership.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -14,6 +14,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./config": {
+      "types": "./src/config.ts",
+      "import": "./src/config.ts"
     }
   },
   "files": [
@@ -24,6 +28,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "import": "./dist/config.js"
       }
     },
     "access": "public"

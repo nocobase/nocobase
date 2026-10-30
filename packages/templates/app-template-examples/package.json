@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.68",
+  "version": "1.0.0-beta.69",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.68",
+    "defaultTemplateVersion": "1.0.0-beta.69",
     "cli": {
       "bin": "nocobase-examples",
       "displayName": "NocoBase Examples",
@@ -136,7 +136,12 @@
     "docs/ui/pages/skill-projects.md",
     "docs/ui/pages/customer-contacts.md",
     "docs/customer-contacts.md",
-    "docs/customer-contacts/*.png"
+    "docs/customer-contacts/*.png",
+    "docs/procurement.md",
+    "docs/business-examples/index.json",
+    "docs/ui/pages/procurement.md",
+    "docs/onboarding.md",
+    "docs/ui/pages/onboarding.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -177,6 +182,8 @@
     ]
   },
   "dependencies": {
+    "@nocobase/concurrency": "workspace:^",
+    "@nocobase/app-plugin-concurrency": "workspace:^",
     "zod": "catalog:",
     "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",

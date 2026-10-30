@@ -278,6 +278,20 @@ export interface RunnerRecentRun {
   readonly path: string | null;
 }
 
+/** Opaque continuation values use the stored start time, including never-started runs. */
+export interface RunnerRunsCursor {
+  readonly startedAt: string | null;
+  readonly id: string;
+}
+
+export interface RunnerRunsPage {
+  readonly data: RunnerRecentRun[];
+  readonly meta: {
+    readonly nextCursor: string | null;
+    readonly total: number;
+  };
+}
+
 /**
  * A runner in the list, with what the viewer may do with it. What identifies its machine (the host name, the tools'
  * executable paths) is shown only to its owner, the managers of runners and anyone who may wake an agent: `hostname`
@@ -315,7 +329,7 @@ export interface RunnerSummary extends Omit<
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
   readonly canClearQuota: boolean;
-  /** Count of the recent (at most ten) run rows, without loading their details. */
+  /** Exact run count, without loading row details. */
   readonly recentRunsCount: number;
   /**
    * A newer runner version the application serves for its platform, which the runner installs on its own between
@@ -763,12 +777,12 @@ export function workspaceSummary(
   return { ...usage, totalBytes, sizeUnknownCount, counts };
 }
 
-/** Known efforts common to every eligible runner for this exact model; unknown reports disable selection. */
-export function chatEffortsFor(
+/** Undefined means capabilities are unknown; an empty list is a known empty intersection. */
+export function chatEffortCapabilities(
   entry: RunnerModelEntry | undefined,
   runners: readonly Pick<Runner, 'tools'>[],
-): readonly string[] {
-  if (!entry?.model || runners.length === 0) return [];
+): readonly string[] | undefined {
+  if (!entry?.model || runners.length === 0) return undefined;
   const reports = runners.map(
     (runner) =>
       runner.tools
@@ -779,7 +793,20 @@ export function chatEffortsFor(
             normalizeModel(entry.tool, entry.model!),
         )?.efforts,
   );
-  return effortsFor(entry).filter((effort) =>
-    reports.every((report) => report?.includes(effort)),
+  const known = reports.filter((report) => report !== undefined);
+  const options = effortsFor(entry).filter((effort) =>
+    known.every((report) => report.includes(effort)),
   );
+  // Missing reports cannot widen an already empty intersection of known capabilities.
+  return options.length === 0 || known.length === reports.length
+    ? options
+    : undefined;
+}
+
+/** Known efforts common to every eligible runner; unknown reports hide selection. */
+export function chatEffortsFor(
+  entry: RunnerModelEntry | undefined,
+  runners: readonly Pick<Runner, 'tools'>[],
+): readonly string[] {
+  return chatEffortCapabilities(entry, runners) ?? [];
 }

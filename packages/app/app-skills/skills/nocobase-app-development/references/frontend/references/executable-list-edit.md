@@ -1,5 +1,7 @@
 # Executable list and edit example
 
+For parent/child transactions, scoped reference selection, exact amounts and a designated reviewer, see the [business example catalogue](../../business-examples.md). Keep this shared-dataset list/edit example's permission policy distinct from those business record scopes.
+
 Start here for the tested core list/create/edit interaction. The source runs as the `/skill-projects` page in the Examples application. These [published source files](../../../assets/list-edit-example/client/pages/skill-projects/index.tsx) are generated from that application's compiled source, not independently maintained Markdown snippets. Adapt the business names, permission resource, schema and copy to your requirement; the example's page grant allows management of one shared learning dataset, not a production authorization policy.
 
 ## Source

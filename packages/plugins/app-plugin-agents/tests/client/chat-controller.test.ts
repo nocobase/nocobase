@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { QueryObserver } from '@tanstack/react-query';
 import type { AppUIMessage } from '../../client/chat.js';
 import { appUIMessageText } from '../../client/chat.js';
 import { agentsQueryClient } from '../../client/query.js';
@@ -978,4 +979,224 @@ it('does not attach recovery after a new send starts during the history read', a
   output.emit({ type: 'finish' });
   output.close();
   await sending;
+});
+
+it('keeps a pending history read when marking the conversation read', async () => {
+  const f = fixture();
+  const saved = uiMessage(1, 'assistant', 'Completed answer');
+  let resolve!: (value: {
+    data: AppUIMessage[];
+    meta: { lastSeq: number };
+  }) => void;
+  f.request.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  const reading = f.controller.loadHistory('c1');
+  await vi.waitFor(() => expect(resolve).toBeDefined());
+  await f.controller.markRead('c1');
+  resolve({ data: [saved], meta: { lastSeq: 1 } });
+  await reading;
+  expect(f.controller.chat('c1').messages).toEqual([saved]);
+});
+
+it.each(['command', 'identity'])(
+  'ignores a read receipt superseded by %s',
+  async (kind) => {
+    const f = fixture();
+    let resolve!: (value: { data: ConversationDetail }) => void;
+    f.request.mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const reading = f.controller.markRead('c1');
+    const newer = { ...f.state.detail, title: 'New title' };
+    if (kind === 'command')
+      await f.controller.command(
+        'c1',
+        async () => newer,
+        (detail) => detail,
+      );
+    else {
+      f.controller.invalidate();
+      agentsQueryClient().setQueryData(chatKeys.conversation('c1'), newer);
+    }
+    resolve({ data: f.state.detail });
+    await reading;
+    expect(
+      agentsQueryClient().getQueryData(chatKeys.conversation('c1')),
+    ).toEqual(newer);
+  },
+);
+
+it.each(['none', 'reread', 'detail'])(
+  'preserves completion revision when markRead overlaps %s',
+  async (phase) => {
+    const f = fixture();
+    const initial = uiMessage(2, 'assistant', 'Completed answer');
+    f.state.messages = [initial];
+    await f.controller.loadHistory('c1');
+    f.state.detail = {
+      ...f.state.detail,
+      execution: {
+        status: 'idle',
+        outcome: 'completed',
+        messageId: initial.id,
+      },
+    };
+    const saved = {
+      ...initial,
+      metadata: { ...initial.metadata!, revision: 2 },
+      parts: [
+        ...initial.parts,
+        { type: 'data-turn' as const, data: { durationMs: 4200 } },
+      ],
+    };
+    f.state.messages = [saved];
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    if (phase === 'detail') {
+      vi.spyOn(f.api, 'conversation').mockImplementationOnce(async () => {
+        await gate;
+        return f.state.detail;
+      });
+      const refreshing = f.controller.refresh('c1');
+      await f.controller.markRead('c1');
+      release();
+      await refreshing;
+    } else if (phase === 'reread') {
+      const original = f.api.messages.bind(f.api);
+      let reading!: () => void;
+      const started = new Promise<void>((done) => {
+        reading = done;
+      });
+      vi.spyOn(f.api, 'messages').mockImplementationOnce(async (id, query) => {
+        reading();
+        await gate;
+        return original(id, query);
+      });
+      const refreshing = f.controller.refresh('c1');
+      await started;
+      await f.controller.markRead('c1');
+      release();
+      await refreshing;
+    } else {
+      await f.controller.refresh('c1');
+    }
+    expect(f.controller.chat('c1').messages).toEqual([saved]);
+  },
+);
+
+it('shares initial conversation reads and keeps one trailing refresh for concurrent changes', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const blocked = Promise.withResolvers<{ data: ConversationDetail }>();
+  f.request.mockImplementationOnce(() => blocked.promise);
+  const first = f.controller.refresh('c1', false);
+  const duplicate = f.controller.refresh('c1', false);
+  const changed = f.controller.refresh('c1');
+  expect(duplicate).toBe(first);
+  expect(changed).toBe(first);
+  expect(f.request).toHaveBeenCalledTimes(1);
+  blocked.resolve({ data: f.state.detail });
+  await first;
+  expect(
+    f.request.mock.calls.filter(
+      ([options]) => options.path === 'agents/conversations/c1',
+    ),
+  ).toHaveLength(2);
+});
+
+it('uses an active detail snapshot for initial messages without rereading the conversation or loaded history', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.conversation('c1'),
+    queryFn: async () => f.state.detail,
+  });
+  const off = observer.subscribe(() => {});
+  await observer.refetch();
+  try {
+    await f.controller.refresh('c1', false);
+    await f.controller.refresh('c1', false);
+    expect(
+      f.request.mock.calls.filter(
+        ([options]) => options.path === 'agents/conversations/c1',
+      ),
+    ).toHaveLength(0);
+    expect(
+      f.request.mock.calls.filter(([options]) =>
+        options.path.endsWith('/messages'),
+      ),
+    ).toHaveLength(1);
+    await f.controller.refresh('c1');
+    expect(
+      f.request.mock.calls.filter(
+        ([options]) => options.path === 'agents/conversations/c1',
+      ),
+    ).toHaveLength(1);
+  } finally {
+    off();
+  }
+});
+
+it('initializes one shared stream while multiple surfaces follow it', async () => {
+  const f = fixture();
+  const receive = vi
+    .spyOn(f.controller, 'receive')
+    .mockImplementation(() => {});
+  const one = f.controller.followStream('c1');
+  const two = f.controller.followStream('c1');
+  expect(receive).toHaveBeenCalledOnce();
+  one();
+  two();
+  const reopened = f.controller.followStream('c1');
+  expect(receive).toHaveBeenCalledTimes(2);
+  reopened();
+});
+
+it('keeps an initial history read alive while the initial detail is reconciled', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.conversation('c1'),
+    queryFn: async () => f.state.detail,
+  });
+  const off = observer.subscribe(() => {});
+  await observer.refetch();
+  const blocked = Promise.withResolvers<{
+    data: never[];
+    meta: { lastSeq: number };
+  }>();
+  const original = f.request.getMockImplementation()!;
+  f.request.mockImplementation((options) =>
+    options.path.endsWith('/messages') ? blocked.promise : original(options),
+  );
+  const loading = f.controller.loadHistory('c1');
+  const refreshing = f.controller.refresh('c1', false);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(
+    f.request.mock.calls.filter(([options]) =>
+      options.path.endsWith('/messages'),
+    ),
+  ).toHaveLength(1);
+  blocked.resolve({ data: [], meta: { lastSeq: 0 } });
+  await Promise.all([loading, refreshing]);
+  off();
 });

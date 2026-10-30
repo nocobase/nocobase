@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification-providers",
   "displayName": "Notification Providers App Plugin",
   "description": "Provides built-in notification Channels and Providers.",
-  "version": "1.0.0-beta.15",
+  "version": "1.0.0-beta.16",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -33,7 +33,11 @@
       "types": "./server/im/index.ts",
       "import": "./server/im/index.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./config": {
+      "types": "./server/email/config.ts",
+      "import": "./server/email/config.ts"
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -54,7 +58,11 @@
         "types": "./dist/server/im/index.d.ts",
         "import": "./dist/server/im/index.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./config": {
+        "types": "./dist/server/email/config.d.ts",
+        "import": "./dist/server/email/config.js"
+      }
     }
   },
   "scripts": {

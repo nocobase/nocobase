@@ -1,3 +1,5 @@
+import { enUS as onboarding } from '../pages/onboarding/locales.js';
+import { enUS as procurement } from '../pages/procurement/locales.js';
 import { enUS as customerContacts } from '../pages/customer-contacts/locales.js';
 import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
 import { workflowNamesEnUS } from '../../shared/workflow-names.js';
@@ -7,6 +9,8 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  procurement,
+  onboarding,
   customerContacts,
   skillProjects: skillProjectsenUS,
   knowledge: {
@@ -628,6 +632,14 @@ const enUS = {
     },
   },
   examples: {
+    onboarding: {
+      title: onboarding.title,
+      description: onboarding.description,
+    },
+    procurement: {
+      title: procurement.title,
+      description: procurement.description,
+    },
     customerContacts: {
       title: 'Customer relations and batch editing',
       description: customerContacts.description,

@@ -7,13 +7,26 @@ import type enUS from './en-US.js';
 const viVN: LocaleResource<typeof enUS> = {
   modelSuggestions: {
     design:
-      'Thiết kế, kiến trúc, điều tra vấn đề khó và đánh giá các thay đổi quan trọng.',
+      'Suy luận mạnh nhất: đề xuất, kiến trúc, điều tra vấn đề khó và đánh giá thay đổi quan trọng; cũng triển khai thông thường và thay đổi nhiều gói.',
+    large:
+      'Triển khai lớn, thay đổi nhiều gói, tái cấu trúc và triển khai thông thường; cũng viết đề xuất, đánh giá mã và thay đổi nhỏ.',
+    review:
+      'Đánh giá mã và phân tích lỗi CI; cũng viết đề xuất và điều tra vấn đề khó.',
     routine:
-      'Triển khai có phạm vi rõ ràng, sửa lỗi nhỏ, kiểm thử và chỉnh câu chữ.',
-    small: 'Thay đổi nhỏ, lặp lại; chi phí thấp và nhanh.',
-    explanation: 'Hiểu yêu cầu, viết đề xuất và giải thích.',
-    large: 'Triển khai lớn, thay đổi trên nhiều gói và tái cấu trúc.',
-    review: 'Đánh giá mã và phân tích lỗi CI.',
+      'Triển khai thông thường, sửa lỗi nhỏ, kiểm thử và câu chữ; cũng phân tích lỗi CI.',
+    small:
+      'Thay đổi nhỏ, chỉnh sửa cơ học và kiểm thử, rẻ và nhanh; cũng phân tích lỗi CI.',
+    explanation: 'Hiểu yêu cầu, giải thích và viết đề xuất.',
+  },
+  goodAtTemplates: {
+    fill: 'Điền từ mẫu',
+    design: 'Thiết kế và đánh giá',
+    large: 'Triển khai lớn',
+    review: 'Đánh giá mã và CI',
+    routine: 'Triển khai thông thường',
+    small: 'Thay đổi nhỏ',
+    explanation: 'Giải thích và đề xuất',
+    undo: 'Hoàn tác',
   },
   actions: {
     back: 'Quay lại',
@@ -98,7 +111,7 @@ const viVN: LocaleResource<typeof enUS> = {
     unavailableNow: 'Hiện không khả dụng',
     title: 'Tác nhân',
     description:
-      'Thêm tác nhân từ các mô hình do trình chạy báo cáo. Người quản lý dự án giao từng bước của nhiệm vụ cho tác nhân có mô tả phù hợp.',
+      'Thêm tác nhân từ các mô hình do trình chạy báo cáo. Lead Agent giao từng bước của nhiệm vụ cho tác nhân có mô tả phù hợp.',
     fromRunners: 'Đại lý từ trình chạy',
     display: {
       search: 'Tìm kiếm người mẫu hoặc nhà cung cấp',
@@ -162,12 +175,11 @@ const viVN: LocaleResource<typeof enUS> = {
         'Báo cáo của các vận động viên {{count}} trực tuyến: {{names}}.',
       noRunnerNow: 'Hiện tại không có trình chạy nào có nó trực tuyến.',
       goodAtHint:
-        'Người quản lý dự án quyết định những gì sẽ giao cho người đại diện này bằng những lời này. Nói những gì nó phù hợp và những gì nó không.',
+        'Lead Agent quyết định những gì sẽ giao cho người đại diện này bằng những lời này. Nói những gì nó phù hợp và những gì nó không.',
       goodAtRequired: 'Viết ra nó giỏi về cái gì trước khi kích hoạt nó.',
-      effortHint:
-        'Người quản lý dự án không thể thay đổi nó khi bàn giao công việc.',
+      effortHint: 'Lead Agent không thể thay đổi nó khi bàn giao công việc.',
       personalOnly:
-        'Chỉ những trình chạy bộ cá nhân mới có nó: người quản lý dự án giao nó chỉ giải quyết các vấn đề mà chủ sở hữu của họ bắt đầu.',
+        'Chỉ những trình chạy bộ cá nhân mới có nó: Lead Agent giao nó chỉ giải quyết các vấn đề mà chủ sở hữu của họ bắt đầu.',
     },
     edit: {
       button: 'Chỉnh sửa',
@@ -789,6 +801,11 @@ const viVN: LocaleResource<typeof enUS> = {
       version: 'Á quân {{version}}',
       runs: 'Các lần chạy gần đây',
       runsEmpty: 'Chưa có lượt chạy nào.',
+      runsTotal: '{{count}} lượt chạy',
+      runsPagination: 'Phân trang lịch sử',
+      runsPrevious: 'Trước',
+      runsNext: 'Tiếp',
+      runsPage: 'Trang {{page}} / {{pageCount}}',
       runsFailed: 'Không thể tải các lượt chạy của nó.',
       readOnly: 'Chỉ có chủ nhân của nó mới có thể thay đổi nó.',
       owner: 'Chủ sở hữu {{name}}',

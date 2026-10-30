@@ -67,7 +67,7 @@ it('discards an older page that returns after an authoritative refresh begins', 
     10, 11,
   ]);
 });
-it('does not let an older detail response overwrite a newer refresh', async () => {
+it('shares the first detail read and retains one authoritative trailing refresh', async () => {
   const a = deferred<ConversationDetail>(),
     b = deferred<ConversationDetail>();
   const conversation = vi
@@ -77,10 +77,11 @@ it('does not let an older detail response overwrite a newer refresh', async () =
   const c = controller({ conversation, messages: async () => page([], 0) });
   const first = c.refresh('c'),
     second = c.refresh('c');
-  b.resolve(detail('new'));
-  await second;
+  expect(conversation).toHaveBeenCalledOnce();
   a.resolve(detail('old', 'running'));
-  await first;
+  await vi.waitFor(() => expect(conversation).toHaveBeenCalledTimes(2));
+  b.resolve(detail('new'));
+  await Promise.all([first, second]);
   expect(agentsQueryClient().getQueryData(chatKeys.conversation('c'))).toEqual(
     detail('new'),
   );

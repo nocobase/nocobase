@@ -1,3 +1,5 @@
+import OnboardingRegistration from './onboarding-registration.js';
+import ProcurementRegistration from './procurement-registration.js';
 import SubmissionProvider from './submission.js';
 import type { ApplicationServiceProviderConstructor } from '@nocobase/app-server/application';
 
@@ -19,6 +21,8 @@ export {
 
 const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
   SubmissionProvider,
+  ProcurementRegistration,
+  OnboardingRegistration,
   AppExampleProvider,
   AIFormFillProvider,
   WorkflowManagementProvider,

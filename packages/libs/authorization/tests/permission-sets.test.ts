@@ -768,3 +768,47 @@ describe('subscribing to assignment changes', () => {
     expect(changed).not.toHaveBeenCalled();
   });
 });
+
+describe('batched effective permission sets', () => {
+  it('preserves assignment order, deduplicates keys and rejects missing sets', async () => {
+    const store = readerStore();
+    await store.create({ key: 'second', grants: [] });
+    await store.assign({
+      id: 'second-assignment',
+      subject: alice.principal,
+      permissionSet: 'second',
+    });
+    await store.assign({
+      id: 'duplicate-reader',
+      subject: alice.principal,
+      permissionSet: 'order-reader',
+    });
+    const get = vi.spyOn(store, 'get');
+    const getMany = vi.fn(async (keys: readonly string[]) =>
+      (await store.list()).filter((set) => keys.includes(set.key)).reverse(),
+    );
+    const batched = Object.assign(store, { getMany });
+    const authorization = createAuthorization({
+      plugins: [permissionSetsPlugin({ store: batched })],
+    });
+    const effective = await authorization.permissionSets.getEffective(alice);
+    expect(effective.map((set) => set.key)).toEqual(['order-reader', 'second']);
+    expect(getMany).toHaveBeenCalledExactlyOnceWith(['order-reader', 'second']);
+    expect(get).not.toHaveBeenCalled();
+    getMany.mockResolvedValue([]);
+    await expect(
+      authorization.permissionSets.getEffective(alice),
+    ).rejects.toThrow('Unknown Permission Set: order-reader');
+  });
+  it('does not issue a batch lookup for an identity with no assignments', async () => {
+    const store = new MockPermissionSetStore();
+    const getMany = vi.fn(async () => []);
+    const authorization = createAuthorization({
+      plugins: [
+        permissionSetsPlugin({ store: Object.assign(store, { getMany }) }),
+      ],
+    });
+    expect(await authorization.permissionSets.getEffective(alice)).toEqual([]);
+    expect(getMany).not.toHaveBeenCalled();
+  });
+});

@@ -1,5 +1,26 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.16
+
+### Minor Changes
+
+- b6934ad: Add an independent SMTP or Resend sender for password recovery with private environment configuration, bounded execution and legacy channel compatibility.
+
+### Patch Changes
+
+- b6934ad: Resolve deprecated password recovery channels inside Authentication and use its own transport and execution lifecycle for both built-in senders. Explicitly enabled legacy applications with valid email channels no longer need a host MailerProvider or installed notification/mailbox plugin. Keep custom callback priority, opt-in requirements, safe diagnostics and single-submission behavior. Remove unused host mailer registrations from templates and fixtures; the published host API remains frozen for external consumers. Keep sender selection and deprecation diagnostics on the main Authentication instance, without repeating them for transaction-bound administration instances.
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/mailer@0.1.0-beta.1
+
 ## 2.0.0-beta.15
 
 ### Patch Changes

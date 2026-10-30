@@ -103,6 +103,13 @@ describe('what conversations need of their owner', () => {
     ).toEqual({ unread: 0, needsYou: 0 });
 
     const path = `/agents/conversations/${id}/markSeen`;
+    const receipts: AgentsEvent[] = [];
+    const stopReceipts = h.services.events.on(
+      'conversation.changed',
+      (event) => {
+        receipts.push(event);
+      },
+    );
     expect(
       (await h.request('POST', path, { user: 'bob', body: { seq: 2 } })).status,
     ).toBe(404);
@@ -118,6 +125,15 @@ describe('what conversations need of their owner', () => {
     });
     // Never back.
     expect((await domain().markSeen(ALICE, id, 0)).seenSeq).toBe(2);
+    stopReceipts();
+    expect(receipts).toEqual([
+      {
+        type: 'conversation.changed',
+        conversationId: id,
+        userId: ALICE,
+        seenSeq: 2,
+      },
+    ]);
     expect(await counts()).toEqual({ unread: 0, needsYou: 0 });
 
     // Writing after a reply settles it too, announced without a seq so listeners that settle notices act on it.
@@ -157,6 +173,40 @@ describe('what conversations need of their owner', () => {
     await domain().update(ALICE, id, { archived: true });
     expect((await domain().get(ALICE, id)).needsYou).toBeNull();
   });
+
+  it.each(['read', 'needsYou'] as const)(
+    'announces a %s-only acknowledgement without a read position',
+    async (field) => {
+      h = await createHarness();
+      const agentId = await h.createAgent({ name: 'PM' });
+      const id = (await domain().create(ALICE, { agentId })).id;
+      const before = await domain().get(ALICE, id);
+      await h.database
+        .connection()
+        .repository('agConversations')
+        .updateMany({
+          filter: { id },
+          values:
+            field === 'read'
+              ? { read: false }
+              : { needsYou: 'reply', needsYouSeq: before.seenSeq },
+        });
+      const receipts: AgentsEvent[] = [];
+      const stop = h.services.events.on('conversation.changed', (event) => {
+        receipts.push(event);
+      });
+      const after = await domain().markSeen(ALICE, id, before.seenSeq);
+      stop();
+      expect(after).toMatchObject({
+        seenSeq: before.seenSeq,
+        read: true,
+        needsYou: null,
+      });
+      expect(receipts).toEqual([
+        { type: 'conversation.changed', conversationId: id, userId: ALICE },
+      ]);
+    },
+  );
 
   it("keeps an agent's question waiting until the owner writes", async () => {
     h = await createHarness();
