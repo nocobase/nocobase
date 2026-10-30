@@ -363,6 +363,11 @@ describe('requestLogger', () => {
             .replace(':token', encodeURIComponent(token))
             .replace(':sessionId', encodeURIComponent(token))
             .replace(':issueId', issueId),
+          {
+            headers: {
+              referer: `http://localhost/reset-password/${encodeURIComponent(token)}?token=${token}`,
+            },
+          },
         );
         expect(response.status).toBe(status === 'throw' ? 200 : status);
       }
@@ -379,6 +384,9 @@ describe('requestLogger', () => {
         if (req.params?.sessionId)
           expect(req.params.sessionId).toBe('[REDACTED]');
         if (req.params?.issueId) expect(req.params.issueId).toBe(issueId);
+        const headers = (record.req as { headers?: Record<string, string> })
+          .headers;
+        if (headers) expect(headers.referer).toBe('http://localhost');
       }
       const completed = records.filter((record) => record.res !== undefined);
       expect(completed).toHaveLength(status === 'throw' ? 6 : 3);

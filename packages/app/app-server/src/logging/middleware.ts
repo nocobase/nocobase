@@ -264,7 +264,16 @@ function selectHeaders(
   const headers: Record<string, string> = {};
   for (const name of names) {
     const value = context.req.header(name);
-    if (value !== undefined) headers[name.toLowerCase()] = value;
+    if (value === undefined) continue;
+    const key = name.toLowerCase();
+    if (key === 'referer') {
+      // Referrers can repeat the same private path or query as the request.
+      try {
+        headers[key] = new URL(value).origin;
+      } catch {
+        // An invalid referrer is not useful diagnostic context.
+      }
+    } else headers[key] = value;
   }
   return headers;
 }
