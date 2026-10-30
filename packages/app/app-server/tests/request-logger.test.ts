@@ -85,7 +85,6 @@ describe('requestLogger', () => {
         req: {
           method: 'GET',
           path: '/users/:id',
-          route: '/users/:id',
           params: { id: '42' },
           query: { limit: '20' },
           caller: 'anonymous',

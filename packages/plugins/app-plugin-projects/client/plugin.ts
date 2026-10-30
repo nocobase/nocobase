@@ -20,6 +20,8 @@ export interface ProjectsClientOptions {
   readonly routes?: boolean;
   /** Application effects mounted inside the projects query cache. */
   readonly queryEffects?: ComponentType;
+  /** Set false when the application refreshes its own route cache. Defaults to true. */
+  readonly realtime?: boolean;
 }
 
 const projects: AppClientPluginFactory<ProjectsClientOptions> =
@@ -29,15 +31,13 @@ const projects: AppClientPluginFactory<ProjectsClientOptions> =
     routes: (options) => (options.routes === false ? [] : routes),
     reactProviders: (options) => {
       const Effects = options.queryEffects;
-      const component = Effects
-        ? ({ children }: PropsWithChildren) =>
-            createElement(
-              PmQueryProvider,
-              null,
-              createElement(Effects),
-              children,
-            )
-        : PmQueryProvider;
+      const component = ({ children }: PropsWithChildren) =>
+        createElement(
+          PmQueryProvider,
+          { realtime: options.realtime },
+          Effects ? createElement(Effects) : null,
+          children,
+        );
       return [{ name: 'pm-query', component }];
     },
   });
