@@ -1,5 +1,43 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.55
+
+### Minor Changes
+
+- f5703e1: Add a runnable customers and contacts example with scoped relation selection, transactional batch assignments, native authorization tests and synchronized adaptation references.
+- a9872cc: Add a runnable procurement request example with scoped references, exact amounts, atomic parent and line saves, editable applicant quote snapshots with current catalog comparisons, designated reviewer transitions and synchronized adaptation guidance.
+
+### Patch Changes
+
+- a56182e: Clarify paused and active list loading states, correct the delayed refresh indicator example, and add overlay transition acceptance checks.
+- d3f0c92: Present concise, theme-aware list feedback for loading, empty data, unmatched filters, denied access and request failures, preserve prior results after failed refreshes, and include target-guidance discovery, source reconciliation and verified completion in the existing version-selected template upgrade workflow.
+- d3f0c92: Show each built-in list state with a matching icon and one concise line, keep recovery actions in existing controls, retain prior data after refresh failures, and show loading instead of previous-query results while a new query is pending.
+- 4a2c960: Plan pages, data, endpoints and permissions together before implementing a complete application or feature. Let routine CRUD pages use the lightweight workflow while retaining internal reviews for complex interactions, and verify complete user operations instead of treating backend tests or design documents as delivery.
+- 3402d7e: Add a runnable project list and edit example with persisted data, native authorization, submission recovery across reloads and deleted records, and synchronized Skills source checked for drift.
+- e4ff32a: Rename the unpublished Mutex adapter to @nocobase/app-plugin-concurrency and add its application-owned service token, Provider, strict named configuration and pure configuration factory. Default and Examples explicitly register the plugin and its in-process Mutex configuration. Install the compatible concurrency core and host peers; the default remains process-local and does not coordinate multiple instances. Server APIs, including deliberate low-level Mutex construction, are exported from /server; configuration uses /config. No library-style package-root export, private implementation subpath, app-server concurrency subpath or old-package alias is provided.
+- a0b4568: **Breaking:** Move ordinary and recurring Redis Jobs out of the open-source runtime into the commercial `@nocobase/app-plugin-jobs-redis` Server plugin. Redis deployments must install and register a compatible plugin on every producer and consumer as part of the framework upgrade; selecting an unregistered backend now fails explicitly instead of falling back to Memory. Move Redis-specific type imports from `@nocobase/jobs` to `@nocobase/app-plugin-jobs-redis/config`.
+
+  Add application-owned, paired backend registration through `jobExecutorServiceToken`'s `registerImplementation(name, implementation)` and public `JobsImplementation` contracts from `@nocobase/jobs`, without a separate registry token. Keep the existing Jobs service token, lazy executors and Memory behavior. Registration opens no resources and is not frozen by boot or executor startup. Services require no setup; configuration and missing implementations are validated when an executor is requested, and consumers still own executor startup. Default and Examples templates now declare only Memory. Preserve existing Redis connection, namespace, scopes and job identities; no database or Redis data migration is required. Queue Redis is unchanged.
+
+  Existing YAML overrides that relied on template defaults must explicitly declare `adapter: redis` for each Redis Jobs configuration; `connection` alone no longer selects Redis. Updated template examples document the commercial Server plugin installation and registration prerequisite.
+
+  Selected configurations with missing, empty or non-string adapters are rejected instead of silently using Memory.
+
+  Release the framework first and verify its exact version is downloadable from the customer registry before pinning and releasing the compatible commercial plugin. Redis users must wait through any publication gap and upgrade the framework and plugin together.
+
+- d3f0c92: Clarify that the permission-gated list create action stays in the page header when a list is empty.
+- 5ce4a7c: Move the Redis/BullMQ Queue backend to the Server-only commercial `@nocobase/app-plugin-queue-redis` plugin. Applications using Redis Queue must install and explicitly register that plugin and retain the same Redis target, namespace and logical queue names. Memory remains built in and both templates now declare only Memory. Common configuration is always validated; an unselected Redis declaration no longer requires its implementation, but selecting Redis without it fails explicitly without falling back to Memory. Backend implementations register through the new public runtime contract before host setup. Remove `QueueService.registerBackend()` and OSS Redis identity exports; migrate factories and identity imports to the commercial plugin. Jobs and recurring schedules are unchanged. Coordinate release order: publish the additive OSS API, then the compatible commercial plugin, before shipping this removal. Rollback requires a compatible OSS/plugin/application composition set, not uninstalling the plugin alone.
+- d3f0c92: Remove the generic Page access description from both templates while keeping role permissions unchanged.
+- b6934ad: Expose notification email configuration helpers from `@nocobase/app-plugin-notification-providers/config` and mailer contracts and validation from `@nocobase/mailer/config`, without loading sending runtimes. Preserve notification validation, optional private environment mappings and application overrides. Migrate application templates and configuration examples to the new import. Freeze and deprecate the published `@nocobase/app-server/mailer` API while retaining existing behavior for applications that still depend on it.
+- e6af70d: Remove unused route-override and source-extension entry files from application templates. Document explicit opt-in route overrides and preserve existing application customizations during template upgrades.
+- a56182e: Share reference-aware UI design and acceptance rules between application and plugin development. Preserve application-owned design decisions and authorized page exceptions across tasks, compare original references during review, and clarify installed dialog footer ownership and scrolling verification. Require component selection and source review, and ship a targeted JSX checker for duplicate native interactions with narrowly documented exceptions. Bind exceptions to adjacent elements without interpreting rendered JSX text as comments.
+- a9872cc: Keep procurement actions disabled until saved versions finish refreshing, and preserve conflict feedback across refreshed editors.
+- a56182e: Correct the submission example to record failed form submissions and revalidate corrected fields while retaining the submission lock before asynchronous validation.
+- d3f0c92: Keep table headers and existing controls visible while list feedback appears in the table body, and retain same-query rows alongside refresh-failure messages.
+- 38ad946: Clarify asynchronous UI continuity and transition verification, and document file upload components, unsaved form protection, and content URL handling in the application development skill.
+
+  Continue frontend implementation after presenting the reviewed design without requiring routine user confirmation.
+
 ## 0.1.0-beta.54
 
 ### Patch Changes

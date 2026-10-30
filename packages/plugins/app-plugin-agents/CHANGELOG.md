@@ -1,5 +1,48 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.0
+
+### Minor Changes
+
+- 57ecc34: Allow applications to supply project workspaces for Runner conversations, retain their runner when changing agents, and continue from the latest conversation summary. Project selection is frozen after the first message. Project access checks can use the caller's transaction connection.
+
+  Reject Agent changes when the conversation’s bound project runner cannot run the selected Agent, preserving its workspace and queued work.
+
+- 8f3e54d: Allow Runner conversations to choose and retain reasoning effort from their current model's eligible runtime capabilities, and preserve the selected effort in each turn and run.
+
+### Patch Changes
+
+- c571810: Add batched causal run and input reads on the caller's connection so applications can avoid repeated progress lookups.
+- b2c0dfd: Let runners scan up to two additional pages of queued runs when earlier candidates cannot run on them, preserving claim order and the existing capacity checks.
+- 311f6e1: Offer six editable description templates through a compact selector with one-step Undo when adding or editing runner agents, and suggest a template for newer models in known families.
+- 4c89e3c: Refresh run status when a realtime notification arrives before the first detail request finishes.
+- 483ac67: Use supported Agent defaults for unselected conversation reasoning effort and fall back to coding tool defaults when capabilities are unknown or do not support the Agent default, retain only explicit non-default selections, and expose a display notice when a selected effort falls back to the tool default.
+- b2eed36: Preserve pending conversation history reads when marking messages as read.
+- 82f9c1d: BREAKING: Agents 2 removes legacy vector collections, their SQLite/pgvector stores, workers and public types. Migrate consumers before upgrading; active `agents.vectors` settings now fail startup, while `{ store: false }` remains an inert compatibility setting for the 2.x line. Model services, Embedding, usage recording and Knowledge's independent indexing remain available. Historical migrations and existing data are retained. See `@nocobase/app-plugin-agents/docs/vectors-migration.md` for API/configuration migration, backups and rollback. Republish direct consumers against the new Agents major version.
+- 91b7602: Reuse active conversation streams when returning to a chat, synchronize saved history when a stream cannot be resumed, and release a pending browser subscription after its execution has durably finished.
+- eff2cb2: Paginate runtime run history in groups of twenty with previous/next controls, page numbers and an exact total. Align runtime status and quota badge sizes and spacing, and show quota hints in a warning color.
+
+  Adds a reversible index on runtime, start time and run id. Building the index during an upgrade scans existing run history and can briefly block run writes.
+
+  Show owned conversations by title with their native entry in runtime history. Hide other conversations behind a localized label without exposing their title or link, using current ownership.
+
+  Place the runtime history loading action below the table with the number of displayed runs, and keep dates on older runs readable.
+
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-cli@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
 ## 2.0.0-beta
 
 ### Breaking changes
