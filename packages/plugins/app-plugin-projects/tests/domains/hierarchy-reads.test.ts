@@ -244,9 +244,15 @@ it('keeps database hierarchy relations equivalent to authorized filter matches',
         viewer,
         query,
       );
-      const rows = (await client.raw(source.matching.sql, [
-        ...source.matching.parameters,
-      ] as Knex.RawBinding[])) as { id: string }[];
+      const rows = (await client
+        .with(
+          'authorized',
+          client.raw(source.matching.sql, [
+            ...source.matching.parameters,
+          ] as Knex.RawBinding[]),
+        )
+        .select('id')
+        .from('authorized')) as { id: string }[];
       expect(rows.map((row) => row.id).sort()).toEqual(
         [...hierarchy.matchingIds].sort(),
       );
@@ -298,9 +304,15 @@ it('keeps the blocker relation equivalent to hierarchy waits without exposing in
       { unfinishedOnly: true },
     );
     const source = await h.services.issueQueries.hierarchySource(viewer, {});
-    const rows = (await client.raw(source.blocked.sql, [
-      ...source.blocked.parameters,
-    ] as Knex.RawBinding[])) as { id: string }[];
+    const rows = (await client
+      .with(
+        'authorized',
+        client.raw(source.blocked.sql, [
+          ...source.blocked.parameters,
+        ] as Knex.RawBinding[]),
+      )
+      .select('id')
+      .from('authorized')) as { id: string }[];
     const unfinished = new Set(
       hierarchy.issues
         .filter((i) => !['done', 'cancelled'].includes(i.statusKey))
