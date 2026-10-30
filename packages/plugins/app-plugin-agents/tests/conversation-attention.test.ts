@@ -174,6 +174,40 @@ describe('what conversations need of their owner', () => {
     expect((await domain().get(ALICE, id)).needsYou).toBeNull();
   });
 
+  it.each(['read', 'needsYou'] as const)(
+    'announces a %s-only acknowledgement without a read position',
+    async (field) => {
+      h = await createHarness();
+      const agentId = await h.createAgent({ name: 'PM' });
+      const id = (await domain().create(ALICE, { agentId })).id;
+      const before = await domain().get(ALICE, id);
+      await h.database
+        .connection()
+        .repository('agConversations')
+        .updateMany({
+          filter: { id },
+          values:
+            field === 'read'
+              ? { read: false }
+              : { needsYou: 'reply', needsYouSeq: before.seenSeq },
+        });
+      const receipts: AgentsEvent[] = [];
+      const stop = h.services.events.on('conversation.changed', (event) => {
+        receipts.push(event);
+      });
+      const after = await domain().markSeen(ALICE, id, before.seenSeq);
+      stop();
+      expect(after).toMatchObject({
+        seenSeq: before.seenSeq,
+        read: true,
+        needsYou: null,
+      });
+      expect(receipts).toEqual([
+        { type: 'conversation.changed', conversationId: id, userId: ALICE },
+      ]);
+    },
+  );
+
   it("keeps an agent's question waiting until the owner writes", async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ name: 'PM' });

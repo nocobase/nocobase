@@ -2292,9 +2292,13 @@ export function createConversationService(
           filter: { id },
           values,
         });
-        changed(unit, record, {
-          seenSeq: Number(values.seenSeq ?? record.seenSeq ?? 0),
-        });
+        changed(
+          unit,
+          record,
+          values.seenSeq === undefined
+            ? undefined
+            : { seenSeq: values.seenSeq },
+        );
       });
       return detail(userId, id);
     },

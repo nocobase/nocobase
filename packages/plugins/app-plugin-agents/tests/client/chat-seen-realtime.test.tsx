@@ -99,7 +99,11 @@ async function fixture() {
     detail = { ...detail, seenSeq, read: seenSeq >= detail.lastSeq };
     return detail;
   };
-  return { client, key, reads, seen, update, settle, controller };
+  const patch = (values: Partial<ConversationDetail>) => {
+    detail = { ...detail, ...values };
+    return detail;
+  };
+  return { client, key, reads, seen, update, patch, settle, controller };
 }
 
 it.each(['before', 'after'])(
@@ -138,6 +142,27 @@ it('refreshes another tab’s exact detail without its links or usage', async ()
   expect(f.reads.usage).toHaveBeenCalledTimes(1);
   expect(f.client.getQueryData<ConversationDetail>(f.key)?.seenSeq).toBe(5);
 });
+
+it.each(['read', 'needsYou'] as const)(
+  'refreshes another tab after a %s-only acknowledgement at the same read position',
+  async (field) => {
+    const f = await fixture();
+    const before = f.patch({
+      seenSeq: 5,
+      read: field !== 'read',
+      needsYou:
+        field === 'needsYou' ? { reason: 'reply', seq: 5, text: null } : null,
+    });
+    f.client.setQueryData(f.key, before);
+    const after = f.patch({ read: true, needsYou: null });
+    f.seen();
+    await f.settle();
+    expect(f.client.getQueryData(f.key)).toEqual(after);
+    expect(f.reads.detail).toHaveBeenCalledTimes(2);
+    expect(f.reads.links).toHaveBeenCalledTimes(2);
+    expect(f.reads.usage).toHaveBeenCalledTimes(2);
+  },
+);
 
 it('retains the full prefix refresh for old events without a read position', async () => {
   const f = await fixture();
