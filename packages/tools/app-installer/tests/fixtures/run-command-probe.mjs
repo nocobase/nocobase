@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process';
+import childProcess, { spawn } from 'node:child_process';
+import { syncBuiltinESMExports } from 'node:module';
 import { pbkdf2Sync } from 'node:crypto';
 import { appendFileSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -66,6 +67,24 @@ if (mode === 'leaf') {
   const timed = !mode.includes('interrupt');
   let readinessTimer;
   let output = '';
+  let leafPid;
+  let leaderExited = !mode.includes('early-exit');
+  const prepared = () => {
+    if (leafPid && leaderExited) ready.resolve(leafPid);
+  };
+  if (!leaderExited) {
+    const spawnLeader = childProcess.spawn;
+    // Observe the real exit event without changing spawn arguments or streams.
+    mock.method(childProcess, 'spawn', (...args) => {
+      const child = spawnLeader(...args);
+      child.once('exit', () => {
+        leaderExited = true;
+        prepared();
+      });
+      return child;
+    });
+    syncBuiltinESMExports();
+  }
   if (timed) {
     // Freeze only the initial timeout during fixture preparation. Restore real
     // timers before stopping so TERM/KILL grace and observations stay real.
@@ -75,6 +94,8 @@ if (mode === 'leaf') {
       globalThis.setTimeout = schedule;
       return schedule(() => {
         mock.timers.reset();
+        // Restore live ESM bindings such as timers/promises before observation.
+        syncBuiltinESMExports();
         callback(...args);
       }, ms);
     };
@@ -96,7 +117,10 @@ if (mode === 'leaf') {
           write(chunk, _encoding, next) {
             output += chunk.toString();
             const match = output.match(/ready:(\d+)\n/);
-            if (match) ready.resolve(Number(match[1]));
+            if (match) {
+              leafPid = Number(match[1]);
+              prepared();
+            }
             next();
           },
         }),
@@ -109,6 +133,8 @@ if (mode === 'leaf') {
         exitCode: error.exitCode,
       }),
     );
+    mock.restoreAll();
+    syncBuiltinESMExports();
     readinessTimer = nativeSetTimeout(
       () => ready.reject(new Error('The probe leaf did not become ready.')),
       2500,
@@ -149,6 +175,8 @@ if (mode === 'leaf') {
   } finally {
     nativeClearTimeout(readinessTimer);
     mock.timers.reset();
+    mock.restoreAll();
+    syncBuiltinESMExports();
     remove();
     // The supervisor kills and waitpid-reaps every adopted child, including on assertion or driver failure.
   }
