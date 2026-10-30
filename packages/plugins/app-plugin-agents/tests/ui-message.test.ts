@@ -316,3 +316,18 @@ it('publishes only the authorized display context and source timestamps through 
   });
   expect(JSON.stringify(saved)).not.toContain('hidden');
 });
+
+it('validates workspace preparation as a public live phase', async () => {
+  const preparing: AppUIMessage = {
+    id: 'preparing',
+    role: 'assistant',
+    metadata: {
+      conversationId: 'conversation',
+      seq: 2,
+      createdAt: '2026-10-17T12:00:00Z',
+      revision: 1,
+    },
+    parts: [{ type: 'data-phase', id: 'phase', data: { phase: 'preparing' } }],
+  };
+  expect(await validateAppUIMessages([preparing])).toEqual([preparing]);
+});
