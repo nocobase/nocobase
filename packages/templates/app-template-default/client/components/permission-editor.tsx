@@ -538,8 +538,6 @@ function PermissionRow({
 }): ReactElement {
   const hasControls =
     row.enabled && Boolean(row.levels?.length || row.scopes?.length);
-  const singleRange =
-    hasControls && (row.scopes?.length ?? 0) + (row.levels ? 1 : 0) === 1;
   const describedBy =
     [
       row.hint ? `${controlId}-hint` : undefined,
@@ -554,19 +552,14 @@ function PermissionRow({
       className={cn(
         'group/field grid min-w-0 gap-2 rounded-md px-2 py-2 hover:bg-hover',
         presentation === 'inline' && 'inline-flex items-start',
-        singleRange && 'sm:flex sm:flex-wrap sm:items-start sm:gap-x-5',
       )}
     >
-      <div
-        className={cn(
-          'flex min-w-0 items-start gap-3',
-          singleRange && 'sm:max-w-lg',
-        )}
-      >
+      <div className='flex min-w-0 items-start gap-3'>
         <Checkbox
           id={controlId}
           className='mt-0.5 shrink-0'
           checked={row.enabled}
+          aria-label={row.label}
           disabled={readOnly || row.toggleable === false}
           onCheckedChange={(on: boolean) => onEnabledChange(row.id, on)}
           aria-describedby={describedBy}
@@ -606,29 +599,35 @@ function PermissionRow({
       {hasControls && (
         <div
           data-slot='permission-scopes'
-          className={cn(
-            'grid min-w-0 gap-x-5 gap-y-2 pl-7 sm:grid-cols-2',
-            singleRange && 'w-full sm:w-80 sm:shrink-0 sm:grid-cols-1 sm:pl-0',
-          )}
+          className='grid min-w-0 max-w-[60rem] gap-x-6 gap-y-2 pl-7 @min-[48rem]/permissions:grid-cols-2'
         >
           {row.levels && (
-            <LevelControl
-              label={labels.levelFor(row.label)}
-              levels={row.levels}
-              value={row.level ?? ''}
-              disabled={readOnly}
-              onChange={(level) => onLevelChange(row.id, level)}
-            />
+            <div className='grid min-w-0 items-start gap-x-3 gap-y-1 @min-[26rem]/permissions:grid-cols-[8.5rem_minmax(0,1fr)]'>
+              <span aria-hidden />
+              <div className='grid min-w-0 grid-cols-[minmax(0,1fr)_1.5rem] items-start gap-x-1'>
+                <LevelControl
+                  label={labels.levelFor(row.label)}
+                  levels={row.levels}
+                  value={row.level ?? ''}
+                  disabled={readOnly}
+                  onChange={(level) => onLevelChange(row.id, level)}
+                />
+              </div>
+            </div>
           )}
           {row.scopes?.map((scope) => (
             <div
               key={scope.id}
-              className='grid min-w-0 grid-cols-[minmax(4rem,auto)_minmax(0,1fr)] items-center gap-2'
+              data-slot='permission-scope'
+              className='grid min-w-0 items-start gap-x-3 gap-y-1 @min-[26rem]/permissions:grid-cols-[8.5rem_minmax(0,1fr)]'
             >
-              <span className='max-w-36 text-xs break-words text-muted-foreground'>
+              <span
+                title={scope.label}
+                className='line-clamp-2 min-w-0 pt-1 text-xs break-words text-muted-foreground'
+              >
                 {scope.label}
               </span>
-              <div className='flex min-w-0 items-center gap-1'>
+              <div className='grid min-w-0 grid-cols-[minmax(0,1fr)_1.5rem] items-start gap-x-1 gap-y-1'>
                 <LevelControl
                   label={labels.levelFor(`${row.label} · ${scope.label}`)}
                   levels={scope.levels}
@@ -636,13 +635,21 @@ function PermissionRow({
                   disabled={readOnly}
                   onChange={(level) => onLevelChange(scope.id, level)}
                 />
-                {scope.configuration}
-                {scope.hint && (
-                  <ScopeHint
-                    label={labels.scopeHintFor(`${row.label} · ${scope.label}`)}
-                  >
-                    {scope.hint}
-                  </ScopeHint>
+                <div className='col-start-2 row-start-1'>
+                  {scope.hint && (
+                    <ScopeHint
+                      label={labels.scopeHintFor(
+                        `${row.label} · ${scope.label}`,
+                      )}
+                    >
+                      {scope.hint}
+                    </ScopeHint>
+                  )}
+                </div>
+                {scope.configuration && (
+                  <div className='col-start-1 min-w-0'>
+                    {scope.configuration}
+                  </div>
                 )}
               </div>
             </div>
@@ -652,7 +659,7 @@ function PermissionRow({
           ].map((hint) => (
             <p
               key={hint}
-              className='text-xs leading-5 text-muted-foreground sm:col-span-full'
+              className='col-span-full text-xs leading-5 text-muted-foreground'
             >
               {hint}
             </p>
@@ -797,7 +804,7 @@ export function PermissionEditor({
         setQuery('');
         setStatus('all');
       }}
-      className='min-w-0 gap-3'
+      className='@container/permissions min-w-0 gap-3'
     >
       {available.length > 0 && (
         <div className='overflow-x-auto pb-1'>
