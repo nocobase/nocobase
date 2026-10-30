@@ -219,6 +219,7 @@ const chatRefreshOwners = new WeakMap<
 
 export function useChatRealtime(enabled: boolean): void {
   const queryClient = agentsQueryClient();
+  const controller = useChatController();
   const staleRef = useRef<ReturnType<typeof coalescedInvalidation> | undefined>(
     undefined,
   );
@@ -253,8 +254,29 @@ export function useChatRealtime(enabled: boolean): void {
       }
       if (!isChatPayload(payload)) return;
       staleRef.current?.add(chatKeys.lists);
-      if (payload.kind === 'conversation.changed')
-        staleRef.current?.add(chatKeys.conversation(payload.conversationId));
+      if (payload.kind === 'conversation.changed') {
+        const key = chatKeys.conversation(payload.conversationId);
+        const seenSeq = payload.seenSeq;
+        if (
+          typeof seenSeq === 'number' &&
+          Number.isSafeInteger(seenSeq) &&
+          seenSeq >= 0
+        ) {
+          const current = queryClient.getQueryData<ConversationDetail>(key);
+          if ((current?.seenSeq ?? -1) >= seenSeq) return;
+          const refresh = () => staleRef.current?.add(key, true);
+          if (
+            !controller.deferReadReceipt(
+              payload.conversationId,
+              seenSeq,
+              refresh,
+            )
+          )
+            refresh();
+        } else {
+          staleRef.current?.add(key);
+        }
+      }
     },
     true,
   );

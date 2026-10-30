@@ -126,6 +126,10 @@ export class ChatController {
   private generation = 0;
   private detailVersions = new Map<string, number>();
   private receiptVersions = new Map<string, number>();
+  private pendingReceipts = new Map<
+    string,
+    { seenSeq: number; refresh?: () => void }
+  >();
   private commandVersions = new Map<string, number>();
   constructor(readonly api: ChatApi) {
     this.submissions = new ChatSubmissions(
@@ -1409,25 +1413,73 @@ export class ChatController {
     if (JSON.stringify(previous) !== JSON.stringify(detail))
       void client.invalidateQueries({ queryKey: chatKeys.lists });
   }
+  /** The HTTP receipt supplies this tab's snapshot; retain a newer read position for a trailing read. */
+  deferReadReceipt(id: string, seenSeq: number, refresh: () => void): boolean {
+    const pending = this.pendingReceipts.get(id);
+    if (!pending) return false;
+    pending.seenSeq = Math.max(pending.seenSeq, seenSeq);
+    pending.refresh = refresh;
+    return true;
+  }
   async markRead(id: string): Promise<ConversationDetail> {
+    const client = agentsQueryClient();
+    const key = chatKeys.conversation(id);
+    const before = client.getQueryData<ConversationDetail>(key);
     const active = this.lifetime(),
       commandVersion = this.commandVersions.get(id),
       receiptVersion = (this.receiptVersions.get(id) ?? 0) + 1;
     // Detail reads must not suppress the read transition needed by a viewed conversation.
     this.receiptVersions.set(id, receiptVersion);
+    const pending: {
+      seenSeq: number;
+      refresh?: () => void;
+    } = { seenSeq: -1 };
+    this.pendingReceipts.set(id, pending);
     this.nextDetailVersion(id);
-    const detail = await this.api.markRead(id);
-    if (
-      active() &&
-      this.commandVersions.get(id) === commandVersion &&
-      this.receiptVersions.get(id) === receiptVersion
-    ) {
-      // Read receipts do not change execution or invalidate pending history.
-      this.nextDetailVersion(id);
-      agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
-      void agentsQueryClient().invalidateQueries({ queryKey: chatKeys.lists });
+    try {
+      const detail = await this.api.markRead(id);
+      if (
+        active() &&
+        this.commandVersions.get(id) === commandVersion &&
+        this.receiptVersions.get(id) === receiptVersion
+      ) {
+        // Read receipts do not change execution or invalidate pending history.
+        this.nextDetailVersion(id);
+        client.setQueryData<ConversationDetail>(key, (current) => {
+          if (
+            !current ||
+            current === before ||
+            (current.lastSeq ?? 0) < (detail.lastSeq ?? 0) ||
+            (current.lastSeq === detail.lastSeq &&
+              current.updatedAt < detail.updatedAt)
+          )
+            return detail;
+          // A later snapshot may already contain the next reply or a metadata change.
+          const seenSeq = Math.max(current.seenSeq ?? 0, detail.seenSeq ?? 0);
+          return {
+            ...current,
+            seenSeq,
+            read: seenSeq >= (current.lastSeq ?? 0) || current.read,
+            needsYou:
+              current.needsYou &&
+              current.needsYou.reason !== 'confirm' &&
+              current.needsYou.seq <= seenSeq
+                ? null
+                : current.needsYou,
+          };
+        });
+      }
+      return detail;
+    } finally {
+      if (this.pendingReceipts.get(id) === pending) {
+        this.pendingReceipts.delete(id);
+        const current = agentsQueryClient().getQueryData<ConversationDetail>(
+          chatKeys.conversation(id),
+        );
+        if (active() && pending.seenSeq > (current?.seenSeq ?? -1))
+          pending.refresh?.();
+      }
     }
-    return detail;
   }
   async command<T>(
     id: string,
@@ -1495,6 +1547,7 @@ export class ChatController {
     this.refreshAgain.clear();
     this.commandVersions.clear();
     this.receiptVersions.clear();
+    this.pendingReceipts.clear();
     this.stopRequests.clear();
     this.approvalRequests.clear();
     this.recoveries.clear();
