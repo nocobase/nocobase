@@ -601,7 +601,7 @@ function PermissionRow({
           data-slot='permission-scopes'
           className='grid min-w-0 max-w-[60rem] gap-x-6 gap-y-2 pl-7 @min-[48rem]/permissions:grid-cols-2'
         >
-          {row.levels && (
+          {row.levels && row.levels.length > 0 && (
             <div className='grid min-w-0 items-start gap-x-3 gap-y-1 @min-[26rem]/permissions:grid-cols-[8.5rem_minmax(0,1fr)]'>
               <span aria-hidden />
               <div className='grid min-w-0 grid-cols-[minmax(0,1fr)_1.5rem] items-start gap-x-1'>

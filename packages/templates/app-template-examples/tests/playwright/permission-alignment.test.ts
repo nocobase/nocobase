@@ -36,6 +36,13 @@ for (const width of [1440, 1024, 768, 390, 375, 360]) {
       if (await controls.count()) {
         const first = await controls.first().boundingBox();
         expect(first!.y).toBeGreaterThan(checkbox!.y + checkbox!.height);
+        expect(Math.round(first!.x)).toBe(
+          Math.min(...geometry.map((item) => item.x)),
+        );
+        if ((await controls.count()) % 2 === 1) {
+          const last = await controls.last().boundingBox();
+          expect(Math.round(last!.x)).toBe(Math.round(first!.x));
+        }
       }
     }
     for (const scope of await page

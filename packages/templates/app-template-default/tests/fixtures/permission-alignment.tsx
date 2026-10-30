@@ -51,6 +51,7 @@ export default function Fixture() {
                       return {
                         id,
                         label: id,
+                        levels: [],
                         hint: 'Existing permission descriptions remain visible.',
                         enabled: enabled[id] ?? true,
                         scopes: (group === 'Responsible units'
