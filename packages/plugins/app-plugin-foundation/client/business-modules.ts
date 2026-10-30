@@ -32,6 +32,7 @@ function mergeTopLevelGroups(
       ? JSON.stringify([
           route.packageName,
           path,
+          route.auth,
           route.navigation?.title,
           route.breadcrumb?.title,
         ])
