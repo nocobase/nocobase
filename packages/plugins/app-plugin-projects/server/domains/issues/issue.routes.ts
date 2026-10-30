@@ -292,7 +292,7 @@ export function createIssueRoutes(deps: {
         flags: { issueId: { name: 'issue' } },
         action: 'pm.issues/view',
       }),
-      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress when available. ${idOrKey}`,
+      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress for CLI and delegated callers when available. ${idOrKey}`,
       responses: {
         200: dataResponse(IssueDetailSchema),
         ...apiErrorResponses,
@@ -308,9 +308,13 @@ export function createIssueRoutes(deps: {
       );
       const integration = deps.session?.();
       return context.json({
-        data: integration
-          ? { ...issue, progress: await integration.progress(viewer, issue) }
-          : issue,
+        data:
+          integration &&
+          (context.req.header('x-nocobase-client') === 'cli' ||
+            viewer.actor.via ||
+            viewer.actor.type !== 'user')
+            ? { ...issue, progress: await integration.progress(viewer, issue) }
+            : issue,
       });
     },
   );

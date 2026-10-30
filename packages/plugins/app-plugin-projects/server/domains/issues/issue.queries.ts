@@ -35,8 +35,10 @@ import {
 } from '../../kernel/activity.js';
 import { decodeCursor, pageLimit, pageOf } from '../../kernel/pagination.js';
 import type { TxRunner } from '../../kernel/tx.js';
+import { notFound } from '../../kernel/errors.js';
 import type { UserDirectory } from '../../kernel/users.js';
 import {
+  canSee,
   deletedIssues,
   requireVisible,
   visibleIssues,
@@ -46,7 +48,6 @@ import {
   findIssueSummaries,
   findIssue,
   findIssueRefs,
-  findIssueRow,
   findIssueRows,
   hierarchyRecords,
   priorityRank,
@@ -605,15 +606,32 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
 
     async detail(viewer, idOrKey) {
       const conn = deps.tx.read();
-      const issue = await requireVisible(conn, viewer, idOrKey);
-      const row = await findIssueRow(conn, issue.id);
-      const [item] = await listItems(deps, conn, row ? [row] : []);
-      const parent = issue.parentIssueId
-        ? await findIssue(conn, issue.parentIssueId)
-        : undefined;
+      const lookup = (filter: { id: string } | { identifier: string }) =>
+        findIssueRows(conn, { filter, order: 'updatedAt', limit: 1 });
+      let [issue] = await lookup({ id: idOrKey });
+      if (!issue && /^[A-Za-z][A-Za-z0-9]*-\d+$/u.test(idOrKey))
+        [issue] = await lookup({ identifier: idOrKey.toUpperCase() });
+      if (!issue || !(await canSee(conn, viewer, issue)))
+        throw notFound('Issue');
+      const extras = deps.extras();
+      const [
+        [item],
+        parent,
+        activities,
+        threads,
+        subscribers,
+        attachments,
+        relations,
+      ] = await Promise.all([
+        listItems(deps, conn, [issue]),
+        issue.parentIssueId ? findIssue(conn, issue.parentIssueId) : undefined,
+        activityPage(conn, issue.id, viewer, {}),
+        extras.threads(conn, issue, viewer),
+        extras.subscribers(conn, issue),
+        extras.attachments(conn, viewer, issue),
+        extras.relations(conn, viewer, issue),
+      ]);
       const catalog = deps.statuses.catalog();
-      const activities = await activityPage(conn, issue.id, viewer, {});
-      const threads = await deps.extras().threads(conn, issue, viewer);
       return {
         ...item,
         parent:
@@ -629,9 +647,9 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         activitiesNextCursor: activities.nextCursor,
         threads: threads.data,
         threadsNextCursor: threads.nextCursor,
-        subscribers: await deps.extras().subscribers(conn, issue),
-        attachments: await deps.extras().attachments(conn, viewer, issue),
-        ...(await deps.extras().relations(conn, viewer, issue)),
+        subscribers,
+        attachments,
+        ...relations,
       };
     },
 
