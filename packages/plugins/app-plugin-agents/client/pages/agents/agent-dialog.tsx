@@ -93,14 +93,13 @@ function AgentForm({
         enabled,
         expectedRevision: target.revision,
       }),
-    onSuccess: async (saved) => {
+    onSuccess: (saved) => {
       notify.success(
         t('agents.edit.done', {
           name: saved.name,
         }),
       );
-      // Reopening takes its initial fields from the list, so finish refreshing it before closing.
-      await queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
+      void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
       onClose();
     },
     onError: (error) => notify.error(error),
