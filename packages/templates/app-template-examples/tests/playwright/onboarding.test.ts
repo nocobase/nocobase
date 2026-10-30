@@ -183,6 +183,9 @@ test('four-step form preserves values, restores drafts and submits one employee 
         name: 'Contract end date: The contract must end after the start date.',
       }),
     ).toBeVisible();
+    await expect(
+      page.getByText('Issues to fix: 1', { exact: true }),
+    ).toBeVisible();
     await snapshot('onboarding-employment-invalid.png');
     await page
       .getByLabel('Contract end date', { exact: true })

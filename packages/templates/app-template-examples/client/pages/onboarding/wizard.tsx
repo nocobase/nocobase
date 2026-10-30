@@ -742,6 +742,11 @@ function Editor({
                     <AlertTitle>{t('onboarding.invalid')}</AlertTitle>
                     {issueTargets.length ? (
                       <AlertDescription>
+                        <p className='font-medium'>
+                          {t('onboarding.issueCount', {
+                            count: issueTargets.length,
+                          })}
+                        </p>
                         <ul className='space-y-0.5'>
                           {issueTargets.map((issue) => (
                             <li key={issue.target + issue.text}>

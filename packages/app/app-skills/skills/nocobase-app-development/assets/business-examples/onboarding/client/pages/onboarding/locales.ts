@@ -52,6 +52,7 @@ export const enUS = {
     'No available departments. Ask an administrator to check the department dictionary.',
   invalid:
     'Check the highlighted fields and required documents before continuing.',
+  issueCount: 'Issues to fix: {{count}}',
   required: 'Complete this field with a valid value.',
   documentHint:
     'Every employee needs an identity document. Non-CN nationals also need a work permit; contractors need a service agreement. Record a title and reference number for each document.',
@@ -161,6 +162,7 @@ export const zhCN: Record<keyof typeof enUS, string> = {
   select: '请选择',
   noDepartments: '没有可用部门，请管理员检查部门字典。',
   invalid: '请检查标记的字段及必需资料后继续。',
+  issueCount: '待处理问题：{{count}} 项',
   required: '请填写有效值。',
   documentHint:
     '所有员工均需身份证明；非 CN 国籍还需工作许可，外包还需服务协议。每项资料填写标题和编号。',

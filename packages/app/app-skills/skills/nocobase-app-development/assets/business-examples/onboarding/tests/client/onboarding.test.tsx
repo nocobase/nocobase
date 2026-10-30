@@ -105,6 +105,7 @@ it('retains input while changing steps, validates conditions and recovers a priv
       'Check the highlighted fields and required documents before continuing.',
     ),
   ).toBeVisible();
+  expect(screen.getByText('Issues to fix: 3')).toBeVisible();
   await userEvent.type(screen.getByLabelText('Full name'), 'Example employee');
   fireEvent.change(screen.getByLabelText('Work email'), {
     target: { value: 'employee@example.test' },
