@@ -6,3 +6,5 @@ export * from './memory-cache.js';
 export * from './memory-counter.js';
 export * from './memory-bloom-filter.js';
 export * from './memory-provider.js';
+export { ManagedCacheProvider } from './internal/managed-provider.js';
+export { resolveTtlConfig } from './internal/duration.js';

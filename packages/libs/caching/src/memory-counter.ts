@@ -1,6 +1,7 @@
 import { CacheableMemory } from '@cacheable/memory';
 import type { Counter } from './types.js';
 import { assertNamespace, assertTtl } from './internal/validation.js';
+import { resolveTtlConfig } from './internal/duration.js';
 
 interface CounterEntry {
   value: number;
@@ -36,12 +37,15 @@ export class MemoryCounter implements Counter {
 
     const current = this.store.get<CounterEntry>(key);
     if (current) {
-      current.value += amount;
+      const next = current.value + amount;
+      if (!Number.isFinite(next))
+        throw new Error('Counter result must be a finite number.');
+      current.value = next;
       return current.value;
     }
 
     const entry = { value: amount };
-    this.store.set(key, entry, ttl);
+    this.store.set(key, entry, resolveTtlConfig(ttl, 'Counter TTL'));
     return entry.value;
   }
 

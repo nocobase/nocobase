@@ -15,8 +15,16 @@ import {
   assertNamespace,
   assertTtl,
 } from './internal/validation.js';
+import { ManagedCacheProvider } from './internal/managed-provider.js';
+import { settleCleanup } from './internal/lifecycle.js';
+import { resolveTtlConfig } from './internal/duration.js';
 
-export class MemoryCacheProvider implements CacheProvider {
+export class MemoryCacheProvider extends ManagedCacheProvider {
+  constructor(options: MemoryCacheProviderOptions = {}) {
+    super(new MemoryProviderResources(options));
+  }
+}
+class MemoryProviderResources implements CacheProvider {
   private readonly maxSize: number;
   private readonly defaultTtl?: number;
   private readonly maxTtl?: number;
@@ -31,9 +39,15 @@ export class MemoryCacheProvider implements CacheProvider {
 
   constructor(options: MemoryCacheProviderOptions = {}) {
     this.maxSize = options.maxSize ?? 2_000;
-    this.defaultTtl = options.defaultTtl;
-    this.maxTtl = options.maxTtl;
-    this.checkInterval = options.checkInterval;
+    this.defaultTtl = resolveTtlConfig(
+      options.defaultTtl,
+      'Memory cache defaultTtl',
+    );
+    this.maxTtl = resolveTtlConfig(options.maxTtl, 'Memory cache maxTtl');
+    this.checkInterval = resolveTtlConfig(
+      options.checkInterval,
+      'Memory cache checkInterval',
+    );
     this.useClone = options.useClone ?? true;
     assertMaxSize(this.maxSize);
     assertTtl(this.defaultTtl);
@@ -43,7 +57,10 @@ export class MemoryCacheProvider implements CacheProvider {
 
   createCache(options: CacheOptions): Cache {
     assertNamespace(options.namespace);
-    const defaultTtl = options.defaultTtl ?? this.defaultTtl;
+    const defaultTtl = resolveTtlConfig(
+      options.defaultTtl ?? this.defaultTtl,
+      'Memory cache defaultTtl',
+    );
     assertTtl(defaultTtl);
     const existing = this.caches.get(options.namespace);
     if (existing) {
@@ -93,17 +110,16 @@ export class MemoryCacheProvider implements CacheProvider {
   }
 
   async dispose(): Promise<void> {
-    await Promise.all(
-      [...this.caches.values()].map(({ cache }) => cache.disconnect()),
+    const cleanups = [...this.caches.entries()].map(
+      async ([namespace, { cache }]) => {
+        await cache.disconnect();
+        this.caches.delete(namespace);
+      },
     );
-    for (const counter of this.counters.values()) {
-      counter.clear();
-    }
-    for (const filter of this.bloomFilters.values()) {
-      filter.clear();
-    }
-    this.caches.clear();
+    for (const counter of this.counters.values()) counter.clear();
+    for (const filter of this.bloomFilters.values()) filter.clear();
     this.counters.clear();
     this.bloomFilters.clear();
+    await settleCleanup(cleanups);
   }
 }

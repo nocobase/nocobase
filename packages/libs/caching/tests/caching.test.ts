@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  createCaching,
-  MemoryCacheProvider,
-  registerCachingDriver,
-} from '../src/index.js';
+import { createCaching, MemoryCacheProvider } from '../src/index.js';
 
 describe('createCaching', () => {
   it('lazily creates the default provider and returns stable namespaced capabilities', async () => {
@@ -49,14 +45,13 @@ describe('createCaching', () => {
     expect(() => createCaching({ default: 'missing', providers: {} })).toThrow(
       'Default cache provider "missing" is not configured.',
     );
-    expect(() =>
-      createCaching({
-        default: 'redis',
-        providers: {
-          redis: { driver: 'redis' },
-        },
-      }),
-    ).toThrow('Cache provider driver "redis" is not registered.');
+    const caching = createCaching({
+      default: 'redis',
+      providers: { redis: { driver: 'redis' } },
+    });
+    expect(() => caching.validateDefaultProvider()).toThrow(
+      'Cache provider driver "redis" is not registered.',
+    );
   });
 
   it('supplements static provider config when the provider is first used', async () => {
@@ -64,13 +59,6 @@ describe('createCaching', () => {
     const provider = new MemoryCacheProvider();
     const dispose = vi.spyOn(provider, 'dispose');
     let receivedConfig: Record<string, unknown> | undefined;
-    const unregister = registerCachingDriver({
-      name: 'test',
-      createProvider(config) {
-        receivedConfig = config;
-        return provider;
-      },
-    });
     const caching = createCaching({
       default: 'remote',
       providers: {
@@ -81,6 +69,13 @@ describe('createCaching', () => {
       },
     });
 
+    caching.registerDriver({
+      name: 'test',
+      createProvider(config) {
+        receivedConfig = config;
+        return provider;
+      },
+    });
     expect(receivedConfig).toBeUndefined();
 
     const cache = caching.getCache({
@@ -106,7 +101,6 @@ describe('createCaching', () => {
 
     await caching.dispose();
     expect(dispose).toHaveBeenCalledOnce();
-    unregister();
   });
 });
 

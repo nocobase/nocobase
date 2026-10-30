@@ -13,6 +13,10 @@ export class CachingProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(cachingToken, () => createCaching(config));
   }
 
+  public override boot(): Promise<void> {
+    this.app.container.resolve(cachingToken).validateDefaultProvider();
+    return Promise.resolve();
+  }
   public override async shutdown(): Promise<void> {
     await this.app.container.resolveIfCreated(cachingToken)?.dispose();
   }

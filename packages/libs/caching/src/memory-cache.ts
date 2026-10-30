@@ -1,8 +1,13 @@
-import { createKeyv } from '@cacheable/memory';
+import {
+  createKeyv,
+  KeyvCacheableMemory,
+  type CacheableMemory,
+} from '@cacheable/memory';
 import type { Keyv } from 'keyv';
 import type { Cache, CacheEntry } from './types.js';
 import { KeyedLock } from './internal/keyed-lock.js';
 import { assertNamespace, assertTtl } from './internal/validation.js';
+import { resolveTtlConfig } from './internal/duration.js';
 
 export interface MemoryCacheOptions {
   namespace: string;
@@ -16,6 +21,7 @@ export interface MemoryCacheOptions {
 export class MemoryCache implements Cache {
   readonly namespace: string;
   private readonly store: Keyv;
+  private readonly memory: CacheableMemory;
   private readonly lock = new KeyedLock();
   private readonly pending = new Map<string, Promise<unknown>>();
 
@@ -23,14 +29,29 @@ export class MemoryCache implements Cache {
     assertNamespace(options.namespace);
     assertTtl(options.defaultTtl);
     this.namespace = options.namespace;
+    const checkInterval = resolveTtlConfig(
+      options.checkInterval,
+      'Memory cache checkInterval',
+    );
     this.store = createKeyv({
       namespace: options.namespace,
-      ttl: options.defaultTtl,
-      maxTtl: options.maxTtl,
+      ttl: resolveTtlConfig(options.defaultTtl, 'Memory cache defaultTtl'),
+      maxTtl: resolveTtlConfig(options.maxTtl, 'Memory cache maxTtl'),
       lruSize: options.maxSize,
-      checkInterval: options.checkInterval,
       useClone: options.useClone ?? true,
     });
+    const adapter: unknown = this.store.store;
+    if (!(adapter instanceof KeyvCacheableMemory)) {
+      throw new Error(
+        'Memory cache did not create its expected storage adapter.',
+      );
+    }
+    this.memory = adapter.store;
+    // The adapter also creates an unused default store. Start only the owned namespace's timer.
+    if (checkInterval !== undefined) {
+      this.memory.checkInterval = checkInterval;
+      this.memory.startIntervalCheck();
+    }
   }
 
   get<T>(key: string): Promise<T | undefined> {
@@ -48,11 +69,12 @@ export class MemoryCache implements Cache {
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     assertTtl(ttl);
     await this.lock.run(key, async () => {
-      await this.store.set(key, value, ttl);
+      await this.store.set(key, value, resolveTtlConfig(ttl, 'Cache TTL'));
     });
   }
 
   async setMany<T>(entries: readonly CacheEntry<T>[]): Promise<void> {
+    for (const entry of entries) assertTtl(entry.ttl);
     await Promise.all(
       entries.map((entry) => this.set(entry.key, entry.value, entry.ttl)),
     );
@@ -117,6 +139,8 @@ export class MemoryCache implements Cache {
   }
 
   async disconnect(): Promise<void> {
+    this.memory.stopIntervalCheck();
     await this.store.disconnect();
+    this.memory.clear();
   }
 }

@@ -1,6 +1,7 @@
 export interface CacheEntry<T = unknown> {
   key: string;
   value: T;
+  /** Positive milliseconds rounded upward; undefined inherits Cache defaults. */
   ttl?: number;
 }
 
@@ -27,7 +28,7 @@ export interface Counter {
 
   get(key: string): Promise<number>;
 
-  /** Atomically increments a value. TTL is applied only when the value is first created. */
+  /** Atomically adds a finite signed/fractional amount; rejects non-finite results. TTL applies only at creation. */
   increment(key: string, amount?: number, ttl?: number): Promise<number>;
 
   reset(key: string): Promise<void>;
@@ -61,6 +62,7 @@ export interface CacheProvider {
   createCache(options: CacheOptions): Cache;
   createCounter(options: NamespacedOptions): Counter;
   createBloomFilter(options: NamespacedOptions): BloomFilter;
+  /** Reject new work, drain admitted operations, and release owned resources. Failures remain retryable. */
   dispose(): Promise<void>;
 }
 
@@ -91,6 +93,7 @@ export interface CacheProviderDriverContext {
 
 export interface CacheProviderDriver {
   readonly name: string;
+  /** Synchronously validate selected options and create a lazy, application-owned provider without network I/O. */
   createProvider(
     config: CacheProviderConfig,
     context: CacheProviderDriverContext,
