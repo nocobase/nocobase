@@ -1,6 +1,5 @@
 import ts from 'typescript';
 import type { SourceEvidence } from './source-evidence.js';
-import { importedContract } from './api-contracts.js';
 
 type Atom = string | number | boolean | null;
 type Bindings = ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
@@ -145,8 +144,6 @@ export class StaticValues {
       return flow.unknown ? [] : flow.values;
     }
     if (ts.isCallExpression(node)) {
-      const inputs = this.initializers(node.arguments, new Set(seen), 0);
-      if (inputs.unknown || !inputs.continues) return [];
       if (this.activeCalls.has(node) || this.activeCalls.size >= MAX_CALL_DEPTH)
         return [];
       const nested = new Set(this.activeCalls).add(node);
@@ -363,18 +360,6 @@ export class StaticValues {
         throws: false,
         unknown: false,
       };
-    const inputs = this.initializers(node.arguments, seen, depth + 1);
-    if (inputs.unknown || !inputs.continues) return inputs;
-    // Configuration reads retain an unknown value, but do not run application factories. Identify
-    // the host application through its provider or route binding, never through a method name alone.
-    if (this.configurationRead(node))
-      return {
-        values: [node],
-        continues: true,
-        returns: false,
-        throws: false,
-        unknown: false,
-      };
     const activeCalls = new Set(this.activeCalls).add(node);
     const evaluator = new StaticValues(
       this.analysis,
@@ -455,202 +440,6 @@ export class StaticValues {
     };
   }
 
-  /** Immediate child expressions run before a call or an object value can be acquired. */
-  private initializers(
-    nodes: readonly ts.Node[],
-    seen: ReadonlySet<ts.Node>,
-    depth: number,
-  ): Flow {
-    let unknown = false;
-    let throws = false;
-    for (const node of nodes) {
-      const flow = this.initialization(node, seen, depth + 1);
-      unknown ||= flow.unknown;
-      throws ||= flow.throws;
-      if (!flow.continues)
-        return { ...flow, values: [], returns: false, unknown, throws };
-    }
-    return { values: [], continues: true, returns: false, throws, unknown };
-  }
-
-  private initialization(
-    node: ts.Node,
-    seen: ReadonlySet<ts.Node>,
-    depth: number,
-  ): Flow {
-    if (depth >= MAX_CALL_DEPTH || seen.has(node))
-      return {
-        values: [],
-        continues: false,
-        returns: false,
-        throws: false,
-        unknown: true,
-      };
-    if (
-      (ts.isFunctionLike(node) &&
-        !ts.isGetAccessorDeclaration(node) &&
-        !ts.isSetAccessorDeclaration(node)) ||
-      ts.isTypeNode(node)
-    )
-      return this.initializers(
-        ts.isMethodDeclaration(node) && ts.isComputedPropertyName(node.name)
-          ? [node.name.expression]
-          : [],
-        seen,
-        depth + 1,
-      );
-    if (ts.isConditionalExpression(node)) {
-      const condition = this.initialization(node.condition, seen, depth + 1);
-      if (!condition.continues || condition.unknown) return condition;
-      const branches = this.booleans(node.condition);
-      return this.initializers(
-        branches.length === 1
-          ? [branches[0] ? node.whenTrue : node.whenFalse]
-          : [node.whenTrue, node.whenFalse],
-        seen,
-        depth + 1,
-      );
-    }
-    if (ts.isSpreadElement(node) || ts.isSpreadAssignment(node)) {
-      const values = this.values(node.expression);
-      if (
-        values.length !== 1 ||
-        !(
-          ts.isArrayLiteralExpression(values[0]) ||
-          ts.isObjectLiteralExpression(values[0])
-        )
-      )
-        return {
-          values: [],
-          continues: true,
-          returns: false,
-          throws: false,
-          unknown: true,
-        };
-      return this.initialization(values[0], new Set(seen).add(node), depth + 1);
-    }
-    if (
-      ts.isGetAccessorDeclaration(node) ||
-      ts.isSetAccessorDeclaration(node) ||
-      ts.isDeleteExpression(node) ||
-      (ts.isBinaryExpression(node) &&
-        node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
-        node.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
-      ((ts.isPrefixUnaryExpression(node) ||
-        ts.isPostfixUnaryExpression(node)) &&
-        [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(
-          node.operator,
-        ))
-    )
-      return {
-        values: [],
-        continues: true,
-        returns: false,
-        throws: false,
-        unknown: true,
-      };
-    const target = ts.isExpression(node)
-      ? this.expressionCall(node)
-      : undefined;
-    if (target)
-      return this.callFlow(target.call, seen, depth + 1, target.awaited);
-    const children: ts.Node[] = [];
-    ts.forEachChild(node, (child) => {
-      children.push(child);
-    });
-    return this.initializers(children, new Set(seen).add(node), depth + 1);
-  }
-
-  private configurationRead(node: ts.CallExpression): boolean {
-    if (
-      node.questionDotToken ||
-      node.arguments.length !== 1 ||
-      !ts.isStringLiteralLike(node.arguments[0]) ||
-      !ts.isPropertyAccessExpression(node.expression) ||
-      node.expression.questionDotToken ||
-      node.expression.name.text !== 'get'
-    )
-      return false;
-    const config = node.expression.expression;
-    if (
-      !ts.isPropertyAccessExpression(config) ||
-      config.questionDotToken ||
-      config.name.text !== 'config'
-    )
-      return false;
-    const application = (
-      value: ts.Node,
-      seen = new Set<ts.Node>(),
-    ): boolean => {
-      if (seen.has(value) || seen.size >= MAX_VALUES) return false;
-      const next = new Set(seen).add(value);
-      if (
-        ts.isPropertyAccessExpression(value) &&
-        !value.questionDotToken &&
-        value.name.text === 'app' &&
-        value.expression.kind === ts.SyntaxKind.ThisKeyword
-      ) {
-        let owner: ts.Node | undefined = value.parent;
-        while (owner && !ts.isClassLike(owner)) {
-          if (
-            ts.isFunctionDeclaration(owner) ||
-            ts.isFunctionExpression(owner) ||
-            (ts.canHaveModifiers(owner) &&
-              ts
-                .getModifiers(owner)
-                ?.some(
-                  (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword,
-                ))
-          )
-            return false;
-          owner = owner.parent;
-        }
-        return (
-          !!owner &&
-          ts.isClassLike(owner) &&
-          !!owner.heritageClauses?.some(
-            (clause) =>
-              clause.token === ts.SyntaxKind.ExtendsKeyword &&
-              clause.types.some((type) =>
-                importedContract(
-                  type.expression,
-                  this.analysis,
-                  '@nocobase/service-provider',
-                  'ServiceProvider',
-                ),
-              ),
-          )
-        );
-      }
-      return this.analysis.declarations(value).some((declaration) => {
-        if (
-          ts.isVariableDeclaration(declaration) &&
-          declaration.initializer &&
-          ts.isVariableDeclarationList(declaration.parent) &&
-          declaration.parent.flags & ts.NodeFlags.Const
-        )
-          return application(declaration.initializer, next);
-        if (!ts.isParameter(declaration)) return false;
-        const bound = this.bindings.get(declaration);
-        if (bound) return bound.length === 1 && application(bound[0], next);
-        const fn = declaration.parent;
-        return (
-          ts.isArrowFunction(fn) &&
-          fn.parameters[0] === declaration &&
-          ts.isCallExpression(fn.parent) &&
-          fn.parent.arguments[0] === fn &&
-          importedContract(
-            fn.parent.expression,
-            this.analysis,
-            '@nocobase/app-server/router',
-            'defineApiRoutes',
-          )
-        );
-      });
-    };
-    return application(config.expression);
-  }
-
   private flow(node: ts.Node, seen: ReadonlySet<ts.Node>, depth: number): Flow {
     if (depth >= MAX_CALL_DEPTH || seen.has(node))
       return {
@@ -688,15 +477,12 @@ export class StaticValues {
           unknown: call.unknown,
         };
       }
-      const initialized = this.initialization(node, seen, depth + 1);
       return {
-        ...initialized,
-        values:
-          initialized.continues && !initialized.unknown
-            ? this.values(node, new Set(seen))
-            : [],
+        values: this.values(node, new Set(seen)),
         continues: false,
-        returns: initialized.continues,
+        returns: true,
+        throws: false,
+        unknown: this.analysis.nativeInitialization.containsCall(node),
       };
     }
     if (ts.isBlock(node)) {
@@ -726,23 +512,20 @@ export class StaticValues {
             target.awaited || this.awaitReturns,
           )
         : undefined;
-      const initialized =
-        !target && node.expression
-          ? this.initialization(node.expression, nextSeen, depth + 1)
-          : undefined;
       return {
         values:
-          (initialized && (!initialized.continues || initialized.unknown)
-            ? []
-            : undefined) ??
           call?.values ??
           (node.expression
             ? this.values(node.expression, new Set(nextSeen))
             : []),
         continues: false,
-        returns: call?.continues ?? initialized?.continues ?? true,
-        throws: call?.throws ?? initialized?.throws ?? false,
-        unknown: call?.unknown ?? initialized?.unknown ?? false,
+        returns: call ? call.continues : true,
+        throws: call?.throws ?? false,
+        unknown:
+          call?.unknown ??
+          (node.expression
+            ? this.analysis.nativeInitialization.containsCall(node.expression)
+            : false),
       };
     }
     if (ts.isThrowStatement(node))
@@ -766,10 +549,18 @@ export class StaticValues {
       let unknown = false;
       for (const declaration of node.declarationList.declarations) {
         if (!declaration.initializer) continue;
-        const flow = this.initialization(
-          declaration.initializer,
+        const target = this.expressionCall(declaration.initializer);
+        if (!target) {
+          unknown ||= this.analysis.nativeInitialization.containsCall(
+            declaration.initializer,
+          );
+          continue;
+        }
+        const flow = this.callFlow(
+          target.call,
           nextSeen,
           depth + 1,
+          target.awaited,
         );
         throws ||= flow.throws;
         unknown ||= flow.unknown;
