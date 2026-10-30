@@ -10,11 +10,6 @@ export interface EvidenceSource {
 export class SourceEvidence {
   public authorizationIdentityResolved = false;
   private readonly checker: ts.TypeChecker;
-  private readonly symbols = new WeakMap<ts.Node, ts.Symbol | undefined>();
-  private readonly declarationNodes = new WeakMap<
-    ts.Node,
-    readonly ts.Declaration[]
-  >();
   private readonly sources: Map<string, EvidenceSource>;
   private readonly services = new Map<ts.Declaration, ts.Expression[]>();
   private readonly serviceReceivers = new Map<ts.Expression, ts.Expression>();
@@ -172,19 +167,11 @@ export class SourceEvidence {
     let visits = 0;
     const nodeKey = (node: ts.Node): string =>
       `${node.getSourceFile().fileName}:${node.getStart()}`;
-    // Invocation environments are immutable during traversal. Reuse the existing canonical key
-    // rather than rebuilding and retaining the same long string at every syntax node.
-    const contextKeys = new WeakMap<
-      ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-      WeakMap<ReadonlySet<ts.Node>, string>
-    >();
     const contextKey = (
       bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
       active: ReadonlySet<ts.Node>,
-    ): string => {
-      const known = contextKeys.get(bindings)?.get(active);
-      if (known !== undefined) return known;
-      const key = [
+    ): string =>
+      [
         ...[...bindings]
           .map(
             ([declaration, values]) =>
@@ -193,13 +180,6 @@ export class SourceEvidence {
           .sort(),
         ...[...active].map(nodeKey).sort(),
       ].join('|');
-      const contexts =
-        contextKeys.get(bindings) ??
-        new WeakMap<ReadonlySet<ts.Node>, string>();
-      contexts.set(active, key);
-      contextKeys.set(bindings, contexts);
-      return key;
-    };
     const definitelyTerminates = (
       node: ts.Node,
       bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
@@ -798,28 +778,20 @@ export class SourceEvidence {
   }
 
   public symbol(node: ts.Node): ts.Symbol | undefined {
-    // The checker and its source graph never change during a scan. These are declaration facts,
-    // not invocation bindings or endpoint evidence, including a stable absence of a symbol.
-    if (this.symbols.has(node)) return this.symbols.get(node);
-    const symbol =
+    if (
       node.parent &&
       ts.isShorthandPropertyAssignment(node.parent) &&
       node.parent.name === node
-        ? this.checker.getShorthandAssignmentValueSymbol(node.parent)
-        : this.checker.getSymbolAtLocation(node);
-    this.symbols.set(node, symbol);
-    return symbol;
+    )
+      return this.checker.getShorthandAssignmentValueSymbol(node.parent);
+    return this.checker.getSymbolAtLocation(node);
   }
 
   public declarations(node: ts.Node): readonly ts.Declaration[] {
-    const known = this.declarationNodes.get(node);
-    if (known) return known;
     let symbol = this.symbol(node);
     if (symbol && symbol.flags & ts.SymbolFlags.Alias)
       symbol = this.checker.getAliasedSymbol(symbol);
-    const declarations = symbol?.declarations ?? [];
-    this.declarationNodes.set(node, declarations);
-    return declarations;
+    return symbol?.declarations ?? [];
   }
 
   /** The package exporting a service token that no local code registers: the host or that package provides it. */
