@@ -23,6 +23,7 @@ import { Link } from 'react-router';
 import { Button } from '#components/ui/button';
 
 const examples = [
+  { key: 'procurement', path: '/procurement', icon: ShoppingCart },
   { key: 'customerContacts', path: '/customer-contacts', icon: Users },
   { key: 'aiFormFill', path: '/ai-form-fill', icon: FilePenLine },
   { key: 'routeOverlays', path: '/route-overlays', icon: PanelsTopLeft },

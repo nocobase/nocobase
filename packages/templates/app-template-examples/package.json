@@ -136,7 +136,10 @@
     "docs/ui/pages/skill-projects.md",
     "docs/ui/pages/customer-contacts.md",
     "docs/customer-contacts.md",
-    "docs/customer-contacts/*.png"
+    "docs/customer-contacts/*.png",
+    "docs/procurement.md",
+    "docs/business-examples/index.json",
+    "docs/ui/pages/procurement.md"
   ],
   "publishConfig": {
     "access": "public"
