@@ -2,13 +2,16 @@ import ts from 'typescript';
 import type { SourceEvidence } from './source-evidence.js';
 import { importedContract } from './api-contracts.js';
 
-type Resolve = (node: ts.Node) => readonly ts.Node[];
+interface Resolve {
+  values(node: ts.Node): readonly ts.Node[];
+}
 
 /** One owned, inline SHA-256 initialization. No application or native code is executed. */
 export class NativeInitialization {
   private intact: boolean | undefined;
   private readonly unchanged = new WeakMap<ts.ParameterDeclaration, boolean>();
   private readonly cryptoFiles = new WeakMap<ts.SourceFile, boolean>();
+  private readonly immediateCalls = new WeakMap<ts.Node, boolean>();
   public constructor(
     private readonly analysis: SourceEvidence,
     private readonly sources: readonly ts.SourceFile[],
@@ -251,6 +254,8 @@ export class NativeInitialization {
 
   /** Composite expressions do not silently hide unsupported native initialization. */
   public containsCall(node: ts.Node): boolean {
+    const known = this.immediateCalls.get(node);
+    if (known !== undefined) return known;
     const source = node.getSourceFile();
     let crypto = this.cryptoFiles.get(source);
     if (crypto === undefined) {
@@ -262,7 +267,10 @@ export class NativeInitialization {
       );
       this.cryptoFiles.set(source, crypto);
     }
-    if (!crypto) return false;
+    if (!crypto) {
+      this.immediateCalls.set(node, false);
+      return false;
+    }
     let found = false;
     let visits = 0;
     const visit = (child: ts.Node): void => {
@@ -279,6 +287,7 @@ export class NativeInitialization {
       ts.forEachChild(child, visit);
     };
     visit(node);
+    this.immediateCalls.set(node, found);
     return found;
   }
 
@@ -286,7 +295,7 @@ export class NativeInitialization {
   public guardCondition(node: ts.Node, resolve: Resolve): boolean | undefined {
     const parameter = this.guard(node);
     if (!parameter || !this.parameterUnchanged(parameter)) return undefined;
-    const values = resolve(parameter);
+    const values = resolve.values(parameter);
     if (!values.length) return undefined;
     const invalid = values.map((value) => {
       if (this.undefined(value) || ts.isStringLiteralLike(value)) return false;
@@ -394,6 +403,70 @@ export class NativeInitialization {
       !ts.isStringLiteralLike(body.expression.arguments[0])
     )
       return false;
+    // No other immediate work is hidden behind the recognized initialization. The remaining
+    // declarations create deferred functions, and the final object only exposes those functions.
+    if (index !== 1) return false;
+    const tail = block.statements.slice(index + 1);
+    const returned = tail.at(-1);
+    if (
+      !returned ||
+      !ts.isReturnStatement(returned) ||
+      !returned.expression ||
+      !ts.isObjectLiteralExpression(returned.expression)
+    )
+      return false;
+    const functions = new Set<ts.Symbol>();
+    for (const step of tail.slice(0, -1)) {
+      if (ts.isFunctionDeclaration(step) && step.name) {
+        const symbol = this.analysis.symbol(step.name);
+        if (symbol) functions.add(symbol);
+        continue;
+      }
+      if (
+        !ts.isVariableStatement(step) ||
+        !(step.declarationList.flags & ts.NodeFlags.Const)
+      )
+        return false;
+      for (const local of step.declarationList.declarations) {
+        if (
+          !ts.isIdentifier(local.name) ||
+          !local.initializer ||
+          !(
+            ts.isArrowFunction(local.initializer) ||
+            ts.isFunctionExpression(local.initializer)
+          )
+        )
+          return false;
+        const symbol = this.analysis.symbol(local.name);
+        if (symbol) functions.add(symbol);
+      }
+    }
+    for (const property of returned.expression.properties) {
+      if (
+        !property.name ||
+        !(
+          ts.isIdentifier(property.name) ||
+          ts.isStringLiteralLike(property.name)
+        )
+      )
+        return false;
+      if (ts.isMethodDeclaration(property)) continue;
+      const value = ts.isShorthandPropertyAssignment(property)
+        ? property.name
+        : ts.isPropertyAssignment(property)
+          ? property.initializer
+          : undefined;
+      if (
+        !value ||
+        !(
+          ts.isArrowFunction(value) ||
+          ts.isFunctionExpression(value) ||
+          (ts.isIdentifier(value) &&
+            functions.has(this.analysis.symbol(value)!))
+        )
+      )
+        return false;
+    }
     const input = this.analysis.symbol(parameter.name),
       output = this.analysis.symbol(declaration.name);
     if (!input || !output) return false;
