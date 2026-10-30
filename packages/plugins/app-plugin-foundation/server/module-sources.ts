@@ -250,9 +250,14 @@ class SourceGraph {
       'server/routes/index.js',
       'server/routes.js',
     );
-    let backendComplete = this.serverEntry
-      ? (await this.walk(this.serverEntry, false)).complete
-      : false;
+    const nativeSources = new Map<string, Source>();
+    const serverGraph = this.serverEntry
+      ? await this.walk(this.serverEntry, false)
+      : undefined;
+    serverGraph?.sources.forEach((source) =>
+      nativeSources.set(source.file, source),
+    );
+    let backendComplete = serverGraph?.complete ?? false;
     const providerEntries: string[] = [];
     for (const name of [
       'server/providers/index.js',
@@ -264,6 +269,9 @@ class SourceGraph {
         providerEntries.push(provider);
         const graph = await this.walk(provider, false);
         backendComplete &&= graph.complete;
+        graph.sources.forEach((source) =>
+          nativeSources.set(source.file, source),
+        );
       }
     }
     const identityEntries = {
@@ -289,6 +297,13 @@ class SourceGraph {
         identitySources.set(source.file, source),
       );
     }
+    let nativeComplete = true;
+    for (const root of [this.serverEntry, ...providerEntries]) {
+      if (!root || identitySources.has(root)) continue;
+      const graph = await this.walk(root, true);
+      nativeComplete &&= graph.complete;
+      graph.sources.forEach((source) => nativeSources.set(source.file, source));
+    }
     // Read backend declarations before lazy page graphs can exhaust the shared source budget.
     await this.walk(entry, true);
     const resolutions = new Map<string, string>();
@@ -308,6 +323,12 @@ class SourceGraph {
       ),
       resolutions,
       (specifier) => this.isLocal(specifier),
+      {
+        // These are executable backend roots already traversed for API and identity evidence.
+        // Browser-only pages are not executed in the process owning Node's crypto intrinsics.
+        sources: [...new Map([...nativeSources, ...identitySources]).values()],
+        complete: backendComplete && identityComplete && nativeComplete,
+      },
     );
     this.analysis.registerServices(providerEntries);
     this.analysis.authorizationIdentityResolved =

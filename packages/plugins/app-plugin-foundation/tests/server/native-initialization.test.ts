@@ -295,3 +295,35 @@ it('retains an opaque step before the guard', async () => {
   );
   expect(result?.apiProviders ?? []).not.toContain('@nocobase/db');
 });
+
+const clientCryptoPatch =
+  "import {Hmac} from 'node:crypto';Hmac.prototype.digest=external;";
+it('keeps browser-only crypto declarations out of backend intrinsic identity', async () => {
+  const result = await scan(guarded, undefined, '', {
+    'client/page.js':
+      "import './crypto.js';import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'requisitions'});",
+    'client/crypto.js': clientCryptoPatch,
+  });
+  expect(result?.collections).toContain('jobRequisitions');
+});
+it('checks a client-path module when a backend root actually imports it', async () => {
+  const result = await scan(guarded, undefined, '', {
+    'client/crypto.js': clientCryptoPatch,
+    'server/runtime.js':
+      "import '../client/crypto.js';import {defineAppRuntime} from '@nocobase/app-server/runtime';import routes from './routes/index.js';import serviceProviders from './providers/index.js';export default defineAppRuntime({routes,serviceProviders});",
+  });
+  expect(result?.apiProviders ?? []).not.toContain('@nocobase/db');
+});
+it('rejects a native contract when the executable backend graph is incomplete', async () => {
+  const result = await scan(guarded + "\nimport './missing.js';");
+  expect(result?.apiProviders ?? []).not.toContain('@nocobase/db');
+});
+
+it('includes dynamic API dependencies when runtime omits the conventional API entry', async () => {
+  const result = await scan(guarded, undefined, '', {
+    'client/crypto.js': clientCryptoPatch,
+    'server/runtime.js': 'export default {};',
+    'server/routes/index.js': `void import('../client/crypto.js');import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {token} from '../providers/index.js';export default defineApiRoutes(app=>{const routes=new Hono();const service=app.container.resolve(token);routes.get('/requisitions',c=>service.requisitions.list());return routes;});`,
+  });
+  expect(result?.apiProviders ?? []).not.toContain('@nocobase/db');
+});
