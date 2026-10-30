@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConcurrentConfigurationError } from '@nocobase/concurrency';
 import { ManagedConcurrencyService } from '../../server/services/concurrency.js';
 
@@ -14,7 +14,10 @@ async function service(
   return host;
 }
 describe('concurrency manager facade', () => {
+  afterEach(() => vi.useRealTimers());
   it('allows an explicit TTL override without wrapping the returned Lock acquisition methods', async () => {
+    // The five-millisecond lease must be delivered before simulated expiry, regardless of CI load.
+    vi.useFakeTimers();
     const host = await service({
       default: 'memory',
       memory: { adapter: 'mutex', ttl: 1000 },
@@ -27,7 +30,7 @@ describe('concurrency manager facade', () => {
       });
       const lease = await lock.lock();
       try {
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await vi.advanceTimersByTimeAsync(20);
         expect(await executor.tryRun(() => 'after-expiry')).toEqual({
           acquired: true,
           value: 'after-expiry',
@@ -101,6 +104,7 @@ describe('concurrency manager facade', () => {
     }
   });
   it('reads ttl once, supplies its default and rejects unrecognized creation options', async () => {
+    vi.useFakeTimers();
     const host = await service({
       default: 'memory',
       memory: { adapter: 'mutex', ttl: 5 },
@@ -115,7 +119,7 @@ describe('concurrency manager facade', () => {
     expect(ttl).toHaveBeenCalledOnce();
     const lease = await lock.lock();
     try {
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await vi.advanceTimersByTimeAsync(20);
       const replacement = await lock.tryLock();
       expect(replacement).toBeDefined();
       await replacement!.release();
