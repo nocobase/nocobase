@@ -13,6 +13,8 @@ export function Choice({
   onChange,
   disabled,
   selectedName,
+  id,
+  invalid,
 }: {
   label: string;
   value: string;
@@ -20,6 +22,8 @@ export function Choice({
   onChange: (value: string) => void;
   disabled?: boolean;
   selectedName?: string;
+  id?: string;
+  invalid?: boolean;
 }) {
   const { t } = useTranslation();
   const choices = [
@@ -36,7 +40,12 @@ export function Choice({
       onValueChange={(v) => onChange(v === '__empty' ? '' : String(v ?? ''))}
       disabled={disabled}
     >
-      <SelectTrigger aria-label={label} className='w-full'>
+      <SelectTrigger
+        id={id}
+        aria-label={label}
+        aria-invalid={invalid || undefined}
+        className='w-full'
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

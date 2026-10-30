@@ -132,7 +132,7 @@ test('four-step form preserves values, restores drafts and submits one employee 
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     await choose(page, 'Department', 'Engineering');
     await page.getByLabel('Job title', { exact: true }).fill('Engineer');
-    await choose(page, 'Employment type', 'Contractor');
+    await page.getByRole('button', { name: 'Contractor', exact: true }).click();
     await page.getByLabel('Start date', { exact: true }).fill('2026-12-01');
     await page
       .getByLabel('Contract end date', { exact: true })
@@ -143,6 +143,12 @@ test('four-step form preserves values, restores drafts and submits one employee 
         'Check the highlighted fields and required documents before continuing.',
       ),
     ).toBeVisible();
+    await expect(
+      page.getByRole('button', {
+        name: 'Contract end date: The contract must end after the start date.',
+      }),
+    ).toBeVisible();
+    await snapshot('onboarding-employment-invalid.png');
     await page
       .getByLabel('Contract end date', { exact: true })
       .fill('2027-12-01');
@@ -173,6 +179,10 @@ test('four-step form preserves values, restores drafts and submits one employee 
     await expect(
       page.getByRole('heading', { name: 'Documents', exact: true }),
     ).toBeVisible();
+    await expect(
+      page.getByText('Draft restored', { exact: true }),
+    ).toBeVisible();
+    await snapshot('onboarding-restored.png');
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(
       page.getByText(
@@ -196,6 +206,9 @@ test('four-step form preserves values, restores drafts and submits one employee 
         .fill(reference);
     }
     await snapshot('onboarding-documents.png');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await snapshot('onboarding-mobile-documents.png');
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(
       page.getByRole('heading', { name: 'Confirm submission', exact: true }),
@@ -248,14 +261,13 @@ test('four-step form preserves values, restores drafts and submits one employee 
     expect(replay.headers()['idempotency-replayed']).toBe('true');
     await snapshot('onboarding-submitted.png');
     await page.setViewportSize({ width: 390, height: 844 });
-    const popup = page.getByRole('dialog');
-    await expect(popup).toHaveCSS('width', '390px');
-    await expect(popup).toHaveJSProperty('scrollLeft', 0);
+    // The child page covers the content area; neither it nor the document scrolls sideways at phone width.
+    const layer = page.locator('[data-slot=route-child-page] > div');
+    await expect(
+      page.getByRole('heading', { name: 'Employee created', exact: true }),
+    ).toBeVisible();
     expect(
-      (await popup.locator('header').boundingBox())!.x,
-    ).toBeGreaterThanOrEqual(0);
-    expect(
-      await popup.locator('[data-slot=route-overlay-body]').evaluate((el) => {
+      await layer.evaluate((el) => {
         const body = el as unknown as {
           scrollWidth: number;
           clientWidth: number;
@@ -288,7 +300,21 @@ test('another coordinator and HR viewer cannot recover, edit or submit a private
   const f = await fixture(browser);
   try {
     const owner = f.actors.owner.page;
+    await owner.setViewportSize({ width: 390, height: 844 });
     await owner.goto(f.app + '/onboarding/new');
+    await owner.getByRole('button', { name: 'Next', exact: true }).click();
+    await expect(owner.getByText('Step 1 of 4 ·')).toBeVisible();
+    await expect(
+      owner.getByRole('button', {
+        name: 'Full name: Complete this field with a valid value.',
+      }),
+    ).toBeVisible();
+    const evidence =
+      process.env.E2E_EVIDENCE_DIR ?? testInfo.outputPath('screenshots');
+    await mkdir(evidence, { recursive: true });
+    await owner.screenshot({
+      path: path.join(evidence, 'onboarding-mobile-invalid.png'),
+    });
     await owner
       .getByLabel('Full name', { exact: true })
       .fill('Private synthetic draft');

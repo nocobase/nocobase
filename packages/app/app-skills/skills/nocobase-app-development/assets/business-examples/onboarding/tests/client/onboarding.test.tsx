@@ -117,7 +117,9 @@ it('retains input while changing steps, validates conditions and recovers a priv
   );
   await choose('Department', 'Engineering');
   await userEvent.type(screen.getByLabelText('Job title'), 'Engineer');
-  await choose('Employment type', 'Full-time');
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Full-time', exact: true }),
+  );
   fireEvent.change(screen.getByLabelText('Start date'), {
     target: { value: '2026-12-01' },
   });
@@ -145,8 +147,10 @@ it('retains input while changing steps, validates conditions and recovers a priv
   expect(
     await screen.findByRole('heading', { name: 'Documents', exact: true }),
   ).toBeVisible();
+  expect(await screen.findByText('Draft saved')).toBeVisible();
+  expect(screen.queryByText('Draft restored')).not.toBeInTheDocument();
   await userEvent.click(
-    screen.getByRole('button', { name: 'Close', exact: true }),
+    screen.getByRole('link', { name: 'Back to onboarding', exact: true }),
   );
   await userEvent.click(
     await screen.findByRole('link', { name: 'Example employee', exact: true }),
@@ -154,6 +158,18 @@ it('retains input while changing steps, validates conditions and recovers a priv
   expect(
     await screen.findByRole('heading', { name: 'Documents', exact: true }),
   ).toBeVisible();
+  expect(screen.getByText('Draft restored')).toBeVisible();
+  // A completed step can be reopened from the step list; moving forward still goes through Next.
+  await userEvent.click(
+    screen.getByRole('button', { name: /^Employment information/ }),
+  );
+  expect(screen.getByLabelText('Job title')).toHaveValue('Engineer');
+  expect(
+    screen.queryByRole('button', { name: /^Confirm submission/ }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Next', exact: true }),
+  );
   await userEvent.click(
     screen.getByRole('button', { name: 'Next', exact: true }),
   );
@@ -162,6 +178,11 @@ it('retains input while changing steps, validates conditions and recovers a priv
       'Check the highlighted fields and required documents before continuing.',
     ),
   ).toBeVisible();
+  // Nationality US requires a work permit as well as the identity document.
+  expect(
+    screen.getByRole('button', { name: 'Add a complete Work permit.' }),
+  ).toBeVisible();
+  expect(screen.getByText(/Work permit · nationality US/)).toBeVisible();
   for (const [kind, title, reference] of [
     ['Identity document', 'Synthetic identity', 'ID-001'],
     ['Work permit', 'Synthetic permit', 'WP-001'],
@@ -190,6 +211,16 @@ it('retains input while changing steps, validates conditions and recovers a priv
   expect(
     screen.getByText('employee@example.test', { selector: 'dd' }),
   ).toBeVisible();
+  expect(screen.getByText('All required documents are present.')).toBeVisible();
+  expect(screen.getByText('Unsaved changes')).toBeVisible();
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Edit Basic information' }),
+  );
+  expect(screen.getByLabelText('Full name')).toHaveValue('Example employee');
+  for (let step = 0; step < 3; step++)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Next', exact: true }),
+    );
   expect(
     screen.getByRole('button', { name: 'Submit onboarding' }),
   ).toBeDisabled();
