@@ -1,227 +1,232 @@
-import { describe, expect, it, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import {
-  ConcurrentAcquireError,
+  ConcurrentAbortError,
   ConcurrentCloseError,
   ConcurrentConfigurationError,
 } from '@nocobase/concurrency';
-import { LocalConcurrentBackend } from '../../server/index.ts';
 import { ManagedConcurrencyService } from '../../server/services/concurrency.js';
+import type {
+  ConcurrencyInstance,
+  ResolvedConcurrencyConfig,
+} from '../../server/index.js';
+import {
+  ManagedLeaseRegistry,
+  startAcquire,
+  createSynchronousExecutor,
+} from '../../server/index.js';
 
-describe('concurrency host lifecycle', () => {
-  it('runs one lazy factory for concurrent consumers and retains a failed item without request-driven retries', async () => {
-    const host = new ManagedConcurrencyService({
-      appName: 'crm',
-      nodeEnv: 'development',
-    });
-    const gate = Promise.withResolvers<void>();
-    const create = vi.fn(async () => {
-      await gate.promise;
-      return {
-        backend: new LocalConcurrentBackend(),
-        dispose: () => Promise.resolve(),
+function fixture() {
+  const service = new ManagedConcurrencyService({
+    appName: 'test',
+    nodeEnv: 'development',
+  });
+  const start = vi.fn(async () => {});
+  const shutdown = vi.fn(async () => {});
+  const acquire = vi.fn(async () => async () => {});
+  const create = vi.fn(
+    (_entry: ResolvedConcurrencyConfig): ConcurrencyInstance => {
+      const registry = new ManagedLeaseRegistry();
+      const controller = new AbortController();
+      const pending = new Set<Promise<void>>();
+      const request = () => {
+        const task = startAcquire(registry, {
+          signal: controller.signal,
+          acquire,
+        });
+        if (task.completion) {
+          const completion = task.completion;
+          pending.add(completion);
+          void completion
+            .finally(() => pending.delete(completion))
+            .catch(() => {});
+        }
+        return task.result;
       };
-    });
-    const failedCreate = vi.fn(() =>
-      Promise.reject(new Error('factory-failed')),
-    );
-    host.registerImplementation('test', { validate: () => {}, create });
-    host.registerImplementation('failed', {
-      validate: () => {},
-      create: failedCreate,
-    });
-    host.boot({ lazy: { adapter: 'test' }, failure: { adapter: 'failed' } });
-    await host.start();
-    const consumers = Array.from({ length: 20 }, () => host.getManager('lazy'));
-    await Promise.resolve();
-    expect(create).toHaveBeenCalledOnce();
-    gate.resolve();
-    expect(new Set(await Promise.all(consumers)).size).toBe(1);
-    const firstError = await host
-      .getManager('failure')
-      .catch((error: unknown) => error);
-    const secondError = await host
-      .getManager('failure')
-      .catch((error: unknown) => error);
-    expect(firstError).toBeInstanceOf(ConcurrentConfigurationError);
-    expect(secondError).toBe(firstError);
-    expect(failedCreate).toHaveBeenCalledOnce();
-    await host.shutdown();
+      const lock = {
+        async lock() {
+          const lease = await request();
+          if (!lease) throw new Error('Expected lease');
+          return lease;
+        },
+        tryLock: request,
+      };
+      return {
+        manager: {
+          createLock: async () => lock,
+          createSynchronous: async () => createSynchronousExecutor(lock),
+        },
+        start,
+        async shutdown() {
+          controller.abort();
+          while (pending.size) await Promise.allSettled([...pending]);
+          await registry.releaseAll();
+          await shutdown();
+          registry.clear();
+        },
+      };
+    },
+  );
+  const validate = vi.fn();
+  service.registerImplementation('fixture', { validate, create });
+  return { service, start, shutdown, create, validate, acquire };
+}
+const config = {
+  default: 'memory',
+  memory: { adapter: 'mutex' },
+  remote: { adapter: 'fixture', connection: {} },
+  second: { adapter: 'fixture', connection: {} },
+};
+it('S01/S06/E02: validate and synchronous create do not acquire; named initialization is shared', async () => {
+  const f = fixture();
+  f.service.boot(config);
+  expect(f.validate).toHaveBeenCalledTimes(2);
+  expect(f.create).not.toHaveBeenCalled();
+  await f.service.start();
+  const [a, b] = await Promise.all([
+    f.service.getManager('remote'),
+    f.service.getManager('remote'),
+  ]);
+  expect(a).toBe(b);
+  expect(f.create).toHaveBeenCalledTimes(1);
+  expect(f.start).toHaveBeenCalledTimes(1);
+  expect(f.acquire).not.toHaveBeenCalled();
+  const lease = await (await a.createLock('x')).lock();
+  await lease.release();
+  await f.service.shutdown();
+  expect(f.shutdown).toHaveBeenCalledTimes(1);
+});
+it('S06: failed startup retains the same instance for shutdown and never rebuilds', async () => {
+  const f = fixture();
+  f.start.mockRejectedValue(new Error('start'));
+  f.service.boot(config);
+  await f.service.start();
+  await expect(f.service.getManager('remote')).rejects.toBeInstanceOf(
+    ConcurrentConfigurationError,
+  );
+  await expect(f.service.getManager('remote')).rejects.toBeInstanceOf(
+    ConcurrentConfigurationError,
+  );
+  expect(f.create).toHaveBeenCalledTimes(1);
+  await f.service.shutdown();
+  expect(f.shutdown).toHaveBeenCalledTimes(1);
+});
+it('S07: shutdown closes an instance while start is pending and observes its later rejection', async () => {
+  const f = fixture();
+  const started = Promise.withResolvers<void>();
+  const barrier = Promise.withResolvers<void>();
+  f.start.mockImplementation(() => {
+    started.resolve();
+    return barrier.promise;
   });
-  it('does not report a successful start after shutdown overtakes default initialization', async () => {
-    const host = new ManagedConcurrencyService({ appName: 'crm' });
-    const gate = Promise.withResolvers<void>();
-    const backend = new LocalConcurrentBackend();
-    const dispose = vi.fn(() => Promise.resolve());
-    host.registerImplementation('test', {
-      validate: () => {},
-      create: async () => {
-        await gate.promise;
-        return { backend, dispose };
-      },
-    });
-    host.boot({
-      default: 'main',
-      main: { adapter: 'test', shutdownTimeoutMs: 10 },
-    });
-    const starting = host.start().then(
-      () => {
-        throw new Error('Startup must reject after shutdown.');
-      },
-      (error: unknown) => {
-        expect(error).toBeInstanceOf(ConcurrentAcquireError);
-      },
-    );
-    await expect(host.shutdown()).rejects.toBeInstanceOf(ConcurrentCloseError);
-    gate.resolve();
-    await starting;
-    await host.shutdown();
-    expect(dispose).toHaveBeenCalledOnce();
+  f.service.boot(config);
+  await f.service.start();
+  const initializing = f.service.getManager('remote');
+  const rejected = initializing.catch((error: unknown) => error);
+  await started.promise;
+  const closing = f.service.shutdown();
+  await vi.waitFor(() => expect(f.shutdown).toHaveBeenCalledTimes(1));
+  barrier.reject(new Error('late start'));
+  await closing;
+  expect(await rejected).toBeInstanceOf(ConcurrentConfigurationError);
+  await expect(f.service.getManager()).rejects.toBeInstanceOf(
+    ConcurrentAbortError,
+  );
+});
+it('S07: shutdown before factory microtask does not construct a late instance', async () => {
+  const f = fixture();
+  f.service.boot(config);
+  await f.service.start();
+  const pending = f.service
+    .getManager('remote')
+    .catch((error: unknown) => error);
+  await f.service.shutdown();
+  expect(await pending).toBeInstanceOf(ConcurrentAbortError);
+  expect(f.create).not.toHaveBeenCalled();
+});
+it('S07: synchronous reentrant shutdown from create saves the returned instance without starting it', async () => {
+  const service = new ManagedConcurrencyService({ appName: 'test' });
+  const start = vi.fn(async () => {});
+  const shutdown = vi.fn(async () => {});
+  let closing: Promise<void> | undefined;
+  service.registerImplementation('fixture', {
+    validate: () => {},
+    create: () => {
+      closing = service.shutdown();
+      return {
+        manager: {
+          createLock: async () => {
+            throw new Error('not started');
+          },
+          createSynchronous: async () => {
+            throw new Error('not started');
+          },
+        },
+        start,
+        shutdown,
+      };
+    },
   });
-  it('rejects early access, late/duplicate registrations and replacement of mutex', async () => {
-    const host = new ManagedConcurrencyService({ appName: 'crm' });
-    const implementation = { validate: vi.fn(), create: vi.fn() };
-    await expect(host.getManager()).rejects.toBeInstanceOf(
-      ConcurrentAcquireError,
-    );
-    expect(() => host.registerImplementation('mutex', implementation)).toThrow(
-      ConcurrentConfigurationError,
-    );
-    host.registerImplementation('test', implementation);
-    expect(() => host.registerImplementation('test', implementation)).toThrow(
-      ConcurrentConfigurationError,
-    );
-    host.boot(undefined);
-    expect(implementation.create).not.toHaveBeenCalled();
-    expect(() => host.registerImplementation('late', implementation)).toThrow(
-      ConcurrentConfigurationError,
-    );
-    await host.shutdown();
+  service.boot({
+    default: 'remote',
+    remote: { adapter: 'fixture', connection: {} },
   });
-  it('does not declare a TTL-expired unreturned lease drained and can retry the original runtime', async () => {
-    const host = new ManagedConcurrencyService({
-      appName: 'crm',
-      nodeEnv: 'development',
-    });
-    host.boot({
-      default: 'memory',
-      memory: { adapter: 'mutex', ttl: 5, shutdownTimeoutMs: 10 },
-    });
-    await host.start();
-    const manager = await host.getManager();
-    const lock = await manager.createLock('resource');
-    const lease = await lock.lock();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    await expect(host.shutdown()).rejects.toBeInstanceOf(ConcurrentCloseError);
-    await expect(host.getManager()).rejects.toBeInstanceOf(
-      ConcurrentAcquireError,
-    );
-    await lease.release().catch(() => {});
-    await host.shutdown();
+  await expect(service.start()).rejects.toBeInstanceOf(ConcurrentAbortError);
+  await closing;
+  expect(start).not.toHaveBeenCalled();
+  expect(shutdown).toHaveBeenCalledTimes(1);
+});
+it('C25/C26/S08: multi-instance shutdown continues after a failure; explicit retry reuses failed handle only', async () => {
+  const f = fixture();
+  f.service.boot(config);
+  await f.service.start();
+  await f.service.getManager('remote');
+  await f.service.getManager('second');
+  f.shutdown.mockRejectedValueOnce(new Error('close'));
+  const closing = f.service.shutdown();
+  expect(f.service.shutdown()).toBe(closing);
+  await expect(closing).rejects.toBeInstanceOf(ConcurrentCloseError);
+  expect(f.shutdown).toHaveBeenCalledTimes(2);
+  await f.service.shutdown();
+  expect(f.shutdown).toHaveBeenCalledTimes(3);
+  await f.service.shutdown();
+  expect(f.create).toHaveBeenCalledTimes(2);
+  expect(f.shutdown).toHaveBeenCalledTimes(3);
+});
+it('registration captures methods and rejects duplicates and registration after boot', () => {
+  const f = fixture();
+  expect(() =>
+    f.service.registerImplementation('fixture', {
+      validate: f.validate,
+      create: f.create,
+    }),
+  ).toThrow(ConcurrentConfigurationError);
+  f.service.boot(config);
+  expect(() =>
+    f.service.registerImplementation('later', {
+      validate: f.validate,
+      create: f.create,
+    }),
+  ).toThrow(ConcurrentConfigurationError);
+});
+
+it('C24/E02: a failed held releaser does not stop sibling cleanup or the owned connection close', async () => {
+  const f = fixture();
+  const failedRelease = vi.fn(async () => {
+    throw new Error('release failure');
   });
-  it('waits for a real runner and shares a single original backend across concurrent consumers', async () => {
-    const host = new ManagedConcurrencyService({ appName: 'crm' });
-    const backend = new LocalConcurrentBackend();
-    const close = vi.spyOn(backend, 'close');
-    const dispose = vi.fn(() => Promise.resolve());
-    const create = vi.fn(() => Promise.resolve({ backend, dispose }));
-    host.registerImplementation('test', { validate: () => {}, create });
-    host.boot({
-      default: 'main',
-      main: { adapter: 'test', shutdownTimeoutMs: 10 },
-    });
-    await host.start();
-    const managers = await Promise.all([
-      host.getManager(),
-      host.getManager('main'),
-    ]);
-    expect(managers[0]).toBe(managers[1]);
-    const executor = await managers[0]!.createSynchronous('runner');
-    const ready = Promise.withResolvers<void>();
-    const finished = Promise.withResolvers<void>();
-    const running = executor.run(async () => {
-      ready.resolve();
-      await finished.promise;
-    });
-    await ready.promise;
-    await expect(host.shutdown()).rejects.toBeInstanceOf(ConcurrentCloseError);
-    expect(close).not.toHaveBeenCalled();
-    expect(dispose).not.toHaveBeenCalled();
-    finished.resolve();
-    await running;
-    await Promise.all([host.shutdown(), host.shutdown()]);
-    expect(create).toHaveBeenCalledOnce();
-    expect(close).toHaveBeenCalledOnce();
-    expect(dispose).toHaveBeenCalledOnce();
-  });
-  it('retains late initialization and closes it without handing a manager to the caller', async () => {
-    const host = new ManagedConcurrencyService({
-      appName: 'crm',
-      nodeEnv: 'development',
-    });
-    const gate = Promise.withResolvers<void>();
-    const backend = new LocalConcurrentBackend();
-    const dispose = vi.fn(() => Promise.resolve());
-    const create = vi.fn(async () => {
-      await gate.promise;
-      return { backend, dispose };
-    });
-    host.registerImplementation('test', { validate: () => {}, create });
-    host.boot({ lazy: { adapter: 'test', shutdownTimeoutMs: 10 } });
-    await host.start();
-    const manager = host.getManager('lazy');
-    const rejectedManager = manager.then(
-      () => {
-        throw new Error('A late manager must not be delivered.');
-      },
-      (error: unknown) => {
-        expect(error).toBeInstanceOf(ConcurrentAcquireError);
-      },
-    );
-    await expect(host.shutdown()).rejects.toBeInstanceOf(ConcurrentCloseError);
-    gate.resolve();
-    await rejectedManager;
-    await host.shutdown();
-    expect(create).toHaveBeenCalledOnce();
-    expect(dispose).toHaveBeenCalledOnce();
-  });
-  it('retains failed initialization and retries saved backend cleanup before dispose', async () => {
-    const host = new ManagedConcurrencyService({ appName: 'crm' });
-    const original = new Error('initialize');
-    const cleanup = new Error('cleanup');
-    const backend = new LocalConcurrentBackend();
-    vi.spyOn(backend, 'initialize').mockRejectedValue(original);
-    const close = vi
-      .spyOn(backend, 'close')
-      .mockRejectedValueOnce(cleanup)
-      .mockRejectedValueOnce(cleanup);
-    const dispose = vi.fn(() => Promise.resolve());
-    const create = vi.fn(() => Promise.resolve({ backend, dispose }));
-    host.registerImplementation('test', { validate: () => {}, create });
-    host.boot({ default: 'main', main: { adapter: 'test' } });
-    await expect(host.start()).rejects.toMatchObject({ cause: original });
-    await expect(host.shutdown()).rejects.toBeInstanceOf(ConcurrentCloseError);
-    expect(dispose).not.toHaveBeenCalled();
-    await host.shutdown();
-    expect(close).toHaveBeenCalledTimes(3);
-    expect(create).toHaveBeenCalledOnce();
-    expect(dispose).toHaveBeenCalledOnce();
-  });
-  it('retries dispose without reclosing the runtime or creating replacement resources', async () => {
-    const host = new ManagedConcurrencyService({ appName: 'crm' });
-    const backend = new LocalConcurrentBackend();
-    const close = vi.spyOn(backend, 'close');
-    const dispose = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('dispose'))
-      .mockResolvedValue(undefined);
-    const create = vi.fn(() => Promise.resolve({ backend, dispose }));
-    host.registerImplementation('test', { validate: () => {}, create });
-    host.boot({ default: 'main', main: { adapter: 'test' } });
-    await host.start();
-    await expect(host.shutdown()).rejects.toBeInstanceOf(ConcurrentCloseError);
-    await host.shutdown();
-    expect(close).toHaveBeenCalledOnce();
-    expect(create).toHaveBeenCalledOnce();
-    expect(dispose).toHaveBeenCalledTimes(2);
-  });
+  const successfulRelease = vi.fn(async () => {});
+  f.acquire
+    .mockResolvedValueOnce(failedRelease)
+    .mockResolvedValueOnce(successfulRelease);
+  f.service.boot(config);
+  await f.service.start();
+  const manager = await f.service.getManager('remote');
+  await (await manager.createLock('first')).lock();
+  await (await manager.createLock('second')).lock();
+  await expect(f.service.shutdown()).resolves.toBeUndefined();
+  expect(failedRelease).toHaveBeenCalledTimes(1);
+  expect(successfulRelease).toHaveBeenCalledTimes(1);
+  expect(f.shutdown).toHaveBeenCalledTimes(1);
+  await f.service.shutdown();
+  expect(f.shutdown).toHaveBeenCalledTimes(1);
 });

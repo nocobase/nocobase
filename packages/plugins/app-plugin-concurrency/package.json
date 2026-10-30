@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-plugin-concurrency",
   "version": "0.1.0-beta.0",
-  "description": "Application-owned concurrency services, configuration and an in-process fixed-TTL Mutex backend.",
+  "description": "Application-owned concurrency services, process-local Mutex instances and public implementation tools.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

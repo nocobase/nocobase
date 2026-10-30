@@ -2,7 +2,10 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ConcurrentAcquireError } from '@nocobase/concurrency';
+import {
+  ConcurrentAcquireError,
+  ConcurrentAbortError,
+} from '@nocobase/concurrency';
 import { ServiceProvider } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import {
@@ -131,7 +134,7 @@ describe('host concurrency provider in a real Application', () => {
     });
     await app.shutdown();
     await expect(references[0]!.getManager()).rejects.toBeInstanceOf(
-      ConcurrentAcquireError,
+      ConcurrentAbortError,
     );
   });
   it('supports no section and warns once outside development even for explicit memory', async () => {

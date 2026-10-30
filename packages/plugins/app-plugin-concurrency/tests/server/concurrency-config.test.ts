@@ -13,10 +13,6 @@ describe('concurrency pure configuration', () => {
       key: 'built-in-memory',
       adapter: 'mutex',
       namespace: 'crm',
-      ttl: 30000,
-      operationTimeoutMs: 5000,
-      cleanupTimeoutMs: 5000,
-      shutdownTimeoutMs: 30000,
     });
     const explicit = resolveConcurrencyConfig(
       { default: 'memory', memory: { adapter: 'mutex' } },

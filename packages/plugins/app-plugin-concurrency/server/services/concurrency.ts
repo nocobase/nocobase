@@ -1,13 +1,10 @@
 import {
-  createConcurrentRuntime,
+  ConcurrentAbortError,
   ConcurrentAcquireError,
   ConcurrentCloseError,
   ConcurrentConfigurationError,
   type ConcurrentManager,
-  type ConcurrentRuntime,
-  type ConcurrentOptions,
 } from '@nocobase/concurrency';
-import { LocalConcurrentBackend } from '../mutex/index.js';
 import {
   resolveConcurrencyConfig,
   type ConcurrencySnapshot,
@@ -15,24 +12,22 @@ import {
 import type {
   ConcurrencyService,
   ConcurrencyImplementation,
-  OwnedConcurrencyBackend,
+  ConcurrencyInstance,
   ResolvedConcurrencyConfig,
   ConcurrencyServiceOptions,
   ConcurrencyLogEvent,
 } from '../../shared/types.js';
+import { MutexConcurrencyInstance } from '../mutex/instance.js';
+import { reportSafely } from '../diagnostics.js';
 
 interface EntryState {
   readonly config: ResolvedConcurrencyConfig;
   initializing: Promise<ConcurrentManager>;
-  handle?: OwnedConcurrencyBackend;
-  runtime?: ConcurrentRuntime;
-  runtimeClosed?: boolean;
-  disposed?: boolean;
-  draining?: Promise<void>;
+  instance?: ConcurrencyInstance;
+  closed?: boolean;
+  stopping?: Promise<void>;
 }
-const LOCAL_WARNING_ENVIRONMENTS = new Set(['develop', 'development']);
 
-/** Host ownership only: lease state and backend lifecycle remain in the core runtime. */
 export class ManagedConcurrencyService implements ConcurrencyService {
   private phase:
     'registering' | 'booted' | 'starting' | 'started' | 'stopping' | 'closed' =
@@ -42,23 +37,27 @@ export class ManagedConcurrencyService implements ConcurrencyService {
     ConcurrencyImplementation
   >();
   private readonly states = new Map<string, EntryState>();
-  private readonly mutexNamespaces = new Map<string, string>();
+  private readonly instances = new WeakSet<ConcurrencyInstance>();
+  private readonly mutexNamespaces = new Set<string>();
   private snapshot?: ConcurrencySnapshot;
   private stopping?: Promise<void>;
   private localReported = false;
   private reloadReported = false;
 
   public constructor(private readonly options: ConcurrencyServiceOptions) {
-    this.implementations.set('mutex', {
+    this.registerImplementation('mutex', {
       validate: () => {},
-      create: () =>
-        Promise.resolve({
-          backend: new LocalConcurrentBackend(),
-          dispose: () => Promise.resolve(),
-        }),
+      create: (entry) =>
+        new MutexConcurrencyInstance(entry, (event) =>
+          this.report({
+            ...event,
+            configKey: entry.key,
+            adapter: entry.adapter,
+            namespace: entry.namespace,
+          }),
+        ),
     });
   }
-
   public registerImplementation(
     adapter: string,
     implementation: ConcurrencyImplementation,
@@ -66,21 +65,20 @@ export class ManagedConcurrencyService implements ConcurrencyService {
     if (
       this.phase !== 'registering' ||
       typeof adapter !== 'string' ||
-      adapter.length === 0 ||
+      !adapter.length ||
       this.implementations.has(adapter) ||
-      typeof implementation?.validate !== 'function' ||
+      !implementation ||
+      typeof implementation.validate !== 'function' ||
       typeof implementation.create !== 'function'
     )
       throw new ConcurrentConfigurationError(
         'Concurrency implementation registration is invalid, duplicate or closed.',
       );
-    // Capture methods: later mutation of the caller's registration object cannot change the booted service.
     this.implementations.set(adapter, {
       validate: implementation.validate.bind(implementation),
       create: implementation.create.bind(implementation),
     });
   }
-
   public boot(config: unknown): void {
     if (this.phase !== 'registering')
       throw new ConcurrentConfigurationError(
@@ -90,60 +88,58 @@ export class ManagedConcurrencyService implements ConcurrencyService {
     const snapshot = resolveConcurrencyConfig(config, this.options.appName);
     for (const entry of snapshot.entries.values())
       this.implementations.get(entry.adapter)?.validate(entry);
-    const selected = snapshot.entries.get(snapshot.defaultKey)!;
-    this.implementation(selected);
+    this.implementation(snapshot.entries.get(snapshot.defaultKey)!);
     this.snapshot = snapshot;
   }
-
   public async start(): Promise<void> {
     if (this.phase !== 'booted' || !this.snapshot)
       throw new ConcurrentAcquireError('Concurrency service is not booted.');
     this.phase = 'starting';
     await this.initialize(this.snapshot.defaultKey);
-    if (this.phase !== 'starting')
-      throw new ConcurrentAcquireError(
-        'Concurrency startup was interrupted by shutdown.',
-      );
+    if (this.isStopping())
+      throw new ConcurrentAbortError('Concurrency startup was interrupted.');
     this.phase = 'started';
   }
-
   public async getManager(configKey?: string): Promise<ConcurrentManager> {
+    if (this.isStopping())
+      throw new ConcurrentAbortError('Concurrency service is closed.');
     if (this.phase !== 'started')
-      throw new ConcurrentAcquireError(
-        'Concurrency service is not started or is stopping.',
-      );
+      throw new ConcurrentAcquireError('Concurrency service is not started.');
     const snapshot = this.snapshot!;
     const key = configKey === undefined ? snapshot.defaultKey : configKey;
     if (
       typeof key !== 'string' ||
-      (configKey !== undefined && (key.length === 0 || key === 'default')) ||
+      (configKey !== undefined && (!key.length || key === 'default')) ||
       !snapshot.entries.has(key)
     )
       throw new ConcurrentConfigurationError(
         'Unknown concurrency configuration name.',
       );
     const manager = await this.initialize(key);
-    if (this.phase !== 'started')
-      throw new ConcurrentAcquireError('Concurrency service is stopping.');
+    if (this.isStopping())
+      throw new ConcurrentAbortError('Concurrency service is closed.');
     return manager;
   }
-
   public configurationChanged(): void {
     if (this.snapshot && !this.reloadReported) {
       this.reloadReported = true;
       this.report({ phase: 'reload' });
     }
   }
-
   public shutdown(): Promise<void> {
     if (this.phase === 'closed') return Promise.resolve();
+    if (this.stopping) return this.stopping;
     this.phase = 'stopping';
-    this.stopping ??= this.stopAll().finally(() => {
-      this.stopping = undefined;
-    });
+    this.stopping = Promise.resolve()
+      .then(() => this.stopAll())
+      .finally(() => {
+        this.stopping = undefined;
+      });
     return this.stopping;
   }
-
+  private isStopping(): boolean {
+    return this.phase === 'stopping' || this.phase === 'closed';
+  }
   private implementation(
     entry: ResolvedConcurrencyConfig,
   ): ConcurrencyImplementation {
@@ -154,7 +150,6 @@ export class ManagedConcurrencyService implements ConcurrencyService {
       );
     return implementation;
   }
-
   private initialize(key: string): Promise<ConcurrentManager> {
     const previous = this.states.get(key);
     if (previous) return previous.initializing;
@@ -163,13 +158,12 @@ export class ManagedConcurrencyService implements ConcurrencyService {
     if (config.adapter === 'mutex') {
       if (this.mutexNamespaces.has(config.namespace))
         throw new ConcurrentConfigurationError(
-          'Another enabled mutex configuration owns this namespace; reuse its configuration name.',
+          'Another enabled mutex configuration owns this namespace.',
         );
-      this.mutexNamespaces.set(config.namespace, key);
+      this.mutexNamespaces.add(config.namespace);
     }
     const state: EntryState = {
       config,
-      // Defer the factory until the state is registered, including synchronous/reentrant implementations.
       initializing: Promise.resolve().then(() =>
         this.create(state, implementation),
       ),
@@ -177,156 +171,103 @@ export class ManagedConcurrencyService implements ConcurrencyService {
     this.states.set(key, state);
     return state.initializing;
   }
-
   private async create(
     state: EntryState,
     implementation: ConcurrencyImplementation,
   ): Promise<ConcurrentManager> {
-    const { config } = state;
+    if (this.isStopping())
+      throw new ConcurrentAbortError(
+        'Concurrency initialization was interrupted.',
+      );
     try {
-      state.handle = await implementation.create(config);
-      state.runtime = await createConcurrentRuntime({
-        backend: state.handle.backend,
-        namespace: config.namespace,
-        operationTimeoutMs: config.operationTimeoutMs,
-        cleanupTimeoutMs: config.cleanupTimeoutMs,
-        ...(this.options.clock ? { clock: this.options.clock } : {}),
-        ...(this.options.scheduler
-          ? { scheduler: this.options.scheduler }
-          : {}),
-        logger: ({ phase }) =>
-          this.report({
-            phase,
-            configKey: config.key,
-            adapter: config.adapter,
-            namespace: config.namespace,
-          }),
-      });
+      const instance = implementation.create(state.config);
+      if (
+        !instance ||
+        typeof instance.start !== 'function' ||
+        typeof instance.shutdown !== 'function' ||
+        !instance.manager ||
+        typeof instance.manager.createLock !== 'function' ||
+        typeof instance.manager.createSynchronous !== 'function' ||
+        this.instances.has(instance)
+      )
+        throw new ConcurrentConfigurationError(
+          'Implementation must create a fresh managed instance.',
+        );
+      this.instances.add(instance);
+      state.instance = instance;
+      if (this.isStopping())
+        throw new ConcurrentAbortError(
+          'Concurrency initialization was interrupted.',
+        );
+      await instance.start();
+      if (this.isStopping())
+        throw new ConcurrentAbortError(
+          'Concurrency initialization was interrupted.',
+        );
+      if (
+        state.config.adapter === 'mutex' &&
+        !this.localReported &&
+        !['develop', 'development'].includes(this.options.nodeEnv ?? '')
+      ) {
+        this.localReported = true;
+        this.report({
+          phase: 'local',
+          configKey: state.config.key,
+          adapter: 'mutex',
+          namespace: state.config.namespace,
+        });
+      }
+      return instance.manager;
     } catch (cause) {
-      this.report({
-        phase: 'initialize',
-        configKey: config.key,
-        adapter: config.adapter,
-        namespace: config.namespace,
-      });
+      if (cause instanceof ConcurrentAbortError && this.isStopping())
+        throw cause;
+      this.report({ phase: 'initialize', configKey: state.config.key, cause });
       throw new ConcurrentConfigurationError(
         'Concurrency initialization failed.',
         { cause },
       );
     }
-    if (
-      config.adapter === 'mutex' &&
-      !this.localReported &&
-      !LOCAL_WARNING_ENVIRONMENTS.has(this.options.nodeEnv ?? '')
-    ) {
-      this.localReported = true;
-      this.report({
-        phase: 'local',
-        configKey: config.key,
-        adapter: config.adapter,
-        namespace: config.namespace,
+  }
+  private closeState(state: EntryState): Promise<void> {
+    if (state.closed || !state.instance) return Promise.resolve();
+    state.stopping ??= Promise.resolve()
+      .then(() => state.instance!.shutdown())
+      .then(() => {
+        state.closed = true;
+      })
+      .finally(() => {
+        state.stopping = undefined;
       });
-    }
-    const manager = state.runtime.manager;
-    const resourceOptions = (
-      options?: ConcurrentOptions,
-    ): ConcurrentOptions => {
-      if (
-        options !== undefined &&
-        (options === null ||
-          typeof options !== 'object' ||
-          Reflect.ownKeys(options).some((field) => field !== 'ttl'))
-      )
-        throw new ConcurrentConfigurationError(
-          'Concurrency resource options accept only ttl.',
-        );
-      const ttl = options?.ttl;
-      return { ttl: ttl ?? config.ttl };
-    };
-    return Object.freeze({
-      createLock: (name: string, options?: ConcurrentOptions) =>
-        manager.createLock(name, resourceOptions(options)),
-      createSynchronous: (name: string, options?: ConcurrentOptions) =>
-        manager.createSynchronous(name, resourceOptions(options)),
-    });
+    return state.stopping;
   }
-
-  private drain(state: EntryState): Promise<void> {
-    if (state.disposed) return Promise.resolve();
-    state.draining ??= (async () => {
-      // A rejected construction promise has settled before we retry partial backend cleanup.
-      await state.initializing.catch(() => {});
-      if (state.runtime && !state.runtimeClosed) {
-        await state.runtime.close({
-          timeoutMs: state.config.shutdownTimeoutMs,
-        });
-        state.runtimeClosed = true;
-      } else if (!state.runtime && state.handle && !state.runtimeClosed) {
-        await state.handle.backend.close();
-        state.runtimeClosed = true;
-      }
-      if (state.handle) await state.handle.dispose();
-      state.disposed = true;
-    })().finally(() => {
-      state.draining = undefined;
-    });
-    return state.draining;
-  }
-
-  private observeDrain(state: EntryState): Promise<void> {
-    const waitingForInitialization = !state.runtime;
-    const draining = this.drain(state);
-    if (!waitingForInitialization) return draining;
-    // Only the caller's notification is bounded. The saved drain keeps observing late setup and owns its resources.
-    return new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(
-        () =>
-          reject(
-            new ConcurrentCloseError(
-              'Concurrency initialization is still draining.',
-            ),
-          ),
-        state.config.shutdownTimeoutMs,
-      );
-      draining.then(
-        () => {
-          clearTimeout(timer);
-          resolve();
-        },
-        (error: unknown) => {
-          clearTimeout(timer);
-          reject(
-            error instanceof Error
-              ? error
-              : new ConcurrentCloseError('Concurrency cleanup failed.', {
-                  cause: error,
-                }),
-          );
-        },
-      );
-    });
-  }
-
   private async stopAll(): Promise<void> {
     const results = await Promise.allSettled(
-      [...this.states.values()].map((state) => this.observeDrain(state)),
+      [...this.states.values()].map(async (state) => {
+        // Close saved resources before waiting for an in-progress start.
+        let failure: unknown;
+        let failed = false;
+        try {
+          await this.closeState(state);
+        } catch (cause) {
+          failure = cause;
+          failed = true;
+        }
+        await state.initializing.catch(() => {});
+        if (!failed) await this.closeState(state);
+        if (failed) throw failure;
+      }),
     );
-    const errors = results.flatMap((result) =>
-      result.status === 'rejected' ? [result.reason as unknown] : [],
-    );
+    const errors: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') errors.push(result.reason);
     if (errors.length)
       throw new ConcurrentCloseError(
-        'Concurrency shutdown is incomplete; retry shutdown on the same service.',
+        'Concurrency shutdown could not close all instances.',
         { cause: new AggregateError(errors) },
       );
     this.phase = 'closed';
   }
-
   private report(event: ConcurrencyLogEvent): void {
-    try {
-      this.options.report?.(event);
-    } catch {
-      /* Diagnostics must not change business or cleanup results. */
-    }
+    reportSafely(this.options.report, event);
   }
 }

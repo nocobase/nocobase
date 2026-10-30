@@ -43,7 +43,16 @@ export class ConcurrencyServiceProvider extends ServiceProvider<AppPluginApplica
               : event.phase === 'reload'
                 ? RELOAD_WARNING
                 : 'Concurrency operation reported a diagnostic.';
-          if (logger) logger.warn({ ...event }, message);
+          if (logger)
+            logger.warn(
+              {
+                phase: event.phase,
+                configKey: event.configKey,
+                adapter: event.adapter,
+                namespace: event.namespace,
+              },
+              message,
+            );
           else console.warn(message);
         },
       });

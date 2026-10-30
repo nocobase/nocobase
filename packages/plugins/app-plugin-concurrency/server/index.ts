@@ -1,10 +1,6 @@
 export { default } from './plugin.js';
 export { concurrencyServiceToken } from './tokens.js';
 export {
-  LocalConcurrentBackend,
-  type LocalConcurrentBackendOptions,
-} from './mutex/index.js';
-export {
   ConcurrencyServiceProvider,
   type ConcurrencyServiceProviderOptions,
 } from './providers/concurrency.js';
@@ -15,9 +11,17 @@ export type {
   ConcurrencyConfigEntry,
   ConcurrencyAdapterConnections,
   ResolvedConcurrencyConfig,
-  OwnedConcurrencyBackend,
+  ConcurrencyInstance,
   ConcurrencyImplementation,
   ConcurrencyService,
   ConcurrencyServiceOptions,
   ConcurrencyLogEvent,
+  ConcurrencyReporter,
 } from '../shared/types.js';
+export {
+  ManagedLeaseRegistry,
+  type ManagedLeaseAcquireOptions,
+} from './leases.js';
+export { startAcquire, type AcquireTask } from './acquire.js';
+export { createSynchronousExecutor } from './executor.js';
+export { encodeResourceKey } from './resource-key.js';
