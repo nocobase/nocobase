@@ -960,9 +960,15 @@ export function createConversationService(
   // -------------------------------------------------------------------------------------------------------------------
 
   /** Appends the run's new text events as assistant messages, in the caller's transaction. */
-  async function syncIn(unit: Tx, run: Run): Promise<void> {
+  async function syncIn(
+    unit: Tx,
+    run: Run,
+    lockedRecord?: ConversationRecord,
+  ): Promise<void> {
     if (run.subject.kind !== CONVERSATION_SUBJECT) return;
-    const record = await lockConversation(unit.conn, run.subject.id, now());
+    const record =
+      lockedRecord ??
+      (await lockConversation(unit.conn, run.subject.id, now()));
     if (!record || record.userId !== run.actorUserId) return;
     let after: number;
     if (record.syncRunId === run.id) after = Number(record.syncSeq);
@@ -1717,6 +1723,12 @@ export function createConversationService(
             !(await canAnswer(unit.conn, agent, userId)))
         )
           throw conflict('This agent has no available execution environment.');
+        if (realtime.queue) {
+          // Keep already received replies before this follow-up, under the admission's existing conversation lock.
+          const working = open.find((run) => run.status !== 'queued')!;
+          await syncIn(unit, working, record);
+          record = (await findConversation(unit.conn, id))!;
+        }
         turnEffort =
           typeof jsonObject(record.metadata).turnEffort === 'string'
             ? (jsonObject(record.metadata).turnEffort as string)
