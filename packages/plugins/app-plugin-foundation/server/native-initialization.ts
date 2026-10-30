@@ -15,7 +15,6 @@ export class NativeInitialization {
   public constructor(
     private readonly analysis: SourceEvidence,
     private readonly sources: readonly ts.SourceFile[],
-    private readonly complete = true,
   ) {}
 
   private imported(node: ts.Node, name: string): boolean {
@@ -58,7 +57,6 @@ export class NativeInitialization {
   // Every reference to these import bindings must remain a direct call. Namespace/default imports,
   // re-exports and Hmac prototype access make the intrinsic identity unprovable across the graph.
   private importsIntact(): boolean {
-    if (!this.complete) return false;
     if (this.intact !== undefined) return this.intact;
     const functions = new Set<ts.Symbol>();
     const hmac = new Set<ts.Symbol>();

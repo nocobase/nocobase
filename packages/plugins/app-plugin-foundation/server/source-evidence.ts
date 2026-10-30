@@ -61,7 +61,6 @@ export class SourceEvidence {
     private readonly resolutions: ReadonlyMap<string, string>,
     private readonly isLocal: (specifier: string) => boolean = (specifier) =>
       /^[.#/]/.test(specifier),
-    nativeProgram?: { sources: readonly EvidenceSource[]; complete: boolean },
   ) {
     this.sources = new Map(sources.map((source) => [source.file, source]));
     const options: ts.CompilerOptions = {
@@ -86,8 +85,7 @@ export class SourceEvidence {
       .getTypeChecker();
     this.nativeInitialization = new NativeInitialization(
       this,
-      (nativeProgram?.sources ?? sources).map((source) => source.ast),
-      nativeProgram?.complete ?? true,
+      sources.map((source) => source.ast),
     );
   }
 
