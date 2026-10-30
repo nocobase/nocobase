@@ -1,5 +1,4 @@
 import ts from 'typescript';
-import { StaticValues } from './static-values.js';
 
 export interface EvidenceSource {
   readonly file: string;
@@ -82,196 +81,17 @@ export class SourceEvidence {
   public collect(
     file: string,
     roots?: readonly ts.Node[],
-    contextualCalls = false,
   ): {
     references: Set<string>;
     nodes: Map<string, Set<ts.Node>>;
     complete: boolean;
-    unsafeCapability: boolean;
-    unsafeValue: boolean;
   } {
     const references = new Set<string>();
     const nodes = new Map<string, Set<ts.Node>>();
-    const visited = new Map<ts.Node, Set<string>>();
-    const rootFunctions = new Set<ts.SignatureDeclaration>(
-      (roots ?? []).flatMap((root) => [
-        ...(ts.isFunctionLike(root) ? [root] : []),
-        ...this.functions(root),
-      ]),
-    );
+    const visited = new Set<ts.Node>();
     const symbols = new Set<ts.Symbol>();
-    const captures = new Map<
-      ts.SignatureDeclaration,
-      ReadonlyMap<ts.Declaration, readonly ts.Node[]>
-    >();
     let complete = true;
-    let unsafeCapabilityEscaped = false;
-    let unsafeValueEscaped = false;
-    let visits = 0;
-    const nodeKey = (node: ts.Node): string =>
-      `${node.getSourceFile().fileName}:${node.getStart()}`;
-    const contextKey = (
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-      active: ReadonlySet<ts.Node>,
-    ): string =>
-      [
-        ...[...bindings]
-          .map(
-            ([declaration, values]) =>
-              `${nodeKey(declaration)}=${values.map(nodeKey).join(',')}`,
-          )
-          .sort(),
-        ...[...active].map(nodeKey).sort(),
-      ].join('|');
-    const definitelyTerminates = (
-      node: ts.Node,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-    ): boolean => {
-      if (ts.isReturnStatement(node) || ts.isThrowStatement(node)) return true;
-      if (ts.isBlock(node)) {
-        for (const statement of node.statements)
-          if (definitelyTerminates(statement, bindings)) return true;
-        return false;
-      }
-      if (ts.isIfStatement(node)) {
-        const branches = new StaticValues(this, bindings, captures).booleans(
-          node.expression,
-        );
-        if (branches.length === 1)
-          return branches[0]
-            ? definitelyTerminates(node.thenStatement, bindings)
-            : node.elseStatement
-              ? definitelyTerminates(node.elseStatement, bindings)
-              : false;
-        return Boolean(
-          node.elseStatement &&
-          definitelyTerminates(node.thenStatement, bindings) &&
-          definitelyTerminates(node.elseStatement, bindings),
-        );
-      }
-      return false;
-    };
-    const capability = (
-      node: ts.Node,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-      seen = new Set<ts.Node>(),
-    ): boolean => {
-      if (seen.has(node) || seen.size >= 32) return true;
-      seen = new Set(seen).add(node);
-      if (ts.isIdentifier(node)) {
-        if (node.text === 'container') return true;
-        const bound = this.declarations(node).flatMap(
-          (declaration) => bindings.get(declaration) ?? [],
-        );
-        if (bound.length)
-          return bound.some((item) => capability(item, bindings, seen));
-      }
-      const literals = new StaticValues(this, bindings, captures);
-      return literals.values(node).some((value) => {
-        if (
-          ts.isPropertyAccessExpression(value) &&
-          value.name.text === 'container'
-        )
-          return true;
-        if (
-          ts.isCallExpression(value) &&
-          ts.isPropertyAccessExpression(value.expression) &&
-          value.expression.name.text === 'resolve'
-        )
-          return true;
-        if (
-          ts.isIdentifier(value) &&
-          value.text === 'container' &&
-          !this.declarations(value).length
-        )
-          return true;
-        if (ts.isObjectLiteralExpression(value))
-          return value.properties.some((property) =>
-            ts.isPropertyAssignment(property)
-              ? capability(property.initializer, bindings, seen)
-              : ts.isShorthandPropertyAssignment(property)
-                ? capability(property.name, bindings, seen)
-                : true,
-          );
-        if (ts.isArrayLiteralExpression(value))
-          return value.elements.some(
-            (element) =>
-              !ts.isSpreadElement(element) &&
-              capability(element, bindings, seen),
-          );
-        if (ts.isFunctionLike(value)) {
-          const captured = captures.get(value);
-          return (
-            captured !== undefined &&
-            [...captured.values()].some((items) =>
-              items.some((item) => capability(item, captured, seen)),
-            )
-          );
-        }
-        return false;
-      });
-    };
-    const candidateValue = (
-      node: ts.Node,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-      seen = new Set<ts.Node>(),
-      budget = { visits: 0 },
-    ): boolean => {
-      if (seen.has(node) || seen.size >= 32 || ++budget.visits > 2048)
-        return true;
-      if (
-        ts.isCallExpression(node) &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        node.expression.name.text === 'resolve' &&
-        node.arguments.length === 1 &&
-        this.serviceFactories(node.arguments[0]) !== undefined
-      )
-        return true;
-      const next = new Set(seen).add(node);
-      const values = new StaticValues(this, bindings, captures).values(node);
-      return values.some((value) => {
-        if (ts.isArrayLiteralExpression(value))
-          return value.elements.some(
-            (item) =>
-              !ts.isSpreadElement(item) &&
-              candidateValue(item, bindings, next, budget),
-          );
-        if (ts.isObjectLiteralExpression(value))
-          return value.properties.some((property) =>
-            ts.isPropertyAssignment(property)
-              ? candidateValue(property.initializer, bindings, next, budget)
-              : ts.isShorthandPropertyAssignment(property)
-                ? candidateValue(property.name, bindings, next, budget)
-                : ts.isMethodDeclaration(property) ||
-                  ts.isGetAccessorDeclaration(property) ||
-                  ts.isSetAccessorDeclaration(property),
-          );
-        if (ts.isFunctionLike(value)) {
-          const captured = captures.get(value);
-          return Boolean(
-            captured &&
-            [...captured.values()].some((items) =>
-              items.some((item) =>
-                candidateValue(item, captured, next, budget),
-              ),
-            ),
-          );
-        }
-        return (
-          ts.isCallExpression(value) &&
-          ts.isPropertyAccessExpression(value.expression) &&
-          value.expression.name.text === 'resolve' &&
-          value.arguments.length === 1 &&
-          this.serviceFactories(value.arguments[0]) !== undefined
-        );
-      });
-    };
-    const exported = (
-      target: string,
-      name: string,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]> = new Map(),
-      active: ReadonlySet<ts.Node> = new Set(),
-    ): void => {
+    const exported = (target: string, name: string): void => {
       const ast = this.sources.get(target)?.ast;
       const symbol = ast && this.checker.getSymbolAtLocation(ast);
       const value =
@@ -283,14 +103,9 @@ export class SourceEvidence {
         complete = false;
         return;
       }
-      follow(value, bindings, active);
+      follow(value);
     };
-    const imported = (
-      declaration: ts.Node,
-      name?: string,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]> = new Map(),
-      active: ReadonlySet<ts.Node> = new Set(),
-    ): boolean => {
+    const imported = (declaration: ts.Node, name?: string): boolean => {
       let statement: ts.Node | undefined = declaration;
       while (
         statement &&
@@ -311,15 +126,11 @@ export class SourceEvidence {
       if (!target) {
         if (this.isLocal(specifier)) complete = false;
         else references.add(specifier);
-      } else if (name) exported(target, name, bindings, active);
+      } else if (name) exported(target, name);
       else complete = false;
       return true;
     };
-    const follow = (
-      symbol: ts.Symbol,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
-      active: ReadonlySet<ts.Node>,
-    ): void => {
+    const follow = (symbol: ts.Symbol): void => {
       if (symbols.has(symbol)) return;
       symbols.add(symbol);
       for (const declaration of symbol.declarations ?? []) {
@@ -337,94 +148,41 @@ export class SourceEvidence {
             imported(
               declaration,
               declaration.propertyName?.text ?? declaration.name.text,
-              bindings,
-              active,
             )
           )
             continue;
           if (ts.isExportSpecifier(declaration)) {
             const local =
               this.checker.getExportSpecifierLocalTargetSymbol(declaration);
-            if (local) follow(local, bindings, active);
+            if (local) follow(local);
             else complete = false;
             continue;
           }
           if (symbol.flags & ts.SymbolFlags.Alias)
-            follow(this.checker.getAliasedSymbol(symbol), bindings, active);
+            follow(this.checker.getAliasedSymbol(symbol));
         } else if (ts.isImportClause(declaration)) {
           if (!declaration.isTypeOnly) imported(declaration, 'default');
         } else if (ts.isNamespaceImport(declaration)) {
           imported(declaration);
         } else if (this.sources.has(declaration.getSourceFile().fileName)) {
-          visit(declaration, bindings, active);
+          visit(declaration);
         }
       }
     };
-    const visit = (
-      node: ts.Node,
-      bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]> = new Map(),
-      active: ReadonlySet<ts.Node> = new Set(),
-    ): void => {
-      if (ts.isTypeNode(node)) return;
-      if (
-        contextualCalls &&
-        ts.isFunctionLike(node) &&
-        !rootFunctions.has(node)
-      )
-        return;
-      if (++visits > 100_000 || active.size >= 32) {
-        complete = false;
-        return;
-      }
-      const key = contextKey(bindings, active);
-      const contexts = visited.get(node) ?? new Set<string>();
-      if (contexts.has(key)) return;
-      if (contexts.size >= 32) {
-        complete = false;
-        return;
-      }
-      contexts.add(key);
-      visited.set(node, contexts);
+    const visit = (node: ts.Node): void => {
+      if (visited.has(node) || ts.isTypeNode(node)) return;
+      visited.add(node);
       const sourceFile = node.getSourceFile();
       const selected = nodes.get(sourceFile.fileName) ?? new Set<ts.Node>();
       selected.add(node);
       nodes.set(sourceFile.fileName, selected);
       if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) return;
-      if (contextualCalls && (ts.isBlock(node) || ts.isSourceFile(node))) {
-        for (const statement of node.statements) {
-          visit(statement, bindings, active);
-          if (definitelyTerminates(statement, bindings)) break;
-        }
-        return;
-      }
-      if (
-        contextualCalls &&
-        (ts.isReturnStatement(node) || ts.isThrowStatement(node))
-      ) {
-        if (node.expression) visit(node.expression, bindings, active);
-        return;
-      }
-      if (contextualCalls && ts.isIfStatement(node)) {
-        visit(node.expression, bindings, active);
-        const branches = new StaticValues(this, bindings, captures).booleans(
-          node.expression,
-        );
-        if (branches.length === 1) {
-          if (branches[0]) visit(node.thenStatement, bindings, active);
-          else if (node.elseStatement)
-            visit(node.elseStatement, bindings, active);
-        } else {
-          visit(node.thenStatement, bindings, active);
-          if (node.elseStatement) visit(node.elseStatement, bindings, active);
-        }
-        return;
-      }
       if (
         ts.isVariableDeclaration(node) ||
         ts.isParameter(node) ||
         ts.isPropertyDeclaration(node)
       ) {
-        if (node.initializer) visit(node.initializer, bindings, active);
+        if (node.initializer) visit(node.initializer);
         return;
       }
       if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) {
@@ -434,49 +192,25 @@ export class SourceEvidence {
             ts.isConstructorDeclaration(member) ||
             ts.isPropertyDeclaration(member)
           )
-            visit(member, bindings, active);
+            visit(member);
         return;
       }
-      if (ts.isPropertyAccessExpression(node)) {
-        for (const root of this.serviceMethod(
-          node.expression,
-          node.name.text,
-          bindings,
-        )) {
-          if (contextualCalls && ts.isFunctionLike(root))
-            rootFunctions.add(root);
-          visit(root, bindings, active);
-        }
+      if (
+        ts.isPropertyAccessExpression(node) &&
+        ts.isIdentifier(node.expression)
+      ) {
+        for (const root of this.serviceMethod(node.expression, node.name.text))
+          visit(root);
         const receiver = this.checker.getSymbolAtLocation(node.expression);
         const namespace = receiver?.declarations?.find(ts.isNamespaceImport);
         if (namespace) {
-          imported(namespace, node.name.text, bindings, active);
+          imported(namespace, node.name.text);
           return;
         }
       }
       if (ts.isIdentifier(node)) {
         const symbol = this.symbol(node);
-        const callTarget =
-          ts.isCallExpression(node.parent) && node.parent.expression === node;
-        if (symbol && (!callTarget || !contextualCalls))
-          follow(symbol, bindings, active);
-        if (symbol && callTarget)
-          for (const declaration of symbol.declarations ?? []) {
-            if (ts.isImportSpecifier(declaration) && !declaration.isTypeOnly) {
-              let statement: ts.Node = declaration;
-              while (!ts.isImportDeclaration(statement) && statement.parent)
-                statement = statement.parent;
-              if (
-                ts.isImportDeclaration(statement) &&
-                ts.isStringLiteralLike(statement.moduleSpecifier) &&
-                !this.resolutions.has(
-                  `${statement.getSourceFile().fileName}\0${statement.moduleSpecifier.text}`,
-                ) &&
-                !this.isLocal(statement.moduleSpecifier.text)
-              )
-                references.add(statement.moduleSpecifier.text);
-            }
-          }
+        if (symbol) follow(symbol);
       }
       if (
         ts.isCallExpression(node) &&
@@ -487,131 +221,19 @@ export class SourceEvidence {
           const target = this.resolutions.get(
             `${sourceFile.fileName}\0${argument.text}`,
           );
-          if (target) exported(target, 'default', bindings, active);
+          if (target) exported(target, 'default');
           else if (this.isLocal(argument.text)) complete = false;
           else references.add(argument.text);
         } else complete = false;
       }
-      if (ts.isCallExpression(node)) {
-        const evaluator = new StaticValues(this, bindings, captures);
-        const invocations = evaluator.invocations(node);
-        const serviceCall =
-          ts.isPropertyAccessExpression(node.expression) &&
-          this.serviceMethod(
-            node.expression.expression,
-            node.expression.name.text,
-            bindings,
-          ).length > 0;
-        const safeParser =
-          ts.isPropertyAccessExpression(node.expression) &&
-          node.expression.name.text === 'safeParse';
-        const passesCapability =
-          invocations.length === 0 &&
-          !serviceCall &&
-          node.arguments.some((argument) => capability(argument, bindings));
-        if (passesCapability) {
-          complete = false;
-          unsafeCapabilityEscaped = true;
-        }
-        const escapesCandidate =
-          invocations.length === 0 &&
-          !serviceCall &&
-          !safeParser &&
-          (node.arguments.some((argument) =>
-            candidateValue(argument, bindings),
-          ) ||
-            (ts.isPropertyAccessExpression(node.expression) &&
-              candidateValue(node.expression.expression, bindings)));
-        if (escapesCandidate) {
-          complete = false;
-          unsafeValueEscaped = true;
-        }
-        for (const invocation of invocations) {
-          if (active.has(invocation.fn)) {
-            complete = false;
-            continue;
-          }
-          if ('body' in invocation.fn && invocation.fn.body)
-            visit(
-              invocation.fn.body,
-              invocation.bindings,
-              new Set(active).add(invocation.fn),
-            );
-        }
-      }
-      if (
-        ts.isBinaryExpression(node) &&
-        node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
-        node.operatorToken.kind <= ts.SyntaxKind.LastAssignment
-      ) {
-        let target = node.left;
-        while (
-          (ts.isPropertyAccessExpression(target) ||
-            ts.isElementAccessExpression(target)) &&
-          target.expression
-        )
-          target = target.expression;
-        if (candidateValue(target, bindings)) {
-          complete = false;
-          unsafeValueEscaped = true;
-        }
-      }
-      if (
-        (ts.isPrefixUnaryExpression(node) ||
-          ts.isPostfixUnaryExpression(node)) &&
-        [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(
-          node.operator,
-        )
-      ) {
-        let target = node.operand;
-        while (
-          (ts.isPropertyAccessExpression(target) ||
-            ts.isElementAccessExpression(target)) &&
-          target.expression
-        )
-          target = target.expression;
-        if (candidateValue(target, bindings)) {
-          complete = false;
-          unsafeValueEscaped = true;
-        }
-      }
-      if (ts.isDeleteExpression(node)) {
-        let target = node.expression;
-        while (
-          (ts.isPropertyAccessExpression(target) ||
-            ts.isElementAccessExpression(target)) &&
-          target.expression
-        )
-          target = target.expression;
-        if (candidateValue(target, bindings)) {
-          complete = false;
-          unsafeValueEscaped = true;
-        }
-      }
       ts.forEachChild(node, (child) => {
         // A nested helper declaration is not a call. Follow it only when a value reference reaches it.
-        if (!ts.isFunctionDeclaration(child)) visit(child, bindings, active);
+        if (!ts.isFunctionDeclaration(child)) visit(child);
       });
     };
-    if (roots) roots.forEach((root) => visit(root));
-    else {
-      const ast = this.sources.get(file)?.ast;
-      const symbol = ast && this.checker.getSymbolAtLocation(ast);
-      const value =
-        symbol &&
-        this.checker
-          .getExportsOfModule(symbol)
-          .find((item) => item.name === 'default');
-      if (value) follow(value, new Map(), new Set());
-      else complete = false;
-    }
-    return {
-      references,
-      nodes,
-      complete,
-      unsafeCapability: unsafeCapabilityEscaped,
-      unsafeValue: unsafeValueEscaped,
-    };
+    if (roots) roots.forEach(visit);
+    else exported(file, 'default');
+    return { references, nodes, complete };
   }
 
   /** External contracts cannot describe resolved local overrides or unresolved local declarations. */
@@ -684,27 +306,6 @@ export class SourceEvidence {
     if (symbol && symbol.flags & ts.SymbolFlags.Alias)
       symbol = this.checker.getAliasedSymbol(symbol);
     return symbol?.declarations ?? [];
-  }
-
-  /** Only one locally registered implementation can prove a resolved service value. */
-  public serviceFactories(
-    token: ts.Node,
-  ): readonly ts.Expression[] | undefined {
-    const declaration = this.declarations(token)[0];
-    const factories = declaration ? this.services.get(declaration) : undefined;
-    return factories?.length === 1 ? factories : undefined;
-  }
-
-  public isExported(declaration: ts.Declaration): boolean {
-    const statement = ts.isVariableDeclaration(declaration)
-      ? declaration.parent.parent
-      : declaration;
-    return (
-      ts.canHaveModifiers(statement) &&
-      !!ts
-        .getModifiers(statement)
-        ?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
-    );
   }
 
   /** Resolve returned local functions and React's identity-preserving callback wrapper only. */
@@ -882,16 +483,9 @@ export class SourceEvidence {
   private serviceMethod(
     receiver: ts.Expression,
     method: string,
-    bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
   ): readonly ts.Node[] {
     const roots: ts.Node[] = [];
-    for (const value of new StaticValues(
-      this,
-      bindings,
-      undefined,
-      undefined,
-      false,
-    ).values(receiver)) {
+    for (const value of this.values(receiver)) {
       if (
         !ts.isCallExpression(value) ||
         !ts.isPropertyAccessExpression(value.expression) ||
