@@ -233,6 +233,8 @@ export interface ConversationRun {
 
 /** A conversation in the history list. */
 export interface ConversationSummary {
+  /** Linked work resolved for this conversation's owner in the list/detail snapshot. */
+  readonly links?: readonly ConversationLink[];
   /** The optional project whose code this Runner conversation uses. */
   readonly projectId?: string | null;
   readonly execution?: {

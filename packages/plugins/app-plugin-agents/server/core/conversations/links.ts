@@ -41,6 +41,11 @@ interface ConversationLinksDeps {
 }
 
 export interface ConversationLinksInternal extends ConversationLinks {
+  /** Resolve a page of already authorized conversations once per owner and kind. */
+  summaries(
+    conn: DatabaseConnection,
+    conversations: readonly Pick<ConversationRecord, 'id' | 'userId'>[],
+  ): Promise<Map<string, ConversationLink[]>>;
   /** The "Linked work" section of a turn, as the owner sees the links; null when there are none. */
   turnSection(
     conn: DatabaseConnection,
@@ -175,6 +180,42 @@ export function createConversationLinks(
       };
     },
     hasKind: (key) => kinds.has(key),
+
+    async summaries(conn, conversations) {
+      const result = new Map<string, ConversationLink[]>();
+      if (!conversations.length) return result;
+      const rows = await linksRepo(conn).findMany({
+        filter: (f) =>
+          f.or(
+            conversations.map((item) => f.string('conversationId').eq(item.id)),
+          ),
+        sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+      });
+      const owners = new Map<string, LinkRecord[]>();
+      const counts = new Map<string, number>();
+      const userOf = new Map(
+        conversations.map((item) => [item.id, item.userId]),
+      );
+      for (const row of rows) {
+        const count = counts.get(row.conversationId) ?? 0;
+        if (count >= CONVERSATION_LINKS_MAX) continue;
+        counts.set(row.conversationId, count + 1);
+        if (!kinds.has(row.kind)) continue;
+        const userId = userOf.get(row.conversationId)!;
+        const group = owners.get(userId) ?? [];
+        group.push(row);
+        owners.set(userId, group);
+      }
+      for (const [userId, group] of owners) {
+        const found = await views(conn, userId, group);
+        for (const row of group) {
+          const items = result.get(row.conversationId) ?? [];
+          items.push(linkOf(row, found));
+          result.set(row.conversationId, items);
+        }
+      }
+      return result;
+    },
 
     async list(userId, conversationId) {
       const conn = tx.read();
