@@ -1,27 +1,32 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ConcurrentConfigurationError } from '@nocobase/concurrency';
+import { ManualTime } from '@nocobase/concurrency/testing';
 import { ManagedConcurrencyService } from '../../server/services/concurrency.js';
 
 async function service(
   config: unknown = { default: 'memory', memory: { adapter: 'mutex' } },
+  time?: ManualTime,
 ) {
   const host = new ManagedConcurrencyService({
     appName: 'crm',
     nodeEnv: 'development',
+    ...(time ? { clock: time, scheduler: time } : {}),
   });
   host.boot(config);
   await host.start();
   return host;
 }
 describe('concurrency manager facade', () => {
-  afterEach(() => vi.useRealTimers());
   it('allows an explicit TTL override without wrapping the returned Lock acquisition methods', async () => {
     // The five-millisecond lease must be delivered before simulated expiry, regardless of CI load.
-    vi.useFakeTimers();
-    const host = await service({
-      default: 'memory',
-      memory: { adapter: 'mutex', ttl: 1000 },
-    });
+    const time = new ManualTime();
+    const host = await service(
+      {
+        default: 'memory',
+        memory: { adapter: 'mutex', ttl: 1000 },
+      },
+      time,
+    );
     try {
       const manager = await host.getManager();
       const lock = await manager.createLock('override', { ttl: 5 });
@@ -30,7 +35,8 @@ describe('concurrency manager facade', () => {
       });
       const lease = await lock.lock();
       try {
-        await vi.advanceTimersByTimeAsync(20);
+        time.advance(20);
+        time.flush();
         expect(await executor.tryRun(() => 'after-expiry')).toEqual({
           acquired: true,
           value: 'after-expiry',
@@ -104,11 +110,14 @@ describe('concurrency manager facade', () => {
     }
   });
   it('reads ttl once, supplies its default and rejects unrecognized creation options', async () => {
-    vi.useFakeTimers();
-    const host = await service({
-      default: 'memory',
-      memory: { adapter: 'mutex', ttl: 5 },
-    });
+    const time = new ManualTime();
+    const host = await service(
+      {
+        default: 'memory',
+        memory: { adapter: 'mutex', ttl: 5 },
+      },
+      time,
+    );
     const manager = await host.getManager();
     const ttl = vi.fn(() => undefined);
     const lock = await manager.createLock('resource', {
@@ -119,7 +128,8 @@ describe('concurrency manager facade', () => {
     expect(ttl).toHaveBeenCalledOnce();
     const lease = await lock.lock();
     try {
-      await vi.advanceTimersByTimeAsync(20);
+      time.advance(20);
+      time.flush();
       const replacement = await lock.tryLock();
       expect(replacement).toBeDefined();
       await replacement!.release();
