@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- 54a4215: The App Foundation page combines duplicate static navigation groups and reports physical foreign keys separately from logical relationship fields.
+
+  应用底座页面会合并重复的静态导航分组，并将物理外键与逻辑关联字段分别统计。
+
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-cli@1.0.0-beta.30
+
 ## 0.1.0-beta.9
 
 ### Patch Changes
