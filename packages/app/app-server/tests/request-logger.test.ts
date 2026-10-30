@@ -24,6 +24,8 @@ describe('requestLogger', () => {
       container,
       appName: 'main',
     } as AppPluginApplication);
+    router.get('/api', (context) => context.text('ok'));
+    router.get('/api/users', (context) => context.text('ok'));
     router.get('*', (context) => context.text('ok'));
     for (const path of [
       '/hub',
@@ -67,7 +69,7 @@ describe('requestLogger', () => {
         app: 'main',
         req: {
           method: 'GET',
-          path: '/users/42',
+          path: '/users/:id',
           query: { limit: '20' },
           caller: 'anonymous',
           headers: {
@@ -75,14 +77,14 @@ describe('requestLogger', () => {
             'x-request-source': 'cli',
           },
         },
-        msg: 'GET /users/42 started',
+        msg: 'GET /users/:id started',
       }),
       expect.objectContaining({
         level: 30,
         app: 'main',
         req: {
           method: 'GET',
-          path: '/users/42',
+          path: '/users/:id',
           route: '/users/:id',
           params: { id: '42' },
           query: { limit: '20' },
@@ -90,7 +92,7 @@ describe('requestLogger', () => {
         },
         res: expect.objectContaining({ status: 200 }),
         durationMs: expect.any(Number),
-        msg: 'GET /users/42 200 completed',
+        msg: 'GET /users/:id 200 completed',
       }),
     ]);
   });
@@ -185,6 +187,13 @@ describe('requestLogger', () => {
         q: 'private search',
         filter: '{"secret":"private-filter"}',
         cursor: 'opaque+cursor==',
+        pass: 'hunter2',
+        pwd: 'abc123',
+        auth: 'aBcD1234_efGH5678-ijKL',
+        share: 'dba9a7e6-79f5-4cd0-bf2a-f24f87184461',
+        invite: '2e5bc4f4-76ab-48c8-9ad1-3a38f9ac69f1',
+        pin: '1234',
+        phone: '13800138000',
       });
       await router.request(`/runs?${query}`, {
         headers: { 'x-nocobase-run-token': 'run-secret' },
@@ -212,6 +221,13 @@ describe('requestLogger', () => {
         'key',
         'sessionId',
         'CoDe',
+        'pass',
+        'pwd',
+        'auth',
+        'share',
+        'invite',
+        'pin',
+        'phone',
       ])
         expect(serialized).not.toContain(query.get(name));
     },
@@ -240,7 +256,7 @@ describe('requestLogger', () => {
         upper: 'Uppercase',
         punctuation: 'a.b',
         empty: '',
-        longWord: 'a'.repeat(33),
+        longWord: 'a'.repeat(17),
         longNumber: '1'.repeat(21),
         tooLong: 'a'.repeat(101),
         longPrefix: 'valid' + ' '.repeat(100),
@@ -263,27 +279,31 @@ describe('requestLogger', () => {
     router.use('*', requestLogger({ logger: createLogger({}, output) }));
     router.get('/', (context) => context.text('ok'));
     const query = {
-      limit: '100',
-      offset: '0',
-      page: '1',
-      pageSize: '50',
+      limit: '1000',
+      offset: '1000000000',
+      page: '1000000000',
+      pageSize: '1000',
       count: '-42',
       recordId: '394741478850560',
-      uuid: 'dba9a7e6-79f5-4cd0-bf2a-f24f87184461',
-      upperUuid: 'DBA9A7E6-79F5-4CD0-BF2A-F24F87184461',
-      customKind: 'customKind_2-archived',
+      id: 'dba9a7e6-79f5-4cd0-bf2a-f24f87184461',
+      appId: 'DBA9A7E6-79F5-4CD0-BF2A-F24F87184461',
+      customKind: 'custom-archived',
       arbitraryFlag: 'false',
       statusKey: 'customState',
       keyboard: 'safe',
       singleLetter: 'a',
-      longestWord: 'a'.repeat(32),
+      longestWord: 'a'.repeat(16),
       largestId: '1'.repeat(20),
+      maximum: '999',
+      minimum: '-999',
       constructor: 'safe',
       toString: 'safe',
       ['__proto__']: 'safe',
     };
     await router.request(`/?${new URLSearchParams(query)}`);
-    expect(output.records()[0].req).toMatchObject({ query });
+    expect((output.records()[0].req as { query: unknown }).query).toEqual(
+      query,
+    );
   });
 
   it('bounds query entry counts and names without truncating them', async () => {
@@ -304,6 +324,101 @@ describe('requestLogger', () => {
       Object.keys((output.records()[0].req as { query: object }).query),
     ).toHaveLength(20);
   });
+
+  it.each([200, 400, 500, 'throw'] as const)(
+    'redacts download and reset tokens in paths, params and messages (%s)',
+    async (status) => {
+      const output = createMemoryDestination();
+      const router = new Hono();
+      const middleware = requestLogger({
+        logger: createLogger({ level: 'debug' }, output),
+      });
+      router.use('*', middleware);
+      const routes = [
+        '/main/api/releaseDownloads/:token',
+        '/main/api/auth/reset-password/:token',
+        '/main/api/confirm/:sessionId/:issueId',
+      ];
+      const token = 'aHidden/credential123';
+      const issueId = '394741478850560';
+      for (const route of routes) {
+        router.get(route, async (context) => {
+          expect(
+            context.req.param('token') ?? context.req.param('sessionId'),
+          ).toBe(token);
+          if (status === 'throw') {
+            await expect(
+              middleware(context, async () => {
+                throw new Error('failed');
+              }),
+            ).rejects.toThrow('failed');
+            return context.text('ok');
+          }
+          return context.json({}, status);
+        });
+      }
+      for (const route of routes) {
+        const response = await router.request(
+          route
+            .replace(':token', encodeURIComponent(token))
+            .replace(':sessionId', encodeURIComponent(token))
+            .replace(':issueId', issueId),
+        );
+        expect(response.status).toBe(status === 'throw' ? 200 : status);
+      }
+      const records = output.records();
+      expect(JSON.stringify(records)).not.toContain(token);
+      expect(JSON.stringify(records)).not.toContain(encodeURIComponent(token));
+      for (const record of records) {
+        const req = record.req as {
+          path: string;
+          params?: Record<string, string>;
+        };
+        expect(routes).toContain(req.path);
+        if (req.params?.token) expect(req.params.token).toBe('[REDACTED]');
+        if (req.params?.sessionId)
+          expect(req.params.sessionId).toBe('[REDACTED]');
+        if (req.params?.issueId) expect(req.params.issueId).toBe(issueId);
+      }
+      const completed = records.filter((record) => record.res !== undefined);
+      expect(completed).toHaveLength(status === 'throw' ? 6 : 3);
+      expect(
+        completed.find(
+          (record) => (record.req as { path: string }).path === routes[2],
+        )?.req,
+      ).toMatchObject({ params: { issueId, sessionId: '[REDACTED]' } });
+      expect(
+        completed.some(
+          (record) =>
+            (record.req as { params?: Record<string, string> }).params
+              ?.token === '[REDACTED]',
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it.each([200, 500] as const)(
+    'hides token suffixes behind wildcard mounts (%s)',
+    async (status) => {
+      const output = createMemoryDestination();
+      const router = new Hono();
+      router.use(
+        '*',
+        requestLogger({ logger: createLogger({ level: 'debug' }, output) }),
+      );
+      router.all('/main/api/auth/*', (context) => context.json({}, status));
+      router.get('*', (context) => context.text('fallback'));
+      await router.request(
+        '/main/api/auth/reset-password/aHiddenCredential123',
+      );
+      expect(output.records()).toHaveLength(2);
+      expect(JSON.stringify(output.records())).not.toContain(
+        'aHiddenCredential123',
+      );
+      for (const record of output.records())
+        expect(record.req).toMatchObject({ path: '/main/api/auth/*' });
+    },
+  );
 
   it('applies the same validation when downstream middleware throws', async () => {
     const output = createMemoryDestination();

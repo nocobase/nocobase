@@ -2,4 +2,4 @@
 '@nocobase/app-server': patch
 ---
 
-Record bounded integer, identifier and short-word query values and caller categories in request logs, including failed requests, while omitting authentication parameters.
+Record bounded query context and caller categories while restricting identifiers to ID parameters, using route templates instead of raw request paths, and redacting sensitive path parameters in all request logs.

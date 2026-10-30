@@ -34,29 +34,57 @@ const paginationParameters: Readonly<
   page: integer(1, 1_000_000_000),
   pageSize: integer(1, 1000),
 };
-const scalarQueryValue = (value: string) =>
-  /^-?(?:0|[1-9]\d{0,19})$/u.test(value) ||
+const shortValue = (value: string) =>
+  /^-?(?:0|[1-9]\d{0,2})$/u.test(value) ||
+  /^[a-z][a-zA-Z_-]{0,15}$/u.test(value);
+const identifierValue = (value: string) =>
+  /^(?:0|[1-9]\d{0,19})$/u.test(value) ||
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
     value,
-  ) ||
-  /^[a-z][a-zA-Z0-9_-]{0,31}$/u.test(value);
-const sensitiveQueryName =
+  );
+const sensitiveParameterName =
   /password|passwd|token|secret|authorization|cookie|api[-_]?key|credential|signature|code|state|session|ticket|otp|nonce|^key$/iu;
 
-function safeQuery(context: Context): Record<string, string> {
-  const query = Object.create(null) as Record<string, string>;
-  for (const [key, value] of Object.entries(context.req.query())) {
-    if (Object.keys(query).length >= 20) break;
-    // Bound names and values before validation; never make a rejected value
-    // acceptable by truncating it. Authentication fields stay out at any shape.
-    if (key.length > 64 || value.length > 100 || sensitiveQueryName.test(key))
-      continue;
-    const accepts = Object.hasOwn(paginationParameters, key)
-      ? paginationParameters[key]
-      : scalarQueryValue;
-    if (accepts(value)) query[key] = value;
+function acceptsParameter(key: string, value: string): boolean {
+  // Reject length before validating; never make a rejected value acceptable by
+  // truncating it. Pagination is bounded independently of identifier shapes.
+  if (value.length > 100 || sensitiveParameterName.test(key)) return false;
+  if (Object.hasOwn(paginationParameters, key))
+    return paginationParameters[key](value);
+  return (
+    shortValue(value) ||
+    ((key === 'id' || key.endsWith('Id')) && identifierValue(value))
+  );
+}
+
+function safeParameters(
+  values: Record<string, string>,
+  redact: boolean,
+): Record<string, string> {
+  const safe = Object.create(null) as Record<string, string>;
+  for (const [key, value] of Object.entries(values)) {
+    if (Object.keys(safe).length >= 20) break;
+    if (key.length > 64) continue;
+    if (acceptsParameter(key, value)) safe[key] = value;
+    else if (redact) safe[key] = '[REDACTED]';
   }
-  return query;
+  return safe;
+}
+
+function safeQuery(context: Context): Record<string, string> {
+  return safeParameters(context.req.query(), false);
+}
+
+function safePath(context: Context): string {
+  // Hono has already matched routes before middleware runs. Templates also
+  // protect wildcard mounts whose nested router owns the token parameter.
+  let concrete: string | undefined;
+  let wildcard = '*';
+  for (const { path } of context.req.matchedRoutes) {
+    if (!path.endsWith('*')) concrete = path;
+    else if (path.length > wildcard.length) wildcard = path;
+  }
+  return concrete ?? wildcard;
 }
 
 /** A transport hint for traffic analysis, never an authentication decision. */
@@ -89,7 +117,7 @@ export function requestLogger(
     const startedAt = Date.now();
     const app = options.app;
     const method = context.req.method;
-    const path = context.req.path;
+    const path = safePath(context);
 
     logger.debug(
       {
@@ -188,7 +216,7 @@ function completionBindings(
       method,
       path,
       route: context.req.routePath,
-      params: context.req.param(),
+      params: safeParameters(context.req.param(), true),
       query: safeQuery(context),
       caller: callerOf(context),
       ...(status >= 400
