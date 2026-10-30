@@ -313,7 +313,9 @@ export const RunListQuery: z.ZodType<
     .transform((value) => [...new Set(value.split(','))])
     .pipe(z.array(z.enum(RUN_STATUSES)).min(1).max(RUN_STATUSES.length))
     .optional()
-    .describe('One status or a comma-separated list of statuses to filter by.'),
+    .describe(
+      `One status or a comma-separated list of statuses to filter by. Allowed values: ${RUN_STATUSES.join(', ')}.`,
+    ),
   pageSize: pageSize(50, 100).describe(
     'The maximum number of records to return.',
   ),
