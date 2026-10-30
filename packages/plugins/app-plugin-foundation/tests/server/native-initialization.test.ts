@@ -327,3 +327,62 @@ it('includes dynamic API dependencies when runtime omits the conventional API en
   });
   expect(result?.apiProviders ?? []).not.toContain('@nocobase/db');
 });
+
+it.each([
+  'unknownInput()',
+  "(()=>{throw new Error('stop')})()",
+  'unknown.input()',
+  "unknown.config.get('auth.secret')",
+])(
+  'blocks factory acquisition until its input expression completes: %s',
+  async (secret) => {
+    const result = await scan(guarded, secret);
+    expect(result?.apiProviders ?? []).not.toContain('@nocobase/db');
+    expect(result?.collections ?? []).not.toContain('jobRequisitions');
+  },
+);
+
+it.each([
+  [
+    'unused call argument',
+    "function read(value){return value;}read('fixture',unknownInput());",
+  ],
+  [
+    'throwing unused argument',
+    "function read(value){return value;}read('fixture',(()=>{throw new Error('stop')})());",
+  ],
+  [
+    'nested object initializer',
+    'const options={nested:{input:unknownInput()}};',
+  ],
+  [
+    'throwing object initializer',
+    "const options={input:(()=>{throw new Error('stop')})()};",
+  ],
+  [
+    'returned object initializer',
+    "return {requisitions:{list(){return ctx.database.repository('jobRequisitions').findMany();}},input:unknownInput()};",
+  ],
+  [
+    'throwing returned object initializer',
+    "return {requisitions:{list(){return ctx.database.repository('jobRequisitions').findMany();}},input:(()=>{throw new Error('stop')})()};",
+  ],
+  ['computed method name', 'const options={[unknownInput()](){}};'],
+])('retains the %s acquisition barrier', async (_name, prefix) => {
+  const result = await scan(guarded, undefined, prefix);
+  expect(result?.apiProviders ?? []).not.toContain('@nocobase/db');
+  expect(result?.collections ?? []).not.toContain('jobRequisitions');
+});
+
+it.each([
+  ["(()=> 'fixture')()", ''],
+  ["'fixture'", 'const options={input:()=>unknownInput()};'],
+  ["'fixture'", "const options={input:true ? 'fixture' : unknownInput()};"],
+])(
+  'preserves proven input and deferred initialization: %s / %s',
+  async (secret, prefix) => {
+    expect((await scan(guarded, secret, prefix))?.collections).toContain(
+      'jobRequisitions',
+    );
+  },
+);
