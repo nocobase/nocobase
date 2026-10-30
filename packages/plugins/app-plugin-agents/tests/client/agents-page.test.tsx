@@ -14,6 +14,9 @@ import {
 import { beforeEach, describe, expect, it } from 'vitest';
 import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { QueryClient } from '@tanstack/react-query';
+
+import { agentsKeys } from '../../client/api/keys.js';
 
 import type {
   AgentView,
@@ -192,6 +195,111 @@ describe('the Agent page', () => {
         expect.objectContaining({ description: 'Updated description' }),
       ]),
     );
+  });
+
+  it('reopens the saved description and revision before the list refresh completes', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const page = renderPage(<AgentsPage />, client);
+    try {
+      fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+      const saved = {
+        ...agents[0]!,
+        description: 'Saved immediately',
+        revision: 2,
+      };
+      api.routes['PATCH agents/sonnet'] = () => saved;
+      let finishRefresh!: (value: AgentView[]) => void;
+      api.routes.agents = () =>
+        new Promise<AgentView[]>((resolve) => {
+          finishRefresh = resolve;
+        });
+      fireEvent.change(screen.getByTestId('agent-good-at'), {
+        target: { value: saved.description },
+      });
+      fireEvent.click(screen.getByTestId('agent-dialog-save'));
+      await waitFor(() =>
+        expect(screen.queryByTestId('agent-good-at')).not.toBeInTheDocument(),
+      );
+      expect(client.isFetching({ queryKey: agentsKeys.agents })).toBe(1);
+      fireEvent.click(screen.getByTestId('agent-edit-sonnet'));
+      expect(await screen.findByTestId('agent-good-at')).toHaveValue(
+        saved.description,
+      );
+      expect(
+        client.getQueryData<AgentView[]>(agentsKeys.agents)?.[0],
+      ).toMatchObject({
+        description: saved.description,
+        revision: 2,
+        runners: agents[0]!.runners,
+      });
+      fireEvent.change(screen.getByTestId('agent-good-at'), {
+        target: { value: 'Unsaved next draft' },
+      });
+      await act(async () => {
+        finishRefresh([saved, ...agents.slice(1)]);
+      });
+      expect(screen.getByTestId('agent-good-at')).toHaveValue(
+        'Unsaved next draft',
+      );
+      fireEvent.click(screen.getByTestId('agent-dialog-save'));
+      await waitFor(() =>
+        expect(callsTo('PATCH', 'agents/sonnet')[1]?.json).toMatchObject({
+          description: 'Unsaved next draft',
+          expectedRevision: 2,
+        }),
+      );
+    } finally {
+      page.unmount();
+      client.clear();
+    }
+  });
+
+  it('cancels a stale list read before caching the save without resetting an open draft', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const page = renderPage(<AgentsPage />, client);
+    try {
+      fireEvent.click(await screen.findByTestId('agent-edit-sonnet'));
+      const draft = 'Draft kept across background changes';
+      fireEvent.change(screen.getByTestId('agent-good-at'), {
+        target: { value: draft },
+      });
+      await act(async () => {
+        client.setQueryData(agentsKeys.agents, [
+          { ...agents[0]!, description: 'Background update' },
+        ]);
+      });
+      expect(screen.getByTestId('agent-good-at')).toHaveValue(draft);
+      const stale = agents;
+      let finishStale!: (value: AgentView[]) => void;
+      api.routes.agents = () =>
+        new Promise<AgentView[]>((resolve) => {
+          finishStale = resolve;
+        });
+      void client.invalidateQueries({ queryKey: agentsKeys.agents });
+      await waitFor(() => expect(callsTo('GET', 'agents')).toHaveLength(2));
+      const resolveStale = finishStale;
+      const saved = { ...agents[0]!, description: draft, revision: 2 };
+      api.routes['PATCH agents/sonnet'] = () => saved;
+      fireEvent.click(screen.getByTestId('agent-dialog-save'));
+      await waitFor(() =>
+        expect(screen.queryByTestId('agent-good-at')).not.toBeInTheDocument(),
+      );
+      await act(async () => {
+        resolveStale(stale);
+      });
+      fireEvent.click(screen.getByTestId('agent-edit-sonnet'));
+      expect(await screen.findByTestId('agent-good-at')).toHaveValue(draft);
+      await act(async () => {
+        finishStale([saved]);
+      });
+    } finally {
+      page.unmount();
+      client.clear();
+    }
   });
 
   it('adds one model from the available models drawer through the confirm step, starting from the suggestion', async () => {
