@@ -10,8 +10,6 @@ interface Invocation {
 interface Flow {
   readonly values: readonly ts.Node[];
   readonly continues: boolean;
-  readonly returns: boolean;
-  readonly throws: boolean;
   readonly unknown: boolean;
 }
 const MAX_VALUES = 32;
@@ -267,199 +265,55 @@ export class StaticValues {
       this.activeCalls,
       this.expandServices,
     );
-    const flow = evaluator.flow(body, seen, depth + 1);
+    const flow =
+      ts.isArrowFunction(invocation.fn) && !ts.isBlock(body)
+        ? {
+            values: evaluator.values(body, new Set(seen)),
+            continues: false,
+            unknown: false,
+          }
+        : evaluator.flow(body, seen, depth + 1);
     if (flow.unknown) return [];
     for (const value of flow.values)
       evaluator.capture(value, invocation.bindings);
     return [...new Set(flow.values)].slice(0, MAX_VALUES);
   }
 
-  /** A statement is terminal only when every bounded local path returns or throws. */
-  public definitelyTerminates(node: ts.Node): boolean {
-    const flow = this.flow(node, new Set(), 0);
-    return !flow.continues && (flow.returns || flow.throws);
-  }
-
-  private callFlow(
-    node: ts.CallExpression,
-    seen: ReadonlySet<ts.Node>,
-    depth: number,
-  ): Flow {
-    if (
-      depth >= MAX_CALL_DEPTH ||
-      this.activeCalls.has(node) ||
-      this.activeCalls.size >= MAX_CALL_DEPTH
-    )
-      return {
-        values: [],
-        continues: true,
-        returns: false,
-        throws: false,
-        unknown: true,
-      };
-    const activeCalls = new Set(this.activeCalls).add(node);
-    const evaluator = new StaticValues(
-      this.analysis,
-      this.bindings,
-      this.captures,
-      activeCalls,
-      this.expandServices,
-    );
-    const invocations = evaluator.invocations(node);
-    if (!invocations.length)
-      return {
-        values: [],
-        continues: true,
-        returns: false,
-        throws: false,
-        unknown: true,
-      };
-    const values: ts.Node[] = [];
-    let continues = false;
-    let throws = false;
-    let unknown = false;
-    for (const invocation of invocations) {
-      const body = 'body' in invocation.fn ? invocation.fn.body : undefined;
-      if (!body) {
-        continues = true;
-        unknown = true;
-        continue;
-      }
-      const flow = new StaticValues(
-        this.analysis,
-        invocation.bindings,
-        this.captures,
-        activeCalls,
-        this.expandServices,
-      ).flow(body, new Set(seen), depth + 1);
-      values.push(...flow.values);
-      continues ||= flow.continues || flow.returns;
-      throws ||= flow.throws;
-      unknown ||= flow.unknown;
-    }
-    return {
-      values: values.slice(0, MAX_VALUES),
-      continues,
-      returns: false,
-      throws,
-      unknown,
-    };
-  }
-
   private flow(node: ts.Node, seen: ReadonlySet<ts.Node>, depth: number): Flow {
     if (depth >= MAX_CALL_DEPTH || seen.has(node))
-      return {
-        values: [],
-        continues: false,
-        returns: false,
-        throws: false,
-        unknown: true,
-      };
+      return { values: [], continues: false, unknown: true };
     const nextSeen = new Set(seen).add(node);
-    if (ts.isExpression(node)) {
-      if (ts.isCallExpression(node)) {
-        const call = this.callFlow(node, nextSeen, depth + 1);
-        return {
-          values: call.values,
-          continues: false,
-          returns: call.continues,
-          throws: call.throws,
-          unknown: call.unknown,
-        };
-      }
+    if (ts.isArrowFunction(node) && !ts.isBlock(node.body))
       return {
-        values: this.values(node, new Set(nextSeen)),
+        values: this.values(node.body, new Set(nextSeen)),
         continues: false,
-        returns: true,
-        throws: false,
         unknown: false,
       };
-    }
     if (ts.isBlock(node)) {
       let continues = true;
-      let returns = false;
-      let throws = false;
       let unknown = false;
       const values: ts.Node[] = [];
       for (const statement of node.statements) {
         if (!continues) break;
         const flow = this.flow(statement, nextSeen, depth + 1);
         values.push(...flow.values);
-        returns ||= flow.returns;
-        throws ||= flow.throws;
         unknown ||= flow.unknown;
         continues = flow.continues;
       }
-      return { values, continues, returns, throws, unknown };
+      return { values, continues, unknown };
     }
-    if (ts.isReturnStatement(node)) {
-      const call =
-        node.expression && ts.isCallExpression(node.expression)
-          ? this.callFlow(node.expression, nextSeen, depth + 1)
-          : undefined;
+    if (ts.isReturnStatement(node))
       return {
-        values:
-          call?.values ??
-          (node.expression
-            ? this.values(node.expression, new Set(nextSeen))
-            : []),
+        values: node.expression
+          ? this.values(node.expression, new Set(nextSeen))
+          : [],
         continues: false,
-        returns: call ? call.continues : true,
-        throws: call?.throws ?? false,
-        unknown: call?.unknown ?? false,
+        unknown: !node.expression,
       };
-    }
     if (ts.isThrowStatement(node))
-      return {
-        values: [],
-        continues: false,
-        returns: false,
-        throws: true,
-        unknown: false,
-      };
+      return { values: [], continues: false, unknown: false };
     if (ts.isBreakStatement(node) || ts.isContinueStatement(node))
-      return {
-        values: [],
-        continues: false,
-        returns: false,
-        throws: false,
-        unknown: true,
-      };
-    if (ts.isVariableStatement(node)) {
-      let throws = false;
-      let unknown = false;
-      for (const declaration of node.declarationList.declarations) {
-        if (!declaration.initializer) continue;
-        const call = this.expressionCall(declaration.initializer);
-        if (!call) continue;
-        const flow = this.callFlow(call, nextSeen, depth + 1);
-        throws ||= flow.throws;
-        unknown ||= flow.unknown;
-        if (!flow.continues) return { ...flow, returns: false };
-      }
-      return {
-        values: [],
-        continues: true,
-        returns: false,
-        throws,
-        unknown,
-      };
-    }
-    if (ts.isExpressionStatement(node)) {
-      if (ts.isDeleteExpression(node.expression))
-        return {
-          values: [],
-          continues: true,
-          returns: false,
-          throws: false,
-          unknown: true,
-        };
-      const call = this.expressionCall(node.expression);
-      if (call) {
-        const flow = this.callFlow(call, nextSeen, depth + 1);
-        return { ...flow, values: [], returns: false };
-      }
-    }
+      return { values: [], continues: false, unknown: true };
     if (ts.isIfStatement(node)) {
       const branches = [...new Set(this.atoms(node.expression).map(Boolean))];
       if (branches.length === 1)
@@ -467,34 +321,23 @@ export class StaticValues {
           ? this.flow(node.thenStatement, nextSeen, depth + 1)
           : node.elseStatement
             ? this.flow(node.elseStatement, nextSeen, depth + 1)
-            : {
-                values: [],
-                continues: true,
-                returns: false,
-                throws: false,
-                unknown: false,
-              };
-      const then = this.flow(node.thenStatement, nextSeen, depth + 1);
-      const otherwise = node.elseStatement
-        ? this.flow(node.elseStatement, nextSeen, depth + 1)
-        : {
-            values: [],
-            continues: true,
-            returns: false,
-            throws: false,
-            unknown: false,
-          };
-      return {
-        values: [...then.values, ...otherwise.values].slice(0, MAX_VALUES),
-        continues: then.continues || otherwise.continues,
-        returns: then.returns || otherwise.returns,
-        throws: then.throws || otherwise.throws,
-        unknown:
-          then.unknown ||
-          otherwise.unknown ||
-          (then.values.length > 0 && otherwise.continues) ||
-          (otherwise.values.length > 0 && then.continues),
-      };
+            : { values: [], continues: true, unknown: false };
+      if (!branches.length) {
+        const then = this.flow(node.thenStatement, nextSeen, depth + 1);
+        const otherwise = node.elseStatement
+          ? this.flow(node.elseStatement, nextSeen, depth + 1)
+          : { values: [], continues: true, unknown: false };
+        return {
+          values: [...then.values, ...otherwise.values].slice(0, MAX_VALUES),
+          continues: then.continues || otherwise.continues,
+          unknown:
+            then.unknown ||
+            otherwise.unknown ||
+            (then.values.length > 0 && otherwise.continues) ||
+            (otherwise.values.length > 0 && then.continues),
+        };
+      }
+      return { values: [], continues: true, unknown: true };
     }
     if (ts.isForOfStatement(node)) {
       const arrays = this.values(node.expression).filter(
@@ -517,16 +360,8 @@ export class StaticValues {
             array.elements.some((element) => !this.completeCandidate(element)),
         )
       )
-        return {
-          values: [],
-          continues: true,
-          returns: false,
-          throws: false,
-          unknown: true,
-        };
+        return { values: [], continues: true, unknown: true };
       const values: ts.Node[] = [];
-      let returns = false;
-      let throws = false;
       let unknown = false;
       let continues = true;
       for (const array of arrays) {
@@ -541,8 +376,6 @@ export class StaticValues {
             this.expandServices,
           ).flow(node.statement, nextSeen, depth + 1);
           values.push(...flow.values);
-          returns ||= flow.returns;
-          throws ||= flow.throws;
           unknown ||= flow.unknown;
           continues = flow.continues;
         }
@@ -550,8 +383,6 @@ export class StaticValues {
       return {
         values: values.slice(0, MAX_VALUES),
         continues,
-        returns,
-        throws,
         unknown,
       };
     }
@@ -561,32 +392,8 @@ export class StaticValues {
       ts.isClassExpression(node) ||
       ts.isTypeNode(node)
     )
-      return {
-        values: [],
-        continues: true,
-        returns: false,
-        throws: false,
-        unknown: false,
-      };
-    return {
-      values: [],
-      continues: true,
-      returns: false,
-      throws: false,
-      unknown: false,
-    };
-  }
-
-  private expressionCall(node: ts.Expression): ts.CallExpression | undefined {
-    if (ts.isCallExpression(node)) return node;
-    if (
-      ts.isParenthesizedExpression(node) ||
-      ts.isAsExpression(node) ||
-      ts.isSatisfiesExpression(node) ||
-      ts.isNonNullExpression(node)
-    )
-      return this.expressionCall(node.expression);
-    return undefined;
+      return { values: [], continues: true, unknown: false };
+    return { values: [], continues: true, unknown: false };
   }
 
   private stableCollection(
@@ -647,7 +454,6 @@ export class StaticValues {
           ts.isPostfixUnaryExpression(use)
         )
           stable = false;
-        else if (ts.isDeleteExpression(use)) stable = false;
       }
       ts.forEachChild(current, visit);
     };

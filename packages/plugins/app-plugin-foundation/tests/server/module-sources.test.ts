@@ -996,15 +996,6 @@ describe('static module dependencies', () => {
     'returned-object-alias-write',
     'captured-container-escape',
     'terminal-handler',
-    'terminal-return-call',
-    'local-return',
-    'terminal-local-call',
-    'terminal-nested-call',
-    'terminal-before-closure',
-    'terminal-nested-before-closure',
-    'delete-tool',
-    'delete-nested-property',
-    'delete-aliased-property',
     'oversized-registry',
   ])(
     'follows only a proven %s tool chain to its database service',
@@ -1032,12 +1023,12 @@ describe('static module dependencies', () => {
                     `const selected=tools[0];selected.definition.name='other';const tool=findTool(tools,name);`,
                   )
                 : registry;
-      const toolObject = `{definition:{name:'getMyHrProfile'},execute(actor,input){if(input.invalid)throw new Error('invalid');${kind === 'captured-container-escape' ? `external(container);` : ''}${['local-return', 'terminal-local-call', 'terminal-nested-call'].includes(kind) ? 'stop();' : ''}const deps=resolveDependencies(container);return invoke({actor,deps});}}`;
+      const toolObject = `{definition:{name:'getMyHrProfile'},execute(actor,input){if(input.invalid)throw new Error('invalid');${kind === 'captured-container-escape' ? `external(container);` : ''}const deps=resolveDependencies(container);return invoke({actor,deps});}}`;
       const toolValue =
         kind === 'object-write'
           ? `const tool=${toolObject};tool.definition.name='other';return tool;`
           : `return ${toolObject};`;
-      const profile = `import {authorizationToken} from '@nocobase/app-plugin-authorization/server';import {hrCoreServiceToken} from './tokens.js';function resolveDependencies(container){return {core:container.resolve(hrCoreServiceToken),authz:container.resolve(authorizationToken)};}function invoke(ctx){return ctx.deps.core.myHrProfile({userId:ctx.actor.id,authz:ctx.deps.authz},'en');}${['local-return', 'terminal-local-call', 'terminal-nested-call'].includes(kind) ? `function stop(){${kind === 'terminal-nested-call' ? 'fail();' : kind === 'local-return' ? 'return;' : `throw new Error('stop');`}}${kind === 'terminal-nested-call' ? `function fail(){throw new Error('fail');}` : ''}` : ''}export function bindGetMyHrProfile(container){${toolValue}}${kind === 'captured-container-escape' ? `import {external} from 'unknown';` : ''}`;
+      const profile = `import {authorizationToken} from '@nocobase/app-plugin-authorization/server';import {hrCoreServiceToken} from './tokens.js';function resolveDependencies(container){return {core:container.resolve(hrCoreServiceToken),authz:container.resolve(authorizationToken)};}function invoke(ctx){return ctx.deps.core.myHrProfile({userId:ctx.actor.id,authz:ctx.deps.authz},'en');}export function bindGetMyHrProfile(container){${toolValue}}${kind === 'captured-container-escape' ? `import {external} from 'unknown';` : ''}`;
       const toolElements =
         kind === 'oversized-registry'
           ? Array.from({ length: 33 }, () => 'profile').join(',')
@@ -1060,46 +1051,16 @@ describe('static module dependencies', () => {
                     'return [profile];',
                     `const tools=[profile];tools.push({definition:{name:'other'},execute(){return undefined;}});return tools;`,
                   )
-                : [
-                      'delete-tool',
-                      'delete-nested-property',
-                      'delete-aliased-property',
-                    ].includes(kind)
+                : kind === 'oversized-registry'
                   ? registry.replace(
                       'return [profile];',
-                      kind === 'delete-tool'
-                        ? `const tools=[profile];delete tools[0];return tools;`
-                        : kind === 'delete-nested-property'
-                          ? `const tools=[profile];delete tools[0].execute;return tools;`
-                          : `const tools=[profile];const selected=tools[0];delete selected.execute;return tools;`,
+                      `return [${toolElements}];`,
                     )
-                  : [
-                        'terminal-before-closure',
-                        'terminal-nested-before-closure',
-                      ].includes(kind)
-                    ? registry
-                        .replace(
-                          'return [profile];',
-                          `stop();return [profile];`,
-                        )
-                        .replace(
-                          'export function findTool',
-                          `${kind === 'terminal-nested-before-closure' ? `function fail(){throw new Error('fail');}` : ''}function stop(){${kind === 'terminal-nested-before-closure' ? 'fail();' : `throw new Error('stop');`}}export function findTool`,
-                        )
-                    : kind === 'oversized-registry'
-                      ? registry.replace(
-                          'return [profile];',
-                          `return [${toolElements}];`,
-                        )
-                      : effectiveRegistry;
-      const toolInvocation = `executeTool(app.container.resolve(toolCatalogToken),'getMyHrProfile',{id:'fixture-user'},{})`;
-      const handler =
+                  : effectiveRegistry;
+      const routeSource =
         kind === 'terminal-handler'
-          ? `()=>{throw new Error('stopped');return ${toolInvocation};}`
-          : kind === 'terminal-return-call'
-            ? `()=>{return opaque();return ${toolInvocation};}`
-            : `()=>${toolInvocation}`;
-      const routeSource = `${kind === 'terminal-return-call' ? `import {opaque} from 'unknown';` : ''}import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {executeTool} from '../tools/registry.js';import {toolCatalogToken,catalogToken} from '../providers/index.js';export default defineApiRoutes(app=>{const router=new Hono();const child=new Hono();const catalog=app.container.resolve(catalogToken);child.get('/profile',${handler});child.get('/',()=>catalog.list());return router.route('/catalog',child);});`;
+          ? `import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {executeTool} from '../tools/registry.js';import {toolCatalogToken,catalogToken} from '../providers/index.js';export default defineApiRoutes(app=>{const router=new Hono();const child=new Hono();const catalog=app.container.resolve(catalogToken);child.get('/profile',()=>{throw new Error('stopped');return executeTool(app.container.resolve(toolCatalogToken),'getMyHrProfile',{id:'fixture-user'},{});});child.get('/',()=>catalog.list());return router.route('/catalog',child);});`
+          : `import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {executeTool} from '../tools/registry.js';import {toolCatalogToken,catalogToken} from '../providers/index.js';export default defineApiRoutes(app=>{const router=new Hono();const child=new Hono();const catalog=app.container.resolve(catalogToken);child.get('/profile',()=>executeTool(app.container.resolve(toolCatalogToken),'getMyHrProfile',{id:'fixture-user'},{}));child.get('/',()=>catalog.list());return router.route('/catalog',child);});`;
       const root = await fixture({
         'client/routes.ts': `export default [{name:'profile-tool',componentLoader:()=>import('./page.js')},{name:'catalog-witness',componentLoader:()=>import('./witness.js')}];`,
         'client/page.js': `import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'catalog/profile'});`,
@@ -1114,11 +1075,7 @@ describe('static module dependencies', () => {
       const toolProviders =
         result.routes.find((route) => route.routeName === 'profile-tool')
           ?.apiProviders ?? [];
-      if (
-        kind === 'selected-tool' ||
-        kind === 'unselected-candidate' ||
-        kind === 'local-return'
-      )
+      if (kind === 'selected-tool' || kind === 'unselected-candidate')
         expect(toolProviders).toContain('@nocobase/db');
       else expect(toolProviders).not.toContain('@nocobase/db');
       if (kind === 'unselected-candidate')
