@@ -12,7 +12,7 @@ type HistoryReplacement = Extract<
   ConversationChanged,
   { kind: 'conversation.historyReplaced' }
 >;
-import { CancelledError } from '@tanstack/react-query';
+import { CancelledError, hashKey } from '@tanstack/react-query';
 import { isToolUIPart } from 'ai';
 import { Chat, useChat as useSDKChat } from '@ai-sdk/react';
 import {
@@ -763,10 +763,15 @@ export class ChatController {
           chatKeys.conversation(id),
         );
         const current = this.watches.get(id)!;
-        const interval = detail?.execution?.status === 'running' ? 5000 : 30000;
+        const status = this.chats.get(id)?.status;
+        const busy =
+          chatIsRunning(detail ?? null) ||
+          status === 'submitted' ||
+          status === 'streaming';
+        const interval = busy ? 5000 : 30000;
         if (Date.now() - current.last < interval) return;
         current.last = Date.now();
-        void this.refresh(id).catch(() => {});
+        void this.refresh(id, true, !busy).catch(() => {});
       }, 5000);
       watch = { refs: 0, timer, last: Date.now() };
       this.watches.set(id, watch);
@@ -1169,7 +1174,7 @@ export class ChatController {
     void task.then(clear, clear);
     return task;
   }
-  refresh(id: string, fresh = true): Promise<void> {
+  refresh(id: string, fresh = true, idleProbe = false): Promise<void> {
     if (this.disposed) return Promise.resolve();
     const pending = this.refreshes.get(id);
     if (pending) {
@@ -1187,8 +1192,9 @@ export class ChatController {
     const run = async () => {
       do {
         owner.trailing = false;
-        await this.refreshOnce(id, fresh);
+        await this.refreshOnce(id, fresh, idleProbe);
         fresh = true;
+        idleProbe = false;
       } while (owner.trailing && active());
     };
     owner.task = run().finally(() => {
@@ -1197,7 +1203,11 @@ export class ChatController {
     this.refreshes.set(id, owner);
     return owner.task;
   }
-  private async refreshOnce(id: string, fresh: boolean): Promise<void> {
+  private async refreshOnce(
+    id: string,
+    fresh: boolean,
+    idleProbe = false,
+  ): Promise<void> {
     if (this.disposed) return;
     const lifetime = this.lifetime(),
       commandVersion = this.commandVersions.get(id),
@@ -1221,7 +1231,37 @@ export class ChatController {
       !fresh && query?.isActive() && query.state.fetchStatus === 'idle'
         ? (query.state.data as ConversationDetail | undefined)
         : undefined;
+    const previous = query?.state.data as ConversationDetail | undefined;
     const detail = cached ?? (await this.readDetail(id, fresh));
+    if (!active()) return;
+    if (
+      idleProbe &&
+      previous &&
+      !chatIsRunning(detail) &&
+      detail.lastSeq !== undefined &&
+      this.history(id).state.loaded &&
+      !this.history(id).error &&
+      this.history(id).loadedThrough >= detail.lastSeq &&
+      hashKey([previous]) === hashKey([detail])
+    ) {
+      // The durable cursor is current. Still reread revisions of the latest assistant response: a same-sequence
+      // update may have lost its announcement, even though the conversation snapshot did not change.
+      const latest = [...this.chat(id).messages]
+        .reverse()
+        .find((message) => message.role === 'assistant');
+      const ids = [
+        ...new Set([
+          ...(this.deferredReads.get(id) ?? []),
+          ...(latest ? [latest.id] : []),
+        ]),
+      ];
+      if (ids.length) await this.reread(id, ids);
+      if (active() && ordered()) {
+        this.remember(detail, false);
+        this.publish();
+      }
+      return;
+    }
     if (!active()) return;
     if (ordered() && (fresh || this.history(id).state.loaded))
       await this.reconcile(id, detail);
