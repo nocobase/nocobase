@@ -46,6 +46,7 @@ describe('base-auth', () => {
 
   it('check: should set roleName to headers', async () => {
     const ctx = {
+      state: {} as { authTokenRole?: string },
       getBearerToken: () => 'token',
       t: (s) => s,
       headers: {},
@@ -86,6 +87,53 @@ describe('base-auth', () => {
 
     await auth.check();
     expect(ctx.headers['x-role']).toBe('admin');
+    expect(ctx.state.authTokenRole).toBe('admin');
+  });
+
+  it('check: should not pin a signed-in session to a role', async () => {
+    const ctx = {
+      state: {} as { authTokenRole?: string },
+      getBearerToken: () => 'token',
+      t: (s) => s,
+      headers: {},
+      logger: {
+        error: (...args) => console.log(args),
+      },
+      app: {
+        authManager: {
+          jwt: {
+            decode: () => ({ userId: 1, roleName: 'admin', temp: true, signInTime: Date.now() }),
+            blacklist: {
+              has: () => false,
+            },
+          },
+          tokenController: {
+            check: () => ({ status: 'valid' }),
+            removeLoginExpiredTokens: async () => null,
+            getConfig: async () => ({
+              tokenExpirationTime: '30m',
+              sessionExpirationTime: '1d',
+              expiredTokenRenewLimit: '15m',
+            }),
+          },
+        },
+      },
+      cache: {
+        wrap: async (key, fn) => fn(),
+      },
+    };
+    const auth = new BaseAuth({
+      ctx,
+      userCollection: {
+        repository: {
+          findOne: () => ({ id: 1 }),
+        },
+      },
+    } as any);
+
+    await auth.check();
+    expect(ctx.headers['x-role']).toBe('admin');
+    expect(ctx.state.authTokenRole).toBeUndefined();
   });
 
   it('check: should return user', async () => {

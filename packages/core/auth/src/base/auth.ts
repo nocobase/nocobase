@@ -245,6 +245,10 @@ export class BaseAuth extends Auth {
     if (!temp) {
       if (tokenStatus === 'valid') {
         this.ctx.state.authTokenSource = tokenSource;
+        // An API key credential is issued for exactly one role. Remember the binding so the
+        // ACL middleware evaluates this request with that role instead of the global role
+        // mode (see the only-use-union comment in plugin-acl setCurrentRole).
+        this.ctx.state.authTokenRole = roleName;
         return { tokenStatus, user, temp };
       } else {
         this.ctx.throw(401, {
