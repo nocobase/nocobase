@@ -1032,6 +1032,26 @@ describe('SqlPreviewConfigureItem', () => {
     expect(screen.getByText('12')).toBeInTheDocument();
   });
 
+  it('serializes JSON object and array preview values instead of rendering them as React children', async () => {
+    renderConfigureItem(SqlPreviewConfigureItem, {
+      initialValues: {
+        [previewName]: {
+          data: [
+            {
+              headers: [{ name: 'X-Tenant', value: 'tenant-123' }],
+              authConfig: { type: 'bearer', token: 'YOUR_TOKEN' },
+            },
+          ],
+        },
+        fields: [{ name: 'headers' }, { name: 'authConfig' }],
+      },
+      registerNames: [previewName, 'fields'],
+    });
+
+    expect(screen.getByText('[{"name":"X-Tenant","value":"tenant-123"}]')).toBeInTheDocument();
+    expect(screen.getByText('{"type":"bearer","token":"YOUR_TOKEN"}')).toBeInTheDocument();
+  });
+
   it('falls back to preview data keys when fields are not configured', async () => {
     renderConfigureItem(SqlPreviewConfigureItem, {
       initialValues: {

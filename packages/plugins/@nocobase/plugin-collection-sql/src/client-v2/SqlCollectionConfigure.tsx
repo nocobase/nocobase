@@ -140,6 +140,22 @@ function normalizeFieldSource(source?: string | string[] | null) {
   return source || null;
 }
 
+// JSON/JSONB values arrive from sqlCollection:execute as parsed objects and arrays. React cannot
+// render them as children, so serialize them before handing them to a table cell.
+export function formatPreviewValue(value: unknown): React.ReactNode {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 function getFieldTitle(field: SqlFieldRecord) {
   const options = getFieldOptions(field);
   return (options.uiSchema?.title as React.ReactNode) || options.title || options.name;
@@ -801,7 +817,7 @@ export function SqlPreviewConfigureItem(props: CollectionTemplateConfigureItemPr
   const dataSource = useMemo(() => {
     return (preview?.data || []).map((record, index) => ({
       ...Object.entries(record).reduce<Record<string, unknown>>((memo, [key, value]) => {
-        memo[key] = typeof value === 'string' ? compileLegacyTemplate(value, t) : value;
+        memo[key] = typeof value === 'string' ? compileLegacyTemplate(value, t) : formatPreviewValue(value);
         return memo;
       }, {}),
       key: index,
