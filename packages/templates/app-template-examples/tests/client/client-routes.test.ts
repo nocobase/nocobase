@@ -217,6 +217,10 @@ describe('app client routes', () => {
     const resolved = resolveRoutes();
 
     expect(pageAuthorizations(resolved.routes)).toEqual([
+      ...['onboarding', 'onboarding-new', 'onboarding-detail'].map((name) => ({
+        name,
+        authorizedAs: 'onboarding',
+      })),
       ...['procurement', 'procurement-new', 'procurement-detail'].map(
         (name) => ({ name, authorizedAs: 'procurement' }),
       ),

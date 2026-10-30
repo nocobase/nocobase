@@ -1,5 +1,98 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.69
+
+### Minor Changes
+
+- f5703e1: Add a runnable customers and contacts example with scoped relation selection, transactional batch assignments, native authorization tests and synchronized adaptation references.
+- a9872cc: Add a runnable procurement request example with scoped references, exact amounts, atomic parent and line saves, editable applicant quote snapshots with current catalog comparisons, designated reviewer transitions and synchronized adaptation guidance.
+
+### Patch Changes
+
+- a833c27: Align permission data ranges across actions and groups, with consistent label widths, condition controls below selectors, and a single-column layout on narrow screens.
+- d3f0c92: Present concise, theme-aware list feedback for loading, empty data, unmatched filters, denied access and request failures, preserve prior results after failed refreshes, and include target-guidance discovery, source reconciliation and verified completion in the existing version-selected template upgrade workflow.
+- d3f0c92: Show each built-in list state with a matching icon and one concise line, keep recovery actions in existing controls, retain prior data after refresh failures, and show loading instead of previous-query results while a new query is pending.
+- d3f0c92: Keep the create action in the page header when a list is empty instead of duplicating it in the empty state.
+- 3402d7e: Add a runnable project list and edit example with persisted data, native authorization, submission recovery across reloads and deleted records, and synchronized Skills source checked for drift.
+- e4ff32a: Rename the unpublished Mutex adapter to @nocobase/app-plugin-concurrency and add its application-owned service token, Provider, strict named configuration and pure configuration factory. Default and Examples explicitly register the plugin and its in-process Mutex configuration. Install the compatible concurrency core and host peers; the default remains process-local and does not coordinate multiple instances. Server APIs, including deliberate low-level Mutex construction, are exported from /server; configuration uses /config. No library-style package-root export, private implementation subpath, app-server concurrency subpath or old-package alias is provided.
+- a0b4568: **Breaking:** Move ordinary and recurring Redis Jobs out of the open-source runtime into the commercial `@nocobase/app-plugin-jobs-redis` Server plugin. Redis deployments must install and register a compatible plugin on every producer and consumer as part of the framework upgrade; selecting an unregistered backend now fails explicitly instead of falling back to Memory. Move Redis-specific type imports from `@nocobase/jobs` to `@nocobase/app-plugin-jobs-redis/config`.
+
+  Add application-owned, paired backend registration through `jobExecutorServiceToken`'s `registerImplementation(name, implementation)` and public `JobsImplementation` contracts from `@nocobase/jobs`, without a separate registry token. Keep the existing Jobs service token, lazy executors and Memory behavior. Registration opens no resources and is not frozen by boot or executor startup. Services require no setup; configuration and missing implementations are validated when an executor is requested, and consumers still own executor startup. Default and Examples templates now declare only Memory. Preserve existing Redis connection, namespace, scopes and job identities; no database or Redis data migration is required. Queue Redis is unchanged.
+
+  Existing YAML overrides that relied on template defaults must explicitly declare `adapter: redis` for each Redis Jobs configuration; `connection` alone no longer selects Redis. Updated template examples document the commercial Server plugin installation and registration prerequisite.
+
+  Selected configurations with missing, empty or non-string adapters are rejected instead of silently using Memory.
+
+  Release the framework first and verify its exact version is downloadable from the customer registry before pinning and releasing the compatible commercial plugin. Redis users must wait through any publication gap and upgrade the framework and plugin together.
+
+- b6934ad: Add an independent SMTP or Resend sender for password recovery with private environment configuration, bounded execution and legacy channel compatibility.
+- 5ce4a7c: Move the Redis/BullMQ Queue backend to the Server-only commercial `@nocobase/app-plugin-queue-redis` plugin. Applications using Redis Queue must install and explicitly register that plugin and retain the same Redis target, namespace and logical queue names. Memory remains built in and both templates now declare only Memory. Common configuration is always validated; an unselected Redis declaration no longer requires its implementation, but selecting Redis without it fails explicitly without falling back to Memory. Backend implementations register through the new public runtime contract before host setup. Remove `QueueService.registerBackend()` and OSS Redis identity exports; migrate factories and identity imports to the commercial plugin. Jobs and recurring schedules are unchanged. Coordinate release order: publish the additive OSS API, then the compatible commercial plugin, before shipping this removal. Rollback requires a compatible OSS/plugin/application composition set, not uninstalling the plugin alone.
+- d3f0c92: Remove the generic Page access description from both templates while keeping role permissions unchanged.
+- b6934ad: Expose notification email configuration helpers from `@nocobase/app-plugin-notification-providers/config` and mailer contracts and validation from `@nocobase/mailer/config`, without loading sending runtimes. Preserve notification validation, optional private environment mappings and application overrides. Migrate application templates and configuration examples to the new import. Freeze and deprecate the published `@nocobase/app-server/mailer` API while retaining existing behavior for applications that still depend on it.
+- f7c8fc9: Prevent user list loading indicators from appearing behind edit drawers or flashing during fast refreshes after closing them.
+- e6af70d: Remove unused route-override and source-extension entry files from application templates. Document explicit opt-in route overrides and preserve existing application customizations during template upgrades.
+- 82f9c1d: BREAKING: Agents 2 removes legacy vector collections, their SQLite/pgvector stores, workers and public types. Migrate consumers before upgrading; active `agents.vectors` settings now fail startup, while `{ store: false }` remains an inert compatibility setting for the 2.x line. Model services, Embedding, usage recording and Knowledge's independent indexing remain available. Historical migrations and existing data are retained. See `@nocobase/app-plugin-agents/docs/vectors-migration.md` for API/configuration migration, backups and rollback. Republish direct consumers against the new Agents major version.
+- a9872cc: Keep procurement actions disabled until saved versions finish refreshing, and preserve conflict feedback across refreshed editors.
+- d3f0c92: Keep table headers and existing controls visible while list feedback appears in the table body, and retain same-query rows alongside refresh-failure messages.
+- Updated dependencies [b6934ad]
+- Updated dependencies [c571810]
+- Updated dependencies [b2c0dfd]
+- Updated dependencies [311f6e1]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [7ab80a0]
+- Updated dependencies [57ecc34]
+- Updated dependencies [4c89e3c]
+- Updated dependencies [e4ff32a]
+- Updated dependencies [a0b4568]
+- Updated dependencies [483ac67]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [182d2d2]
+- Updated dependencies [b6934ad]
+- Updated dependencies [b2eed36]
+- Updated dependencies [82f9c1d]
+- Updated dependencies [8f3e54d]
+- Updated dependencies [171f7fb]
+- Updated dependencies [54a4215]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [91b7602]
+- Updated dependencies [eff2cb2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-plugin-agents@2.0.0-beta.0
+  - @nocobase/concurrency@0.0.2-beta.0
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.0
+  - @nocobase/jobs@1.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/lifecycle@0.1.0-beta.4
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.21
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.15
+  - @nocobase/app-plugin-mail@1.0.0-beta.18
+  - @nocobase/app-plugin-notification@2.0.0-beta.2
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.9
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.14
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.9
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.12
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/queue@1.0.0-beta.10
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.13
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.16
+  - @nocobase/app-plugin-foundation@0.1.0-beta.10
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.5
+
 ## 1.0.0-beta.68
 
 ### Minor Changes

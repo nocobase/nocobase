@@ -1,5 +1,23 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 2b8a30e: Retain generated first administrator credentials until they are manually dismissed or the app is removed.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+
 ## 0.1.0-beta.14
 
 ### Minor Changes

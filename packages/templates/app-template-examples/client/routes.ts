@@ -34,6 +34,26 @@ import {
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
+    name: 'onboarding',
+    path: '/onboarding',
+    auth: 'required',
+    authz: { resource: { type: 'page', id: 'onboarding' }, action: 'access' },
+    navigation: { title: 'onboarding.title', icon: UsersRound },
+    componentLoader: () => import('./pages/onboarding/index.js'),
+    children: [
+      {
+        name: 'onboarding-new',
+        path: 'new',
+        componentLoader: () => import('./pages/onboarding/wizard.js'),
+      },
+      {
+        name: 'onboarding-detail',
+        path: ':id',
+        componentLoader: () => import('./pages/onboarding/wizard.js'),
+      },
+    ],
+  },
+  {
     name: 'procurement',
     path: '/procurement',
     auth: 'required',

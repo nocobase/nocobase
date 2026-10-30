@@ -1,3 +1,8 @@
+export {
+  watchReadiness,
+  type RealtimeReadiness,
+  type ReadinessOptions,
+} from './realtime-readiness.js';
 export { refreshRealtimeQueries } from './realtime-query.js';
 export { createUuid } from './create-uuid.js';
 export { copyText, type CopyTextOptions } from './copy-text.js';
@@ -143,6 +148,7 @@ export { useNavigationGuard } from './navigation-guard.js';
 
 export {
   useRealtimeTopic,
+  useRealtimeReadiness,
   useRealtimeRefresh,
   useRealtimeConnectionState,
   createRealtimeRefresh,

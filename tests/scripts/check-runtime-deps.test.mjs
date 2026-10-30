@@ -158,6 +158,10 @@ test('treats the declared Skill examples as source material while checking other
         'procurement-example-only',
       [`${appSkill}/assets/business-examples/procurement-extra/index.ts`]:
         'procurement-other-asset',
+      [`${appSkill}/assets/business-examples/onboarding/server/routes/onboarding.ts`]:
+        'onboarding-example-only',
+      [`${appSkill}/assets/business-examples/onboarding-extra/index.ts`]:
+        'onboarding-other-asset',
       [`${appSkill}/assets/business-examples/unlisted/index.ts`]:
         'unlisted-business-runtime',
       [`${appSkill}/assets/list-edit-example-extra/index.ts`]:
@@ -184,6 +188,7 @@ test('treats the declared Skill examples as source material while checking other
         'app-other-asset',
         'app-script-runtime',
         'customer-other-asset',
+        'onboarding-other-asset',
         'other-asset',
         'other-skill-runtime',
         'procurement-other-asset',
@@ -207,6 +212,8 @@ test('treats the declared Skill examples as source material while checking other
         'customer-example-only',
         'customer-other-asset',
         'example-only',
+        'onboarding-example-only',
+        'onboarding-other-asset',
         'other-asset',
         'other-skill-runtime',
         'procurement-example-only',

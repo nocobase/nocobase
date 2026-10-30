@@ -211,7 +211,7 @@ export interface RunFilter {
   readonly subjectKind?: string;
   readonly subjectId?: string;
   readonly agentId?: string;
-  readonly status?: RunStatus;
+  readonly status?: RunStatus | readonly RunStatus[];
   /** Only runs this user started or is owner of. */
   readonly involvingUserId?: string;
   readonly limit?: number;
@@ -1896,7 +1896,16 @@ export function createRunService(deps: RunServiceDeps): RunService {
               ? [f.string('subjectId').eq(filter.subjectId)]
               : []),
             ...(filter.agentId ? [f.string('agentId').eq(filter.agentId)] : []),
-            ...(filter.status ? [f.string('status').eq(filter.status)] : []),
+            ...(filter.status
+              ? [
+                  f.or(
+                    (typeof filter.status === 'string'
+                      ? [filter.status]
+                      : filter.status
+                    ).map((status) => f.string('status').eq(status)),
+                  ),
+                ]
+              : []),
             ...(filter.involvingUserId
               ? [
                   f.or([

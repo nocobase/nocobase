@@ -107,8 +107,8 @@ export function AuthenticationProvider({
     let cancelled = false;
     publish('preparing');
     const unsubscribe = realtime.onOpen(() => {
-      // Authorization's synchronous onOpen invalidation must finish first,
-      // regardless of listener registration order.
+      // Let connection callbacks finish before rendering signed-in providers.
+      // Permission snapshots wait for their own topic acknowledgements.
       queueMicrotask(() => {
         if (cancelled) return;
         cancelled = true;

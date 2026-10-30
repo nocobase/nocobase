@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/concurrency",
-  "version": "0.0.1",
+  "version": "0.0.2-beta.0",
   "description": "Business concurrency interfaces and shared error constructors.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

@@ -1,3 +1,4 @@
+import { enUS as onboarding } from '../pages/onboarding/locales.js';
 import { enUS as procurement } from '../pages/procurement/locales.js';
 import { enUS as customerContacts } from '../pages/customer-contacts/locales.js';
 import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
@@ -9,6 +10,7 @@ import systemEnUS from './system/en-US.js';
 
 const enUS = {
   procurement,
+  onboarding,
   customerContacts,
   skillProjects: skillProjectsenUS,
   knowledge: {
@@ -630,6 +632,10 @@ const enUS = {
     },
   },
   examples: {
+    onboarding: {
+      title: onboarding.title,
+      description: onboarding.description,
+    },
     procurement: {
       title: procurement.title,
       description: procurement.description,

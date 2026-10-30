@@ -56,8 +56,14 @@ it.each(['en-US', 'zh-CN'])(
       }),
     ).toHaveAttribute('href', '/demo/procurement');
     expect(
+      screen.getByRole('link', {
+        name: locale === 'zh-CN' ? /^员工入职/u : /^Employee onboarding/u,
+      }),
+    ).toHaveAttribute('href', '/demo/onboarding');
+    expect(
       screen.getAllByRole('link').map((link) => link.getAttribute('href')),
     ).toEqual([
+      '/demo/onboarding',
       '/demo/procurement',
       '/demo/customer-contacts',
       '/demo/ai-form-fill',

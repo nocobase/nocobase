@@ -1,5 +1,11 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.5
+
+### Patch Changes
+
+- d3f0c92: Present concise, theme-aware list feedback for loading, empty data, unmatched filters, denied access and request failures, preserve prior results after failed refreshes, and include target-guidance discovery, source reconciliation and verified completion in the existing version-selected template upgrade workflow.
+
 ## 4.0.0-beta.4
 
 ### Minor Changes

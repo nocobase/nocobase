@@ -20,6 +20,28 @@ function announcer() {
 }
 
 describe('change announcements', () => {
+  it('keeps parent and child scope when completing a batch of subtasks', () => {
+    const { it: changes, published } = announcer();
+    changes.add({ type: 'issue.changed', issueId: 'child' });
+    changes.add({
+      type: 'issue.batchDone',
+      parentIssueId: 'parent',
+      childIssueIds: ['child', 'sibling'],
+    });
+    changes.add({ type: 'issue.changed', issueId: 'parent' });
+    changes.flush();
+    expect(published).toEqual([
+      {
+        kind: 'pm.changed',
+        domain: 'issues',
+        issueIds: ['child', 'parent', 'sibling'],
+      },
+    ]);
+    changes.add({ type: 'unknown.change' });
+    changes.flush();
+    expect(published[1]).toEqual({ kind: 'pm.changed', domain: 'issues' });
+  });
+
   it('keeps named task scope when opaque executor announcements accompany status changes', () => {
     const { it: changes, published } = announcer();
     changes.add({ type: 'work.announced' });

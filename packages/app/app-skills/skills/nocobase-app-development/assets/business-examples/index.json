@@ -114,42 +114,63 @@
   {
     "id": "onboarding",
     "title": "Employee onboarding",
-    "status": "planned",
+    "status": "runnable",
     "sources": [
-      "client/pages/onboarding/",
+      "shared/onboarding.ts",
+      "client/pages/onboarding/index.tsx",
+      "client/pages/onboarding/wizard.tsx",
+      "client/pages/onboarding/choice.tsx",
+      "client/pages/onboarding/locales.ts",
       "server/routes/onboarding.ts",
       "server/providers/onboarding.ts",
-      "database/main/migrations/",
-      "database/main/seeds/",
+      "server/providers/onboarding-registration.ts",
+      "server/providers/onboarding-reset.ts",
+      "server/lifecycles/onboarding.ts",
+      "database/main/migrations/202611050001_create_onboarding.ts",
+      "database/main/seeds/202611050001_onboarding.ts",
+      "database/main/seeds/202611050002_onboarding_samples.ts",
+      "cli/commands/onboarding-reset.ts",
       "tests/client/onboarding.test.tsx",
       "tests/server/onboarding.test.ts",
       "tests/database/onboarding.test.ts",
-      "tests/playwright/onboarding.test.ts"
+      "tests/playwright/onboarding.test.ts",
+      "docs/onboarding.md"
     ],
     "destination": "assets/business-examples/onboarding/",
     "entries": {
       "page": "/onboarding",
-      "api": []
+      "api": [
+        "/api/onboarding",
+        "/api/onboarding/context",
+        "/api/onboarding/candidates",
+        "/api/onboarding/{id}",
+        "/api/onboarding/{id}/fire"
+      ]
     },
     "dependencies": [
-      "Default registered authentication, Users and authorization capabilities",
-      "lifecycle"
+      "Native authentication, Users and authorization with explicit per-user coordinator/viewer roles",
+      "Registered lifecycle example server runtime/history or an explicitly adapted application runtime/store",
+      "Existing submission provider/receipt migration and template-owned UI components"
     ],
     "commands": {
       "install": "pnpm install",
       "start": "pnpm dev",
-      "test": "pnpm test && pnpm test:e2e",
-      "reset": "implementation must supply isolated test-data reset"
+      "test": "pnpm exec vitest run tests/client/onboarding.test.tsx tests/server/onboarding.test.ts tests/database/onboarding.test.ts && pnpm exec playwright test tests/playwright/onboarding.test.ts",
+      "reset": "pnpm nocobase app onboarding-reset --dry-run --json; pnpm nocobase app onboarding-reset --force --json"
     },
     "applicability": "Application-owned business feature in the Examples template",
     "replacementPoints": [
-      "Business fields and labels",
-      "Reference scope",
-      "Ownership and action permission rules",
-      "Lifecycle transitions"
+      "Business fields, step grouping and shared validation",
+      "Conditional documents and dictionary scope",
+      "Ownership and role capabilities",
+      "Employee business key and unique constraints"
     ],
     "limitations": [
-      "Not implemented or published by this collection-material change"
+      "Documents record type/title/reference only; no file upload",
+      "No approval, autosave, draft sharing or post-submission edits",
+      "Default integration requires explicit runtime/store and UI composition; see docs/onboarding.md",
+      "Confidential cases must not join unscoped generic data or workflow inspection endpoints",
+      "Independent agent adaptation and comparative evaluation remain separate"
     ]
   },
   {
