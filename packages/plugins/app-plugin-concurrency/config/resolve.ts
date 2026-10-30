@@ -5,15 +5,7 @@ import type {
   ResolvedConcurrencyConfig,
 } from '../shared/types.js';
 
-const COMMON_FIELDS = new Set([
-  'adapter',
-  'namespace',
-  'ttl',
-  'operationTimeoutMs',
-  'cleanupTimeoutMs',
-  'shutdownTimeoutMs',
-  'connection',
-]);
+const COMMON_FIELDS = new Set(['adapter', 'namespace', 'ttl', 'connection']);
 const NAME = /^[A-Za-z][A-Za-z0-9_-]*$/u;
 export const BUILTIN_MEMORY_KEY: string = 'built-in-memory';
 export interface ConcurrencySnapshot {
@@ -34,8 +26,7 @@ function object(value: unknown, path: string): Record<string, unknown> {
     fail(path, 'Expected a plain object.');
   return value as Record<string, unknown>;
 }
-function positive(value: unknown, fallback: number, path: string): number {
-  if (value === undefined) return fallback;
+function positive(value: unknown, path: string): number {
   if (
     typeof value !== 'number' ||
     !Number.isInteger(value) ||
@@ -103,22 +94,9 @@ function resolveEntry(
       entry.namespace === undefined ? appName : entry.namespace,
       `${key}.namespace`,
     ),
-    ttl: positive(entry.ttl, 30000, `${key}.ttl`),
-    operationTimeoutMs: positive(
-      entry.operationTimeoutMs,
-      5000,
-      `${key}.operationTimeoutMs`,
-    ),
-    cleanupTimeoutMs: positive(
-      entry.cleanupTimeoutMs,
-      5000,
-      `${key}.cleanupTimeoutMs`,
-    ),
-    shutdownTimeoutMs: positive(
-      entry.shutdownTimeoutMs,
-      30000,
-      `${key}.shutdownTimeoutMs`,
-    ),
+    ...(entry.ttl === undefined
+      ? {}
+      : { ttl: positive(entry.ttl, `${key}.ttl`) }),
     ...(Object.hasOwn(entry, 'connection')
       ? {
           connection: frozenCopy(

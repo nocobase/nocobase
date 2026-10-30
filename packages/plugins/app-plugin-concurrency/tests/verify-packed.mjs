@@ -10,78 +10,75 @@ const coreRoot = dirname(
   dirname(fileURLToPath(import.meta.resolve('@nocobase/concurrency'))),
 );
 const metadata = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-if (metadata.name !== '@nocobase/app-plugin-concurrency')
-  throw new Error('Unexpected mutex package name');
 const coreMetadata = JSON.parse(
   readFileSync(join(coreRoot, 'package.json'), 'utf8'),
 );
-const cohortFile = process.argv[3];
-if (!cohortFile)
+if (!process.argv[2] || !process.argv[3])
   throw new Error(
     'Usage: node tests/verify-packed.mjs <artifact-directory> <host-cohort.json>',
   );
-const cohort = JSON.parse(readFileSync(resolve(cohortFile), 'utf8'));
+const artifacts = resolve(process.argv[2]);
+const cohort = JSON.parse(readFileSync(resolve(process.argv[3]), 'utf8'));
 for (const peer of Object.keys(metadata.peerDependencies)) {
   if (typeof cohort[peer] !== 'string')
-    throw new Error('Missing required host peer tarball: ' + peer);
+    throw new Error('Missing fixed host peer tarball: ' + peer);
 }
-const artifacts = resolve(
-  process.argv[2] ??
-    mkdtempSync(join(tmpdir(), 'concurrency-mutex-artifacts-')),
-);
 mkdirSync(artifacts, { recursive: true });
-const coreTarball = join(
-  artifacts,
-  `nocobase-concurrency-${coreMetadata.version}.tgz`,
+for (const [directory, manifest] of [
+  [root, metadata],
+  [coreRoot, coreMetadata],
+]) {
+  const tarball = join(
+    artifacts,
+    `${manifest.name.replace('@', '').replace('/', '-')}-${manifest.version}.tgz`,
+  );
+  execFileSync('pnpm', ['pack', '--out', tarball], {
+    cwd: directory,
+    stdio: 'inherit',
+  });
+  cohort[manifest.name] = tarball;
+}
+const consumer = mkdtempSync(join(tmpdir(), 'concurrency-plugin-consumer-'));
+const version = (name) =>
+  JSON.parse(
+    readFileSync(join(root, 'node_modules', name, 'package.json'), 'utf8'),
+  ).version;
+const overrides = Object.fromEntries(
+  Object.entries(cohort).map(([name, file]) => [name, `file:${resolve(file)}`]),
 );
-const mutexTarball = join(
-  artifacts,
-  `nocobase-app-plugin-concurrency-${metadata.version}.tgz`,
-);
-execFileSync('pnpm', ['pack', '--out', coreTarball], {
-  cwd: coreRoot,
-  stdio: 'inherit',
-});
-execFileSync('pnpm', ['pack', '--out', mutexTarball], {
-  cwd: root,
-  stdio: 'inherit',
-});
-cohort[metadata.name] = mutexTarball;
-cohort[coreMetadata.name] = coreTarball;
-const consumer = mkdtempSync(join(tmpdir(), 'concurrency-mutex-consumer-'));
 writeFileSync(
   join(consumer, 'package.json'),
-  JSON.stringify({
-    name: 'packed-mutex-consumer',
-    private: true,
-    type: 'module',
-  }),
-);
-const tsVersion = JSON.parse(
-  readFileSync(join(root, 'node_modules/typescript/package.json'), 'utf8'),
-).version;
-const nodeTypesVersion = JSON.parse(
-  readFileSync(join(root, 'node_modules/@types/node/package.json'), 'utf8'),
-).version;
-execFileSync(
-  'npm',
-  [
-    'install',
-    '--ignore-scripts',
-    '--no-audit',
-    '--no-fund',
-    ...Object.values(cohort),
-    `typescript@${tsVersion}`,
-    `@types/node@${nodeTypesVersion}`,
-  ],
-  { cwd: consumer, stdio: 'inherit' },
+  JSON.stringify(
+    {
+      name: 'packed-concurrency-consumer',
+      private: true,
+      type: 'module',
+      packageManager: `pnpm@${execFileSync('pnpm', ['--version'], { cwd: root, encoding: 'utf8' }).trim()}`,
+      dependencies: {
+        ...overrides,
+        typescript: version('typescript'),
+        '@types/node': version('@types/node'),
+      },
+    },
+    null,
+    2,
+  ),
 );
 writeFileSync(
+  join(consumer, 'pnpm-workspace.yaml'),
+  JSON.stringify({ packages: [], autoInstallPeers: false, overrides }),
+);
+execFileSync('pnpm', ['install', '--ignore-scripts', '--no-frozen-lockfile'], {
+  cwd: consumer,
+  stdio: 'inherit',
+});
+writeFileSync(
   join(consumer, 'consumer.ts'),
-  readFileSync(join(root, 'tests/consumer.ts'), 'utf8').replaceAll(
-    '../server/index.ts',
-    '@nocobase/app-plugin-concurrency/server',
-  ),
+  readFileSync(join(root, 'tests/consumer.ts'), 'utf8'),
+);
+writeFileSync(
+  join(consumer, 'augmentation.ts'),
+  readFileSync(join(root, 'tests/types/concurrency-augmentation.ts'), 'utf8'),
 );
 writeFileSync(
   join(consumer, 'tsconfig.json'),
@@ -94,7 +91,7 @@ writeFileSync(
       skipLibCheck: false,
       types: ['node'],
     },
-    include: ['consumer.ts'],
+    include: ['*.ts'],
   }),
 );
 execFileSync(
@@ -106,193 +103,129 @@ writeFileSync(
   join(consumer, 'run.mjs'),
   `
 import assert from 'node:assert/strict';
-import {getEventListeners} from 'node:events';
-import {setImmediate} from 'node:timers/promises';
+import { mock } from 'node:test';
+
+import { Application } from '@nocobase/app-server/application';
+import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
+import { ConcurrencyServiceProvider, concurrencyServiceToken } from '@nocobase/app-plugin-concurrency/server';
 import * as core from '@nocobase/concurrency';
-import * as port from '@nocobase/concurrency/backend';
-import * as testing from '@nocobase/concurrency/testing';
-import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency/server';
-for(const entry of ['@nocobase/concurrency','@nocobase/concurrency/backend','@nocobase/concurrency/testing','@nocobase/app-plugin-concurrency/server']) assert.match(import.meta.resolve(entry),/node_modules.*dist/);
-const installed = JSON.parse(await (await import('node:fs/promises')).readFile(new URL(import.meta.resolve('@nocobase/app-plugin-concurrency/package.json')), 'utf8'));
-assert.equal(installed.name,'@nocobase/app-plugin-concurrency');
-assert.equal('.' in installed.exports,false);
-for(const entry of ['@nocobase/app-plugin-concurrency','@nocobase/app-plugin-concurrency/src/index.ts','@nocobase/app-plugin-concurrency/server/mutex','@nocobase/app-plugin-concurrency/server/mutex/registry.ts']) assert.throws(()=>import.meta.resolve(entry),{code:'ERR_PACKAGE_PATH_NOT_EXPORTED'});
-const server=await import('@nocobase/app-plugin-concurrency/server');
-assert.equal(server.LocalConcurrentBackend,LocalConcurrentBackend);
-assert.equal('LocalResourceRegistry' in server,false);
-assert.equal(installed.peerDependencies['@nocobase/concurrency'], '^' + ${JSON.stringify(coreMetadata.version)});
-for(const name of ['ConcurrentConfigurationError','ConcurrentAcquireError','ConcurrentAbortError','ConcurrentLeaseLostError','ConcurrentReleaseError','ConcurrentCloseError']) {assert.equal(core[name],port[name]);assert.equal(core[name],testing[name]);}
-const contract = await testing.runBackendContract({createBackend:()=>new LocalConcurrentBackend()});
-const faults = await testing.runCoreFaultContract();
-for(const method of ['lock','run']){
-  const time=new testing.ManualTime();const callbacks=[];
-  const scheduler={setTimer(notify,delay){callbacks.push({notify,delay});return time.setTimer(notify,delay);}};
-  const backend=new LocalConcurrentBackend({retryIntervalMs:1});const options={backend,namespace:'early-deadline',clock:time,scheduler};
-  const owner=await core.createConcurrentRuntime(options);
-  const held=await (await owner.manager.createLock('r',{ttl:100})).lock();
-  const lock=await owner.manager.createLock('r');const executor=await owner.manager.createSynchronous('r');
-  const flush=async()=>{for(let i=0;i<50;i++)await Promise.resolve();};
-  const work=method==='lock'?lock.tryLock(10).then(async lease=>{assert.ok(lease);await lease.release();}):executor.tryRun(()=>42,10).then(result=>assert.deepEqual(result,{acquired:true,value:42}));
-  await flush();const timer=callbacks.find(callback=>callback.delay===10);assert.ok(timer);time.advance(8.25);timer.notify();await flush();time.advance(0.75);await held.release();time.flush();await work;
-  const queued=method==='lock'?lock.tryLock(10):executor.tryRun(()=>{throw new Error('Must not run');},10);time.advance(10);assert.deepEqual(await queued,method==='lock'?undefined:{acquired:false});
-  const next=await lock.tryLock();assert.ok(next);await next.release();
-  await owner.close();assert.equal(time.pendingTimers,0);
+import { ManagedLeaseRegistry, startAcquire, createSynchronousExecutor, encodeResourceKey } from '@nocobase/app-plugin-concurrency/server';
+for (const entry of ['@nocobase/concurrency', '@nocobase/app-plugin-concurrency/server']) {
+  assert.match(import.meta.resolve(entry), /node_modules.*dist/);
 }
-const flush=async()=>{for(let i=0;i<50;i++)await Promise.resolve();};
-for(const method of ['lock','run']){
-  const time=new testing.ManualTime();let calls=0;const cause=new Error('Core lease timer failed');
-  const scheduler={setTimer(notify,delay){if(++calls===2)throw cause;return time.setTimer(notify,delay);}};
-  const runtime=await core.createConcurrentRuntime({backend:new LocalConcurrentBackend(),namespace:'grant-timer',clock:time,scheduler});
-  const lock=await runtime.manager.createLock('r',{ttl:100});const executor=await runtime.manager.createSynchronous('r',{ttl:100});
-  await assert.rejects(method==='lock'?lock.lock():executor.run(()=>{throw new Error('Must not enter runner');}),error=>error instanceof core.ConcurrentAcquireError&&error.cause===cause);
-  time.advance(101);time.flush();await flush();await runtime.close();await runtime.close();assert.equal(time.pendingTimers,0);
+const pluginUrl = import.meta.resolve('@nocobase/app-plugin-concurrency/server');
+assert.equal(await import(import.meta.resolve('@nocobase/concurrency', pluginUrl)), core);
+assert.equal((await import(import.meta.resolve('@nocobase/app-plugin-concurrency/server', pluginUrl))).concurrencyServiceToken, concurrencyServiceToken);
+for (const path of ['@nocobase/app-plugin-concurrency/server/mutex/instance', '@nocobase/app-plugin-concurrency/server/leases', '@nocobase/app-plugin-concurrency/server/acquire', '@nocobase/app-plugin-concurrency/server/mutex/lock', '@nocobase/app-plugin-concurrency/server/extensions']) {
+  assert.throws(() => import.meta.resolve(path), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
 }
-{
-  const time=new testing.ManualTime();const callbacks=[];const gate=testing.deferred();const entered=testing.deferred();
-  const runtime=await core.createConcurrentRuntime({backend:new LocalConcurrentBackend(),namespace:'close-timer',clock:time,scheduler:{setTimer(notify,delay){callbacks.push({notify,delay});return time.setTimer(notify,delay);}}});
-  const executor=await runtime.manager.createSynchronous('r',{ttl:100});const work=executor.run(async()=>{entered.resolve();await gate.promise;});await entered.promise;
-  let settled=false;const closing=runtime.close({timeoutMs:10}).then(()=>{settled=true;},error=>{settled=true;return error;});const timer=callbacks.find(callback=>callback.delay===10);assert.ok(timer);
-  time.advance(9.25);timer.notify();await flush();assert.equal(settled,false);gate.resolve();await work;assert.equal(await closing,undefined);
-  const count=callbacks.length;for(const callback of callbacks)callback.notify();assert.equal(callbacks.length,count);assert.equal(time.pendingTimers,0);
-}
-console.log(JSON.stringify({confirmedGrantTimerFailureCases:2,realRunnerCloseAt9_25Ms:'passed'}));
-for(const method of ['lock','run']){
-  const time=new testing.ManualTime();const cause=new Error('First backend timer failed');let calls=0;
-  const runtime=await core.createConcurrentRuntime({backend:new LocalConcurrentBackend(),namespace:'backend-timer',clock:time,scheduler:{setTimer(notify,delay){if(++calls===1)throw cause;return time.setTimer(notify,delay);}}});
-  const lock=await runtime.manager.createLock('r',{ttl:100});const executor=await runtime.manager.createSynchronous('r',{ttl:100});
-  await assert.rejects(method==='lock'?lock.lock():executor.run(()=>{throw new Error('Must not enter runner');}),error=>error instanceof core.ConcurrentAcquireError&&error.cause===cause);
-  const lease=await lock.tryLock();assert.ok(lease);await lease.release();time.advance(101);time.flush();await runtime.close();await runtime.close();assert.equal(time.pendingTimers,0);
-}
-console.log(JSON.stringify({initialBackendTimerFailureCases:2}));
-
-
-async function verifySignalSnapshots(createBackend){
-  let cases=0;
-  for(const method of ['lock','tryLock','boundedLock','run','tryRun','boundedRun'])for(const timing of ['entry','waiting'])for(const cancelled of ['original','replacement','neither']){
-    const time=new testing.ManualTime();const backend=createBackend();const runtime=await core.createConcurrentRuntime({backend,namespace:'signal-snapshot',clock:time,scheduler:time});
-    const lock=await runtime.manager.createLock('r',{ttl:1000});const executor=await runtime.manager.createSynchronous('r',{ttl:1000});const holder=await lock.lock();
-    const original=new AbortController();const replacement=new AbortController();const originalReason=new Error('Original request cancelled');const external=()=>{};const externalReplacement=()=>{};
-    original.signal.addEventListener('abort',external);replacement.signal.addEventListener('abort',externalReplacement);
-    const options={signal:original.signal};const entered=testing.deferred();const gate=testing.deferred();const acquire=backend.acquire.bind(backend);
-    backend.acquire=async request=>{entered.resolve(request);await gate.promise;return acquire(request);};
-    let acquired=false;let runs=0;const runner=()=>{runs++;return 42;};const release=async lease=>{if(lease){acquired=true;await lease.release();}};
-    const work=method==='lock'?lock.lock(options).then(release):method==='tryLock'?lock.tryLock(0,options).then(release):method==='boundedLock'?lock.tryLock(10,options).then(release):method==='run'?executor.run(runner,options).then(()=>{acquired=true;}):(method==='tryRun'?executor.tryRun(runner,0,options):executor.tryRun(runner,10,options)).then(result=>{acquired=result.acquired;});
-    const observed=work.then(()=>({ok:true}),error=>({ok:false,error}));
-    if(timing==='waiting')await entered.promise;options.signal=replacement.signal;
-    if(cancelled==='original')original.abort(originalReason);else if(cancelled==='replacement')replacement.abort(new Error('Replacement request cancelled'));
-    await holder.release();gate.resolve();const result=await observed;await runtime.close();
-    if(cancelled==='original'){assert.equal(result.ok,false);assert.ok(result.error instanceof core.ConcurrentAbortError);assert.equal(result.error.cause instanceof core.ConcurrentAbortError?result.error.cause.cause:result.error.cause,originalReason);assert.equal(acquired,false);assert.equal(runs,0);}
-    else{assert.deepEqual(result,{ok:true});assert.equal(acquired,true);assert.equal(runs,['run','tryRun','boundedRun'].includes(method)?1:0);}
-    assert.deepEqual(getEventListeners(original.signal,'abort'),[external]);assert.deepEqual(getEventListeners(replacement.signal,'abort'),[externalReplacement]);assert.equal(time.pendingTimers,0);cases++;
-  }
-  for(const mode of ['getter','absent','clock']){
-    const time=new testing.ManualTime();const original=new AbortController();const replacement=new AbortController();replacement.abort(new Error('Unrelated signal'));let reads=0;let mutate=false;
-    const options=mode==='absent'?{}:mode==='getter'?{get signal(){return ++reads===1?original.signal:replacement.signal;}}:{signal:original.signal};
-    const clock=mode==='clock'?{now(){if(mutate)options.signal=replacement.signal;return time.now();}}:time;
-    const runtime=await core.createConcurrentRuntime({backend:createBackend(),namespace:'snapshot-'+mode,clock,scheduler:time});const lock=await runtime.manager.createLock('r');mutate=true;
-    const work=lock.tryLock(10,options);if(mode==='absent')options.signal=replacement.signal;
-    const lease=await work;assert.ok(lease);await lease.release();await runtime.close();if(mode==='getter')assert.equal(reads,1);
-    assert.deepEqual(getEventListeners(original.signal,'abort'),[]);assert.deepEqual(getEventListeners(replacement.signal,'abort'),[]);assert.equal(time.pendingTimers,0);cases++;
-  }
-  return cases;
-}
-
-console.log(JSON.stringify({signalSnapshotCases:await verifySignalSnapshots(()=>new LocalConcurrentBackend())}));
-async function verifyLeaseBoundaries(createBackend, backendTimers) {
-  let finalization=0;let startup=0;
-  for(const method of ['run','tryRun'])for(const phase of ['before','after'])for(const businessFails of [false,true])for(const releaseFails of [false,true]){
-    const time=new testing.ManualTime();const cause=new Error('Final lease clock failed');const business=new Error('Independent business failure');let failClock=false;let releases=0;
-    const clock={now(){if(failClock){failClock=false;throw cause;}return time.now();}};
-    const backend=createBackend();const acquire=backend.acquire.bind(backend);
-    backend.acquire=async request=>{const grant=await acquire(request);if(!grant)return undefined;return{notAfter:grant.notAfter,release:async()=>{const call=++releases;try{if(releaseFails&&call===1)throw new Error('Release failed');await grant.release();}finally{if(phase==='after'&&call===1)failClock=true;}}};};
-    const runtime=await core.createConcurrentRuntime({backend,namespace:'finalize',clock,scheduler:time,logger(){throw new Error('Diagnostic failure');}});
-    const executor=await runtime.manager.createSynchronous('r',{ttl:100});const runner=()=>{if(phase==='before')failClock=true;if(businessFails)throw business;return 42;};
-    const error=await(method==='run'?executor.run(runner):executor.tryRun(runner)).then(()=>null,error=>error);
-    assert.equal(releases,1);if(businessFails)assert.equal(error,business);else{assert.ok(error instanceof core.ConcurrentLeaseLostError);assert.equal(error.cause,cause);}
-    time.advance(101);time.flush();await runtime.close();await runtime.close();assert.equal(releases,releaseFails?2:1);assert.equal(time.pendingTimers,0);finalization++;
-  }
-  for(const method of ['lock','tryLock','boundedLock','run','tryRun','boundedRun'])for(const releaseFails of [false,true]){
-    const time=new testing.ManualTime();const cause=new Error('Nested monitor failed');const callbacks=[];let ttlTimers=0;let releases=0;let entered=0;
-    const scheduler={setTimer(notify,delay){callbacks.push(notify);if(delay===100){const call=++ttlTimers;if(call===backendTimers+1)notify();if(call===backendTimers+2)throw cause;}return time.setTimer(notify,delay);}};
-    const backend=createBackend();const acquire=backend.acquire.bind(backend);
-    backend.acquire=async request=>{const grant=await acquire(request);if(!grant)return undefined;return{notAfter:grant.notAfter,release:async()=>{if(++releases===1&&releaseFails)throw new Error('Release failed');await grant.release();}};};
-    const runtime=await core.createConcurrentRuntime({backend,namespace:'startup-loss',clock:time,scheduler});const lock=await runtime.manager.createLock('r',{ttl:100});const executor=await runtime.manager.createSynchronous('r',{ttl:100});const runner=()=>{entered++;return 42;};
-    const work=method==='lock'?lock.lock():method==='tryLock'?lock.tryLock():method==='boundedLock'?lock.tryLock(10):method==='run'?executor.run(runner):method==='tryRun'?executor.tryRun(runner):executor.tryRun(runner,10);
-    const error=await work.then(()=>null,error=>error);assert.equal(entered,0);assert.ok(error instanceof core.ConcurrentLeaseLostError);assert.equal(error.cause,cause);assert.equal(releases,1);
-    time.advance(101);time.flush();await runtime.close();await runtime.close();assert.equal(releases,releaseFails?2:1);assert.equal(time.pendingTimers,0);const count=callbacks.length;for(const notify of callbacks)notify();assert.equal(callbacks.length,count);assert.equal(time.pendingTimers,0);startup++;
-  }
-  return {finalization,startup};
-}
-
-console.log(JSON.stringify({leaseBoundaryCases:await verifyLeaseBoundaries(()=>new LocalConcurrentBackend(),1)}));
-const ordinary = [];
-for (const method of ['lock', 'run']) {
-  const time = new testing.ManualTime();
-  const local = new LocalConcurrentBackend({retryIntervalMs: 10000});
-  const options = {backend: local, namespace: 'packed-wait', clock: time, scheduler: time};
-  const owner = await core.createConcurrentRuntime(options);
-  const held = await (await owner.manager.createLock('r', {ttl: 120000})).lock();
-  let settled = false;
-  const work = method === 'lock'
-    ? (await owner.manager.createLock('r')).lock().then(async lease => {settled=true;await lease.release();})
-    : (await owner.manager.createSynchronous('r')).run(() => {settled=true;});
-  const flush = async () => {for(let i=0;i<50;i++) await Promise.resolve();};
-  await flush();time.advance(60000);time.flush();await flush();
-  assert.equal(settled,false);
-  await held.release();time.advance(10000);time.flush();await work;
-  assert.equal(settled,true);
-  await owner.close();
-  assert.equal(time.pendingTimers,0);ordinary.push(method);
-}
-const backend = new LocalConcurrentBackend();
-const a = await core.createConcurrentRuntime({backend,namespace:'packed'});
-await assert.rejects(core.createConcurrentRuntime({backend,namespace:'other'}),core.ConcurrentConfigurationError);
-assert.equal('createSemaphore' in a.manager,false);
-assert.equal('capabilities' in a,false);
-const lock = await a.manager.createLock('r');
-const executor = await a.manager.createSynchronous('r');
-const lease = await lock.lock();assert.deepEqual(await executor.tryRun(()=>1),{acquired:false});await lease.release();
-let active=0;let max=0;
-const executors = [await a.manager.createSynchronous('r'),executor];
-await Promise.all(Array.from({length:20},(_,i)=>executors[i%2].run(async({signal})=>{signal.throwIfAborted();active++;max=Math.max(max,active);await setImmediate();active--;})));
-assert.equal(max,1);
-assert.equal(await executor.run(()=>42),42);
-await a.close();await a.close();
-await assert.rejects(core.createConcurrentRuntime({backend,namespace:'closed'}),core.ConcurrentConfigurationError);
-await assert.rejects(backend.validateResource({namespace:'packed',name:'r',kind:'lock',ttl:30000}),core.ConcurrentAcquireError);
-console.log(JSON.stringify({contract,faults,ordinaryWaitsBeyond30Seconds:ordinary,sameRuntimeMaxActive:max}));
+assert.equal(typeof createSynchronousExecutor, 'function');
+const config = new AppConfig();
+await config.loadAll();
+config.mergeDefaults({ app: { name: 'packed', publicBasePath: '/packed', internalBasePath: '', publicApiUrl: '/packed/api' }, concurrency: { default: 'memory', memory: { adapter: 'mutex', ttl: 3 } } });
+const app = new Application({ config, paths: createAppPaths({ rootDir: process.cwd() }), nodeEnv: 'development' });
+app.addServiceProvider(ConcurrencyServiceProvider);
+await app.start();
+const service = app.container.resolve(concurrencyServiceToken);
+try {
+  const [left, right] = await Promise.all([service.getManager(), service.getManager('memory')]);
+  assert.equal(left, right);
+  assert.equal('shutdown' in left, false);
+  const lock = await left.createLock('shared');
+  const executor = await right.createSynchronous('shared');
+  const held = await lock.lock();
+  assert.deepEqual(await executor.tryRun(() => 0), { acquired: false });
+  const cancel = new AbortController();
+  const waiting = lock.lock({ signal: cancel.signal });
+  cancel.abort();
+  await assert.rejects(waiting, core.ConcurrentAbortError);
+  await held.release();
+  assert.equal(await executor.run(() => 42), 42);
+  const registry = new ManagedLeaseRegistry();
+  let released = 0;
+  const task = startAcquire(registry, { signal: new AbortController().signal, acquire: async () => async () => { released++; } });
+  const lease = await task.result;
+  await task.completion;
+  await lease.release(); await lease.release(); assert.equal(released, 1);
+  registry.register(async () => { released++; });
+  await registry.releaseAll();
+  registry.clear();
+  assert.equal(released, 2);
+  assert.equal('acquire' in registry, false);
+  assert.equal('settlePending' in registry, false);
+  const cancelled = new AbortController();
+  const native = Promise.withResolvers();
+  const cleanup = Promise.withResolvers();
+  const cleaning = Promise.withResolvers();
+  const late = startAcquire(registry, { signal: cancelled.signal, acquire: () => native.promise });
+  const aborted = assert.rejects(late.result, core.ConcurrentAbortError);
+  await Promise.resolve();
+  cancelled.abort();
+  await aborted;
+  let completed = false;
+  void late.completion.then(() => { completed = true; });
+  native.resolve(async () => { cleaning.resolve(); await cleanup.promise; });
+  await cleaning.promise;
+  assert.equal(completed, false);
+  cleanup.resolve();
+  await late.completion;
+  assert.equal(completed, true);
+  assert.match(encodeResourceKey('namespace', 'name'), /^nb-concurrency:v2:/);
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+    const ttlLock = await left.createLock('ttl', { ttl: 1 });
+    const ttlExecutor = await right.createSynchronous('ttl', { ttl: 2 });
+    const holder = await ttlLock.lock();
+    const finish = Promise.withResolvers();
+    const started = Promise.withResolvers();
+    let entered = false;
+    const running = ttlExecutor.run(() => { entered = true; started.resolve(); return finish.promise; });
+    await flush();
+    mock.timers.tick(10000);
+    await flush();
+    assert.equal(entered, false);
+    await holder.release();
+    await started.promise;
+    let nextEntered = false;
+    const next = ttlLock.lock().then(lease => { nextEntered = true; return lease; });
+    mock.timers.tick(10000);
+    await flush();
+    assert.equal(nextEntered, false);
+    finish.resolve('actual');
+    assert.equal(await running, 'actual');
+    const successor = await next;
+    await holder.release();
+    const busy = ttlLock.tryLock(10);
+    await flush();
+    mock.timers.tick(10);
+    assert.equal(await busy, undefined);
+    await successor.release();
+  } finally { mock.timers.reset(); }
+} finally { await app.shutdown(); }
+await assert.rejects(service.getManager(), core.ConcurrentAbortError);
+console.log(JSON.stringify({ server: import.meta.resolve('@nocobase/app-plugin-concurrency/server'), helpers: ['ManagedLeaseRegistry', 'startAcquire', 'createSynchronousExecutor', 'encodeResourceKey'] }));
 `,
 );
-writeFileSync(
-  join(consumer, 'retry-failure.mjs'),
-  readFileSync(
-    join(root, 'tests/fixtures/retry-failure.mjs'),
-    'utf8',
-  ).replaceAll(
-    '../../server/mutex/index.ts',
-    '@nocobase/app-plugin-concurrency/server',
-  ),
+execFileSync(
+  process.execPath,
+  ['--experimental-import-meta-resolve', 'run.mjs'],
+  { cwd: consumer, stdio: 'inherit' },
 );
-for (const mode of ['timer', 'abort', 'deadline'])
-  execFileSync(process.execPath, ['retry-failure.mjs', mode], {
-    cwd: consumer,
-    stdio: 'inherit',
-    timeout: 5000,
-  });
-execFileSync(process.execPath, ['run.mjs'], {
-  cwd: consumer,
-  stdio: 'inherit',
-});
 const evidence = {
   consumer,
-  status: 'passed',
-  artifacts: [coreTarball, mutexTarball].map((path) => ({
-    path,
-    sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
-  })),
+  cohort: Object.fromEntries(
+    Object.entries(cohort).map(([name, path]) => [
+      name,
+      {
+        path,
+        sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
+      },
+    ]),
+  ),
 };
 writeFileSync(
-  join(artifacts, 'evidence.json'),
-  JSON.stringify(evidence, null, 2) + '\n',
+  join(artifacts, 'plugin-concurrency-evidence.json'),
+  JSON.stringify(evidence, null, 2),
 );
 console.log(JSON.stringify(evidence));

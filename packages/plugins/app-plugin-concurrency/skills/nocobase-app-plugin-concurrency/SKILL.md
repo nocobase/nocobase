@@ -1,15 +1,15 @@
 ---
 name: nocobase-app-plugin-concurrency
-description: Configure and consume the NocoBase 3 Concurrency plugin: process-local Mutex locks, strict named managers, original service Token, fixed TTL and application-owned shutdown. Use when an application needs coordinated Lock or SynchronousExecutor work or a concurrency backend registration.
+description: Configure and consume NocoBase 3 process-local Mutex locks, strict named managers, original service Token, optional TTL, public implementation extensions and application-owned shutdown.
 ---
 
 # Concurrency
 
 ## Install and register
 
-Install @nocobase/app-plugin-concurrency with compatible @nocobase/app-server, @nocobase/service-provider and @nocobase/concurrency peers. Register its default /server export before business plugins in the application's defineServerPlugins list. Register defineConcurrencyConfig() from /config under concurrency in the existing configuration aggregator. Installation, Server registration and configuration registration are separate steps. Do not put the service or Token in app-server or create a same-named Token locally.
+Install `@nocobase/app-plugin-concurrency` with compatible application-supplied `@nocobase/app-server`, `@nocobase/service-provider` and `@nocobase/concurrency` peers. Register the default `/server` definition before business plugins and register `defineConcurrencyConfig()` from `/config` under `concurrency`. Installation and both registrations are separate requirements.
 
-The factory defaults to memory.adapter = mutex and default = memory, declares CONCURRENCY_DEFAULT and exposes no browser fields. Common item fields are adapter, namespace (defaults to appName), ttl (30000ms), operationTimeoutMs (5000ms), cleanupTimeoutMs (5000ms), shutdownTimeoutMs (30000ms), and an implementation-owned connection. Mutex forbids connection. Time fields are integers in 1..2147483647. Unknown names and invalid defaults fail; items do not inherit from one another. Two enabled Mutex items cannot use the same namespace.
+The factory supplies `default: memory` and `memory.adapter: mutex`, declares `CONCURRENCY_DEFAULT` and exposes no browser fields. Entry fields are `adapter`, optional `namespace` (application name by default), optional `ttl`, and implementation-owned `connection`. Mutex forbids connection. TTL is a renewable lease duration, an integer from 1 through 2147483647 milliseconds. Local Mutex accepts and validates TTL but ignores it, with no holding timer, expiration release or local renewal. Resource TTL overrides configuration TTL; `undefined` retains configuration TTL. Unknown options and invalid selectors fail. Entries do not inherit from one another. Two enabled local entries cannot share a namespace.
 
 ## Consume the original service
 
@@ -17,27 +17,26 @@ The factory defaults to memory.adapter = mutex and default = memory, declares CO
 import { concurrencyServiceToken } from '@nocobase/app-plugin-concurrency/server';
 
 const service = app.container.resolve(concurrencyServiceToken);
-// Run this in ready or normal business work, not Provider register/boot/start.
+// Obtain managers in ready or normal running work.
 const manager = await service.getManager();
-const lock = await manager.createLock('orders:sync', { ttl: 30000 });
-const lease = await lock.lock();
-try {
-  // Work must finish within the fixed TTL; expiry does not stop application code.
-} finally {
-  await lease.release();
-}
+const executor = await manager.createSynchronous('orders:sync');
+const result = await executor.tryRun(async () => 'done', 500);
 ```
 
-Inject the service into business objects during boot when needed. getManager(name) selects exactly one declared item; the same name shares one runtime. createSynchronous(name) competes with a same-name Lock. Ordinary lock/run waits are unbounded unless cancelled; bounded waits are positional tryLock/tryRun arguments, never a new resource timeout option. No automatic renewal, Semaphore, reentrancy, fairness or read/write mode is provided. Preserve core cancellation and error semantics.
+Inject the owner-created Token; never create a second Token or service. The same configuration name shares one manager. Same-name Lock and Executor handles compete in the same domain regardless of TTL. Use bounded, stable resource names: the local native Mutex table remains until instance shutdown. Local locks coordinate only within that instance, never across processes.
 
-## Backend and lifecycle ownership
+`lock` and `run` wait without a deadline until success, cancellation or failure. Omitted/zero positional try budgets use native `tryAcquire`, including its zero-millisecond timer window. Positive try budgets use native `withTimeout`, not a precise return deadline. Busy results come only from explicit native non-acquisition. Capture each call's signal once; cancellation before delivery must not affect other waiters. Cancellation after delivery does not release a Lease or stop a runner. Late native success after cancellation is released using its own releaser without delivery, runner execution or TTL timer.
 
-For deliberate low-level construction, import LocalConcurrentBackend and LocalConcurrentBackendOptions from @nocobase/app-plugin-concurrency/server and use the core createConcurrentRuntime factory. There is no package-root runtime export or public deep import into server/mutex; its registry is internal. Importing the Server entry does not register the plugin or start a runtime.
+Lease release is asynchronous and idempotent; concurrent calls share a result and failures permit explicit retry on the same handle while its instance remains usable. Executors combine Lock acquisition with a no-argument runner, wait for actual runner settlement and diagnose cleanup failure without replacing business values or exceptions. Local Mutex remains held beyond an explicit TTL until manual release, actual runner settlement or instance shutdown. TTL is not a runner timeout or a validity guarantee. Redis implementations use native automatic renewal for both Lock and Executor, not an Executor-owned renewal loop. Use application transactions and idempotency where required.
 
-The plugin owns runtime initialization and shutdown. Consumers end their own tasks and return their own leases before host cleanup. They must not close the manager or a shared transport. Only the startup owner retries service.shutdown() after failure; app.shutdown() itself is cached and does not repeat Provider shutdown. Runtime close must succeed before disposing its owned transport. Failure retains the original handles. No hot reconfiguration is supported: the full boot snapshot survives reload, including not-yet-initialized items. Restart and coordinate instances when changing namespaces or connections.
+## Lifecycle and extensions
 
-Mutex is process-local even when namespaces match across instances. Multi-instance Redis support comes from @nocobase/app-plugin-concurrency-redis, which owns the Redis backend, original-client release, dedicated connection, implementation registration and Redis-specific pure validator. It must import this OSS plugin's service Token and extension contract; do not add a second Redis thin plugin, copy core state machines, or reuse active Queue/Jobs/Caching clients. Read that plugin's version-matched Skill before configuring Redis. Do not migrate an existing business lock merely by enabling this plugin.
+The Provider owns initialization and shutdown. Default startup is eager; named configurations initialize lazily and concurrently share one initialization. Boot freezes the complete snapshot, including unused entries. Reload requires restart to apply changes and never changes active or lazy domains.
+
+Applications stop dependent business work before Concurrency shutdown. Shutdown rejects new acquisitions, interrupts waits, observes issued native requests and actively releases confirmed Leases without draining runners. Release failures are diagnosed while cleanup continues. Concurrent shutdown shares a Promise and successful shutdown is idempotent. Failed owned-resource closure retains its handle for explicit owner `service.shutdown()` retry. A second `app.shutdown()` does not repeat cached Provider shutdown. No public operation, cleanup or overall shutdown deadline is configured.
+
+Implementation authors use `/server`: `ManagedLeaseRegistry`, `startAcquire`, `createSynchronousExecutor`, `encodeResourceKey` and the original implementation/configuration types. The registry registers confirmed releasers synchronously and owns only Lease release and record disposal, not acquisition, pending work, TTL or renewal. `startAcquire(registry, { signal, acquire }, report?)` returns a caller-facing result and optional completion for native acquisition plus late-grant cleanup. Each instance tracks and drains completion, which may outlive cancellation, before releasing confirmed Leases and closing native resources. Register through the original service during Provider register; validate at boot without I/O. Synchronous create returns a fresh `{ manager, start(), shutdown() }` and performs no networking; the service saves it before awaiting start. Each instance owns one shutdown signal and must handle start/shutdown interleaving without reopening resources. Extend `ConcurrencyAdapterConnections` through the public declaration entry for connection typing. Do not import internal paths or duplicate error constructors, Tokens or execution tools. OSS does not require a Redis implementation.
 
 ## Verify
 
-Verify both registration steps, two real business consumers sharing one manager, same-name Lock/Executor contention, cancellation, caller lease return and natural shutdown. Validate named selection, defaults and reload through the application's real config commands. Memory tests do not establish Redis or cross-process correctness.
+Verify both registrations, two real consumers sharing a manager, same-name Lock/Executor contention, cancellation and natural host shutdown. Test strict names, optional TTL and startup snapshots. Verify installed compiled exports and declarations outside the workspace using fixed tarballs. Local competition and extension lifecycle fixtures do not establish Redis or cross-process correctness.

@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/concurrency",
   "version": "0.0.1",
-  "description": "Fixed-TTL concurrency contracts, leases and execution lifecycle.",
+  "description": "Business concurrency interfaces and shared error constructors.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -14,14 +14,6 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
-    },
-    "./backend": {
-      "types": "./src/backend/index.ts",
-      "import": "./src/backend/index.ts"
-    },
-    "./testing": {
-      "types": "./src/testing/index.ts",
-      "import": "./src/testing/index.ts"
     }
   },
   "files": [
@@ -33,14 +25,6 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
-      },
-      "./backend": {
-        "types": "./dist/backend/index.d.ts",
-        "import": "./dist/backend/index.js"
-      },
-      "./testing": {
-        "types": "./dist/testing/index.d.ts",
-        "import": "./dist/testing/index.js"
       }
     }
   },

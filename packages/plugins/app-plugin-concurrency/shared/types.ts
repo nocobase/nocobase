@@ -1,19 +1,12 @@
 import type { ConcurrentManager } from '@nocobase/concurrency';
-import type {
-  ConcurrentBackend,
-  Clock,
-  Scheduler,
-} from '@nocobase/concurrency/backend';
 
 export interface ConcurrencyAdapterConnections {
   mutex: never;
 }
 export interface ConcurrencyConfigCommon {
   readonly namespace?: string;
+  /** Renewable lease duration in milliseconds; process-local Mutex ignores it. */
   readonly ttl?: number;
-  readonly operationTimeoutMs?: number;
-  readonly cleanupTimeoutMs?: number;
-  readonly shutdownTimeoutMs?: number;
 }
 export type ConcurrencyConfigEntry = {
   [A in keyof ConcurrencyAdapterConnections]: ConcurrencyConfigCommon & {
@@ -26,15 +19,18 @@ export interface AppConcurrencyConfig {
   readonly default?: string;
   readonly [key: string]: ConcurrencyConfigEntry | string | undefined;
 }
-export type ResolvedConcurrencyConfig = ConcurrencyConfigEntry &
-  Required<ConcurrencyConfigCommon> & { readonly key: string };
-export interface OwnedConcurrencyBackend {
-  readonly backend: ConcurrentBackend;
-  dispose(): Promise<void>;
+export type ResolvedConcurrencyConfig = ConcurrencyConfigEntry & {
+  readonly key: string;
+  readonly namespace: string;
+};
+export interface ConcurrencyInstance {
+  readonly manager: ConcurrentManager;
+  start(): Promise<void>;
+  shutdown(): Promise<void>;
 }
 export interface ConcurrencyImplementation {
   validate(entry: ResolvedConcurrencyConfig): void;
-  create(entry: ResolvedConcurrencyConfig): Promise<OwnedConcurrencyBackend>;
+  create(entry: ResolvedConcurrencyConfig): ConcurrencyInstance;
 }
 export interface ConcurrencyService {
   getManager(configKey?: string): Promise<ConcurrentManager>;
@@ -42,27 +38,22 @@ export interface ConcurrencyService {
     adapter: string,
     implementation: ConcurrencyImplementation,
   ): void;
-  /** The host may retry this after failed or timed-out cleanup. */
+  /** Explicit retry belongs to the service's lifecycle owner. */
   shutdown(): Promise<void>;
-}
-export interface ConcurrencyServiceOptions {
-  readonly appName: string;
-  readonly nodeEnv?: string;
-  /** Code-only testing dependencies, never configuration-file fields. */
-  readonly clock?: Clock;
-  readonly scheduler?: Scheduler;
-  readonly report?: (event: ConcurrencyLogEvent) => void;
 }
 export interface ConcurrencyLogEvent {
   readonly phase:
-    | 'local'
-    | 'reload'
-    | 'initialize'
-    | 'acquire'
-    | 'release'
-    | 'cleanup'
-    | 'business';
+    'local' | 'reload' | 'initialize' | 'acquire' | 'release' | 'cleanup';
   readonly configKey?: string;
   readonly adapter?: string;
   readonly namespace?: string;
+  readonly cause?: unknown;
+}
+export type ConcurrencyReporter = (
+  event: ConcurrencyLogEvent,
+) => void | Promise<void>;
+export interface ConcurrencyServiceOptions {
+  readonly appName: string;
+  readonly nodeEnv?: string;
+  readonly report?: ConcurrencyReporter;
 }

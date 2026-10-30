@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConcurrentConfigurationError } from '@nocobase/concurrency';
 import { ManagedConcurrencyService } from '../../server/services/concurrency.js';
 
@@ -13,8 +13,10 @@ async function service(
   await host.start();
   return host;
 }
+afterEach(() => vi.useRealTimers());
 describe('concurrency manager facade', () => {
-  it('allows an explicit TTL override without wrapping the returned Lock acquisition methods', async () => {
+  it('S03/C03: validates resource ttl but ignores both resource and configuration durations', async () => {
+    vi.useFakeTimers();
     const host = await service({
       default: 'memory',
       memory: { adapter: 'mutex', ttl: 1000 },
@@ -27,14 +29,15 @@ describe('concurrency manager facade', () => {
       });
       const lease = await lock.lock();
       try {
-        await new Promise((resolve) => setTimeout(resolve, 20));
-        expect(await executor.tryRun(() => 'after-expiry')).toEqual({
-          acquired: true,
-          value: 'after-expiry',
-        });
+        expect(vi.getTimerCount()).toBe(0);
+        await vi.advanceTimersByTimeAsync(10000);
+        const attempt = executor.tryRun(() => 'wrong', 10);
+        await vi.advanceTimersByTimeAsync(10);
+        expect(await attempt).toEqual({ acquired: false });
       } finally {
-        await lease.release().catch(() => {});
+        await lease.release();
       }
+      expect(await executor.run(() => 'released')).toBe('released');
     } finally {
       await host.shutdown();
     }
@@ -100,7 +103,8 @@ describe('concurrency manager facade', () => {
       await explicit.shutdown();
     }
   });
-  it('reads ttl once, supplies its default and rejects unrecognized creation options', async () => {
+  it('reads ttl once, ignores the configured duration and rejects unrecognized creation options', async () => {
+    vi.useFakeTimers();
     const host = await service({
       default: 'memory',
       memory: { adapter: 'mutex', ttl: 5 },
@@ -115,13 +119,14 @@ describe('concurrency manager facade', () => {
     expect(ttl).toHaveBeenCalledOnce();
     const lease = await lock.lock();
     try {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      const replacement = await lock.tryLock();
-      expect(replacement).toBeDefined();
-      await replacement!.release();
-      expect(() =>
+      await vi.advanceTimersByTimeAsync(20);
+      expect(vi.getTimerCount()).toBe(0);
+      const attempt = lock.tryLock(10);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(await attempt).toBeUndefined();
+      await expect(
         manager.createLock('bad', { timeoutMs: 1 } as never),
-      ).toThrow(ConcurrentConfigurationError);
+      ).rejects.toBeInstanceOf(ConcurrentConfigurationError);
     } finally {
       await lease.release().catch(() => {});
       await host.shutdown();

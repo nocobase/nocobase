@@ -1,85 +1,62 @@
 # @nocobase/app-plugin-concurrency
 
-Application-owned concurrency services and an in-process fixed-TTL Mutex backend for NocoBase 3. This package replaces the unpublished @nocobase/concurrency-mutex package; do not install both names. Requires Node 24 ESM and compatible @nocobase/app-server, @nocobase/service-provider and @nocobase/concurrency peers.
+Application-owned concurrency configuration, services, process-local Mutex instances and public implementation tools for NocoBase 3. Requires Node 24 ESM and compatible `@nocobase/app-server`, `@nocobase/service-provider` and `@nocobase/concurrency` peers supplied by the application.
 
 ## Application integration
 
-Install the plugin and its peers, then register the Server definition before business consumers in the application's server/plugins.ts:
+Register the default `/server` export before business plugins in `server/plugins.ts`. Register `defineConcurrencyConfig()` from `/config` under `concurrency` in the application's configuration aggregator. Both application templates include these registrations and production dependencies.
 
 ```ts
 import concurrency from '@nocobase/app-plugin-concurrency/server';
 import { defineServerPlugins } from '@nocobase/app-server/plugins';
 
-export default defineServerPlugins([
-  concurrency,
-  // Other application plugins.
-]);
+export default defineServerPlugins([concurrency]);
 ```
 
-Register configuration separately in the application's existing configuration aggregator:
+The factory supplies `{ default: 'memory', memory: { adapter: 'mutex' } }`, declares `CONCURRENCY_DEFAULT` and publishes no browser fields. A host without a default selector uses an independent built-in local entry. Unknown names and invalid defaults fail instead of falling back. Common entry fields are `adapter`, optional `namespace` (defaults to the application name) and optional `ttl`. Mutex forbids `connection`; other implementations validate their own connection data without I/O. TTL is an integer in 1..2147483647 milliseconds. Configuration entries do not inherit from one another.
+
+## Business consumption
 
 ```ts
-import { defineConcurrencyConfig } from '@nocobase/app-plugin-concurrency/config';
+import { concurrencyServiceToken } from '@nocobase/app-plugin-concurrency/server';
 
-export default defineConcurrencyConfig();
+const service = app.container.resolve(concurrencyServiceToken);
+// Obtain managers in ready or normal running work.
+const manager = await service.getManager();
+const executor = await manager.createSynchronous('reports:daily');
+const result = await executor.tryRun(async () => 'done', 500);
 ```
 
-The factory supplies { default: 'memory', memory: { adapter: 'mutex' } }, maps CONCURRENCY_DEFAULT to the section's default selector, validates without I/O and publishes no browser configuration. Register this factory under concurrency. File and environment precedence remain application-owned. Both OSS templates already perform these two registration steps. A manually composed host with no section uses a built-in Mutex item. Unknown names or invalid defaults never fall back. Unused named adapters need not be installed, but common fields and every registered implementation are validated at boot.
+Inject the original service Token, never a locally recreated Token. The same configuration shares one manager. `getManager(name)` strictly selects a declared entry. Same-name Lock and Executor handles compete for the same native Mutex, independent of TTL. Each enabled local configuration owns its instance; duplicate enabled local namespaces are rejected.
 
-## Business consumers and lifecycle
+Local acquisition uses the public `async-mutex` API: ordinary `acquire`, `tryAcquire` for omitted/zero try budgets, and `withTimeout` for positive budgets. Native timeout errors alone produce busy results. No second acquisition deadline or success-budget recheck is applied. Signals are captured once and cancel only undelivered acquisitions. Native late successes after cancellation are released on their original releaser without TTL setup or runner entry; cancelling one request never cancels the shared Mutex queue.
 
-Import the original concurrencyServiceToken and ConcurrencyService from @nocobase/app-plugin-concurrency/server. Resolve and inject the service during boot; call getManager() or getManager(name) only in ready or normal running work. The same configuration name shares one manager/runtime. Its createLock/createSynchronous methods only apply the configured default TTL and return core objects; they do not wrap acquisition or execution. Leases belong to callers and must be returned. A fixed TTL is not renewal or an acquisition timeout. See the packaged [integration Skill](skills/nocobase-app-plugin-concurrency/SKILL.md) for a complete consumption example.
+TTL is a renewable lease duration, not a maximum holding time or runner timeout. Resource TTL overrides configuration TTL for lease-based implementations; `undefined` retains the configured value. The local async-mutex implementation validates legal values but ignores both: no holding timer, expiration release or local renewal is scheduled. A local Lease remains held until manual release, actual runner settlement or instance shutdown. Executors compose Lock, call no-argument runners once and diagnose automatic release failures without replacing business results. Redis implementations use native automatic renewal for both Lock and Executor without public renewal controls.
 
-The Provider owns initialization and shutdown. A failed close retains the original runtime/backend for explicit service.shutdown() retry; the application's cached shutdown Promise does not repeat Provider cleanup. Business consumers must not close shared resources. Boot freezes all entries, including lazy ones. Reload only warns; applying a changed lock domain requires coordinated restart. Two enabled Mutex entries with the same namespace are rejected: reuse the same item instead. Local locks never coordinate separate processes. Non-development use emits a local-scope warning.
+Native Mutex entries remain in the instance until shutdown. Use stable, bounded resource names rather than unbounded one-use names. Local coordination applies only within an instance, not between processes or separate applications.
 
-Redis support is contributed by the commercial @nocobase/app-plugin-concurrency-redis plugin, not enabled by installation alone. That plugin owns its backend, registration, dedicated connection and Redis-specific validator. OSS applications do not depend on it.
+## Configuration and lifecycle
 
-## Public exports
+Boot copies and freezes the complete configuration snapshot, including lazy entries. Reload warns that a restart is required; it does not change an active or lazy instance's namespace, TTL or connection. Default initialization occurs during service start; named initialization is lazy and shared. Failed initialization retains the instance for cleanup and never rebuilds it implicitly.
 
-- /server: the static Server definition, original Token, service/extension contracts, Provider, LocalConcurrentBackend and LocalConcurrentBackendOptions.
-- /config: defineConcurrencyConfig, common types and pure validation, without importing Server registration.
-- /package.json: package metadata.
-  There is no package-root runtime export. Server APIs are exported deliberately from server/index.ts; server/mutex contains the backend implementation and its private registry, not additional public deep-import paths. Importing /server alone does not bind a host service or register the plugin.
+Applications stop dependent business work before shutting down Concurrency. Shutdown permanently rejects new work, interrupts undelivered requests, cancels local native queues, observes in-flight acquisitions and actively releases confirmed Leases. It does not wait for runners to finish. Individual release failures are diagnosed while remaining cleanup continues. Concurrent shutdown calls share an in-flight result; successful shutdown is idempotent. Failed owned-resource cleanup preserves its handle for explicit service/instance retry. The host caches Provider shutdown, so a second `app.shutdown()` does not repeat failed Provider cleanup. There is no public operation, cleanup or overall shutdown deadline.
 
-## Low-level backend
+Diagnostics cannot alter business or cleanup results. Default logging includes only safe phase/configuration identifiers, not raw exceptions or connection data. Local use outside development warns that coordination is process-local.
 
-```ts
-import { createConcurrentRuntime } from '@nocobase/concurrency';
-import { LocalConcurrentBackend } from '@nocobase/app-plugin-concurrency/server';
+## Public exports and extensions
 
-const runtime = await createConcurrentRuntime({
-  backend: new LocalConcurrentBackend(),
-  namespace: 'orders:local',
-});
-const executor = await runtime.manager.createSynchronous('order:123', {
-  ttl: 30000,
-});
-await executor.run(async ({ signal }) => {
-  signal.throwIfAborted();
-});
-await runtime.close();
-```
+- `/server`: static Server definition, original `concurrencyServiceToken`, Provider, service/configuration/instance/diagnostic contracts, `ManagedLeaseRegistry`, `startAcquire`, `createSynchronousExecutor` and `encodeResourceKey`.
+- `/config`: configuration factory, common configuration types and pure validation.
+- `/package.json`: package metadata.
 
-## Competition and time
+The built-in `MutexConcurrencyInstance` lives in `server/mutex/instance.ts`. It is an internal implementation; consumers and adapter authors import the public contracts and tools directly from `@nocobase/app-plugin-concurrency/server`.
 
-Each runtime exclusively owns one backend. Lock and executor handles created by that runtime share exact namespace/kind/name resources. Supply a fresh backend for another runtime; separate backend instances, processes and isolates are isolated. Each backend uses its own runtime's Clock and Scheduler; there is no cross-runtime clock-sharing requirement. A same-name lock and executor compete for the same lock resource. Names are neither trimmed nor Unicode/case normalized; state keys encode the structured tuple rather than concatenate unescaped names.
+Implementations register in Provider `register()` through the original service. All registrations complete before boot validation; business obtains managers in `ready()` or normal running work. `validate(entry)` and synchronous `create(entry)` perform no network I/O. `create` returns a fresh `{ manager, start(), shutdown() }` instance; the service saves it before awaiting start. Instances must handle start/shutdown interleaving without reopening resources after closure. Managers expose no shutdown method.
 
-TTL defaults to 30000ms. Every successful attempt uses a new token and actual monotonic grant time plus TTL. Resource timers carry token/version checks, round delays up, rearm when early, and only trigger best-effort cleanup. Each acquisition and release also purges by actual time, so delayed timers do not extend ownership. Expiry permits another acquisition but never stops old business code. Expired manual leases still require return before runtime close.
+`ManagedLeaseRegistry.register(nativeRelease)` synchronously registers a confirmed releaser and returns its Lease. `releaseAll()` attempts every confirmed release and diagnoses failures; `clear()` only discards records and must run after owned resources have closed. `startAcquire(registry, { signal, acquire }, report?)` observes one native acquisition and returns `{ result, completion? }`. The result settles for the caller; completion also waits for any late-grant cleanup and may outlive cancellation. Each implementation instance tracks and drains these completions before releasing confirmed Leases. The registry neither acquires nor tracks pending work. These tools do not manage TTL or renewal. The implementation classifies native errors, combines request/shutdown signals and owns native resource closure. Code-only reporters may receive controlled causes and must not be serialized into configuration. `createSynchronousExecutor(lock, report?)` preserves business-result priority.
 
-`new LocalConcurrentBackend({ retryIntervalMs: 10 })` configures the retry interval. It must be an integer in 1..2147483647. Ordinary `lock({ signal })` and `run(runner, { signal })` use protocol v1 `unbounded` waits: retries continue outside the gate until success, cancellation or failure, without a 30-second acquisition limit. Single try calls attempt at most once. Positive positional try timeouts use `bounded` waits of min(interval, remaining deadline). Both retry modes are cancellable per request. There is no FIFO, fairness or starvation guarantee; core does not add another retry loop. No call to `async-mutex.cancel()` can cancel another request. The initial backend protocol is fixed at 1 while unpublished; other protocol versions are rejected explicitly.
-
-## State and lifecycle
-
-A registry reference is pinned synchronously before waiting for a real Mutex gate. Critical sections never await business/I/O or publish scheduler/signal effects. Effects run after unlocking, while references and effect counts protect the state against reclamation. Empty state is deleted only if it has no holder/reference/timer/effect and the map still points to it. Facades resolve the registry on each call instead of caching reclaimable state pointers.
-
-Each grant releases only its original token. Repeated and concurrent release are idempotent; failed gate entry can be retried without affecting a newer token. No private core classes, copied public errors, leases or executors are used. The /server entry exports `LocalConcurrentBackend` and `LocalConcurrentBackendOptions`; adapter implementation modules are not public exports.
-
-Runtime close belongs to core: it refuses new work, cancels only undelivered acquisition, waits for real runners/manual returns, retains failed executor cleanup and then closes its owned backend. Applications call only `runtime.close()`. The backend directly implements `initialize`, `validateResource`, `acquire` and `close`; no session layer remains. Initialization is single-use. Backend close aborts pending attempts, rejects while grants or releases remain, drains visible timer/gate promises and marks closed only after successful drain. Failed or timed-out runtime close can be retried without duplicating in-flight backend cleanup. No global lock singleton or implicit application/environment configuration is installed.
-
-## Supported scope
-
-Only fixed-TTL Lock and SynchronousExecutor are exposed, with both provided by every Local backend. There is no placeholder semaphore API, automatic-renewal option or capability map. Unknown options are rejected rather than accepted as no-ops. There is no extend, reentrancy, read/write mode, final atomic validity proof, strong replay barrier or automatic migration of existing business locks. See core's documentation for independent acquisition/executor signals, conservative success semantics and business error priority.
+`encodeResourceKey(namespace, name)` returns `nb-concurrency:v2:` followed by base64url UTF-8 JSON of `[namespace, name]`. Configuration names and TTL are not part of the key. `ConcurrencyAdapterConnections` supports public module augmentation for implementation-specific connection types. OSS does not include or require a Redis implementation.
 
 ## Verification
 
-Run scoped `fix`, `lint`, `typecheck`, `test` and `build`. Tests run the published framework-neutral backend/fault drivers, deterministic Clock/Scheduler races, actual Mutex gate blocking, old timer/token checks, release failures, business/cause/logger edge cases, owned backend close/retry and dynamic-name reclamation. A real event-loop integration case runs competing callbacks using the actual async-mutex implementation. `node tests/verify-packed.mjs <artifact-directory> <host-cohort.json>` packs this package, installs it with a freshly packed core and the exact host peer tarballs supplied by a package-name-to-tarball JSON map in a temporary directory outside the workspace, checks declarations/public entries and executes real same-runtime handle competition and public contract drivers. Tests never imply cross-process coordination or Redis correctness.
+Run scoped `fix`, `lint`, `typecheck`, `test` and `build`. Tests use real async-mutex competition, controlled release/Promise faults and small public lifecycle implementations. Both templates exercise the real host container. `node tests/verify-packed.mjs <artifact-directory> <host-cohort.json>` verifies installed compiled exports and declarations using a fixed host tarball cohort outside the workspace. Local and extension-fixture checks do not establish Redis or cross-process correctness.
