@@ -98,11 +98,15 @@ describe('user invitations', () => {
   const tokenOf = (email: InvitationEmail) =>
     /\/main\/invite\/([\w-]+)/u.exec(email.text)?.[1] ?? '';
   it('bounds slow batch delivery and omits queued links that were revoked or rotated', async () => {
-    const send = vi.fn((email: InvitationEmail) =>
-      email.to === 'batch-0@example.test'
+    const started = Promise.withResolvers<void>();
+    let submissions = 0;
+    const send = vi.fn((email: InvitationEmail) => {
+      submissions += 1;
+      if (submissions === 6) started.resolve();
+      return email.to === 'batch-0@example.test'
         ? Promise.resolve()
-        : new Promise<void>(() => {}),
-    );
+        : new Promise<void>(() => {});
+    });
     const batchService = createUserManagementService({
       database,
       users: userAdministration(database.connection()),
@@ -121,7 +125,8 @@ describe('user invitations', () => {
     );
     const pending = batchService.invite({ emails, invitedBy: 'ann' });
     // One completed send frees a slot; the other five stay in flight until the common deadline.
-    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6));
+    await started.promise;
+    expect(send).toHaveBeenCalledTimes(6);
     const queued = await batchService.listInvitations();
     const revoked = queued.find((row) => row.email === emails[6]);
     const rotated = queued.find((row) => row.email === emails[7]);
@@ -263,7 +268,11 @@ describe('user invitations', () => {
       origin: ORIGIN,
     });
 
-    expect(result).toMatchObject({ outcome: 'invited', emailSent: false });
+    expect(result).toMatchObject({
+      outcome: 'invited',
+      emailSent: false,
+      emailError: 'Email not sent: email delivery failed',
+    });
     expect(result).toHaveProperty(
       'inviteUrl',
       expect.stringContaining(`${ORIGIN}/main/invite/`),
@@ -271,6 +280,28 @@ describe('user invitations', () => {
     const [row] = await service.listInvitations();
     expect(row?.sentAt).toBeNull();
     expect(JSON.stringify(row)).not.toContain('invite/');
+  });
+
+  it('returns a clear message and the invitation link without a mail channel', async () => {
+    const local = createUserManagementService({
+      database,
+      users: userAdministration(database.connection()),
+      roleScopes: createUserRoleScopeRegistry(),
+      site: { publicBasePath: '/main', appTitle: 'Acme' },
+    });
+
+    const [result] = await local.invite({
+      emails: ['new@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+
+    expect(result).toMatchObject({
+      outcome: 'invited',
+      emailSent: false,
+      emailError: 'Email not sent: no email channel configured',
+      inviteUrl: expect.stringContaining(`${ORIGIN}/main/invite/`),
+    });
   });
 
   it('shows the invitation to the link and creates the account on acceptance', async () => {

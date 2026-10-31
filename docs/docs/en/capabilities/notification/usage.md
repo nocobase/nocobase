@@ -16,6 +16,10 @@ Notifications support **four channel categories: in-app messages, email, Feishu 
 
 The application selects when to notify, the recipients, content and destination page. Notification services handle delivery, delivery records and retry history. Other notification services can also be added through extensions.
 
+## User invitation emails
+
+User invitation emails also use notification channels. The Users plugin uses `system-email` by default; configure and enable an email provider such as SMTP at `notification.channels.system-email`. The application templates include an SMTP example in `config.example.yml`. If no usable channel is configured, invitation creation still succeeds and returns “Email not sent: no email channel configured” with an invitation link for an authorized inviter to forward manually.
+
 ## Example: send an in-app notification
 
 Use in-app messages to send business reminders to application users. This example notifies the operator of transport progress and links to the order detail.

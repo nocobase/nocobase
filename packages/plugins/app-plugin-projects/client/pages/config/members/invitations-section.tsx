@@ -48,6 +48,7 @@ import { usePmApi } from '../../../hooks/use-pm-api.js';
 import { useViewer } from '../../../hooks/use-viewer.js';
 import { usePmFormatters } from '../../../lib/format.js';
 import { InviteResults } from './invite-dialog.js';
+import { invitationEmailError } from './invitation-email-error.js';
 import { SectionHeading } from '../section-heading.js';
 
 /**
@@ -94,7 +95,7 @@ export function InvitationsSection(): ReactElement | null {
       } else if (sendEmail && result.emailSent === false) {
         toaster.show({
           type: 'warning',
-          title: t('invitations.outcome.notSent'),
+          title: invitationEmailError(t, result),
         });
       } else if (sendEmail)
         notify.success(t('invitations.resent', { email: result.email }));
