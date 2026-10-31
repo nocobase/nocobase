@@ -1,5 +1,36 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- 88d35b8: Share conversation snapshot reads, wait for subscription acknowledgement, and avoid redundant agent catalog refreshes.
+- 88d35b8: Reduce idle conversation recovery reads while preserving latest response revisions, missed messages, reconnect recovery and running refreshes.
+- d04061e: Batch linked work in conversation snapshots and share cursor-based message refreshes across chat surfaces. Refresh changed conversation state without repeatedly reading archived lists, and reconcile saved history once after acknowledged reconnection.
+- 88d35b8: Avoid redundant conversation detail and related-data reads after read acknowledgements while preserving cross-tab updates and reconnect recovery.
+- 88d35b8: Allow runs to be filtered by multiple statuses in one paginated request.
+- 36f61d0: Distinguish workspace preparation from Agent startup when reusing a runner workspace.
+
+  Keep received replies before follow-up messages queued during an active conversation.
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- 88d35b8: Document every allowed run status for single and combined status filters in the API and command reference.
+- b29a336: Keep saved Agent descriptions current when reopening the editor before a list refresh completes, and expose the existing authorization permission topic constants to client integrations.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.31
+  - @nocobase/app-plugin-file@1.0.0-beta.28
+
 ## 2.0.0-beta.0
 
 ### Minor Changes

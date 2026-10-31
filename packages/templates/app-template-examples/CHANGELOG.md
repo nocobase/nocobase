@@ -1,5 +1,75 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.70
+
+### Minor Changes
+
+- 237a192: Add a four-step employee onboarding example with private recoverable drafts, complete server validation, atomic employee creation and reusable Skill resources.
+
+### Patch Changes
+
+- 5e32117: Provide business concurrency interfaces with shared errors and application-owned native Mutex instances. Support unbounded ordinary acquisition, native single and bounded attempts, acquisition-only cancellation, optional renewable lease durations accepted and ignored by local Mutex, no-argument Executors, strict named configuration and public managed-instance extension tools. Keep business results independent of automatic cleanup failures and actively release confirmed occupancy during application-owned shutdown.
+
+  Expose managed-instance contracts and tools through the single Server entry, with the built-in Mutex implementation organized under its own internal directory.
+
+  Keep local Lock and Executor ownership until explicit release, actual runner settlement or instance shutdown. Managed lease tools do not own TTL timers or renewal; preserve public duration validation and native bounded acquisition. Separate confirmed Lease registration from per-request acquisition observation, track in-flight completions in the owning instance, and keep Mutex adaptation private without changing business APIs.
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [5e32117]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [d04061e]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [36f61d0]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [88d35b8]
+- Updated dependencies [b29a336]
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-agents@2.0.0-beta.1
+  - @nocobase/concurrency@0.1.0-beta.1
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.1
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.31
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.20
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.21
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.18
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.16
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.17
+  - @nocobase/app-plugin-database-example@0.1.0-beta.10
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.18
+  - @nocobase/app-plugin-file@1.0.0-beta.28
+  - @nocobase/app-plugin-file-example@1.0.0-beta.24
+  - @nocobase/app-plugin-foundation@0.1.0-beta.11
+  - @nocobase/app-plugin-i18n@1.0.0-beta.19
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.10
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.16
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.15
+  - @nocobase/app-plugin-mail@1.0.0-beta.19
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.10
+  - @nocobase/app-plugin-notification@2.0.0-beta.3
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.12
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.17
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.10
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.14
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.13
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.6
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.23
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.22
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.10
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.9
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.9
+  - @nocobase/app-plugin-users@2.0.0-beta.12
+  - @nocobase/realtime@1.0.0-beta.0
+
 ## 1.0.0-beta.69
 
 ### Minor Changes

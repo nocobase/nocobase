@@ -1,5 +1,11 @@
 # @nocobase/realtime
 
+## 1.0.0-beta.0
+
+### Major Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+
 ## 1.0.0-beta
 
 ### Breaking changes

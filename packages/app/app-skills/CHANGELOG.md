@@ -1,5 +1,22 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.56
+
+### Minor Changes
+
+- 237a192: Add a four-step employee onboarding example with private recoverable drafts, complete server validation, atomic employee creation and reusable Skill resources.
+
+### Patch Changes
+
+- e9256f4: Automatically check required commercial plugin and database driver access through the pkg-v3 registry and install compatible authorized packages without prompting. Route knowledge base requirements to the existing knowledge plugin and its installed documentation. Report unavailable access in the conversation while continuing independent work.
+- 5e32117: Provide business concurrency interfaces with shared errors and application-owned native Mutex instances. Support unbounded ordinary acquisition, native single and bounded attempts, acquisition-only cancellation, optional renewable lease durations accepted and ignored by local Mutex, no-argument Executors, strict named configuration and public managed-instance extension tools. Keep business results independent of automatic cleanup failures and actively release confirmed occupancy during application-owned shutdown.
+
+  Expose managed-instance contracts and tools through the single Server entry, with the built-in Mutex implementation organized under its own internal directory.
+
+  Keep local Lock and Executor ownership until explicit release, actual runner settlement or instance shutdown. Managed lease tools do not own TTL timers or renewal; preserve public duration validation and native bounded acquisition. Separate confirmed Lease registration from per-request acquisition observation, track in-flight completions in the owning instance, and keep Mutex adaptation private without changing business APIs.
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+
 ## 0.1.0-beta.55
 
 ### Minor Changes

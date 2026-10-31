@@ -2,6 +2,27 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-10-31.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-31.1)
+
+### 🎉 新特性
+
+- **[实时更新]** Redis 实时广播改为显式注册商业 Broker 插件后使用，单实例应用仍可使用内置 Memory Broker。 ([#11258](https://github.com/nocobase/nocobase/pull/11258)) by @cgyrock
+- **[应用模板]** 新增员工入职四步表单示例，支持私有草稿恢复、条件校验和防重复创建员工。 ([#11259](https://github.com/nocobase/nocobase/pull/11259)) by @katherinehhh
+
+### 🚀 优化
+
+- **[项目]** 减少任务详情读取和进度刷新的数据库查询。 ([#11264](https://github.com/nocobase/nocobase/pull/11264)) by @2013xile
+- **[并发控制]** 本地锁会持续持有到显式释放、任务完成或应用关闭，不再将租约时长作为任务超时。 ([#11269](https://github.com/nocobase/nocobase/pull/11269)) by @cgyrock
+- **[Agent]** 减少执行机会话的重复读取，并批量加载会话列表的关联工作。 ([#11272](https://github.com/nocobase/nocobase/pull/11272)) by @2013xile
+
+### 🐛 修复
+
+- **[实时更新]** 减少打开任务、收件箱和会话时的重复请求，并保留实时更新。 ([#11257](https://github.com/nocobase/nocobase/pull/11257)) by @2013xile
+- **[Agent]**
+  - 保存 Agent 描述后立即重新打开编辑器时显示最新内容。 ([#11268](https://github.com/nocobase/nocobase/pull/11268)) by @2013xile
+  - 区分工作区准备与 Agent 启动，并将已收到的回复保存在排队追问之前。 ([#11271](https://github.com/nocobase/nocobase/pull/11271)) by @2013xile
+- **[Agent 会话]** 页面较窄时优先显示会话列表而不是详情，并记住 My Agent 详情的开关状态。 ([#11275](https://github.com/nocobase/nocobase/pull/11275)) by @gchust
+
 ## [nocobase-v3-beta/2026-10-30.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-30.1)
 
 ### 🎉 新特性

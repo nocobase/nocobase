@@ -1,5 +1,17 @@
 # @nocobase/app-server
 
+## 4.0.0-beta.0
+
+### Major Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+
+### Patch Changes
+
+- 83f28b1: Avoid computing application progress for browser issue details and parallelize independent detail reads. Expose authorized blocker inputs and keep hierarchy count hydration limited to related tasks. Let applications own project cache refreshes and keep request logs free of duplicate route fields.
+- Updated dependencies [cf23bfe]
+  - @nocobase/realtime@1.0.0-beta.0
+
 ## 4.0.0-beta
 
 ### Breaking changes
