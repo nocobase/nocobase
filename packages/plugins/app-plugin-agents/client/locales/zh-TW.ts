@@ -62,6 +62,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     title: '放棄未儲存的變更？',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      '此 runner 不支援重新整理狀態，請重新啟動 runner。',
+    RUNNER_REFRESH_UNAVAILABLE: '此 runner 已撤銷，無法重新整理狀態。',
     boundRunnerIncompatible:
       '此執行機無法執行所選 Agent。請更換執行機或建立新對話。',
     CONFLICT: '同時，它發生了變化。重新載入並重試。',
@@ -565,6 +568,11 @@ const zhTW: LocaleResource<typeof enUS> = {
     unknown: '執行失敗。',
   },
   runtimes: {
+    refresh: {
+      button: '重新整理狀態',
+      checking: '檢測中…',
+      restart: '請重新啟動 runner 以重新整理狀態。',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     quota: {
       workspaceStatus: {

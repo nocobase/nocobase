@@ -63,6 +63,10 @@ const jaJP: LocaleResource<typeof enUS> = {
     title: '保存されていない変更を破棄しますか?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'この runner は状態の更新に対応していません。再起動してください。',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'この runner は取り消されているため、状態を更新できません。',
     boundRunnerIncompatible:
       'このランナーは選択した Agent を実行できません。ランナーを切り替えるか、新しい会話を開始してください。',
     CONFLICT: 'そのうちに変わりました。リロードして再試行してください。',
@@ -589,6 +593,11 @@ const jaJP: LocaleResource<typeof enUS> = {
     unknown: '実行に失敗しました。',
   },
   runtimes: {
+    refresh: {
+      button: '状態を更新',
+      checking: '確認中…',
+      restart: '状態を更新するには runner を再起動してください。',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     quota: {
       workspaceStatus: {

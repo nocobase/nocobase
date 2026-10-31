@@ -616,6 +616,38 @@ export function createAdminRoutes(
     },
   );
   router.post(
+    '/:runnerId/refreshStatus',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Refresh runner tool status',
+      operationId: 'agentsRefreshRunnerStatus',
+      ...cliRoute(false),
+      responses: {
+        202: dataResponse(RunnerSchema),
+        ...editErrors,
+        400: apiErrorResponse(
+          400,
+          'The runner is revoked or does not support refreshing tool status; restart it.',
+        ),
+      },
+    }),
+    runnerParam,
+    async (context) => {
+      const runner = await visibleRunner(context);
+      if (!(await runnerRights(context, runner)).edit)
+        throw forbidden('Only the owner may refresh this runner.');
+      return context.json(
+        {
+          data: runnerPublicData(
+            await services.runners.refreshTools(runner.id),
+          ),
+        },
+        202,
+      );
+    },
+  );
+  router.post(
     '/:runnerId/revoke',
     guard,
     describeRoute({

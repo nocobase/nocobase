@@ -64,6 +64,7 @@ import {
   credentialPrefix,
   hashCredential,
 } from '../kernel/crypto.js';
+import { agentsApiError } from '../kernel/http.js';
 import { notFound, precondition } from '../kernel/errors.js';
 import type { AgentsNotice } from '../kernel/events.js';
 import type { IdSource } from '../kernel/ids.js';
@@ -133,6 +134,7 @@ export interface RunnerService {
   /** 404 when absent. */
   get(id: string): Promise<Runner>;
   update(id: string, patch: RunnerPatch): Promise<Runner>;
+  refreshTools(id: string): Promise<Runner>;
   /**
    * Revokes the runner and every key it has. The runs it holds go back to the queue (the runs service). When `by` is
    * someone other than its owner, the owner is told (`runner_revoked`).
@@ -518,7 +520,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             version: request.version,
             product: request.product ?? null,
             protocolVersion: request.protocolVersion,
-            features: cleanList(request.features),
+            features: cleanList([
+              ...request.features,
+              ...(request.toolsRefreshSupported ? ['tools.refresh'] : []),
+            ]),
             tools: request.tools
               .filter((tool) =>
                 (storedToolChoice(token.enabledTools) ?? []).includes(
@@ -618,7 +623,12 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           runner.version !== request.version ||
           runner.product !== (request.product ?? null) ||
           JSON.stringify(runner.features) !==
-            JSON.stringify(cleanList(request.features)) ||
+            JSON.stringify(
+              cleanList([
+                ...request.features,
+                ...(request.toolsRefreshSupported ? ['tools.refresh'] : []),
+              ]),
+            ) ||
           JSON.stringify(runner.tools) !== JSON.stringify(tools) ||
           JSON.stringify(runner.policy) !== JSON.stringify(policy) ||
           JSON.stringify(runner.variables ?? null) !==
@@ -631,7 +641,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           values: {
             version: request.version,
             product: request.product ?? null,
-            features: cleanList(request.features),
+            features: cleanList([
+              ...request.features,
+              ...(request.toolsRefreshSupported ? ['tools.refresh'] : []),
+            ]),
             tools,
             policy: asJson(policy),
             variables: asJson(variables),
@@ -683,10 +696,48 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             'REVISION_CONFLICT',
             'Quota changed during heartbeat; report again.',
           );
-        if (changed) emit({ type: 'runner.changed', runnerId: runner.id });
+        if (request.toolsRefreshCompletedId) {
+          await runnersRepo(conn).updateMany({
+            filter: {
+              id: runner.id,
+              toolsRefreshRequestId: request.toolsRefreshCompletedId,
+            },
+            values: { toolsRefreshRequestId: null },
+          });
+        }
+        if (
+          changed ||
+          (request.toolsRefreshCompletedId &&
+            runner.toolsRefreshRequestId === request.toolsRefreshCompletedId)
+        )
+          emit({ type: 'runner.changed', runnerId: runner.id });
         const reported = await require(conn, runner.id);
         await deps.onReport?.(unit, reported);
         return reported;
+      }),
+
+    refreshTools: (id) =>
+      tx.run(async ({ conn, emit }) => {
+        const runner = await require(conn, id);
+        if (runner.status === 'revoked')
+          throw agentsApiError({
+            status: 'FAILED_PRECONDITION',
+            reason: 'RUNNER_REFRESH_UNAVAILABLE',
+            message: 'The runner is revoked.',
+          });
+        if (!runner.features.includes('tools.refresh'))
+          throw agentsApiError({
+            status: 'FAILED_PRECONDITION',
+            reason: 'TOOLS_REFRESH_UNSUPPORTED',
+            message: 'Restart the runner to refresh its tools.',
+          });
+        if (runner.toolsRefreshRequestId) return runner;
+        await runnersRepo(conn).updateMany({
+          filter: { id, toolsRefreshRequestId: null },
+          values: { toolsRefreshRequestId: ids.next() },
+        });
+        emit({ type: 'runner.changed', runnerId: id });
+        return require(conn, id);
       }),
 
     list: async (options) => {

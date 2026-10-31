@@ -70,6 +70,8 @@ export interface Runner {
   readonly features: readonly RunnerFeature[];
   /** What the runner reported: version, sign-in and optional advisory model capabilities. Never edits Agent configuration. */
   readonly tools: readonly ToolInfo[];
+  /** Pending tool detection request; null or absent when none. */
+  readonly toolsRefreshRequestId?: string | null;
   /**
    * The coding tools people let this runner run, chosen on the web; null offers every tool it reports. A tool left
    * out is still reported (with its version and sign-in) but never dispatched here.
@@ -354,6 +356,8 @@ export const RUNNER_LIST_FIELDS = {
   arch: true,
   version: true,
   product: true,
+  features: true,
+  toolsRefreshRequestId: true,
   tools: true,
   enabledTools: true,
   trust: true,

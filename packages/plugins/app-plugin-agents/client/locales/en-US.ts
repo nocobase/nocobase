@@ -68,6 +68,10 @@ const pages = {
     title: 'Discard unsaved changes?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Please restart the runner to refresh its status.',
+    RUNNER_REFRESH_UNAVAILABLE: 'This runner has been revoked.',
+
     boundRunnerIncompatible:
       'This runner cannot run the selected Agent. Switch runner or start a new conversation.',
     CONFLICT: 'It changed in the meantime. Reload and try again.',

@@ -66,6 +66,10 @@ const deDE: LocaleResource<typeof enUS> = {
     title: 'Nicht gespeicherte Änderungen verwerfen?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Dieser Runner unterstützt keine Statusaktualisierung. Starte ihn neu.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Der Status eines widerrufenen Runners kann nicht aktualisiert werden.',
     boundRunnerIncompatible:
       'Dieser Runner kann den ausgewählten Agent nicht ausführen. Wechseln Sie den Runner oder starten Sie eine neue Unterhaltung.',
     CONFLICT:
@@ -611,6 +615,11 @@ const deDE: LocaleResource<typeof enUS> = {
     unknown: 'Der Lauf ist fehlgeschlagen.',
   },
   runtimes: {
+    refresh: {
+      button: 'Status aktualisieren',
+      checking: 'Wird geprüft…',
+      restart: 'Starte den Runner neu, um seinen Status zu aktualisieren.',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     quota: {
       workspaceStatus: {
