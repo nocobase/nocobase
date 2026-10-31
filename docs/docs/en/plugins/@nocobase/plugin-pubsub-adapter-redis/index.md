@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding pub/sub messages with Redis.
+  Used for handling pub/sub messages with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
