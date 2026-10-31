@@ -358,6 +358,7 @@
   "Preview run JavaScript code": "预览运行 JavaScript 代码",
   "Enter your question": "请输入你的问题",
   "AI disclaimer": "AI 也可能出错，请检查信息内容。",
+  "Chat options": "对话选项",
   "ai.tools.getContextApis.title": "获取上下文 API",
   "ai.tools.getContextApis.about": "获取上下文中可用的 API 方法",
   "ai.tools.getContextEnvs.title": "获取上下文环境",

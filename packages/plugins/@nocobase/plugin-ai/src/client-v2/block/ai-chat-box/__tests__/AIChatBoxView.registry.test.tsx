@@ -294,14 +294,12 @@ describe('AIChatBoxView mounted registry', () => {
     expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain('height: 100%');
   });
 
-  it('keeps the chat box core wide enough for horizontal scrolling', () => {
+  it('allows the chat core to shrink inside a narrow container', () => {
     const { container, getByTestId } = renderAIChatBoxView(makeModel({}, {}, [makeCoreModel()]));
-    const coreItem = getByTestId('flow-model-renderer').closest(
-      `[style*="min-width: ${AI_CHAT_BOX_CORE_MIN_WIDTH}px"]`,
-    );
+    const coreItem = getByTestId('flow-model-renderer').closest('[style*="min-width: 0"]');
 
     expect(container.querySelector('.ant-layout')?.getAttribute('style')).toContain(
-      `min-width: ${AI_CHAT_BOX_CORE_MIN_WIDTH}px`,
+      `min-width: min(100%, ${AI_CHAT_BOX_CORE_MIN_WIDTH}px)`,
     );
     expect(coreItem).toBeTruthy();
   });
@@ -322,7 +320,7 @@ describe('AIChatBoxView mounted registry', () => {
     const { getAllByTestId } = renderAIChatBoxView(makeModel({}, {}, [makeBodyModel(), makeCoreModel()]));
     const [bodyRenderer, coreRenderer] = getAllByTestId('flow-model-renderer');
     const bodyItem = bodyRenderer.parentElement;
-    const coreItem = coreRenderer.closest(`[style*="min-width: ${AI_CHAT_BOX_CORE_MIN_WIDTH}px"]`);
+    const coreItem = coreRenderer.closest('[style*="min-width: 0"]');
 
     expect(bodyItem).toBeTruthy();
     expect(bodyItem?.getAttribute('style') || '').not.toContain('max-height');

@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.36](https://github.com/nocobase/nocobase/compare/v2.2.35...v2.2.36) - 2026-10-29
+
+### 🚀 Improvements
+
+- **[AI employees]** Improved AI employee chat usability on mobile and in narrow blocks, with a compact toolbar, bottom-sheet options, touch-friendly selectors, and automatic options dismissal when picking a block. ([#11230](https://github.com/nocobase/nocobase/pull/11230)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[Feishu / Lark]** Fix the Feishu workflow notification form not rendering on legacy URLs (no `/v`), and message fields being dropped from the saved node config on modern URLs by @chenzhizdt
+
+## [v2.2.35](https://github.com/nocobase/nocobase/compare/v2.2.34...v2.2.35) - 2026-10-28
+
+### 🐛 Bug Fixes
+
+- **[Authentication]** Fixed authenticator options being rendered before their auth type plugin finished loading, which made LDAP sign-in fail with "must either provide a buffer via raw or some value" after an application reload ([#11182](https://github.com/nocobase/nocobase/pull/11182)) by @hongboji
+
+## [v2.2.34](https://github.com/nocobase/nocobase/compare/v2.2.33...v2.2.34) - 2026-10-27
+
+### 🚀 Improvements
+
+- **[DingTalk]** Fix DingTalk Stream mode failing on file-based plugin installs; cut full-sync API calls ~90%; show DingTalk quota reset time on sync failure by @chenzhizdt
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Added an optional stateless request mode for OpenAI Responses services to avoid response-item errors when a gateway routes requests across Azure OpenAI resources. ([#11183](https://github.com/nocobase/nocobase/pull/11183)) by @cgyrock
+
+- **[Feishu / Lark]** Fix Feishu OAuth callback URLs missing the `APP_PUBLIC_PATH` prefix; fix automatic login not triggering and landing on a 404 in the v2 client by @chenzhizdt
+
 ## [v2.2.33](https://github.com/nocobase/nocobase/compare/v2.2.32...v2.2.33) - 2026-10-25
 
 ### 🐛 Bug Fixes

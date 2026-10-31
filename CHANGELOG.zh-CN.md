@@ -5,6 +5,34 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.36](https://github.com/nocobase/nocobase/compare/v2.2.35...v2.2.36) - 2026-10-29
+
+### 🚀 优化
+
+- **[AI 员工]** 优化 AI 员工聊天在移动端和窄区块中的使用体验，提供紧凑操作栏、底部选项面板及便于触控的选择器，并在选择页面区块时自动收起选项面板。 ([#11230](https://github.com/nocobase/nocobase/pull/11230)) by @cgyrock
+
+### 🐛 修复
+
+- **[飞书 / Lark]** 修复旧版地址(无 `/v` 前缀)下工作流通知节点选择飞书渠道后消息表单不显示；修复新版地址下保存节点时接收人与消息内容丢失 by @chenzhizdt
+
+## [v2.2.35](https://github.com/nocobase/nocobase/compare/v2.2.34...v2.2.35) - 2026-10-28
+
+### 🐛 修复
+
+- **[用户认证]** 修复认证器选项在认证类型插件加载完成前被渲染，导致应用重载后 LDAP 登录报 "must either provide a buffer via raw or some value" 的问题 ([#11182](https://github.com/nocobase/nocobase/pull/11182)) by @hongboji
+
+## [v2.2.34](https://github.com/nocobase/nocobase/compare/v2.2.33...v2.2.34) - 2026-10-27
+
+### 🚀 优化
+
+- **[钉钉]** 修复文件式安装插件后钉钉 Stream 模式启动失败；全量同步接口调用量降低约 90%；同步撞钉钉调用总量配额时在失败消息中显示配额重置时间 by @chenzhizdt
+
+### 🐛 修复
+
+- **[AI 员工]** 为 OpenAI Responses 服务增加可选的“无状态请求”模式，用于规避网关跨 Azure OpenAI 资源路由时的响应条目错误。 ([#11183](https://github.com/nocobase/nocobase/pull/11183)) by @cgyrock
+
+- **[飞书 / Lark]** 修复配置 `APP_PUBLIC_PATH` 后飞书 OAuth 回调地址缺少前缀导致授权失败；修复 v2 客户端自动登录不触发及回跳 404 by @chenzhizdt
+
 ## [v2.2.33](https://github.com/nocobase/nocobase/compare/v2.2.32...v2.2.33) - 2026-10-25
 
 ### 🐛 修复
