@@ -16,6 +16,7 @@ import { uniq } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import type { PermissionTabProps, Role } from '../../registries';
+import { withAncestorIds, withoutEmptyAncestorIds } from './utils';
 
 interface DesktopRoutePayload {
   data?: DesktopRouteRecord[];
@@ -32,6 +33,7 @@ interface RoutePermissionRecord {
   id: number;
   title?: string;
   parentId?: number;
+  hidden?: boolean;
   children?: RoutePermissionRecord[];
 }
 
@@ -45,6 +47,7 @@ function toRouteItems(items: DesktopRouteRecord[] | undefined, parentId?: number
       id: item.id,
       title: item.title,
       parentId,
+      hidden: item.hidden === true,
       children: children.length ? children : undefined,
     };
   });
@@ -113,7 +116,10 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
 
   const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
-  const allIds = useMemo(() => getAllChildrenIds(routeItems), [routeItems]);
+  const allIds = useMemo(
+    () => flattenItems(routeItems).filter((item) => item.hidden !== true).map((item) => item.id),
+    [routeItems],
+  );
   const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
   const roleRoutesResource = role ? ctx.api.resource('roles.desktopRoutes', role.name) : null;
 
@@ -139,6 +145,8 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
     },
   );
 
+  const isRouteVisible = useMemoizedFn((item: RoutePermissionRecord) => item.hidden !== true);
+
   const setAll = useMemoizedFn(async () => {
     if (!roleRoutesResource) {
       return;
@@ -160,16 +168,11 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
 
-    if (item.parentId) {
-      const parent = itemById.get(item.parentId);
-      const selectedSibling = parent?.children?.some((child) => nextIds.includes(child.id));
-      if (checked && !selectedSibling) {
-        nextIds = nextIds.filter((id) => id !== item.parentId);
-      }
-      if (!checked && !nextIds.includes(item.parentId)) {
-        nextIds.push(item.parentId);
-      }
-    }
+    // Checking adds the whole ancestor chain; unchecking prunes newly empty ancestors (v1 parity). Ancestors restored by
+    // the tree query may not match the request filter (hidden), so the cascade only walks visible nodes.
+    nextIds = checked
+      ? withoutEmptyAncestorIds(nextIds, item, itemById, isRouteVisible)
+      : withAncestorIds(nextIds, item, itemById, isRouteVisible);
 
     setSelectedIds(nextIds);
     if (checked) {

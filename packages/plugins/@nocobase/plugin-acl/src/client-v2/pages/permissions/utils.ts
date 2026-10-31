@@ -43,3 +43,59 @@ export function mergeRoleSnippets(role: Role, snippets: string[]): Role {
 export function getSettingsChildren(item: PluginSettingsPageType): PluginSettingsPageType[] {
   return item.children ? [...item.children] : [];
 }
+
+export interface RoutePermissionNode {
+  id: number;
+  parentId?: number;
+  hidden?: boolean;
+  children?: RoutePermissionNode[];
+}
+
+export type RoutePermissionPredicate<T> = (node: T) => boolean;
+
+const alwaysTraversable = () => true;
+
+export function withAncestorIds<T extends RoutePermissionNode>(
+  ids: number[],
+  node: T,
+  nodeById: Map<number, T>,
+  canTraverse: RoutePermissionPredicate<T> = alwaysTraversable,
+): number[] {
+  const nextIds = [...ids];
+  let parentId = node.parentId;
+  while (parentId) {
+    const parent = nodeById.get(parentId);
+    // The tree query restores path ancestors that do not match the request filter, so only cascade into visible nodes
+    if (!parent || !canTraverse(parent)) {
+      break;
+    }
+    if (!nextIds.includes(parentId)) {
+      nextIds.push(parentId);
+    }
+    parentId = parent.parentId;
+  }
+  return nextIds;
+}
+
+export function withoutEmptyAncestorIds<T extends RoutePermissionNode>(
+  ids: number[],
+  node: T,
+  nodeById: Map<number, T>,
+  canTraverse: RoutePermissionPredicate<T> = alwaysTraversable,
+): number[] {
+  let nextIds = ids;
+  let parentId = node.parentId;
+  while (parentId) {
+    const parent = nodeById.get(parentId);
+    if (!parent || !canTraverse(parent)) {
+      break;
+    }
+    const children = parent.children ?? [];
+    if (children.some((child) => nextIds.includes(child.id))) {
+      break;
+    }
+    nextIds = nextIds.filter((id) => id !== parentId);
+    parentId = parent.parentId;
+  }
+  return nextIds;
+}
