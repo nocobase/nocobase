@@ -52,4 +52,45 @@ describe('route permission ancestor helpers', () => {
   it('never removes a read-only ancestor', () => {
     expect(withoutEmptyAncestorIds([21, 20], tab, nodeById)).toEqual([21, 20]);
   });
+
+  it('stops at an ancestor restored by the tree query that belongs to another layout', () => {
+    const link: LayoutRoutePermissionNode = { id: 12, parentId: 11, layoutUids: ['admin-layout-model'] };
+    const foreignGroup: LayoutRoutePermissionNode = {
+      id: 11,
+      parentId: 10,
+      layoutUids: ['mobile-layout-model'],
+      children: [link],
+    };
+    const nodeById = new Map<number, LayoutRoutePermissionNode>([
+      [10, { id: 10, children: [foreignGroup] }],
+      [11, foreignGroup],
+      [12, link],
+    ]);
+    const isRouteInLayout = (node: LayoutRoutePermissionNode) => node.layoutUids?.includes('admin-layout-model') ?? true;
+
+    expect(withAncestorIds([12], link, nodeById, isRouteInLayout)).toEqual([12]);
+  });
+
+  it('keeps a shared ancestor that another layout may still need', () => {
+    const link: LayoutRoutePermissionNode = { id: 12, parentId: 11, layoutUids: ['admin-layout-model'] };
+    const innerGroup: LayoutRoutePermissionNode = {
+      id: 11,
+      parentId: 10,
+      layoutUids: ['admin-layout-model'],
+      children: [link],
+    };
+    const sharedRoot: LayoutRoutePermissionNode = {
+      id: 10,
+      layoutUids: ['admin-layout-model', 'mobile-layout-model'],
+      children: [innerGroup],
+    };
+    const nodeById = new Map<number, LayoutRoutePermissionNode>([
+      [10, sharedRoot],
+      [11, innerGroup],
+      [12, link],
+    ]);
+    const canRevoke = (node: LayoutRoutePermissionNode) => (node.layoutUids?.length ?? 0) <= 1;
+
+    expect(withoutEmptyAncestorIds([10, 11], link, nodeById, canRevoke)).toEqual([10]);
+  });
 });

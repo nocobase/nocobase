@@ -122,20 +122,37 @@ export interface LayoutRoutePermissionNode {
   id: number;
   parentId?: number;
   readOnly?: boolean;
+  hidden?: boolean;
+  layoutUids?: string[];
   children?: LayoutRoutePermissionNode[];
+}
+
+export type LayoutRoutePermissionPredicate<T> = (node: T) => boolean;
+
+const alwaysTraversable = () => true;
+
+export function normalizeLayoutUids(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => (typeof item === 'string' ? item : (item as { uid?: string } | undefined)?.uid))
+    .filter((uid): uid is string => typeof uid === 'string' && uid.length > 0);
 }
 
 export function withAncestorIds<T extends LayoutRoutePermissionNode>(
   ids: number[],
   node: T,
   nodeById: Map<number, T>,
+  canTraverse: LayoutRoutePermissionPredicate<T> = alwaysTraversable,
 ): number[] {
   const nextIds = [...ids];
   let parentId = node.parentId;
   while (parentId) {
     const parent = nodeById.get(parentId);
-    // Read-only ancestors (pages and their child routes) are kept by applyPermissionChanges
-    if (!parent || parent.readOnly) {
+    // Read-only ancestors (pages and their child routes) are kept by applyPermissionChanges. Ancestors restored by the
+    // tree query may belong to another layout or be hidden, so only cascade into nodes that match the current view.
+    if (!parent || parent.readOnly || !canTraverse(parent)) {
       break;
     }
     if (!nextIds.includes(parentId)) {
@@ -150,12 +167,13 @@ export function withoutEmptyAncestorIds<T extends LayoutRoutePermissionNode>(
   ids: number[],
   node: T,
   nodeById: Map<number, T>,
+  canTraverse: LayoutRoutePermissionPredicate<T> = alwaysTraversable,
 ): number[] {
   let nextIds = ids;
   let parentId = node.parentId;
   while (parentId) {
     const parent = nodeById.get(parentId);
-    if (!parent || parent.readOnly) {
+    if (!parent || parent.readOnly || !canTraverse(parent)) {
       break;
     }
     const children = parent.children ?? [];

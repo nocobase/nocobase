@@ -556,12 +556,85 @@ describe('plugin-ui-layout route permissions', () => {
     await waitFor(() => expect(resource.roleRoutesRemove).toHaveBeenCalledWith({ values: [20, 21, 1] }));
     expect(resource.getSelectedRouteIds()).toEqual([]);
   });
+
+  it('does not grant an ancestor that belongs to another layout', async () => {
+    const resource = createRoutePermissionResources({
+      selectedRouteIds: [],
+      desktopRoutes: [
+        {
+          id: 20,
+          title: 'Mobile-only group',
+          type: 'group',
+          uiLayouts: [MOBILE_LAYOUT_UID],
+          children: [{ id: 21, title: 'Desktop page', type: 'flowPage', uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT.uid] }],
+        },
+      ],
+    });
+    flowMocks.context = resource.context;
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(resource.roleRoutesList).toHaveBeenCalled());
+    await act(async () => {
+      await userEvent.type(screen.getByPlaceholderText('Search routes'), 'Desktop page');
+    });
+    const desktopPage = await screen.findByRole('checkbox', { name: 'Allow access to Desktop page' });
+    await waitFor(() => expect(desktopPage).not.toBeDisabled());
+
+    await act(async () => {
+      await userEvent.click(desktopPage);
+    });
+
+    await waitFor(() => expect(resource.roleRoutesAdd).toHaveBeenCalledWith({ values: [21] }));
+    expect(resource.getSelectedRouteIds()).toEqual([21]);
+  });
+
+  it('keeps a shared ancestor that another layout still needs', async () => {
+    const resource = createRoutePermissionResources({
+      selectedRouteIds: [20, 21],
+      desktopRoutes: [
+        {
+          id: 20,
+          title: 'Shared group',
+          type: 'group',
+          uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT.uid, MOBILE_LAYOUT_UID],
+          children: [{ id: 21, title: 'Desktop page', type: 'flowPage', uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT.uid] }],
+        },
+      ],
+    });
+    flowMocks.context = resource.context;
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(resource.roleRoutesList).toHaveBeenCalled());
+    await act(async () => {
+      await userEvent.type(screen.getByPlaceholderText('Search routes'), 'Desktop page');
+    });
+    const desktopPage = await screen.findByRole('checkbox', { name: 'Allow access to Desktop page' });
+    await waitFor(() => expect(desktopPage).toBeChecked());
+
+    await act(async () => {
+      await userEvent.click(desktopPage);
+    });
+
+    await waitFor(() => expect(resource.roleRoutesRemove).toHaveBeenCalledWith({ values: [21] }));
+    expect(resource.getSelectedRouteIds()).toEqual([20]);
+  });
 });
 
 interface TestRoute {
   id: number;
   title: string;
   type: string;
+  uiLayouts?: string[];
   children?: TestRoute[];
 }
 

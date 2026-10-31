@@ -19,6 +19,7 @@ import { useT } from '../locale';
 import {
   createDesktopRouteLayoutPermissionFilter,
   getLayoutScopedPermissionChanges,
+  normalizeLayoutUids,
   withAncestorIds,
   withoutEmptyAncestorIds,
 } from './layoutAwareDesktopRoutesPermissions';
@@ -54,6 +55,7 @@ interface DesktopRouteRecord {
   hidden?: boolean;
   parentId?: number;
   options?: DesktopRouteOptions;
+  uiLayouts?: Array<string | { uid?: string }>;
   children?: DesktopRouteRecord[];
 }
 
@@ -69,6 +71,7 @@ interface RoutePermissionRecord {
   hidden?: boolean;
   routePath?: string;
   parentId?: number;
+  layoutUids: string[];
   children?: RoutePermissionRecord[];
 }
 
@@ -111,9 +114,10 @@ function toRouteItems(
       readOnly,
       type: item.type,
       title: item.title,
-      hidden: item.hidden,
+      hidden: item.hidden === true,
       routePath: toRoutePath(item.options),
       parentId,
+      layoutUids: normalizeLayoutUids(item.uiLayouts),
       children: children.length ? children : undefined,
     };
   });
@@ -215,6 +219,7 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
         tree: true,
         sort: 'sort',
         paginate: false,
+        appends: ['uiLayouts'],
         filter: layoutFilter,
       });
       return toDesktopRoutePayload(response?.data).data ?? [];
@@ -226,14 +231,31 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
   );
   const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
-  const allIds = useMemo(() => getEditableRouteIds(routeItems), [routeItems]);
+  const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
+  // Routes restored as path ancestors can belong to another layout or be hidden; keep automatic grants inside this view
+  const isRouteInLayout = useMemoizedFn((item: RoutePermissionRecord) =>
+    item.layoutUids.length === 0 || item.layoutUids.includes(props.layoutUid),
+  );
+  const canCascadeTo = useMemoizedFn(
+    (item: RoutePermissionRecord) => item.hidden !== true && isRouteInLayout(item),
+  );
+  const canRevokeFrom = useMemoizedFn(
+    (item: RoutePermissionRecord) => canCascadeTo(item) && item.layoutUids.length <= 1,
+  );
+  const allIds = useMemo(
+    () =>
+      getEditableRouteIds(routeItems).filter((id) => {
+        const item = itemById.get(id);
+        return !item || canCascadeTo(item);
+      }),
+    [canCascadeTo, itemById, routeItems],
+  );
   const displayRouteItems = useMemo(() => removeHiddenRouteItems(routeItems), [routeItems]);
   const visibleRouteItems = useMemo(
     () => filterRouteItems(displayRouteItems, routeKeyword, t),
     [displayRouteItems, routeKeyword, t],
   );
   const visibleIds = useMemo(() => getEditableRouteIds(visibleRouteItems), [visibleRouteItems]);
-  const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
   const visibleIdsWithDescendants = useMemo(
     () => getRouteIdsWithAllDescendants(visibleRouteItems, itemById),
     [itemById, visibleRouteItems],
@@ -351,8 +373,11 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
 
-    // Check adds the ancestor chain, uncheck prunes empty ones; read-only ancestors stay with applyPermissionChanges
-    nextIds = checked ? withoutEmptyAncestorIds(nextIds, item, itemById) : withAncestorIds(nextIds, item, itemById);
+    // Check adds the ancestor chain, uncheck prunes empty ones; read-only ancestors stay with applyPermissionChanges.
+    // Hidden, out-of-layout and shared ancestors are never granted or revoked automatically by this viewer.
+    nextIds = checked
+      ? withoutEmptyAncestorIds(nextIds, item, itemById, canRevokeFrom)
+      : withAncestorIds(nextIds, item, itemById, canCascadeTo);
 
     await applyPermissionChanges(nextIds);
   });

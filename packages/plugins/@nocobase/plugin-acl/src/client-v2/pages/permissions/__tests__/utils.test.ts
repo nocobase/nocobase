@@ -46,6 +46,22 @@ describe('withAncestorIds', () => {
     const nodeById = new Map<number, RoutePermissionNode>();
     expect(withAncestorIds([99], { id: 99, parentId: 404 }, nodeById)).toEqual([99]);
   });
+
+  it('does not cascade into an ancestor restored by the tree query that the filter hides', () => {
+    const tab: RoutePermissionNode = { id: 13, parentId: 12 };
+    const page: RoutePermissionNode = { id: 12, parentId: 11, children: [tab] };
+    const group: RoutePermissionNode = { id: 11, parentId: 9, children: [page] };
+    const hiddenRoot: RoutePermissionNode = { id: 9, hidden: true, children: [group] };
+    const nodeById = new Map<number, RoutePermissionNode>([
+      [9, hiddenRoot],
+      [11, group],
+      [12, page],
+      [13, tab],
+    ]);
+    const isRouteVisible = (node: RoutePermissionNode) => node.hidden !== true;
+
+    expect(withAncestorIds([13], tab, nodeById, isRouteVisible)).toEqual([13, 12, 11]);
+  });
 });
 
 describe('withoutEmptyAncestorIds', () => {
@@ -57,5 +73,21 @@ describe('withoutEmptyAncestorIds', () => {
   it('stops at the first ancestor that still has a selected child', () => {
     const { tab, nodeById } = createRouteTree();
     expect(withoutEmptyAncestorIds([12, 11, 10, 14], tab, nodeById)).toEqual([11, 10, 14]);
+  });
+
+  it('stops before a hidden ancestor instead of revoking it', () => {
+    const tab: RoutePermissionNode = { id: 13, parentId: 12 };
+    const page: RoutePermissionNode = { id: 12, parentId: 11, children: [tab] };
+    const group: RoutePermissionNode = { id: 11, parentId: 9, children: [page] };
+    const hiddenRoot: RoutePermissionNode = { id: 9, hidden: true, children: [group] };
+    const nodeById = new Map<number, RoutePermissionNode>([
+      [9, hiddenRoot],
+      [11, group],
+      [12, page],
+      [13, tab],
+    ]);
+    const isRouteVisible = (node: RoutePermissionNode) => node.hidden !== true;
+
+    expect(withoutEmptyAncestorIds([12, 11], tab, nodeById, isRouteVisible)).toEqual([]);
   });
 });

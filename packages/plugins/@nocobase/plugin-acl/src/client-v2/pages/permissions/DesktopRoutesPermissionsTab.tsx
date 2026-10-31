@@ -33,6 +33,7 @@ interface RoutePermissionRecord {
   id: number;
   title?: string;
   parentId?: number;
+  hidden?: boolean;
   children?: RoutePermissionRecord[];
 }
 
@@ -46,6 +47,7 @@ function toRouteItems(items: DesktopRouteRecord[] | undefined, parentId?: number
       id: item.id,
       title: item.title,
       parentId,
+      hidden: item.hidden === true,
       children: children.length ? children : undefined,
     };
   });
@@ -114,7 +116,10 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
 
   const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
-  const allIds = useMemo(() => getAllChildrenIds(routeItems), [routeItems]);
+  const allIds = useMemo(
+    () => flattenItems(routeItems).filter((item) => item.hidden !== true).map((item) => item.id),
+    [routeItems],
+  );
   const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
   const roleRoutesResource = role ? ctx.api.resource('roles.desktopRoutes', role.name) : null;
 
@@ -140,6 +145,8 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
     },
   );
 
+  const isRouteVisible = useMemoizedFn((item: RoutePermissionRecord) => item.hidden !== true);
+
   const setAll = useMemoizedFn(async () => {
     if (!roleRoutesResource) {
       return;
@@ -161,8 +168,11 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
 
-    // Checking adds the whole ancestor chain; unchecking prunes newly empty ancestors (v1 parity)
-    nextIds = checked ? withoutEmptyAncestorIds(nextIds, item, itemById) : withAncestorIds(nextIds, item, itemById);
+    // Checking adds the whole ancestor chain; unchecking prunes newly empty ancestors (v1 parity). Ancestors restored by
+    // the tree query may not match the request filter (hidden), so the cascade only walks visible nodes.
+    nextIds = checked
+      ? withoutEmptyAncestorIds(nextIds, item, itemById, isRouteVisible)
+      : withAncestorIds(nextIds, item, itemById, isRouteVisible);
 
     setSelectedIds(nextIds);
     if (checked) {
