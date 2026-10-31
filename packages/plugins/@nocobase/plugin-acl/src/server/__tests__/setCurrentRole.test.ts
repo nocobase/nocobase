@@ -161,6 +161,64 @@ describe('role', () => {
     expect(ctx.state.currentRoles).toHaveLength(2);
   });
 
+  it('should honor the role bound to an api key when role mode is only-use-union', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'r1',
+      },
+    });
+    const user = await db.getRepository('users').create({
+      values: {
+        name: 'u1',
+        roles: ['member', 'r1'],
+      },
+    });
+    await db.getRepository('systemSettings').update({
+      filter: { id: 1 },
+      values: {
+        roleMode: SystemRoleMode.onlyUseUnion,
+      },
+    });
+    ctx.state.currentUser = user;
+    ctx.state.authTokenRole = 'r1';
+    ctx.headers = {};
+    ctx.get = function (name) {
+      if (name === 'X-Role') {
+        return 'r1';
+      }
+    };
+
+    await setCurrentRole(ctx, () => {});
+
+    expect(ctx.state.currentRole).toBe('r1');
+    expect(ctx.state.currentRoles).toEqual(['r1']);
+    expect(ctx.headers['x-role']).toBe('r1');
+  });
+
+  it('should reject an api key whose role no longer belongs to the user', async () => {
+    await db.getRepository('systemSettings').update({
+      filter: { id: 1 },
+      values: {
+        roleMode: SystemRoleMode.onlyUseUnion,
+      },
+    });
+    ctx.state.currentUser = await db.getRepository('users').findOne({
+      appends: ['roles'],
+    });
+    ctx.state.authTokenRole = 'not-exists';
+    ctx.get = function () {
+      return '';
+    };
+    const throwFn = vi.fn();
+    ctx.throw = throwFn;
+    await setCurrentRole(ctx, () => {});
+    expect(throwFn).lastCalledWith(401, {
+      code: 'ROLE_NOT_FOUND_FOR_USER',
+      message: 'The role does not belong to the user',
+    });
+    expect(ctx.state.currentRoles).not.toBeDefined();
+  });
+
   it('should throw error', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],

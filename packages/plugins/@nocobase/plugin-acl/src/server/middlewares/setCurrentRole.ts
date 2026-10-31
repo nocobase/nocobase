@@ -116,6 +116,23 @@ export async function setCurrentRole(ctx: Context, next) {
   roles.forEach((role) => rolesMap.set(role.name, role));
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
+  // A credential bound to a single role (API key) must be evaluated with that role only.
+  // Without this, role mode `only-use-union` would silently promote a key issued for a
+  // restricted role to the union of its owner's roles.
+  const authTokenRole = ctx.state.authTokenRole;
+  if (authTokenRole) {
+    const boundRole = userRoles.find((role) => role.name === authTokenRole)?.name;
+    if (!boundRole) {
+      return ctx.throw(401, {
+        code: 'ROLE_NOT_FOUND_FOR_USER',
+        message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
+      });
+    }
+    ctx.state.currentRole = boundRole;
+    ctx.state.currentRoles = [boundRole];
+    ctx.headers['x-role'] = boundRole;
+    return next();
+  }
   const systemSettingsRepository = mainDb?.getRepository('systemSettings');
   const systemSettings = systemSettingsRepository
     ? ((await cache.wrap(`app:systemSettings`, () =>
