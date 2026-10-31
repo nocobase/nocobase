@@ -16,6 +16,7 @@ import { uniq } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import type { PermissionTabProps, Role } from '../../registries';
+import { withAncestorIds, withoutEmptyAncestorIds } from './utils';
 
 interface DesktopRoutePayload {
   data?: DesktopRouteRecord[];
@@ -160,16 +161,8 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
 
-    if (item.parentId) {
-      const parent = itemById.get(item.parentId);
-      const selectedSibling = parent?.children?.some((child) => nextIds.includes(child.id));
-      if (checked && !selectedSibling) {
-        nextIds = nextIds.filter((id) => id !== item.parentId);
-      }
-      if (!checked && !nextIds.includes(item.parentId)) {
-        nextIds.push(item.parentId);
-      }
-    }
+    // Checking adds the whole ancestor chain; unchecking prunes newly empty ancestors (v1 parity)
+    nextIds = checked ? withoutEmptyAncestorIds(nextIds, item, itemById) : withAncestorIds(nextIds, item, itemById);
 
     setSelectedIds(nextIds);
     if (checked) {

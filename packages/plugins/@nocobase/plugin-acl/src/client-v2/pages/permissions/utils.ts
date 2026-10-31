@@ -43,3 +43,47 @@ export function mergeRoleSnippets(role: Role, snippets: string[]): Role {
 export function getSettingsChildren(item: PluginSettingsPageType): PluginSettingsPageType[] {
   return item.children ? [...item.children] : [];
 }
+
+export interface RoutePermissionNode {
+  id: number;
+  parentId?: number;
+  children?: RoutePermissionNode[];
+}
+
+export function withAncestorIds<T extends RoutePermissionNode>(
+  ids: number[],
+  node: T,
+  nodeById: Map<number, T>,
+): number[] {
+  const nextIds = [...ids];
+  let parentId = node.parentId;
+  while (parentId) {
+    const parent = nodeById.get(parentId);
+    if (!parent) {
+      break;
+    }
+    if (!nextIds.includes(parentId)) {
+      nextIds.push(parentId);
+    }
+    parentId = parent.parentId;
+  }
+  return nextIds;
+}
+
+export function withoutEmptyAncestorIds<T extends RoutePermissionNode>(
+  ids: number[],
+  node: T,
+  nodeById: Map<number, T>,
+): number[] {
+  let nextIds = ids;
+  let parentId = node.parentId;
+  while (parentId) {
+    const children = nodeById.get(parentId)?.children ?? [];
+    if (children.some((child) => nextIds.includes(child.id))) {
+      break;
+    }
+    nextIds = nextIds.filter((id) => id !== parentId);
+    parentId = nodeById.get(parentId)?.parentId;
+  }
+  return nextIds;
+}
