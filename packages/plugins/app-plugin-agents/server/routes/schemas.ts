@@ -1687,6 +1687,7 @@ const availability = z.object({
 });
 
 const conversationSummaryObject = z.object({
+  links: z.array(ConversationLinkSchema).optional(),
   projectId: z.string().nullable().optional(),
   execution: z
     .object({

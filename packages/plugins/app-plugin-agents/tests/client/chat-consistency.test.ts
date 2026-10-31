@@ -52,7 +52,7 @@ it('discards an older page that returns after an authoritative refresh begins', 
   const messages = vi.fn().mockImplementation(async (_id, query) => {
     if (query?.pageToken) return old.promise;
     if (query?.ids) return page([message(10)], 11);
-    return page([message(11)], 11);
+    return page([message(10), message(11)], 11);
   });
   const c = controller({ messages, conversation: async () => detail('fresh') });
   c.dispatch('c', { type: 'page', page: page([message(10)], 10, 'older') });
@@ -60,9 +60,7 @@ it('discards an older page that returns after an authoritative refresh begins', 
   await c.refresh('c');
   old.resolve(page([message(1)], 11));
   await older;
-  expect(messages.mock.calls.map((call) => call[1])).toContainEqual({
-    ids: 'm10',
-  });
+  expect(messages.mock.calls.map((call) => call[1])).toContainEqual({});
   expect(c.history('c').state.items.map((m) => m.metadata?.seq)).toEqual([
     10, 11,
   ]);

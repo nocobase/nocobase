@@ -481,6 +481,7 @@ export function createConversationService(
     conn: DatabaseConnection,
     records: readonly ConversationRecord[],
   ): Promise<ConversationSummary[]> {
+    const linked = await links.summaries(conn, records);
     const agents = new Map<string, Agent | null>();
     for (const record of records)
       for (const id of [
@@ -506,6 +507,7 @@ export function createConversationService(
     return Promise.all(
       records.map(async (record) => ({
         id: record.id,
+        links: linked.get(record.id) ?? [],
         title: record.title,
         titleSource: record.titleSource,
         category: record.category,

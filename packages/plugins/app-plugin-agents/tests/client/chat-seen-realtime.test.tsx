@@ -56,7 +56,7 @@ async function fixture() {
     detail: vi.fn(async () => detail),
     links: vi.fn(async () => []),
     usage: vi.fn(async () => ({})),
-    list: vi.fn(async () => []),
+    list: vi.fn(async () => [{ ...detail }]),
   };
   const client = agentsQueryClient();
   const key = chatKeys.conversation('c1');
@@ -123,7 +123,11 @@ it.each(['before', 'after'])(
     });
     if (order === 'after') f.seen(5);
     await f.settle();
-    expect(f.reads.list).toHaveBeenCalledTimes(2);
+    expect(f.reads.list).toHaveBeenCalledTimes(1);
+    expect(
+      f.client.getQueryData<ConversationDetail[]>(chatKeys.list({}))?.[0]
+        ?.seenSeq,
+    ).toBe(5);
     expect(f.reads.detail).toHaveBeenCalledTimes(1);
     expect(f.reads.links).toHaveBeenCalledTimes(1);
     expect(f.reads.usage).toHaveBeenCalledTimes(1);
@@ -136,7 +140,11 @@ it('refreshes another tab’s exact detail without its links or usage', async ()
   f.update(5);
   f.seen(5);
   await f.settle();
-  expect(f.reads.list).toHaveBeenCalledTimes(2);
+  expect(f.reads.list).toHaveBeenCalledTimes(1);
+  expect(
+    f.client.getQueryData<ConversationDetail[]>(chatKeys.list({}))?.[0]
+      ?.seenSeq,
+  ).toBe(5);
   expect(f.reads.detail).toHaveBeenCalledTimes(2);
   expect(f.reads.links).toHaveBeenCalledTimes(1);
   expect(f.reads.usage).toHaveBeenCalledTimes(1);

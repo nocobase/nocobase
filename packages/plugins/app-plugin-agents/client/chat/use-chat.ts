@@ -25,7 +25,6 @@ import {
   type UseInfiniteQueryResult,
   type UseMutationResult,
   type UseQueryResult,
-  type QueryClient,
 } from '@tanstack/react-query';
 import {
   useCallback,
@@ -59,7 +58,6 @@ import { agentsQueryClient } from '../query.js';
 import { useChatController, useChatStream } from './controller.js';
 import { ChatApi } from './api.js';
 import { chatKeys } from './keys.js';
-import { coalescedInvalidation } from './coalesced-invalidation.js';
 import {
   EMPTY_MESSAGES,
   messagesReducer,
@@ -152,6 +150,7 @@ export function useChatModels(enabled = true): UseQueryResult<ModelService[]> {
 /** One conversation; polled while its run is open. */
 export function useConversation(
   conversationId: string | null,
+  options: { passive?: boolean } = {},
 ): UseQueryResult<ConversationDetail> {
   const controller = useChatController();
   const ready = useRealtimeReadiness([CONVERSATIONS_TOPIC]);
@@ -167,11 +166,15 @@ export function useConversation(
         return detail;
       },
       enabled: ready && conversationId !== null,
+      ...(options.passive
+        ? { refetchOnMount: false, refetchOnWindowFocus: false }
+        : {}),
       placeholderData: noPlaceholder,
       retry: notRetriedOnClientErrors,
       refetchInterval: (query) =>
-        query.state.data?.run ||
-        query.state.data?.execution?.status === 'running'
+        !options.passive &&
+        (query.state.data?.run ||
+          query.state.data?.execution?.status === 'running')
           ? CHAT_POLL_MS
           : false,
     },
@@ -188,13 +191,14 @@ export type ConversationListPages = InfiniteData<
 /** The viewer's conversations matching `query`, last message first; `fetchNextPage()` loads the next page. */
 export function useConversationList(
   query: ConversationListQuery,
+  enabled = true,
 ): UseInfiniteQueryResult<ConversationListPages> {
   const api = useChatApi();
   const ready = useRealtimeReadiness([CONVERSATIONS_TOPIC]);
   return useInfiniteQuery(
     {
       queryKey: chatKeys.list(query),
-      enabled: ready,
+      enabled: ready && enabled,
       queryFn: ({ pageParam }) =>
         api.conversations({
           ...query,
@@ -212,36 +216,13 @@ export function useConversationList(
  * Keeps the conversation details and lists current from the per-user topic. Mounted once, by `ChatProvider` while the
  * chat is available; after a reconnect everything is refetched, since announcements were missed meanwhile.
  */
-const chatRefreshOwners = new WeakMap<
-  QueryClient,
-  { count: number; stale: ReturnType<typeof coalescedInvalidation> }
->();
-
 export function useChatRealtime(enabled: boolean): void {
   const queryClient = agentsQueryClient();
   const controller = useChatController();
-  const staleRef = useRef<ReturnType<typeof coalescedInvalidation> | undefined>(
-    undefined,
-  );
-  useEffect(() => {
-    let owner = chatRefreshOwners.get(queryClient);
-    if (!owner) {
-      owner = { count: 0, stale: coalescedInvalidation(queryClient) };
-      chatRefreshOwners.set(queryClient, owner);
-    }
-    owner.count++;
-    staleRef.current = owner.stale;
-    return () => {
-      if (--owner.count === 0) {
-        owner.stale.stop();
-        chatRefreshOwners.delete(queryClient);
-      }
-    };
-  }, [queryClient]);
   useRealtimeTopic(
     enabled ? RUNNERS_TOPIC : null,
     () => {
-      staleRef.current?.add(chatKeys.agents);
+      controller.invalidateQuery(chatKeys.agents);
     },
     true,
   );
@@ -249,11 +230,59 @@ export function useChatRealtime(enabled: boolean): void {
     enabled ? CONVERSATIONS_TOPIC : null,
     (payload) => {
       if (payload === undefined) {
-        staleRef.current?.add(chatKeys.all);
+        for (const query of queryClient
+          .getQueryCache()
+          .findAll({ queryKey: chatKeys.all })) {
+          const key = query.queryKey;
+          if (
+            key[2] === 'conversation' &&
+            key.length === 4 &&
+            controller.isWatching(String(key[3]))
+          )
+            continue;
+          controller.invalidateQuery(key, true);
+        }
+        controller.reconnect();
         return;
       }
       if (!isChatPayload(payload)) return;
-      staleRef.current?.add(chatKeys.lists);
+      const receipt =
+        payload.kind === 'conversation.changed' &&
+        typeof payload.seenSeq === 'number' &&
+        Number.isSafeInteger(payload.seenSeq) &&
+        payload.seenSeq >= 0;
+      if (receipt)
+        controller.observeReceipt(payload.conversationId, payload.seenSeq);
+      const watched = controller.isWatching(payload.conversationId);
+      const ownsSnapshot =
+        watched &&
+        queryClient
+          .getQueryCache()
+          .find({
+            queryKey: chatKeys.conversation(payload.conversationId),
+            exact: true,
+          })
+          ?.isActive();
+      if (
+        !receipt &&
+        !(watched && payload.kind === 'conversation.messageUpdated') &&
+        !(ownsSnapshot && payload.kind === 'conversation.changed')
+      )
+        controller.invalidateLists();
+      if (controller.isWatching(payload.conversationId)) {
+        if (payload.kind === 'conversation.messages')
+          void controller
+            .messagesChanged(payload.conversationId, payload.lastSeq)
+            .catch(() => {});
+        else if (payload.kind === 'conversation.messageUpdated')
+          controller.messageUpdated(
+            payload.conversationId,
+            payload.messageId,
+            payload.revision,
+          );
+        else if (payload.kind === 'conversation.historyReplaced')
+          controller.historyReplaced(payload);
+      }
       if (payload.kind === 'conversation.changed') {
         const key = chatKeys.conversation(payload.conversationId);
         const seenSeq = payload.seenSeq;
@@ -264,7 +293,7 @@ export function useChatRealtime(enabled: boolean): void {
         ) {
           const current = queryClient.getQueryData<ConversationDetail>(key);
           if ((current?.seenSeq ?? -1) >= seenSeq) return;
-          const refresh = () => staleRef.current?.add(key, true);
+          const refresh = () => controller.invalidateQuery(key, true);
           if (
             !controller.deferReadReceipt(
               payload.conversationId,
@@ -274,7 +303,7 @@ export function useChatRealtime(enabled: boolean): void {
           )
             refresh();
         } else {
-          staleRef.current?.add(key);
+          controller.invalidateQuery(key);
         }
       }
     },
@@ -311,37 +340,6 @@ export function useConversationMessages(
   const fetchNewer = useCallback(() => {
     if (conversationId) void controller.refresh(conversationId).catch(() => {});
   }, [controller, conversationId]);
-  useRealtimeTopic(
-    conversationId ? CONVERSATIONS_TOPIC : null,
-    (payload) => {
-      if (!conversationId) return;
-      if (payload === undefined) {
-        void controller
-          .refresh(conversationId)
-          .then(() => controller.resume(conversationId))
-          .catch(() => {});
-        return;
-      }
-      if (!isChatPayload(payload) || payload.conversationId !== conversationId)
-        return;
-      if (payload.kind === 'conversation.historyReplaced') {
-        controller.historyReplaced(payload);
-        return;
-      }
-      if (payload.kind === 'conversation.messageUpdated')
-        controller.messageUpdated(
-          conversationId,
-          payload.messageId,
-          payload.revision,
-        );
-      else if (
-        payload.kind === 'conversation.messages' &&
-        payload.lastSeq > controller.history(conversationId).loadedThrough
-      )
-        fetchNewer();
-    },
-    true,
-  );
   // One durable subscription/poll owner regardless of how many surfaces display this conversation.
   useEffect(
     () =>

@@ -263,8 +263,10 @@ it.each(['detail', 'reconcile'])(
             return f.state.detail;
           })
         : vi.spyOn(f.api, 'messages').mockImplementationOnce(async () => {
+            const items = [...f.state.messages],
+              lastSeq = f.state.lastSeq;
             await gate;
-            return f.api.messages('c1', { ids: 'm1' });
+            return { items, lastSeq, hasMore: false, nextCursor: null };
           });
     const refreshing = f.controller.refresh('c1');
     await vi.waitFor(() => expect(held).toHaveBeenCalledOnce());
