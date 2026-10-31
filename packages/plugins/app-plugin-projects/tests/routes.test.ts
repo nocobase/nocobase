@@ -1715,6 +1715,90 @@ describe('attachments over HTTP', () => {
     expect(h.stored.size).toBe(1);
   });
 
+  it('keeps uploads after a refused initial status and attaches them on retry', async () => {
+    const shot = await upload(
+      '/attachments',
+      new File([new Uint8Array([137, 80])], 'screenshot.png', {
+        type: 'image/png',
+      }),
+    );
+    const { data: file } = (await shot.json()) as { data: { id: string } };
+    const refused = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Broken',
+        statusKey: 'blocked',
+        attachmentIds: [file.id],
+      }),
+    });
+    expect(refused.status).toBe(400);
+    expect(await refused.json()).toMatchObject({
+      error: { reason: 'INVALID_STATUS' },
+    });
+    const created = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Broken',
+        statusKey: 'in_progress',
+        attachmentIds: [file.id],
+      }),
+    });
+    expect(created.status).toBe(201);
+    const { data: issue } = (await created.json()) as {
+      data: { identifier: string };
+    };
+    expect(issue.identifier).toBe('PM-1');
+    const listed = (await (
+      await call(`/issues/${issue.identifier}/attachments`, { role: 'member' })
+    ).json()) as { data: { id: string }[] };
+    expect(listed.data.map((item) => item.id)).toEqual([file.id]);
+    const again = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ title: 'Again', attachmentIds: [file.id] }),
+    });
+    expect(again.status).toBe(400);
+    expect(await again.json()).toMatchObject({
+      error: { reason: 'INVALID_ATTACHMENT', domain: 'projects' },
+    });
+  });
+
+  it('discards only unsent uploads, keeping one a new issue took meanwhile', async () => {
+    const send = async (name: string) => {
+      const response = await upload(
+        '/attachments',
+        new File([new Uint8Array([137, 80])], name, { type: 'image/png' }),
+      );
+      return ((await response.json()) as { data: { id: string } }).data.id;
+    };
+    const taken = await send('taken.png');
+    const unsent = await send('unsent.png');
+    // The create reached the server before the form, left, discarded its files.
+    const created = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ title: 'Raced', attachmentIds: [taken] }),
+    });
+    const { data: issue } = (await created.json()) as {
+      data: { identifier: string };
+    };
+    const discarded = await call('/attachments/discard', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ attachmentIds: [taken, unsent, 'nope'] }),
+    });
+    expect(discarded.status).toBe(204);
+    const listed = (await (
+      await call(`/issues/${issue.identifier}/attachments`, { role: 'member' })
+    ).json()) as { data: { id: string }[] };
+    expect(listed.data.map((item) => item.id)).toEqual([taken]);
+    expect(
+      (await call(`/attachments/${unsent}`, { role: 'member' })).status,
+    ).toBe(404);
+  });
+
   it('refuses a body that is not one file, and one over the limit', async () => {
     const empty = await router.request('/api/projects/attachments', {
       method: 'POST',
