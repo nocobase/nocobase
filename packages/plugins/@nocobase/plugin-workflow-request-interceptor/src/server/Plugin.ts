@@ -17,6 +17,16 @@ export class PluginWorkflowRequestInterceptorServer extends Plugin {
     const workflowPlugin = this.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
     workflowPlugin.registerTrigger('request-interception', RequestInterceptionTrigger);
   }
+
+  async afterStart() {
+    const workflowPlugin = this.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
+    const workflows = await this.db.getRepository('workflows').find({
+      filter: { type: 'request-interception', enabled: true, current: true },
+    });
+    for (const workflow of workflows) {
+      workflowPlugin.toggle(workflow, true, { silent: true });
+    }
+  }
 }
 
 export default PluginWorkflowRequestInterceptorServer;
