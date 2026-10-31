@@ -55,7 +55,7 @@ describe('deleting conversations', () => {
         workDir: '/work/chat',
         fingerprint: 'f',
         poisoned: false,
-        updatedAt: new Date().toISOString(),
+        updatedAt: h.clock.now().toISOString(),
       },
     });
 
@@ -113,7 +113,7 @@ describe('deleting conversations', () => {
             runId: run.id,
             workDir: '/work/chat',
             unpushed: false,
-            lastUsedAt: new Date().toISOString(),
+            lastUsedAt: h.clock.now().toISOString(),
           },
         ],
       },
@@ -121,7 +121,9 @@ describe('deleting conversations', () => {
     expect(report.status).toBe(200);
     expect(report.body.data.remove).toEqual([run.id]);
     // Once ended, the run and what it recorded go with the next cleanup.
-    expect(await h.services.conversations.purgeArchived(30)).toBe(0);
+    expect(
+      await h.services.conversations.purgeArchived(30, h.clock.now()),
+    ).toBe(0);
     expect(
       await conn.repository('agRuns').findOne({ filter: { id: run.id } }),
     ).toBeUndefined();
@@ -144,10 +146,12 @@ describe('deleting conversations', () => {
     const repo = h.database.connection().repository('agConversations');
     await repo.updateMany({
       filter: { id: old },
-      values: { archivedAt: new Date(Date.now() - 40 * 86_400_000) },
+      values: {
+        archivedAt: new Date(h.clock.now().getTime() - 40 * 86_400_000),
+      },
     });
-    expect(await conversations.purgeArchived(0)).toBe(0);
-    expect(await conversations.purgeArchived(30)).toBe(1);
+    expect(await conversations.purgeArchived(0, h.clock.now())).toBe(0);
+    expect(await conversations.purgeArchived(30, h.clock.now())).toBe(1);
     expect(await repo.findOne({ filter: { id: old } })).toBeUndefined();
     expect(await repo.findOne({ filter: { id: recent } })).not.toBeUndefined();
     expect(await repo.findOne({ filter: { id: open } })).not.toBeUndefined();
