@@ -72,6 +72,7 @@ import { displayPath } from '../lib/paths.js';
 import { byIcon, linkIcon, linkNeedsYou } from '../lib/tones.js';
 import { StatusIcon } from './status-icon.js';
 import { WaitingCount } from './waiting-count.js';
+import { useSessionsLayoutContext } from '../sessions-layout.js';
 import { foldTranscript, type TranscriptItem } from '../transcript.js';
 import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
@@ -123,13 +124,14 @@ export function SessionView({
       viewport.removeEventListener('scroll', fit);
     };
   }, [session.data?.id]);
-  // Beside a full-page conversation on a wide screen, over it on narrower screens, and inside an embedded sidebar.
-  const [details, setDetails] = useState(
-    () =>
-      !surface.panel &&
-      (typeof window === 'undefined' ||
-        window.matchMedia('(min-width: 80rem)').matches),
-  );
+  // On the page, whether the details are open and where they go are the layout's (`sessions-layout.ts`); an embedded
+  // sidebar has no layout, and keeps them closed until asked for, inside it.
+  const pageLayout = useSessionsLayoutContext();
+  const layout = surface.panel ? null : pageLayout;
+  const [ownDetails, setOwnDetails] = useState(false);
+  const details = layout ? layout.detailsOpen : ownDetails;
+  const setDetails = layout ? layout.setDetailsOpen : setOwnDetails;
+  const detailsBeside = layout?.right === 'column';
   const items = useMemo(
     () => foldTranscript(transcript.data ?? []),
     [transcript.data],
@@ -182,13 +184,10 @@ export function SessionView({
             else if (!panel.openSummary()) setDetails(true);
           }}
         />
-        {showDetails && !surface.panel && (
+        {showDetails && !surface.panel && !detailsBeside && (
           <div
             aria-hidden
-            className={cn(
-              'absolute inset-0 z-40 bg-black/30',
-              !surface.panel && 'xl:hidden',
-            )}
+            className='absolute inset-0 z-40 bg-black/30'
             onClick={() => setDetails(false)}
           />
         )}
@@ -198,6 +197,7 @@ export function SessionView({
             computer={computer}
             items={items}
             inline={surface.panel}
+            beside={detailsBeside}
             onClose={() => setDetails(false)}
           />
         )}
@@ -905,6 +905,7 @@ function Details({
   computer,
   items,
   inline,
+  beside,
   onClose,
 }: {
   readonly session: Session;
@@ -912,6 +913,8 @@ function Details({
   readonly items: readonly TranscriptItem[];
   /** Inside the host's sidebar, without covering the main page. */
   readonly inline: boolean;
+  /** A column beside the conversation; otherwise a sheet over it, closed from its own header. */
+  readonly beside: boolean;
   readonly onClose: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
@@ -931,14 +934,16 @@ function Details({
         'bg-background overflow-y-auto',
         inline
           ? 'max-h-[50%] min-h-0 shrink-0 border-t'
-          : 'absolute inset-y-0 right-0 z-50 w-[min(100%,22rem)] border-l shadow-xl xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none',
+          : beside
+            ? 'w-[296px] shrink-0 border-l'
+            : 'absolute inset-y-0 right-0 z-50 w-[min(100%,22rem)] border-l shadow-xl',
       )}
       aria-label={t('session.details')}
     >
       <div
         className={cn(
           'flex items-center justify-between border-b px-5 py-3',
-          !inline && 'xl:hidden',
+          !inline && beside && 'hidden',
         )}
       >
         <h2 className='text-[15px] font-semibold'>{t('session.details')}</h2>

@@ -7,7 +7,7 @@ import {
 } from '../../client/sessions-layout.js';
 
 describe('My sessions layout', () => {
-  it('opens the details by default whenever they fit as a column, folding the list to a rail first', () => {
+  it('adds the regions as the width grows: the conversation, then the list, then the details', () => {
     expect(breakpointOf(1279)).toBe('md');
     expect(breakpointOf(1280)).toBe('lg');
     expect(breakpointOf(1599)).toBe('lg');
@@ -27,17 +27,36 @@ describe('My sessions layout', () => {
       detailsOpen: true,
       right: 'column',
     });
-    // 900 - 264 - 296 < 420 but 900 - 48 - 296 >= 420: the list folds to make room.
-    expect(sessionsLayout(900, {}, false)).toEqual({
-      breakpoint: 'md',
-      list: 'rail',
+    // 980 - 264 - 296 = 420: exactly where all three fit.
+    expect(sessionsLayout(980, {}, false)).toMatchObject({
+      list: 'column',
       detailsOpen: true,
       right: 'column',
     });
-    expect(sessionsLayout(768, {}, false)).toMatchObject({
-      list: 'rail',
-      detailsOpen: true,
+    // Just below it the list keeps its place and the details wait.
+    expect(sessionsLayout(979, {}, false)).toMatchObject({
+      list: 'column',
+      detailsOpen: false,
+    });
+    expect(sessionsLayout(900, {}, false)).toEqual({
+      breakpoint: 'md',
+      list: 'column',
+      detailsOpen: false,
       right: 'column',
+    });
+    // 684 - 264 = 420: exactly where the list fits beside the conversation.
+    expect(sessionsLayout(684, {}, false)).toMatchObject({
+      list: 'column',
+      detailsOpen: false,
+    });
+    expect(sessionsLayout(683, {}, false)).toMatchObject({
+      list: 'rail',
+      detailsOpen: false,
+    });
+    // Folding the list by hand leaves the details as they were: it does not open them.
+    expect(sessionsLayout(900, { list: 'folded' }, false)).toMatchObject({
+      list: 'rail',
+      detailsOpen: false,
     });
     // With the list kept unfolded by hand, the details open only where they fit beside it too.
     expect(sessionsLayout(900, { list: 'unfolded' }, false)).toMatchObject({
