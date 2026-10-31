@@ -49,6 +49,24 @@ Protokol transport http mendukung dua cara transport: Streamable dan SSE, Stream
 
 ![20260323103906](https://static-docs.nocobase.com/20260323103906.png)
 
+#### Contoh: Parallel Search
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) menyediakan pencarian web publik dan ekstraksi konten halaman tanpa akun Parallel atau kunci API. Akses gratis memiliki batas frekuensi permintaan.
+
+Tambahkan layanan dengan nilai berikut:
+
+| Kolom     | Nilai                            |
+| --------- | -------------------------------- |
+| Nama      | `parallel-search`                |
+| Judul     | `Parallel Search`                |
+| Transport | `HTTP (Streamable)`              |
+| URL       | `https://search.parallel.ai/mcp` |
+| Header    | Biarkan kosong                   |
+
+Jalankan tes ketersediaan, simpan layanan, lalu gunakan `Lihat` untuk memastikan `web_search` dan `web_fetch` tercantum. Alat ini menggunakan `Ask` secara default; pertahankan pengaturan ini untuk mengonfirmasi setiap panggilan, atau pilih `Allow` agar Karyawan AI dapat memanggilnya langsung saat diperlukan.
+
+Saat layanan diaktifkan, Karyawan AI dapat menggunakan alat ini dalam percakapan. Panggilan alat mengirim kueri, URL yang diminta, serta tujuan atau konteks yang diberikan ke Parallel. Untuk berhenti menggunakannya, nonaktifkan layanan ini dalam daftar layanan MCP.
+
 ### Test Ketersediaan
 
 Saat menambahkan dan mengedit layanan MCP, setelah memasukkan informasi konfigurasi MCP dapat melakukan test ketersediaan terhadap layanan MCP, saat informasi konfigurasi MCP lengkap dan benar serta layanan MCP tersedia, akan mengembalikan informasi test ketersediaan layanan MCP berhasil.
