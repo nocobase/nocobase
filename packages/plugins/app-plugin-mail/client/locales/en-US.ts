@@ -40,6 +40,13 @@ const enUS = {
     refresh: 'Refresh',
   },
   workspace: {
+    imapSourceRequired:
+      'Open the source folder before moving or deleting this message.',
+    imapTrashMissing: 'This account has no Trash folder. Use your mail client.',
+    deleteUnsupported:
+      'This account does not support deletion. Use your mail client.',
+    imapScheduled: 'Cancel the scheduled delivery before deleting this draft.',
+
     senderLabel: 'From',
     attachmentNumber: 'Attachment {{number}}',
     pendingDelivery:
