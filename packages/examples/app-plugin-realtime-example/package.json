@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-realtime-example",
   "displayName": "Realtime Example App Plugin",
   "description": "Business realtime examples for collaborative tasks, personal notifications, background CSV exports, and a subscription capability lab.",
-  "version": "0.1.0-beta.12",
+  "version": "0.1.0-beta.13",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

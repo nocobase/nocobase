@@ -1,5 +1,13 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 36f61d0: Distinguish workspace preparation from Agent startup when reusing a runner workspace.
+
+  Keep received replies before follow-up messages queued during an active conversation.
+
 ## 0.1.0-beta.21
 
 ### Minor Changes

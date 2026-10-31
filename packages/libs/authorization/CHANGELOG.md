@@ -1,5 +1,11 @@
 # @nocobase/authorization
 
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 83f28b1: Batch effective permission set reads so request query counts remain constant as users hold more roles.
+
 ## 1.0.0-beta.15
 
 ### Patch Changes

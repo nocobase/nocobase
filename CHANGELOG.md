@@ -2,6 +2,27 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-10-31.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-31.1)
+
+### 🎉 New Features
+
+- **[Realtime updates]** Redis-backed realtime now requires explicit registration of the commercial broker plugin, while single-instance applications retain the built-in Memory broker. ([#11258](https://github.com/nocobase/nocobase/pull/11258)) by @cgyrock
+- **[App templates]** Add a four-step employee onboarding example with private recoverable drafts, conditional validation and duplicate-safe employee creation. ([#11259](https://github.com/nocobase/nocobase/pull/11259)) by @katherinehhh
+
+### 🚀 Improvements
+
+- **[Projects]** Read issue details and refresh progress with fewer database queries. ([#11264](https://github.com/nocobase/nocobase/pull/11264)) by @2013xile
+- **[Concurrency]** Keep local locks held until explicit release, task completion, or application shutdown without treating lease durations as task timeouts. ([#11269](https://github.com/nocobase/nocobase/pull/11269)) by @cgyrock
+- **[Agents]** Keep runner conversations current with fewer duplicate reads and batch linked work in conversation lists. ([#11272](https://github.com/nocobase/nocobase/pull/11272)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Realtime updates]** Reduce repeated requests when opening tasks, inboxes and conversations while preserving live updates. ([#11257](https://github.com/nocobase/nocobase/pull/11257)) by @2013xile
+- **[Agents]**
+  - Show the saved Agent description when reopening its editor immediately after saving. ([#11268](https://github.com/nocobase/nocobase/pull/11268)) by @2013xile
+  - Distinguish workspace preparation from Agent startup and keep received replies before queued follow-ups. ([#11271](https://github.com/nocobase/nocobase/pull/11271)) by @2013xile
+- **[Agent sessions]** Show the session list before the details on narrower pages, and remember whether My Agent's details are open. ([#11275](https://github.com/nocobase/nocobase/pull/11275)) by @gchust
+
 ## [nocobase-v3-beta/2026-10-30.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-30.1)
 
 ### 🎉 New Features
