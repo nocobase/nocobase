@@ -117,3 +117,53 @@ export function registerLayoutAwareDesktopRoutesPermissionsTab(app: Application,
     },
   });
 }
+
+export interface LayoutRoutePermissionNode {
+  id: number;
+  parentId?: number;
+  readOnly?: boolean;
+  children?: LayoutRoutePermissionNode[];
+}
+
+export function withAncestorIds<T extends LayoutRoutePermissionNode>(
+  ids: number[],
+  node: T,
+  nodeById: Map<number, T>,
+): number[] {
+  const nextIds = [...ids];
+  let parentId = node.parentId;
+  while (parentId) {
+    const parent = nodeById.get(parentId);
+    // Read-only ancestors (pages and their child routes) are kept by applyPermissionChanges
+    if (!parent || parent.readOnly) {
+      break;
+    }
+    if (!nextIds.includes(parentId)) {
+      nextIds.push(parentId);
+    }
+    parentId = parent.parentId;
+  }
+  return nextIds;
+}
+
+export function withoutEmptyAncestorIds<T extends LayoutRoutePermissionNode>(
+  ids: number[],
+  node: T,
+  nodeById: Map<number, T>,
+): number[] {
+  let nextIds = ids;
+  let parentId = node.parentId;
+  while (parentId) {
+    const parent = nodeById.get(parentId);
+    if (!parent || parent.readOnly) {
+      break;
+    }
+    const children = parent.children ?? [];
+    if (children.some((child) => nextIds.includes(child.id))) {
+      break;
+    }
+    nextIds = nextIds.filter((id) => id !== parentId);
+    parentId = parent.parentId;
+  }
+  return nextIds;
+}

@@ -472,6 +472,90 @@ describe('plugin-ui-layout route permissions', () => {
     expect(resource.getSelectedRouteIds()).toContain(10);
     expect(resource.getSelectedRouteIds()).toContain(20);
   });
+
+  it('selects every editable ancestor when a deeply nested route is checked', async () => {
+    const resource = createRoutePermissionResources({
+      selectedRouteIds: [],
+      desktopRoutes: [
+        {
+          id: 20,
+          title: 'Outer group',
+          type: 'group',
+          children: [
+            {
+              id: 21,
+              title: 'Inner group',
+              type: 'group',
+              children: [{ id: 1, title: 'Deep page', type: 'flowPage' }],
+            },
+          ],
+        },
+      ],
+    });
+    flowMocks.context = resource.context;
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(resource.roleRoutesList).toHaveBeenCalled());
+    await act(async () => {
+      await userEvent.type(screen.getByPlaceholderText('Search routes'), 'Deep page');
+    });
+    const deepPage = await screen.findByRole('checkbox', { name: 'Allow access to Deep page' });
+    await waitFor(() => expect(deepPage).not.toBeDisabled());
+
+    await act(async () => {
+      await userEvent.click(deepPage);
+    });
+
+    await waitFor(() => expect(resource.roleRoutesAdd).toHaveBeenCalledWith({ values: [20, 21, 1] }));
+    expect(resource.getSelectedRouteIds()).toEqual([20, 21, 1]);
+  });
+
+  it('removes empty ancestors when a deeply nested route is unchecked', async () => {
+    const resource = createRoutePermissionResources({
+      selectedRouteIds: [20, 21, 1],
+      desktopRoutes: [
+        {
+          id: 20,
+          title: 'Outer group',
+          type: 'group',
+          children: [
+            {
+              id: 21,
+              title: 'Inner group',
+              type: 'group',
+              children: [{ id: 1, title: 'Deep page', type: 'flowPage' }],
+            },
+          ],
+        },
+      ],
+    });
+    flowMocks.context = resource.context;
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(resource.roleRoutesList).toHaveBeenCalled());
+    await act(async () => {
+      await userEvent.type(screen.getByPlaceholderText('Search routes'), 'Deep page');
+    });
+    const deepPage = await screen.findByRole('checkbox', { name: 'Allow access to Deep page' });
+    await waitFor(() => expect(deepPage).toBeChecked());
+
+    await act(async () => {
+      await userEvent.click(deepPage);
+    });
+
+    await waitFor(() => expect(resource.roleRoutesRemove).toHaveBeenCalledWith({ values: [20, 21, 1] }));
+    expect(resource.getSelectedRouteIds()).toEqual([]);
+  });
 });
 
 interface TestRoute {

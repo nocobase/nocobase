@@ -19,6 +19,8 @@ import { useT } from '../locale';
 import {
   createDesktopRouteLayoutPermissionFilter,
   getLayoutScopedPermissionChanges,
+  withAncestorIds,
+  withoutEmptyAncestorIds,
 } from './layoutAwareDesktopRoutesPermissions';
 
 const DEFAULT_MOBILE_UI_LAYOUT_UID = 'mobile-layout-model';
@@ -349,16 +351,8 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
 
-    if (item.parentId) {
-      const parent = itemById.get(item.parentId);
-      const selectedSibling = parent?.children?.some((child) => nextIds.includes(child.id));
-      if (checked && !parent?.readOnly && !selectedSibling) {
-        nextIds = nextIds.filter((id) => id !== item.parentId);
-      }
-      if (!checked && !parent?.readOnly && !nextIds.includes(item.parentId)) {
-        nextIds.push(item.parentId);
-      }
-    }
+    // Check adds the ancestor chain, uncheck prunes empty ones; read-only ancestors stay with applyPermissionChanges
+    nextIds = checked ? withoutEmptyAncestorIds(nextIds, item, itemById) : withAncestorIds(nextIds, item, itemById);
 
     await applyPermissionChanges(nextIds);
   });
