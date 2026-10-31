@@ -22,6 +22,11 @@
         "type": "custom-link",
         "label": "WeChat Work",
         "link": "/notification-manager/wecom/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Feishu / Lark",
+        "link": "/notification-manager/feishu/"
       }
     ]
   },

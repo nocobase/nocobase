@@ -22,6 +22,11 @@
         "type": "custom-link",
         "label": "企業微信",
         "link": "/notification-manager/wecom/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Feishu / Lark",
+        "link": "/notification-manager/feishu/"
       }
     ]
   },

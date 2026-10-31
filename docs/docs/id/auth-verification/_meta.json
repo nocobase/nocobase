@@ -100,6 +100,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Feishu / Lark",
+            "link": "/auth-verification/auth-feishu/"
+          },
+          {
+            "type": "custom-link",
             "label": "API Keys",
             "link": "/auth-verification/api-keys/"
           }
