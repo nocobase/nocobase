@@ -17,6 +17,7 @@ import { vi } from 'vitest';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import type { EventOptions } from '../Dispatcher';
 import type { ExecutionModel, JobModel } from '../types';
 
 describe('workflow > Plugin', () => {
@@ -548,7 +549,7 @@ describe('workflow > Plugin', () => {
         enabled: true,
         type: 'asyncTrigger',
       });
-      const onTriggerFail = vi.fn(async () => {
+      const onTriggerFail = vi.fn<Parameters<NonNullable<EventOptions['onTriggerFail']>>, Promise<void>>(async () => {
         await sleep(10);
       });
 
