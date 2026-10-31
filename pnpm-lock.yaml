@@ -5363,7 +5363,7 @@ importers:
   packages/plugins/app-plugin-scheduler:
     dependencies:
       '@nocobase/app-cli':
-        specifier: workspace:^
+        specifier: workspace:^1.0.0-beta.26
         version: link:../../app/app-cli
       '@nocobase/jobs':
         specifier: workspace:^
