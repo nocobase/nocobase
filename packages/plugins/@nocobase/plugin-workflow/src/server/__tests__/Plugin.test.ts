@@ -450,6 +450,36 @@ describe('workflow > Plugin', () => {
       },
     );
 
+    it('should retry acquiring queueing execution after a SQLite lock conflict', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      const execution = (await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      })) as ExecutionModel;
+      type QueueingDispatcher = {
+        prepare(input: ExecutionModel): Promise<ExecutionModel | null>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
+      const error = Object.assign(new Error('database is locked'), { parent: { code: 'SQLITE_BUSY' } });
+      const update = vi.spyOn(db.getModel('executions'), 'update').mockRejectedValueOnce(error);
+
+      try {
+        const acquired = await dispatcher.prepare(execution);
+        expect(acquired?.id).toBe(execution.id);
+        expect(update).toHaveBeenCalledTimes(2);
+        await execution.reload();
+        expect(execution.dispatched).toBe(true);
+        expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+      } finally {
+        update.mockRestore();
+      }
+    });
+
     it('should not acquire queueing execution when acquire transaction fails', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
