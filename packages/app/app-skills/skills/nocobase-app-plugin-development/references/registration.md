@@ -17,6 +17,12 @@ The current CLI writes the plugin into App `dependencies`, including moving a ma
 
 An App can consume local plugins from its `packages/` workspace with `workspace:*` and published plugins with registry version ranges. Installation makes a package resolvable; registration connects its runtime entries.
 
+## Required commercial dependencies
+
+When target App integration needs a commercial NocoBase plugin or driver, automatically request that package's metadata from `https://pkg-v3.nocobase.com/` with existing npm/pnpm credentials and command-local global/scoped registry overrides. Check access per package and choose a published version compatible with the host runtime and peer requirements. When authorized, install it without a confirmation prompt; plugins also need runtime registration, while drivers are ordinary production dependencies. Verify installation and read synchronized package Skills before using their APIs. The App development Skill's `references/plugins.md` describes the commands when that Skill is available.
+
+If access or a compatible version is unavailable, leave one brief conversation notice and immediately continue independent work without asking for purchase, login, a token or installation approval. Distinguish explicit authorization denial from missing credentials, network failures, 404s and version incompatibility; none of the latter proves that the user has no license. Keep dependent integration pending and preserve working configuration rather than inventing package APIs or silently substituting a backend. Use bounded requests and never expose registry credentials.
+
 ## Register a local plugin in an App
 
 After creating the plugin and installing dependencies, run from the App root:

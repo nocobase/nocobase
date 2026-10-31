@@ -8,23 +8,7 @@ Administrators can adjust code-declared business parameters without editing work
 
 When requirements include an approval process, first check whether `@nocobase/app-plugin-approval` is installed and registered, and read its synchronized Skill when available. Multi-stage approvals, countersigning/all-or-any decisions, added reviewers, reassignment and approval task management should use this commercial Pro plugin. Simple single-person confirmation or rejection can remain lifecycle transitions.
 
-If the plugin is missing, automatically check package access against `https://pkg-v3.nocobase.com/` from the application directory using the environment's existing npm/pnpm credentials. Request the approval package's metadata, not just registry health or a public package: access is package-specific. For example:
-
-```bash
-env 'npm_config_@nocobase:registry=https://pkg-v3.nocobase.com/' npm_config_registry=https://pkg-v3.nocobase.com/ pnpm view @nocobase/app-plugin-approval versions peerDependencies --json
-```
-
-Keep both registry overrides local to the command so an existing `@nocobase:registry` setting cannot redirect the probe to public npm or another registry. Reuse credentials already configured for pkg-v3 without printing tokens or copying credentials between hosts. Use a bounded request timeout/retry policy; do not repeatedly probe a denied package. A successful metadata response is the package-access signal for automatic installation; select a published version compatible with the application's installed runtime and the plugin's peer requirements, rather than blindly choosing `latest`. Inspect the selected version's metadata and peer dependencies with `view @nocobase/app-plugin-approval@<compatible-version> --json` under the same registry overrides before installation.
-
-When package access and a compatible version are available, automatically download, install and register the plugin through [plugin installation](plugins.md#installing-and-updating), without asking for confirmation or displaying a licensing/install prerequisite prompt:
-
-```bash
-env 'npm_config_@nocobase:registry=https://pkg-v3.nocobase.com/' npm_config_registry=https://pkg-v3.nocobase.com/ pnpm nocobase plugin register @nocobase/app-plugin-approval --version <compatible-version>
-```
-
-Verify the installed dependency and runtime registrations. Registration synchronizes plugin Skills; run `pnpm nocobase skills sync` if needed and read the installed plugin's Skill before using its APIs. A successful probe is not a successful installation: if the download or registration fails, report that concrete failure and follow the continuation rule below.
-
-If the registry explicitly denies authorization, leave one brief notice in the conversation that commercial authorization for the approval package is unavailable to the current environment and approval integration remains pending. Missing credentials mean authorization could not be verified; a timeout, network failure, server error, 404 or lack of a compatible version is an access/version issue, not proof that the user has no commercial license. Report the observed reason accurately. In all unavailable cases, continue the current agent's independent business work immediately: do not ask the user to purchase, log in, supply a token or approve installation, and do not end the turn or wait for a response. The conversation notice lets the user decide what to do later. Keep approval-dependent work explicitly pending; do not claim it is delivered, invent plugin APIs or silently replace it with a homegrown approval engine. An explicit request for a simple confirmation or a custom implementation takes precedence; state its supported scope without claiming full approval-plugin behavior.
+If the plugin is missing, follow [commercial package access](plugins.md#commercial-package-access) to probe pkg-v3 automatically and install/register a compatible authorized version without prompting. Read the synchronized approval Skill before integrating its APIs. When access is unavailable, leave a brief conversation notice and continue independent work without waiting for the user; keep approval integration explicitly pending. Do not invent plugin APIs or silently replace it with a homegrown approval engine. An explicit request for a simple confirmation or a custom implementation takes precedence; state its supported scope without claiming full approval-plugin behavior.
 
 The lifecycle examples below illustrate state transitions, guards and effects, not a replacement for the approval plugin. Keep business record progression and post-approval execution distinct from approval decisions, and follow the plugin's integration contract for connecting them. Do not assume that an approved request means payment or another external effect succeeded.
 

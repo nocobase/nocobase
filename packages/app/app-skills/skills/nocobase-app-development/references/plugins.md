@@ -52,7 +52,33 @@ A full package name such as `@my-company/app-plugin-demo-tools` keeps the chosen
 
 Install plugins with `pnpm nocobase plugin register <name>`. All application plugins belong in `dependencies`, including client-only and disabled plugins, because deployment dependencies come from that field. Plugin frontend libraries remain peers and are not automatically installed in the deployment. Re-registering migrates legacy `devDependencies` entries while preserving the declared range; verify the manifest and lockfile afterward. With an older CLI, use `pnpm add --save-prod <package>@<declared-range>` to correct the declaration; `--no-install` leaves lockfile synchronization to the caller.
 
+For a commercial plugin, follow [commercial package access](#commercial-package-access) before installation or update; registry access is checked automatically, without a separate licensing prompt.
+
 To update a registered plugin, use `pnpm nocobase plugin update @nocobase/app-plugin-authentication`, or omit the name to update all registered plugins. Prefer the full package name; `authentication` is also accepted as a short name. The name is a positional argument, not `--plugin`. Use `--dry-run` to preview. With pnpm, updates stay within declared version ranges; after a successful update, all registered plugin Skills are re-synchronized. See the Plugins section of the application's `README.MD` for version-range behavior and examples.
+
+## Commercial package access
+
+Apply this workflow to every required NocoBase Pro package, including approval and Redis backend plugins, commercial database drivers and commercial packages introduced later. It applies to installation and updates; do not probe or install unrelated commercial packages. First inspect the application's installed packages, registrations and synchronized Skills. A missing runtime registration does not require downloading an already compatible installed package again.
+
+Automatically request the required package's metadata from `https://pkg-v3.nocobase.com/` in the application directory using existing npm/pnpm credentials. Registry health, access to a public package or access to another commercial package does not establish authorization for this package. For example, replace `<package>` with the actual package name:
+
+```bash
+env 'npm_config_@nocobase:registry=https://pkg-v3.nocobase.com/' npm_config_registry=https://pkg-v3.nocobase.com/ pnpm view <package> versions --json
+```
+
+Keep both registry overrides local to the command so an existing scoped registry cannot redirect the request to public npm or another registry, and let the install subprocess inherit them. Reuse credentials already configured for pkg-v3 without printing tokens or copying credentials between hosts. Use a bounded request timeout/retry policy; do not repeatedly probe a denied package. Successful metadata access is the package-access signal for automatic installation, not proof that every version is compatible or that installation has succeeded. Inspect the selected version's metadata and peer requirements with `view <package>@<compatible-version> --json` under the same overrides; preserve the application's declared range and installed runtime compatibility instead of blindly choosing `latest`.
+
+When access and a compatible version are available, automatically download and install the package without asking for confirmation or displaying a licensing/install prerequisite prompt. For a new plugin, use:
+
+```bash
+env 'npm_config_@nocobase:registry=https://pkg-v3.nocobase.com/' npm_config_registry=https://pkg-v3.nocobase.com/ pnpm nocobase plugin register <package> --version <compatible-version>
+```
+
+For an existing plugin update, use `pnpm nocobase plugin update <package>` under the same registry overrides and the supported declared range. For a non-plugin package such as a database driver, use `pnpm add --save-prod <package>@<compatible-version>` under the same overrides; do not run plugin registration on it. Verify the manifest, lockfile, applicable runtime registrations and configuration. Synchronize Skills with `pnpm nocobase skills sync` if needed and read the installed package's Skill before using its APIs. Verify actual runtime behavior separately from package access and installation.
+
+If the registry explicitly denies authorization, leave one brief conversation notice that commercial authorization for the named package is unavailable to the current environment and its integration remains pending. Missing credentials mean authorization could not be verified; a timeout, network failure, server error, 404 or lack of a compatible version is an access/version issue, not proof that the user has no commercial license. A download or registration failure after a successful probe is an installation failure; report that concrete reason accurately.
+
+In all unavailable cases, continue the current agent's independent work immediately: do not ask the user to purchase, log in, supply a token or approve installation, and do not end the turn or wait for a response. The conversation notice lets the user decide what to do later. Keep package-dependent work explicitly pending and existing working configuration intact. Do not claim completion, invent package APIs, build a substitute or silently switch to a backend/dialect that cannot meet the requested deployment or business requirements.
 
 ## Customizing a page a plugin owns
 
