@@ -16,7 +16,7 @@ import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
 import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput, AIToolCall, UserDecision } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
-import { KnowledgeBaseGroup, DocumentSegmentedWithScore } from '../types';
+import { KnowledgeBaseGroup, DocumentSegmentedWithScore, KnowledgeBaseReference } from '../types';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
@@ -95,6 +95,12 @@ type InterruptAction = {
     from: string;
     username: string;
   };
+};
+
+type KnowledgeBaseContext = {
+  prompt?: string;
+  backgroundPrompt?: string;
+  documents: KnowledgeBaseReference[];
 };
 
 export type PersistAIMessageOptions = {
@@ -195,9 +201,12 @@ export class AIEmployee {
     return this.employee.toJSON() as AIEmployeeType;
   }
   async getFormatMessages(userMessages: AIMessageInput[]) {
-    const { provider } = await this.plugin.aiManager.getLLMService({
-      ...this.model,
-    });
+    const { provider } = await this.plugin.aiManager.getLLMService(
+      {
+        ...this.model,
+      },
+      { sessionId: this.sessionId },
+    );
     const { messages } = await this.aiChatConversation.getChatContext({
       userMessages,
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
@@ -283,9 +292,12 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
-    const { provider, model, service } = await this.plugin.aiManager.getLLMService({
-      ...this.model,
-    });
+    const { provider, model, service } = await this.plugin.aiManager.getLLMService(
+      {
+        ...this.model,
+      },
+      { sessionId: this.sessionId },
+    );
     this.userMessageCount = (userMessages ?? []).filter((message) => message.role === 'user').length;
     const { historyMessages, tools, resolvedTools, middleware, config, state } = await this.initSession({
       messageId,
@@ -295,12 +307,15 @@ export class AIEmployee {
       llmService: service.get?.('name') || (service as any).name,
     });
 
+    const contextMessages = [...historyMessages, ...(userMessages ?? [])];
+    const knowledgeBaseContext = await this.retrieveKnowledgeBase(contextMessages);
+
     const chatContext = await this.aiChatConversation.getChatContext({
-      userMessages: [...historyMessages, ...(userMessages ?? [])],
+      userMessages: contextMessages,
       userDecisions,
       tools: resolvedTools,
       middleware,
-      getSystemPrompt: (userMessages) => this.getSystemPrompt(userMessages),
+      getSystemPrompt: (userMessages) => this.getSystemPrompt(userMessages, knowledgeBaseContext),
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
     });
 
@@ -312,6 +327,7 @@ export class AIEmployee {
       chatContext,
       config,
       state,
+      knowledgeBaseDocuments: knowledgeBaseContext.documents,
     };
   }
 
@@ -335,11 +351,12 @@ export class AIEmployee {
       },
     });
     try {
-      const { providerName, llmService, model, provider, chatContext, config, state } = await this.buildChatContext({
-        messageId,
-        userMessages,
-        userDecisions,
-      });
+      const { providerName, llmService, model, provider, chatContext, config, state, knowledgeBaseDocuments } =
+        await this.buildChatContext({
+          messageId,
+          userMessages,
+          userDecisions,
+        });
 
       const responseMetadata = new Map<string, any>();
       const responseMetadataCollector = new ResponseMetadataCollector(provider, responseMetadata);
@@ -357,6 +374,7 @@ export class AIEmployee {
         model,
         provider,
         responseMetadata,
+        knowledgeBaseDocuments,
       });
 
       return true;
@@ -545,11 +563,28 @@ export class AIEmployee {
       provider: LLMProvider;
       allowEmpty?: boolean;
       responseMetadata: Map<string, any>;
+      knowledgeBaseDocuments?: KnowledgeBaseReference[];
     },
   ) {
     const aiMessageIdMap = new Map<string, string>();
     const persistedAIMessageIdMap = new Map<string, string>();
-    const { signal, providerName, llmService, model, provider, responseMetadata, allowEmpty = false } = options;
+    const {
+      signal,
+      providerName,
+      llmService,
+      model,
+      provider,
+      responseMetadata,
+      allowEmpty = false,
+      knowledgeBaseDocuments = [],
+    } = options;
+    const knowledgeBaseReferences = new Map<string, KnowledgeBaseReference>();
+    const collectKnowledgeBaseReferences = (documents: KnowledgeBaseReference[]) => {
+      for (const document of documents) {
+        knowledgeBaseReferences.set(String(document.id), document);
+      }
+    };
+    let lastAIMessageId: string | undefined;
 
     const reasoningState = new ReasoningStreamState();
     const stopReasoning = async (conversation: StreamConversation) => {
@@ -571,7 +606,7 @@ export class AIEmployee {
           try {
             await stopAllReasoning();
             if (gathered?.type === 'ai') {
-              await this.finalizeAbortedAIMessage({
+              const result = await this.finalizeAbortedAIMessage({
                 aiMessage: gathered,
                 providerName,
                 provider,
@@ -579,6 +614,9 @@ export class AIEmployee {
                 model,
                 knownMessageId: persistedAIMessageIdMap.get(gathered.id),
               });
+              if (result) {
+                lastAIMessageId = result.message.messageId;
+              }
             }
           } catch (e) {
             this.logger.error('Fail to save message after conversation abort', gathered);
@@ -603,6 +641,10 @@ export class AIEmployee {
         username: this.employee.username,
       };
       await this.protocol.with(aiEmployeeConversation).startStream();
+      if (knowledgeBaseDocuments.length) {
+        collectKnowledgeBaseReferences(knowledgeBaseDocuments);
+        await this.protocol.with(aiEmployeeConversation).knowledgeBaseReferences({ documents: knowledgeBaseDocuments });
+      }
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk, metadata] = chunks;
@@ -664,6 +706,9 @@ export class AIEmployee {
             await this.streamCached.skipped();
             aiMessageIdMap.set(currentConversation.sessionId, chunks.body.messageId);
             persistedAIMessageIdMap.set(chunks.body.id, chunks.body.messageId);
+            if (currentConversation.sessionId === this.sessionId) {
+              lastAIMessageId = chunks.body.messageId;
+            }
 
             const data = responseMetadata.get(chunks.body.id);
             if (data) {
@@ -752,6 +797,15 @@ export class AIEmployee {
             await this.protocol.with(currentConversation).newMessage();
           } else if (chunks.action === 'afterSubAgentInvoke') {
             await this.protocol.with(currentConversation).subAgentCompleted();
+          } else if (chunks.action === 'knowledgeBaseRetrieved') {
+            const { toolCallId, documents = [] } = chunks.body ?? {};
+            collectKnowledgeBaseReferences(documents);
+            await this.protocol
+              .with({
+                ...currentConversation,
+                from: currentConversation.sessionId === this.sessionId ? this.from : 'sub-agent',
+              })
+              .knowledgeBaseReferences({ toolCallId, documents });
           }
         }
       }
@@ -773,9 +827,31 @@ export class AIEmployee {
       }
     } finally {
       await abortFinalization;
+      await this.saveKnowledgeBaseReferences(lastAIMessageId, Array.from(knowledgeBaseReferences.values()));
       if (this.from === 'main-agent') {
         this.ctx.res.end();
       }
+    }
+  }
+
+  private async saveKnowledgeBaseReferences(messageId: string | undefined, documents: KnowledgeBaseReference[]) {
+    if (!messageId || !documents.length) {
+      return;
+    }
+    try {
+      const savedMessage = await this.aiMessagesModel.findOne({
+        where: { sessionId: this.sessionId, messageId },
+      });
+      if (!savedMessage) {
+        return;
+      }
+      const metadata = savedMessage.get('metadata') ?? {};
+      await this.aiMessagesModel.update(
+        { metadata: { ...metadata, knowledgeBaseReferences: documents } },
+        { where: { sessionId: this.sessionId, messageId } },
+      );
+    } catch (error) {
+      this.logger.error('Failed to save knowledge base references', { sessionId: this.sessionId, messageId, error });
     }
   }
 
@@ -878,14 +954,9 @@ export class AIEmployee {
     return message;
   }
 
-  async getSystemPrompt(userMessages: AIMessageInput[]) {
-    if (this.systemPromptMode === 'none') {
-      return '';
-    }
-
-    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
-    if (this.systemPromptMode === 'raw') {
-      return about;
+  async retrieveKnowledgeBase(userMessages: AIMessageInput[]): Promise<KnowledgeBaseContext> {
+    if (this.systemPromptMode !== 'default') {
+      return { documents: [] };
     }
     const employee = this.getAIEmployeeRecord();
     const knowledgeBaseManager = this.plugin.knowledgeBaseManager;
@@ -899,6 +970,36 @@ export class AIEmployee {
       knowledgeBaseEnabled &&
       hasAccessibleKnowledgeBase &&
       normalizeKnowledgeBaseRetrievalStrategy(employee.knowledgeBase?.retrievalStrategy) === 'onDemand';
+
+    let prompt: string | undefined;
+    let documents: KnowledgeBaseReference[] = [];
+    if (knowledgeBaseEnabled && hasAccessibleKnowledgeBase && !knowledgeBaseOnDemand && userMessages?.length) {
+      const lastUserMessage = userMessages.filter((x) => x.role === 'user').at(-1);
+      if (lastUserMessage) {
+        ({ prompt, documents } = await knowledgeBaseManager.retrievePrompt({
+          employee,
+          query: lastUserMessage.content.content as string,
+          roleNames,
+        }));
+      }
+    }
+    const backgroundPrompt = getKnowledgeBaseBackgroundPrompt({
+      accessDenied: knowledgeBaseAccessDenied,
+      onDemand: knowledgeBaseOnDemand,
+      preRetrieved: Boolean(prompt),
+    });
+    return { prompt, backgroundPrompt, documents };
+  }
+
+  async getSystemPrompt(userMessages: AIMessageInput[], knowledgeBaseContext?: KnowledgeBaseContext) {
+    if (this.systemPromptMode === 'none') {
+      return '';
+    }
+
+    const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
+    if (this.systemPromptMode === 'raw') {
+      return about;
+    }
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id ?? 0,
@@ -925,24 +1026,8 @@ export class AIEmployee {
       background = `${background}\n${addSystemPrompt.map((it) => it.content).join('\n')}`;
     }
 
-    let knowledgeBase: string | undefined;
-    if (knowledgeBaseEnabled && hasAccessibleKnowledgeBase && !knowledgeBaseOnDemand && userMessages?.length) {
-      const lastUserMessage = userMessages.filter((x) => x.role === 'user').at(-1);
-      if (lastUserMessage) {
-        knowledgeBase = await knowledgeBaseManager.retrievePrompt({
-          employee,
-          query: lastUserMessage.content.content as string,
-          roleNames,
-        });
-      }
-    }
-    const knowledgeBaseBackgroundPrompt = getKnowledgeBaseBackgroundPrompt({
-      accessDenied: knowledgeBaseAccessDenied,
-      onDemand: knowledgeBaseOnDemand,
-      preRetrieved: Boolean(knowledgeBase),
-    });
-    if (knowledgeBaseBackgroundPrompt) {
-      background = `${background}\n${knowledgeBaseBackgroundPrompt}`;
+    if (knowledgeBaseContext?.backgroundPrompt) {
+      background = `${background}\n${knowledgeBaseContext.backgroundPrompt}`;
     }
     const availableSkills = await this.getAvailableSkills();
     const availableAIEmployees = await this.getAvailableAIEmployees();
@@ -959,10 +1044,14 @@ export class AIEmployee {
       environment: {
         database: this.db.sequelize.getDialect(),
         locale: this.ctx.getCurrentLocale?.() || 'en-US',
-        currentDateTime: getCurrentDateTimeForPrompt(this.ctx.getCurrentLocale?.(), getCurrentTimezone(this.ctx)),
+        currentDateTime: getCurrentDateTimeForPrompt(
+          await this.aiChatConversation.getCreatedAt(),
+          this.ctx.getCurrentLocale?.(),
+          getCurrentTimezone(this.ctx),
+        ),
         timezone: getCurrentTimezone(this.ctx),
       },
-      knowledgeBase,
+      knowledgeBase: knowledgeBaseContext?.prompt,
       availableSkills,
       availableAIEmployees,
       webSearch: this.webSearch,
@@ -1433,9 +1522,12 @@ If information is missing, clearly state it in the summary.</Important>`;
       return;
     }
 
-    const { model, service } = await this.plugin.aiManager.getLLMService({
-      ...this.model,
-    });
+    const { model, service } = await this.plugin.aiManager.getLLMService(
+      {
+        ...this.model,
+      },
+      { sessionId: this.sessionId },
+    );
     const toolCallMap = await this.getToolCallMap(messageId);
     const now = new Date();
     const toolMessageContent = 'The user ignored the application for tools usage and will continued to ask questions';
@@ -2047,8 +2139,10 @@ function getCurrentTimezone(ctx: Context): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-function getCurrentDateTimeForPrompt(locale: string | undefined, timezone?: string) {
-  const now = new Date();
+function getCurrentDateTimeForPrompt(now: Date | undefined, locale: string | undefined, timezone?: string) {
+  if (!now) {
+    return undefined;
+  }
   const normalizedLocale = locale || 'en-US';
 
   try {
@@ -2136,6 +2230,10 @@ export class ChatStreamProtocol {
 
       subAgentCompleted: async () => {
         await write({ type: 'sub_agent_completed' });
+      },
+
+      knowledgeBaseReferences: async (body: { toolCallId?: string; documents: KnowledgeBaseReference[] }) => {
+        await write({ type: 'knowledge_base_references', body });
       },
 
       newMessage: async (content?: unknown) => {

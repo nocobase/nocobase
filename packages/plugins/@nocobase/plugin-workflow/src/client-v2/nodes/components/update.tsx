@@ -46,7 +46,7 @@ function UpdateFields() {
   const collection = Form.useWatch(['config', 'collection']);
   const individualHooks = Form.useWatch(['config', 'params', 'individualHooks'], form);
   const updateModeOptions = useUpdateModeOptions();
-  const isBatchUpdateMode = individualHooks !== true;
+  const isBatchUpdateMode = (individualHooks ?? form.getFieldValue(['config', 'params', 'individualHooks'])) !== true;
   const disabled = Boolean(workflow?.versionStats?.executed);
 
   useEffect(() => {

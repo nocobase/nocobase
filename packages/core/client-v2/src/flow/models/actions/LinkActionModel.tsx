@@ -46,21 +46,23 @@ LinkActionModel.registerFlow({
 
         if (link) {
           const isExternalLink = isURL(link);
+          // embed 是页面容器，不应销毁；仅弹窗视图在站内同窗口跳转后销毁。
+          const shouldDestroyView =
+            !!ctx.view &&
+            shouldDestroyViewAfterLinkNavigation({
+              openInNewWindow,
+              isExternalLink,
+              viewType: ctx.view.type,
+            });
           handleLinkNavigation({
             link,
             openInNewWindow,
             router: ctx.router,
             isExternalLink,
+            // 弹窗会被销毁，用 replace 丢弃弹窗路由；页面（含移动端 embed）跳转需保留历史，以便逐级返回。
+            replace: shouldDestroyView,
           });
-          // embed 是页面容器，不应销毁；仅弹窗视图在站内同窗口跳转后销毁。
-          if (
-            ctx.view &&
-            shouldDestroyViewAfterLinkNavigation({
-              openInNewWindow,
-              isExternalLink,
-              viewType: ctx.view.type,
-            })
-          ) {
+          if (shouldDestroyView) {
             ctx.view.destroy();
           }
         } else {

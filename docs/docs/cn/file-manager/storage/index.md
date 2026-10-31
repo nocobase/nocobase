@@ -103,13 +103,13 @@ keywords: "存储引擎,Storage,本地存储,S3,OSS,COS,文件大小限制,MIME 
 https://storage.example.com/path/to/file.png
 ```
 
-该 URL 不经过 NocoBase，也不会检查文件记录的查看权限。对于本地存储，它是本地静态文件地址；对于云存储，它通常是对象存储或 CDN 地址。
+该 URL 不检查文件记录的查看权限。对于本地存储，它通常是 `/storage/uploads/` 历史地址，默认要求用户登录，但不会继续检查具体文件记录的权限；对于云存储，它通常是对象存储或 CDN 地址，其访问策略由对应存储服务决定。
 
 只有当调用方无法使用 NocoBase URL——比如不能跟随 `302` 重定向，或明确需要对象存储 / CDN 地址时，才建议选择原始 URL。
 
 :::warning 注意
 
-选择原始 URL 后，任何获得有效 URL 的用户都可以绕过 NocoBase 的权限控制访问文件。如果地址没有签名和有效期，还需要确保存储桶及文件允许公开读取。
+选择原始 URL 后，获得有效 URL 的用户可以绕过 NocoBase 的文件记录权限。对于本地存储，历史地址仍受 `/storage/uploads/` 登录检查约束；如果通过自定义 Nginx 直接暴露上传目录，则可能绕过该检查。对于云存储，如果地址没有签名和有效期，还需要确保存储桶及文件允许公开读取。
 
 :::
 
@@ -121,6 +121,14 @@ https://storage.example.com/path/to/file.png
 
 Markdown、外部页面或第三方服务也可以使用公开的 NocoBase URL。外部使用时，需要将接口返回的路径补全为包含 NocoBase 域名的绝对 URL，并确保调用方支持跟随 `302` 重定向。
 
+:::warning 本地存储说明
+
+本地存储的 NocoBase URL 最终会重定向到 `/storage/uploads/`。勾选「允许公开访问」只会跳过 `/files/` 阶段的文件记录权限，历史地址默认仍要求登录。如果确实需要匿名读取本地文件，还需设置 `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` 并重启应用。该环境变量会公开整个 `/storage/uploads/` 历史路径，而不只是当前勾选公开访问的存储，启用前请评估已有文件。
+
+使用自定义 Nginx 时，还需要为 `/storage/uploads/` 配置 `auth_request`。完整配置见 [Nginx 反向代理](../../nocobase-cli/production/reverse-proxy/nginx.md)。
+
+:::
+
 ### 如何选择
 
 | 使用场景 | 文件 URL | 允许公开访问 |
@@ -131,7 +139,7 @@ Markdown、外部页面或第三方服务也可以使用公开的 NocoBase URL�
 
 :::warning 注意
 
-[本地存储](./local)、[Amazon S3](./amazon-s3)、[阿里云 OSS](./aliyun-oss) 和 [腾讯云 COS](./tencent-cos) 不会生成临时签名 URL。即使选择 NocoBase URL 并启用文件记录权限，已经获得存储服务原始地址的用户仍然可以直接访问文件。
+[本地存储](./local)、[Amazon S3](./amazon-s3)、[阿里云 OSS](./aliyun-oss) 和 [腾讯云 COS](./tencent-cos) 不会生成临时签名 URL。即使选择 NocoBase URL 并启用文件记录权限，已经获得存储服务原始地址的用户也可以绕过文件记录权限。其中，本地存储的历史地址默认仍要求登录；云存储原始地址的访问能力取决于对应服务的公开读取配置。
 
 如果需要保存合同、证件、内部资料等不应公开的文件，建议使用 [S3 Pro](./s3-pro)，并参考其专属的访问控制配置。
 

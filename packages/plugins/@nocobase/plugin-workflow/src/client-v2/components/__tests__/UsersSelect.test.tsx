@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const holder = vi.hoisted(() => ({
+  list: vi.fn().mockResolvedValue({ data: { data: [] } }),
   filter: vi.fn(),
   flowContextSelector: vi.fn(() => null),
   remoteSelect: vi.fn(() => null),
@@ -23,7 +24,7 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => ({
   ...((await importOriginal()) as object),
   FlowContextSelector: holder.flowContextSelector,
   useFlowContext: () => ({
-    api: { resource: () => ({ list: vi.fn().mockResolvedValue({ data: { data: [] } }) }) },
+    api: { resource: () => ({ list: holder.list }) },
     t: (key: string) => key,
   }),
 }));
@@ -74,6 +75,31 @@ describe('UsersSelect', () => {
       '$scopes',
       '$jobsMapByNodeKey',
     ]);
+  });
+
+  it('requests users from the API when searching', async () => {
+    render(<UsersSelect />);
+
+    const remoteSelectProps = holder.remoteSelect.mock.calls[0][0] as {
+      onSearch: (value: string) => void;
+      request: () => Promise<unknown>;
+      filterOption: boolean;
+    };
+    expect(remoteSelectProps.filterOption).toBe(false);
+
+    await remoteSelectProps.request();
+    expect(holder.list).toHaveBeenLastCalledWith(undefined);
+
+    act(() => remoteSelectProps.onSearch('alice'));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+
+    const searchedProps = holder.remoteSelect.mock.calls.at(-1)?.[0] as typeof remoteSelectProps;
+    await searchedProps.request();
+    expect(holder.list).toHaveBeenLastCalledWith({
+      filter: { nickname: { $includes: 'alice' } },
+    });
   });
 
   it('uses caller-provided variable options without rebuilding the workflow variable tree', () => {

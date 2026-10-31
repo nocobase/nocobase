@@ -47,6 +47,146 @@ class MockFlowModelRepository implements IFlowModelRepository {
 }
 
 describe('assignFieldValuesFlow (editor)', () => {
+  it('shows the deleted-field placeholder for a stale assigned value', async () => {
+    const engine = new FlowEngine();
+    engine.setModelRepository(new MockFlowModelRepository());
+    engine.registerModels({
+      AssignFormModel,
+      AssignFormGridModel,
+      AssignFormItemModel,
+      InputFieldModel,
+      VariableFieldFormModel,
+    });
+    engine.context.defineProperty('location', { value: { search: '' } });
+    engine.context.defineProperty('themeToken', { value: { marginLG: 24 } });
+    engine.context.defineProperty('flowSettingsEnabled', { value: true });
+
+    const main = engine.context.dataSourceManager.getDataSource('main');
+    main.addCollection({
+      name: 'users',
+      fields: [{ name: 'nickname', type: 'string', interface: 'input' }],
+    });
+    const users = engine.context.dataSourceManager.getCollection('main', 'users');
+
+    const action = engine.createModel({
+      use: 'FlowModel',
+      uid: 'act-assign-deleted-field',
+    });
+    action.setStepParams('assignSettings', 'assignFieldValues', {
+      assignedValues: { deletedField: 'stale value' },
+    });
+    action.context.defineProperty('blockModel', { value: { collection: users } });
+
+    const step = createAssignFieldValuesStep({ settingsFlowKey: 'assignSettings' });
+    const Editor = step.uiSchema().editor?.['x-component'] as React.ComponentType;
+    const flowSettingsCtx = new FlowRuntimeContext(action, 'assignSettings', 'settings');
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowSettingsContextProvider value={flowSettingsCtx}>
+              <Editor />
+            </FlowSettingsContextProvider>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Fields/ })).toBeInTheDocument();
+      expect(screen.getByText(/deletedField.*may have been deleted/)).toBeInTheDocument();
+      const form = engine.findModelByParentId<AssignFormModel>(action.uid, 'assignForm');
+      expect(form).toBeDefined();
+      expect(form?.subModels.grid.subModels.items || []).toHaveLength(1);
+      expect(form?.getAssignedValues()).toEqual({});
+    });
+  });
+
+  it('shows the standard deleted-field placeholder for a persisted assigned field model', async () => {
+    const engine = new FlowEngine();
+    engine.setModelRepository(new MockFlowModelRepository());
+    engine.registerModels({
+      AssignFormModel,
+      AssignFormGridModel,
+      AssignFormItemModel,
+      InputFieldModel,
+      VariableFieldFormModel,
+    });
+    engine.context.defineProperty('location', { value: { search: '' } });
+    engine.context.defineProperty('themeToken', { value: { marginLG: 24 } });
+    engine.context.defineProperty('flowSettingsEnabled', { value: true });
+
+    const main = engine.context.dataSourceManager.getDataSource('main');
+    main.addCollection({
+      name: 'users',
+      fields: [{ name: 'nickname', type: 'string', interface: 'input' }],
+    });
+    const users = engine.context.dataSourceManager.getCollection('main', 'users');
+
+    const action = engine.createModel({
+      use: 'FlowModel',
+      uid: 'act-assign-persisted-deleted-field',
+    });
+    action.setStepParams('assignSettings', 'assignFieldValues', {
+      assignedValues: { deletedField: 'stale value' },
+    });
+    action.context.defineProperty('blockModel', { value: { collection: users } });
+
+    const form = engine.createModel<AssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'form-assign-persisted-deleted-field',
+      parentId: action.uid,
+      subKey: 'assignForm',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+          },
+        },
+      },
+    });
+    action.setSubModel('assignForm', form);
+    form.subModels.grid.addSubModel('items', {
+      use: 'AssignFormItemModel',
+      uid: 'item-assign-persisted-deleted-field',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            fieldPath: 'deletedField',
+          },
+          assignValue: { value: 'stale value' },
+        },
+      },
+    });
+    form.subModels.grid.resetRows(true);
+
+    const step = createAssignFieldValuesStep({ settingsFlowKey: 'assignSettings' });
+    const Editor = step.uiSchema().editor?.['x-component'] as React.ComponentType;
+    const flowSettingsCtx = new FlowRuntimeContext(action, 'assignSettings', 'settings');
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowSettingsContextProvider value={flowSettingsCtx}>
+              <Editor />
+            </FlowSettingsContextProvider>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/deletedField.*may have been deleted/)).toBeInTheDocument();
+      expect(form.subModels.grid.subModels.items).toHaveLength(1);
+      expect(form.getAssignedValues()).toEqual({});
+    });
+  });
+
   it('repairs AssignFormModel resource init and clears cached collection', async () => {
     const engine = new FlowEngine();
     engine.setModelRepository(new MockFlowModelRepository());

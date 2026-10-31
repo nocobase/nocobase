@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { createMockDatabase } from '@nocobase/database';
+import Database, { createMockDatabase, DataTypes } from '@nocobase/database';
 import { EagerLoadingTree } from '../../eager-loading/eager-loading-tree';
 
 const skipSqlite = process.env.DB_DIALECT == 'sqlite' ? it.skip : it;
@@ -621,67 +621,147 @@ describe('Eager loading tree', () => {
     expect(u1.get('posts')[0].get('tags')[0].get('tagCategory').get('name')).toBe('c1');
   });
 
-  it.each(['mssql', 'mysql', 'mariadb'])(
-    'should group direct root order fields for %s relation filters without grouping association order fields',
-    async (dialect) => {
-      const User = db.collection({
-        name: 'users',
-        fields: [
-          { type: 'string', name: 'name' },
-          { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'userId' },
-        ],
-      });
+  it('should group direct root order fields for relation filters without grouping association order fields', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'userId' },
+      ],
+    });
 
-      const Post = db.collection({
-        name: 'posts',
-        fields: [{ type: 'string', name: 'title' }],
-      });
+    const Post = db.collection({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
 
-      await db.sync();
+    await db.sync();
 
-      const rootInstance = User.model.build({ id: 1, name: 'user1' });
-      const rootFindAllSpy = vi
-        .spyOn(User.model, 'findAll')
-        .mockResolvedValueOnce([rootInstance])
-        .mockResolvedValueOnce([rootInstance]);
-      const childFindAllSpy = vi.spyOn(Post.model, 'findAll').mockResolvedValue([]);
-      vi.spyOn(db, 'inDialect').mockImplementation((...dialects: string[]) => dialects.includes(dialect));
+    const rootInstance = User.model.build({ id: 1, name: 'user1' });
+    const rootFindAllSpy = vi
+      .spyOn(User.model, 'findAll')
+      .mockResolvedValueOnce([rootInstance])
+      .mockResolvedValueOnce([rootInstance]);
+    const childFindAllSpy = vi.spyOn(Post.model, 'findAll').mockResolvedValue([]);
 
-      const rootOrder = [
-        ['name', 'ASC'],
-        [{ model: Post.model, as: 'posts' }, 'title', 'ASC'],
-      ];
-      const rootQueryOptions = {
-        include: [
-          {
-            association: 'posts',
-            attributes: ['id', 'title'],
-            where: { title: 'matched' },
-          },
-        ],
-        filter: { posts: { title: { $includes: 'matched' } } },
-        order: rootOrder,
-      };
-      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
-        model: User.model,
-        rootAttributes: ['id', 'name'],
-        rootOrder,
-        includeOption: rootQueryOptions.include,
-        db,
-        rootQueryOptions,
-      });
+    const rootOrder = [
+      ['name', 'ASC'],
+      [{ model: Post.model, as: 'posts' }, 'title', 'ASC'],
+    ];
+    const rootQueryOptions = {
+      include: [
+        {
+          association: 'posts',
+          attributes: ['id', 'title'],
+          where: { title: 'matched' },
+        },
+      ],
+      filter: { posts: { title: { $includes: 'matched' } } },
+      order: rootOrder,
+    };
+    const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+      model: User.model,
+      rootAttributes: ['id', 'name'],
+      rootOrder,
+      includeOption: rootQueryOptions.include,
+      db,
+      rootQueryOptions,
+    });
 
-      await eagerLoadingTree.load();
+    await eagerLoadingTree.load();
 
-      expect(rootFindAllSpy).toHaveBeenNthCalledWith(
-        1,
-        expect.objectContaining({
-          group: ['users.id', 'users.name'],
-        }),
-      );
-      expect(childFindAllSpy).toHaveBeenCalledTimes(1);
-    },
-  );
+    expect(rootFindAllSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        group: ['users.id', 'users.name'],
+      }),
+    );
+    expect(childFindAllSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should filter by a to-many relation sorted by root fields when the table has no primary key constraint', async () => {
+    // External tables or views may have no primary key constraint, so PostgreSQL cannot infer root columns from the id.
+    const Dept = db.collection({
+      name: 'depts',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        { type: 'integer', name: 'id', primaryKey: true },
+        { type: 'string', name: 'name' },
+      ],
+    });
+    const Through = db.collection({
+      name: 'operators_depts',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        { type: 'integer', name: 'operator_id' },
+        { type: 'integer', name: 'dept_id' },
+      ],
+    });
+    const Operator = db.collection({
+      name: 'operators',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        { type: 'integer', name: 'id', primaryKey: true },
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'depts',
+          target: 'depts',
+          through: 'operators_depts',
+          foreignKey: 'operator_id',
+          otherKey: 'dept_id',
+          sourceKey: 'id',
+          targetKey: 'id',
+        },
+      ],
+    });
+
+    await db.prepare();
+
+    const queryInterface = db.sequelize.getQueryInterface();
+    await queryInterface.createTable(Operator.getTableNameWithSchema(), {
+      id: { type: DataTypes.INTEGER },
+      name: { type: DataTypes.STRING },
+    });
+    await queryInterface.createTable(Dept.getTableNameWithSchema(), {
+      id: { type: DataTypes.INTEGER },
+      name: { type: DataTypes.STRING },
+    });
+    await queryInterface.createTable(Through.getTableNameWithSchema(), {
+      operator_id: { type: DataTypes.INTEGER },
+      dept_id: { type: DataTypes.INTEGER },
+    });
+
+    await Operator.model.bulkCreate([
+      { id: 1, name: 'c' },
+      { id: 2, name: 'a' },
+      { id: 3, name: 'b' },
+    ]);
+    await Dept.model.bulkCreate([
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+    ]);
+    await Through.model.bulkCreate([
+      { operator_id: 1, dept_id: 1 },
+      { operator_id: 1, dept_id: 2 },
+      { operator_id: 2, dept_id: 1 },
+      { operator_id: 3, dept_id: 2 },
+    ]);
+
+    const [rows, count] = await db.getRepository('operators').findAndCount({
+      filter: { depts: { name: { $includes: 'A' } } },
+      appends: ['depts'],
+      sort: ['name'],
+      limit: 1,
+      offset: 0,
+    });
+
+    expect(count).toBe(2);
+    expect(rows.map((row) => row.get('name'))).toEqual(['a']);
+  });
 
   it('should use bind parameters when loading parent recursively with string primary keys', async () => {
     const payload = `root') UNION ALL SELECT 'pwned', NULL WHERE ('1'='1`;

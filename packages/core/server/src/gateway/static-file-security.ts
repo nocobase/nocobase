@@ -41,6 +41,7 @@ export function hasActiveContentExtension(pathname = '') {
 
 export function getStorageUploadSecurityHeaders(pathname = '') {
   const headers: Record<string, string> = {
+    'Cache-Control': 'private, no-store',
     'Content-Security-Policy': 'sandbox',
     'X-Content-Type-Options': 'nosniff',
   };

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-type FieldAction = 'list' | 'create' | 'update' | 'destroy';
+type FieldAction = 'list' | 'get' | 'create' | 'update' | 'destroy';
 
 export function getCollectionFieldActionUrl(
   dataSourceKey: string,

@@ -102,13 +102,13 @@ Bản ghi file trả về trực tiếp địa chỉ do dịch vụ storage tạ
 https://storage.example.com/path/to/file.png
 ```
 
-URL này không đi qua NocoBase và không kiểm tra quyền xem của bản ghi file. Với Local Storage, đây là địa chỉ file tĩnh cục bộ. Với cloud storage, đây thường là địa chỉ Object Storage hoặc CDN.
+URL này không kiểm tra quyền xem của bản ghi file. Với Local Storage, đây thường là URL cũ `/storage/uploads/`, mặc định yêu cầu đăng nhập nhưng không kiểm tra lại từng bản ghi file. Với cloud storage, đây thường là địa chỉ Object Storage hoặc CDN có chính sách truy cập do dịch vụ đó kiểm soát.
 
 Chỉ chọn URL gốc khi bên gọi không thể sử dụng URL NocoBase, chẳng hạn như không thể theo chuyển hướng `302` hoặc cần rõ ràng một địa chỉ Object Storage hay CDN.
 
 :::warning Lưu ý
 
-Sau khi chọn URL gốc, bất kỳ ai có URL hợp lệ đều có thể bỏ qua kiểm tra quyền của NocoBase và truy cập file. Nếu URL không có chữ ký hoặc thời hạn, hãy đảm bảo bucket và file cho phép đọc công khai.
+Sau khi chọn URL gốc, bất kỳ ai có URL hợp lệ đều có thể bỏ qua quyền của bản ghi file trong NocoBase. Với Local Storage, URL cũ vẫn chịu kiểm tra đăng nhập của `/storage/uploads/`; việc dùng Nginx tùy chỉnh để mở trực tiếp thư mục upload có thể bỏ qua kiểm tra này. Với cloud storage, nếu URL không có chữ ký hoặc thời hạn, hãy đảm bảo bucket và file cho phép đọc công khai.
 
 :::
 
@@ -120,6 +120,14 @@ Tùy chọn này không thay đổi cấu hình đọc công khai của chính d
 
 Markdown, trang bên ngoài và dịch vụ bên thứ ba cũng có thể sử dụng URL NocoBase công khai. Khi sử dụng bên ngoài, hãy bổ sung domain NocoBase vào path do API trả về để tạo URL tuyệt đối, đồng thời bảo đảm bên gọi có thể theo chuyển hướng `302`.
 
+:::warning Hành vi của Local Storage
+
+URL NocoBase cho Local Storage cuối cùng chuyển hướng đến `/storage/uploads/`. Cho phép truy cập công khai bỏ qua quyền bản ghi ở bước `/files/`, nhưng URL cũ vẫn yêu cầu đăng nhập theo mặc định. Để file cục bộ có thể được đọc ẩn danh, hãy đặt thêm `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` rồi khởi động lại ứng dụng. Biến này công khai toàn bộ path cũ `/storage/uploads/`, không chỉ storage được chọn; hãy đánh giá tất cả file hiện có trước khi bật.
+
+Khi dùng Nginx tùy chỉnh, cũng cần cấu hình `auth_request` cho `/storage/uploads/`. Xem [Proxy ngược Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) để biết cấu hình đầy đủ.
+
+:::
+
 ### Cách chọn
 
 | Tình huống sử dụng | URL file | Cho phép truy cập công khai |
@@ -130,7 +138,7 @@ Markdown, trang bên ngoài và dịch vụ bên thứ ba cũng có thể sử d
 
 :::warning Lưu ý
 
-[Local Storage](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) và [Tencent COS](./tencent-cos) không tạo URL có chữ ký tạm thời. Ngay cả khi sử dụng URL NocoBase và quyền của bản ghi file, người đã có địa chỉ gốc của dịch vụ storage vẫn có thể truy cập trực tiếp file.
+[Local Storage](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) và [Tencent COS](./tencent-cos) không tạo URL có chữ ký tạm thời. Địa chỉ gốc có thể bỏ qua quyền bản ghi file. URL Local Storage cũ vẫn yêu cầu đăng nhập theo mặc định; quyền truy cập URL gốc của cloud storage phụ thuộc cấu hình đọc công khai của dịch vụ đó.
 
 Với hợp đồng, giấy tờ định danh, tài liệu nội bộ hoặc file không nên công khai, hãy dùng [S3 Pro](./s3-pro) và tham khảo cấu hình kiểm soát truy cập riêng của nó.
 

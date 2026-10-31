@@ -8,6 +8,7 @@
  */
 
 import actions, { Context } from '@nocobase/actions';
+import { sanitizeWorkflowTaskReadParams } from '@nocobase/plugin-workflow';
 import { appendTempAssociationFields } from './tempAssociationFields';
 
 const mergeAppends = (appends: string[] | undefined, required: string[]) => {
@@ -18,6 +19,7 @@ const mergeAppends = (appends: string[] | undefined, required: string[]) => {
 
 const workflowCcTasks = {
   async get(context: Context, next) {
+    sanitizeWorkflowTaskReadParams(context);
     context.action.mergeParams({
       filter: {
         userId: context.state.currentUser.id,
@@ -27,6 +29,7 @@ const workflowCcTasks = {
   },
 
   async listMine(context: Context, next) {
+    sanitizeWorkflowTaskReadParams(context);
     context.action.mergeParams({
       filter: {
         userId: context.state.currentUser.id,

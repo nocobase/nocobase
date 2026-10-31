@@ -126,7 +126,7 @@ export abstract class StorageType {
 
       return {
         stream: response.data,
-        contentType: response.headers['content-type'],
+        contentType: response.headers['content-type'] as string | undefined,
       };
     } catch (err) {
       throw new Error(`fetch file failed: ${err}`);

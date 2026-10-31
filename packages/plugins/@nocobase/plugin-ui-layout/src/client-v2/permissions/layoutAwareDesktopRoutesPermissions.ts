@@ -51,7 +51,6 @@ export function createDesktopRouteLayoutPermissionFilter(layoutUid: unknown): Re
 
   return {
     ...routeVisibilityFilter,
-    type: { $ne: 'page' },
     'uiLayouts.uid': normalizedLayoutUid,
   };
 }

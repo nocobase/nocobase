@@ -113,6 +113,18 @@ NocoBase dùng cookie để duy trì trạng thái đăng nhập và cấp quy�
 Vì vậy, nên ưu tiên phục vụ trang và API cùng origin thông qua reverse proxy và để trống `API_BASE_URL`.
 :::
 
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
+
+Kiểm soát việc URL file cục bộ cũ dưới `/storage/uploads/` có cho phép truy cập ẩn danh hay không. Mặc định là `false`, vì vậy chỉ người dùng đã đăng nhập mới truy cập được.
+
+Nếu integration hiện có phụ thuộc vào truy cập công khai qua các URL này, hãy bật rõ ràng chế độ tương thích:
+
+```bash
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
+```
+
+Khởi động lại ứng dụng sau khi thay đổi. Biến này chỉ ảnh hưởng URL cũ `/storage/uploads/` và không thay đổi quyền cấp bản ghi cho `/files/`. Truy cập công khai có thể làm lộ file đã upload; chỉ bật sau khi xác nhận các file có thể được công khai.
+
 ### CORS_ORIGIN_WHITELIST
 
 Danh sách whitelist các origin được phép truy cập API theo cơ chế cross-origin kèm credential (cookie). Nhiều origin được phân tách bằng dấu phẩy. Mặc định để trống.

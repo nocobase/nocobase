@@ -9,7 +9,35 @@
 
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
+// Prime the model module graph so the editable field bindings used by the quick edit data scope setting are registered.
+import '../../../index';
+import { RecordSelectFieldModel } from '../../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { TableColumnModel } from '../TableColumnModel';
+
+const createQuickEditDataScopeCtx = (
+  overrides: { associationPathName?: string; editable?: boolean; isAssociation?: boolean } = {},
+) => {
+  const engine = new FlowEngine();
+  engine.registerModels({ RecordSelectFieldModel });
+  const { associationPathName, editable = true, isAssociation = true } = overrides;
+  return {
+    engine,
+    model: {
+      associationPathName,
+      props: { editable },
+    },
+    collectionField: {
+      interface: isAssociation ? 'm2o' : 'input',
+      isAssociationField: () => isAssociation,
+      targetCollection: isAssociation ? { template: 'general' } : undefined,
+    },
+  };
+};
+
+const getQuickEditDataScopeStep = (engine: FlowEngine) => {
+  const model = new TableColumnModel({ uid: 'table-column-quick-edit-data-scope', flowEngine: engine } as any);
+  return model.getFlow('tableColumnSettings')?.steps?.quickEditDataScope as any;
+};
 
 describe('TableColumnModel sorter settings', () => {
   it('clamps custom column width to the minimum value', () => {
@@ -28,6 +56,42 @@ describe('TableColumnModel sorter settings', () => {
     );
 
     expect(setProps).toHaveBeenCalledWith('width', 10);
+  });
+
+  it('offers the quick edit data scope on an editable association column', async () => {
+    const engine = new FlowEngine();
+    const step = getQuickEditDataScopeStep(engine);
+
+    const hidden = await step.hideInSettings(createQuickEditDataScopeCtx());
+
+    expect(hidden).toBe(false);
+  });
+
+  it('hides the quick edit data scope when quick edit is off', async () => {
+    const engine = new FlowEngine();
+    const step = getQuickEditDataScopeStep(engine);
+
+    const hidden = await step.hideInSettings(createQuickEditDataScopeCtx({ editable: false }));
+
+    expect(hidden).toBe(true);
+  });
+
+  it('hides the quick edit data scope for non-association columns', async () => {
+    const engine = new FlowEngine();
+    const step = getQuickEditDataScopeStep(engine);
+
+    const hidden = await step.hideInSettings(createQuickEditDataScopeCtx({ isAssociation: false }));
+
+    expect(hidden).toBe(true);
+  });
+
+  it('hides the quick edit data scope for relation path columns', async () => {
+    const engine = new FlowEngine();
+    const step = getQuickEditDataScopeStep(engine);
+
+    const hidden = await step.hideInSettings(createQuickEditDataScopeCtx({ associationPathName: 'department' }));
+
+    expect(hidden).toBe(true);
   });
 
   it('hides quick edit setting for relation path columns added from association groups', async () => {

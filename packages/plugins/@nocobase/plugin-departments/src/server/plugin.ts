@@ -61,7 +61,6 @@ export class PluginDepartmentsServer extends Plugin {
       'departments:removeOwner': removeOwner,
     });
 
-    this.app.acl.allow('users', ['listExcludeDept'], 'loggedIn');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
       actions: [

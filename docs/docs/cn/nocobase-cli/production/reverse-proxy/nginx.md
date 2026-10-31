@@ -111,6 +111,7 @@ nb proxy nginx reload
 - `NB_CLI_ROOT/test2/storage/...` 下面的是应用自己的静态资源和上传目录
 - `app.conf` 可以改，不过要保留 NocoBase 托管区块
 - `index-v1.html` 和 `index-v2.html` 会按当前 env 的子路径、active client 版本，以及 `CDN_BASE_URL` 自动重写资源地址
+- `maps-http.conf` 和 `uploads-location.conf` 会共同保护历史 `/storage/uploads/` 地址：前者解析子应用参数，后者在返回本地文件前通过 `auth_request` 检查登录状态
 
 :::warning 注意
 
@@ -154,6 +155,11 @@ location / {
 对 `test2` 这类 CLI 托管应用来说，更接近真实部署情况的结构通常会像下面这样：
 
 ```nginx
+map $request_uri $legacy_file_app {
+    default "";
+    ~[?&]__appName=(?<legacy_file_app_name>[A-Za-z0-9_-]+)(?:&|$) $legacy_file_app_name;
+}
+
 server {
     listen 80;
     server_name c.local.nocobase.com;
@@ -164,6 +170,19 @@ server {
 
     include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/mime-types.conf;
     include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/gzip.conf;
+
+    location = /_nocobase_legacy_file_auth {
+        internal;
+        proxy_pass http://127.0.0.1:56575/api/auth:checkLegacyFileAccess;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header X-App $legacy_file_app;
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header Host $final_host;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+    }
 
     location /storage/uploads/ {
         alias NB_CLI_ROOT/test2/storage/uploads/;
@@ -216,6 +235,8 @@ server {
 }
 ```
 
+`map` 必须放在 Nginx 的 `http {}` 上下文中，不能放进 `server {}` 或 `location {}`。它用于从历史文件 URL 的 `__appName` 查询参数中识别子应用。`proxy_pass` 中的 `/api/` 需要与应用实际的 `API_BASE_PATH` 保持一致；如果设置了 `APP_PUBLIC_PATH`，上传目录和认证接口路径也要使用相同前缀。
+
 这里有两个关键点：
 
 - `NB_CLI_ROOT/.nocobase/proxy/nginx/...` 下面的是 CLI 维护的代理辅助文件
@@ -242,6 +263,10 @@ nb proxy nginx generate --env test2 --host c.local.nocobase.com
 `/files/` 是需要经过 NocoBase 鉴权的应用路由，不能作为静态目录处理，也不能落入 SPA 回退页。手写配置时，需要把它转发到 NocoBase 后端，并放在 `location /` 等前端回退规则之前。
 
 如果配置了 `APP_PUBLIC_PATH=/nocobase/`，还需要转发 `/nocobase/files/`。为了兼容已有的根路径文件地址，建议同时保留 `/files/` 转发规则。
+
+历史 `/storage/uploads/` 地址默认也需要登录。使用 `alias` 直接返回文件时，必须先通过 `auth_request` 请求 NocoBase 的 `auth:checkLegacyFileAccess`，不能只配置静态目录，否则会绕过登录检查。上例的 `uploads-location.conf` 已包含 `auth_request` 指令；如果没有使用 CLI snippets，需要把相同逻辑写入上传目录的 location。
+
+如果已有集成必须匿名访问历史地址，可在 NocoBase 应用中设置 `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` 并重启应用。该判断由认证接口完成，因此不需要重新生成或删除 Nginx 的 `auth_request` 配置。这个开关只影响 `/storage/uploads/`，不影响 `/files/` 的文件记录级权限。
 
 :::
 

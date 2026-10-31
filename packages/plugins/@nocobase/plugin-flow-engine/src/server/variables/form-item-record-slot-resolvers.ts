@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import FlowModelRepository from '../repository';
+import type { ResourcerContext } from '@nocobase/resourcer';
+import type FlowModelRepository from '../repository';
 import type {
   RecordSlotResolverInput,
   RecordSlotResolverRegistration,
@@ -17,7 +18,10 @@ import type {
 type FlowModelOptions = Readonly<{
   stepParams?: unknown;
   subModels?: unknown;
+  use?: unknown;
 }>;
+
+const requestModelTrees = new WeakMap<ResourcerContext, Map<string, Promise<FlowModelOptions | undefined>>>();
 
 type ResourceTarget = Readonly<{
   associationName?: string;
@@ -190,8 +194,18 @@ async function loadModelTree(input: RecordSlotResolverInput, node: unknown) {
   if (options && getFormItems(options)) return options;
   const uid = isObject(node) && typeof node.uid === 'string' ? node.uid : undefined;
   if (!uid || !input.ctx) return undefined;
+  let cache = requestModelTrees.get(input.ctx);
+  if (!cache) {
+    cache = new Map();
+    requestModelTrees.set(input.ctx, cache);
+  }
+  const cached = cache.get(uid);
+  if (cached) return cached;
   const repository = input.ctx.db.getCollection('flowModels').repository as FlowModelRepository;
-  return getModelOptions(await repository.findModelById(uid, { includeAsyncNode: true }));
+  // Share pending loads across expressions and contracts, while keeping record-slot resolution per occurrence.
+  const load = repository.findModelById(uid, { includeAsyncNode: true }).then(getModelOptions);
+  cache.set(uid, load);
+  return load;
 }
 
 async function findFormProvider(input: RecordSlotResolverInput, lineage: readonly unknown[]) {
@@ -212,6 +226,7 @@ function getConfiguredAssociationSlots(
   source: CollectionRef,
   items: readonly FlowModelOptions[],
 ) {
+  const exactAnchors = new Map<string, readonly string[]>();
   const slots = new Map<string, readonly string[]>();
   const fieldPaths: string[][] = [];
   for (const item of items) {
@@ -226,8 +241,11 @@ function getConfiguredAssociationSlots(
       slots.set(prefix.join('.'), [...prefix]);
       current = edge.target;
     }
+    if (item.use === 'FormAssociationItemModel' && prefix.length > 1 && prefix.length === fieldPath.length) {
+      exactAnchors.set(prefix.join('.'), prefix.slice(0, -1));
+    }
   }
-  return { fieldPaths, slots: [...slots.values()] };
+  return { exactAnchors, fieldPaths, slots: [...slots.values()] };
 }
 
 async function resolveFormValues(input: RecordSlotResolverInput): Promise<RecordSlotResolverResult> {
@@ -242,7 +260,10 @@ async function resolveFormValues(input: RecordSlotResolverInput): Promise<Record
   for (const slot of configuredSlots.slots) {
     if (pathStartsWith(runtimePath, slot) && (!configured || slot.length > configured.length)) configured = slot;
   }
-  if (configured) return resolved(configured);
+  if (configured) {
+    const exactAnchor = configuredSlots.exactAnchors.get(runtimePath.join('.'));
+    return resolved(exactAnchor || configured);
+  }
 
   const top = runtimePath[0];
   if (typeof top !== 'string') return runtimePath.length ? { status: 'deny' } : resolved([]);

@@ -111,6 +111,7 @@ TRONG:
 - `NB_CLI_ROOT/test2/storage/...` Sau đây là các tài nguyên tĩnh và thư mục tải lên của ứng dụng
 - `app.conf` có thể thay đổi nhưng khối được quản lý NocoBase phải được giữ lại
 - `index-v1.html` và `index-v2.html` sẽ tự động ghi lại địa chỉ tài nguyên theo đường dẫn con env hiện tại, phiên bản máy khách đang hoạt động và `CDN_BASE_URL`
+- `maps-http.conf` và `uploads-location.conf` cùng bảo vệ URL cũ `/storage/uploads/`: xác định sub-app và kiểm tra đăng nhập bằng `auth_request` trước khi trả file.
 
 :::lưu ý cảnh báo
 
@@ -154,6 +155,11 @@ location / {
 Đối với ứng dụng được lưu trữ trên máy chủ CLI như `test2`, cấu trúc gần với triển khai thực tế hơn thường trông như thế này:
 
 ```nginx
+map $request_uri $legacy_file_app {
+    default "";
+    ~[?&]__appName=(?<legacy_file_app_name>[A-Za-z0-9_-]+)(?:&|$) $legacy_file_app_name;
+}
+
 server {
     listen 80;
     server_name c.local.nocobase.com;
@@ -164,6 +170,19 @@ server {
 
     include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/mime-types.conf;
     include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/gzip.conf;
+
+    location = /_nocobase_legacy_file_auth {
+        internal;
+        proxy_pass http://127.0.0.1:56575/api/auth:checkLegacyFileAccess;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header X-App $legacy_file_app;
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header Host $final_host;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+    }
 
     location /storage/uploads/ {
         alias NB_CLI_ROOT/test2/storage/uploads/;
@@ -216,6 +235,8 @@ server {
 }
 ```
 
+Directive `map` phải nằm trong ngữ cảnh Nginx `http {}`. Nó xác định sub-app từ `__appName`. Phần `/api/` trong `proxy_pass` phải khớp `API_BASE_PATH`; khi dùng `APP_PUBLIC_PATH`, hãy dùng cùng prefix cho route upload và xác thực.
+
 Có hai điểm chính ở đây:
 
 - `NB_CLI_ROOT/.nocobase/proxy/nginx/...` Sau đây là các tệp phụ trợ tác nhân được CLI duy trì
@@ -242,6 +263,8 @@ Cách này thường ít bỏ sót các chi tiết liên quan đến `/files/`, 
 `/files/` là route ứng dụng phải đi qua cơ chế xác thực của NocoBase. Không xử lý route này như thư mục tĩnh và không để nó rơi vào fallback SPA. Hãy chuyển tiếp đến backend NocoBase và đặt rule trước `location /` cùng các rule fallback frontend khác.
 
 Nếu cấu hình `APP_PUBLIC_PATH=/nocobase/`, hãy chuyển tiếp thêm `/nocobase/files/`. Giữ rule `/files/` ở root để tương thích với các URL file hiện có.
+
+URL cũ `/storage/uploads/` mặc định yêu cầu đăng nhập. Khi phục vụ qua `alias`, trước tiên chạy `auth_request` tới `auth:checkLegacyFileAccess`. Để tương thích truy cập ẩn danh, đặt `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` rồi khởi động lại ứng dụng mà không xóa kiểm tra Nginx. Quyền `/files/` không thay đổi.
 
 :::
 

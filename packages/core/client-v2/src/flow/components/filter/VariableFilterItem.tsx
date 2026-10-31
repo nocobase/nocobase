@@ -130,7 +130,9 @@ export interface VariableFilterItemProps {
   rightAsVariable?: boolean;
   /**
    * 右侧 VariableInput 的 metaTree 提供器；
-   * 默认使用整棵 ctx 的 metaTree：model.context.getPropertyMetaTree()
+   * 默认使用视图上下文的 metaTree：useFlowViewContext().getPropertyMetaTree()。
+   * 注意它取自视图上下文而非 `model.context`：当调用方传入的 model 与打开设置弹窗的模型不是同一个时，
+   * 右侧变量不会跟随 model 变化，需要显式传入本属性。
    */
   rightMetaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   /**
@@ -139,9 +141,16 @@ export interface VariableFilterItemProps {
   rightVariableConverters?: Pick<Converters, 'resolvePathFromValue' | 'resolveValueFromPath'>;
   ignoreFieldNames?: string[];
   maxAssociationFieldDepth?: number;
+  /**
+   * 右侧变量树的关联层级上限，默认与 `maxAssociationFieldDepth` 一致。
+   * 传 `null` 表示不限制：右侧是变量树而非集合字段树，其深度可能已由调用方约束
+   * （例如工作流的变量树由触发器的「预加载关系数据」决定），此时再按左侧的层级上限裁剪
+   * 会让已配置好的深层变量选不到。
+   */
+  rightMaxAssociationFieldDepth?: number | null;
 }
 
-function limitMetaTreeIfNeeded(nodes: MetaTreeNode[], maxAssociationFieldDepth?: number) {
+function limitMetaTreeIfNeeded(nodes: MetaTreeNode[], maxAssociationFieldDepth?: number | null) {
   if (typeof maxAssociationFieldDepth !== 'number') {
     return nodes;
   }
@@ -367,6 +376,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     rightVariableConverters,
     ignoreFieldNames,
     maxAssociationFieldDepth,
+    rightMaxAssociationFieldDepth = maxAssociationFieldDepth,
   }) => {
     // 使用 View 上下文，确保可访问 ctx.view 的异步子树
     const ctx = useFlowViewContext();
@@ -685,10 +695,10 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
             { title: t('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
             ...nodes,
           ],
-          maxAssociationFieldDepth,
+          rightMaxAssociationFieldDepth,
         );
       };
-    }, [rightMetaTree, ctx, staticInputRenderer, NullComponent, t, maxAssociationFieldDepth]);
+    }, [rightMetaTree, ctx, staticInputRenderer, NullComponent, t, rightMaxAssociationFieldDepth]);
 
     // 当启用右侧变量输入时，构造 VariableInput 的 converters：
     // - 变量模式：返回 null 让 VariableInput 渲染 VariableTag

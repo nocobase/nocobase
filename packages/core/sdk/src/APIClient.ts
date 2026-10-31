@@ -152,7 +152,10 @@ export class APIClient {
 
   interceptors() {
     this.axios.interceptors.request.use((config) => {
-      config.paramsSerializer = (params) => {
+      config.paramsSerializer = (params: unknown) => {
+        if (params instanceof URLSearchParams) {
+          return params.toString();
+        }
         return qs.stringify(params, {
           strictNullHandling: true,
           arrayFormat: 'brackets',
@@ -172,7 +175,7 @@ export class APIClient {
     if (resource) {
       return this.resource(resource, resourceOf, headers)[action](params);
     }
-    return this.axios.request<T, R, D>(config);
+    return this.axios.request<T, R, D>(config) as Promise<R>;
   }
 
   resource(name: string, of?: any, headers?: RawAxiosRequestHeaders, cancel?: boolean): IResource {

@@ -167,7 +167,8 @@ function buildLoopItemNode(
 
 export function useLoopScopeVariables(node: LoopNodeLike, options: UseVariableOptions = {}): MetaTreeNode[] | null {
   const t = useT();
-  const workflowMetaTree = useWorkflowVariableOptions({ ...options, includeScopes: false });
+  // Resolve the target in this loop's upstream context so enclosing loop items remain available without self-recursion.
+  const workflowMetaTree = useWorkflowVariableOptions({ ...options, node, includeScopes: true });
 
   if (node.config?.target == null) {
     return null;

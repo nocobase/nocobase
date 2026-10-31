@@ -660,6 +660,8 @@ HTTPS も有効にする場合は、ホスト側の Nginx で `443` と証明書
 
 このルートパス構成の `location /` は、`/api/`、`/ws`、`/files/` もプロキシします。静的リソースとアプリケーションルートを分離する場合も、`/files/` を静的ディレクトリとして扱わず、NocoBase に転送してください。
 
+組み込み Nginx が既存の `/storage/uploads/` ファイルを返す前に、NocoBase がログイン状態を確認します。匿名アクセスはデフォルトで `401` になります。既存の連携で匿名アクセスが必要な場合は、`app.environment` に `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` を追加してコンテナを再起動してください。このパスは引き続きコンテナへ転送し、別の `alias` でアップロードディレクトリを直接公開しないでください。
+
 ### サブパスへのデプロイ
 
 アプリを `https://your_domain.com/nocobase/` のようなサブパスにデプロイする場合は、先に `APP_PUBLIC_PATH` 環境変数を設定します。

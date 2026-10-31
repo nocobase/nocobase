@@ -267,6 +267,14 @@ export default defineConfig({
     resolve: {
       aliasStrategy: 'prefer-tsconfig',
     },
+    tools: {
+      rspack(config) {
+        config.module.rules.push({
+          test: /zxing_reader\.wasm$/,
+          type: 'asset/resource',
+        });
+      },
+    },
   },
   markdown: {
     link: {

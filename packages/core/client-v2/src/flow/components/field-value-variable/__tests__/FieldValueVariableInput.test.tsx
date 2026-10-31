@@ -50,6 +50,7 @@ function renderInput(options?: {
   value?: unknown;
   isDateLikeField?: boolean;
   dateComponentProps?: DateVariableComponentProps;
+  allowDateVariables?: boolean;
 }) {
   const onChange = vi.fn();
   render(
@@ -62,6 +63,7 @@ function renderInput(options?: {
       runJSComponent={RunJSComponent}
       isDateLikeField={options?.isDateLikeField ?? false}
       dateComponentProps={options?.dateComponentProps ?? DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
+      allowDateVariables={options?.allowDateVariables}
     />,
   );
   return onChange;
@@ -108,6 +110,13 @@ describe('FieldValueVariableInput', () => {
       'nextYear',
     ]);
     expect(tree[4].name).toBe('currentUser');
+  });
+
+  it('omits the built-in Date variables when they are disabled', async () => {
+    renderInput({ isDateLikeField: true, allowDateVariables: false });
+
+    const tree = await resolveMetaTree();
+    expect(tree.map((node) => node.name)).toEqual(['constant', 'null', 'runjs', 'currentUser']);
   });
 
   it('does not allow Now for pure date fields', async () => {

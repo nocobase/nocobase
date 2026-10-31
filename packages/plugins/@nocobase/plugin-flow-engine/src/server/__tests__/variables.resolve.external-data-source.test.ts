@@ -336,7 +336,12 @@ describe('variables:resolve external data source records', () => {
         logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
       },
       db: {
-        getCollection: () => ({ repository: { findModelNodeSnapshotById: async () => flowModel } }),
+        getCollection: () => ({
+          repository: {
+            findModelNodeSnapshotById: async () => flowModel,
+            findModelNodeSnapshotByParentId: async () => null,
+          },
+        }),
         getRepository: () => ({ find: async () => [] }),
       },
       get: (name: string) => (name.toLowerCase() === 'authorization' ? `Bearer ${token}` : undefined),

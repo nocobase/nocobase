@@ -289,13 +289,13 @@ export class EagerLoadingTree {
             throw new Error(`Model ${node.model.name} does not have primary key`);
           }
 
-          const group = [`${node.model.name}.${primaryKeyField}`];
-
-          if (this.db.inDialect('mssql') || this.db.isMySQLCompatibleDialect()) {
-            // Strict GROUP BY dialects reject root ORDER BY fields that are not grouped. Include direct root order
-            // fields without changing the root row cardinality; to-many association order fields stay excluded.
-            group.push(...getRootModelOrderFields(node).map((field) => `${node.model.name}.${field}`));
-          }
+          // Strict GROUP BY dialects (MSSQL, MySQL ONLY_FULL_GROUP_BY, and PostgreSQL when the table has no real primary
+          // key constraint, e.g. external tables or views) reject root ORDER BY fields that are not grouped. Include direct
+          // root order fields without changing the root row cardinality; to-many association order fields stay excluded.
+          const group = [
+            `${node.model.name}.${primaryKeyField}`,
+            ...getRootModelOrderFields(node).map((field) => `${node.model.name}.${field}`),
+          ];
 
           // find the paginated root ids after deduplication
           const ids = (

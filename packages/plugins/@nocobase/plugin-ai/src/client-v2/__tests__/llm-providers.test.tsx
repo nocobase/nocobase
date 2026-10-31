@@ -63,6 +63,9 @@ describe('plugin-ai client-v2 LLM providers', () => {
 
   it('uses v2 provider settings components without v1 schema forms', () => {
     expect(openaiResponsesProviderOptions.components.ProviderSettingsForm).toBe(ProviderSettingsForm);
+    expect(
+      builtinLLMProviderOptions.find(([name]) => name === 'openai-completions')?.[1].components.ProviderSettingsForm,
+    ).toBe(ProviderSettingsForm);
     expect(ollamaProviderOptions.components.ProviderSettingsForm).toBe(EmptyProviderSettingsForm);
     expect(orcarouterProviderOptions.components.ProviderSettingsForm).toBe(OrcaRouterProviderSettingsForm);
     expect(shengsuanyunProviderOptions.components.ProviderSettingsForm).toBe(ShengSuanYunProviderSettingsForm);

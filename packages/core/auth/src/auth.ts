@@ -72,6 +72,9 @@ export abstract class Auth implements IAuth {
     if (this.ctx.skipAuthCheck === true) {
       return true;
     }
+    if (this.ctx.state?.legacyFileAccess === true) {
+      return false;
+    }
     const { resourceName, actionName } = this.ctx.action;
     const acl = this.ctx.dataSource.acl;
     const isPublic = await acl.allowManager.isPublic(resourceName, actionName, this.ctx);

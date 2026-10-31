@@ -242,12 +242,15 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   };
   applyVarsToVariables(variables, vars);
 
+  const urlVariables = {
+    ...variables,
+    $env: ctx.app.environment.getNonSecretVariables(),
+  };
+
   const axiosRequestConfig = {
     baseURL: getRequestBaseURL(ctx),
     ...options,
-    // safeRequest checks this url value (before baseURL combination) so that
-    // relative paths pointing to the same server are not subject to the whitelist.
-    url: getParsedValue(url, variables),
+    url: getParsedValue(url, urlVariables),
     headers: {
       Authorization: 'Bearer ' + ctx.getBearerToken(),
       ...getHeaders(ctx.headers),

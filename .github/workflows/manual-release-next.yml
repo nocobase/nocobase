@@ -62,6 +62,9 @@ jobs:
           git checkout next
           git pull origin next
           git checkout develop
+          git checkout next
+          git pull origin next
+          git checkout develop
           git merge next
           git push origin develop --tags --atomic
   update-version:

@@ -81,7 +81,6 @@ function ReceiverSortHandle() {
 }
 
 type MessageConfigFormContentProps = MessageConfigFormProps & {
-  stringVariableOptions: MetaTreeNode[];
   userVariableOptions: MetaTreeNode[];
 };
 
@@ -179,7 +178,7 @@ function MessageConfigFormContent(props: MessageConfigFormContentProps) {
         label={t('Message title')}
         rules={[{ required: true, message: t('The field value is required') }]}
       >
-        <WorkflowVariableInput metaTree={props.stringVariableOptions} />
+        <WorkflowVariableInput metaTree={props.variableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'content')}
@@ -200,7 +199,7 @@ function MessageConfigFormContent(props: MessageConfigFormContentProps) {
           'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/admin". If using an external link, the link starts with "http", for example, "https://example.com".',
         )}
       >
-        <WorkflowVariableInput metaTree={props.stringVariableOptions} />
+        <WorkflowVariableInput metaTree={props.variableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'mobileUrl')}
@@ -209,7 +208,7 @@ function MessageConfigFormContent(props: MessageConfigFormContentProps) {
           'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/m". If using an external link, the link starts with "http", for example, "https://example.com".',
         )}
       >
-        <WorkflowVariableInput metaTree={props.stringVariableOptions} />
+        <WorkflowVariableInput metaTree={props.variableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'duration')}
@@ -224,16 +223,9 @@ function MessageConfigFormContent(props: MessageConfigFormContentProps) {
 }
 
 export function MessageConfigForm(props: MessageConfigFormProps) {
-  const stringVariableOptions = useWorkflowVariableOptions({ types: ['string'] });
   const userVariableOptions = useWorkflowVariableOptions({ types: [isUserKeyField] });
 
-  return (
-    <MessageConfigFormContent
-      {...props}
-      stringVariableOptions={stringVariableOptions}
-      userVariableOptions={userVariableOptions}
-    />
-  );
+  return <MessageConfigFormContent {...props} userVariableOptions={userVariableOptions} />;
 }
 
 export default MessageConfigForm;

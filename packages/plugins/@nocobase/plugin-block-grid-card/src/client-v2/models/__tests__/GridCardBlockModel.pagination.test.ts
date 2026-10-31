@@ -99,6 +99,24 @@ describe('GridCardBlockModel pagination', () => {
     expect(pagination.showSizeChanger).toBe(false);
     expect(pagination.showTotal).toBe(false);
     expect(pagination.total).toBe(13);
+    expect(pagination.pageSizeOptions).toEqual([9, 18, 27, 45, 90]);
     expect(typeof pagination.itemRender).toBe('function');
+  });
+
+  it('未知总数时切换分页会更新资源并刷新数据', () => {
+    const { model, setPage, setPageSize, refresh } = createGridCardModel({
+      count: 0,
+      page: 1,
+      pageSize: 12,
+      hasNext: true,
+      dataLength: 12,
+    });
+
+    const pagination = model.pagination() as any;
+    pagination.onChange(2, 24);
+
+    expect(setPage).toHaveBeenCalledWith(2);
+    expect(setPageSize).toHaveBeenCalledWith(24);
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 });

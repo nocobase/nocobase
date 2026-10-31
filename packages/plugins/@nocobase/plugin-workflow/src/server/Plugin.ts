@@ -440,6 +440,7 @@ export default class PluginWorkflowServer extends Plugin {
         'workflows.nodes:*',
         'executions:list',
         'executions:get',
+        'executions.jobs:list',
         'executions:cancel',
         'executions:destroy',
         'flow_nodes:update',

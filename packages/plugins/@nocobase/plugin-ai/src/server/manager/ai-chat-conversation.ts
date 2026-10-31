@@ -48,6 +48,16 @@ class AIChatConversationImpl implements AIChatConversation {
     return this.sessionId;
   }
 
+  async getCreatedAt(): Promise<Date | undefined> {
+    const conversation = await this.ctx.db.getRepository('aiConversations').findOne({
+      filterByTk: this.sessionId,
+      fields: ['createdAt'],
+      transaction: this.transaction,
+    });
+    const createdAt = conversation?.get('createdAt');
+    return createdAt ? new Date(createdAt) : undefined;
+  }
+
   async addMessages(messages: AIMessageInput): Promise<AIMessage>;
   async addMessages(messages: AIMessageInput[]): Promise<AIMessage[]>;
   async addMessages(messages: AIMessageInput | AIMessageInput[]): Promise<AIMessage | AIMessage[]> {

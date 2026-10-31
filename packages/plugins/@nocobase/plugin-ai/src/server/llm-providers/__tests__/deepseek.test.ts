@@ -9,10 +9,13 @@
 
 import { AIMessage, AIMessageChunk, HumanMessage, ToolMessage } from '@langchain/core/messages';
 import { convertMessagesToResponsesInput } from '@langchain/openai';
+import type { Context } from '@nocobase/actions';
 import type { Model } from '@nocobase/database';
+import type { AttachmentModel } from '@nocobase/plugin-file-manager';
 import type { Application } from '@nocobase/server';
 import type OpenAI from 'openai';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Readable } from 'node:stream';
 import type { AIMessageInput } from '../../types';
 import { patchRequestMessagesReasoning } from '../common/reasoning';
 import { AIManager } from '../../manager/ai-manager';
@@ -46,11 +49,12 @@ afterEach(() => {
 describe('DeepSeek protocol contract', () => {
   it('freezes the official model protocol and web-search capability matrix', () => {
     expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-flash'].protocol).toBe('responses');
-    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-flash'].supportsWebSearch).toBe(true);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-flash'].supportsWebSearch).toBe(false);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-flash'].supportsWebSearch).toBe(false);
     expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-pro'].protocol).toBe('responses');
     expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-pro'].supportsWebSearch).toBe(true);
     expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-chat'].protocol).toBe('chat-completions');
-    expect(deepseekProviderOptions.webSearchModels).toEqual(deepSeekThinkingModeFixture.responsesModels);
+    expect(deepseekProviderOptions.webSearchModels).toEqual(['deepseek-v4-pro']);
   });
 
   it.each([
@@ -142,6 +146,99 @@ describe('DeepSeek protocol contract', () => {
   });
 });
 
+describe('DeepSeek image input', () => {
+  const imageAttachment = {
+    id: 1,
+    title: 'image',
+    filename: 'image.png',
+    mimetype: 'image/png',
+    path: '',
+    storageId: 1,
+  } as unknown as AttachmentModel;
+
+  function createAppWithFileManager(): Application {
+    return {
+      ...createApp(),
+      pm: {
+        get: () => ({
+          getFileStream: async () => ({
+            stream: Readable.from([Buffer.from('hello')]),
+          }),
+        }),
+      },
+    } as unknown as Application;
+  }
+
+  function createProvider(model: string) {
+    const provider = new DeepSeekProvider({ app: createAppWithFileManager(), serviceOptions: { apiKey: 'test-key' } });
+    provider.modelOptions = { model };
+    return provider;
+  }
+
+  it('freezes the image input capability matrix', () => {
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-flash'].supportsImageInput).toBe(true);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-flash'].supportsImageInput).toBe(true);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-flash-vision-exp'].supportsImageInput).toBe(true);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4.1-flash'].supportsImageInput).toBe(true);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-pro'].supportsImageInput).toBe(false);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-chat'].supportsImageInput).toBe(false);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-reasoner'].supportsImageInput).toBe(false);
+    expect(deepseekProviderOptions.models.LLM).toContain('deepseek-flash');
+  });
+
+  it.each(['deepseek-flash', 'deepseek-v4-flash', 'deepseek-v4-flash-vision-exp', 'deepseek-v4.1-flash'])(
+    'sends images as content blocks for %s',
+    async (model) => {
+      const parsed = await createProvider(model).parseAttachment(
+        { get: () => '' } as unknown as Context,
+        imageAttachment,
+      );
+
+      expect(parsed).toMatchObject({
+        placement: 'contentBlocks',
+        content: { type: 'image_url', image_url: { url: 'data:image/png;base64,aGVsbG8=' } },
+      });
+    },
+  );
+
+  it.each(['deepseek-v4-pro', 'deepseek-chat', 'custom-model'])('does not send images to %s', async (model) => {
+    const parsed = await createProvider(model).parseAttachment(
+      { get: () => '' } as unknown as Context,
+      imageAttachment,
+    );
+
+    expect(parsed).toMatchObject({
+      placement: 'system',
+      content: expect.stringContaining('do not support parsing image/png'),
+    });
+  });
+
+  it('converts image content blocks to Responses input_image items', () => {
+    const input = convertMessagesToResponsesInput({
+      model: 'deepseek-flash',
+      zdrEnabled: false,
+      messages: [
+        new HumanMessage({
+          content: [
+            { type: 'text', text: 'What is in this image?' },
+            { type: 'image_url', image_url: { url: 'data:image/png;base64,aGVsbG8=' } },
+          ],
+        }),
+      ],
+    });
+
+    expect(input).toEqual([
+      expect.objectContaining({
+        role: 'user',
+        content: [
+          { type: 'input_text', text: 'What is in this image?' },
+          expect.objectContaining({ type: 'input_image', image_url: 'data:image/png;base64,aGVsbG8=' }),
+        ],
+      }),
+    ]);
+  });
+});
+
 describe('DeepSeek final client routing', () => {
   it('sends V4 Pro through Responses with the DeepSeek web_search tool', async () => {
     process.env.SERVER_REQUEST_WHITELIST = 'api.deepseek.com';
@@ -178,7 +275,7 @@ describe('DeepSeek final client routing', () => {
     });
   });
 
-  it('sends V4 Flash through Responses with the DeepSeek web_search tool', async () => {
+  it('does not send the ignored web_search tool to V4 Flash', async () => {
     process.env.SERVER_REQUEST_WHITELIST = 'api.deepseek.com';
     const provider = new DeepSeekProvider({
       app: createApp({ apiKey: 'test-key' }),
@@ -207,17 +304,15 @@ describe('DeepSeek final client routing', () => {
     });
 
     expect(create).toHaveBeenCalledOnce();
-    expect(create.mock.calls[0][0]).toMatchObject({
-      reasoning: { effort: 'none' },
-      tools: [{ type: 'web_search' }],
-    });
+    expect(create.mock.calls[0][0]).toMatchObject({ reasoning: { effort: 'none' } });
+    expect(create.mock.calls[0][0].tools ?? []).not.toContainEqual({ type: 'web_search' });
   });
 
   it('converts native DeepSeek Responses reasoning and web-search stream events through LangChain', async () => {
     process.env.SERVER_REQUEST_WHITELIST = 'api.deepseek.com';
     const provider = new DeepSeekProvider({
       app: createApp({ apiKey: 'test-key' }),
-      modelOptions: { model: 'deepseek-v4-flash', builtIn: { webSearch: true } },
+      modelOptions: { model: 'deepseek-v4-pro', builtIn: { webSearch: true } },
     });
     async function* responseEvents(): AsyncGenerator<OpenAI.Responses.ResponseStreamEvent> {
       yield {
@@ -283,7 +378,13 @@ describe('DeepSeek final client routing', () => {
     expect(chunks.map((chunk) => provider.parseResponseChunk(chunk.content)).filter(Boolean)).toEqual(['answer']);
   });
 
-  it('rejects web search for legacy DeepSeek models before provider invocation', async () => {
+  it.each([
+    'deepseek-chat',
+    'deepseek-flash',
+    'deepseek-v4-flash',
+    'deepseek-v4-flash-vision-exp',
+    'deepseek-v4.1-flash',
+  ])('rejects web search for %s before provider invocation', async (model) => {
     const manager = new AIManager({
       app: createApp({ apiKey: 'test-key' }),
       db: {
@@ -297,7 +398,7 @@ describe('DeepSeek final client routing', () => {
     await expect(
       manager.getLLMService({
         llmService: 'deepseek-service',
-        model: 'deepseek-chat',
+        model,
         webSearch: true,
       }),
     ).rejects.toThrow(/Web search is not supported/);

@@ -333,6 +333,9 @@ export class TreeBlockModel extends CollectionBlockModel {
         model={container}
         items={buildTreeSearchActionItems}
         subModelKey="actions"
+        afterSubModelAdd={async () => {
+          await container.save();
+        }}
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
       </AddSubModelButton>
@@ -386,6 +389,9 @@ export class TreeBlockModel extends CollectionBlockModel {
         model={container}
         items={buildTreeNodeActionItems}
         subModelKey="actions"
+        afterSubModelAdd={async () => {
+          await container.save();
+        }}
         afterSubModelInit={async (actionModel) => {
           actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
         }}

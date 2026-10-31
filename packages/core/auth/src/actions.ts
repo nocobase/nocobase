@@ -74,6 +74,14 @@ export const actions = {
     ctx.body = filterHiddenFields(ctx, ctx.auth.user);
     await next();
   },
+  checkLegacyFileAccess: async (ctx, next) => {
+    if (!ctx.auth.user && ctx.state?.legacyLocalStoragePublicAccess !== true) {
+      ctx.throw(401, ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }));
+    }
+    ctx.status = 204;
+    ctx.withoutDataWrapping = true;
+    await next();
+  },
   syncCookies: async (ctx, next) => {
     ctx.body = await ctx.auth.syncCookies();
     await next();

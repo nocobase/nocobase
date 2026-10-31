@@ -54,10 +54,26 @@ export type LLMModelRequestBuilder = (input: {
   options?: LLMProviderInvokeOptions;
 }) => LLMModelRequestBuilderResult;
 
+export type LLMProviderRequestContext = {
+  sessionId?: string;
+};
+
 export interface LLMProviderOptions {
   app: Application;
   serviceOptions?: Record<string, any>;
   modelOptions?: Record<string, any>;
+  requestContext?: LLMProviderRequestContext;
+}
+
+// OpenCode Zen / Go require a custom User-Agent and a stable per-conversation `x-opencode-session` header
+// https://opencode.ai/docs/go/#where-can-i-use-it
+function isOpenCodeBaseURL(baseURL: string): boolean {
+  try {
+    const { hostname } = new URL(baseURL);
+    return hostname === 'opencode.ai' || hostname.endsWith('.opencode.ai');
+  } catch {
+    return false;
+  }
 }
 
 function assertBaseURLString(baseURL: unknown): asserts baseURL is string {
@@ -104,6 +120,7 @@ export abstract class LLMProvider {
   modelOptions: Record<string, any> | undefined;
   chatModel: any;
   protected modelReasoningOptions: ReasoningOptions | undefined;
+  protected requestContext: LLMProviderRequestContext;
 
   abstract createModel(): BaseChatModel | any;
 
@@ -112,9 +129,10 @@ export abstract class LLMProvider {
   }
 
   constructor(opts: LLMProviderOptions) {
-    const { app, serviceOptions, modelOptions } = opts;
+    const { app, serviceOptions, modelOptions, requestContext } = opts;
     this.app = app;
     this.serviceOptions = resolveServiceOptions(serviceOptions, app);
+    this.requestContext = requestContext ?? {};
     if (modelOptions) {
       const { _reasoning, ...restModelOptions } = modelOptions;
       this.modelReasoningOptions = _reasoning;
@@ -207,6 +225,7 @@ export abstract class LLMProvider {
         method: 'GET',
         url,
         headers: {
+          ...this.getDefaultHeaders(),
           Authorization: `Bearer ${apiKey}`,
         },
       });
@@ -441,6 +460,29 @@ export abstract class LLMProvider {
       throw new Error('baseURL is required');
     }
     return normalizeBaseURL(baseURL);
+  }
+
+  /**
+   * Headers every provider must merge into its model client. Decided by the resolved baseURL; returns an empty object
+   * when the target service needs no extra headers.
+   */
+  protected getDefaultHeaders(): Record<string, string> {
+    let baseURL: string;
+    try {
+      baseURL = this.getResolvedBaseURL();
+    } catch {
+      return {};
+    }
+    if (!isOpenCodeBaseURL(baseURL)) {
+      return {};
+    }
+    const headers: Record<string, string> = {
+      'User-Agent': `NocoBase/${this.app.getVersion()}`,
+    };
+    if (this.requestContext.sessionId) {
+      headers['x-opencode-session'] = this.requestContext.sessionId;
+    }
+    return headers;
   }
 
   protected buildRequestURL(pathname: string): string {

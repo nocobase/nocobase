@@ -152,6 +152,7 @@ const JSBlockPlainHost = ({
   afterContent,
   contentRef,
   marginBlock,
+  minHeight,
   ...rest
 }: React.HTMLAttributes<HTMLDivElement> & {
   uid: string;
@@ -161,6 +162,7 @@ const JSBlockPlainHost = ({
   afterContent?: React.ReactNode;
   contentRef: React.RefObject<HTMLDivElement>;
   marginBlock: number;
+  minHeight: number;
 }) => {
   const hostRef = React.useRef<HTMLDivElement | null>(null);
   const resolvedHeight = usePlainHostHeight({ height, heightMode, hostRef, marginBlock });
@@ -175,7 +177,7 @@ const JSBlockPlainHost = ({
         display: 'flex',
         flexDirection: 'column',
         height: resolvedHeight ?? undefined,
-        minHeight: 0,
+        minHeight,
         overflow: 'auto',
         ...(style || {}),
       }}
@@ -228,6 +230,8 @@ export class JSBlockModel extends BlockModel {
           afterContent={afterContent}
           contentRef={this.context.ref}
           marginBlock={this.context.themeToken?.marginBlock ?? 0}
+          // Keep empty blocks reachable by the settings overlay while the UI editor is active.
+          minHeight={this.context.flowSettingsEnabled ? this.context.themeToken?.controlHeightLG ?? 40 : 0}
         />
       );
     }

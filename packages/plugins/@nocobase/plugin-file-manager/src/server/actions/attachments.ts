@@ -232,10 +232,7 @@ export async function createMiddleware(ctx: Context, next: Next) {
     return next();
   }
 
-  const storageName =
-    resourceName === 'attachments'
-      ? ctx.db.getFieldByPath(attachmentField)?.options?.storage
-      : collection.options.storage;
+  const storageName = ctx.db.getFieldByPath(attachmentField)?.options?.storage || collection.options.storage;
   const plugin = ctx.app.pm.get(Plugin) as Plugin;
   const storage = Array.from(plugin.storagesCache.values()).find((storage) =>
     storageName ? storage.name === storageName : storage.default,

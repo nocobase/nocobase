@@ -50,6 +50,7 @@ import { useUnsavedChangesBeforeClose } from './useUnsavedChangesBeforeClose';
 import { getLLMModelValue, LLMModelMultiSelect, parseLLMModelValue } from '../llm-services/model-select';
 import { AI_EMPLOYEE_USERNAME_CONFLICT } from '../../common/error-codes';
 import {
+  hasKnowledgeBaseDataPlaceholder,
   isValidAIEmployeeNickname,
   isValidAIEmployeeUsername,
   normalizeAIEmployeeName,
@@ -174,7 +175,14 @@ const readResponseMeta = (response: unknown): Record<string, unknown> => {
     return {};
   }
   const data = response.data;
-  return isRecord(data) ? data : {};
+  if (!isRecord(data)) {
+    return {};
+  }
+  // NocoBase list responses put pagination metadata under response.data.meta.
+  // Returning the whole response body makes meta.count undefined and limits the
+  // controlled table to the current page's row count, so the next-page control
+  // is disabled even when more records exist.
+  return isRecord(data.meta) ? data.meta : data;
 };
 
 const isAIEmployee = (value: unknown): value is SettingsAIEmployee =>
@@ -295,14 +303,42 @@ export const normalizeKnowledgeBaseSettingsForForm = (
   retrievalStrategy: knowledgeBase?.retrievalStrategy === 'onDemand' ? 'onDemand' : defaultStrategy,
 });
 
+export const KNOWLEDGE_BASE_DEFAULT_TOP_K = 3;
+export const KNOWLEDGE_BASE_DEFAULT_SCORE = '0.6';
+
+// AI employees saved before the knowledge-base fields existed carry no topK/score/prompt, so switching the feature on
+// has to seed the same defaults the create form uses — otherwise the required rules would reject a form the user never
+// had a chance to fill in.
+export const buildKnowledgeBaseDefaults = (
+  values: EmployeeFormValues,
+  defaultPrompt: string,
+): Partial<EmployeeFormValues> => {
+  const knowledgeBase = values.knowledgeBase ?? {};
+  const patch: Partial<EmployeeFormValues> = {};
+  const knowledgeBasePatch: NonNullable<EmployeeFormValues['knowledgeBase']> = {};
+  if (knowledgeBase.topK === undefined || knowledgeBase.topK === null) {
+    knowledgeBasePatch.topK = KNOWLEDGE_BASE_DEFAULT_TOP_K;
+  }
+  if (knowledgeBase.score === undefined || knowledgeBase.score === null || knowledgeBase.score === '') {
+    knowledgeBasePatch.score = KNOWLEDGE_BASE_DEFAULT_SCORE;
+  }
+  if (Object.keys(knowledgeBasePatch).length) {
+    patch.knowledgeBase = { ...knowledgeBase, ...knowledgeBasePatch };
+  }
+  if (!values.knowledgeBasePrompt) {
+    patch.knowledgeBasePrompt = defaultPrompt;
+  }
+  return patch;
+};
+
 export const createInitialEmployeeValues = (t: ReturnType<typeof useT>): EmployeeFormValues => ({
   username: randomId(),
   enabled: true,
   enableKnowledgeBase: false,
   knowledgeBase: {
     knowledgeBaseKeys: [],
-    topK: 3,
-    score: '0.6',
+    topK: KNOWLEDGE_BASE_DEFAULT_TOP_K,
+    score: KNOWLEDGE_BASE_DEFAULT_SCORE,
     retrievalStrategy: 'onDemand',
   },
   knowledgeBasePrompt: t('knowledge Base Prompt default'),
@@ -1083,6 +1119,16 @@ export const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ 
     };
   }, [apiClient]);
 
+  const handleEnableChange = (checked: boolean) => {
+    if (!checked) {
+      return;
+    }
+    const patch = buildKnowledgeBaseDefaults(form.getFieldsValue(), t('knowledge Base Prompt default'));
+    if (Object.keys(patch).length) {
+      form.setFieldsValue(patch);
+    }
+  };
+
   return (
     <>
       <Form.Item
@@ -1091,7 +1137,7 @@ export const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ 
         valuePropName="checked"
         preserve
       >
-        <Switch />
+        <Switch onChange={handleEnableChange} />
       </Form.Item>
       <Form.Item
         name={['knowledgeBase', 'knowledgeBaseKeys']}
@@ -1135,7 +1181,18 @@ export const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ 
       <Form.Item
         name="knowledgeBasePrompt"
         label={formLabel(t('Knowledge Base Prompt'))}
-        rules={[{ required: true }]}
+        extra={t('Include {knowledgeBaseData} in the prompt to insert the retrieved knowledge-base content.')}
+        rules={[
+          { required: !!enableKnowledgeBase },
+          {
+            validator: (_rule, value) =>
+              !enableKnowledgeBase || hasKnowledgeBaseDataPlaceholder(value)
+                ? Promise.resolve()
+                : Promise.reject(
+                    new Error(t('The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.')),
+                  ),
+          },
+        ]}
         preserve
       >
         <Input.TextArea disabled={!enableKnowledgeBase} autoSize={{ minRows: 5 }} />
@@ -1144,7 +1201,7 @@ export const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ 
         name={['knowledgeBase', 'topK']}
         label={formLabel(t('Top K'))}
         extra={t('Maximum number of knowledge-base entries returned for each retrieval.')}
-        rules={[{ required: true }]}
+        rules={[{ required: !!enableKnowledgeBase }]}
         preserve
       >
         <InputNumber disabled={!enableKnowledgeBase} min={1} max={100} />
@@ -1153,7 +1210,7 @@ export const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ 
         name={['knowledgeBase', 'score']}
         label={formLabel(t('Score'))}
         extra={t('Minimum similarity score for knowledge-base content to be included in retrieval results.')}
-        rules={[{ required: true }]}
+        rules={[{ required: !!enableKnowledgeBase }]}
         preserve
       >
         <InputNumber disabled={!enableKnowledgeBase} min={0} max={1} step={0.1} />
@@ -1272,6 +1329,9 @@ export const EmployeesPage: React.FC = () => {
   const repo = useAIConfigRepository();
   const [category, setCategory] = useState<EmployeeCategory>('business');
   const [employees, setEmployees] = useState<SettingsAIEmployee[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -1289,16 +1349,23 @@ export const EmployeesPage: React.FC = () => {
   );
 
   const refresh = useCallback(
-    async (nextCategory = category) => {
+    async (nextCategory = category, nextPage = page, nextPageSize = pageSize) => {
       setLoading(true);
       try {
-        const result = await listAIEmployees(app.apiClient, { category: nextCategory });
+        const result = await listAIEmployees(app.apiClient, {
+          category: nextCategory,
+          page: nextPage,
+          pageSize: nextPageSize,
+        });
         setEmployees(result.data);
+        setTotal(result.total ?? result.data.length);
+        setPage(nextPage);
+        setPageSize(nextPageSize);
       } finally {
         setLoading(false);
       }
     },
-    [app.apiClient, category],
+    [app.apiClient, category, page, pageSize],
   );
 
   useEffect(() => {
@@ -1470,7 +1537,10 @@ export const EmployeesPage: React.FC = () => {
               { label: t('Business'), value: 'business' },
               { label: t('Developer'), value: 'developer' },
             ]}
-            onChange={(event) => setCategory(event.target.value)}
+            onChange={(event) => {
+              setPage(1);
+              setCategory(event.target.value);
+            }}
           />
           <Space>
             <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
@@ -1495,8 +1565,15 @@ export const EmployeesPage: React.FC = () => {
               onChange: setSelectedRowKeys,
             }}
             pagination={{
-              defaultPageSize: 20,
-              showTotal: (total) => t('Total {{count}} items', { count: total }),
+              current: page,
+              pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: (count) => t('Total {{count}} items', { count }),
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage);
+                setPageSize(nextPageSize);
+              },
             }}
             scroll={{ x: 'max-content', y: '100%' }}
           />

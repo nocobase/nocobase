@@ -77,6 +77,7 @@ async function setupFormModel() {
   ds.addCollection({
     name: 'levels',
     filterTargetKey: 'id',
+    titleField: 'name',
     fields: [
       { name: 'id', type: 'integer', interface: 'number' },
       { name: 'name', type: 'string', interface: 'text' },
@@ -547,6 +548,150 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const tpl2 = { who: '{{ ctx.formValues.customer.level.name }}' } as any;
     await (model.context as any).resolveJsonTemplate(tpl2);
     expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves a configured nested association from the server when the local value is only its key', async () => {
+    const model = await setupFormModel();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const batch = config?.data?.values?.batch || [];
+        const item = batch[0] || {};
+        expect(item.template).toEqual({ level: '{{ ctx.formValues.customer.level }}' });
+        expect(Object.keys(item.contextParams || {})).toEqual(['formValues.customer']);
+        expect(item.contextParams['formValues.customer']).toMatchObject({
+          collection: 'customers',
+          filterByTk: 9,
+        });
+        return {
+          data: {
+            data: {
+              results: [{ id: item.id, data: { level: { id: 'level-1', name: 'Level 1' } } }],
+            },
+          },
+        } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (values: Record<string, any>) => Object.assign(mem, values),
+      getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (key: string, value: any) => (mem[key] = value),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({ customer: { id: 9, level: 'level-1' } });
+    mockFormGridEnabledFields(model, ['customer']);
+
+    const output = await (model.context as any).resolveJsonTemplate({
+      level: '{{ ctx.formValues.customer.level }}',
+    });
+
+    expect(api.request).toHaveBeenCalledTimes(1);
+    expect(output).toEqual({ level: { id: 'level-1', name: 'Level 1' } });
+  });
+
+  it('resolves a configured nested association when its local record does not include the title field', async () => {
+    const model = await setupFormModel();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const item = config?.data?.values?.batch?.[0] || {};
+        return {
+          data: {
+            data: {
+              results: [{ id: item.id, data: { level: { id: 'level-1', name: 'Level 1' } } }],
+            },
+          },
+        } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (values: Record<string, any>) => Object.assign(mem, values),
+      getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (key: string, value: any) => (mem[key] = value),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({ customer: { id: 9, level: { id: 'level-1' } } });
+    mockFormGridEnabledFields(model, ['customer']);
+
+    const output = await (model.context as any).resolveJsonTemplate({
+      level: '{{ ctx.formValues.customer.level }}',
+    });
+
+    expect(api.request).toHaveBeenCalledTimes(1);
+    expect(output).toEqual({ level: { id: 'level-1', name: 'Level 1' } });
+  });
+
+  it('uses a configured nested association locally when its record is already loaded', async () => {
+    const model = await setupFormModel();
+    const api = { request: vi.fn(async () => ({ data: {} }) as any) } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (values: Record<string, any>) => Object.assign(mem, values),
+      getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (key: string, value: any) => (mem[key] = value),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    const level = { id: 'level-1', name: 'Level 1' };
+    fakeForm.setFieldsValue({ customer: { id: 9, level } });
+    mockFormGridEnabledFields(model, ['customer']);
+
+    const output = await (model.context as any).resolveJsonTemplate({
+      level: '{{ ctx.formValues.customer.level }}',
+    });
+
+    expect(output).toEqual({ level });
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
+  it('keeps indexed paths local when the nested association record is already loaded', async () => {
+    const model = await setupFormModel();
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (values: Record<string, any>) => Object.assign(mem, values),
+      getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (key: string, value: any) => (mem[key] = value),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({ assignees: [{ id: 3, org: { id: 1, name: 'Org 1' } }] });
+    mockFormGridEnabledFields(model, ['assignees']);
+
+    const options = (model.context as any).getPropertyOptions('formValues');
+    expect(options.resolveOnServer('assignees[0].org.name')).toBe(false);
   });
 
   it('configured toMany dot aggregation path uses local value and skips server', async () => {

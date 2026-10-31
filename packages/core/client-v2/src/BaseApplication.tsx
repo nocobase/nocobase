@@ -274,6 +274,8 @@ export abstract class BaseApplication<
     this.eventBus.addEventListener('auth:tokenChanged', (event: Event) => {
       const detail = (event as CustomEvent<AuthTokenPayload>).detail;
       if (!detail?.token) {
+        // 登录态已结束（退出登录或 token 失效），清空路由缓存，避免下一个用户沿用上一个用户的可访问路由。
+        this.context.routeRepository?.clear();
         return;
       }
       this.setTokenInWebSocket(detail);

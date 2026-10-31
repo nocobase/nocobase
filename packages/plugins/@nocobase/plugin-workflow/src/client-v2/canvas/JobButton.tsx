@@ -7,18 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo } from 'react';
-import { Button, Dropdown, Tag, Tooltip } from 'antd';
+import React from 'react';
 import { css } from '@emotion/css';
+import { Button, Tag } from 'antd';
+import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import { useFlowContext } from './contexts';
+import type { CanvasNode } from './contexts';
 import useStyles from './style';
-import { useT } from '../locale';
 import { formatTime } from '../components/workflowCanvas';
 import { JOB_STATUS_OPTIONS_MAP } from '../components/jobStatus';
+import { JobHistoryPopover, JobSummary } from '../components/JobHistoryPopover';
 
 const statusButtonClass = css`
   border: none;
-
   .ant-tag {
     width: 100%;
     height: 100%;
@@ -29,128 +30,63 @@ const statusButtonClass = css`
   }
 `;
 
-const emptyStatusButtonClass = css`
-  border-width: 2px;
-`;
-
-function JobStatusButton({
-  status,
-  disabled,
-  onClick,
-  onMouseDown,
-  className,
-}: {
-  status?: number | null;
-  disabled?: boolean;
-  onClick?: () => void;
-  onMouseDown?: React.MouseEventHandler<HTMLElement>;
-  className?: string;
-}) {
-  const t = useT();
+export function JobButton({ data }: { data: CanvasNode & { jobs?: JobSummary[] } }) {
+  const ctx = useFlowEngineContext();
   const { styles, cx } = useStyles();
-  const option = typeof status !== 'undefined' && status !== null ? JOB_STATUS_OPTIONS_MAP[status] : undefined;
-  const content = option ? <Tag color={option.color}>{option.icon}</Tag> : null;
-  const button = (
-    <Button
-      shape="circle"
-      size="small"
-      disabled={disabled}
-      onClick={onClick}
-      onMouseDown={onMouseDown}
-      className={cx(styles.nodeJobButtonClass, className, content ? statusButtonClass : emptyStatusButtonClass)}
-    >
-      {content}
-    </Button>
-  );
-
-  return option ? <Tooltip title={t(option.label)}>{button}</Tooltip> : button;
-}
-
-export function JobButton({ data }: { data: any }) {
-  const t = useT();
-  const { styles } = useStyles();
   const { execution, setViewJob } = useFlowContext() ?? {};
-  const jobs = useMemo(() => data?.jobs ?? [], [data?.jobs]);
-  const stopPropagation = useCallback((event: React.SyntheticEvent) => {
-    event.stopPropagation();
-  }, []);
-
-  const onOpenJobInList = useCallback(
-    ({ key }: { key: string }) => {
-      const job = jobs.find((item: any) => String(item.id) === String(key));
-      if (job) {
-        setViewJob?.(job);
-      }
-    },
-    [jobs, setViewJob],
-  );
-
-  const onOpenOnlyJob = useCallback(() => {
-    const job = jobs?.[0];
-    if (job) {
-      setViewJob?.(job);
-    }
-  }, [jobs, setViewJob]);
-
+  const latestJob = data?.jobs?.[data.jobs.length - 1];
   if (!execution || !setViewJob) {
     return null;
   }
-
-  if (!jobs?.length) {
-    return (
-      <span onClick={stopPropagation} onMouseDown={stopPropagation}>
-        <Tooltip title={t('View result')}>
-          <JobStatusButton disabled onMouseDown={stopPropagation} />
-        </Tooltip>
-      </span>
-    );
+  const status = latestJob ? JOB_STATUS_OPTIONS_MAP[latestJob.status] : undefined;
+  if (!latestJob) {
+    return <Button shape="circle" size="small" disabled className={styles.nodeJobButtonClass} />;
   }
-
-  if (jobs.length === 1) {
-    return (
-      <span onClick={stopPropagation} onMouseDown={stopPropagation}>
-        <JobStatusButton status={jobs[0].status} onClick={onOpenOnlyJob} onMouseDown={stopPropagation} />
-      </span>
-    );
-  }
-
-  const latestJob = jobs[jobs.length - 1];
-
   return (
-    <Tooltip title={t('View result')}>
-      <Dropdown
-        menu={{
-          items: jobs.map((job: any) => ({
-            key: `${job.id}`,
-            label: (
-              <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  gap: '1.5em',
-                  minWidth: '14em',
-                }}
-              >
-                <JobStatusButton
-                  status={job.status}
-                  className={css`
-                    pointer-events: none;
-                  `}
-                />
-                <time>{formatTime(job.updatedAt)}</time>
-              </span>
-            ),
-          })),
-          onClick: onOpenJobInList,
-          className: styles.dropdownClass,
-        }}
-      >
-        <span onClick={stopPropagation} onMouseDown={stopPropagation}>
-          <JobStatusButton status={latestJob.status} onMouseDown={stopPropagation} />
-        </span>
-      </Dropdown>
-    </Tooltip>
+    <JobHistoryPopover
+      key={`${execution.id}:${latestJob.nodeId}:${latestJob.id}:${latestJob.updatedAt}:${execution.updatedAt}`}
+      menuClassName={styles.dropdownClass}
+      loadPage={async (cursor) => {
+        const response = await ctx.api.resource('executions.jobs', execution.id).list({
+          nodeId: latestJob.nodeId,
+          ...cursor,
+        });
+        return response.data.data;
+      }}
+      onSelect={(job) =>
+        setViewJob({ ...job, node: { id: data.id, key: data.key, title: data.title, type: data.type } })
+      }
+      renderJob={(job) => {
+        const option = JOB_STATUS_OPTIONS_MAP[job.status];
+        return (
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '1.5em',
+              minWidth: '14em',
+            }}
+          >
+            <Button
+              shape="circle"
+              size="small"
+              tabIndex={-1}
+              aria-hidden
+              style={{ pointerEvents: 'none' }}
+              className={statusButtonClass}
+            >
+              <Tag color={option?.color}>{option?.icon}</Tag>
+            </Button>
+            <time>{formatTime(job.updatedAt)}</time>
+          </span>
+        );
+      }}
+    >
+      <Button shape="circle" size="small" className={cx(styles.nodeJobButtonClass, statusButtonClass)}>
+        <Tag color={status?.color}>{status?.icon}</Tag>
+      </Button>
+    </JobHistoryPopover>
   );
 }
 

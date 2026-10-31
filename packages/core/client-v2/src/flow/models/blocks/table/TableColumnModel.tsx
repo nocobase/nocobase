@@ -37,6 +37,7 @@ import { getRowKey } from './utils';
 import { getSavedAssociationTitleField, getTableColumnSortField } from './sortUtils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { getSavedDateTimeFormatParams, resolveDateTimeDisplayProps } from '../../../utils/dateTimeDisplayProps';
+import { QuickEditDataScopeInput, resolveQuickEditDataScopeStep } from '../../../internal/utils/quickEditDataScope';
 
 export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
@@ -540,6 +541,36 @@ TableColumnModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('editable', ctx.model.associationPathName ? false : params.editable);
+      },
+    },
+    quickEditDataScope: {
+      title: tExpr('Data scope'),
+      uiMode: {
+        type: 'dialog',
+        props: {
+          width: 800,
+        },
+      },
+      uiSchema: {
+        filter: {
+          type: 'object',
+          'x-decorator': 'FormItem',
+          'x-component': QuickEditDataScopeInput,
+        },
+      },
+      useRawParams: true,
+      defaultParams: {
+        filter: { logic: '$and', items: [] },
+      },
+      hideInSettings(ctx) {
+        if (ctx.model.associationPathName || !ctx.model.props.editable) {
+          return true;
+        }
+        return !resolveQuickEditDataScopeStep(ctx, ctx.collectionField);
+      },
+      handler() {
+        // Settings-only step. The filter is kept raw on the column and handed to the editor model that
+        // QuickEditFormModel builds when the popover opens, so there is nothing to apply to the column itself.
       },
     },
     model: {

@@ -302,6 +302,22 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._instanceId;
   }
 
+  /**
+   * Adopt a worker id handed out at runtime, after the allocator loses its lease and acquires a different one. Ids may
+   * only be minted under a worker id this process currently holds, so the generator is rebuilt to match.
+   *
+   * Returning early on an unchanged id is required rather than an optimisation: rebuilding restarts the sequence at 0,
+   * so doing it for the same worker id inside one second would re-issue ids this process has already handed out.
+   */
+  setInstanceId(instanceId: number) {
+    if (this._instanceId === instanceId) {
+      return;
+    }
+    this._instanceId = instanceId;
+    this.snowflakeIdGenerator = new Snowflake({ workerId: instanceId });
+    this.log.info(`adopt worker id: ${instanceId}`, { method: 'setInstanceId' });
+  }
+
   get sqlLogger() {
     return this._sqlLogger;
   }
@@ -602,6 +618,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private async disposeServices() {
+    // Release before the connections close: the allocator deletes its lease over Redis, and a closed client turns that
+    // into a failed delete that leaves the worker id claimed but no longer renewed.
+    await this.workerIdAllocator.release();
+
     if (this.redisConnectionManager) {
       await this.redisConnectionManager.close();
     }
@@ -617,8 +637,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.telemetry.started) {
       await this.telemetry.shutdown();
     }
-
-    await this.workerIdAllocator.release();
   }
 
   /**
@@ -696,7 +714,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.emitAsync('beforeLoad', this, options);
     }
 
-    if (!this._instanceId) {
+    if (this._instanceId == null) {
       this._instanceId = await this.workerIdAllocator.getWorkerId();
       this.log.info(`allocate worker id: ${this._instanceId}`, { method: 'load' });
     }
@@ -1244,6 +1262,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
     this._instanceId = options.instanceId;
+    // The generator holds a worker id, so it has to be rebuilt whenever that id is re-allocated. Keeping the old one
+    // would mint ids under a worker id this process has already released, which another replica is free to take.
+    this.snowflakeIdGenerator = undefined;
 
     this.initLogger(options.logger);
 

@@ -135,7 +135,7 @@ Taking `test2` as an example, key directories related to Caddy usually include:
 In other words, handwritten configuration usually needs to cover at least the following types of entries:
 
 - `v`: Redirect `/v` to `/v/`
-- `uploads`: Expose upload directory
+- `uploads`: Expose the upload directory after NocoBase authentication
 - `dist`: Expose the front-end build product directory
 - `oauth well-known`: Handle OAuth discovery paths
 - `openid well-known`: Handle OpenID discovery paths
@@ -164,10 +164,31 @@ c.local.nocobase.com {
     }
 
     handle_path /storage/uploads/* {
-        root * NB_CLI_ROOT/test2/storage/uploads
-        header Cache-Control public
-        header X-Content-Type-Options nosniff
-        file_server
+        route {
+            request_header -X-NocoBase-Auth-Set-Cookie
+            forward_auth host.docker.internal:56575 {
+                uri /api/auth:checkLegacyFileAccess
+                header_up X-App {query.__appName}
+                copy_headers Set-Cookie>X-NocoBase-Auth-Set-Cookie
+            }
+
+            @refreshedAuth header X-NocoBase-Auth-Set-Cookie *
+            header @refreshedAuth Set-Cookie {header.X-NocoBase-Auth-Set-Cookie}
+            header Cache-Control "private, no-store"
+            header Content-Security-Policy sandbox
+            header X-Content-Type-Options nosniff
+            header Content-Disposition inline
+
+            @activeUploadedContent path_regexp activeUploadedContent (?i)\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$
+            header @activeUploadedContent Content-Disposition attachment
+            @download query download=1
+            header @download Content-Disposition attachment
+            @markdown path_regexp markdown (?i)\.md$
+            header @markdown Content-Type text/markdown
+
+            root * NB_CLI_ROOT/test2/storage/uploads
+            file_server
+        }
     }
 
     handle_path /dist/* {
@@ -257,6 +278,8 @@ A more prudent approach is usually:
 This is usually less likely to miss details related to `/files/`, WebSockets, static resources, upload directories, `.well-known` routes, or SPA fallback pages than handwriting a configuration from scratch.
 
 :::warning Note
+
+URLs under `/storage/uploads/` are legacy local file URLs and must pass NocoBase sign-in authentication by default. Do not expose the upload directory with `file_server` alone, because that bypasses access control. The example above uses `forward_auth` to call the NocoBase auth endpoint before Caddy sends the file. Set `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` and restart the application only when anonymous access is explicitly required for compatibility.
 
 `/files/` is an application route that must pass through NocoBase authorization. Do not handle it as a static directory or let it fall through to the SPA fallback. Forward it to the NocoBase backend and place the rule before `handle_path /*` and other front-end fallback rules.
 

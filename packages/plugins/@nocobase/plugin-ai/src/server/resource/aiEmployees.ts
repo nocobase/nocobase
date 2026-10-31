@@ -15,11 +15,13 @@ import type { AIEmployee } from '../../collections/ai-employees';
 import _ from 'lodash';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import {
+  AI_EMPLOYEE_KNOWLEDGE_BASE_PROMPT_INVALID,
   AI_EMPLOYEE_NICKNAME_INVALID,
   AI_EMPLOYEE_USERNAME_CONFLICT,
   AI_EMPLOYEE_USERNAME_INVALID,
 } from '../../common/error-codes';
 import {
+  hasKnowledgeBaseDataPlaceholder,
   isValidAIEmployeeNickname,
   isValidAIEmployeeUsername,
   normalizeAIEmployeeName,
@@ -72,9 +74,47 @@ const setDefaultKnowledgeBaseRetrievalStrategy = (ctx: Context) => {
   }
 };
 
+type ExistingAIEmployee = {
+  get?: (key: string) => unknown;
+  enableKnowledgeBase?: unknown;
+  knowledgeBasePrompt?: unknown;
+};
+
+const readEmployeeValue = (employee: ExistingAIEmployee | null | undefined, key: keyof ExistingAIEmployee) =>
+  typeof employee?.get === 'function' ? employee.get(key) : employee?.[key];
+
+const validateKnowledgeBasePrompt = (ctx: Context, employee?: ExistingAIEmployee | null) => {
+  const values = ctx.action.params.values;
+  if (!isRecord(values)) {
+    return;
+  }
+
+  const enableKnowledgeBase =
+    typeof values.enableKnowledgeBase === 'boolean'
+      ? values.enableKnowledgeBase
+      : readEmployeeValue(employee, 'enableKnowledgeBase') === true;
+  const knowledgeBasePrompt =
+    'knowledgeBasePrompt' in values ? values.knowledgeBasePrompt : readEmployeeValue(employee, 'knowledgeBasePrompt');
+
+  if (enableKnowledgeBase && !hasKnowledgeBaseDataPlaceholder(knowledgeBasePrompt)) {
+    ctx.throw(400, {
+      code: AI_EMPLOYEE_KNOWLEDGE_BASE_PROMPT_INVALID,
+      message: ctx.t('The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.'),
+      data: { field: 'knowledgeBasePrompt' },
+    });
+  }
+};
+
+const hasKnowledgeBaseConfigurationChanges = (values: unknown) =>
+  isRecord(values) &&
+  ['enableKnowledgeBase', 'knowledgeBase', 'knowledgeBasePrompt'].some((key) =>
+    Object.prototype.hasOwnProperty.call(values, key),
+  );
+
 export const create = async (ctx: Context, next: Next) => {
   validateAndNormalizeProfileValues(ctx);
   setDefaultKnowledgeBaseRetrievalStrategy(ctx);
+  validateKnowledgeBasePrompt(ctx);
   const username = ctx.action.params.values?.username;
 
   if (typeof username === 'string') {
@@ -98,6 +138,12 @@ export const create = async (ctx: Context, next: Next) => {
 
 export const update = async (ctx: Context, next: Next) => {
   validateAndNormalizeProfileValues(ctx);
+  if (hasKnowledgeBaseConfigurationChanges(ctx.action.params.values)) {
+    const employee = await ctx.db.getRepository('aiEmployees').findOne({
+      filterByTk: ctx.action.params.filterByTk,
+    });
+    validateKnowledgeBasePrompt(ctx, employee);
+  }
   await actions.update(ctx, next);
 };
 

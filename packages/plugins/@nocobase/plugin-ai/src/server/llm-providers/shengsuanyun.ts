@@ -53,7 +53,10 @@ export class ShengSuanYunProvider extends LLMProvider {
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
-        ...(xTitle ? { defaultHeaders: { 'X-Title': xTitle } } : {}),
+        defaultHeaders: {
+          ...this.getDefaultHeaders(),
+          ...(xTitle ? { 'X-Title': xTitle } : {}),
+        },
       },
     });
   }
@@ -81,6 +84,7 @@ export class ShengSuanYunProvider extends LLMProvider {
         method: 'GET',
         url,
         headers: {
+          ...this.getDefaultHeaders(),
           Authorization: `Bearer ${apiKey}`,
           ...(xTitle ? { 'X-Title': xTitle } : {}),
         },

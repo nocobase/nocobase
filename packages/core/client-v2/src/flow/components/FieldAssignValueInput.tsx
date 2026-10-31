@@ -71,6 +71,8 @@ interface Props {
   enableDateVariableAsConstant?: boolean;
   /** 是否允许在变量选择器中使用 RunJS。默认 true，保持历史行为。 */
   allowRunJS?: boolean;
+  /** 是否允许在变量选择器中使用内置日期变量。默认 true。 */
+  allowDateVariables?: boolean;
   maxAssociationFieldDepth?: number;
   disabled?: boolean;
   variableConverters?: VariableInputProps['converters'];
@@ -444,6 +446,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   preferFormItemFieldModel,
   associationFieldNamesOverride,
   allowRunJS = true,
+  allowDateVariables = true,
   maxAssociationFieldDepth = 2,
   disabled = false,
   variableConverters,
@@ -972,6 +975,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       style={{ width: '100%' }}
       clearValue={''}
       allowRunJS={allowRunJS}
+      allowDateVariables={allowDateVariables}
       disabled={disabled}
       converters={variableConverters}
     />

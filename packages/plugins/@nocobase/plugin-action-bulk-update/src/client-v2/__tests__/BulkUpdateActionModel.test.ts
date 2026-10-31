@@ -11,6 +11,7 @@ import { FlowEngine, FlowModel, tExpr } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { BulkUpdateActionModel } from '../BulkUpdateActionModel';
 import { PluginActionBulkUpdateClient } from '../index';
+import { NAMESPACE } from '../locale';
 
 class TestAssignFormModel extends FlowModel {
   private values: Record<string, unknown> = {};
@@ -568,6 +569,54 @@ describe('BulkUpdateActionModel apply action', () => {
     await handler?.(ctx as never, { assignedValues: { status: 'published' } } as never);
 
     expect(ctx.message.error).toHaveBeenCalledWith('Collection is required to perform this action');
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('does not update with an option value that was removed from the collection field', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-stale-option-action', flowEngine: engine } as never);
+    const update = vi.fn();
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+    const ctx = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'updateMode') {
+            return { value: 'all' };
+          }
+          return undefined;
+        }),
+        setProps: vi.fn(),
+      },
+      runAction: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      collection: {
+        name: 'posts',
+        getField: vi.fn(() => ({
+          interface: 'select',
+          uiSchema: {
+            enum: [{ label: 'Published', value: 'published' }],
+          },
+        })),
+      },
+      blockModel: {
+        resource: {
+          refresh: vi.fn(),
+        },
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: vi.fn((value: string) => value),
+    };
+
+    await handler?.(ctx as never, { assignedValues: { status: 'archived' } } as never);
+
+    expect(ctx.message.error).toHaveBeenCalledWith('The configured field value is no longer available');
+    expect(ctx.t).toHaveBeenCalledWith('The configured field value is no longer available', { ns: NAMESPACE });
     expect(update).not.toHaveBeenCalled();
   });
 

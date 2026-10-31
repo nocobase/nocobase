@@ -1,0 +1,293 @@
+name: Rebuild Docker image with patched Node
+
+on:
+  workflow_dispatch:
+    inputs:
+      nocobase_version:
+        description: 'NocoBase version, e.g. 2.2.26 (requires v<version> tag; overwrites matching image tags)'
+        required: true
+        type: string
+      node_version:
+        description: 'Node.js major (e.g. 22 = latest 22.x) or exact version (e.g. 22.23.4)'
+        required: true
+        default: '22'
+        type: string
+      variant:
+        description: 'Docker image variant (all = build all four variants)'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - all
+          - full
+          - full-no-nginx
+          - default
+          - no-nginx
+      tag_mode:
+        description: 'Image tag mode'
+        required: true
+        default: 'same-version'
+        type: choice
+        options:
+          - same-version
+      platforms:
+        description: 'Build platforms'
+        required: true
+        default: 'linux/amd64,linux/arm64'
+        type: string
+      push_image:
+        description: 'Push the built image to the registry'
+        required: true
+        default: true
+        type: boolean
+      push_aliyun:
+        description: 'Also push to Aliyun Container Registry'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rebuild-docker-nodefix-${{ inputs.nocobase_version }}-${{ inputs.variant }}-${{ inputs.tag_mode }}
+  cancel-in-progress: false
+
+env:
+  BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.prepare.outputs.matrix }}
+      version: ${{ steps.prepare.outputs.version }}
+      ref: ${{ steps.prepare.outputs.ref }}
+      node_version: ${{ steps.prepare.outputs.node_version }}
+    steps:
+      - name: Prepare build parameters
+        id: prepare
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.nocobase_version }}
+          INPUT_NODE_VERSION: ${{ inputs.node_version }}
+          INPUT_VARIANT: ${{ inputs.variant }}
+          INPUT_TAG_MODE: ${{ inputs.tag_mode }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${INPUT_VERSION#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z0-9.-]+)?$ ]]; then
+            echo "Invalid NocoBase version: $INPUT_VERSION" >&2
+            exit 1
+          fi
+
+          if [[ ! "$INPUT_NODE_VERSION" =~ ^[0-9]+(\.[0-9]+\.[0-9]+)?$ ]]; then
+            echo "Invalid Node.js version: $INPUT_NODE_VERSION (use a major like 22 or an exact version like 22.23.4)" >&2
+            exit 1
+          fi
+
+          if [[ "$INPUT_TAG_MODE" != "same-version" ]]; then
+            echo "Unsupported tag mode: $INPUT_TAG_MODE" >&2
+            exit 1
+          fi
+
+          case "$INPUT_VARIANT" in
+            all)
+              VARIANTS="full full-no-nginx default no-nginx"
+              ;;
+            full|full-no-nginx|default|no-nginx)
+              VARIANTS="$INPUT_VARIANT"
+              ;;
+            *)
+              echo "Unsupported variant: $INPUT_VARIANT" >&2
+              exit 1
+              ;;
+          esac
+
+          MATRIX='{"include":['
+          FIRST=1
+          for VARIANT in $VARIANTS; do
+            case "$VARIANT" in
+              full)
+                DOCKERFILE=./docker/nocobase/Dockerfile-full
+                SUFFIX=-full
+                INSTALL_NGINX=1
+                ;;
+              full-no-nginx)
+                DOCKERFILE=./docker/nocobase/Dockerfile-full
+                SUFFIX=-full-no-nginx
+                INSTALL_NGINX=0
+                ;;
+              default)
+                DOCKERFILE=./docker/nocobase/Dockerfile
+                SUFFIX=
+                INSTALL_NGINX=1
+                ;;
+              no-nginx)
+                DOCKERFILE=./docker/nocobase/Dockerfile
+                SUFFIX=-no-nginx
+                INSTALL_NGINX=0
+                ;;
+            esac
+
+            IMAGE_TAG="${VERSION}${SUFFIX}"
+            ENTRY=$(jq -cn \
+              --arg variant "$VARIANT" \
+              --arg dockerfile "$DOCKERFILE" \
+              --arg install_nginx "$INSTALL_NGINX" \
+              --arg image_tag "$IMAGE_TAG" \
+              '{variant:$variant,dockerfile:$dockerfile,install_nginx:$install_nginx,image_tag:$image_tag}')
+
+            if [[ "$FIRST" == "1" ]]; then
+              FIRST=0
+            else
+              MATRIX="${MATRIX},"
+            fi
+            MATRIX="${MATRIX}${ENTRY}"
+          done
+          MATRIX="${MATRIX}]}"
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "ref=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "node_version=$INPUT_NODE_VERSION" >> "$GITHUB_OUTPUT"
+
+  rebuild:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Checkout NocoBase release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+          fetch-depth: 1
+
+      - name: Pin Node.js base image
+        shell: bash
+        env:
+          NODE_VERSION: ${{ needs.prepare.outputs.node_version }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
+        run: |
+          set -euo pipefail
+          sed -i -E "s|node:[0-9]+(\.[0-9]+)*-bookworm-slim|node:${NODE_VERSION}-bookworm-slim|g" "$DOCKERFILE"
+          if ! grep -q "node:${NODE_VERSION}-bookworm-slim" "$DOCKERFILE"; then
+            echo "No Debian bookworm-slim Node base image found in $DOCKERFILE." >&2
+            echo "This workflow only supports releases built on node:<version>-bookworm-slim." >&2
+            exit 1
+          fi
+          grep -n 'FROM node' "$DOCKERFILE"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        if: ${{ inputs.push_image }}
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to Aliyun Container Registry
+        if: ${{ inputs.push_image && inputs.push_aliyun }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+
+      - name: Resolve image tags
+        id: images
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ matrix.image_tag }}
+          PUSH_ALIYUN: ${{ inputs.push_image && inputs.push_aliyun }}
+          ALI_REGISTRY: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
+        run: |
+          set -euo pipefail
+          IMAGE="nocobase/nocobase:${IMAGE_TAG}"
+          TAGS="$IMAGE"
+          if [[ "$PUSH_ALIYUN" == "true" ]]; then
+            if [[ -z "$ALI_REGISTRY" ]]; then
+              echo "ALI_DOCKER_PUBLIC_REGISTRY is not configured." >&2
+              exit 1
+            fi
+            TAGS="${TAGS},${ALI_REGISTRY}/nocobase/nocobase:${IMAGE_TAG}"
+          fi
+          echo "docker_image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve commit
+        id: commit
+        shell: bash
+        run: echo "hash=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: ./docker/nocobase
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ inputs.platforms }}
+          pull: true
+          push: ${{ inputs.push_image }}
+          tags: ${{ steps.images.outputs.tags }}
+          build-args: |
+            CNA_VERSION=${{ needs.prepare.outputs.version }}
+            INSTALL_NGINX=${{ matrix.install_nginx }}
+            COMMIT_HASH=${{ steps.commit.outputs.hash }}
+
+      - name: Verify published image
+        id: verify
+        if: ${{ inputs.push_image && contains(inputs.platforms, 'linux/amd64') }}
+        shell: bash
+        env:
+          IMAGE: ${{ steps.images.outputs.docker_image }}
+          REQUESTED_NODE: ${{ needs.prepare.outputs.node_version }}
+        run: |
+          set -euo pipefail
+          docker pull --platform linux/amd64 "$IMAGE"
+          ACTUAL_NODE=$(docker run --rm --platform linux/amd64 --entrypoint node "$IMAGE" -v | sed 's/^v//')
+          echo "Node: $ACTUAL_NODE"
+
+          if [[ "$REQUESTED_NODE" == *.*.* ]]; then
+            [[ "$ACTUAL_NODE" == "$REQUESTED_NODE" ]] || {
+              echo "Expected Node $REQUESTED_NODE, got $ACTUAL_NODE" >&2
+              exit 1
+            }
+          else
+            [[ "$ACTUAL_NODE" == "$REQUESTED_NODE".* ]] || {
+              echo "Expected Node $REQUESTED_NODE.x, got $ACTUAL_NODE" >&2
+              exit 1
+            }
+          fi
+
+          MIN_NODE=22.23.4
+          if [[ "$(printf '%s\n' "$MIN_NODE" "$ACTUAL_NODE" | sort -V | head -n1)" != "$MIN_NODE" ]]; then
+            echo "Node $ACTUAL_NODE is older than $MIN_NODE (CVE-2026-111497 fix)." >&2
+            exit 1
+          fi
+
+          docker run --rm --platform linux/amd64 --entrypoint node "$IMAGE" \
+            -e "console.log(require('/app/nocobase/package.json').version)"
+          echo "actual_node=$ACTUAL_NODE" >> "$GITHUB_OUTPUT"
+
+      - name: Write summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Rebuild Docker image with patched Node"
+            echo ""
+            echo "- NocoBase: ${{ needs.prepare.outputs.version }}"
+            echo "- Node: ${{ needs.prepare.outputs.node_version }} (actual: ${{ steps.verify.outputs.actual_node }})"
+            echo "- Variant: ${{ matrix.variant }}"
+            echo "- Tag mode: ${{ inputs.tag_mode }}"
+            echo "- Image: ${{ steps.images.outputs.docker_image }}"
+            echo "- Pushed: ${{ inputs.push_image }}"
+          } >> "$GITHUB_STEP_SUMMARY"

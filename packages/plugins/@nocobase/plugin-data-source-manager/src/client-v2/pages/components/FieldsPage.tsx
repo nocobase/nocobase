@@ -1049,12 +1049,33 @@ export default function FieldsPage(props: FieldsPageProps) {
   }, [request.data]);
 
   const openFieldForm = useCallback(
-    (
+    async (
       mode: 'create' | 'edit',
       field?: Record<string, any>,
       interfaceName?: string,
       options?: { override?: boolean },
     ) => {
+      let fieldValues = field;
+      if (mode === 'edit' && field?.name) {
+        try {
+          const response = await ctx.api.request({
+            url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'get', field.name),
+            params: { appends: ['reverseField'] },
+          });
+          fieldValues = response?.data?.data || field;
+        } catch (error) {
+          notification.error({
+            message: getErrorMessage(error, t('Field loading failed')),
+          });
+          return;
+        }
+      }
+      const currentCollection = ctx.dataSourceManager
+        .getDataSource(props.dataSourceKey)
+        ?.collectionManager.getCollection(props.collection.name);
+      const collection = currentCollection
+        ? { ...props.collection, fields: getRuntimeCollectionOwnFields(currentCollection) }
+        : props.collection;
       ctx.viewer.drawer({
         width: 800,
         closable: true,
@@ -1062,16 +1083,16 @@ export default function FieldsPage(props: FieldsPageProps) {
           <FieldForm
             mode={mode}
             dataSourceKey={props.dataSourceKey}
-            collection={props.collection}
+            collection={collection}
             interfaceName={interfaceName}
-            field={field}
+            field={fieldValues}
             override={options?.override}
             onSubmitted={() => request.refresh()}
           />
         ),
       });
     },
-    [ctx.viewer, props.collection, props.dataSourceKey, request],
+    [ctx.api, ctx.dataSourceManager, ctx.viewer, notification, props.collection, props.dataSourceKey, request, t],
   );
 
   const addFieldMenu = useMemo<MenuProps>(
@@ -1211,6 +1232,8 @@ export default function FieldsPage(props: FieldsPageProps) {
 
   const handleFieldInterfaceChange = useCallback(
     async (field: Record<string, any>, nextInterfaceName?: string) => {
+      const fieldValues = { ...field };
+      delete fieldValues.reverseField;
       const nextInterface = nextInterfaceName ? fieldInterfacesByName[nextInterfaceName] : undefined;
       const nextDefault = nextInterface?.default || {};
       const nextUiSchema = nextDefault.uiSchema
@@ -1224,7 +1247,7 @@ export default function FieldsPage(props: FieldsPageProps) {
           url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'update', field.name),
           method: 'post',
           data: {
-            ...field,
+            ...fieldValues,
             ...nextDefault,
             name: field.name,
             interface: nextInterfaceName || null,
@@ -1260,13 +1283,15 @@ export default function FieldsPage(props: FieldsPageProps) {
         message.error(t('Field display name is required'));
         throw new Error('Field display name is required');
       }
+      const fieldValues = { ...field };
+      delete fieldValues.reverseField;
       setDisplayNameLoadingKey(field.name);
       try {
         await ctx.api.request({
           url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'update', field.name),
           method: 'post',
           data: {
-            ...field,
+            ...fieldValues,
             uiSchema: {
               ...omitRawTitle(field.uiSchema),
               title: nextTitle,

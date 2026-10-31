@@ -95,13 +95,13 @@ Der Dateidatensatz gibt direkt die vom Speicherdienst erzeugte Adresse zurück, 
 https://storage.example.com/path/to/file.png
 ```
 
-Diese URL durchläuft NocoBase nicht und prüft die Leseberechtigungen des Dateidatensatzes nicht. Bei lokalem Speicher handelt es sich um eine lokale statische Dateiadresse, bei Cloud-Speicher normalerweise um eine Objekt-Speicher- oder CDN-Adresse.
+Diese URL prüft die Leseberechtigungen des Dateidatensatzes nicht. Bei lokalem Speicher handelt es sich normalerweise um eine historische `/storage/uploads/`-URL, die standardmäßig eine Anmeldung erfordert, den einzelnen Dateidatensatz aber nicht erneut prüft. Bei Cloud-Speicher ist es normalerweise eine Objekt-Speicher- oder CDN-Adresse, deren Zugriffsrichtlinie vom Speicherdienst gesteuert wird.
 
 Wählen Sie die ursprüngliche URL nur aus, wenn der Aufrufer keine NocoBase-URL verwenden kann, zum Beispiel weil er `302`-Weiterleitungen nicht folgen kann oder ausdrücklich eine Objektspeicher- beziehungsweise CDN-Adresse benötigt.
 
 :::warning Hinweis
 
-Nach Auswahl der ursprünglichen URL kann jeder mit einer gültigen URL die NocoBase-Berechtigungsprüfung umgehen und auf die Datei zugreifen. Wenn die URL keine Signatur oder Ablaufzeit besitzt, müssen Bucket und Datei öffentlich lesbar sein.
+Nach Auswahl der ursprünglichen URL kann jeder mit einer gültigen URL die Berechtigungen des NocoBase-Dateidatensatzes umgehen. Bei lokalem Speicher unterliegt die historische URL weiterhin der Anmeldeprüfung für `/storage/uploads/`; ein direktes Freigeben des Upload-Verzeichnisses über ein benutzerdefiniertes Nginx kann diese Prüfung umgehen. Wenn eine Cloud-Speicher-URL keine Signatur oder Ablaufzeit besitzt, müssen Bucket und Datei öffentlich lesbar sein.
 
 :::
 
@@ -113,6 +113,14 @@ Diese Option ändert nicht die Konfiguration für öffentlichen Lesezugriff im S
 
 Markdown, externe Seiten und Drittanbieterdienste können ebenfalls eine öffentliche NocoBase-URL verwenden. Ergänzen Sie für die externe Nutzung den von der API zurückgegebenen Pfad zu einer absoluten URL mit der NocoBase-Domain und stellen Sie sicher, dass der Aufrufer `302`-Weiterleitungen folgen kann.
 
+:::warning Verhalten des lokalen Speichers
+
+Eine NocoBase-URL für lokalen Speicher leitet schließlich zu `/storage/uploads/` weiter. „Öffentlichen Zugriff erlauben“ überspringt die Dateidatensatzberechtigungen in der `/files/`-Phase, die historische URL erfordert jedoch standardmäßig weiterhin eine Anmeldung. Für anonym lesbare lokale Dateien setzen Sie zusätzlich `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` und starten die Anwendung neu. Diese Variable veröffentlicht den gesamten historischen Pfad `/storage/uploads/`, nicht nur den ausgewählten Speicher; prüfen Sie daher zuvor alle vorhandenen Dateien.
+
+Konfigurieren Sie bei einem benutzerdefinierten Nginx außerdem `auth_request` für `/storage/uploads/`. Die vollständige Konfiguration finden Sie unter [Nginx-Reverse-Proxy](../../nocobase-cli/production/reverse-proxy/nginx.md).
+
+:::
+
 ### Auswahlhilfe
 
 | Anwendungsfall | Datei-URL | Öffentlichen Zugriff erlauben |
@@ -123,7 +131,7 @@ Markdown, externe Seiten und Drittanbieterdienste können ebenfalls eine öffent
 
 :::warning Hinweis
 
-[Lokaler Speicher](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) und [Tencent COS](./tencent-cos) erzeugen keine temporären signierten URLs. Selbst wenn die NocoBase-URL und Dateidatensatzberechtigungen aktiviert sind, können Personen, die bereits die ursprüngliche Adresse des Speicherdienstes kennen, weiterhin direkt auf die Datei zugreifen.
+[Lokaler Speicher](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) und [Tencent COS](./tencent-cos) erzeugen keine temporären signierten URLs. Auch bei aktivierter NocoBase-URL und Dateidatensatzberechtigungen kann die ursprüngliche Adresse diese Berechtigungen umgehen. Historische lokale URLs erfordern standardmäßig weiterhin eine Anmeldung; der Zugriff auf eine ursprüngliche Cloud-Speicher-URL hängt von dessen Konfiguration für öffentliches Lesen ab.
 
 Verwenden Sie für Verträge, Ausweisdokumente, interne Unterlagen oder andere nicht öffentliche Dateien [S3 Pro](./s3-pro) und beachten Sie dessen spezielle Zugriffskonfiguration.
 

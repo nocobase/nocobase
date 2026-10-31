@@ -175,8 +175,10 @@ export const FieldsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProps
         }
         const next = paths.slice(0, i + 1).join('.');
         if (optionsMap[next]) {
+          // NOTE: already loaded, keep walking down instead of stopping, otherwise the deeper levels of the path are
+          // never loaded and the value silently disappears from the selector
           option = optionsMap[next];
-          break;
+          continue;
         }
         if (!option.isLeaf && option.loadChildren) {
           const children = option.loadChildren(option);

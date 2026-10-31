@@ -29,6 +29,7 @@ import {
   isSameOriginUrl,
   matchMimetype,
   normalizePreviewFile,
+  triggerFileDownload,
   wrapWithModalPreviewer,
 } from '../previewer/filePreviewTypes';
 
@@ -69,6 +70,19 @@ describe('file preview helpers', () => {
     delete browserWindow.__nocobase_modern_client_prefix__;
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it('adds the download flag to permanent file URLs and preserves external signed URLs', () => {
+    const downloads: Array<{ href: string | null; filename: string }> = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloads.push({ href: this.getAttribute('href'), filename: this.download });
+    });
+    triggerFileDownload('/files/main/main/aiKnowledgeBaseDocs/42.pdf', 'Document.pdf');
+    triggerFileDownload('https://storage.example.com/file.pdf?signature=abc', 'External.pdf');
+    expect(downloads).toEqual([
+      { href: '/files/main/main/aiKnowledgeBaseDocs/42.pdf?download=1', filename: 'Document.pdf' },
+      { href: 'https://storage.example.com/file.pdf?signature=abc', filename: 'External.pdf' },
+    ]);
   });
 
   it('normalizes preview file inputs and resolves URLs', () => {

@@ -9,6 +9,7 @@
 
 import { createServer, type RequestListener, type Server } from 'http';
 import type { AddressInfo } from 'net';
+import { vi } from 'vitest';
 
 import { serverRequest } from '../server-request';
 
@@ -42,15 +43,44 @@ describe('serverRequest redirect whitelist checks', () => {
 
   beforeEach(() => {
     originalWhitelist = process.env[ENV_KEY];
+    vi.stubEnv('SERVER_REQUEST_DISALLOW_IP', 'false');
   });
 
   afterEach(async () => {
     await Promise.all(servers.splice(0).map((server) => stopServer(server)));
+    vi.unstubAllEnvs();
     if (originalWhitelist === undefined) {
       delete process.env[ENV_KEY];
     } else {
       process.env[ENV_KEY] = originalWhitelist;
     }
+  });
+
+  it('blocks redirects from a domain to a literal IP even when whitelisted', async () => {
+    let targetRequestCount = 0;
+    const target = await startServer((_request, response) => {
+      targetRequestCount += 1;
+      response.end('private data');
+    });
+    servers.push(target.server);
+
+    const redirect = await startServer((_request, response) => {
+      response.writeHead(302, { Location: target.origin });
+      response.end();
+    });
+    servers.push(redirect.server);
+
+    process.env[ENV_KEY] = 'localhost,127.0.0.1';
+    vi.stubEnv('SERVER_REQUEST_DISALLOW_IP', 'true');
+
+    await expect(
+      serverRequest({
+        url: redirect.origin.replace('127.0.0.1', 'localhost'),
+        proxy: false,
+        family: 4,
+      }),
+    ).rejects.toThrow(/SERVER_REQUEST_DISALLOW_IP/);
+    expect(targetRequestCount).toBe(0);
   });
 
   it('allows redirects when every destination is whitelisted', async () => {

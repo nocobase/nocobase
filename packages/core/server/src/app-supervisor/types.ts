@@ -163,7 +163,7 @@ export interface AppDiscoveryAdapter {
   unregisterEnvironment?(): Promise<void>;
   listEnvironments?(): Promise<EnvironmentInfo[]>;
   getEnvironment?(environmentName: string): Promise<EnvironmentInfo | null>;
-  heartbeatEnvironment?(): Promise<void>;
+  heartbeatEnvironment?(environment: EnvironmentInfo): Promise<void>;
   getBootstrapLock?(appName: string): Promise<BootstrapLock | null> | BootstrapLock | null;
 
   proxyWeb?(appName: string, req: IncomingMessage, res: ServerResponse): Promise<boolean>;

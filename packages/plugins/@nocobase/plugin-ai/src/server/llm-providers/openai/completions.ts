@@ -32,12 +32,14 @@ export class OpenAICompletionsProvider extends LLMProvider {
       apiKey,
       ...this.modelOptions,
       ...(reasoningOptions.modelRequestParams || {}),
+      ...(this.requestContext.sessionId ? { promptCacheKey: this.requestContext.sessionId } : {}),
       modelKwargs: {
         response_format: responseFormatOptions,
         ...(reasoningOptions.modelKwargs || {}),
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
+        defaultHeaders: this.getDefaultHeaders(),
       },
     });
   }

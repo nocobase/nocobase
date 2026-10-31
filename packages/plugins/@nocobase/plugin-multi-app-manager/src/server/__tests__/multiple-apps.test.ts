@@ -385,10 +385,14 @@ describe('multiple apps', () => {
     await app.db.reconnect();
 
     await app.start();
-    await sleep(10000);
-    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
-    const appStatus = await AppSupervisor.getInstance().getAppStatus(subAppName);
-    expect(appStatus).toEqual('running');
+    await vi.waitFor(
+      async () => {
+        expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
+        const appStatus = await AppSupervisor.getInstance().getAppStatus(subAppName);
+        expect(appStatus).toEqual('running');
+      },
+      { timeout: 30000, interval: 200 },
+    );
   });
 
   it('should get same obj ref when asynchronously access with same sub app name', async () => {

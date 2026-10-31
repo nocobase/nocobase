@@ -40,6 +40,12 @@ If a file `AGENTS.local.md` exists in this repository root, read it once at the 
 
 - User-facing strings (UI labels, messages, errors shown to end users) must go through the project's i18n layer (`t()` / `useTranslation()`); do not hardcode them. Add keys for both `en-US` and `zh-CN` when introducing new strings.
 
+## V3 Workflow Entry Points
+
+Keep workflow YAML files directly in `.github/workflows/`; GitHub Actions does not support workflow subdirectories. Prefix every v3 workflow filename with `v3-`, including matching implementations on the v3 branches. V3 implementations live on `v3-develop` and are synchronized to `v3-main` through release promotion, with stable-line fixes synchronized back to `v3-develop`. The files on default branch `main` expose manual or scheduled entry points and dispatch the v3 implementation.
+
+Every v3 workflow change must include a synchronization check of its corresponding `main` entry. Implementation-only jobs and steps are picked up through dispatch to `v3-develop`, not copied into `main`; explicitly confirm that the entry still reaches the updated implementation. Workflow additions, deletions, renames, dispatch input changes and scheduled/default-branch trigger changes must update both sides in the same delivery. Keep workflow calls, dispatch filenames, path filters, tests and documentation consistent, coordinate the paired branch rollout, and preserve all existing v1/v2 workflow behavior.
+
 ## Pre-Commit Workflow
 
 - Run `yarn eslint --fix` on touched files before reporting work as done. Resolve type errors and lint warnings rather than disabling them.

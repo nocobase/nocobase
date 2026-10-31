@@ -114,6 +114,34 @@ describe('DataSource & Collection APIs', () => {
     await expect(rules[0].validator({}, '123')).rejects.toBe('单行文本 长度必须为 18 个字符');
   });
 
+  it('enforces collection field precision in component validation rules', async () => {
+    const { m, engine } = makeManager();
+    const translate = vi.spyOn(engine, 'translate').mockImplementation((key) => key);
+    const ds = new DataSource({ key: 'main' });
+    m.addDataSource(ds);
+    ds.addCollection({
+      name: 'employees',
+      fields: [
+        {
+          name: 'years',
+          type: 'double',
+          interface: 'number',
+          title: 'Years',
+          validation: { type: 'number', rules: [{ name: 'precision', args: { limit: 2 } }] },
+        },
+      ],
+    });
+    const rules = ds.getCollection('employees').getField('years').getComponentProps().rules;
+
+    await expect(rules[0].validator({}, 39.2234)).rejects.toContain('2 decimal places');
+    expect(translate).toHaveBeenCalledWith(
+      'number.precision',
+      expect.objectContaining({ ns: 'data-source-main', label: 'Years', limit: 2 }),
+    );
+    await expect(rules[0].validator({}, 39.22)).resolves.toBeUndefined();
+    translate.mockRestore();
+  });
+
   it('ensureLoaded, reload and data source events work for main loader', async () => {
     const { m, engine } = makeManager();
     const loadedListener = vi.fn();

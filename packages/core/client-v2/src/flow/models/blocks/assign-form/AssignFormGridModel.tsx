@@ -115,7 +115,28 @@ export class AssignFormGridModel extends FormGridModel {
       (existing as any).assignValue = value;
       return;
     }
-    const field = (collection?.getFields?.() || []).find((f: any) => f.name === fieldName);
+    if (!collection) {
+      return;
+    }
+    const field = (collection.getFields?.() || []).find((f: any) => f.name === fieldName);
+
+    if (!field) {
+      const created = this.addSubModel('items', {
+        use: 'AssignFormItemModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: collection?.dataSourceKey,
+              collectionName: collection?.name,
+              fieldPath: fieldName,
+            },
+            assignValue: { value },
+          },
+        },
+      });
+      created['assignValue'] = value;
+      return;
+    }
 
     const binding = EditableItemModel.getDefaultBindingByField(this.context, field);
     if (!binding) {

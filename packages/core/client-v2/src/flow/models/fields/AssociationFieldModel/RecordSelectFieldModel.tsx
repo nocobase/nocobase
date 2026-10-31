@@ -41,6 +41,7 @@ import { BlockSceneEnum } from '../../base/BlockModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
 import { EditFormModel } from '../../blocks';
 import { hasAncestorModel } from './recordSelectSettingsUtils';
+import { syncQuickEditPreventClose } from '../../../internal/utils/quickEditViewContainer';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -65,6 +66,11 @@ function RemoteModelRenderer({ options }) {
 
 export function CreateContent({ model, toOne = false }) {
   const ctx = useFlowContext();
+  // Quick-create popups isolate business context but must retain the field's configuration mode.
+  ctx.defineProperty('flowSettingsEnabled', {
+    get: () => model.context.flowSettingsEnabled,
+    cache: false,
+  });
   const { Header, type } = ctx.view;
   model._closeView = ctx.view.close;
   return (
@@ -308,6 +314,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
             }
             setKeepOpenRuntime({ preventCloseOnSelect: false, open });
           }
+          syncQuickEditPreventClose(model, open);
           others.onDropdownVisibleChange?.(open);
         }}
         optionRender={({ data }) => {
@@ -874,6 +881,8 @@ RecordSelectFieldModel.registerFlow({
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
+            // 上级记录暂无主键（如审批配置态表单）时不能传 associationName，否则弹窗内新建的区块会绑定到关联资源；改传 sourceAssociationName，仅用于展示“当前弹窗上级记录”变量
+            ...(associationName && sourceId == null ? { sourceAssociationName: associationName } : {}),
             collectionField: ctx.collectionField,
             openerUids,
             onChange: (e) => {

@@ -666,6 +666,8 @@ server {
 
 这份根路径配置中的 `location /` 会同时代理 `/api/`、`/ws` 和 `/files/`。如果你拆分了静态资源和应用路由，仍需要确保 `/files/` 被转发到 NocoBase，不能把它当作静态目录处理。
 
+内置 Nginx 会在返回历史 `/storage/uploads/` 文件前调用 NocoBase 检查登录状态，匿名访问默认返回 `401`。如果升级前已有程序依赖这些历史地址的匿名访问，可以在 `app.environment` 中增加 `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` 并重启容器。宿主机 Nginx 只需继续把该路径转发到容器，不要另外使用 `alias` 直接暴露宿主机上的上传目录，否则会绕过这一检查。
+
 ### 子路径部署
 
 如果你要把应用部署到子路径，比如 `https://your_domain.com/nocobase/`，那么需要先配置 `APP_PUBLIC_PATH` 环境变量：

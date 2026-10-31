@@ -10,6 +10,7 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  AI_EMPLOYEE_KNOWLEDGE_BASE_PROMPT_INVALID,
   AI_EMPLOYEE_NICKNAME_INVALID,
   AI_EMPLOYEE_USERNAME_CONFLICT,
   AI_EMPLOYEE_USERNAME_INVALID,
@@ -122,6 +123,40 @@ describe('aiEmployees.create', () => {
     expect(actionCreate).not.toHaveBeenCalled();
   });
 
+  it('rejects creating an enabled knowledge-base configuration without the data placeholder', async () => {
+    const values = {
+      username: 'atlas',
+      nickname: 'Atlas',
+      enableKnowledgeBase: true,
+      knowledgeBasePrompt: 'Use retrieved content.',
+    };
+    const { ctx } = createContext(null, values);
+    const actionCreate = vi.spyOn(actions, 'create').mockResolvedValue(undefined);
+
+    await expect(create(ctx, vi.fn() as Next)).rejects.toMatchObject({
+      status: 400,
+      code: AI_EMPLOYEE_KNOWLEDGE_BASE_PROMPT_INVALID,
+      message: 'The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.',
+      data: { field: 'knowledgeBasePrompt' },
+    });
+    expect(actionCreate).not.toHaveBeenCalled();
+  });
+
+  it('accepts an enabled knowledge-base configuration with the data placeholder', async () => {
+    const values = {
+      username: 'atlas',
+      nickname: 'Atlas',
+      enableKnowledgeBase: true,
+      knowledgeBasePrompt: 'Use retrieved content: {knowledgeBaseData}',
+    };
+    const { ctx } = createContext(null, values);
+    const actionCreate = vi.spyOn(actions, 'create').mockResolvedValue(undefined);
+
+    await create(ctx, vi.fn() as Next);
+
+    expect(actionCreate).toHaveBeenCalledOnce();
+  });
+
   it('validates and trims profile names on update', async () => {
     const values = { username: '  atlas  ', nickname: '  Atlas Admin  ' };
     const { ctx } = createContext(null, values);
@@ -130,6 +165,43 @@ describe('aiEmployees.create', () => {
     await update(ctx, vi.fn() as Next);
 
     expect(values).toEqual({ username: 'atlas', nickname: 'Atlas Admin' });
+    expect(actionUpdate).toHaveBeenCalledOnce();
+  });
+
+  it('rejects updating the prompt of an enabled knowledge-base configuration without the placeholder', async () => {
+    const values = { knowledgeBasePrompt: 'Use retrieved content.' };
+    const { ctx } = createContext(
+      {
+        enableKnowledgeBase: true,
+        knowledgeBasePrompt: 'Old prompt: {knowledgeBaseData}',
+      },
+      values,
+    );
+    ctx.action.params.filterByTk = 'atlas';
+    const actionUpdate = vi.spyOn(actions, 'update').mockResolvedValue(undefined);
+
+    await expect(update(ctx, vi.fn() as Next)).rejects.toMatchObject({
+      status: 400,
+      code: AI_EMPLOYEE_KNOWLEDGE_BASE_PROMPT_INVALID,
+    });
+    expect(actionUpdate).not.toHaveBeenCalled();
+  });
+
+  it('does not validate legacy knowledge-base prompts during unrelated updates', async () => {
+    const values = { enabled: false };
+    const { ctx, findOne } = createContext(
+      {
+        enableKnowledgeBase: true,
+        knowledgeBasePrompt: 'Legacy prompt without placeholder',
+      },
+      values,
+    );
+    ctx.action.params.filterByTk = 'atlas';
+    const actionUpdate = vi.spyOn(actions, 'update').mockResolvedValue(undefined);
+
+    await update(ctx, vi.fn() as Next);
+
+    expect(findOne).not.toHaveBeenCalled();
     expect(actionUpdate).toHaveBeenCalledOnce();
   });
 });

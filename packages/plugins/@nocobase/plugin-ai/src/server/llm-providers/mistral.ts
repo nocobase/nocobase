@@ -87,6 +87,20 @@ function extractThinkingChunks(content: unknown): string {
     .join('');
 }
 
+// The Mistral SDK has no default-headers option, so headers are injected through a before-request hook
+export const createMistralHeadersHook = (defaultHeaders: Record<string, string>): MistralBeforeRequestHook => {
+  return (request) => {
+    if (!Object.keys(defaultHeaders).length) {
+      return;
+    }
+    const headers = new Headers(request.headers);
+    for (const [key, value] of Object.entries(defaultHeaders)) {
+      headers.set(key, value);
+    }
+    return new Request(request, { headers });
+  };
+};
+
 export const injectMistralReasoningEffort: MistralBeforeRequestHook = async (request) => {
   if (request.method !== 'POST') {
     return;
@@ -173,9 +187,10 @@ export class MistralProvider extends LLMProvider {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput, ...modelOptions } = this.modelOptions || {};
     omitDisabledNumberOptions(modelOptions);
+    const defaultHooks = [createMistralHeadersHook(this.getDefaultHeaders()), injectMistralReasoningEffort];
     const beforeRequestHooks = Array.isArray(modelOptions.beforeRequestHooks)
-      ? ([injectMistralReasoningEffort, ...modelOptions.beforeRequestHooks] as MistralBeforeRequestHook[])
-      : [injectMistralReasoningEffort];
+      ? ([...defaultHooks, ...modelOptions.beforeRequestHooks] as MistralBeforeRequestHook[])
+      : defaultHooks;
     const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
 
     return new ReasoningChatMistralAI({
@@ -231,6 +246,7 @@ export class MistralProvider extends LLMProvider {
         method: 'GET',
         url,
         headers: {
+          ...this.getDefaultHeaders(),
           Authorization: `Bearer ${apiKey}`,
         },
       });

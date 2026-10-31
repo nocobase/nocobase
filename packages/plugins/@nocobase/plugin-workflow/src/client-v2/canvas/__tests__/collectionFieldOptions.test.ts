@@ -148,4 +148,86 @@ describe('getCollectionFieldOptions (client-v2)', () => {
     expect(getCollectionFieldOptions({ compile, collectionManager })).toEqual([]);
     expect(collectionManager.getCollectionAllFields).not.toHaveBeenCalled();
   });
+
+  describe('deeply nested appends', () => {
+    // A chain c0 -> c1 -> ... -> c5, each level linked by a `next` belongsTo, mirroring a collection-event trigger
+    // whose "Preload associations" config goes several levels deep.
+    const chain: Record<string, MockField[]> = {};
+    for (let i = 0; i <= 5; i++) {
+      chain[`c${i}`] = [
+        { name: 'id', type: 'bigInt', interface: 'integer', uiSchema: { title: 'ID' }, primaryKey: true },
+        { name: `name${i}`, type: 'string', interface: 'input', uiSchema: { title: `Name${i}` } },
+        ...(i < 5
+          ? [
+              {
+                name: 'next',
+                type: 'belongsTo',
+                interface: 'm2o',
+                target: `c${i + 1}`,
+                targetKey: 'id',
+                foreignKey: 'nextId',
+                uiSchema: { title: 'Next' },
+              } as MockField,
+              {
+                name: 'nextId',
+                type: 'bigInt',
+                interface: 'integer',
+                foreignKey: 'nextId',
+                isForeignKey: true,
+                uiSchema: { title: 'Next ID' },
+              } as MockField,
+            ]
+          : []),
+      ];
+    }
+
+    // Walk the tree the way the variable picker does: expand `next` level by level, returning the paths reached.
+    function walk(configAppends: string[], types?: any[]) {
+      const collectionManager = makeCollectionManager(chain);
+      const options = getCollectionFieldOptions({
+        types,
+        // Same shape the collection trigger builds: the record itself plus every configured path under it.
+        appends: ['data', ...configAppends.map((item) => `data.${item}`)],
+        fields: [
+          { collectionName: 'c0', name: 'data', type: 'hasOne', target: 'c0', uiSchema: { title: 'Trigger data' } },
+        ],
+        compile,
+        collectionManager,
+      });
+      const reached: string[] = [];
+      const path = ['data'];
+      let current: any = options.find((o) => o.value === 'data');
+      while (current) {
+        reached.push(path.join('.'));
+        if (current.isLeaf || !current.loadChildren) {
+          break;
+        }
+        current.loadChildren(current);
+        current = (current.children ?? []).find((child: any) => child.value === 'next');
+        path.push('next');
+      }
+      return reached;
+    }
+
+    const full = ['next', 'next.next', 'next.next.next', 'next.next.next.next'];
+    const gapped = ['next', 'next.next', 'next.next.next.next']; // `next.next.next` missing from the config
+    const leafOnly = ['next.next.next.next'];
+    const allLevels = ['data', 'data.next', 'data.next.next', 'data.next.next.next', 'data.next.next.next.next'];
+
+    it('walks every configured level', () => {
+      expect(walk(full)).toEqual(allLevels);
+    });
+
+    // A nested appends entry preloads the whole chain server-side, so a missing intermediate entry must not cut the
+    // variable tree short — it used to stop at the gap, making deeper variables unselectable.
+    it('walks past gaps in the configured paths', () => {
+      expect(walk(gapped)).toEqual(allLevels);
+      expect(walk(leafOnly)).toEqual(allLevels);
+    });
+
+    it('walks past gaps with a type filter as well', () => {
+      expect(walk(gapped, ['string'])).toEqual(allLevels);
+      expect(walk(leafOnly, ['string'])).toEqual(allLevels);
+    });
+  });
 });

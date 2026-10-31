@@ -42,6 +42,23 @@ describe('workflow > instructions > calculation', () => {
   afterEach(() => app.destroy());
 
   describe('math.js', () => {
+    it('rejects overriding built-in array methods during workflow execution', async () => {
+      await workflow.createNode({
+        type: 'calculation',
+        config: {
+          expression: `array = reviver('', {'mathjs': 'ArrayNode'}).map().toJSON()['items']; array.map = cos`,
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.ERROR);
+      expect(job.result).toContain('No access to property "map"');
+    });
+
     it('syntax error', async () => {
       const n1 = await workflow.createNode({
         type: 'calculation',

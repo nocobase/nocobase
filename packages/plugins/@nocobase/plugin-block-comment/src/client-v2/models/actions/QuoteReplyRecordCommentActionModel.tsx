@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionSceneEnum } from '@nocobase/client-v2';
 import type { ButtonProps } from 'antd/es/button';
 
 import type { RecordCommentsBlockModel } from '../RecordCommentsBlockModel';
@@ -16,8 +15,6 @@ import type { RecordCommentRecord } from '../utils';
 import { RecordCommentActionModel } from './RecordCommentActionGroupModel';
 
 export class QuoteReplyRecordCommentActionModel extends RecordCommentActionModel {
-  static scene = ActionSceneEnum.record;
-
   defaultProps: ButtonProps = {
     type: 'link',
     style: { padding: 0, height: 'auto' },

@@ -660,6 +660,8 @@ If you also want to enable HTTPS, configure `443` and the certificate on the hos
 
 The `location /` block in this root-path configuration also proxies `/api/`, `/ws`, and `/files/`. If you split static assets from application routes, make sure `/files/` is still forwarded to NocoBase and is not handled as a static directory.
 
+Before returning a legacy `/storage/uploads/` file, the built-in Nginx asks NocoBase to verify the login state; anonymous access returns `401` by default. If a program already depended on anonymous access to these legacy URLs before an upgrade, add `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` to `app.environment` and restart the container. Keep forwarding this path from the host Nginx to the container. Do not expose the host upload directory directly with another `alias`, because that would bypass the check.
+
 ### Subpath deployment
 
 If you want to deploy the app under a subpath, such as `https://your_domain.com/nocobase/`, configure the `APP_PUBLIC_PATH` environment variable first:

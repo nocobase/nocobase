@@ -46,6 +46,7 @@ function validateWorkflow(
 }
 
 export async function list(context: Context, next) {
+  // use default list action
   return actions.list(context, next);
 }
 

@@ -867,6 +867,7 @@ describe('file manager > server', () => {
 
         expect(response.status).toBe(302);
         expect(response.headers.location).toBe(storageUrl);
+        expect(response.headers['cache-control']).toBe('private, no-store');
       });
 
       it('preserves the sub-application when redirecting to local storage', async () => {
@@ -1018,6 +1019,7 @@ describe('file manager > server', () => {
         expect(file.toJSON()).toMatchObject({ local: false });
         expect(getResponse.body.data.local).toBe(false);
         expect(response.status).toBe(302);
+        expect(response.headers['cache-control']).toBe('private, no-store');
         expect(location.searchParams.get('response-content-disposition')).toContain('attachment');
         expect(location.searchParams.get('X-Amz-Signature')).toBeTruthy();
       });
@@ -1033,6 +1035,7 @@ describe('file manager > server', () => {
 
         expect(response.status).toBe(302);
         expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+        expect(response.headers['cache-control']).toBe('private, no-store');
         expect(response.text || '').toBe('');
       });
 

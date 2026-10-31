@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { FlowContext } from '../flowContext';
+import { FlowContext, type PropertyMeta } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowView } from '../views/FlowView';
 import { buildPopupRuntime, createPopupMeta, registerPopupVariable } from '../views/createViewMeta';
@@ -396,5 +396,87 @@ describe('createPopupMeta - popup variables', () => {
     registerPopupVariable(ctx, anchorView);
 
     expect(ctx.getPropertyOptions('popup')?.resolveOnServer?.('sourceRecord.department.title')).toBe(true);
+  });
+
+  describe('popup sourceRecord meta for quick create popups', () => {
+    function makeCtxWithUsers() {
+      const engine = new FlowEngine();
+      const ds = engine.context.dataSourceManager.getDataSource('main');
+      ds.addCollection({
+        name: 'orgs',
+        filterTargetKey: 'id',
+        fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+      });
+      ds.addCollection({
+        name: 'users',
+        filterTargetKey: 'id',
+        fields: [
+          { name: 'id', type: 'integer', interface: 'number' },
+          { name: 'nickname', type: 'string', interface: 'input' },
+          { name: 'orgs', type: 'hasMany', target: 'orgs', interface: 'o2m' },
+        ],
+      });
+      return engine.context;
+    }
+
+    function makeQuickCreatePopupView(inputArgs: Record<string, unknown>): FlowView {
+      return {
+        type: 'drawer',
+        inputArgs: {
+          openerUids: ['approval-form-uid'],
+          scene: 'create',
+          dataSourceKey: 'main',
+          collectionName: 'orgs',
+          ...inputArgs,
+        },
+        Header: null,
+        Footer: null,
+        close: () => void 0,
+        update: () => void 0,
+      } as unknown as FlowView;
+    }
+
+    async function getPopupProps(ctx: FlowContext, view: FlowView) {
+      const meta = await createPopupMeta(ctx, view)();
+      const props = typeof meta?.properties === 'function' ? await meta.properties() : meta?.properties;
+      return { meta, props: props || {} };
+    }
+
+    it('exposes the parent record meta from sourceAssociationName before the parent record has a primary key', async () => {
+      const ctx = makeCtxWithUsers();
+      const view = makeQuickCreatePopupView({ sourceAssociationName: 'users.orgs' });
+
+      const { meta, props } = await getPopupProps(ctx, view);
+      const sourceRecordMeta = props.sourceRecord as PropertyMeta;
+      expect(sourceRecordMeta?.title).toBe('Current popup parent record');
+      const fields =
+        typeof sourceRecordMeta.properties === 'function'
+          ? await sourceRecordMeta.properties()
+          : sourceRecordMeta.properties;
+      expect(fields).toHaveProperty('nickname');
+
+      // 父记录尚无主键时仅用于配置变量，不应生成服务端取值参数
+      const vars = (await meta?.buildVariablesParams?.(ctx)) as { sourceRecord?: unknown } | undefined;
+      expect(vars?.sourceRecord).toBeUndefined();
+    });
+
+    it('does not expose the parent record meta without sourceId or sourceAssociationName', async () => {
+      const ctx = makeCtxWithUsers();
+      const view = makeQuickCreatePopupView({});
+
+      const { props } = await getPopupProps(ctx, view);
+      expect(props.sourceRecord).toBeUndefined();
+    });
+
+    it('keeps resolving the parent record by sourceId once the parent record is persisted', async () => {
+      const ctx = makeCtxWithUsers();
+      const view = makeQuickCreatePopupView({ associationName: 'users.orgs', sourceId: 7 });
+
+      const { meta, props } = await getPopupProps(ctx, view);
+      expect((props.sourceRecord as PropertyMeta)?.title).toBe('Current popup parent record');
+
+      const vars = (await meta?.buildVariablesParams?.(ctx)) as { sourceRecord?: unknown } | undefined;
+      expect(vars?.sourceRecord).toEqual({ collection: 'users', dataSourceKey: 'main', filterByTk: 7 });
+    });
   });
 });

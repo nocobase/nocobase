@@ -179,6 +179,37 @@ describe('workflow > instructions > delay', () => {
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
     });
 
+    it('should error when the duration variable resolves to a string', async () => {
+      const n1 = await workflow.createNode({
+        type: 'echoVariable',
+        config: {
+          variable: 'invalid duration',
+        },
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'delay',
+        config: {
+          duration: `{{$jobsMapByNodeKey.${n1.key}}}`,
+          unit: 1000,
+          endStatus: JOB_STATUS.RESOLVED,
+        },
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n2);
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
+      const [, delayJob] = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(delayJob.status).toBe(JOB_STATUS.ERROR);
+      expect(delayJob.result).toMatchObject({
+        message: 'Delay duration must be a finite number greater than or equal to 1',
+      });
+    });
+
     it('delay to resolve and downstream node error', async () => {
       const n1 = await workflow.createNode({
         type: 'delay',
@@ -307,6 +338,20 @@ describe('workflow > instructions > delay', () => {
         values: { type: 'delay', config: { endStatus: JOB_STATUS.RESOLVED, unit: 1000 } },
       });
       expect(status).toBe(200);
+    });
+
+    it('should accept duration as a JSON template variable', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'delay', config: { duration: '{{$context.data.duration}}' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should reject a numeric duration below the minimum', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'delay', config: { duration: 0 } },
+      });
+      expect(status).toBe(400);
     });
 
     it('should accept with empty config', async () => {

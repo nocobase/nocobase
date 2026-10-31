@@ -59,14 +59,24 @@ export default defineTools({
     }
 
     const plugin = getAIPlugin(ctx);
-    const content = await plugin.knowledgeBaseManager.retrievePrompt({
+    const { prompt, documents } = await plugin.knowledgeBaseManager.retrievePrompt({
       username,
       query,
       roleNames: getCurrentRoleNames(ctx.state),
     });
+    if (documents.length) {
+      runtime.writer?.({
+        action: 'knowledgeBaseRetrieved',
+        body: { toolCallId, documents },
+        currentConversation: {
+          sessionId: aiToolMessage.sessionId,
+          username,
+        },
+      });
+    }
     return {
       status: 'success',
-      content,
+      content: prompt,
     };
   },
 });

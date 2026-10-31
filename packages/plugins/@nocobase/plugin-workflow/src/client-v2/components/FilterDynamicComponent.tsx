@@ -377,6 +377,10 @@ export function FilterDynamicComponent({
           rightMetaTree={rightMetaTree}
           rightVariableConverters={workflowFilterVariableConverters}
           maxAssociationFieldDepth={maxAssociationFieldDepth}
+          // The right-hand tree is the workflow variable tree, whose depth is already decided by the trigger's
+          // "Preload associations" config — capping it by the left-side field-picker limit would hide variables the
+          // user has explicitly preloaded.
+          rightMaxAssociationFieldDepth={null}
         />
       </FlowModelProvider>
     );

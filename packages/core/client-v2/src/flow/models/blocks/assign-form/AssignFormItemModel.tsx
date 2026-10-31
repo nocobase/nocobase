@@ -10,7 +10,14 @@
 import React from 'react';
 import { Input } from 'antd';
 import { define, observable } from '@formily/reactive';
-import { FlowModelRenderer, FormItem, tExpr, EditableItemModel, jioToJoiSchema } from '@nocobase/flow-engine';
+import {
+  EditableItemModel,
+  FieldDeletePlaceholder,
+  FlowModelRenderer,
+  FormItem,
+  jioToJoiSchema,
+  tExpr,
+} from '@nocobase/flow-engine';
 // 无需类型导入（避免未使用的类型）
 import { FormItemModel } from '../form/FormItemModel';
 import { EditFormModel } from '../form/EditFormModel';
@@ -24,6 +31,7 @@ import {
   isDateLikeField,
   resolveDateVariableComponentProps,
 } from '../../../components/field-value-variable';
+import { isArrayValueField, normalizeAssignFormValue } from './assignFormValue';
 
 type AssignFormTempOriginField = {
   uid?: string;
@@ -105,8 +113,6 @@ export class AssignFormItemModel extends FormItemModel {
   }
 
   onInit(options: any) {
-    const initAssign = this.getStepParams('fieldSettings', 'assignValue')?.value;
-    if (typeof initAssign !== 'undefined') this.assignValue = initAssign;
     this.context.defineProperty('collectionField', {
       get: () => {
         const params = this.getStepParams('fieldSettings', 'init') || {};
@@ -115,6 +121,10 @@ export class AssignFormItemModel extends FormItemModel {
         return dsm?.getCollectionField?.(key);
       },
     });
+    const initAssign = this.getStepParams('fieldSettings', 'assignValue')?.value;
+    if (typeof initAssign !== 'undefined') {
+      this.assignValue = normalizeAssignFormValue(initAssign, isArrayValueField(this.collectionField));
+    }
 
     // 确保存在 subModels.field，便于沿用 FormItemModel 的组件切换/设置步骤（fieldComponent 等）
     const ctx: any = this.context;
@@ -160,11 +170,15 @@ export class AssignFormItemModel extends FormItemModel {
 
   getAssignedEntry(): [string, any] | null {
     const name = this.fieldPath;
-    if (!name) return null;
-    return [name, this.assignValue];
+    if (!name || !this.collectionField) return null;
+    return [name, normalizeAssignFormValue(this.assignValue, isArrayValueField(this.collectionField))];
   }
 
   render() {
+    if (!this.collectionField) {
+      return <FieldDeletePlaceholder />;
+    }
+
     // 与 FormItemModel.render 结构保持一致，仅替换内部渲染为 VariableInput + 常量编辑器
     const ctx: any = this.context;
     const collection = ctx.collection;
@@ -173,6 +187,7 @@ export class AssignFormItemModel extends FormItemModel {
     const fieldPath = this.fieldPath;
     const originField = this.subModels?.field as AssignFormTempOriginField | undefined;
     const tempFieldRefreshKey = getAssignFormTempFieldRefreshKey(originField);
+    const arrayValueField = isArrayValueField(this.collectionField);
 
     const FieldRow: React.FC = () => {
       const [tempRoot, setTempRoot] = React.useState<any>(null);
@@ -241,6 +256,14 @@ export class AssignFormItemModel extends FormItemModel {
         fm?.dispatchEvent?.('beforeRender', undefined, { sequential: true, useCache: true });
         // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
         ensureOptionsFromUiSchemaEnumIfAbsent(fm as any, cfForMultiple as any);
+        // `mode` is the antd Select switch for multi-select. It is normally injected by
+        // `collectionField.getComponentProps()`, which the temp field does not apply.
+        // Apply the fallback after `beforeRender` so field flows keep precedence; a
+        // schema-provided mode is used when present, otherwise default to `multiple`.
+        if (cfForMultiple?.interface === 'multipleSelect' && fm?.props?.mode === undefined) {
+          const schemaMode = cfForMultiple?.uiSchema?.['x-component-props']?.mode as string | undefined;
+          fm?.setProps?.({ mode: schemaMode ?? 'multiple' });
+        }
         if (!fm?.props?.fieldNames && cfForMultiple?.targetCollection) {
           const targetCol = cfForMultiple.targetCollection;
           const valueKey = cfForMultiple?.targetKey || targetCol?.filterTargetKey || 'id';
@@ -257,16 +280,17 @@ export class AssignFormItemModel extends FormItemModel {
       const ConstantValueEditor: React.FC<any> = (inputProps: any) => {
         React.useEffect(() => {
           if (!tempRoot) return;
+          const isArrayField = isArrayValueField(this.collectionField);
           // 同步根 props（变量输入的受控 value/onChange）
           tempRoot.setProps?.({ ...inputProps });
           // 同步到具体字段模型，确保字段组件能触发 onChange
           const fm = tempRoot?.subModels?.fields?.[0];
           if (fm) {
             fm.setProps?.({
-              value: inputProps?.value,
+              value: normalizeAssignFormValue(inputProps?.value, isArrayField),
               onChange: (...args: unknown[]) => {
                 const nextArg = args && args.length ? args[0] : undefined;
-                const nextValue = normalizeAssignFormInputValue(nextArg);
+                const nextValue = normalizeAssignFormValue(normalizeAssignFormInputValue(nextArg), isArrayField);
                 fm.setProps?.({ value: nextValue });
                 this.assignValue = nextValue;
                 inputProps?.onChange?.(nextValue);
@@ -319,20 +343,24 @@ export class AssignFormItemModel extends FormItemModel {
           {...this.props}
           label={labelText}
           name={namePath}
-          initialValue={this.assignValue}
+          initialValue={normalizeAssignFormValue(this.assignValue, arrayValueField)}
           valuePropName="__assign_value__"
           trigger="__assign_trigger__"
           validateTrigger="__assign_trigger__"
         >
           {React.createElement((formBindingProps: any) => {
             const formValue = formBindingProps?.__assign_value__;
-            const mergedValue = typeof formValue === 'undefined' ? this.assignValue : formValue;
+            const mergedValue = normalizeAssignFormValue(
+              typeof formValue === 'undefined' ? this.assignValue : formValue,
+              arrayValueField,
+            );
             return (
               <FieldValueVariableInput
                 value={mergedValue}
                 onChange={(v) => {
-                  this.assignValue = v;
-                  formBindingProps?.__assign_trigger__?.(v);
+                  const nextValue = normalizeAssignFormValue(v, arrayValueField);
+                  this.assignValue = nextValue;
+                  formBindingProps?.__assign_trigger__?.(nextValue);
                 }}
                 baseMetaTree={baseMetaTree}
                 constantComponent={ConstantValueEditor}
@@ -392,7 +420,7 @@ AssignFormItemModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          label: (ctx.model as any).collectionField.title,
+          label: (ctx.model as any).collectionField?.title || (ctx.model as any).fieldPath,
         };
       },
       handler(ctx, params) {

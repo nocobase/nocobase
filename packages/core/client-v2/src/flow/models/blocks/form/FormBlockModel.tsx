@@ -399,20 +399,41 @@ export class FormBlockModel<
           if (Array.isArray(topValue) && topValue.length === 0) return false;
 
           // 本地优先：支持对多关系的 dot 聚合路径（例如 assignees.name）。
-          // lodash.get 对数组聚合路径会返回 undefined（如 _.get({ assignees:[{name:'A'}] }, 'assignees.name')），
-          // 因而这里先用 getValuesByPath 做一次前端可解析性检查，命中则直接前端解析。
+          // 关联字段只有在本地值包含目标标题字段时才算完整；标量外键或仅含主键的轻量对象仍需服务端补全。
           const formValuesSnapshot = runtime.getFormValuesSnapshot();
+          let shouldResolveAssociationValueOnServer = false;
           if (formValuesSnapshot && typeof formValuesSnapshot === 'object') {
-            const localResolved = getValuesByPath(formValuesSnapshot as Record<string, any>, subPath);
+            const localResolved = getValuesByPath(formValuesSnapshot as Record<string, unknown>, subPath);
             if (typeof localResolved !== 'undefined') {
-              return false;
+              const fieldPath = subPath
+                .replace(/\[\d+\]/g, '')
+                .split('.')
+                .filter((segment) => !/^\d+$/.test(segment))
+                .join('.');
+              const resolvedField = this.collection?.getFieldByPath?.(fieldPath);
+              const titleFieldName = resolvedField?.targetCollectionTitleFieldName;
+              const isLoadedAssociationRecord = (value: unknown) => {
+                if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+                if (!titleFieldName) return true;
+                return typeof (value as Record<string, unknown>)[titleFieldName] !== 'undefined';
+              };
+              const isAssociationValueLoaded =
+                localResolved === null ||
+                (Array.isArray(localResolved)
+                  ? localResolved.length === 0 ||
+                    localResolved.every((value) => value === null || isLoadedAssociationRecord(value))
+                  : isLoadedAssociationRecord(localResolved));
+              if (!resolvedField?.isAssociationField?.() || isAssociationValueLoaded) {
+                return false;
+              }
+              shouldResolveAssociationValueOnServer = true;
             }
           }
 
           // 已配置字段：仅关联字段的子路径按需服务端补全（保持现有语义）
           const assocResolver = createAssociationSubpathResolver(
             () => this.collection,
-            () => runtime.getFormValuesSnapshot(),
+            shouldResolveAssociationValueOnServer ? undefined : () => runtime.getFormValuesSnapshot(),
           );
           return assocResolver(subPath);
         }

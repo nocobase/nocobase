@@ -50,6 +50,7 @@ export {
   getPreviewThumbnailUrl,
   isPermanentFileUrl,
   matchMimetype,
+  triggerFileDownload,
   wrapWithModalPreviewer,
 } from './previewer/filePreviewTypes';
 export type { FilePreviewType, FilePreviewerProps } from './previewer/filePreviewTypes';

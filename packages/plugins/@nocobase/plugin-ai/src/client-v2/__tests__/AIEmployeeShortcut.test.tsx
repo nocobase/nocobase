@@ -48,16 +48,12 @@ vi.mock('antd', async () => {
   };
 });
 
-vi.mock('ahooks', async () => {
-  const actual = await vi.importActual<typeof import('ahooks')>('ahooks');
-  return {
-    ...actual,
-    useRequest: () => ({
-      data: [employee],
-      loading: false,
-    }),
-  };
-});
+vi.mock('../repositories/hooks/useAIConfigRepository', () => ({
+  useAIConfigRepository: () => ({
+    aiEmployees: [{ username: 'atlas', nickname: 'Atlas', avatar: 'baseBlue' }],
+    getAIEmployees: vi.fn().mockResolvedValue([{ username: 'atlas', nickname: 'Atlas', avatar: 'baseBlue' }]),
+  }),
+}));
 
 vi.mock('@nocobase/flow-engine', async () => {
   const actual = await vi.importActual<typeof import('@nocobase/flow-engine')>('@nocobase/flow-engine');

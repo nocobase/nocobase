@@ -206,24 +206,26 @@ function exposeMobileOpenViewInputArgsOnModelContext(
   modelContext.isMobileLayout = true;
 }
 
-export const mobileOpenView = {
-  ...openView,
-  async handler(ctx: OpenViewContext, params: OpenViewParams) {
-    const inputArgs = resolveMobileOpenViewInputArgs(ctx, params);
-    const resolvedParams = resolveMobileOpenViewParams(ctx, params);
-    const originalInputArgs = ctx.inputArgs;
+export function createMobileOpenView(base: typeof openView = openView) {
+  return {
+    ...base,
+    async handler(ctx: OpenViewContext, params: OpenViewParams) {
+      const inputArgs = resolveMobileOpenViewInputArgs(ctx, params);
+      const resolvedParams = resolveMobileOpenViewParams(ctx, params);
+      const originalInputArgs = ctx.inputArgs;
 
-    exposeMobileOpenViewInputArgsOnModelContext(ctx, inputArgs);
+      exposeMobileOpenViewInputArgsOnModelContext(ctx, inputArgs);
 
-    if (inputArgs === originalInputArgs) {
-      return openView.handler(ctx, resolvedParams);
-    }
+      if (inputArgs === originalInputArgs) {
+        return base.handler(ctx, resolvedParams);
+      }
 
-    const restoreInputArgs = overrideContextInputArgs(ctx, inputArgs);
-    try {
-      return await openView.handler(ctx, resolvedParams);
-    } finally {
-      restoreInputArgs();
-    }
-  },
-};
+      const restoreInputArgs = overrideContextInputArgs(ctx, inputArgs);
+      try {
+        return await base.handler(ctx, resolvedParams);
+      } finally {
+        restoreInputArgs();
+      }
+    },
+  };
+}

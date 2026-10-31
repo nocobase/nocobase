@@ -3,5 +3,6 @@
   "Bulk update": "批量更新",
   "Bulk update action settings": "批量更新操作设置",
   "Entire collection": "全表",
-  "Please select the records to be updated": "请选择要更新的记录"
+  "Please select the records to be updated": "请选择要更新的记录",
+  "The configured field value is no longer available": "配置的字段值已不存在，请重新配置"
 }

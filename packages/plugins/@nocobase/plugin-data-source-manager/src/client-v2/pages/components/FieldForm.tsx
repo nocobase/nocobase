@@ -26,6 +26,7 @@ import type { DragEndEvent, DraggableAttributes, DraggableSyntheticListeners } f
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  AutoComplete,
   Button,
   Checkbox,
   Col,
@@ -140,6 +141,8 @@ const relationCollectionPropertyNames = new Set(['target']);
 const fileCollectionEnum = '{{fileCollections}}';
 const sourceKeyPropertyNames = new Set(['sourceKey']);
 const targetKeyPropertyNames = new Set(['targetKey']);
+// Foreign key candidates only: the storage types that are able to hold a reference column, same as v1.
+const foreignKeyStorageTypes = new Set(['string', 'bigInt', 'integer', 'uuid', 'uid', 'nanoid']);
 const validationConfigureItemName = 'validation';
 const optionColorLabels: Record<string, string> = {
   red: 'Red',
@@ -343,7 +346,11 @@ function toInitialValues(
   t: (key: string) => string,
 ) {
   if (field) {
-    return cloneDeep(field);
+    const values = cloneDeep(field);
+    if (values.reverseField) {
+      values.autoCreateReverseField = true;
+    }
+    return values;
   }
   const values = {
     name: randomId('f_'),
@@ -701,6 +708,9 @@ type ConfigureSelectControlBehavior = {
 };
 
 const configureSelectControlPolicies: Record<string, Partial<ConfigureSelectControlBehavior>> = {
+  ForeignKey: {
+    showSearch: true,
+  },
   SourceKey: {
     allowClear: false,
     autoSelectFirstOption: true,
@@ -731,6 +741,41 @@ export function filterConfigureSelectOption(input: string, option?: ConfigureSel
       .toLowerCase()
       .includes(normalizedInput),
   );
+}
+
+/**
+ * The collection that owns the foreign key column: the current collection for belongsTo, the through collection for
+ * belongsToMany, and the target collection for hasOne / hasMany. Same resolution as v1.
+ */
+export function resolveForeignKeyCollectionName(options: {
+  collectionName?: string;
+  through?: string;
+  target?: string;
+  type?: string;
+}) {
+  const { collectionName, target, through, type } = options;
+  if (type === 'belongsTo') {
+    return collectionName;
+  }
+  if (type === 'belongsToMany') {
+    return through;
+  }
+  return target;
+}
+
+/**
+ * Existing columns of the owning collection that are able to store a reference.
+ */
+export function getForeignKeyFieldOptions(
+  fields: Array<{ name: string; type?: string; title?: string; uiSchema?: { title?: string } }> | undefined,
+  t: (key: string) => string,
+) {
+  return (fields || [])
+    .filter((field) => field?.type && foreignKeyStorageTypes.has(field.type))
+    .map((field) => ({
+      value: field.name,
+      label: compileLegacyTemplate(field.uiSchema?.title || field.title || field.name, t),
+    }));
 }
 
 function ConfigureSelectControl(props: {
@@ -1236,6 +1281,8 @@ function FieldConfigurePropertyItem(props: {
   const component = schema?.['x-component'];
   const CustomComponent = component ? components?.[component] : undefined;
   const targetCollectionName = Form.useWatch('target', form);
+  const relationType = Form.useWatch('type', form);
+  const throughCollectionName = Form.useWatch('through', form);
   const autoCreateReverseField = Form.useWatch('autoCreateReverseField', form);
   const inputable = Form.useWatch('inputable', form);
   const uiSchemaEnum = Form.useWatch(['uiSchema', 'enum'], form);
@@ -1277,6 +1324,16 @@ function FieldConfigurePropertyItem(props: {
       : loadedCurrentCollection?.fields || [];
   const targetCollection = collections.find((item) => item.name === targetCollectionName);
   const targetCollectionFields = targetCollection?.fields || [];
+  const foreignKeyCollectionName = resolveForeignKeyCollectionName({
+    collectionName: collection.name,
+    target: targetCollectionName,
+    through: throughCollectionName,
+    type: relationType,
+  });
+  const foreignKeyFields =
+    foreignKeyCollectionName === collection.name
+      ? currentCollectionFields
+      : collections.find((item) => item.name === foreignKeyCollectionName)?.fields;
 
   useEffect(() => {
     if (!coreState.hasValue) {
@@ -1422,10 +1479,41 @@ function FieldConfigurePropertyItem(props: {
     );
   }
 
+  if (component === 'ForeignKey' && context.createMainOnly && getCollectionTemplate(collection) !== 'view') {
+    const options = getForeignKeyFieldOptions(foreignKeyFields, t);
+    return (
+      <Form.Item
+        name={namePath}
+        label={title}
+        tooltip={tooltip}
+        rules={[
+          { required: !!schema?.required },
+          {
+            validator: (_, value: string | undefined) => {
+              if (!value || options.some((option) => option.value === value) || fieldNamePattern.test(value)) {
+                return Promise.resolve();
+              }
+              return Promise.reject(new Error(t(fieldNameDescription)));
+            },
+          },
+        ]}
+      >
+        <AutoComplete
+          {...componentProps}
+          disabled={disabled}
+          options={options}
+          filterOption={filterConfigureSelectOption}
+          allowClear
+        />
+      </Form.Item>
+    );
+  }
+
   if (
     component === 'Select' ||
     component === 'CollectionSelect' ||
     component === 'RemoteSelect' ||
+    component === 'ForeignKey' ||
     component === 'TargetKey' ||
     component === 'SourceKey'
   ) {
@@ -1443,20 +1531,22 @@ function FieldConfigurePropertyItem(props: {
               value: field.name,
               label: compileLegacyTemplate(field.uiSchema?.title || field.name, t),
             }))
-        : relationCollectionPropertyNames.has(name) &&
-            collectionOptionComponents.has(component) &&
-            !Array.isArray(schema?.enum)
-          ? getCollectionOptions(
-              collections.filter((item) => item.name && item.name !== collection.name),
-              t,
-            )
-          : schema?.enum === '{{collections}}'
-            ? getCollectionOptions(collections, t)
-            : schema?.enum === fileCollectionEnum
-              ? getFileCollectionOptions(collections, t)
-              : component === 'CollectionSelect' || component === 'RemoteSelect'
-                ? getCollectionOptions(collections, t)
-                : normalizeSchemaEnum(schema?.enum, t);
+        : component === 'ForeignKey'
+          ? getForeignKeyFieldOptions(foreignKeyFields, t)
+          : relationCollectionPropertyNames.has(name) &&
+              collectionOptionComponents.has(component) &&
+              !Array.isArray(schema?.enum)
+            ? getCollectionOptions(
+                collections.filter((item) => item.name && item.name !== collection.name),
+                t,
+              )
+            : schema?.enum === '{{collections}}'
+              ? getCollectionOptions(collections, t)
+              : schema?.enum === fileCollectionEnum
+                ? getFileCollectionOptions(collections, t)
+                : component === 'CollectionSelect' || component === 'RemoteSelect'
+                  ? getCollectionOptions(collections, t)
+                  : normalizeSchemaEnum(schema?.enum, t);
 
     const { autoSelectFirstOption, filter, multiple, ...selectProps } = componentProps;
     const resolvedSelectProps = {
@@ -1547,7 +1637,7 @@ function FieldConfigurePropertyItem(props: {
     );
   }
 
-  if (component === 'ForeignKey' || component === 'ThroughCollection') {
+  if (component === 'ThroughCollection') {
     return (
       <Form.Item
         name={namePath}
@@ -1828,20 +1918,18 @@ export function FieldForm(props: FieldFormProps) {
       }
       values.name = generatedFieldNameRef.current;
       applyItemDefaults(values, fieldConfigureItems);
-      if ((fieldInterface?.isAssociation || configure?.isAssociation) && !get(values, 'source')) {
-        set(values, 'source', props.collection.name);
-      }
+    } else if (!values.reverseField && fieldInterfaceOptions?.default?.reverseField) {
+      values.autoCreateReverseField = false;
+      values.reverseField = cloneDeep(fieldInterfaceOptions.default.reverseField);
+      values.reverseField.name = randomId('f_');
+      set(
+        values.reverseField,
+        'uiSchema.title',
+        compileLegacyTemplateText(props.collection.title || props.collection.name, t),
+      );
     }
     return values;
-  }, [
-    configure?.isAssociation,
-    fieldConfigureItems,
-    fieldInterface?.isAssociation,
-    fieldInterfaceOptions,
-    props.collection.name,
-    props.field,
-    t,
-  ]);
+  }, [fieldConfigureItems, fieldInterfaceOptions, props.collection.name, props.collection.title, props.field, t]);
   const initialValuesKey = useMemo(
     () =>
       buildInitialValuesKey({
@@ -1976,9 +2064,6 @@ export function FieldForm(props: FieldFormProps) {
       };
       const nextValues = toInitialValues(nextOptions, undefined, t);
       applyItemDefaults(nextValues, nextConfigure?.items || []);
-      if ((nextFieldInterface?.isAssociation || nextConfigure?.isAssociation) && !get(nextValues, 'source')) {
-        set(nextValues, 'source', props.collection.name);
-      }
       if (currentTitle) {
         set(nextValues, 'uiSchema.title', currentTitle);
       }
@@ -2047,7 +2132,9 @@ export function FieldForm(props: FieldFormProps) {
         }
         form.setFieldValue('name', generatedFieldNameRef.current);
       }
-      const formValues = await form.validateFields();
+      await form.validateFields();
+      // Preserve metadata without registered form items, such as reverseField.key.
+      const formValues = cloneDeep(form.getFieldsValue(true));
       await configure?.validate?.(formValues, {
         mode: props.mode,
         fieldInterface: fieldInterfaceOptions,

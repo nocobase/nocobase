@@ -10,6 +10,7 @@
 import {
   LLMProvider,
   LLMProviderOptions,
+  LLMProviderRequestContext,
   EmbeddingProvider,
   EmbeddingProviderOptions,
   ReasoningOptions,
@@ -162,7 +163,7 @@ export class AIManager {
     return getRecommendedModels(provider);
   }
 
-  async getLLMService(options: LLMModelOptions) {
+  async getLLMService(options: LLMModelOptions, requestContext?: LLMProviderRequestContext) {
     const { llmService, model, webSearch, reasoning } = options ?? {};
 
     // model is required - it's set by the frontend ModelSwitcher
@@ -208,6 +209,7 @@ export class AIManager {
       app: this.plugin.app,
       serviceOptions: service.options,
       modelOptions,
+      requestContext,
     });
 
     return { provider, model, service };

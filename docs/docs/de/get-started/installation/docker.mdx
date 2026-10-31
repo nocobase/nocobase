@@ -662,6 +662,8 @@ Wenn du auch HTTPS aktivieren möchtest, konfiguriere `443` und das Zertifikat i
 
 Der Block `location /` in dieser Root-Pfad-Konfiguration leitet auch `/api/`, `/ws` und `/files/` weiter. Wenn du statische Ressourcen und Anwendungsrouten trennst, stelle weiterhin sicher, dass `/files/` an NocoBase weitergeleitet und nicht als statisches Verzeichnis behandelt wird.
 
+Bevor das integrierte Nginx eine historische `/storage/uploads/`-Datei ausliefert, prüft NocoBase den Anmeldestatus; anonyme Zugriffe erhalten standardmäßig `401`. Falls eine bestehende Integration anonymen Zugriff benötigt, füge `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` zu `app.environment` hinzu und starte den Container neu. Der Host-Nginx soll den Pfad weiterhin an den Container weiterleiten und das Upload-Verzeichnis nicht direkt per `alias` freigeben.
+
 ### Bereitstellung unter einem Unterpfad
 
 Wenn du die Anwendung unter einem Unterpfad bereitstellen möchtest, etwa `https://your_domain.com/nocobase/`, konfiguriere zuerst die Umgebungsvariable `APP_PUBLIC_PATH`:

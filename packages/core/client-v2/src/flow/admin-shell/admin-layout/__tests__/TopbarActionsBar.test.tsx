@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { allowMock, appMock, flowModelRendererSpy } = vi.hoisted(() => {
@@ -270,28 +270,47 @@ describe('TopbarActionsBar helpers', () => {
     expect(link).not.toHaveAttribute('target', '_blank');
   });
 
-  it('should keep sub-app admin settings in the current window inside sub-app admin runtime', () => {
-    const items = getTopbarPluginSettingsItems({
-      canManagePlugins: false,
-      t: (key) => key,
-      settings: [
-        {
-          key: 'routes',
-          name: 'routes',
-          title: 'Routes',
-          path: '/admin/settings/routes',
-          icon: null,
-          componentLoader: async () => null,
-        },
-      ] as any,
-    });
+  it.each(['/nocobase/v', '/v', '/nocobase/v/apps/jhb20'])(
+    'should navigate sub-app settings without document navigation with basename %s',
+    (basename) => {
+      appMock.current.router.getBasename = () => basename;
+      const items = getTopbarPluginSettingsItems({
+        canManagePlugins: false,
+        t: (key) => key,
+        settings: [
+          {
+            key: 'ai',
+            name: 'ai',
+            title: 'AI employees',
+            path: '/admin/settings/ai',
+            icon: null,
+            componentLoader: async () => null,
+          },
+        ],
+      });
+      const item = items[0];
+      if (!item || !('label' in item)) {
+        throw new Error('Expected settings menu item');
+      }
+      const appBase = basename.endsWith('/apps/jhb20') ? basename : `${basename}/apps/jhb20`;
+      const targetHref = `${appBase}/admin/settings/ai`;
+      const LocationDisplay = () => <output aria-label="Current route">{useLocation().pathname}</output>;
+      render(
+        <MemoryRouter basename={basename} initialEntries={[`${appBase}/admin/a3pq1t1773a`]}>
+          {item.label}
+          <LocationDisplay />
+        </MemoryRouter>,
+      );
 
-    renderSettingsLabel((items as any[])[0].label, '/apps/a_9xlild35jir/admin/settings/routes');
-
-    const link = screen.getByRole('link', { name: 'Routes' });
-    expect(link).toHaveAttribute('href', '/nocobase/v/apps/a_9xlild35jir/admin/settings/routes');
-    expect(link).not.toHaveAttribute('target', '_blank');
-  });
+      const link = screen.getByRole('link', { name: 'AI employees' });
+      expect(link).toHaveAttribute('href', targetHref);
+      expect(link).not.toHaveAttribute('target', '_blank');
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+      fireEvent(link, click);
+      expect(click.defaultPrevented).toBe(true);
+      expect(screen.getByLabelText('Current route')).toHaveTextContent(targetHref.slice(basename.length));
+    },
+  );
 
   it('should not treat admin-like paths as admin runtime', () => {
     const items = getTopbarPluginSettingsItems({

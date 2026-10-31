@@ -8,7 +8,7 @@
  */
 
 import { CloseOutlined, ZoomInOutlined } from '@ant-design/icons';
-import { Table, Form, Space, Button } from 'antd';
+import { Table, Form, Space, Button, theme } from 'antd';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
@@ -51,6 +51,7 @@ function shouldRefreshForChangedPaths(fieldPath: unknown, changedPaths: unknown)
 
 export function SubTableField(props) {
   const { t } = useTranslation();
+  const { token } = theme.useToken();
   const {
     onChange,
     columns,
@@ -180,6 +181,9 @@ export function SubTableField(props) {
         // the current array index so Form.Item can rebind after reordering/removal.
         const rowBindingKey = `${rowIdentity}:${pageRowIdx}`;
         const columnKey = col.dataIndex ?? col.key ?? 'cell';
+        if (col.key === '_empty') {
+          return <div style={{ minHeight: token.controlHeight }} />;
+        }
         if (!col.render) {
           return;
         }
@@ -188,6 +192,7 @@ export function SubTableField(props) {
           rowIdx: pageRowIdx,
           id: `field-${String(columnKey)}-${rowBindingKey}`,
           value: text,
+          disabled,
           parentFieldIndex,
           parentItem,
           onChange: (value) => {

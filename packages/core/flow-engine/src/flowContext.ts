@@ -3051,6 +3051,7 @@ class BaseFlowEngineContext extends FlowContext {
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue, options?: ResolveJsonTemplateOptions) => Promise<any>;
+  declare variableContractModelUid?: string;
   declare getVar: (path: string) => Promise<any>;
   declare request: (options: RequestOptions) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
@@ -3408,7 +3409,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
           try {
             const contractRd = buildFlowModelResolveDescriptor(
               this as FlowRuntimeContext<FlowModel>,
-              options?.contractModelUid,
+              options?.contractModelUid ?? this.variableContractModelUid,
             );
             serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
               ...(contractRd ? { contractRd } : {}),
@@ -3943,6 +3944,11 @@ export class FlowRuntimeContext<
   ) {
     super();
     this.addDelegate(this.model.context);
+    const owner = model.getFlow?.(flowKey)?.model;
+    if (owner && owner.uid !== model.uid) {
+      // A forwarded instance flow keeps its configuration owner, without changing the runtime model.
+      this.defineProperty('variableContractModelUid', { value: owner.uid });
+    }
     this.defineMethod('getStepParams', (stepKey: string) => {
       return model.getStepParams(flowKey, stepKey) || {};
     });

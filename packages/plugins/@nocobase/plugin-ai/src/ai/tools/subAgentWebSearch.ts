@@ -10,6 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 import PluginAIServer from '../../server';
 
 export default defineTools({
@@ -32,12 +33,15 @@ export default defineTools({
   },
   invoke: async (ctx: Context, args: { query: string[] }, id) => {
     const pluginAI = ctx.app.pm.get('ai') as PluginAIServer;
-    const { model } = ctx.action?.params?.values ?? {};
-    const { provider } = await pluginAI.aiManager.getLLMService({
-      ...model,
-      webSearch: true,
-      reasoning: { mode: 'off' },
-    });
+    const { model, sessionId } = ctx.action?.params?.values ?? {};
+    const { provider } = await pluginAI.aiManager.getLLMService(
+      {
+        ...model,
+        webSearch: true,
+        reasoning: { mode: 'off' },
+      },
+      { sessionId: typeof sessionId === 'string' && sessionId ? sessionId : `web-search-${randomUUID()}` },
+    );
     if (!args.query?.length) {
       return {
         status: 'success',

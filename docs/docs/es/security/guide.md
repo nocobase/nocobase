@@ -196,13 +196,26 @@ Para el almacenamiento local u otro almacenamiento público accesible directamen
 
 La validación de cargas de NocoBase no confía en el `Content-Type` enviado por la solicitud, sino que prefiere el MIME type detectado en el servidor. La extensión de un archivo solo representa el nombre del archivo y no debe tratarse como el tipo de contenido autorizado. Por lo tanto, al servir archivos subidos públicamente, también debe asegurarse de que la ruta de acceso a los archivos tenga los encabezados de seguridad adecuados.
 
-Si despliega con Docker o utiliza la configuración nginx generada por NocoBase, el directorio de cargas ya incluye esta protección: todos los archivos subidos devuelven `X-Content-Type-Options: nosniff`, y los archivos con contenido activo como `html`, `xhtml`, `svg`, `svgz` y `pdf` se devuelven como descargas mediante `Content-Disposition: attachment`.
+Si despliega con Docker o usa la configuración nginx generada por NocoBase, las URL heredadas `/storage/uploads/` se limitan a usuarios autenticados. Todos los archivos devuelven además `X-Content-Type-Options: nosniff`, y el contenido activo se descarga mediante `Content-Disposition: attachment`. Las nuevas URL `/files/` siguen aplicando permisos de registro.
+
+Si una integración existente necesita acceso anónimo, configure `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` y reinicie la aplicación. Este interruptor solo afecta a URL heredadas y puede exponer archivos subidos.
 
 Si utiliza un proxy personalizado, CDN, almacenamiento de objetos o expone directamente el directorio local de cargas, asegúrese de que estas reglas no se omitan. Puede usar la siguiente configuración nginx como referencia:
 
 ```nginx
+location = /_nocobase_legacy_file_auth {
+    internal;
+    proxy_pass http://127.0.0.1:13000/api/auth:checkLegacyFileAccess;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header Cookie $http_cookie;
+    proxy_set_header Authorization $http_authorization;
+}
+
 location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
     alias /path/to/nocobase/storage/uploads/$1;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
     add_header Content-Disposition "attachment" always;
     add_header X-Content-Type-Options "nosniff" always;
     autoindex off;
@@ -210,6 +223,8 @@ location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
 
 location /storage/uploads/ {
     alias /path/to/nocobase/storage/uploads/;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
     add_header X-Content-Type-Options "nosniff" always;
     autoindex off;
 }

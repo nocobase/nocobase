@@ -13,8 +13,18 @@ import { storagePathJoin } from '@nocobase/utils';
 export const getLoggerLevel = () =>
   process.env.LOGGER_LEVEL || (process.env.APP_ENV === 'development' ? 'debug' : 'info');
 
+/**
+ * Resolve a directory inside the log root. Callers pass app names, plugin names and record ids, so the result is
+ * checked to stay under the root: `path.resolve` silently adopts an absolute segment and happily walks out of the
+ * root on `..`, which would turn any caller that forwards untrusted input into an arbitrary-directory write.
+ */
 export const getLoggerFilePath = (...paths: string[]): string => {
-  return path.resolve(storagePathJoin('logs'), ...paths);
+  const root = path.resolve(storagePathJoin('logs'));
+  const resolved = path.resolve(root, ...paths);
+  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+    throw new Error(`log path ${paths.join('/')} escapes the log directory`);
+  }
+  return resolved;
 };
 
 export const getLoggerTransport = (): ('console' | 'file' | 'dailyRotateFile')[] =>

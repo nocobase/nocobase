@@ -135,7 +135,7 @@ nb proxy caddy reload
 也就是说，手写配置时通常至少要覆盖下面这几类入口：
 
 - `v`：把 `/v` 重定向到 `/v/`
-- `uploads`：暴露上传目录
+- `uploads`：通过 NocoBase 鉴权后暴露上传目录
 - `dist`：暴露前端构建产物目录
 - `oauth well-known`：处理 OAuth 发现路径
 - `openid well-known`：处理 OpenID 发现路径
@@ -164,10 +164,31 @@ c.local.nocobase.com {
     }
 
     handle_path /storage/uploads/* {
-        root * NB_CLI_ROOT/test2/storage/uploads
-        header Cache-Control public
-        header X-Content-Type-Options nosniff
-        file_server
+        route {
+            request_header -X-NocoBase-Auth-Set-Cookie
+            forward_auth host.docker.internal:56575 {
+                uri /api/auth:checkLegacyFileAccess
+                header_up X-App {query.__appName}
+                copy_headers Set-Cookie>X-NocoBase-Auth-Set-Cookie
+            }
+
+            @refreshedAuth header X-NocoBase-Auth-Set-Cookie *
+            header @refreshedAuth Set-Cookie {header.X-NocoBase-Auth-Set-Cookie}
+            header Cache-Control "private, no-store"
+            header Content-Security-Policy sandbox
+            header X-Content-Type-Options nosniff
+            header Content-Disposition inline
+
+            @activeUploadedContent path_regexp activeUploadedContent (?i)\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$
+            header @activeUploadedContent Content-Disposition attachment
+            @download query download=1
+            header @download Content-Disposition attachment
+            @markdown path_regexp markdown (?i)\.md$
+            header @markdown Content-Type text/markdown
+
+            root * NB_CLI_ROOT/test2/storage/uploads
+            file_server
+        }
     }
 
     handle_path /dist/* {
@@ -257,6 +278,8 @@ NB_CLI_ROOT/test2/storage/uploads
 这样通常比从零手写一份配置更不容易漏掉 `/files/`、WebSocket、静态资源、上传目录、`.well-known` 路由或 SPA 回退页相关的细节。
 
 :::warning 注意
+
+`/storage/uploads/` 下是旧版保存的本地文件地址，默认必须先通过 NocoBase 登录鉴权。不能只用 `file_server` 直接公开上传目录，否则会绕过访问控制。上例使用 `forward_auth` 调用 NocoBase 鉴权接口，鉴权成功后再由 Caddy 发送文件；只有明确需要兼容匿名访问时，才应设置 `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` 并重启应用。
 
 `/files/` 是需要经过 NocoBase 鉴权的应用路由，不能作为静态目录处理，也不能落入 SPA 回退页。手写配置时，需要把它转发到 NocoBase 后端，并放在 `handle_path /*` 等前端回退规则之前。
 

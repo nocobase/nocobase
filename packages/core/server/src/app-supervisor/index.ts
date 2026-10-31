@@ -80,6 +80,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
   private environmentHeartbeatInterval = 2 * 60 * 1000;
+  private environmentHeartbeatTimeout = 5 * 60 * 1000;
   private environmentHeartbeatTimer = null;
 
   private constructor() {
@@ -362,13 +363,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async reset() {
+    this.stopEnvironmentHeartbeat();
     await this.processAdapter.removeAllApps();
     await this.discoveryAdapter.dispose?.();
     await this.commandAdapter?.dispose?.();
     this.appManifests.clear();
-    if (this.environmentHeartbeatTimer) {
-      this.environmentHeartbeatTimer = null;
-    }
     this.removeAllListeners();
     this.logger.close();
   }
@@ -481,6 +480,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
             const appModel = await this.getAppModel(appName);
             const appOptions = appModel?.options;
             if (!appOptions) {
+              return;
+            }
+            if (appModel.environments && !appModel.environments.includes(this.environmentName)) {
               return;
             }
             const newApp = this.registerApp({ appModel, mainApp: app });
@@ -740,24 +742,26 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (!this.environmentName || typeof this.discoveryAdapter.registerEnvironment !== 'function') {
       return;
     }
-    const registered = await this.discoveryAdapter.registerEnvironment({
+    const registered = await this.discoveryAdapter.registerEnvironment(this.getEnvironmentInfo(mainApp));
+    if (registered) {
+      this.heartbeatEnvironment(mainApp);
+    }
+  }
+
+  private getEnvironmentInfo(mainApp: Application): EnvironmentInfo {
+    return {
       name: this.environmentName,
       url: this.environmentUrl || '',
       proxyUrl: this.environmentProxyUrl || this.environmentUrl || '',
       appVersion: mainApp.getPackageVersion(),
       lastHeartbeatAt: Date.now(),
-    });
-    if (registered) {
-      this.heartbeatEnvironment();
-    }
+    };
   }
 
   async unregisterEnvironment() {
+    this.stopEnvironmentHeartbeat();
     if (this.environmentName && typeof this.discoveryAdapter.unregisterEnvironment === 'function') {
       await this.discoveryAdapter.unregisterEnvironment();
-    }
-    if (this.environmentHeartbeatTimer) {
-      this.environmentHeartbeatTimer = null;
     }
   }
 
@@ -772,7 +776,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         available: false,
       };
     }
-    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatInterval;
+    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatTimeout;
     return {
       ...environment,
       available,
@@ -800,17 +804,27 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.normalizeEnvInfo(environment);
   }
 
-  async heartbeatEnvironment() {
+  async heartbeatEnvironment(mainApp: Application) {
     if (typeof this.discoveryAdapter.heartbeatEnvironment !== 'function') {
       return;
     }
     if (this.environmentHeartbeatTimer) {
       return;
     }
-    this.environmentHeartbeatTimer = setInterval(
-      () => this.discoveryAdapter.heartbeatEnvironment(),
-      this.environmentHeartbeatInterval,
-    );
+    this.environmentHeartbeatTimer = setInterval(async () => {
+      try {
+        await this.discoveryAdapter.heartbeatEnvironment(this.getEnvironmentInfo(mainApp));
+      } catch (error: unknown) {
+        this.logger.error(error instanceof Error ? error.message : String(error), { method: 'heartbeatEnvironment' });
+      }
+    }, this.environmentHeartbeatInterval);
+  }
+
+  private stopEnvironmentHeartbeat() {
+    if (this.environmentHeartbeatTimer) {
+      clearInterval(this.environmentHeartbeatTimer);
+      this.environmentHeartbeatTimer = null;
+    }
   }
 
   async dispatchCommand(command: ProcessCommand) {

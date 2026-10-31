@@ -31,7 +31,7 @@ function AggregateFieldSelect({ collection }: { collection?: string }) {
 
 function AggregateParamsFields() {
   const t = useT();
-  const collection = Form.useWatch(['config', 'collection']);
+  const collection = Form.useWatch(['config', 'collection'], { preserve: true });
   const aggregator = Form.useWatch(['config', 'aggregator']);
 
   if (!collection) {
@@ -57,7 +57,7 @@ export function AggregateFieldset() {
   const t = useT();
   const form = Form.useFormInstance();
   const associated = Form.useWatch(['config', 'associated']);
-  const collection = Form.useWatch(['config', 'collection']);
+  const collection = Form.useWatch(['config', 'collection'], { preserve: true });
   const associatedTargetOptions = [
     { label: t('Data of collection'), value: ASSOCIATED_TARGETS.COLLECTION },
     { label: t('Data of associated collection'), value: ASSOCIATED_TARGETS.ASSOCIATION },
@@ -103,16 +103,21 @@ export function AggregateFieldset() {
             >
               <AssociatedConfig />
             </Form.Item>
-          ) : (
-            <Form.Item name={['config', 'collection']} label={t('Data of collection')} rules={[{ required: true }]}>
-              <CollectionCascader
-                onChange={() => {
-                  form.setFieldValue(['config', 'params', 'field'], null);
-                  form.setFieldValue(['config', 'params', 'filter'], null);
-                }}
-              />
-            </Form.Item>
-          )}
+          ) : null}
+          {/* Keep the target collection registered so validateFields includes it when saving associated aggregates. */}
+          <Form.Item
+            name={['config', 'collection']}
+            label={t('Data of collection')}
+            hidden={associated}
+            rules={[{ required: true }]}
+          >
+            <CollectionCascader
+              onChange={() => {
+                form.setFieldValue(['config', 'params', 'field'], null);
+                form.setFieldValue(['config', 'params', 'filter'], null);
+              }}
+            />
+          </Form.Item>
         </Col>
         <Col span={12}>
           <AggregateFieldSelect collection={collection} />

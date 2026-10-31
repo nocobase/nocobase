@@ -15,7 +15,7 @@ import { useAPIClient } from '../../../api-client/hooks/useAPIClient';
 import { createDesignable, useDesignable } from '../../hooks/useDesignable';
 
 const useDragEnd = (onDragEnd) => {
-  const { refresh } = useDesignable();
+  const { localPersistence, refresh } = useDesignable();
   const api = useAPIClient();
   const { t } = useTranslation();
 
@@ -49,6 +49,7 @@ const useDragEnd = (onDragEnd) => {
         api,
         refresh: ({ refreshParentSchema = true } = {}) => refresh({ refreshParentSchema }),
         current: overSchema,
+        localPersistence,
       });
 
       dn.loadAPIClientEvents();
@@ -70,7 +71,7 @@ const useDragEnd = (onDragEnd) => {
         return;
       }
     },
-    [api, onDragEnd, refresh, t],
+    [api, localPersistence, onDragEnd, refresh, t],
   );
 };
 

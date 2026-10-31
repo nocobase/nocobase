@@ -7,14 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionSceneEnum } from '@nocobase/client-v2';
 import type { ButtonProps } from 'antd/es/button';
 import { tExpr } from '../../locale';
 import { CommentActionModel } from './CommentActionGroupModel';
 
 export class EditCommentActionModel extends CommentActionModel {
-  static scene = ActionSceneEnum.record;
-
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('Edit'),

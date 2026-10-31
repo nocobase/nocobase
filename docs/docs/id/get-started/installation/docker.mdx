@@ -666,6 +666,8 @@ Jika Anda juga ingin mengaktifkan HTTPS, konfigurasikan `443` dan sertifikat di 
 
 Blok `location /` pada konfigurasi root path ini juga meneruskan `/api/`, `/ws`, dan `/files/`. Jika Anda memisahkan aset statis dari rute aplikasi, pastikan `/files/` tetap diteruskan ke NocoBase dan tidak diperlakukan sebagai direktori statis.
 
+Sebelum mengembalikan file lama `/storage/uploads/`, Nginx bawaan meminta NocoBase memeriksa login; akses anonim secara default mengembalikan `401`. Jika integrasi lama memerlukan akses anonim, tambahkan `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` ke `app.environment` lalu restart kontainer. Tetap teruskan path ini ke kontainer dan jangan ekspos direktori upload secara langsung dengan `alias` lain.
+
 ### Deployment subpath
 
 Jika Anda ingin men-deploy aplikasi di subpath, misalnya `https://your_domain.com/nocobase/`, konfigurasikan dulu variabel lingkungan `APP_PUBLIC_PATH`:

@@ -111,6 +111,7 @@ nb proxy nginx reload
 - `NB_CLI_ROOT/test2/storage/...` 以下は、アプリケーション独自の静的リソースとアップロード ディレクトリです。
 - `app.conf` は変更できますが、NocoBase 管理ブロックは保持する必要があります
 - `index-v1.html` および `index-v2.html` は、現在の環境サブパス、アクティブなクライアントのバージョン、および `CDN_BASE_URL` に従ってリソース アドレスを自動的に書き換えます。
+- `maps-http.conf` と `uploads-location.conf` は既存の `/storage/uploads/` URL を共同で保護し、サブアプリを判定してファイル返却前に `auth_request` でログインを確認します。
 
 :::警告メモ
 
@@ -154,6 +155,11 @@ location / {
 `test2` のような CLI でホストされるアプリケーションの場合、実際のデプロイメントに近い構造は通常次のようになります。
 
 ```nginx
+map $request_uri $legacy_file_app {
+    default "";
+    ~[?&]__appName=(?<legacy_file_app_name>[A-Za-z0-9_-]+)(?:&|$) $legacy_file_app_name;
+}
+
 server {
     listen 80;
     server_name c.local.nocobase.com;
@@ -164,6 +170,19 @@ server {
 
     include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/mime-types.conf;
     include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/gzip.conf;
+
+    location = /_nocobase_legacy_file_auth {
+        internal;
+        proxy_pass http://127.0.0.1:56575/api/auth:checkLegacyFileAccess;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header X-App $legacy_file_app;
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header Host $final_host;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+    }
 
     location /storage/uploads/ {
         alias NB_CLI_ROOT/test2/storage/uploads/;
@@ -216,6 +235,8 @@ server {
 }
 ```
 
+`map` ディレクティブは Nginx の `http {}` コンテキストに置く必要があります。`__appName` からサブアプリを判定します。`proxy_pass` の `/api/` は実際の `API_BASE_PATH` と一致させ、`APP_PUBLIC_PATH` 使用時はアップロードと認証の両方に同じプレフィックスを使ってください。
+
 ここで重要な点が 2 つあります。
 
 - `NB_CLI_ROOT/.nocobase/proxy/nginx/...` 以下は、CLI によって維持されるエージェント補助ファイルです。
@@ -242,6 +263,8 @@ nb proxy nginx generate --env test2 --host c.local.nocobase.com
 `/files/` は NocoBase の認証を通す必要があるアプリケーションルートです。静的ディレクトリとして処理したり、SPA フォールバックへ流したりしないでください。NocoBase バックエンドへ転送し、`location /` などのフロントエンドフォールバックルールより前に配置します。
 
 `APP_PUBLIC_PATH=/nocobase/` を設定している場合は、`/nocobase/files/` も転送してください。既存のファイル URL との互換性のため、ルートの `/files/` ルールも残します。
+
+既存の `/storage/uploads/` URL はデフォルトでログインが必要です。`alias` で配信する場合は、先に `auth_request` で `auth:checkLegacyFileAccess` を呼び出してください。匿名アクセスとの互換性が必要なら `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` を設定して再起動し、Nginx のチェックは削除しないでください。`/files/` の権限は変わりません。
 
 :::
 

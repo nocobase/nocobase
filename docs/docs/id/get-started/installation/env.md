@@ -113,6 +113,18 @@ NocoBase menggunakan cookie untuk mempertahankan status login dan mengotorisasi 
 Sebaiknya sajikan halaman dan API dari origin yang sama melalui reverse proxy dan biarkan `API_BASE_URL` kosong.
 :::
 
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
+
+Mengontrol apakah URL file lokal lama di bawah `/storage/uploads/` mengizinkan akses anonim. Default-nya `false`, sehingga hanya pengguna yang sudah login yang dapat mengaksesnya.
+
+Jika integrasi yang sudah ada bergantung pada akses publik melalui URL tersebut, aktifkan mode kompatibilitas secara eksplisit:
+
+```bash
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
+```
+
+Restart aplikasi setelah mengubah variabel ini. Variabel ini hanya memengaruhi URL lama `/storage/uploads/` dan tidak mengubah izin tingkat record untuk `/files/`. Akses publik dapat mengekspos file upload, jadi aktifkan hanya setelah memastikan file aman untuk dipublikasikan.
+
 ### CORS_ORIGIN_WHITELIST
 
 Daftar whitelist origin yang diizinkan mengakses API secara lintas origin dengan kredensial (cookie). Pisahkan beberapa origin dengan koma. Secara default kosong.

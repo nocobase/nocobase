@@ -10,6 +10,7 @@
 import React from 'react';
 import { App } from 'antd';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Collection } from '@nocobase/flow-engine';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const scopeResource = {
@@ -34,6 +35,12 @@ const scopeResource = {
               key: 'custom',
               name: '{{t("Custom scope")}}',
               resourceName: 'orders',
+              scope: {
+                $and: [
+                  { createdById: { $eq: '{{ ctx.state.currentUser.id }}' } },
+                  { roleName: { $eq: '{{ ctx.state.currentRole }}' } },
+                ],
+              },
             },
             {
               id: 2,
@@ -49,12 +56,41 @@ const scopeResource = {
       },
     }),
   ),
+  create: vi.fn(() => Promise.resolve()),
+  update: vi.fn(() => Promise.resolve()),
 };
 
+interface VariableFilterProps {
+  rightAsVariable?: boolean;
+  rightMetaTree?: () => Promise<Array<{ name: string }>>;
+  rightVariableConverters?: {
+    resolvePathFromValue?: (value: unknown) => string[] | undefined;
+    resolveValueFromPath?: (node: { paths: string[] }) => unknown;
+  };
+}
+
 const flowMocks = {
+  variableFilterProps: null as VariableFilterProps | null,
+  filterGroupValue: null as null | {
+    items: Array<{ path: string; operator: string; value: unknown }>;
+  },
+  filterModel: {
+    context: {
+      defineProperty: vi.fn(),
+      getPropertyMetaTree: vi.fn(() => [
+        { name: 'user', paths: ['user'] },
+        { name: 'role', paths: ['role'] },
+        { name: 'formValues', paths: ['formValues'] },
+      ]),
+    },
+    remove: vi.fn(),
+  },
   ctx: {
     api: {
       resource: vi.fn(() => scopeResource),
+    },
+    engine: {
+      createModel: vi.fn(),
     },
     viewer: {
       drawer: vi.fn(),
@@ -74,24 +110,38 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
   return {
     ...actual,
-    CollectionFilterPanel: React.forwardRef((_props, ref) => {
-      React.useImperativeHandle(ref, () => ({
-        getFilter: () => ({ status: 'active' }),
-      }));
-      return <div data-testid="collection-filter-panel" />;
-    }),
+    FilterGroup: ({
+      FilterItem,
+      value,
+    }: {
+      FilterItem?: React.ComponentType<{ value: Record<string, unknown> }>;
+      value: { items: Array<{ path: string; operator: string; value: unknown }> };
+    }) => {
+      flowMocks.filterGroupValue = value;
+      if (!value.items.length) {
+        value.items.push({ path: '', operator: '', value: '' });
+      }
+      return <div data-testid="filter-group">{FilterItem ? <FilterItem value={value.items[0]} /> : null}</div>;
+    },
+    VariableFilterItem: (props: VariableFilterProps) => {
+      flowMocks.variableFilterProps = props;
+      return <div data-testid="variable-filter-item" data-right-as-variable={String(Boolean(props.rightAsVariable))} />;
+    },
     DrawerFormLayout: ({
       children,
       footer,
       title,
+      onSubmit,
     }: {
       children: React.ReactNode;
       footer?: React.ReactNode;
       title: string;
+      onSubmit?: () => void | Promise<void>;
     }) => (
       <section aria-label={title}>
         {children}
         {footer}
+        {onSubmit ? <button onClick={onSubmit}>Submit {title}</button> : null}
       </section>
     ),
     Table: ({
@@ -135,6 +185,9 @@ const t = (key: string) => `t:${key}`;
 describe('ScopeSelect', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    flowMocks.variableFilterProps = null;
+    flowMocks.filterGroupValue = null;
+    flowMocks.ctx.engine.createModel.mockReturnValue(flowMocks.filterModel);
   });
 
   it('loads the selected scope record when value only contains an id', async () => {
@@ -178,5 +231,102 @@ describe('ScopeSelect', () => {
       }),
     );
     expect(close).toHaveBeenCalled();
+  });
+
+  it('provides variable selection when creating a permission data scope', async () => {
+    const collection = new Collection({ name: 'orders' });
+    render(
+      <App>
+        <ScopeSelect collection={collection} dataSourceKey="main" resourceName="orders" t={t} />
+      </App>,
+    );
+
+    fireEvent.click(screen.getByRole('combobox'));
+    const pickerConfig = flowMocks.ctx.viewer.drawer.mock.calls[0][0];
+    render(<App>{pickerConfig.content({ close: vi.fn() })}</App>);
+
+    fireEvent.click(await screen.findByText('t:Add new'));
+    const scopeFormConfig = flowMocks.ctx.viewer.drawer.mock.calls[1][0];
+    const scopeFormView = render(<App>{scopeFormConfig.content()}</App>);
+
+    expect(screen.getByTestId('variable-filter-item')).toHaveAttribute('data-right-as-variable', 'true');
+    await expect(flowMocks.variableFilterProps?.rightMetaTree?.()).resolves.toEqual([
+      expect.objectContaining({ name: 'user' }),
+      expect.objectContaining({ name: 'role' }),
+    ]);
+    expect(
+      flowMocks.variableFilterProps?.rightVariableConverters?.resolveValueFromPath?.({ paths: ['user', 'id'] }),
+    ).toBe('{{$user.id}}');
+    expect(flowMocks.variableFilterProps?.rightVariableConverters?.resolveValueFromPath?.({ paths: ['role'] })).toBe(
+      '{{$nRole}}',
+    );
+    expect(
+      flowMocks.variableFilterProps?.rightVariableConverters?.resolvePathFromValue?.(
+        '{{ ctx.state.currentUser.department.id }}',
+      ),
+    ).toEqual(['user', 'department', 'id']);
+    expect(
+      flowMocks.variableFilterProps?.rightVariableConverters?.resolvePathFromValue?.('{{ ctx.state.currentRole }}'),
+    ).toEqual(['role']);
+
+    if (!flowMocks.filterGroupValue) {
+      throw new Error('Expected the permission filter group to render');
+    }
+    Object.assign(flowMocks.filterGroupValue.items[0], {
+      path: 'createdById',
+      operator: '$eq',
+      value: '{{$user.id}}',
+    });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Current user records' } });
+    fireEvent.click(screen.getByText('Submit t:Add record'));
+
+    await waitFor(() =>
+      expect(scopeResource.create).toHaveBeenCalledWith({
+        values: {
+          name: 'Current user records',
+          resourceName: 'orders',
+          scope: {
+            $and: [{ createdById: { $eq: '{{$user.id}}' } }],
+          },
+        },
+      }),
+    );
+
+    scopeFormView.unmount();
+    expect(flowMocks.filterModel.remove).toHaveBeenCalled();
+  });
+
+  it('preserves legacy variable expressions when editing a permission data scope', async () => {
+    const collection = new Collection({ name: 'orders' });
+    render(
+      <App>
+        <ScopeSelect collection={collection} dataSourceKey="main" resourceName="orders" t={t} />
+      </App>,
+    );
+
+    fireEvent.click(screen.getByRole('combobox'));
+    const pickerConfig = flowMocks.ctx.viewer.drawer.mock.calls[0][0];
+    render(<App>{pickerConfig.content({ close: vi.fn() })}</App>);
+
+    fireEvent.click((await screen.findAllByText('t:Edit'))[0]);
+    const scopeFormConfig = flowMocks.ctx.viewer.drawer.mock.calls[1][0];
+    render(<App>{scopeFormConfig.content()}</App>);
+    fireEvent.click(await screen.findByText('Submit t:Edit record'));
+
+    await waitFor(() =>
+      expect(scopeResource.update).toHaveBeenCalledWith({
+        filterByTk: 1,
+        values: {
+          name: '{{t("Custom scope")}}',
+          resourceName: 'orders',
+          scope: {
+            $and: [
+              { createdById: { $eq: '{{ ctx.state.currentUser.id }}' } },
+              { roleName: { $eq: '{{ ctx.state.currentRole }}' } },
+            ],
+          },
+        },
+      }),
+    );
   });
 });

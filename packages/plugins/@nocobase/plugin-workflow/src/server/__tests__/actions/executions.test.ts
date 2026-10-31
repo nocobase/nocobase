@@ -57,6 +57,127 @@ describe('workflow > actions > executions', () => {
 
   afterEach(async () => await app.destroy());
 
+  describe('job history', () => {
+    async function prepareHistory() {
+      const node = await workflow.createNode({ type: 'echo' });
+      const otherNode = await workflow.createNode({ type: 'echo' });
+      const execution = await db.getRepository('executions').create({
+        values: { workflowId: workflow.id, key: workflow.key, status: EXECUTION_STATUS.RESOLVED },
+      });
+      const otherExecution = await db.getRepository('executions').create({
+        values: { workflowId: workflow.id, key: workflow.key, status: EXECUTION_STATUS.RESOLVED },
+      });
+      const Job = db.getModel('jobs');
+      await Job.bulkCreate([
+        ...Array.from({ length: 45 }, (_, index) => ({
+          id: index + 1,
+          executionId: execution.id,
+          nodeId: node.id,
+          nodeKey: node.key,
+          status: JOB_STATUS.RESOLVED,
+          result: { large: 'result' },
+          meta: { large: 'meta' },
+          log: 'large log',
+        })),
+        { id: 46, executionId: execution.id, nodeId: otherNode.id, status: JOB_STATUS.FAILED },
+        { id: 47, executionId: otherExecution.id, nodeId: node.id, status: JOB_STATUS.RESOLVED },
+      ]);
+      return { execution, node, otherNode, Job };
+    }
+
+    it('loads only the latest lightweight job per node and preserves full single-job details', async () => {
+      const { execution } = await prepareHistory();
+      const response = await agent.resource('executions').get({
+        filterByTk: execution.id,
+      });
+      expect(response.status).toBe(200);
+      expect(response.body.data.jobs.map((job: { id: number }) => String(job.id))).toEqual(['45', '46']);
+      expect(response.body.data.workflow.nodes).toHaveLength(2);
+      for (const job of response.body.data.jobs) {
+        expect(job).not.toHaveProperty('result');
+        expect(job).not.toHaveProperty('meta');
+        expect(job).not.toHaveProperty('log');
+      }
+      const detail = await agent.resource('jobs').get({ filterByTk: 45 });
+      expect(detail.body.data.result).toEqual({ large: 'result' });
+      expect(detail.body.data.meta).toEqual({ large: 'meta' });
+      expect(detail.body.data.log).toBe('large log');
+    });
+
+    it('ignores caller projections and always returns the fixed detail shape', async () => {
+      const { execution } = await prepareHistory();
+      await workflow.update({ options: { large: 'workflow options' } });
+      const response = await agent.resource('executions').get({
+        filterByTk: execution.id,
+        latestJobs: false,
+        appends: ['jobs', 'jobs.node'],
+        fields: ['id', 'jobs.result', 'jobs.meta', 'jobs.log', 'workflow.options'],
+        except: ['workflow.nodes'],
+      });
+      expect(response.status).toBe(200);
+      expect(response.body.data.workflow.nodes).toHaveLength(2);
+      expect(response.body.data.workflow).not.toHaveProperty('options');
+      expect(response.body.data.jobs.map((job: { id: number }) => String(job.id))).toEqual(['45', '46']);
+      for (const job of response.body.data.jobs) {
+        expect(job).not.toHaveProperty('result');
+        expect(job).not.toHaveProperty('meta');
+        expect(job).not.toHaveProperty('log');
+        expect(job).not.toHaveProperty('node');
+      }
+    });
+
+    it('paginates within one execution and node, keeping a stable upper bound', async () => {
+      const { execution, node, otherNode, Job } = await prepareHistory();
+      const params = { nodeId: node.id };
+      const first = await agent.get(`/executions/${execution.id}/jobs`).query({ ...params, pageSize: 100000 });
+      expect(first.status).toBe(200);
+      expect(first.body.data.items).toHaveLength(20);
+      expect(first.body.data.total).toBe(45);
+      expect(first.body.data.snapshot).toBe('45');
+      expect(first.body.data.nextCursor).toBe('26');
+      expect(first.body.data.items[0]).not.toHaveProperty('meta');
+      expect(first.body.data.items[0]).not.toHaveProperty('result');
+      expect(first.body.data.items[0]).not.toHaveProperty('log');
+      await Job.create({ id: 48, executionId: execution.id, nodeId: node.id, status: JOB_STATUS.RESOLVED });
+      const second = await agent.resource('executions.jobs', execution.id).list({
+        ...params,
+        before: first.body.data.nextCursor,
+        snapshot: first.body.data.snapshot,
+      });
+      expect(second.body.data.items).toHaveLength(20);
+      expect(second.body.data).not.toHaveProperty('total');
+      const last = await agent.resource('executions.jobs', execution.id).list({
+        ...params,
+        before: second.body.data.nextCursor,
+        snapshot: second.body.data.snapshot,
+      });
+      expect(last.body.data.items).toHaveLength(5);
+      expect(last.body.data.nextCursor).toBeNull();
+      const ids = [...first.body.data.items, ...second.body.data.items, ...last.body.data.items].map(
+        (job: { id: number }) => Number(job.id),
+      );
+      expect(ids).toEqual(Array.from({ length: 45 }, (_, index) => 45 - index));
+      const single = await agent.resource('executions.jobs', execution.id).list({ nodeId: otherNode.id });
+      expect(single.body.data.total).toBe(1);
+      expect(single.body.data.nextCursor).toBeNull();
+      const empty = await agent.resource('executions.jobs', execution.id).list({ ...params, nodeId: 0 });
+      expect(empty.body.data).toMatchObject({ items: [], total: 0, nextCursor: null });
+    });
+
+    it('rejects invalid cursors and users without workflow permissions', async () => {
+      const { execution, node } = await prepareHistory();
+      const params = { nodeId: node.id };
+      const invalid = await agent.resource('executions.jobs', execution.id).list({ ...params, before: 'invalid' });
+      expect(invalid.status).toBe(400);
+      const missingSnapshot = await agent.resource('executions.jobs', execution.id).list({ ...params, before: '20' });
+      expect(missingSnapshot.status).toBe(400);
+      const missing = await agent.resource('executions.jobs', 0).list(params);
+      expect(missing.status).toBe(404);
+      const forbidden = await userAgents[1].resource('executions.jobs', execution.id).list(params);
+      expect(forbidden.status).toBe(403);
+    });
+  });
+
   describe('destroy', () => {
     it('completed execution could be deleted', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });

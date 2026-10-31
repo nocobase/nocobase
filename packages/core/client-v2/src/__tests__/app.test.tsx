@@ -171,6 +171,19 @@ describe('app', () => {
       expect(document.documentElement.lang).toBe('ja-JP');
     });
 
+    it('should clear cached accessible routes when the auth token is cleared', () => {
+      const app = new Application({ router });
+      const routeRepository = app.flowEngine.context.routeRepository;
+      routeRepository.setRoutes([{ schemaUid: 'previous-user-page' }]);
+
+      app.apiClient.auth.setToken('renewed-token');
+      expect(routeRepository.listAccessible().map((route) => route.schemaUid)).toEqual(['previous-user-page']);
+
+      app.apiClient.auth.setToken(null);
+      expect(routeRepository.isAccessibleLoaded()).toBe(false);
+      expect(routeRepository.listAccessible()).toEqual([]);
+    });
+
     it('should escape app version html placeholder content', () => {
       expect(getAppVersionHTML('<script>alert(1)</script>&"')).toBe(
         '<span class="nb-app-version">v&lt;script&gt;alert(1)&lt;/script&gt;&amp;&quot;</span>',

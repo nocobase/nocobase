@@ -50,7 +50,7 @@ const deps: Record<string, string> = {
   'pg-hstore': '2.x',
   sqlite3: '5.x',
   supertest: '6.x',
-  axios: '1.7.x',
+  axios: '1.20.x',
   '@emotion/css': '11.x',
   ahooks: '3.x',
   lodash: '4.x',

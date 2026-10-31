@@ -85,7 +85,16 @@ export function jioToJoiSchema<T extends JioType>(jioConfig: {
     if (name === 'required') hasRequired = true;
     if (typeof schema[name] === 'function') {
       try {
-        schema = schema[name](...getArgs(name, args));
+        if (jioConfig.type === 'number' && name === 'precision') {
+          // Validate precision without rounding, while preserving the outer schema's numeric string conversion.
+          const precisionSchema = Joi.number().precision(getArgs(name, args)[0]).strict();
+          schema = schema.custom((value: number, helpers: Joi.CustomHelpers) => {
+            const { error } = precisionSchema.validate(value);
+            return error ? helpers.error('number.precision', error.details[0].context) : value;
+          });
+        } else {
+          schema = schema[name](...getArgs(name, args));
+        }
       } catch (err) {
         console.warn(`调用 Joi 方法 ${name} 失败:`, err);
       }

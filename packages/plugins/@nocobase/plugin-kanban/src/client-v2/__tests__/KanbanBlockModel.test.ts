@@ -2000,8 +2000,8 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(canCrossColumnDrag).toBe(true);
   });
 
-  test('kanban blocks always use manual base-resource loading to avoid the unused initial list request', () => {
-    expect(KanbanBlockModel.prototype.getDataLoadingMode.call({})).toBe('manual');
+  test('kanban blocks use automatic data loading so activation can refresh columns without filters', () => {
+    expect(KanbanBlockModel.prototype.getDataLoadingMode.call({})).toBe('auto');
   });
 
   test('kanban blocks disable automatic base-resource refreshes', () => {

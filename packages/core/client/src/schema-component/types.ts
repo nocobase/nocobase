@@ -18,6 +18,8 @@ export interface ISchemaComponentContext {
   reset?: () => void;
   designable?: boolean;
   setDesignable?: (value: boolean) => void;
+  /** Keep schema changes in the current context without persisting them through the UI schema API. */
+  localPersistence?: boolean;
   SchemaField?: React.FC<ISchemaFieldProps>;
   distributed?: boolean;
   [key: string]: any;

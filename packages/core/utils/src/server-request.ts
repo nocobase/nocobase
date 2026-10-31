@@ -22,8 +22,9 @@
  * Example:
  *   SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,::1,fc00::/7,api.example.com,*.trusted.com
  *
- * When not set, all requests are allowed (preserves existing behaviour).
+ * When not set, all requests are allowed unless SERVER_REQUEST_DISALLOW_IP=true.
  * When set, only requests whose host matches an entry are permitted.
+ * SERVER_REQUEST_DISALLOW_IP=true blocks literal IP hosts even when whitelisted.
  *
  * Note: only http and https URL schemes are ever accepted, regardless of the
  * whitelist configuration.
@@ -194,6 +195,7 @@ async function warnIfResolvedSsrfRiskTarget(url?: string): Promise<void> {
  *
  * Throws an error if:
  *   - The URL scheme is not http or https.
+ *   - SERVER_REQUEST_DISALLOW_IP is true and the host is a literal IP address.
  *   - SERVER_REQUEST_WHITELIST is set and the host does not match any entry.
  *
  * Silently returns for relative URLs (no scheme) so that internal API calls
@@ -222,6 +224,10 @@ export function checkUrlAgainstWhitelist(url?: string): void {
   }
 
   const host = getNormalizedHost(parsed);
+  if (process.env.SERVER_REQUEST_DISALLOW_IP === 'true' && ipaddr.isValid(host)) {
+    throw new Error(`Outbound request to "${host}" is blocked because SERVER_REQUEST_DISALLOW_IP is enabled.`);
+  }
+
   const whitelist = process.env.SERVER_REQUEST_WHITELIST;
   if (!whitelist || !whitelist.trim()) {
     warnIfSsrfRiskTarget(host);
@@ -232,7 +238,10 @@ export function checkUrlAgainstWhitelist(url?: string): void {
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
-  if (entries.length === 0) return;
+  if (entries.length === 0) {
+    warnIfSsrfRiskTarget(host);
+    return;
+  }
 
   for (const entry of entries) {
     if (matchesEntry(host, entry)) return;

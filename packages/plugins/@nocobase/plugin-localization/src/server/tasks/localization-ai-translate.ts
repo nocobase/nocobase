@@ -115,7 +115,9 @@ export class LocalizationAITranslateTask extends TaskType {
       throw new Error(`AI employee "${employeeUsername}" not found`);
     }
     const resolvedModel = await aiPlugin.aiEmployeesManager.resolveModel(employee, params.model);
-    const { provider, model, service } = await aiPlugin.aiManager.getLLMService(resolvedModel);
+    const { provider, model, service } = await aiPlugin.aiManager.getLLMService(resolvedModel, {
+      sessionId: `localization-ai-translate-${this.record.id}`,
+    });
     const defaultReferenceLocale = await this.getSystemDefaultLocale();
     const builtInMatchResources = await this.app.localeManager.getBuiltInResources('en-US');
     const referenceLocales = this.resolveReferenceLocales(params.referenceLocales, defaultReferenceLocale);

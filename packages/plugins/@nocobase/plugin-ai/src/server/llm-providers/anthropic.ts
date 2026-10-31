@@ -69,6 +69,9 @@ export class AnthropicProvider extends LLMProvider {
       ...sanitizedModelOptions,
       model,
       anthropicApiUrl: this.getResolvedBaseURL(),
+      clientOptions: {
+        defaultHeaders: this.getDefaultHeaders(),
+      },
       verbose: false,
     });
   }
@@ -97,6 +100,7 @@ export class AnthropicProvider extends LLMProvider {
         method: 'GET',
         url,
         headers: {
+          ...this.getDefaultHeaders(),
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
         },

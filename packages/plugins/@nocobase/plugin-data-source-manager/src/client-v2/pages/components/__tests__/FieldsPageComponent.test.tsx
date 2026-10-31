@@ -21,7 +21,14 @@ const notifications = {
   error: vi.fn(),
 };
 
-const apiRequest = vi.fn((options: { url: string }) => {
+type ApiRequestOptions = {
+  data?: Record<string, unknown>;
+  method?: string;
+  params?: Record<string, unknown>;
+  url: string;
+};
+
+const apiRequest = vi.fn((options: ApiRequestOptions) => {
   if (options.url === 'collectionFields:list') {
     return Promise.resolve({
       data: {
@@ -32,19 +39,40 @@ const apiRequest = vi.fn((options: { url: string }) => {
             interface: 'input',
             uiSchema: { title: 'Title' },
             description: 'Order title',
+            reverseField: { key: 'customers.orders' },
           },
           {
             name: 'status',
             type: 'string',
             interface: 'select',
             uiSchema: { title: 'Status' },
+            reverseField: { key: 'orders.statuses' },
           },
         ],
       },
     });
   }
+  if (options.url === 'collectionFields:get:title') {
+    return Promise.resolve({
+      data: {
+        data: {
+          name: 'title',
+          type: 'string',
+          interface: 'input',
+          uiSchema: { title: 'Title' },
+          reverseField: {
+            key: 'customers.orders',
+            name: 'orders',
+          },
+        },
+      },
+    });
+  }
   return Promise.resolve({ data: { data: {} } });
 });
+
+const runtimeFields = new Map<string, { options: { name: string } }>();
+const inheritedFields = new Map<string, { name: string; fields: Map<string, { options: { name: string } }> }>();
 
 const mainDataSource = {
   options: {
@@ -53,6 +81,9 @@ const mainDataSource = {
   reload: vi.fn(() => Promise.resolve()),
   collectionManager: {
     getCollection: vi.fn(() => ({
+      name: 'orders',
+      fields: runtimeFields,
+      inherits: inheritedFields,
       getOption: vi.fn((name: string) => (name === 'titleField' ? 'title' : undefined)),
       setOption: vi.fn(),
     })),
@@ -268,10 +299,10 @@ const collection = {
   fields: [{ name: 'id', primaryKey: true }],
 };
 
-function renderFieldsPage(onCollectionChange = vi.fn()) {
+function renderFieldsPage(onCollectionChange = vi.fn(), currentCollection = collection) {
   return render(
     <App>
-      <FieldsPage collection={collection} dataSourceKey="main" onCollectionChange={onCollectionChange} />
+      <FieldsPage collection={currentCollection} dataSourceKey="main" onCollectionChange={onCollectionChange} />
     </App>,
   );
 }
@@ -279,6 +310,62 @@ function renderFieldsPage(onCollectionChange = vi.fn()) {
 describe('FieldsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    runtimeFields.clear();
+    inheritedFields.clear();
+    for (const name of ['id', 'title', 'status']) {
+      runtimeFields.set(name, { options: { name } });
+    }
+  });
+
+  it.each([{ remainingNames: [] }, { remainingNames: ['hidden_fk'] }])(
+    'uses current fields after deleting a field, retaining $remainingNames',
+    async ({ remainingNames }) => {
+      const originalCollection = {
+        ...collection,
+        filterTargetKey: 'status',
+        fields: [{ name: 'status', primaryKey: false }],
+      };
+      mainDataSource.reload.mockImplementationOnce(async () => {
+        runtimeFields.clear();
+        for (const name of remainingNames) {
+          runtimeFields.set(name, { options: { name } });
+        }
+      });
+      inheritedFields.set('parent', {
+        name: 'parent',
+        fields: new Map([['inherited_name', { options: { name: 'inherited_name' } }]]),
+      });
+      renderFieldsPage(vi.fn(), originalCollection);
+
+      const statusRow = await screen.findByTestId('field-row-status');
+      apiRequest.mockResolvedValueOnce({ data: { data: {} } });
+      apiRequest.mockResolvedValueOnce({ data: { data: [] } });
+      fireEvent.click(within(statusRow).getByText('t:Delete'));
+      await waitFor(() => expect(mainDataSource.reload).toHaveBeenCalled());
+      await waitFor(() => expect(screen.queryByTestId('field-row-status')).not.toBeInTheDocument());
+      fireEvent.mouseEnter(screen.getByRole('button', { name: /t:Add field/ }));
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Input' }));
+
+      await waitFor(() => expect(flowMocks.ctx.viewer.drawer).toHaveBeenCalled());
+      const form = flowMocks.ctx.viewer.drawer.mock.calls[0][0].content();
+      expect(form.props.mode).toBe('create');
+      expect(form.props.collection.fields.map((field: { name: string }) => field.name)).toEqual(remainingNames);
+      expect(originalCollection.fields).toEqual([{ name: 'status', primaryKey: false }]);
+    },
+  );
+
+  it('includes newly created fields when reopening the add field drawer', async () => {
+    renderFieldsPage();
+    await screen.findByTestId('field-row-title');
+    runtimeFields.set('new_field', { options: { name: 'new_field' } });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /t:Add field/ }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Input' }));
+
+    await waitFor(() => expect(flowMocks.ctx.viewer.drawer).toHaveBeenCalled());
+    const form = flowMocks.ctx.viewer.drawer.mock.calls[0][0].content();
+    expect(form.props.collection.fields).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'new_field' })]),
+    );
   });
 
   it('loads fields and opens the edit field drawer', async () => {
@@ -286,15 +373,26 @@ describe('FieldsPage', () => {
 
     expect(await screen.findByTestId('field-row-title')).toBeInTheDocument();
     expect(screen.getByTestId('field-row-status')).toBeInTheDocument();
+    const listCall = apiRequest.mock.calls.find(([options]) => options.url === 'collectionFields:list')?.[0] as
+      | { params?: Record<string, unknown> }
+      | undefined;
+    expect(listCall?.params?.appends).toBeUndefined();
 
     fireEvent.click(within(screen.getByTestId('field-row-title')).getByText('t:Edit'));
 
-    expect(flowMocks.ctx.viewer.drawer).toHaveBeenCalledWith(
-      expect.objectContaining({
-        closable: true,
-        width: 800,
+    await waitFor(() =>
+      expect(apiRequest).toHaveBeenCalledWith({
+        url: 'collectionFields:get:title',
+        params: { appends: ['reverseField'] },
       }),
     );
+    await waitFor(() => expect(flowMocks.ctx.viewer.drawer).toHaveBeenCalled());
+    const drawerOptions = flowMocks.ctx.viewer.drawer.mock.calls[0][0];
+    expect(drawerOptions).toEqual(expect.objectContaining({ closable: true, width: 800 }));
+    expect(drawerOptions.content().props.field.reverseField).toEqual({
+      key: 'customers.orders',
+      name: 'orders',
+    });
   });
 
   it('saves field display names and title field changes', async () => {
@@ -320,6 +418,10 @@ describe('FieldsPage', () => {
         }),
       ),
     );
+    const displayNameUpdate = apiRequest.mock.calls.find(
+      ([options]) => options.url === 'collectionFields:update:title',
+    )?.[0];
+    expect(displayNameUpdate.data).not.toHaveProperty('reverseField');
 
     fireEvent.click(screen.getByLabelText('switch-title-field-status'));
 
@@ -376,6 +478,10 @@ describe('FieldsPage', () => {
       ),
     );
     expect(mainDataSource.reload).toHaveBeenCalled();
+    const interfaceUpdate = apiRequest.mock.calls.find(
+      ([options]) => options.url === 'collectionFields:update:status',
+    )?.[0];
+    expect(interfaceUpdate?.data).not.toHaveProperty('reverseField');
   });
 
   it('confirms and deletes a configurable field', async () => {

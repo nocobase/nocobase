@@ -390,7 +390,13 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
           const view = getPopupView(ctx, anchorView);
           const inputArgs = view?.inputArgs;
           const srcId = inputArgs?.sourceId;
-          let assoc: string | undefined = inputArgs?.associationName;
+          const hasSourceId = srcId != null && srcId !== '';
+          // 上级记录暂无主键时（如审批配置态表单里的快速创建弹窗），只会传 sourceAssociationName：仍展示变量结构，取值依赖运行时的 sourceId
+          const pendingSourceAssoc =
+            !hasSourceId && typeof inputArgs?.sourceAssociationName === 'string'
+              ? inputArgs.sourceAssociationName
+              : undefined;
+          let assoc: string | undefined = inputArgs?.associationName || pendingSourceAssoc;
           let dsKey: string = inputArgs?.dataSourceKey || 'main';
 
           // 兜底：若 associationName 缺失或不含“.”，尝试从当前视图模型的 openView 参数推断
@@ -409,7 +415,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
             }
           }
 
-          if (srcId != null && srcId !== '' && assoc && typeof assoc === 'string') {
+          if ((hasSourceId || pendingSourceAssoc) && assoc && typeof assoc === 'string') {
             const parentCollectionName = String(assoc).includes('.') ? String(assoc).split('.')[0] : undefined;
             if (parentCollectionName) {
               const parentCollectionAccessor = () => {
@@ -420,11 +426,15 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
                   return null;
                 }
               };
-              const srcMeta = await buildRecordMeta(parentCollectionAccessor, t('Current popup parent record'), () => ({
-                collection: parentCollectionName,
-                dataSourceKey: dsKey,
-                filterByTk: srcId,
-              }));
+              const srcMeta = await buildRecordMeta(parentCollectionAccessor, t('Current popup parent record'), () =>
+                hasSourceId
+                  ? {
+                      collection: parentCollectionName,
+                      dataSourceKey: dsKey,
+                      filterByTk: srcId,
+                    }
+                  : undefined,
+              );
               if (srcMeta) {
                 props.sourceRecord = srcMeta;
               }

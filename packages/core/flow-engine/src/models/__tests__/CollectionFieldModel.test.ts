@@ -108,6 +108,11 @@ describe('CollectionFieldModel', () => {
     expect(defaultBinding).toBeNull();
   });
 
+  it('should return null when the collection field has been deleted', () => {
+    const defaultBinding = TestModel.getDefaultBindingByField(mockContext, undefined);
+    expect(defaultBinding).toBeNull();
+  });
+
   it('should return null if no bindings exist for the interface', () => {
     class Test1Model extends CollectionFieldModel {}
     class Test2Model extends Test1Model {}

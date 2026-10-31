@@ -11,6 +11,14 @@ import { AppSupervisor } from '../app-supervisor';
 import lodash from 'lodash';
 import Application from '../application';
 
+/** Raised when a request resolves to an app name that could never name a real application. */
+export class InvalidAppNameError extends Error {
+  constructor(readonly appName: unknown) {
+    super('invalid application name');
+    this.name = 'InvalidAppNameError';
+  }
+}
+
 interface AppError {
   status: number;
   message: any;
@@ -34,6 +42,17 @@ function getAppName(app: Application) {
 }
 
 export const errors: AppErrors = {
+  INVALID_APP_NAME: {
+    status: 400,
+    message: 'invalid application name',
+    maintaining: false,
+  },
+
+  APP_ENVIRONMENT_UNAVAILABLE: {
+    status: 503,
+    message: ({ appName }) => `deployment environment for application ${appName} is unavailable`,
+    maintaining: true,
+  },
   APP_NOT_FOUND: {
     status: 404,
     message: ({ appName }) => `application ${appName} not found`,

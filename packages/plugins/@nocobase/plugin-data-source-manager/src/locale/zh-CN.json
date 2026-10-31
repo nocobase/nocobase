@@ -191,6 +191,7 @@
   "Source key": "源键",
   "Status": "状态",
   "Delete failed": "删除失败",
+  "Field loading failed": "字段加载失败",
   "Save failed": "保存失败",
   "Submit failed": "提交失败",
   "Store the creation time of each record": "存储每条记录的创建时间",

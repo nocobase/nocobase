@@ -10,11 +10,14 @@
 export const AI_EMPLOYEE_USERNAME_MAX_LENGTH = 64;
 export const AI_EMPLOYEE_NICKNAME_MAX_LENGTH = 64;
 
+export const KNOWLEDGE_BASE_DATA_PLACEHOLDER = '{knowledgeBaseData}';
 export const AI_EMPLOYEE_USERNAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
 export const AI_EMPLOYEE_NICKNAME_PATTERN = /^[\p{L}\p{M}\p{N} ._'’()&·-]+$/u;
 
 export const normalizeAIEmployeeName = (value: string) => value.trim();
 
+export const hasKnowledgeBaseDataPlaceholder = (value: unknown): value is string =>
+  typeof value === 'string' && value.includes(KNOWLEDGE_BASE_DATA_PLACEHOLDER);
 const isWithinLength = (value: string, maxLength: number) => value.length > 0 && Array.from(value).length <= maxLength;
 
 export const isValidAIEmployeeUsername = (value: string) => {

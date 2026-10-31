@@ -27,17 +27,17 @@ import { RolesManagerContext } from '../RolesManagerProvider';
 interface MenuItem {
   title: string;
   id: number;
-  children?: MenuItem[];
+  children?: MenuItem[] | null;
   parent?: MenuItem;
 }
 
-const toItems = (items, parent?: MenuItem): MenuItem[] => {
+const toItems = (items: MenuItem[] | null | undefined, parent?: MenuItem): MenuItem[] => {
   if (!Array.isArray(items)) {
     return [];
   }
 
   return items.map((item) => {
-    const children = toItems(item.children, item);
+    const children = toItems(item.children, { ...item, parent });
     const hideChildren = children.length === 0;
 
     return {
@@ -51,11 +51,11 @@ const toItems = (items, parent?: MenuItem): MenuItem[] => {
   });
 };
 
-const getAllChildrenId = (items) => {
+const getAllChildrenId = (items: MenuItem[] | null | undefined): number[] => {
   if (!Array.isArray(items)) {
     return [];
   }
-  const IDList = [];
+  const IDList: number[] = [];
   for (const item of items) {
     IDList.push(item.id);
     IDList.push(...getAllChildrenId(item.children));
@@ -154,7 +154,7 @@ export const MenuPermissions: React.FC<{
   const api = useAPIClient();
   const { t } = useTranslation();
   const allIDList = getAllChildrenId(items);
-  const [IDList, setIDList] = useState([]);
+  const [IDList, setIDList] = useState<number[]>([]);
   const { loading, refresh } = useRequest(
     {
       resource: 'roles.desktopRoutes',
@@ -180,18 +180,20 @@ export const MenuPermissions: React.FC<{
   const allChecked = allIDList.length === IDList.length;
   const { refresh: refreshDesktopRoutes } = useAllAccessDesktopRoutes();
 
-  const handleChange = async (checked, menuItem) => {
+  const handleChange = async (checked: boolean, menuItem: MenuItem) => {
     // 处理取消选中
     if (checked) {
       let newIDList = IDList.filter((id) => id !== menuItem.id);
       const shouldRemove = [menuItem.id];
 
-      if (menuItem.parent) {
-        const selectedChildren = menuItem.parent.children.filter((item) => newIDList.includes(item.id));
-        if (selectedChildren.length === 0) {
-          newIDList = newIDList.filter((id) => id !== menuItem.parent.id);
-          shouldRemove.push(menuItem.parent.id);
+      let parent = menuItem.parent;
+      while (parent) {
+        if (parent.children?.some((item) => newIDList.includes(item.id))) {
+          break;
         }
+        newIDList = newIDList.filter((id) => id !== parent.id);
+        shouldRemove.push(parent.id);
+        parent = parent.parent;
       }
 
       if (menuItem.children) {
@@ -209,11 +211,13 @@ export const MenuPermissions: React.FC<{
       const newIDList = [...IDList, menuItem.id];
       const shouldAdd = [menuItem.id];
 
-      if (menuItem.parent) {
-        if (!newIDList.includes(menuItem.parent.id)) {
-          newIDList.push(menuItem.parent.id);
-          shouldAdd.push(menuItem.parent.id);
+      let parent = menuItem.parent;
+      while (parent) {
+        if (!newIDList.includes(parent.id)) {
+          newIDList.push(parent.id);
+          shouldAdd.push(parent.id);
         }
+        parent = parent.parent;
       }
 
       if (menuItem.children) {
@@ -224,7 +228,7 @@ export const MenuPermissions: React.FC<{
 
       setIDList(uniq(newIDList));
       await resource.add({
-        values: shouldAdd,
+        values: uniq(shouldAdd).filter((id) => !IDList.includes(id)),
       });
     }
     refreshDesktopRoutes();
@@ -272,7 +276,7 @@ export const MenuPermissions: React.FC<{
           },
         }}
       />
-      <Table
+      <Table<MenuItem>
         className={style}
         loading={loading}
         rowKey={'id'}
@@ -315,7 +319,7 @@ export const MenuPermissions: React.FC<{
                 return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
               },
             },
-          ] as TableProps['columns']
+          ] as TableProps<MenuItem>['columns']
         }
         dataSource={translateTitle(items, t, compile)}
       />
