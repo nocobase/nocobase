@@ -13,6 +13,22 @@ import { Table } from 'antd';
 import { Schema, observer, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 
+// JSON/JSONB values arrive from the SQL collection preview API as parsed objects and arrays.
+// React cannot render them as children, so serialize them before handing them to a table cell.
+const formatPreviewValue = (value: unknown): React.ReactNode => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
 export const PreviewTable = observer(
   () => {
     const { data: res, loading, error } = useAsyncData();
@@ -43,7 +59,7 @@ export const PreviewTable = observer(
           const compiledRecord = Object.entries(record).reduce(
             (mp: { [key: string]: any }, [key, val]: [string, any]) => {
               if (typeof val !== 'string') {
-                mp[key] = val;
+                mp[key] = formatPreviewValue(val);
                 return mp;
               }
               const compiled = Schema.compile(val, { t });
