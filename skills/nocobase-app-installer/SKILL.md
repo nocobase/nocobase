@@ -1,11 +1,13 @@
 ---
 name: nocobase-app-installer
-description: Deploy a built NocoBase 3 application locally or over SSH to an offline Linux server, for production, with `@nocobase/app-installer` from the deployment archive `pnpm build --tar` writes, then upgrade, roll back and check it. Use when the user asks to deploy an application to production or a server, to upgrade or roll back such an installation, or when the directory holds an `installer.json` written by app-installer. Not for creating a project to develop, which is the `nocobase-create-app` Skill.
+description: Install, deploy, upgrade, roll back and check NocoBase Studio or another built NocoBase 3 application with `@nocobase/app-installer`, using a published application package locally or a deployment archive locally or over SSH to an offline Linux server. Use for running Studio on a server, including a test deployment, or managing a directory with `installer.json`. Not for creating an application source project to develop, which is the `nocobase-create-app` Skill.
 ---
 
 # Install and run NocoBase 3 with app-installer
 
-This Skill installs NocoBase that is already built — nothing on the machine is developed, only run. `@nocobase/app-installer` puts each release under `releases/<version>_<build time>/app` and runs it under pm2; `config.yml`, `app.env`, `storage/`, `backups/` and `logs/` sit beside the releases and survive every upgrade. It installs from `--archive`, a deployment archive built in an application project. This Skill decides when to use it and how to act on what it reports; `--help` is the reference for every flag.
+This Skill deploys NocoBase applications as services. `@nocobase/app-installer` puts each release under `releases/<version>_<build time>/app` and runs it under pm2; `config.yml`, `app.env`, `storage/`, `backups/` and `logs/` sit beside the releases and survive every upgrade. Use `--app` for a published application package, which is downloaded and built on the server, or `--archive` for a deployment archive built elsewhere. This Skill decides when to use it and how to act on what it reports; `--help` is the reference for every flag.
+
+For **NocoBase Studio**, read [the Studio deployment reference](references/studio.md) before selecting a release or installation directory. It covers installing the published npm application without a repository checkout, upgrading the same installation and verifying its business data. The source build, archive transfer and SSH deployment steps below apply only to `--archive`; skip them for same-machine `--app`, which needs no user-provided repository or archive.
 
 ## Run it
 
@@ -23,44 +25,47 @@ Use the published `beta` channel unless the user specifies an exact version. An 
 
 `--json` prints one document on stdout and progress on stderr, in the same envelope as `pnpm nocobase … --json`. Read the document, not the exit code alone: `ok`, `status` (`success`, `success-noop` or `failure`), `result`, and on failure `error.code`, `error.message`, `error.suggestions` and `error.details`. Each suggestion has a `message` and, where there is one, a `run` of `{ command, args }`: an executable and its arguments, run as given without a shell. app-installer 0.1.0-beta.1 and earlier, which a suggested command pinned to that version still runs, print `status` `error` and `run` as one shell line that runs as printed, so tell success from failure by `ok`.
 
-| Exit | Meaning                                                                                  |
-| ---- | ---------------------------------------------------------------------------------------- |
-| `0`  | Done, or nothing to do (`success-noop`).                                                 |
+| Exit | Meaning                                                                                 |
+| ---- | --------------------------------------------------------------------------------------- |
+| `0`  | Done, or nothing to do (`success-noop`).                                                |
 | `1`  | Failed; an application that was already running was not touched.                        |
 | `2`  | Invalid usage, a failed precheck, or a confirmation still needed; nothing was written.  |
-| `3`  | An upgrade failed after switching and was rolled back; the previous release is running.  |
-| `4`  | Rolling back failed too; the application is down.                                        |
+| `3`  | An upgrade failed after switching and was rolled back; the previous release is running. |
+| `4`  | Rolling back failed too; the application is down.                                       |
 
 ## Choose the route
 
 A project is source code someone changes, created by `nocobase-create-app` and developed locally; an installation is a built NocoBase that only runs, made by this Skill, usually in production. Settle the route before installing anything:
 
-| The user asks to                                         | Route                                                                                                       |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Install, create or try NocoBase, to develop with         | The `nocobase-create-app` Skill                                                                             |
-| Deploy an application to production or a server          | This Skill, `--archive`, from the application's deployment archive                                          |
-| Run it with Docker                                       | The application's `nocobase-deployment` Skill and Docker configuration                                     |
+| The user asks to                                   | Route                                                                             |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Install, create or try NocoBase, to develop with   | The `nocobase-create-app` Skill                                                   |
+| Deploy an application to production or a server    | This Skill, `--archive`, from the application's deployment archive                |
+| Install, deploy or try Studio as a running service | This Skill and [the Studio reference](references/studio.md), using `--app studio` |
+| Run it with Docker                                 | The application's `nocobase-deployment` Skill and Docker configuration            |
 
 - "Install NocoBase on this server" with no project and no archive is not settled yet. Running the user's own application means creating it locally with `nocobase-create-app`, building its archive, and installing that here with `--archive`. Do not create a project on the server and run it with `pnpm dev`: that is development mode, not a deployment.
-- An `installer.json` whose `source.kind` is `template` was installed from the published Hub template by an earlier app-installer. The current one refuses it with `STATE_UNSUPPORTED`; leave it to the app-installer version that installed it.
+- An `installer.json` whose `source.kind` is `template` belongs to the legacy Hub installation route, not Studio. Use its compatible installer; a version that reports `STATE_UNSUPPORTED` cannot manage it. Do not convert it to Studio by replacing its archive or state.
 - When the working directory already holds `installer.json`, the installation exists: start with `status`.
 
 ## Choose where the installer runs
 
-When the user supplies an SSH server, keep the Agent, this Skill and the installer on the local machine. Read [Remote deployment](references/remote-deployment.md) before proceeding: it covers local orchestration, offline execution and recovery. The server needs no Agent, Skill or npm access. The `install`, `status`, `upgrade` and `rollback` guidance below still defines the lifecycle; run remote operations with the same SSH options and absolute remote `--dir`.
+For same-machine npm installation, run `install --app` on the application server; no source checkout or deployment archive is needed. SSH deployment supports `--archive`, not `--app`, remote npm upgrades or `--rebuild`.
 
-When the Agent is already on the application server, use the local commands below. An archive is built where the sources are, not in the production installation. If the source project is available locally, follow its `AGENTS.md` and `nocobase-deployment` Skill to build; otherwise obtain the archive from the user or CI. Do not build or run a development project on the production server.
+For `--archive` over SSH, keep the Agent, this Skill and the installer on the local machine. Read [Remote deployment](references/remote-deployment.md) before proceeding: it covers local orchestration, offline execution and recovery. The server needs no Agent, Skill or npm access. The `install`, `status`, `upgrade` and `rollback` guidance below still defines the lifecycle; run remote operations with the same SSH options and absolute remote `--dir`.
+
+For `--archive` only, build where the sources are, usually the user's computer or CI, and install where NocoBase runs. Follow the source project's `AGENTS.md` and `nocobase-deployment` Skill, keeping the source checkout separate from the production installation. If neither sources nor a deployment archive are available, ask for the intended source revision or archive; do not substitute another application or invent a download URL.
 
 ## Build the archive
 
-In the application project, whose own `AGENTS.md` and `nocobase-deployment` Skill are the authority on building:
+For `--archive` only, in the application project, whose own `AGENTS.md` and `nocobase-deployment` Skill are the authority on building:
 
 ```bash
-APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
+pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
 - `--target` and `--node-version` describe the machine that will run it, not the one building it: `node -p "process.platform + '-' + process.arch"` and `node --version` there; Alpine takes a `-musl` target. The installer refuses an archive built for another machine and names the command that fits.
-- `APP_BASE_PATH` is compiled into the client, `/main` when unset. The application is served there, and every later archive must be built for the same one.
+- A current build records `nocobase.relocatable: true` in `dist/package.json`. Choose the mount path at installation with `--base-path /crm`; it is stored in `app.env` as `APP_BASE_PATH`, and upgrades retain it. An older archive with a compiled base path must match the installation's path or be rebuilt; `BASE_PATH_MISMATCH` reports that case.
 - A database other than SQLite needs its driver in the project before the build, such as `pnpm add @nocobase/db-postgres@beta`: an archive carries only the drivers it was built with.
 
 The archive is `storage/exports/dist.tar.gz`; the user copies it to the machine that runs NocoBase, for example `scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz`. `ARCHIVE_TOO_OLD` or `STORAGE_IN_RELEASE` means the project's NocoBase packages are older than the installer needs: upgrade them, build again, then retry.
@@ -74,9 +79,15 @@ The archive is `storage/exports/dist.tar.gz`; the user copies it to the machine 
 3. It listens on `127.0.0.1`, which suits a reverse proxy on the same machine; when people reach it directly at `http://<address>:<port>`, add `--host 0.0.0.0` and use that address as the origin. For another database add `--dialect <dialect>`, the connection as `--set database.connections.main.host=…` and friends, and the password as `--set-from-env database.connections.main.password=<VARIABLE>` after the user has exported it; never put a password on the command line.
 4. `PORT_IN_USE` names a free port in `error.details.freePort`; offer it rather than picking one silently.
 
+Reuse the destination, port, database and authorization already established in the conversation. Ask only for missing decisions; approval to deploy does not require a second approval for the same installation. Before exposing a fresh installation, supply a user-chosen or generated administrator password with `--set-from-env users.initialAdmin.password=<VARIABLE>`, and tell the user where to retrieve it securely. Keep passwords out of command arguments and logs.
+
 ### Run it
 
-`install <dir> --archive <file> --origin <origin> --json`. It needs no pnpm, and finishes in a minute or two. The archive must carry the driver for `--dialect`, or the install stops with `DRIVER_MISSING` and the build command that fixes it.
+Before an npm installation, check the selected installer's `install --help` includes `--app` and the application version exists in the chosen registry. Use that installer version for the installation and subsequent commands.
+
+`install <dir> --app studio --origin <origin> --json` installs the official Studio npm application; the full name `--app @nocobase/studio` is equivalent. Add `@<version or tag>` to select a release. This route requires npm and pnpm 11+ and builds in a temporary directory that is removed afterwards.
+
+`install <dir> --archive <file> --origin <origin> --json` installs an existing deployment archive. It needs no pnpm, and finishes in a minute or two. The archive must carry the driver for `--dialect`, or the install stops with `DRIVER_MISSING` and the build command that fixes it.
 
 ### When it succeeds
 
@@ -95,7 +106,7 @@ Each application is installed once, in a directory of its own, with its own `--p
 
 ## Status
 
-`status --dir <root> --json` changes nothing. Report the application and `version`, `current` (the release id), `endpoints.url`, `health.ok`, `process`, and anything in `warnings`. `node.matches: false` means the machine's Node major changed since the release was built, and it will not load its native modules until a release built for this machine replaces it: the warning names the steps — a rebuilt archive and `upgrade --archive` — which go through the same stop, backup and confirmation as any upgrade. A non-null `pending` means an operation was interrupted; see below.
+`status --dir <root> --json` changes nothing. Report the application and `version`, `current` (the release id), `endpoints.url`, `health.ok`, `process`, and anything in `warnings`. `node.matches: false` means the machine's Node major changed since the release was built, and it will not load its native modules until a release built for this machine replaces it: the warning names the steps — `upgrade --rebuild` for an npm application, or a rebuilt archive and `upgrade --archive` — which go through the same stop, backup and confirmation as any upgrade. A non-null `pending` means an operation was interrupted; see below.
 
 ## Upgrade and roll back
 
@@ -107,8 +118,8 @@ Do not run actual repair before an ordinary installer upgrade. Its SQLite backup
 
 Both stop the application, so the user decides:
 
-1. An upgrade takes a new archive: `upgrade --dir <root> --archive <file> --json`. It must be the same application built for the same base path, and not an older version; the same version built again is a new release and deploys normally.
-2. Run it without `--yes`. It answers `CONFIRMATION_REQUIRED` with `error.details.notes`: what will stop, what is backed up, and any Node major change. Relay those notes and wait for a clear yes before running it again with `--yes`. `success-noop` means that release is already running.
+1. Start with `status --dir <root> --json` and read `source.kind`. For `app`, use `upgrade --dir <root> --json` for the recorded package’s `latest`, add `--to <version or tag>` to select a release, or use `--rebuild` to build the installed version again. A version or tag chosen during installation does not pin future upgrades. For `archive`, use `upgrade --dir <root> --archive <file> --json`. The archive must have the same application package name and a compatible build target, and must not have an older version. Relocatable builds retain the installation's base path; older builds must match it. The same version built again is a new release and deploys normally.
+2. Run it without `--yes` to obtain `CONFIRMATION_REQUIRED` and `error.details.notes`: what will stop, what is backed up, and any Node major change. Relay those notes. If the user has already authorized that exact interruption and data operation, proceed with `--yes`; otherwise obtain that consent first. `success-noop` means that release is already running.
 3. The installer backs up every SQLite database `config.yml` declares, plus `config.yml` and `app.env`, but not any other database: `BACKUP_REQUIRED` names those connections; have the user back them up first, then add `--backup-done`.
 4. An upgrade keeps three releases, always including the new one and the one it came from, and prunes older ones once it succeeds; pass `--keep <n>` when the user wants more of them to stay available for rollback.
 5. Read the outcome:
@@ -122,17 +133,17 @@ Both stop the application, so the user decides:
 
 `OPERATION_INTERRUPTED` from `upgrade`, or `pending` in `status`, means an earlier run stopped while the application was down. Plain `rollback` recovers, through the same confirmation: it undoes an interrupted upgrade, restoring the databases, and finishes an interrupted rollback.
 
-## Change the origin or port
+## Change the origin, port or mount path
 
 app-installer has no command for it. The origin, address and port live in `app.env` as `APP_PUBLIC_ORIGIN`, `APP_SERVER_HOST` and `APP_SERVER_PORT`. Before changing them, tell the user:
 
 - the application will be at the new origin plus its base path;
 - the application stops briefly while it restarts;
 - a new port has to be free, or the application restarts into a crash loop that only `logs/app.err.log` explains, and a reverse proxy in front has to forward to it;
-- `APP_BASE_PATH` cannot change this way: it is compiled into the client.
+- `APP_BASE_PATH` can change for a release whose `dist/package.json` records `nocobase.relocatable: true`; older releases with a compiled base path must be rebuilt first.
 
-With their agreement, edit those three lines and nothing else, then run `pm2 restart <name>`, `<name>` being `name` in `status`. pm2 starts the application through `launcher.mjs`, which reads `app.env` on every start, so nothing has to be registered again. `status` afterwards reports the new `endpoints` and checks health at the address in `app.env`; for a new origin, have the user open `endpoints.url`.
+Within the user's authorized change, edit only the relevant `app.env` values (`APP_PUBLIC_ORIGIN`, `APP_SERVER_HOST`, `APP_SERVER_PORT`, `APP_BASE_PATH`), then run `pm2 restart <name>`, `<name>` being `name` in `status`. pm2 starts the application through `launcher.mjs`, which reads `app.env` on every start, so nothing has to be registered again. Run `status` and verify login, a deep route and WebSocket connections at the new `endpoints.url`; update reverse proxy routing when applicable.
 
 ## Keep the data intact
 
-The root holds the only copy of the application's configuration, secrets and data. Change everything in it through app-installer, apart from the three `app.env` lines above, and leave the choice of deleting anything to the user. Keep the contents of `config.yml`, which holds the secrets, out of the conversation.
+The root holds the application's configuration, secrets and data. Change everything in it through app-installer, apart from the documented `app.env` values above, and leave the choice of deleting anything to the user. Keep the contents of `config.yml`, which holds the secrets, out of the conversation.
