@@ -9,6 +9,7 @@ Read this before registering, updating, customizing or removing a plugin, and be
 | The requirement sounds like                                                                  | Read the Skill for                                                                                                                        |
 | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Email, IM, or in-app messages; notifying someone that something happened                     | `@nocobase/app-plugin-notification`                                                                                                       |
+| Knowledge bases, document spaces, search and document review                                 | `@nocobase/app-plugin-knowledge`; follow [knowledge integration](#knowledge-base-integration)                                             |
 | Approval processes, joint decisions and approval tasks                                       | `@nocobase/app-plugin-approval` (commercial Pro plugin; check [prerequisites](lifecycle.md#approval-requests-check-the-pro-plugin-first)) |
 | Roles, permissions, "user A may only see their own records", field-level or row-level access | `@nocobase/app-plugin-authorization`                                                                                                      |
 | Sign-in, registration, sessions, password reset                                              | `@nocobase/app-plugin-authentication`                                                                                                     |
@@ -21,6 +22,12 @@ Run `pnpm nocobase skills sync` if `.agents/skills/` is missing or looks out of 
 Building a permission system, a notification sender, or a job scheduler by hand when a registered plugin already provides one is the most expensive mistake available here. Prefer the plugin; write your own only when you have read its Skill and confirmed it genuinely does not fit.
 
 `.agents/skills/` is generated output: gitignored, and every synchronized package-owned directory is replaced wholesale on the next sync, so never edit a file there. The same sync mirrors each synchronized directory into `.claude/skills/` as a symbolic link, because Claude Code discovers skills only there; that mirror is generated and gitignored too. Put application-specific guidance in the application's committed `.agents/rules/`, linked from its `AGENTS.md`.
+
+## Knowledge base integration
+
+When requirements include a knowledge base, document spaces, versioned articles/files, document proposals/review or knowledge search, first inspect `@nocobase/app-plugin-knowledge` and its runtime registration. For required installation or updates, follow [commercial package access](#commercial-package-access) for this package: automatically probe pkg-v3 with existing credentials and install/register a compatible accessible version without prompting. If access is unavailable, leave a brief conversation notice and continue independent work; keep knowledge integration pending rather than building a substitute document/search engine.
+
+Read the synchronized plugin Skill when available. A package without a Skill is not an unavailable plugin: inspect its installed `README.md`, `docs/` and public exports before integration. Verify the target version's configuration and access contracts, and distinguish built-in document/keyword search from optional indexing or semantic-search backends. Check each required backend package separately; knowledge package access does not establish authorization for an additional package or availability of a configured model/indexer.
 
 ## The composition roots
 

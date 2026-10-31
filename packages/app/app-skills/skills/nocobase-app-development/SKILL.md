@@ -60,6 +60,7 @@ NocoBase packages may publish Skills under `.agents/skills/`. Current applicatio
 | The requirement sounds like                                    | Read the Skill for                                      |
 | -------------------------------------------------------------- | ------------------------------------------------------- |
 | Email, IM, or in-app messages                                  | `@nocobase/app-plugin-notification`                     |
+| Knowledge bases, document spaces, search and document review   | `@nocobase/app-plugin-knowledge`                        |
 | Approval processes, joint decisions and approval tasks         | `@nocobase/app-plugin-approval` (commercial Pro plugin) |
 | Roles, permissions, per-user or per-record access              | `@nocobase/app-plugin-authorization`                    |
 | Sign-in, registration, sessions                                | `@nocobase/app-plugin-authentication`                   |
@@ -73,6 +74,8 @@ NocoBase packages may publish Skills under `.agents/skills/`. Current applicatio
 Read the relevant Skill before writing the feature, but treat this table as a map rather than an installed-package list. Implementing a permission system, a notification sender, or a scheduler by hand when a registered plugin provides one is the most expensive mistake available here.
 
 For any required commercial NocoBase package, follow [commercial package access](references/plugins.md#commercial-package-access): automatically probe pkg-v3 with existing credentials, install a compatible authorized package without prompting, and leave a brief conversation notice for unavailable access while continuing independent work. This includes plugins and commercial database drivers; do not infer access to one package from another.
+
+For knowledge base requirements, check `@nocobase/app-plugin-knowledge` first and follow [knowledge package integration](references/plugins.md#knowledge-base-integration). Apply the same automatic pkg-v3 access workflow when installation or update is needed. Read its synchronized Skill when available, otherwise its installed README, docs and public exports; do not assume it ships a Skill or build a substitute because one is absent.
 
 For approval requirements, check `@nocobase/app-plugin-approval` first and follow [approval integration prerequisites](references/lifecycle.md#approval-requests-check-the-pro-plugin-first), then the plugin's installed Skill. Do not silently build a substitute approval engine from lifecycle examples. Simple single-person confirmation or rejection can remain lifecycle actions.
 
