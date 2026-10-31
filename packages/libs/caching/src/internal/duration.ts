@@ -8,6 +8,7 @@ const units: Readonly<Record<string, number>> = {
   d: 86_400_000,
 };
 
+/** Resolve a positive duration to safe integer milliseconds, rounding up. */
 export function resolveTtlConfig(
   value: CacheTtlConfig | undefined,
   name: string,
@@ -17,7 +18,7 @@ export function resolveTtlConfig(
   }
   if (typeof value === 'number') {
     assertResolvedTtl(value, name);
-    return value;
+    return Math.ceil(value);
   }
 
   const match = value.trim().match(/^(\d+(?:\.\d+)?)\s*(ms|s|m|h|d)$/i);
@@ -30,11 +31,15 @@ export function resolveTtlConfig(
   const multiplier = units[match[2].toLowerCase()];
   const ttl = amount * multiplier;
   assertResolvedTtl(ttl, name);
-  return ttl;
+  return Math.ceil(ttl);
 }
 
 function assertResolvedTtl(value: number, name: string): void {
-  if (!Number.isFinite(value) || value <= 0) {
+  if (
+    !Number.isFinite(value) ||
+    value <= 0 ||
+    !Number.isSafeInteger(Math.ceil(value))
+  ) {
     throw new Error(
       `${name} must resolve to a positive number of milliseconds.`,
     );

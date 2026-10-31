@@ -30,27 +30,3 @@ export const memoryCacheProviderDriver: CacheProviderDriver = {
     });
   },
 };
-
-const drivers = new Map<string, CacheProviderDriver>([
-  [memoryCacheProviderDriver.name, memoryCacheProviderDriver],
-]);
-
-export function registerCachingDriver(driver: CacheProviderDriver): () => void {
-  if (drivers.has(driver.name)) {
-    throw new Error(
-      `Cache provider driver "${driver.name}" is already registered.`,
-    );
-  }
-  drivers.set(driver.name, driver);
-  return () => {
-    if (drivers.get(driver.name) === driver) {
-      drivers.delete(driver.name);
-    }
-  };
-}
-
-export function getCachingDriver(
-  name: string,
-): CacheProviderDriver | undefined {
-  return drivers.get(name);
-}
