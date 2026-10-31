@@ -392,6 +392,8 @@ const pages = {
     editDescription: 'Edit description',
     editTitle: 'Edit title',
     conflict: 'This issue changed, reloading.',
+    draftConflict:
+      'This issue changed. Your draft is kept. Copy your draft, cancel editing to view the latest content, then edit again to merge your changes.',
     loadFailed: 'Unable to load this issue',
     noDescription: 'No description.',
     parent: 'Sub-issue of',
