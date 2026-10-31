@@ -46,6 +46,63 @@ test.beforeEach(() => {
 
 const pane = (page: Page, name: string): Locator =>
   page.locator(`[data-slot="mail-${name}-pane"]`);
+
+test('recipient fields reject invalid input and send parsed display names', async ({
+  page,
+  mailApi,
+}, info) => {
+  await open(page);
+  await page.getByRole('button', { name: 'Compose', exact: true }).click();
+  const composer = page.getByRole('dialog', {
+    name: 'New message',
+    exact: true,
+  });
+  await composer
+    .getByRole('textbox', { name: 'To', exact: true })
+    .fill('Jane Doe <jane@example.com>');
+  await composer
+    .getByRole('textbox', { name: 'Subject', exact: true })
+    .fill('Recipient validation');
+  await composer
+    .locator('[contenteditable="true"]')
+    .fill('The message stays editable after an address error.');
+  await composer.getByRole('button', { name: 'Cc', exact: true }).click();
+  const cc = composer.getByRole('textbox', { name: 'Cc', exact: true });
+  await cc.fill('invalid-address');
+  await composer.getByRole('button', { name: 'Cc', exact: true }).click();
+  await composer.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(cc).toBeVisible();
+  await expect(cc).toBeFocused();
+  await expect(cc).toHaveAttribute('aria-invalid', 'true');
+  await expect(composer.getByRole('alert')).toContainText('invalid-address');
+  expect(
+    mailApi.requests.some((request) => request.path.includes('/send')),
+  ).toBe(false);
+  await screenshot(page, info, 'recipient-field-error.png');
+  await cc.fill('"Doe, Jane" <copy@example.com>');
+  await expect(cc).toHaveAttribute('aria-invalid', 'false');
+  await expect(composer.locator('[contenteditable="true"]')).toContainText(
+    'stays editable',
+  );
+  await screenshot(page, info, 'recipient-corrected.png');
+  const bodies: unknown[] = [];
+  await page.route('**/api/mail/messages/send', async (route) => {
+    bodies.push(route.request().postDataJSON());
+    await route.fulfill({
+      json: {
+        data: { id: 'recipient-test', accountId: 'alpha', status: 'accepted' },
+      },
+    });
+  });
+  await composer.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(composer).toBeHidden();
+  expect(bodies).toEqual([
+    expect.objectContaining({
+      to: [{ name: 'Jane Doe', address: 'jane@example.com' }],
+      cc: [{ name: 'Doe, Jane', address: 'copy@example.com' }],
+    }),
+  ]);
+});
 const navButton = (page: Page): Locator =>
   page.getByRole('button', { name: 'Mailboxes and folders', exact: true });
 const drawer = (page: Page): Locator =>
