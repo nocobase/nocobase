@@ -1910,3 +1910,73 @@ function withoutTurns<
     };
   });
 }
+
+it.each([true, false])(
+  'maps startup events before Agent output (workspace preparation: %s)',
+  async (preparing) => {
+    const f = await fixture();
+    await f.agent.send([{ role: 'user', content: 'Start' }]);
+    const stream = await f.agent.receive();
+    const reader = stream!.getReader();
+    const phases: string[] = [];
+    const reading = (async () => {
+      for (;;) {
+        const next = await reader.read();
+        if (next.done) break;
+        if (next.value.type === 'data-phase')
+          phases.push(next.value.data.phase);
+      }
+    })();
+    try {
+      await vi.waitFor(() => expect(phases.at(-1)).toBe('waiting'));
+      const [claimed] = await claim(h, f.runner);
+      const runId = claimed.run.id;
+      let seq = 0;
+      const event = async (type: string, content: string) => {
+        expect(
+          (
+            await f.report(runId, 'events', {
+              events: [
+                {
+                  seq: ++seq,
+                  at: h.clock.now().toISOString(),
+                  type,
+                  content,
+                },
+              ],
+            })
+          ).status,
+        ).toBe(200);
+      };
+      await event('status', 'Initializing runner');
+      await vi.waitFor(() => expect(phases.at(-1)).toBe('starting'));
+      if (preparing) {
+        await event('status', 'preparing');
+        await vi.waitFor(() => expect(phases.at(-1)).toBe('preparing'));
+        // Retry notes do not replace the latest lifecycle phase.
+        await event('status', 'Retrying git fetch');
+        await event('checkout', 'Repository ready');
+        await vi.waitFor(() => expect(phases.at(-1)).toBe('starting'));
+      }
+      expect(
+        (
+          await f.report(runId, 'start', {
+            workDir: '/work/chat',
+            adapter: { kind: 'claude' },
+            acceptsInput: true,
+          })
+        ).status,
+      ).toBe(200);
+      await event('status', 'started');
+      await vi.waitFor(() => expect(phases.at(-1)).toBe('thinking'));
+      expect(phases).toEqual(
+        preparing
+          ? ['waiting', 'starting', 'preparing', 'starting', 'thinking']
+          : ['waiting', 'starting', 'thinking'],
+      );
+    } finally {
+      await reader.cancel();
+      await reading;
+    }
+  },
+);

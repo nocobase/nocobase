@@ -63,7 +63,7 @@ export type AdapterEventType = Exclude<RunEventType, 'checkout'>;
  *   must not emit its own.
  * - input: a steered input reached the agent; `content` is its text,
  *   `meta.inputId` the id given to `steer()`.
- * - status: lifecycle notes (`content` is a short code such as 'started',
+ * - status: lifecycle notes (`content` is a short code such as 'preparing', 'started',
  *   'turnCompleted', 'retrying', 'compacting'); details in `meta`.
  * - error: a non-fatal or fatal error; `content` is the message,
  *   `meta.reason` a {@link FailureReason}.

@@ -1,4 +1,9 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+import * as runStore from '../server/core/runs/run.store.js';
+import {
+  messagesRepo,
+  toMessage,
+} from '../server/core/conversations/conversation.store.js';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 
 import type { OnlineAgentContext } from '../server/online/agent/types.js';
@@ -289,3 +294,117 @@ it('never both withdraws and delivers a queued message, whichever comes first', 
   const inputs = await inputsRepo(conn).findMany({ filter: { runId } });
   expect(inputs.find((input) => input.id === taken.id)?.handledAt).toBeFalsy();
 });
+
+it.each([false, true])(
+  'saves received replies before consecutive follow-ups while the background phase read is paused (pending: %s)',
+  async (pending) => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const agentId = await h.createAgent({ source: 'runner', name: 'Helper' });
+    const agent = await h.services.onlineAgent.realtime(context, { agentId });
+    await agent.send([{ role: 'user', content: 'First' }]);
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const eventsRepo = runStore.eventsRepo;
+    const readConnection = h.services.tx.read();
+    let paused = false;
+    const phase = vi
+      .spyOn(runStore, 'eventsRepo')
+      .mockImplementation((conn) => {
+        const repository = eventsRepo(conn);
+        if (conn !== readConnection) return repository;
+        return new Proxy(repository, {
+          get(target, key, receiver) {
+            if (key !== 'findOne') return Reflect.get(target, key, receiver);
+            return async (...args: Parameters<typeof repository.findOne>) => {
+              if (!paused) {
+                paused = true;
+                entered.resolve();
+                await release.promise;
+              }
+              return repository.findOne(...args);
+            };
+          },
+        });
+      });
+    try {
+      const [claimed] = await claim(h, runner);
+      const runId = claimed.run.id;
+      await entered.promise;
+      expect(
+        (
+          await h.request('POST', `/agents/runners/runs/${runId}/start`, {
+            runnerKey: runner.key,
+            body: {
+              workDir: '/work/chat',
+              adapter: { kind: 'claude' },
+              acceptsInput: true,
+            },
+          })
+        ).status,
+      ).toBe(200);
+      let seq = 0;
+      const reply = async (content: string) => {
+        expect(
+          (
+            await h.request('POST', `/agents/runners/runs/${runId}/events`, {
+              runnerKey: runner.key,
+              body: {
+                events: [
+                  {
+                    seq: ++seq,
+                    at: h.clock.now().toISOString(),
+                    type: 'text',
+                    content,
+                  },
+                ],
+              },
+            })
+          ).status,
+        ).toBe(200);
+      };
+      if (pending) await reply('Answer one');
+      // Nothing can drain the received events in the paused background reader.
+      const stored = () =>
+        messagesRepo(readConnection).findMany({
+          filter: { conversationId: agent.sessionId },
+          sort: (sort) => sort.field('seq').asc(),
+        });
+      expect((await stored()).map((row) => row.role)).toEqual(['user']);
+      await agent.queue([{ role: 'user', content: 'Second' }]);
+      // No more events arrived: another follow-up must neither duplicate a reply nor overwrite its sequence.
+      await agent.queue([{ role: 'user', content: 'Third' }]);
+      const third = (await stored()).find(
+        (row) => toMessage(row).content.content === 'Third',
+      )!;
+      await h.services.conversations.withdraw(
+        'alice',
+        agent.sessionId,
+        third.id,
+      );
+      await reply('Answer two');
+      await agent.queue([{ role: 'user', content: 'Fourth' }]);
+      const rows = (await stored()).map((row) => toMessage(row));
+      expect(rows.map((row) => [row.role, row.content.content])).toEqual([
+        ['user', 'First'],
+        ...(pending ? [['assistant', 'Answer one']] : []),
+        ['user', 'Second'],
+        ['user', 'Third'],
+        ['assistant', 'Answer two'],
+        ['user', 'Fourth'],
+      ]);
+      expect(rows.map((row) => row.seq)).toEqual(
+        rows.map((_, index) => index + 1),
+      );
+      expect(rows.find((row) => row.id === third.id)?.metadata?.withdrawn).toBe(
+        true,
+      );
+      expect(
+        (await pendingInputs(readConnection, runId)).map((input) => input.text),
+      ).toEqual(['First', 'Second', 'Fourth']);
+    } finally {
+      release.resolve();
+      phase.mockRestore();
+    }
+  },
+);

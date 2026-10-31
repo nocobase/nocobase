@@ -173,11 +173,11 @@ export interface AppUIPlan {
 }
 
 /**
- * Where a response stands before it has anything to show: `waiting` for a runner to take it, `starting` the agent on
+ * Where a response stands before it has anything to show: `waiting` for a runner to take it, `preparing` its workspace, `starting` the agent on
  * it, `thinking` once the agent started. Only a live response carries it; saved history never does.
  */
 export interface AppUIPhase {
-  phase: 'waiting' | 'starting' | 'thinking';
+  phase: 'waiting' | 'preparing' | 'starting' | 'thinking';
 }
 
 export type AppUIData = {
@@ -211,7 +211,7 @@ export const appUIDataSchemas: {
     outcome: z.enum(['completed', 'cancelled', 'failed']).optional(),
   }),
   phase: z.strictObject({
-    phase: z.enum(['waiting', 'starting', 'thinking']),
+    phase: z.enum(['waiting', 'preparing', 'starting', 'thinking']),
   }),
   plan: z.strictObject({
     entries: z.array(
