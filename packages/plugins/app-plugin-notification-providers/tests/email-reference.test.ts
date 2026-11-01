@@ -71,6 +71,7 @@ it('checks reference shape and cross-section targets without sending or loading 
   for (const channel of [
     { type: 'email', mailer: 'absent' },
     { type: 'email', mailer: 'disabled' },
+    { type: 'email', enabled: 'synthetic-private-field' },
     { type: 'email', host: 'synthetic-private-field' },
     { type: 'email', apiKey: 'synthetic-private-field' },
   ]) {

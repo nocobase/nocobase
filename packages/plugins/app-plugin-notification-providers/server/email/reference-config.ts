@@ -7,6 +7,10 @@ export interface EmailChannelReferenceConfig {
 export function validateEmailChannelReference(
   config: EmailChannelReferenceConfig,
 ): void {
+  if (config.enabled !== undefined && typeof config.enabled !== 'boolean')
+    throw new Error('Email channel enabled must be a boolean.');
+  if (config.type !== undefined && config.type !== 'email')
+    throw new Error('Email channel type must be email.');
   // `provider: email` can be added by the existing alias normalization, never inline provider fields.
   if (
     Object.keys(config).some(

@@ -463,8 +463,16 @@ function legacySender(
     Reflect.get(channel, 'enabled') === false
   )
     return undefined;
-  const type: unknown =
-    Reflect.get(channel, 'type') ?? Reflect.get(channel, 'provider');
+  const enabled: unknown = Reflect.get(channel, 'enabled');
+  if (enabled !== undefined && typeof enabled !== 'boolean') return undefined;
+  let type: string;
+  try {
+    const discriminator: unknown = Reflect.get(channel, 'type');
+    const provider: unknown = Reflect.get(channel, 'provider');
+    type = resolveChannelType({ type: discriminator, provider });
+  } catch {
+    return undefined;
+  }
   if (type === 'email') {
     if (
       Object.keys(channel).some(

@@ -76,3 +76,20 @@ it.each([
     ).toBe(true);
   },
 );
+
+it('rejects mismatched legacy aliases instead of selecting a referenced default sender', async () => {
+  const mailer = new ApplicationMailer({ default: 'main', main: smtp });
+  const policy = new PasswordResetPolicy(
+    { enabled: true, emailChannel: 'selected' },
+    { baseURL: 'https://example.test' },
+    {} as never,
+    {
+      mailer,
+      legacyChannels: {
+        selected: { type: 'email', provider: 'smtp', mailer: 'main' },
+      },
+    },
+  );
+  expect(policy.available).toBe(false);
+  await mailer.close();
+});
