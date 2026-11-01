@@ -1377,6 +1377,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       delayed: 'Programado para {{until}}',
       noRunnerOnline: 'Sem tempo de execução online',
       runnersOffline: 'Seus tempos de execução estão offline',
+      toolQuota: 'Cota da ferramenta esgotada; redefinição: {{until}}',
       toolUnavailable:
         'Ferramenta não conectada, desativada ou modelo solicitado indisponível ({{tool}})',
       noSharedRunner:
@@ -1392,6 +1393,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       next: 'Próximo para um tempo de execução gratuito',
     },
     unknown: 'Na fila ({{reason}})',
+    quotaResetUnknown: 'desconhecida',
     unknownValue: '—',
   },
   access: {

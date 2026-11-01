@@ -17,6 +17,7 @@ const runWaitZhCN: RunWaitLocale = {
       delayed: '计划于 {{until}} 开始',
       noRunnerOnline: '没有在线的运行环境',
       runnersOffline: '它的运行环境都不在线',
+      toolQuota: '工具额度用完；恢复时间：{{until}}',
       toolUnavailable: '工具未登录、被禁用或模型不可用（{{tool}}）',
       noSharedRunner: '仅他人的个人执行机在线',
       missingFeatures: '没有运行环境支持 {{features}}',
@@ -29,6 +30,7 @@ const runWaitZhCN: RunWaitLocale = {
       next: '下一个，等空闲的运行环境',
     },
     unknown: '排队中（{{reason}}）',
+    quotaResetUnknown: '未知',
     unknownValue: '—',
   },
 };

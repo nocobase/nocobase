@@ -1281,6 +1281,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       delayed: '預定{{until}}',
       noRunnerOnline: '無線上執行環境',
       runnersOffline: '運轉時離線',
+      toolQuota: '工具額度用完；恢復時間：{{until}}',
       toolUnavailable: '工具未登入、已停用或要求的模型不可用 ({{tool}})',
       noSharedRunner: '只有別人的私人執行器線上',
       missingFeatures: '沒有執行環境支援 {{features}}',
@@ -1293,6 +1294,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       next: '接下來是免費執行環境',
     },
     unknown: '已排隊 ({{reason}})',
+    quotaResetUnknown: '未知',
     unknownValue: '—',
   },
   access: {

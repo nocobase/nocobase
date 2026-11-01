@@ -14,6 +14,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 
 import { entryTools, type Agent } from '../../../shared/agents.js';
 import {
+  quotaForAgent,
   runsEntry,
   runsTool,
   toolLimit,
@@ -133,7 +134,24 @@ export function explainWait(
       runsEntry(runner, entry, context.now.getTime()),
     ),
   );
-  if (fitting.length === 0)
+  if (fitting.length === 0) {
+    const quota = quotaForAgent(
+      context.runners,
+      agent,
+      run.actorUserId,
+      context.now.getTime(),
+    );
+    if (quota.length > 0) {
+      const until =
+        quota
+          .flatMap((item) => (item.resetsAt ? [item.resetsAt] : []))
+          .sort()[0] ?? null;
+      return wait('toolQuota', {
+        tool,
+        until,
+        params: { ...(tool ? { tool } : {}), ...(until ? { until } : {}) },
+      });
+    }
     return wait('toolUnavailable', {
       tool,
       params: {
@@ -141,6 +159,7 @@ export function explainWait(
         ...(model ? { model } : {}),
       },
     });
+  }
   fitting = fitting.filter(
     (runner) =>
       runner.trust === 'team' || runner.ownerUserId === run.actorUserId,
@@ -393,6 +412,7 @@ const DIAGNOSTIC_CODES: Readonly<Record<string, RunWait['reason']>> = {
   sameWorkActive: 'sameWorkActive',
   delayed: 'delayed',
   toolUnavailable: 'toolUnavailable',
+  toolQuota: 'toolQuota',
   toolNotInstalled: 'toolNotInstalled',
   noSharedRunner: 'noSharedRunner',
   unknown: 'unknown',
@@ -434,6 +454,7 @@ function refineWait(
     );
   return {
     ...previous,
+    until: entry.reason === 'toolQuota' ? (entry.until ?? null) : null,
     reason:
       entry.reason === 'ready' && Number(record.claimFailures) > 0
         ? 'setupRetrying'
@@ -445,6 +466,9 @@ function refineWait(
         .filter((reason) => reason !== entry.reason)
         .map((reason) => DIAGNOSTIC_CODES[reason]),
       tool: entry.tool,
+      ...(entry.reason === 'toolQuota' && entry.until
+        ? { until: entry.until }
+        : {}),
       ...(entry.reason === 'concurrencyFull'
         ? { active, limit: agent!.maxConcurrentRuns }
         : entry.reason === 'busy'

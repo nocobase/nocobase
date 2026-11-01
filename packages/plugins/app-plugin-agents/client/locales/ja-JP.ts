@@ -1355,6 +1355,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       delayed: '{{until}}予定',
       noRunnerOnline: 'オンラインではランタイムがありません',
       runnersOffline: 'ランタイムがオフラインです',
+      toolQuota: 'ツールの利用枠を使い切りました；リセット時刻：{{until}}',
       toolUnavailable:
         'ツールがサインインしていないか、無効になっているか、要求されたモデルが利用できません ({{tool}})',
       noSharedRunner: '他人の個人ランナーのみがオンラインです',
@@ -1369,6 +1370,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       next: '次は無料ランタイムへ',
     },
     unknown: 'キューに登録されました ({{reason}})',
+    quotaResetUnknown: '不明',
     unknownValue: '—',
   },
   access: {

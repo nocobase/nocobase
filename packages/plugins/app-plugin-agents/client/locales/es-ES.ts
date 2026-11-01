@@ -1390,6 +1390,7 @@ const esES: LocaleResource<typeof enUS> = {
       delayed: 'Programado para {{until}}',
       noRunnerOnline: 'Sin tiempo de ejecución en línea',
       runnersOffline: 'Sus tiempos de ejecución están fuera de línea',
+      toolQuota: 'Cuota de la herramienta agotada; restablecimiento: {{until}}',
       toolUnavailable:
         'Herramienta no iniciada, deshabilitada o modelo solicitado no disponible ({{tool}})',
       noSharedRunner:
@@ -1405,6 +1406,7 @@ const esES: LocaleResource<typeof enUS> = {
       next: 'Siguiente para un tiempo de ejecución gratuito',
     },
     unknown: 'En cola ({{reason}})',
+    quotaResetUnknown: 'desconocido',
     unknownValue: '—',
   },
   access: {
