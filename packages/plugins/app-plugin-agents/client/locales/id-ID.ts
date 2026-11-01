@@ -1351,6 +1351,7 @@ const idID: LocaleResource<typeof enUS> = {
       delayed: 'Dijadwalkan untuk {{until}}',
       noRunnerOnline: 'Tidak ada waktu proses online',
       runnersOffline: 'Waktu prosesnya sedang offline',
+      toolQuota: 'Kuota alat habis; waktu reset: {{until}}',
       toolUnavailable:
         'Alat tidak masuk, dinonaktifkan, atau model yang diminta tidak tersedia ({{tool}})',
       noSharedRunner: 'Hanya runner pribadi orang lain yang online',
@@ -1365,6 +1366,7 @@ const idID: LocaleResource<typeof enUS> = {
       next: 'Selanjutnya untuk runtime gratis',
     },
     unknown: 'Antri ({{reason}})',
+    quotaResetUnknown: 'tidak diketahui',
     unknownValue: '—',
   },
   access: {

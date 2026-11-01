@@ -1390,6 +1390,7 @@ const frFR: LocaleResource<typeof enUS> = {
       delayed: 'Prévu pour {{until}}',
       noRunnerOnline: "Pas d'exécution en ligne",
       runnersOffline: "Ses environnements d'exécution sont hors ligne",
+      toolQuota: 'Quota de l’outil épuisé ; réinitialisation : {{until}}',
       toolUnavailable:
         'Outil non connecté, désactivé ou modèle demandé indisponible ({{tool}})',
       noSharedRunner:
@@ -1407,6 +1408,7 @@ const frFR: LocaleResource<typeof enUS> = {
       next: 'Next pour un runtime gratuit',
     },
     unknown: "En file d'attente ({{reason}})",
+    quotaResetUnknown: 'inconnue',
     unknownValue: '—',
   },
   access: {

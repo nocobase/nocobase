@@ -1392,6 +1392,7 @@ const deDE: LocaleResource<typeof enUS> = {
       delayed: 'Geplant für {{until}}',
       noRunnerOnline: 'Keine Laufzeit online',
       runnersOffline: 'Seine Laufzeiten sind offline',
+      toolQuota: 'Werkzeugkontingent aufgebraucht; Zurücksetzung: {{until}}',
       toolUnavailable:
         'Tool nicht angemeldet, deaktiviert oder angefordertes Modell nicht verfügbar ({{tool}})',
       noSharedRunner: 'Nur die persönlichen Runner anderer Leute sind online',
@@ -1406,6 +1407,7 @@ const deDE: LocaleResource<typeof enUS> = {
       next: 'Weiter für eine kostenlose Laufzeit',
     },
     unknown: 'In der Warteschlange ({{reason}})',
+    quotaResetUnknown: 'unbekannt',
     unknownValue: '—',
   },
   access: {

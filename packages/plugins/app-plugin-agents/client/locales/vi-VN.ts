@@ -1348,6 +1348,7 @@ const viVN: LocaleResource<typeof enUS> = {
       delayed: 'Đã lên lịch cho {{until}}',
       noRunnerOnline: 'Không có thời gian chạy trực tuyến',
       runnersOffline: 'Thời gian chạy của nó đang ngoại tuyến',
+      toolQuota: 'Đã hết hạn mức công cụ; thời gian đặt lại: {{until}}',
       toolUnavailable:
         'Công cụ chưa đăng nhập, bị vô hiệu hóa hoặc mô hình được yêu cầu không có sẵn ({{tool}})',
       noSharedRunner:
@@ -1363,6 +1364,7 @@ const viVN: LocaleResource<typeof enUS> = {
       next: 'Tiếp theo để có thời gian chạy miễn phí',
     },
     unknown: 'Đã xếp hàng đợi ({{reason}})',
+    quotaResetUnknown: 'chưa rõ',
     unknownValue: '—',
   },
   access: {
