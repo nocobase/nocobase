@@ -5471,6 +5471,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/mailer':
+        specifier: workspace:^
+        version: link:../../libs/mailer
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider

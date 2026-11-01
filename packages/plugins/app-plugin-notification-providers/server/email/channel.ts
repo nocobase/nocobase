@@ -104,5 +104,6 @@ declare module '@nocobase/app-plugin-notification' {
       readonly message: EmailMessage;
     };
     resend: NotificationChannelSchemas['smtp'];
+    email: NotificationChannelSchemas['smtp'];
   }
 }

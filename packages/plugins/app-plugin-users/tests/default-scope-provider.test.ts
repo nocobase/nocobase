@@ -1,3 +1,7 @@
+import {
+  ApplicationMailer,
+  applicationMailerToken,
+} from '@nocobase/app-server/mailers';
 import { expect, it } from 'vitest';
 import { ServiceContainer } from '@nocobase/service-provider';
 import {
@@ -12,6 +16,7 @@ it.each([true, false])(
   'registers the default scope only when enabled: %s',
   async (enabled) => {
     const container = new ServiceContainer();
+    container.instance(applicationMailerToken, new ApplicationMailer());
     container.instance(authorizationToken, createAppAuthorization({}));
     const provider = new UsersProvider({
       container,

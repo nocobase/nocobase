@@ -45,7 +45,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   private releasePermissionSetScope?: () => void;
   private releaseSubjectType?: () => void;
 
+  private invitationMailer?: ReturnType<typeof createNotificationMailer>;
+
   public override register(): void {
+    this.invitationMailer = createNotificationMailer(this.app);
     this.app.container.singleton(userRoleScopeRegistryToken, () =>
       createUserRoleScopeRegistry(),
     );
@@ -63,7 +66,7 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
       const identity = this.app.config.get<AppIdentityConfig>('app');
       return createUserManagementService({
         database: resolver.resolve(databaseManagerToken),
-        mailer: createNotificationMailer(this.app),
+        mailer: this.invitationMailer,
         site: {
           ...(identity?.publicOrigin
             ? { publicOrigin: identity.publicOrigin }
@@ -175,7 +178,8 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
     return Promise.resolve();
   }
 
-  public override shutdown(): Promise<void> {
+  public override async shutdown(): Promise<void> {
+    await this.invitationMailer?.close();
     this.releasePermissionSetScope?.();
     this.releasePermissionSetScope = undefined;
     this.releaseSubjectType?.();

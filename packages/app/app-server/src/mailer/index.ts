@@ -1,10 +1,9 @@
+import { ApplicationMailer, applicationMailerToken } from '../mailers/index.js';
 import {
-  createMailTransport,
   isMailChannelConfig,
   type EmailMessage,
   type MailResult,
   type MailSendOptions,
-  type MailTransport,
   type EmailChannelConfig,
 } from '@nocobase/mailer';
 import {
@@ -27,7 +26,7 @@ export interface MailChannelsConfig {
   readonly channels: Readonly<Record<string, unknown>>;
 }
 
-/** @deprecated Own a transport from @nocobase/mailer in the sending service. */
+/** @deprecated Use ApplicationMailer from @nocobase/app-server/mailers. */
 export interface Mailer {
   available(channel: string): boolean;
   send(
@@ -38,7 +37,7 @@ export interface Mailer {
   close(): Promise<void>;
 }
 
-/** @deprecated Own a transport from @nocobase/mailer in the sending service. */
+/** @deprecated Use ApplicationMailer from @nocobase/app-server/mailers. */
 export const mailerToken: ServiceToken<Mailer> = createServiceToken<Mailer>(
   '@nocobase/app-server/mailer',
 );
@@ -80,7 +79,8 @@ export const validateMailChannels: ConfigValidator<MailChannelsConfig> = (
 function normalizeChannel(channel: object): object {
   const type: unknown = Reflect.get(channel, 'type');
   const provider: unknown = Reflect.get(channel, 'provider');
-  return { ...channel, provider: resolveChannelType({ type, provider }) };
+  const { type: _type, ...inline } = channel as Record<string, unknown>;
+  return { ...inline, provider: resolveChannelType({ type, provider }) };
 }
 
 function mailChannel(channel: unknown): EmailChannelConfig | undefined {
@@ -119,9 +119,20 @@ export function defineMailChannelsConfig<T extends MailChannelsConfig>(
   });
 }
 
-/** @deprecated Own a transport from @nocobase/mailer in the sending service. */
+/** @deprecated Use ApplicationMailer from @nocobase/app-server/mailers. */
 export function createMailer(config: MailChannelsConfig): Mailer {
-  const transports = new Map<string, MailTransport>();
+  return channelMailer(config, new ApplicationMailer(), true);
+}
+
+function channelMailer(
+  config: MailChannelsConfig,
+  service: ApplicationMailer,
+  ownsService: boolean,
+): Mailer {
+  const senders = new Map<
+    string,
+    ReturnType<ApplicationMailer['bindInline']>
+  >();
   let closed = false;
   const available = (channel: string): boolean => {
     const value = mailChannel(config.channels[channel]);
@@ -131,7 +142,7 @@ export function createMailer(config: MailChannelsConfig): Mailer {
     available,
     async send(channel, message, options): Promise<MailResult> {
       const value = mailChannel(config.channels[channel]);
-      if (closed || !value || value.enabled === false)
+      if (!available(channel) || !value)
         return {
           status: 'failed',
           disposition: 'never',
@@ -140,33 +151,38 @@ export function createMailer(config: MailChannelsConfig): Mailer {
             message: 'Email channel unavailable.',
           },
         };
-      let transport = transports.get(channel);
-      if (!transport) {
-        transport = createMailTransport(value);
-        transports.set(channel, transport);
+      let sender = senders.get(channel);
+      if (!sender) {
+        sender = service.bindInline({}, value);
+        senders.set(channel, sender);
       }
-      return transport.send(message, options);
+      return sender.send(message, options);
     },
     async close(): Promise<void> {
-      if (closed) return;
       closed = true;
-      await Promise.all(
-        [...transports.values()].map((transport) => transport.close()),
-      );
+      if (ownsService) await service.close();
     },
   };
 }
 
-/** @deprecated Own a transport and its lifecycle in the sending service. */
+/** @deprecated Use the automatically registered applicationMailerToken. */
 export class MailerProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-server/mailer';
   public override register(): void {
     this.app.container.singleton(mailerToken, () =>
-      createMailer(
-        this.app.config.get<MailChannelsConfig>('notification') ?? {
-          channels: {},
-        },
-      ),
+      this.app.container.has(applicationMailerToken)
+        ? channelMailer(
+            this.app.config.get<MailChannelsConfig>('notification') ?? {
+              channels: {},
+            },
+            this.app.container.resolve(applicationMailerToken),
+            false,
+          )
+        : createMailer(
+            this.app.config.get<MailChannelsConfig>('notification') ?? {
+              channels: {},
+            },
+          ),
     );
   }
   public override async shutdown(): Promise<void> {

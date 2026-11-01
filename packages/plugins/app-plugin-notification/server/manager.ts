@@ -907,7 +907,11 @@ export class NotificationManager<
       legacyConfig,
     );
     const provider = await providerDefinition.createProvider(
-      { logger: this.options.logger, now: () => this.store.now() },
+      {
+        logger: this.options.logger,
+        now: () => this.store.now(),
+        container: this.container,
+      },
       legacyConfig,
     );
     if (provider.type !== type) {

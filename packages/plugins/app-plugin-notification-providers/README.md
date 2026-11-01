@@ -1,24 +1,20 @@
 # Notification Providers App Plugin
 
-Built-in channel types are `smtp`, `resend`, `feishu-webhook`, and `dingtalk-webhook`. Their classes are `SmtpChannel`, `ResendChannel`, `FeishuWebhookChannel` and `DingTalkWebhookChannel`. Email and IM validation helpers are shared internally; only the concrete class is registered. Register the Server plugin after the core notification plugin, or call `registerBuiltInNotificationProviders(registry)` in a custom host.
+Built-in channel types are `email`, `smtp`, `resend`, `feishu-webhook`, and `dingtalk-webhook`. Their classes are `EmailChannel`, `SmtpChannel`, `ResendChannel`, `FeishuWebhookChannel` and `DingTalkWebhookChannel`. Email and IM validation helpers are shared internally; only the concrete class is registered. Register the Server plugin after the core notification plugin, or call `registerBuiltInNotificationProviders(registry)` in a custom host.
 
 ```yaml
+mailers:
+  default: transactional
+  transactional:
+    provider: smtp
+    host: smtp.example.com
+    port: 587
+    from: notifications@example.com
 notification:
   channels:
     system-email:
-      type: smtp
-      host: smtp.example.com
-      port: 587
-      auth:
-        {
-          user: notifications@example.com,
-          pass: replace-with-the-smtp-password,
-        }
-      from: notifications@example.com
-    marketing-email:
-      type: resend
-      apiKey: replace-with-the-resend-api-key
-      from: marketing@example.com
+      type: email
+      # mailer: transactional
     ops-feishu:
       type: feishu-webhook
       webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
@@ -26,7 +22,7 @@ notification:
       type: in-app
 ```
 
-Each named Channel owns one flat configuration and defaults to enabled. Multiple Channels can use the same type with independent credentials. The `provider` alias remains supported; if both discriminators are supplied, they must match. YAML values are literal; the host maps environment variables to configuration paths. The separate in-app plugin supplies the inbox in this example. Feishu and DingTalk accept their official HTTPS Webhook hosts and reject redirects.
+Each named Channel owns one flat configuration and defaults to enabled. Email Channels can share application mailers; legacy inline Channels keep independent source bindings. The `provider` alias remains supported; if both discriminators are supplied, they must match. YAML values are literal; the host maps environment variables to configuration paths. The separate in-app plugin supplies the inbox in this example. Feishu and DingTalk accept their official HTTPS Webhook hosts and reject redirects.
 
 Declare the application's `notification` section with `defineMailChannelsConfig` from `@nocobase/app-plugin-notification-providers/config`. This pure configuration export provides `validateMailChannels` and `MailChannelsConfig` without loading notification delivery code, email transports or provider SDKs, and requires no plugin startup. The same helpers are also exported from `/email` for existing email integrations. Replace imports of these helpers from the deprecated `@nocobase/app-server/mailer`; that frozen compatibility module remains available for existing applications.
 
@@ -64,3 +60,5 @@ Register one class directly with `registry.registerChannelType(SmtpChannel)`, or
 The Server plugin also installs the legacy `email` and `im` message handlers from its compatibility module, preserving third-party `registerProvider()` extensions. This compatibility setup is separate from the class registration path. New extensions and application code should only call `registerChannelType()`; direct class registration does not install legacy handlers.
 
 Legacy helpers such as `defineSmtpProviderConfig` still produce supported `provider` configurations, and the old `create*Definition` exports remain available for existing extensions. The built-in bootstrap now uses class registration exclusively.
+
+Prefer `type: email` with shared mailers. Declare `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Restart to apply sender changes. Legacy inline SMTP/Resend channels and their mappings remain supported through application-owned bindings; channels never close the shared mailer.

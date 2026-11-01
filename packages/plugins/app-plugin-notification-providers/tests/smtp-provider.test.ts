@@ -1,3 +1,7 @@
+import {
+  ApplicationMailer,
+  applicationMailerToken,
+} from '@nocobase/app-server/mailers';
 import { ServiceContainer } from '@nocobase/service-provider';
 import type {
   NotificationProvider,
@@ -230,7 +234,7 @@ async function createProvider(
 > {
   if (mode === 'class')
     return new SmtpChannel(
-      { channelName: 'email', container: new ServiceContainer() },
+      { channelName: 'email', container: mailContainer() },
       {
         type: 'smtp',
         host: 'smtp.example.com',
@@ -252,6 +256,7 @@ async function createProvider(
 
 function providerContext(): NotificationProviderContext {
   return {
+    container: mailContainer(),
     logger: {} as NotificationProviderContext['logger'],
     async now(): Promise<string> {
       return '2026-08-26T00:00:00.000Z';
@@ -274,4 +279,10 @@ function sendInput(): NotificationProviderSendInput<PreparedEmailMessage> {
       },
     },
   };
+}
+
+function mailContainer(): ServiceContainer {
+  const container = new ServiceContainer();
+  container.instance(applicationMailerToken, new ApplicationMailer());
+  return container;
 }

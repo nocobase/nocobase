@@ -1,3 +1,4 @@
+import { applicationMailerToken } from '@nocobase/app-server/mailers';
 import {
   createAppCookieScope,
   joinBasePath,
@@ -71,7 +72,25 @@ export class AuthenticationProvider<
 > extends ServiceProvider<TApplication> {
   public readonly name: string = '@nocobase/app-plugin-authentication';
 
+  private readonly mailSource = {};
+  private authSnapshot?: AuthConfig;
+  private emailSnapshot?: Pick<AuthConfig, 'email' | 'passwordReset'>;
+  private legacyChannels?: Readonly<Record<string, unknown>>;
+
   public override register(): void {
+    const auth = this.app.config.get<AuthConfig>('auth') ?? {};
+    this.authSnapshot = auth;
+    this.emailSnapshot = {
+      email: auth.email && structuredClone(auth.email),
+      passwordReset: auth.passwordReset && { ...auth.passwordReset },
+    };
+    // Retain the startup section, including third-party channel values that may not be cloneable.
+    // AppConfig.reload replaces its snapshot; it does not mutate this one.
+    this.legacyChannels = {
+      ...this.app.config.get<{ channels?: Readonly<Record<string, unknown>> }>(
+        'notification',
+      )?.channels,
+    };
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
     );
@@ -123,6 +142,11 @@ export class AuthenticationProvider<
    * does not build Better Auth's schema.
    */
   public override async boot(): Promise<void> {
+    const email = this.emailSnapshot?.email;
+    if (email && 'mailer' in email)
+      this.app.container
+        .resolve(applicationMailerToken)
+        .assertReference(email.mailer, 'auth.email.mailer');
     // Better Auth's endpoints are the browser's sign-in and session flow: a command line signs in its own way.
     if (this.app.container.has(cliToken))
       this.app.container.resolve(cliToken).exclude({ paths: ['/api/auth/'] });
@@ -146,7 +170,8 @@ export class AuthenticationProvider<
 
   private createAuthentication(container: ServiceResolver): Auth {
     const app = this.app.config.get<AppIdentityConfig>('app')!;
-    const configuredAuth = this.app.config.get<AuthConfig>('auth') ?? {};
+    const configuredAuth =
+      this.authSnapshot ?? this.app.config.get<AuthConfig>('auth') ?? {};
     const { secret: _secret, secrets: _secrets, ...rest } = configuredAuth;
     const authConfig = {
       ...rest,
@@ -188,15 +213,11 @@ export class AuthenticationProvider<
       secondaryStorage: createAuthStorage(caching),
       appName: app.name,
       ...authConfig,
+      ...this.emailSnapshot,
       passwordResetServices: {
-        legacyChannels:
-          authConfig.passwordReset?.enabled === true &&
-          !authConfig.emailAndPassword?.sendResetPassword &&
-          authConfig.email === undefined
-            ? this.app.config.get<{
-                channels?: Readonly<Record<string, unknown>>;
-              }>('notification')?.channels
-            : undefined,
+        mailer: container.resolve(applicationMailerToken),
+        source: this.mailSource,
+        legacyChannels: this.legacyChannels,
         increment: (key) =>
           caching
             .getCounter({ namespace: 'password-reset-rate-limit' })

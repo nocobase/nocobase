@@ -1,3 +1,4 @@
+import { loggingToken } from '@nocobase/app-server/logging';
 import type {
   ChannelContext,
   ChannelInstance,
@@ -10,11 +11,11 @@ import {
   type NotificationProviderDefinition,
   type ProviderSendResult,
 } from '@nocobase/app-plugin-notification';
-import type { MailTransport } from '@nocobase/mailer';
 import {
-  createSmtpTransport,
-  validateSmtpProviderConfig,
-} from '@nocobase/mailer';
+  applicationMailerToken,
+  type ApplicationMailSender,
+} from '@nocobase/app-server/mailers';
+import { validateSmtpProviderConfig } from '@nocobase/mailer';
 import { notificationProviderText } from '../../i18n.js';
 import { prepareEmailMessage, validateEmailMessage } from '../channel.js';
 import type { EmailMessage, EmailRecipient } from '../types.js';
@@ -38,8 +39,15 @@ export function createSmtpProviderDefinition(): NotificationProviderDefinition<
     label: notificationProviderText('providers.smtp', 'SMTP'),
     validateConfig: validateSmtpProviderConfig,
 
-    async createProvider(_context, config) {
-      const transport = createSmtpTransport(config);
+    async createProvider(context, config) {
+      if (!context.container)
+        throw new Error('Application mailer container is required.');
+      const { type: _type, ...inline } = config as SmtpProviderConfig & {
+        type?: string;
+      };
+      const transport = context.container
+        .resolve(applicationMailerToken)
+        .bindInline({}, inline);
       return {
         type: 'smtp',
 
@@ -53,7 +61,6 @@ export function createSmtpProviderDefinition(): NotificationProviderDefinition<
             { idempotencyKey: deliveryId, signal },
           );
         },
-        close: () => transport.close(),
       };
     },
   };
@@ -79,9 +86,20 @@ export class SmtpChannel implements ChannelInstance<
   static validateConfig(config: SmtpChannelConfig): void {
     validateSmtpProviderConfig({ ...config, provider: 'smtp' });
   }
-  private readonly transport: MailTransport;
-  constructor(_context: ChannelContext, config: SmtpChannelConfig) {
-    this.transport = createSmtpTransport({ ...config, provider: 'smtp' });
+  private readonly transport: ApplicationMailSender;
+  constructor(context: ChannelContext, config: SmtpChannelConfig) {
+    if (context.container.has(loggingToken))
+      context.container
+        .resolve(loggingToken)
+        .getLogger('notification')
+        .warn(
+          {},
+          'Legacy inline email channel configuration remains supported. Migrate to mailers and type: email.',
+        );
+    const { type: _type, ...inline } = config;
+    this.transport = context.container
+      .resolve(applicationMailerToken)
+      .bindInline({}, { ...inline, provider: 'smtp' });
   }
   validateMessage(
     input: unknown,
@@ -104,6 +122,6 @@ export class SmtpChannel implements ChannelInstance<
     );
   }
   close(): Promise<void> {
-    return this.transport.close();
+    return Promise.resolve();
   }
 }

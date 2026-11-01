@@ -67,6 +67,8 @@ it.each([
   ['http://localhost', false],
   ['https://public.example.test', false],
   ['https://public.example.test', true],
+  ['https://public.example.test', 'named'],
+  ['https://public.example.test', 'default'],
 ] as const)(
   'resets through real SMTP without notification or authorization using public origin %s (independent %s)',
   async (publicOrigin, independent) => {
@@ -92,29 +94,44 @@ it.each([
       createServer: createStandaloneServer,
       config: {
         app: { publicOrigin },
-        ...(independent
+        ...(typeof independent === 'string'
           ? {
-              auth: {
-                email: {
+              mailers: {
+                default: 'transactional',
+                transactional: {
                   provider: 'smtp',
                   host: '127.0.0.1',
                   port: smtp.port,
                   from: 'sender@example.test',
                 },
               },
+              ...(independent === 'named'
+                ? { auth: { email: { mailer: 'transactional' } } }
+                : {}),
             }
-          : {
-              notification: {
-                channels: {
-                  'system-email': {
+          : independent
+            ? {
+                auth: {
+                  email: {
                     provider: 'smtp',
                     host: '127.0.0.1',
                     port: smtp.port,
                     from: 'sender@example.test',
                   },
                 },
-              },
-            }),
+              }
+            : {
+                notification: {
+                  channels: {
+                    'system-email': {
+                      provider: 'smtp',
+                      host: '127.0.0.1',
+                      port: smtp.port,
+                      from: 'sender@example.test',
+                    },
+                  },
+                },
+              }),
       },
     });
     try {

@@ -318,6 +318,7 @@ export interface NotificationChannel<
 }
 
 export interface NotificationProviderContext {
+  readonly container?: ServiceContainer;
   readonly logger: Logger;
   now(): Promise<string>;
 }

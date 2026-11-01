@@ -1,3 +1,4 @@
+import { loggingToken } from '@nocobase/app-server/logging';
 import type {
   ChannelCapabilities,
   ChannelContext,
@@ -11,11 +12,11 @@ import {
   type NotificationProviderDefinition,
   type ProviderSendResult,
 } from '@nocobase/app-plugin-notification';
-import type { MailTransport } from '@nocobase/mailer';
 import {
-  createResendTransport,
-  validateResendProviderConfig,
-} from '@nocobase/mailer';
+  applicationMailerToken,
+  type ApplicationMailSender,
+} from '@nocobase/app-server/mailers';
+import { validateResendProviderConfig } from '@nocobase/mailer';
 import { notificationProviderText } from '../../i18n.js';
 import { prepareEmailMessage, validateEmailMessage } from '../channel.js';
 import type { EmailMessage, EmailRecipient } from '../types.js';
@@ -41,8 +42,15 @@ export function createResendProviderDefinition(): NotificationProviderDefinition
     capabilities: {
       idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
     },
-    async createProvider(_context, config) {
-      const transport = createResendTransport(config);
+    async createProvider(context, config) {
+      if (!context.container)
+        throw new Error('Application mailer container is required.');
+      const { type: _type, ...inline } = config as ResendProviderConfig & {
+        type?: string;
+      };
+      const transport = context.container
+        .resolve(applicationMailerToken)
+        .bindInline({}, inline);
       return {
         type: 'resend',
         capabilities: {
@@ -58,7 +66,6 @@ export function createResendProviderDefinition(): NotificationProviderDefinition
             { idempotencyKey: deliveryId, signal },
           );
         },
-        close: () => transport.close(),
       };
     },
   };
@@ -84,12 +91,23 @@ export class ResendChannel implements ChannelInstance<
   static validateConfig(config: ResendChannelConfig): void {
     validateResendProviderConfig({ ...config, provider: 'resend' });
   }
-  private readonly transport: MailTransport;
+  private readonly transport: ApplicationMailSender;
   readonly capabilities: ChannelCapabilities = {
     idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
   };
-  constructor(_context: ChannelContext, config: ResendChannelConfig) {
-    this.transport = createResendTransport({ ...config, provider: 'resend' });
+  constructor(context: ChannelContext, config: ResendChannelConfig) {
+    if (context.container.has(loggingToken))
+      context.container
+        .resolve(loggingToken)
+        .getLogger('notification')
+        .warn(
+          {},
+          'Legacy inline email channel configuration remains supported. Migrate to mailers and type: email.',
+        );
+    const { type: _type, ...inline } = config;
+    this.transport = context.container
+      .resolve(applicationMailerToken)
+      .bindInline({}, { ...inline, provider: 'resend' });
   }
   validateMessage(
     input: unknown,
@@ -112,6 +130,6 @@ export class ResendChannel implements ChannelInstance<
     );
   }
   close(): Promise<void> {
-    return this.transport.close();
+    return Promise.resolve();
   }
 }

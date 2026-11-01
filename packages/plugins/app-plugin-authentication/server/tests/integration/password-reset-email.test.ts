@@ -151,7 +151,7 @@ it.each(
     await vi.waitFor(() => expect(executions.inFlight).toBe(0));
     expect(warning).toHaveBeenCalledWith(
       legacy
-        ? expect.stringContaining('deprecated. Migrate to auth.email')
+        ? expect.stringContaining('deprecated. Migrate to mailers')
         : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
     );
     expect(
@@ -226,7 +226,7 @@ it('announces the legacy sender at startup without exposing channel names', asyn
   });
   expect(fixture.auth.passwordResetAvailable()).toBe(true);
   expect(warning).toHaveBeenCalledWith(
-    expect.stringContaining('deprecated. Migrate to auth.email'),
+    expect.stringContaining('deprecated. Migrate to mailers'),
   );
   expect(JSON.stringify(warning.mock.calls)).not.toContain(
     'synthetic-private-channel',
@@ -357,6 +357,8 @@ it.each([false, true])(
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     expect(create).toHaveBeenCalledOnce();
     await fixture.auth.close();
+    expect(close).not.toHaveBeenCalled();
+    await fixture.mailer.close();
     expect(close).toHaveBeenCalledOnce();
     await fixture.router.request(
       '/api/auth/request-password-reset',
@@ -505,6 +507,8 @@ it.each([false, true])(
       completion.resolve({ status: 'accepted' });
       await shutdown;
       expect(executions.inFlight).toBe(0);
+      expect(close).not.toHaveBeenCalled();
+      await fixture.mailer.close();
       expect(close).toHaveBeenCalledOnce();
     } finally {
       completion.resolve({ status: 'accepted' });

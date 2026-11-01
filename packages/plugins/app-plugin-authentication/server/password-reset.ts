@@ -1,12 +1,11 @@
+import type {
+  ApplicationMailer,
+  ApplicationMailSender,
+} from '@nocobase/app-server/mailers';
 import { assertAuthEmailConfig, type AuthEmailConfig } from './email-config.js';
 import { createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import {
-  createMailTransport,
-  MailExecutions,
-  type MailTransport,
-  type EmailMessage,
-} from '@nocobase/mailer';
+import { MailExecutions, type EmailMessage } from '@nocobase/mailer';
 import { resolveChannelType } from '@nocobase/app-server/config';
 import {
   isMailChannelConfig,
@@ -28,12 +27,14 @@ type ResetData = Parameters<ResetSender>[0];
 
 export interface PasswordResetConfig {
   readonly enabled?: boolean;
-  /** @deprecated Legacy applications only. Configure auth.email instead. */
+  /** @deprecated Legacy applications only. Configure mailers instead. */
   readonly emailChannel?: string;
   readonly template?: (data: ResetData, appName: string) => EmailMessage;
 }
 
 export interface PasswordResetServices {
+  readonly mailer?: ApplicationMailer;
+  readonly source?: object;
   readonly legacyChannels?: Readonly<Record<string, unknown>>;
   readonly increment?: (key: string) => Promise<number>;
   readonly warning?: (message: string) => void;
@@ -46,7 +47,6 @@ export class PasswordResetPolicy {
   public readonly automatic: boolean;
   private readonly sender: ResetSender | undefined;
   private readonly executions: MailExecutions;
-  private transport?: MailTransport;
   private readonly buckets = new Map<
     string,
     { count: number; expires: number }
@@ -66,13 +66,44 @@ export class PasswordResetPolicy {
     const configuredSender = options.emailAndPassword?.sendResetPassword;
     const custom =
       typeof configuredSender === 'function' ? configuredSender : undefined;
-    const selected =
-      email ??
-      (!custom && config.enabled === true
-        ? legacyEmailConfig(
-            services.legacyChannels?.[config.emailChannel ?? 'system-email'],
-          )
-        : undefined);
+    const mailer = services.mailer;
+    let selected: ApplicationMailSender | undefined;
+    // Validate explicit references even when a custom callback wins; never silently downgrade invalid input.
+    if (email && 'mailer' in email) {
+      if (!mailer)
+        throw new Error(
+          'auth.email.mailer: Application mailer service is required.',
+        );
+      mailer.assertReference(email.mailer, 'auth.email.mailer');
+    }
+    if (mailer) {
+      const source = services.source ?? {};
+      if (email)
+        selected =
+          'mailer' in email
+            ? {
+                send: (message, options) =>
+                  mailer.send(message, { ...options, mailer: email.mailer }),
+              }
+            : mailer.bindInline(source, email);
+      else if (config.emailChannel !== undefined) {
+        selected = legacySender(
+          mailer,
+          source,
+          services.legacyChannels?.[config.emailChannel],
+        );
+      } else if (mailer.defaultMailer)
+        selected = {
+          send: (message, options) => mailer.send(message, options),
+        };
+      else {
+        selected = legacySender(
+          mailer,
+          source,
+          services.legacyChannels?.['system-email'],
+        );
+      }
+    }
     this.automatic =
       !custom &&
       config.enabled === true &&
@@ -93,9 +124,13 @@ export class PasswordResetPolicy {
             ? 'auth.passwordReset.emailChannel is unused; auth.emailAndPassword.sendResetPassword takes precedence.'
             : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
         );
-      if (this.automatic && email === undefined)
+      if (
+        this.automatic &&
+        email === undefined &&
+        (config.emailChannel !== undefined || !mailer?.defaultMailer)
+      )
         services.warning?.(
-          'auth.passwordReset.emailChannel is deprecated. Migrate to auth.email; legacy applications remain supported.',
+          'auth.passwordReset.emailChannel is deprecated. Migrate to mailers; legacy applications remain supported.',
         );
     }
     this.sender = this.available
@@ -106,9 +141,7 @@ export class PasswordResetPolicy {
             options.appName ?? 'NocoBase',
           );
           const sendOptions = { signal: request?.signal };
-          // Lazily allocate once: transaction-bound administration instances never open an unused sender.
-          const transport = (this.transport ??= createMailTransport(selected!));
-          const result = await transport.send(message, sendOptions);
+          const result = await selected!.send(message, sendOptions);
           if (result.status !== 'accepted')
             services.report?.(result.error.category);
         }))
@@ -304,7 +337,6 @@ export class PasswordResetPolicy {
 
   public async close(): Promise<void> {
     await this.executions.close();
-    await this.transport?.close();
   }
 
   public runRequest<T>(address: string | undefined, handler: () => T): T {
@@ -407,8 +439,9 @@ function legacyEmailConfig(channel: unknown): EmailChannelConfig | undefined {
   try {
     const type: unknown = Reflect.get(channel, 'type');
     const provider: unknown = Reflect.get(channel, 'provider');
+    const { type: _type, ...inline } = channel as Record<string, unknown>;
     const normalized = {
-      ...channel,
+      ...inline,
       provider: resolveChannelType({ type, provider }),
     };
     return isMailChannelConfig(normalized) && normalized.enabled !== false
@@ -417,4 +450,38 @@ function legacyEmailConfig(channel: unknown): EmailChannelConfig | undefined {
   } catch {
     return undefined;
   }
+}
+
+function legacySender(
+  mailer: ApplicationMailer,
+  source: object,
+  channel: unknown,
+): ApplicationMailSender | undefined {
+  if (
+    !channel ||
+    typeof channel !== 'object' ||
+    Reflect.get(channel, 'enabled') === false
+  )
+    return undefined;
+  const type: unknown =
+    Reflect.get(channel, 'type') ?? Reflect.get(channel, 'provider');
+  if (type === 'email') {
+    if (
+      Object.keys(channel).some(
+        (key) => !['type', 'provider', 'enabled', 'mailer'].includes(key),
+      )
+    )
+      throw new Error(
+        'auth.passwordReset.emailChannel: Reference channel cannot include inline fields.',
+      );
+    const selected: unknown = Reflect.get(channel, 'mailer');
+    const name = selected ?? mailer.defaultMailer;
+    mailer.assertReference(name, 'auth.passwordReset.emailChannel');
+    return {
+      send: (message, options) =>
+        mailer.send(message, { ...options, mailer: name as string }),
+    };
+  }
+  const config = legacyEmailConfig(channel);
+  return config ? mailer.bindInline(source, config) : undefined;
 }
