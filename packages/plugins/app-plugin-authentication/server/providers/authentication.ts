@@ -79,7 +79,6 @@ export class AuthenticationProvider<
 
   private readonly mailSource = {};
   private mailerLease?: ApplicationMailerLease;
-  private authSnapshot?: AuthConfig;
   private emailSnapshot?: Pick<AuthConfig, 'email' | 'passwordReset'>;
   private legacyChannels?: Readonly<Record<string, unknown>>;
 
@@ -88,8 +87,8 @@ export class AuthenticationProvider<
       this.app.container,
       this.app.config.get<MailersConfig>('mailers') ?? {},
     );
+    // Freeze only the sender selection; other auth settings keep their lazy read so later defaults still apply.
     const auth = this.app.config.get<AuthConfig>('auth') ?? {};
-    this.authSnapshot = auth;
     this.emailSnapshot = {
       email: auth.email && structuredClone(auth.email),
       passwordReset: auth.passwordReset && { ...auth.passwordReset },
@@ -184,8 +183,7 @@ export class AuthenticationProvider<
 
   private createAuthentication(container: ServiceResolver): Auth {
     const app = this.app.config.get<AppIdentityConfig>('app')!;
-    const configuredAuth =
-      this.authSnapshot ?? this.app.config.get<AuthConfig>('auth') ?? {};
+    const configuredAuth = this.app.config.get<AuthConfig>('auth') ?? {};
     const { secret: _secret, secrets: _secrets, ...rest } = configuredAuth;
     const authConfig = {
       ...rest,
