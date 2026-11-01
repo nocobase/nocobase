@@ -23,17 +23,24 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
     users: Promise.withResolvers<void>(),
     notification: Promise.withResolvers<void>(),
   };
+  const acknowledgements = {
+    auth: Promise.withResolvers<void>(),
+    users: Promise.withResolvers<void>(),
+    notification: Promise.withResolvers<void>(),
+  };
+  const received: string[] = [];
+  const roleOf = (subject: string): keyof typeof gates =>
+    subject === 'Shutdown notification'
+      ? 'notification'
+      : subject.includes('Reset your password')
+        ? 'auth'
+        : 'users';
   const createTransport = transports.createMailTransport;
   vi.spyOn(transports, 'createMailTransport').mockImplementation((config) => {
     const transport = createTransport(config);
     return {
       async send(message, options) {
-        const role =
-          message.subject === 'Shutdown notification'
-            ? 'notification'
-            : message.subject.includes('Reset your password')
-              ? 'auth'
-              : 'users';
+        const role = roleOf(message.subject);
         const result = await transport.send(message, options);
         events.push(`submitted:${role}`);
         await gates[role].promise;
@@ -61,9 +68,15 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
     );
   }
   const receiver = createServer(async (request, response) => {
-    for await (const _chunk of request) {
-      /* consume the real submission */
-    }
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const message = JSON.parse(Buffer.concat(chunks).toString()) as {
+      subject: string;
+    };
+    const role = roleOf(message.subject);
+    received.push(role);
+    await acknowledgements[role].promise;
+    if (response.destroyed) return;
     response.setHeader('content-type', 'application/json');
     response.end(JSON.stringify({ id: 'synthetic-id' }));
   });
@@ -146,11 +159,10 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
         },
       },
     });
-    await vi.waitFor(() =>
-      expect(
-        events.filter((event) => event.startsWith('submitted:')),
-      ).toHaveLength(3),
-    );
+    await vi.waitFor(() => expect(received).toHaveLength(3));
+    expect(
+      events.filter((event) => event.startsWith('submitted:')),
+    ).toHaveLength(0);
     const mailer = app.application.container.resolve(applicationMailerToken);
     const close = mailer.close.bind(mailer);
     const sharedClose = vi.spyOn(mailer, 'close').mockImplementation(() => {
@@ -159,6 +171,7 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
     });
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     shutdown = app.application.shutdown();
+    acknowledgements.notification.resolve();
     gates.notification.resolve();
     await vi.waitFor(() => expect(events).toContain('users:stopping'));
     expect(
@@ -173,7 +186,7 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
     ).rejects.toThrow(/stopping/u);
     gates.users.resolve();
     const [invitation] = await invite;
-    expect(invitation.emailSent).toBe(true);
+    expect(invitation.emailSent).toBe(false);
     await vi.waitFor(() => expect(events).toContain('auth:stopping'));
     await vi.advanceTimersByTimeAsync(5001);
     expect(events).not.toContain('auth:stopped');
@@ -193,6 +206,7 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
       events.indexOf('shared:close'),
     );
     expect(sharedClose).toHaveBeenCalledOnce();
+    expect(received).toHaveLength(3);
     expect(
       await mailer.send({
         to: 'late@example.test',
@@ -201,7 +215,11 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
       }),
     ).toMatchObject({ status: 'failed' });
   } finally {
-    for (const gate of Object.values(gates)) gate.resolve();
+    for (const gate of [
+      ...Object.values(gates),
+      ...Object.values(acknowledgements),
+    ])
+      gate.resolve();
     vi.useRealTimers();
     await shutdown;
     await app.close();
