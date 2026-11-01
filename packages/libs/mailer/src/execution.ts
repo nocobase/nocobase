@@ -39,6 +39,11 @@ export class MailExecutions {
     return { completion, signal: controller.signal };
   }
 
+  /** Wait for original work after stopping, without treating a bounded cancellation wait as completion. */
+  public async drain(): Promise<void> {
+    await Promise.allSettled([...this.active.values()]);
+  }
+
   public async close(waitMs: number = 5_000): Promise<void> {
     this.stopped = true;
     for (const controller of this.active.keys()) controller.abort();

@@ -1,3 +1,4 @@
+import { InvitationWork } from '../invitations/lifecycle.js';
 import { createApplicationUserRoleScope } from '../services/permission-set-scope.js';
 import { databaseManagerToken } from '@nocobase/db';
 import {
@@ -45,6 +46,7 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   private releasePermissionSetScope?: () => void;
   private releaseSubjectType?: () => void;
 
+  private readonly invitationWork = new InvitationWork();
   private invitationMailer?: ReturnType<typeof createNotificationMailer>;
 
   public override register(): void {
@@ -67,6 +69,7 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
       return createUserManagementService({
         database: resolver.resolve(databaseManagerToken),
         mailer: this.invitationMailer,
+        invitationWork: this.invitationWork,
         site: {
           ...(identity?.publicOrigin
             ? { publicOrigin: identity.publicOrigin }
@@ -179,7 +182,9 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override async shutdown(): Promise<void> {
+    const drained = this.invitationWork.close();
     await this.invitationMailer?.close();
+    await drained;
     this.releasePermissionSetScope?.();
     this.releasePermissionSetScope = undefined;
     this.releaseSubjectType?.();

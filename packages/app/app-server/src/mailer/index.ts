@@ -1,4 +1,9 @@
-import { ApplicationMailer, applicationMailerToken } from '../mailers/index.js';
+import {
+  ApplicationMailer,
+  acquireApplicationMailer,
+  type ApplicationMailerLease,
+  type MailersConfig,
+} from '../mailers/index.js';
 import {
   isMailChannelConfig,
   type EmailMessage,
@@ -168,24 +173,24 @@ function channelMailer(
 /** @deprecated Use the automatically registered applicationMailerToken. */
 export class MailerProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-server/mailer';
+  private lease?: ApplicationMailerLease;
   public override register(): void {
-    this.app.container.singleton(mailerToken, () =>
-      this.app.container.has(applicationMailerToken)
-        ? channelMailer(
-            this.app.config.get<MailChannelsConfig>('notification') ?? {
-              channels: {},
-            },
-            this.app.container.resolve(applicationMailerToken),
-            false,
-          )
-        : createMailer(
-            this.app.config.get<MailChannelsConfig>('notification') ?? {
-              channels: {},
-            },
-          ),
-    );
+    this.app.container.singleton(mailerToken, () => {
+      this.lease = acquireApplicationMailer(
+        this.app.container,
+        this.app.config.get<MailersConfig>('mailers') ?? {},
+      );
+      const config = this.app.config.get<MailChannelsConfig>(
+        'notification',
+      ) ?? { channels: {} };
+      return channelMailer(config, this.lease.mailer, false);
+    });
   }
   public override async shutdown(): Promise<void> {
-    await this.app.container.resolveIfCreated(mailerToken)?.close();
+    try {
+      await this.app.container.resolveIfCreated(mailerToken)?.close();
+    } finally {
+      await this.lease?.release();
+    }
   }
 }

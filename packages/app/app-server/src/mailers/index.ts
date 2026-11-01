@@ -10,6 +10,7 @@ import {
   createServiceToken,
   ServiceProvider,
   type ServiceToken,
+  type ServiceContainer,
 } from '@nocobase/service-provider';
 import type { AppPluginApplication } from '../plugins/index.js';
 import {
@@ -166,18 +167,68 @@ export class ApplicationMailer {
 export const applicationMailerToken: ServiceToken<ApplicationMailer> =
   createServiceToken<ApplicationMailer>('@nocobase/app-server/mailers');
 
+/** Compatibility assembly owns service scopes; consumers never own transports. */
+export interface ApplicationMailerLease {
+  readonly mailer: ApplicationMailer;
+  release(): Promise<void>;
+}
+
+interface CompatibilityScope {
+  readonly mailer: ApplicationMailer;
+  leases: number;
+  managed: boolean;
+}
+
+// Lifecycle accounting only: the container token remains the sole application service registry.
+const compatibilityScopes = new WeakMap<ServiceContainer, CompatibilityScope>();
+
+export function acquireApplicationMailer(
+  container?: ServiceContainer,
+  config: MailersConfig = {},
+): ApplicationMailerLease {
+  let scope = container ? compatibilityScopes.get(container) : undefined;
+  if (!container || !container.has(applicationMailerToken)) {
+    scope = {
+      mailer: new ApplicationMailer(config),
+      leases: 0,
+      managed: false,
+    };
+    if (container) {
+      container.instance(applicationMailerToken, scope.mailer);
+      compatibilityScopes.set(container, scope);
+    }
+  }
+  const mailer = scope?.mailer ?? container!.resolve(applicationMailerToken);
+  if (scope) scope.leases += 1;
+  const owned = scope;
+  let releasePromise: Promise<void> | undefined;
+  return {
+    mailer,
+    release(): Promise<void> {
+      releasePromise ??= (async (): Promise<void> => {
+        if (owned && --owned.leases === 0 && !owned.managed)
+          await owned.mailer.close();
+      })();
+      return releasePromise;
+    },
+  };
+}
+
 export class ApplicationMailerProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-server/mailers';
+  private lease?: ApplicationMailerLease;
   public override register(): void {
-    // Capture during registration, before lazy business services can read reloaded configuration.
-    this.app.container.instance(
-      applicationMailerToken,
-      new ApplicationMailer(
-        this.app.config.get<MailersConfig>('mailers') ?? {},
-      ),
+    // Capture before lazy business services can read reloaded configuration.
+    this.lease = acquireApplicationMailer(
+      this.app.container,
+      this.app.config.get<MailersConfig>('mailers') ?? {},
     );
+    const scope = compatibilityScopes.get(this.app.container);
+    if (scope) scope.managed = true;
   }
   public override async shutdown(): Promise<void> {
+    await this.lease?.release();
+    // The native application owns the final boundary, including custom consumers that never acquired a lease.
     await this.app.container.resolve(applicationMailerToken).close();
   }
 }

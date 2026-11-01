@@ -337,6 +337,8 @@ export class PasswordResetPolicy {
 
   public async close(): Promise<void> {
     await this.executions.close();
+    // Custom callbacks retain their existing bounded shutdown contract.
+    if (this.automatic) await this.executions.drain();
   }
 
   public runRequest<T>(address: string | undefined, handler: () => T): T {

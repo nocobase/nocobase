@@ -5,6 +5,8 @@ import {
 export type { EmailChannelReferenceConfig } from './reference-config.js';
 import {
   applicationMailerToken,
+  acquireApplicationMailer,
+  type ApplicationMailerLease,
   type ApplicationMailer,
 } from '@nocobase/app-server/mailers';
 import type {
@@ -34,6 +36,7 @@ export class EmailChannel implements ChannelInstance<
     validateEmailChannelReference(config);
   }
   private readonly mailer: ApplicationMailer;
+  private readonly mailerLease: ApplicationMailerLease;
   private readonly name?: string;
   readonly capabilities?: ChannelCapabilities;
   constructor(context: ChannelContext, config: EmailChannelReferenceConfig) {
@@ -44,10 +47,14 @@ export class EmailChannel implements ChannelInstance<
       this.name,
       `notification.channels.${context.channelName}.mailer`,
     );
+    this.mailerLease = acquireApplicationMailer(context.container);
     if (this.mailer.provider(this.name) === 'resend')
       this.capabilities = {
         idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
       };
+  }
+  close(): Promise<void> {
+    return this.mailerLease.release();
   }
   validateMessage(
     input: unknown,

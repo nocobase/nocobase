@@ -357,8 +357,6 @@ it.each([false, true])(
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     expect(create).toHaveBeenCalledOnce();
     await fixture.auth.close();
-    expect(close).not.toHaveBeenCalled();
-    await fixture.mailer.close();
     expect(close).toHaveBeenCalledOnce();
     await fixture.router.request(
       '/api/auth/request-password-reset',
@@ -507,8 +505,6 @@ it.each([false, true])(
       completion.resolve({ status: 'accepted' });
       await shutdown;
       expect(executions.inFlight).toBe(0);
-      expect(close).not.toHaveBeenCalled();
-      await fixture.mailer.close();
       expect(close).toHaveBeenCalledOnce();
     } finally {
       completion.resolve({ status: 'accepted' });
@@ -558,3 +554,50 @@ it.each(['legacy', 'email', 'custom'] as const)(
     expect(create).not.toHaveBeenCalled();
   },
 );
+
+it('keeps the old standalone Auth call working and prevents connection bindings from closing its sender scope', async () => {
+  const fetch = vi.fn(async () => Response.json({ id: 'synthetic-id' }));
+  vi.stubGlobal('fetch', fetch);
+  const create = vi.spyOn(mailer, 'createMailTransport');
+  // The fixture passes no mailer/source/container fields to Auth.
+  const fixture = await setup({ email, passwordReset: { enabled: true } });
+  await fixture.signUp();
+  expect(fixture.auth.passwordResetAvailable()).toBe(true);
+  await fixture.router.request(
+    '/api/auth/request-password-reset',
+    json({ email: 'alice@example.com' }),
+  );
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+  const close = vi.spyOn(create.mock.results[0]!.value, 'close');
+  const binding = fixture.auth.forConnection(fixture.connection);
+  await binding.close();
+  expect(close).not.toHaveBeenCalled();
+  await fixture.auth.close();
+  expect(close).toHaveBeenCalledOnce();
+});
+
+it('preserves the bounded shutdown wait for custom callbacks that ignore cancellation', async () => {
+  const completion = Promise.withResolvers<void>();
+  const executions = new MailExecutions(1);
+  const sender = vi.fn(() => completion.promise);
+  const fixture = await setup({
+    emailAndPassword: { enabled: true, sendResetPassword: sender },
+    passwordResetServices: { executions },
+  });
+  await fixture.signUp();
+  await fixture.router.request(
+    '/api/auth/request-password-reset',
+    json({ email: 'alice@example.com' }),
+  );
+  await vi.waitFor(() => expect(sender).toHaveBeenCalledOnce());
+  vi.useFakeTimers();
+  try {
+    const closed = fixture.auth.close();
+    await vi.advanceTimersByTimeAsync(5001);
+    await closed;
+    expect(executions.inFlight).toBe(1);
+  } finally {
+    completion.resolve();
+    vi.useRealTimers();
+  }
+});

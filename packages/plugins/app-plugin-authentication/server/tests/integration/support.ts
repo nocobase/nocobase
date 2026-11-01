@@ -1,4 +1,3 @@
-import { ApplicationMailer } from '@nocobase/app-server/mailers';
 import { fileURLToPath } from 'node:url';
 import { createCaching } from '@nocobase/caching';
 import {
@@ -81,8 +80,6 @@ export async function createAuthFixture(
   );
   const caching = createCaching();
   const connection = database.connection();
-  const mailer =
-    options.passwordResetServices?.mailer ?? new ApplicationMailer();
   const auth = new Auth({
     connection,
     baseURL: 'http://localhost/api/auth',
@@ -91,7 +88,6 @@ export async function createAuthFixture(
     secondaryStorage: createAuthStorage(caching),
     session: { storeSessionInDatabase: true },
     ...options,
-    passwordResetServices: { ...options.passwordResetServices, mailer },
   });
   const router = new Hono<AuthEnv>();
   router.on(['GET', 'POST'], '/api/auth/*', (context) =>
@@ -131,14 +127,12 @@ export async function createAuthFixture(
 
   return {
     auth,
-    mailer,
     connection,
     database,
     router,
     signUp,
     async dispose() {
       await auth.close();
-      await mailer.close();
       await caching.dispose();
       await destroy();
     },

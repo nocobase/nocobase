@@ -13,7 +13,8 @@ import {
   type ProviderSendResult,
 } from '@nocobase/app-plugin-notification';
 import {
-  applicationMailerToken,
+  acquireApplicationMailer,
+  type ApplicationMailerLease,
   type ApplicationMailSender,
 } from '@nocobase/app-server/mailers';
 import { validateResendProviderConfig } from '@nocobase/mailer';
@@ -43,16 +44,14 @@ export function createResendProviderDefinition(): NotificationProviderDefinition
       idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
     },
     async createProvider(context, config) {
-      if (!context.container)
-        throw new Error('Application mailer container is required.');
+      const lease = acquireApplicationMailer(context.container);
       const { type: _type, ...inline } = config as ResendProviderConfig & {
         type?: string;
       };
-      const transport = context.container
-        .resolve(applicationMailerToken)
-        .bindInline({}, inline);
+      const transport = lease.mailer.bindInline({}, inline);
       return {
         type: 'resend',
+        close: () => lease.release(),
         capabilities: {
           idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
         },
@@ -92,6 +91,7 @@ export class ResendChannel implements ChannelInstance<
     validateResendProviderConfig({ ...config, provider: 'resend' });
   }
   private readonly transport: ApplicationMailSender;
+  private readonly mailerLease: ApplicationMailerLease;
   readonly capabilities: ChannelCapabilities = {
     idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
   };
@@ -104,10 +104,12 @@ export class ResendChannel implements ChannelInstance<
           {},
           'Legacy inline email channel configuration remains supported. Migrate to mailers and type: email.',
         );
+    this.mailerLease = acquireApplicationMailer(context.container);
     const { type: _type, ...inline } = config;
-    this.transport = context.container
-      .resolve(applicationMailerToken)
-      .bindInline({}, { ...inline, provider: 'resend' });
+    this.transport = this.mailerLease.mailer.bindInline(
+      {},
+      { ...inline, provider: 'resend' },
+    );
   }
   validateMessage(
     input: unknown,
@@ -130,6 +132,6 @@ export class ResendChannel implements ChannelInstance<
     );
   }
   close(): Promise<void> {
-    return Promise.resolve();
+    return this.mailerLease.release();
   }
 }

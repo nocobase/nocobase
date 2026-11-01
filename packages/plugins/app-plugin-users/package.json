@@ -136,7 +136,8 @@
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/app-plugin-notification-providers": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@nocobase/app-plugin-notification": {

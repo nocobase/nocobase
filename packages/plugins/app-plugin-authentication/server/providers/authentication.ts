@@ -1,4 +1,9 @@
-import { applicationMailerToken } from '@nocobase/app-server/mailers';
+import {
+  applicationMailerToken,
+  acquireApplicationMailer,
+  type ApplicationMailerLease,
+  type MailersConfig,
+} from '@nocobase/app-server/mailers';
 import {
   createAppCookieScope,
   joinBasePath,
@@ -73,11 +78,16 @@ export class AuthenticationProvider<
   public readonly name: string = '@nocobase/app-plugin-authentication';
 
   private readonly mailSource = {};
+  private mailerLease?: ApplicationMailerLease;
   private authSnapshot?: AuthConfig;
   private emailSnapshot?: Pick<AuthConfig, 'email' | 'passwordReset'>;
   private legacyChannels?: Readonly<Record<string, unknown>>;
 
   public override register(): void {
+    this.mailerLease = acquireApplicationMailer(
+      this.app.container,
+      this.app.config.get<MailersConfig>('mailers') ?? {},
+    );
     const auth = this.app.config.get<AuthConfig>('auth') ?? {};
     this.authSnapshot = auth;
     this.emailSnapshot = {
@@ -165,7 +175,11 @@ export class AuthenticationProvider<
   }
 
   public override async shutdown(): Promise<void> {
-    await this.app.container.resolveIfCreated(authenticationToken)?.close();
+    try {
+      await this.app.container.resolveIfCreated(authenticationToken)?.close();
+    } finally {
+      await this.mailerLease?.release();
+    }
   }
 
   private createAuthentication(container: ServiceResolver): Auth {

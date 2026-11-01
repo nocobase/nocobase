@@ -12,7 +12,8 @@ import {
   type ProviderSendResult,
 } from '@nocobase/app-plugin-notification';
 import {
-  applicationMailerToken,
+  acquireApplicationMailer,
+  type ApplicationMailerLease,
   type ApplicationMailSender,
 } from '@nocobase/app-server/mailers';
 import { validateSmtpProviderConfig } from '@nocobase/mailer';
@@ -40,16 +41,14 @@ export function createSmtpProviderDefinition(): NotificationProviderDefinition<
     validateConfig: validateSmtpProviderConfig,
 
     async createProvider(context, config) {
-      if (!context.container)
-        throw new Error('Application mailer container is required.');
+      const lease = acquireApplicationMailer(context.container);
       const { type: _type, ...inline } = config as SmtpProviderConfig & {
         type?: string;
       };
-      const transport = context.container
-        .resolve(applicationMailerToken)
-        .bindInline({}, inline);
+      const transport = lease.mailer.bindInline({}, inline);
       return {
         type: 'smtp',
+        close: () => lease.release(),
 
         async send({
           message,
@@ -87,6 +86,7 @@ export class SmtpChannel implements ChannelInstance<
     validateSmtpProviderConfig({ ...config, provider: 'smtp' });
   }
   private readonly transport: ApplicationMailSender;
+  private readonly mailerLease: ApplicationMailerLease;
   constructor(context: ChannelContext, config: SmtpChannelConfig) {
     if (context.container.has(loggingToken))
       context.container
@@ -96,10 +96,12 @@ export class SmtpChannel implements ChannelInstance<
           {},
           'Legacy inline email channel configuration remains supported. Migrate to mailers and type: email.',
         );
+    this.mailerLease = acquireApplicationMailer(context.container);
     const { type: _type, ...inline } = config;
-    this.transport = context.container
-      .resolve(applicationMailerToken)
-      .bindInline({}, { ...inline, provider: 'smtp' });
+    this.transport = this.mailerLease.mailer.bindInline(
+      {},
+      { ...inline, provider: 'smtp' },
+    );
   }
   validateMessage(
     input: unknown,
@@ -122,6 +124,6 @@ export class SmtpChannel implements ChannelInstance<
     );
   }
   close(): Promise<void> {
-    return Promise.resolve();
+    return this.mailerLease.release();
   }
 }

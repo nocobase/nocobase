@@ -1,6 +1,9 @@
 /** Invitation sender selection and bounded execution, with a lazy legacy Notification adapter. */
 import { loggingToken } from '@nocobase/app-server/logging';
-import { applicationMailerToken } from '@nocobase/app-server/mailers';
+import {
+  acquireApplicationMailer,
+  type MailersConfig,
+} from '@nocobase/app-server/mailers';
 import { MailExecutions } from '@nocobase/mailer';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 
@@ -13,7 +16,11 @@ export function createNotificationMailer(
   app: AppPluginApplication,
 ): InvitationMailer & { close(): Promise<void> } {
   const config = app.config.get<UsersConfig>('users')?.invitations;
-  const mailer = app.container.resolve(applicationMailerToken);
+  const lease = acquireApplicationMailer(
+    app.container,
+    app.config.get<MailersConfig>('mailers') ?? {},
+  );
+  const mailer = lease.mailer;
   const explicit = config?.mailer;
   if (explicit !== undefined)
     mailer.assertReference(explicit, 'users.invitations.mailer');
@@ -25,7 +32,7 @@ export function createNotificationMailer(
     channels?: Readonly<Record<string, { enabled?: boolean }>>;
   }>('notification')?.channels?.[name];
   if (!direct && (!channel || channel.enabled === false)) {
-    return { ...unconfiguredMailer, close: () => Promise.resolve() };
+    return { ...unconfiguredMailer, close: () => lease.release() };
   }
   const logger = app.container.has(loggingToken)
     ? app.container.resolve(loggingToken).getLogger('users')
@@ -73,6 +80,13 @@ export function createNotificationMailer(
         throw new Error('Invitation email submission capacity unavailable.');
       await execution.completion;
     },
-    close: () => executions.close(),
+    async close() {
+      try {
+        await executions.close();
+        await executions.drain();
+      } finally {
+        await lease.release();
+      }
+    },
   };
 }

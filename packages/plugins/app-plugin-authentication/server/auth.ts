@@ -1,3 +1,7 @@
+import {
+  acquireApplicationMailer,
+  type ApplicationMailerLease,
+} from '@nocobase/app-server/mailers';
 import type { AuthEmailConfig } from './email-config.js';
 import {
   PasswordResetPolicy,
@@ -198,6 +202,7 @@ export class Auth {
   private readonly connection: DatabaseConnection;
   private readonly options: AuthOptions;
   private readonly resetPolicy: PasswordResetPolicy;
+  private readonly mailerLease?: ApplicationMailerLease;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
   private userInitializers = new Set<
@@ -229,15 +234,23 @@ export class Auth {
       ...config
     } = options;
     this.connection = connection;
-    this.options = options;
     if (!config.secret?.trim() && !config.secrets?.length) {
       throw new Error('Authentication secret is required.');
     }
+    this.mailerLease = passwordResetServices?.mailer
+      ? undefined
+      : acquireApplicationMailer();
+    const resetServices: PasswordResetServices = {
+      ...passwordResetServices,
+      mailer: passwordResetServices?.mailer ?? this.mailerLease!.mailer,
+      source: passwordResetServices?.source ?? {},
+    };
+    this.options = { ...options, passwordResetServices: resetServices };
     this.resetPolicy = new PasswordResetPolicy(
       passwordReset ?? {},
       config,
       connection,
-      passwordResetServices ?? {},
+      resetServices,
       email,
     );
     const plugins = (config.plugins ?? []).some(
@@ -481,7 +494,11 @@ export class Auth {
   }
 
   async close(): Promise<void> {
-    await this.resetPolicy.close();
+    try {
+      await this.resetPolicy.close();
+    } finally {
+      await this.mailerLease?.release();
+    }
   }
 
   async getSession(

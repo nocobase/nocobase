@@ -172,3 +172,26 @@ it('registers once before consumers, fixes startup snapshots and closes after bu
   expect(events).toEqual(['producer', 'transport']);
   expect(await mailer.send(message)).toMatchObject({ status: 'failed' });
 });
+
+it('assembles legacy container scopes once and releases them only after the last consumer', async () => {
+  const { ServiceContainer } = await import('@nocobase/service-provider');
+  const { acquireApplicationMailer } = await import('../src/mailers/index.js');
+  const container = new ServiceContainer();
+  const first = acquireApplicationMailer(container, {
+    default: 'main',
+    main: smtp,
+  });
+  const second = acquireApplicationMailer(container);
+  expect(second.mailer).toBe(first.mailer);
+  expect(container.resolve(applicationMailerToken)).toBe(first.mailer);
+  const close = vi.spyOn(first.mailer, 'close');
+  await first.release();
+  expect(close).not.toHaveBeenCalled();
+  await second.release();
+  expect(close).toHaveBeenCalledOnce();
+  await second.release();
+  expect(close).toHaveBeenCalledOnce();
+  const isolated = acquireApplicationMailer(new ServiceContainer());
+  expect(isolated.mailer).not.toBe(first.mailer);
+  await isolated.release();
+});
