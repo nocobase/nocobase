@@ -1653,6 +1653,7 @@ export const ConversationLinkSchema: z.ZodType<ConversationLink> = z
       .object({
         key: z.string().nullable(),
         title: z.string(),
+        targetUpdatedAt: dateTime.optional(),
         status: z.string().nullable(),
         url: z.string().nullable(),
       })

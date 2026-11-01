@@ -331,6 +331,8 @@ export interface ConversationUsage {
 
 /** How the application shows something a conversation is tied to, as its link kind resolves it for the viewer. */
 export interface ConversationLinkView {
+  /** When the resolved target was last updated, for ordering linked work without another read. */
+  readonly targetUpdatedAt?: string;
   /** Its short identifier, such as an issue's `ST-58`. */
   readonly key: string | null;
   readonly title: string;
