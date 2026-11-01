@@ -1556,6 +1556,38 @@ export function createConversationService(
             messageId: `runner:${run.id}`,
             revision: Number(answered.seq) + 1,
           });
+        // Stop ends this turn; messages the Agent never acknowledged retain their identity in the next one.
+        // A queued withdrawal or system cancellation must not start more work.
+        if (
+          run.status === 'cancelled' &&
+          run.cancelRequestedAt !== null &&
+          run.cancelledById === record.userId &&
+          record.mode === 'runner' &&
+          record.agentId === run.agentId
+        ) {
+          const queued = await messagesRepo(unit.conn).findMany({
+            filter: (f) =>
+              f.and([
+                f.string('conversationId').eq(record.id),
+                f.string('runId').eq(run.id),
+                f.string('role').eq('user'),
+                f.json('metadata').path(['queued']).eq(true),
+              ]),
+            sort: (sort) => sort.field('seq').asc(),
+          });
+          const pending = queued.filter((message) => {
+            const metadata = metadataOf(message);
+            return !metadata.pickedUp && !metadata.withdrawn;
+          });
+          if (pending.length) {
+            await wake(unit, record, pending);
+            for (const message of pending)
+              changed(unit, record, {
+                messageId: message.id,
+                revision: Number(message.seq),
+              });
+          }
+        }
         await attend(unit, record.id, run);
       },
     },

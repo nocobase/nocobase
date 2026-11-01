@@ -171,6 +171,7 @@ export class ChatController {
     }
   }
   private historyEpochs = new Map<string, number>();
+  private messageEpochs = new Map<string, number>();
   private replacements = new Map<
     string,
     { executionId: string; revision: number; seq: number; lastSeq: number }
@@ -274,7 +275,7 @@ export class ChatController {
               recovery.error = undefined;
               // Reads started before reconnection must not replace its replay or revive old errors.
               this.nextDetailVersion(id);
-              this.invalidateHistoryReads(id);
+              this.invalidateReplayReads(id);
               this.publish();
             };
           },
@@ -407,24 +408,38 @@ export class ChatController {
     this.publish();
   }
   private historyLifetime(id: string): () => boolean {
+    return this.readLifetime(id, this.historyEpochs);
+  }
+  private messageLifetime(id: string): () => boolean {
+    return this.readLifetime(id, this.messageEpochs);
+  }
+  private readLifetime(
+    id: string,
+    epochs: ReadonlyMap<string, number>,
+  ): () => boolean {
     const active = this.lifetime(),
-      epoch = this.historyEpochs.get(id) ?? 0,
+      epoch = epochs.get(id) ?? 0,
       command = this.commandVersions.get(id);
     return () =>
       active() &&
-      (this.historyEpochs.get(id) ?? 0) === epoch &&
+      (epochs.get(id) ?? 0) === epoch &&
       this.commandVersions.get(id) === command;
   }
 
-  private invalidateHistoryReads(id: string, discardDeferred = false): void {
+  /** A resumed stream replaces replay snapshots, not already requested durable message revisions. */
+  private invalidateReplayReads(id: string): void {
     this.historyEpochs.set(id, (this.historyEpochs.get(id) ?? 0) + 1);
     this.loads.delete(id);
     this.refreshAgain.delete(id);
+    this.historyMeta(id).loadingOlder = false;
+  }
+  private invalidateHistoryReads(id: string, discardDeferred = false): void {
+    this.invalidateReplayReads(id);
+    this.messageEpochs.set(id, (this.messageEpochs.get(id) ?? 0) + 1);
     this.revisionQueue.delete(id);
     if (discardDeferred) this.deferredReads.delete(id);
     for (const key of this.messageVersions.keys())
       if (key.startsWith(`${id}:`)) this.messageVersions.delete(key);
-    this.historyMeta(id).loadingOlder = false;
   }
 
   historyReplaced(event: HistoryReplacement): void {
@@ -653,7 +668,7 @@ export class ChatController {
     const pending = this.reconciles.get(id);
     if (pending) return pending;
     if (this.resendRequests.has(id)) return;
-    this.invalidateHistoryReads(id);
+    this.invalidateReplayReads(id);
     const active = this.historyLifetime(id);
     const initial = this.chat(id).messages.filter(
       (m) => m.metadata?.seq !== undefined,
@@ -830,7 +845,8 @@ export class ChatController {
   async reread(id: string, ids: readonly string[]): Promise<AppUIMessage[]> {
     if (this.disposed) return [];
     const found: AppUIMessage[] = [];
-    const active = this.historyLifetime(id);
+    const active = this.messageLifetime(id);
+    const replayActive = this.historyLifetime(id);
     for (let offset = 0; offset < ids.length; offset += 100) {
       const selection = ids.slice(offset, offset + 100);
       const key = JSON.stringify([id, [...selection].sort()]);
@@ -845,7 +861,17 @@ export class ChatController {
         };
         void pendingRead.then(clear, clear);
       }
-      const page = await pendingRead;
+      const response = await pendingRead;
+      if (!active()) return [];
+      // Durable user/system revisions survive reconnection; old assistant snapshots must not overwrite replay.
+      const page = replayActive()
+        ? response
+        : {
+            ...response,
+            items: response.items.filter(
+              (message) => message.role !== 'assistant',
+            ),
+          };
       if (
         shared &&
         active() &&
@@ -860,7 +886,6 @@ export class ChatController {
         found.push(...saved);
         continue;
       }
-      if (!active()) return [];
       found.push(...page.items);
       const pending = this.deferredReads.get(id);
       for (const message of page.items) {
@@ -977,7 +1002,7 @@ export class ChatController {
     }
     const queue = { pending: new Set([messageId]), task: Promise.resolve() };
     this.revisionQueue.set(id, queue);
-    const active = this.historyLifetime(id);
+    const active = this.messageLifetime(id);
     queue.task = (async () => {
       const attempted = new Set<string>();
       try {
@@ -1805,6 +1830,7 @@ export class ChatController {
       request.gate.reject(new CancelledError({ silent: true }));
     this.resendRequests.clear();
     this.historyEpochs.clear();
+    this.messageEpochs.clear();
     this.replacements.clear();
     this.reconciles.clear();
     this.streamFollowers.clear();
