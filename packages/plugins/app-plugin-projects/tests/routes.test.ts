@@ -1496,6 +1496,50 @@ describe('dependencies over HTTP', () => {
 });
 
 describe('comments over HTTP', () => {
+  it.each(['waitingOwner', 'blocked', 'dormant', 'limited', 'denied'] as const)(
+    'returns recorded work skips for a saved comment: %s',
+    async (reason) => {
+      h.services.kinds.add({
+        key: 'bot',
+        mention: { candidates: () => Promise.resolve([]) },
+        work: {
+          onCommentCreated: (_tx, change) =>
+            Promise.resolve([
+              {
+                kind: 'bot',
+                principalId: 'builder',
+                subjectId: change.issue.id,
+                triggerType: 'mention',
+                started: false,
+                skipped: reason,
+              },
+            ]),
+        },
+      });
+      const issue = await h.services.issues.create(h.viewer('alice'), {
+        title: 'Held work',
+      });
+      const path = `/issues/${issue.id}/comments`;
+      const body = JSON.stringify({
+        content: 'Go [@Builder](mention://bot/builder)',
+      });
+      expect((await call(path, { method: 'POST', body })).status).toBe(401);
+      expect(
+        (await call(path, { role: 'none', method: 'POST', body })).status,
+      ).toBe(404);
+      const posted = await call(path, { role: 'member', method: 'POST', body });
+      expect(posted.status).toBe(201);
+      expect(await posted.json()).toMatchObject({
+        data: {
+          comment: { content: 'Go [@Builder](mention://bot/builder)' },
+          triggered: [],
+          skipped:
+            reason === 'denied' ? [] : [{ kind: 'bot', id: 'builder', reason }],
+        },
+      });
+    },
+  );
+
   it('rejects message and provenance on public comment writes and keeps the read permission boundary', async () => {
     const issue = await h.services.issues.create(h.viewer('alice'), {
       title: 'Display message',

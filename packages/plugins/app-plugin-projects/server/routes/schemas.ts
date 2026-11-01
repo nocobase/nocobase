@@ -1076,6 +1076,18 @@ export const CreateCommentResultSchema: z.ZodType<CreateCommentResult> =
       description:
         'Whom the comment started work for; empty without a plugin that does.',
     }),
+    skipped: z
+      .array(
+        z.object({
+          kind: z.string(),
+          id: z.string(),
+          reason: z.enum(['waitingOwner', 'blocked', 'dormant', 'limited']),
+        }),
+      )
+      .meta({
+        description:
+          'Whose work was held back and why; the comment was still saved.',
+      }),
   });
 
 export const CommentReactionsSchema: z.ZodType<CommentReactions> = z.object({
