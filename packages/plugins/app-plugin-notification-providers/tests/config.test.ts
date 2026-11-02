@@ -64,32 +64,93 @@ describe('notification email configuration migration', () => {
     },
   );
 
-  it.each([
-    {},
-    { email: { enabled: false } },
-    { email: { type: 'smtp', enabled: false } },
-    { email: { type: 'smtp', host: 'localhost', port: 25 } },
-    { email: { provider: 'smtp', host: 'localhost', port: 25 } },
-    { email: { type: 'smtp', provider: 'smtp', host: 'localhost', port: 25 } },
-    { email: { type: 'smtp', host: 'synthetic-secret', port: 'invalid' } },
+  const emailChannelIssues = (message: string) => [
     {
-      email: {
-        provider: 'resend',
-        from: 'synthetic@example.test',
-        apiKey: 'synthetic-key',
-      },
+      level: 'error' as const,
+      path: 'notification.channels.email',
+      message,
     },
-    { email: { type: 'resend', from: 'synthetic@example.test' } },
-    { email: { type: 'smtp', provider: 'resend', enabled: false } },
-    { email: { type: ' smtp ' } },
-    { email: { provider: 123 } },
-    { email: { provider: 'custom' }, inbox: { type: 'in-app' } },
+  ];
+
+  it.each([
+    { channels: {}, issues: [] },
+    { channels: { email: { enabled: false } }, issues: [] },
+    { channels: { email: { type: 'smtp', enabled: false } }, issues: [] },
+    {
+      channels: { email: { type: 'smtp', host: 'localhost', port: 25 } },
+      issues: [],
+    },
+    {
+      channels: { email: { provider: 'smtp', host: 'localhost', port: 25 } },
+      issues: [],
+    },
+    {
+      channels: {
+        email: {
+          type: 'smtp',
+          provider: 'smtp',
+          host: 'localhost',
+          port: 25,
+        },
+      },
+      issues: [],
+    },
+    {
+      channels: {
+        email: { type: 'smtp', host: 'synthetic-secret', port: 'invalid' },
+      },
+      issues: emailChannelIssues(
+        'Invalid built-in email channel configuration.',
+      ),
+    },
+    {
+      channels: {
+        email: {
+          provider: 'resend',
+          from: 'synthetic@example.test',
+          apiKey: 'synthetic-key',
+        },
+      },
+      issues: [],
+    },
+    {
+      channels: { email: { type: 'resend', from: 'synthetic@example.test' } },
+      issues: emailChannelIssues(
+        'Invalid built-in email channel configuration.',
+      ),
+    },
+    {
+      channels: { email: { type: 'smtp', provider: 'resend', enabled: false } },
+      issues: emailChannelIssues(
+        'Channel type and provider must match when both are configured.',
+      ),
+    },
+    {
+      channels: { email: { type: ' smtp ' } },
+      issues: emailChannelIssues(
+        'Channel type must be a non-empty trimmed string.',
+      ),
+    },
+    {
+      channels: { email: { provider: 123 } },
+      issues: emailChannelIssues(
+        'Channel provider must be a non-empty trimmed string.',
+      ),
+    },
+    {
+      channels: {
+        email: { provider: 'custom' },
+        inbox: { type: 'in-app' },
+      },
+      issues: [],
+    },
   ])(
     'preserves aliases, enabled rules, validation and private mappings: %j',
-    async (channels) => {
+    async ({ channels, issues }) => {
       const definition = { defaults: { channels } };
       const current = await snapshot(defineMailChannelsConfig(definition));
       expect(current.public).toEqual({});
+      expect(current.issues).toEqual(issues);
       expect(JSON.stringify(current.issues)).not.toContain('synthetic-secret');
       expect(current.variables).toEqual(
         expect.arrayContaining([
@@ -107,6 +168,31 @@ describe('notification email configuration migration', () => {
       );
     },
   );
+
+  it('rejects SMTP authentication when its password is missing', async () => {
+    const current = await snapshot(
+      defineMailChannelsConfig({
+        defaults: {
+          channels: {
+            'system-email': {
+              type: 'smtp',
+              host: 'localhost',
+              port: 2525,
+              auth: { user: 'synthetic' },
+            },
+          },
+        },
+      }),
+    );
+
+    expect(current.issues).toEqual([
+      {
+        level: 'error',
+        path: 'notification.channels.system-email',
+        message: 'Invalid built-in email channel configuration.',
+      },
+    ]);
+  });
 
   it.each([false, true])(
     'preserves custom env overrides and validator order (array=%s)',
@@ -132,6 +218,20 @@ describe('notification email configuration migration', () => {
       };
       const current = await snapshot(factory, environment);
       expect(validate).toHaveBeenCalledOnce();
+      expect(current.variables).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'SMTP_PASSWORD',
+            path: 'channels.email.auth.pass',
+            required: true,
+            secret: true,
+          }),
+          expect.objectContaining({
+            name: 'CUSTOM_HOST',
+            required: false,
+          }),
+        ]),
+      );
       expect(current.issues.map(({ message }) => message)).toEqual([
         'Invalid built-in email channel configuration.',
         'Custom warning.',
