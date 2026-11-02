@@ -81,7 +81,7 @@ import {
 } from './components/ui/sidebar';
 import { Separator } from './components/ui/separator';
 import { TooltipProvider } from './components/ui/tooltip';
-import { AgentChatLinkedDemo } from './demo/agents/agent-chat-linked.js';
+import { AgentChatDetailsDemo } from './demo/agents/agent-chat-details.js';
 import { AgentChatDemo } from './demo/agents/agent-chat';
 import { AgentComposerDemo } from './demo/agents/agent-composer';
 import { AgentPickerDemo } from './demo/agents/agent-picker';
@@ -254,8 +254,8 @@ const itemPreviews: Record<string, ItemPreview> = {
     icon: MessageSquareText,
   },
   'agent-picker': { path: '/demo/agents/agent-picker', icon: UserRoundSearch },
-  'agent-chat-linked': {
-    path: '/demo/agents/agent-chat-linked',
+  'agent-chat-details': {
+    path: '/demo/agents/agent-chat-details',
     icon: BotMessageSquare,
   },
   'agent-chat': { path: '/demo/agents/agent-chat', icon: BotMessageSquare },
@@ -406,8 +406,8 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/agents/agent-picker')) {
     return <AgentPickerDemo />;
   }
-  if (pathname.startsWith('/demo/agents/agent-chat-linked'))
-    return <AgentChatLinkedDemo />;
+  if (pathname.startsWith('/demo/agents/agent-chat-details'))
+    return <AgentChatDetailsDemo />;
   if (pathname.startsWith('/demo/agents/agent-chat')) {
     return <AgentChatDemo />;
   }

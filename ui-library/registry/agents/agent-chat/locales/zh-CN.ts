@@ -318,7 +318,6 @@ const agentChatZhCN: AgentChatLocale = {
     detailsTitle: '会话详情',
     sessionDetails: '会话',
     runtime: '运行环境',
-    unboundRuntime: '尚未绑定',
     agent: 'Agent',
     started: '开始',
     usageTitle: '用量',

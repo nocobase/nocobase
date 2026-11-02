@@ -94,7 +94,7 @@ test('an add-on names its actual installed directory rather than inventing one f
   const section = itemSection(
     {
       ...block,
-      name: 'agent-chat-linked',
+      name: 'agent-chat-details',
       files: [
         {
           path: 'linked-chat-panel.tsx',
@@ -108,5 +108,5 @@ test('an add-on names its actual installed directory rather than inventing one f
     section,
     /- Installs to: `client\/extensions\/nocobase-agent-chat\/`/u,
   );
-  assert.doesNotMatch(section, /nocobase-agent-chat-linked\//u);
+  assert.doesNotMatch(section, /nocobase-agent-chat-details\//u);
 });

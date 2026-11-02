@@ -88,9 +88,13 @@ const slots: LinkedChatPanelProps['slots'] = {
   document: { label: L('Documents', '文档') },
 };
 
-function OpenList(): null {
+/** The preview opens on a conversation with linked tasks; the header button still opens the list first. */
+function OpenOnArrival(): null {
   const { openChat } = useChatPanel();
-  useEffect(() => openChat({ view: 'history' }), [openChat]);
+  useEffect(
+    () => openChat({ conversationId: 'release-follow-up', view: 'chat' }),
+    [openChat],
+  );
   return null;
 }
 /**
@@ -98,11 +102,11 @@ function OpenList(): null {
  * work, runtime, usage). Linked work uses the agents plugin's generic link views; `slots.issue` shows how an
  * application renders one kind its own way, while the `document` link keeps the default rows.
  */
-export function AgentChatLinkedDemo(): ReactElement {
+export function AgentChatDetailsDemo(): ReactElement {
   return (
-    <BrowserRouter basename='/demo/agents/agent-chat-linked'>
-      <ChatProvider memoryScope='linked-demo'>
-        <OpenList />
+    <BrowserRouter basename='/demo/agents/agent-chat-details'>
+      <ChatProvider memoryScope='details-demo'>
+        <OpenOnArrival />
         <div className='flex h-svh flex-col bg-background'>
           <header className='flex h-14 shrink-0 items-center justify-between border-b px-4'>
             <p className='text-sm font-medium'>{L('Workspace', '工作区')}</p>
@@ -111,8 +115,8 @@ export function AgentChatLinkedDemo(): ReactElement {
           <div className='relative flex min-h-0 flex-1'>
             <main className='min-w-0 flex-1 p-6 text-sm text-muted-foreground'>
               {L(
-                'The header button opens the conversation list first. Open “Release follow-up” to see the summary row and its details.',
-                '顶部按钮先打开会话列表。打开「发布跟进」可以看到任务摘要行和会话详情。',
+                'The panel opens on “Release follow-up”: its summary row opens the details with the linked tasks, usage and runner. The header button opens the conversation list first; every Runner conversation there has linked tasks.',
+                '面板打开的是「发布跟进」：点任务摘要行打开会话详情，里面有关联任务、用量和执行机。顶部按钮先打开会话列表，列表里每个 Runner 对话都有关联任务。',
               )}
             </main>
             <LinkedChatPanel slots={slots} />

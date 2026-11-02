@@ -131,7 +131,7 @@
       "name": "agent-chat",
       "type": "registry:block",
       "title": "Agent Chat",
-      "description": "A simple agent conversation panel with shared page/panel headers, history, composer and launchers. It has no association requirements. For related-work slots and conversation details, add agent-chat-linked.",
+      "description": "A simple agent conversation panel with shared page/panel headers, history, composer and launchers. It has no association requirements. For related-work slots and conversation details, add agent-chat-details.",
       "categories": ["agents"],
       "meta": {
         "group": "Agents",
@@ -332,10 +332,10 @@
       ]
     },
     {
-      "name": "agent-chat-linked",
+      "name": "agent-chat-details",
       "type": "registry:block",
-      "title": "Linked Agent Chat",
-      "description": "A conversation panel with list-first entry, shared headers, context usage, runtime details and generic ConversationLink sections. Supply per-kind render slots for application-specific work. No task or project dependency.",
+      "title": "Agent Chat with Details",
+      "description": "The agent chat panel with conversation details: linked work such as tasks, context usage, the runner and the agent, beside or over the conversation, with list-first entry and shared headers. Linked work uses generic ConversationLink sections. Supply per-kind render slots for application-specific work. No task or project dependency.",
       "categories": ["agents"],
       "meta": {
         "group": "Agents",

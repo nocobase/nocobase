@@ -16,7 +16,9 @@ export function ConversationMetadata({
   const text = useAgentText();
   const { t } = useChatTranslation();
   const name = text.name(conversation.agent) ?? t('chat.deletedAgent');
-  const runtime = conversation.runner?.name ?? t('chat.unboundRuntime');
+  // Only a Runner conversation already bound to a named runner shows one; online agents run on no runner.
+  const runner = conversation.mode === 'online' ? null : conversation.runner;
+  const runnerName = runner?.name ?? null;
   return (
     <>
       <ConversationMetaChip
@@ -28,24 +30,24 @@ export function ConversationMetadata({
         <span className='truncate'>{name}</span>
       </ConversationMetaChip>
       {children}
-      <ConversationMetaChip
-        title={runtime}
-        data-testid='conversation-runner'
-        data-status={conversation.runner?.status}
-      >
-        <ServerIcon className='size-4 shrink-0' />
-        <span className='truncate'>{runtime}</span>
-        {conversation.runner && (
+      {runner && runnerName && (
+        <ConversationMetaChip
+          title={runnerName}
+          data-testid='conversation-runner'
+          data-status={runner.status}
+        >
+          <ServerIcon className='size-4 shrink-0' />
+          <span className='truncate'>{runnerName}</span>
           <span
             className={cn(
               'size-2 shrink-0 rounded-full',
-              conversation.runner.status === 'online'
+              runner.status === 'online'
                 ? 'bg-emerald-500'
                 : 'border-[1.5px] border-muted-foreground',
             )}
           />
-        )}
-      </ConversationMetaChip>
+        </ConversationMetaChip>
+      )}
     </>
   );
 }

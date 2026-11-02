@@ -52,7 +52,7 @@ The one way to pick an agent: a trigger with the agent's avatar (availability do
 
 ### agent-chat
 
-A simple agent conversation panel with shared page/panel headers, history, composer and launchers. It has no association requirements. For related-work slots and conversation details, add agent-chat-linked.
+A simple agent conversation panel with shared page/panel headers, history, composer and launchers. It has no association requirements. For related-work slots and conversation details, add agent-chat-details.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
@@ -62,16 +62,16 @@ A simple agent conversation panel with shared page/panel headers, history, compo
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
 - After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass memoryScope, the signed-in person's id, so a new conversation starts with the agent they used last; pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
 
-### agent-chat-linked
+### agent-chat-details
 
-A conversation panel with list-first entry, shared headers, context usage, runtime details and generic ConversationLink sections. Supply per-kind render slots for application-specific work. No task or project dependency.
+The agent chat panel with conversation details: linked work such as tasks, context usage, the runner and the agent, beside or over the conversation, with list-first entry and shared headers. Linked work uses generic ConversationLink sections. Supply per-kind render slots for application-specific work. No task or project dependency.
 
 - Kind: block
-- Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat-linked`
+- Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat-details`
 - Installs to: `client/extensions/nocobase-agent-chat/`
 - Plugin dependencies: none
 - Also installs: `@nocobase/agent-chat`
-- Example: `@nocobase/agent-chat-linked-demo` (`pnpm exec shadcn view @nocobase/agent-chat-linked-demo`)
+- Example: `@nocobase/agent-chat-details-demo` (`pnpm exec shadcn view @nocobase/agent-chat-details-demo`)
 - After installing: Render LinkedChatPanel under the same ChatProvider as the simple ChatPanel. Use linked launchers for list-first opening; explicit conversation/new entry keeps its intent. slots[kind] renders a related-work section and renderSummary provides application-owned status/progress. renderConversation and renderList preserve application controllers. Passive details reuse cached conversation and usage snapshots; no polling is added.
 
 ## Approval

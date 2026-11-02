@@ -46,8 +46,12 @@ export function ConversationDetails({
       <section className='flex flex-col gap-2.5 border-b px-5 py-4'>
         <h3 className='text-sm font-semibold'>{t('chat.sessionDetails')}</h3>
         <dl className='grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs [&>dd]:min-w-0 [&>dd]:break-words [&>dt]:whitespace-nowrap'>
-          <dt className='text-muted-foreground'>{t('chat.runtime')}</dt>
-          <dd>{conversation.runner?.name ?? t('chat.unboundRuntime')}</dd>
+          {conversation.mode !== 'online' && conversation.runner?.name ? (
+            <>
+              <dt className='text-muted-foreground'>{t('chat.runtime')}</dt>
+              <dd>{conversation.runner.name}</dd>
+            </>
+          ) : null}
           <dt className='text-muted-foreground'>{t('chat.agent')}</dt>
           <dd>{agent.name(conversation.agent) ?? t('chat.deletedAgent')}</dd>
           {metadata}
@@ -91,7 +95,7 @@ export function ConversationDetails({
       }}
     >
       <SheetContent
-        className='gap-0 data-[side=right]:w-[min(100%,22rem)] md:data-[side=right]:top-16 md:data-[side=right]:h-auto'
+        className='gap-0 data-[side=right]:w-[min(100%,22rem)]'
         aria-describedby={undefined}
         data-testid={testId}
         data-placement='over'

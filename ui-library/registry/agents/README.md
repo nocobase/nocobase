@@ -1,6 +1,6 @@
 # Agents
 
-What agents do, presented: the `agent-queue`, `agent-chat` and `agent-chat-linked` blocks (each with its own README in its directory) and the `agent-run-history`, `agent-composer` and `agent-picker` components.
+What agents do, presented: the `agent-queue`, `agent-chat` and `agent-chat-details` blocks (each with its own README in its directory) and the `agent-run-history`, `agent-composer` and `agent-picker` components.
 
 | Item                | Installs                                  | Exports                                                                                                                                          |
 | ------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |

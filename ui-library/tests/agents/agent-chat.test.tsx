@@ -44,6 +44,9 @@ vi.mock(
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   resolveAppUrl: (x: string) => x,
+  // Unlinking is the only request the linked details make; the demo's stand-in answers it in memory.
+  useApiClient: (await import('../../website/demo/inbox/app-client'))
+    .useApiClient,
 }));
 vi.mock('../../registry/agents/agent-chat/use-conversation-usage.js', () => ({
   useConversationUsage: () => ({ data: undefined }),
@@ -823,3 +826,42 @@ it('creates an empty conversation in an independent linked panel and deletes an 
     within(dialogs[0]!).getByRole('button', { name: 'Delete' }),
   ).toBeVisible();
 });
+
+it.each([
+  ['a Runner conversation', 'welcome-tour', true],
+  ['an online agent conversation', 'release-plan', false],
+] as const)(
+  'shows the runner only for %s, and never an unbound placeholder',
+  async (_label, conversationId, runner) => {
+    render(
+      <Shell>
+        <Open conversationId={conversationId} />
+        <LinkedChatPanel />
+      </Shell>,
+    );
+    const panel = await screen.findByTestId('chat-panel');
+    const header = await within(panel).findByTestId('conversation-header');
+    await within(header).findByTestId('chat-agent');
+    if (runner) {
+      const chip = within(header).getByTestId('conversation-runner');
+      expect(chip).toHaveTextContent('Dev machine');
+      expect(chip).toHaveAttribute('data-status', 'online');
+    } else
+      expect(within(header).queryByTestId('conversation-runner')).toBeNull();
+    fireEvent.click(
+      within(panel).getByRole('button', { name: 'Show details' }),
+    );
+    const details = await screen.findByTestId('chat-conversation-details');
+    if (runner) {
+      expect(details).toHaveTextContent('Dev machine');
+      // Every Runner conversation of the demo drives linked tasks.
+      expect(
+        details.querySelector('[data-association-kind="issue"]'),
+      ).not.toBeNull();
+    } else {
+      expect(within(details).queryByText('Runtime')).toBeNull();
+      expect(details.querySelector('[data-association-kind]')).toBeNull();
+    }
+    expect(document.body).not.toHaveTextContent(/Unbound|尚未绑定/u);
+  },
+);

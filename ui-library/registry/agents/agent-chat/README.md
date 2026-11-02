@@ -248,9 +248,9 @@ Approval buttons bind the saved message, execution and genuine tool approval ID.
 
 Upgrade the server agents plugin before runners. Conversation previews activate automatically for capable runners and never alter task transcripts. Preserve standard text/reasoning stream parts, `sourceRecords[].output`, stable part IDs, whitespace and part state in custom mappings. Render each text part as one continuous Markdown document. Only completed blocks enter durable history; refreshing mid-block may wait for completion. No application configuration switch or task run-history component update is required.
 
-## Simple and linked panels
+## Simple panel and panel with details
 
-`agent-chat` installs `ChatPanel`, the simple panel, with no business association requirement. `agent-chat-linked` adds `LinkedChatPanel`, `ConversationHeader`, `ConversationMetadata`, `ConversationDetails`, association sections and the list-first `LinkedChatHeaderButton`. Both work independently under `ChatProvider`; install the linked item when related work or context/runtime details are useful. List rows show the title, time and agent only: where a conversation was started (`source`) is a list filter, not a row label. The transcript and composer keep the header's `px-4` inset from the panel edges.
+`agent-chat` installs `ChatPanel`, the simple panel, with no business association requirement. `agent-chat-details` adds `LinkedChatPanel`, `ConversationHeader`, `ConversationMetadata`, `ConversationDetails`, association sections and the list-first `LinkedChatHeaderButton`. Both work independently under `ChatProvider`; install the linked item when related work or context/runtime details are useful. List rows show the title, time and agent only: where a conversation was started (`source`) is a list filter, not a row label. The transcript and composer keep the header's `px-4` inset from the panel edges.
 
 The shared header accepts callbacks for title rename, Back, New, details toggle, desktop expansion, low-frequency menu items and panel close, in that order. Omit New, details and the menu for an unsent conversation. A page omits Close and expansion; its Back control may use `backClassName='md:hidden'`. Agent selection stays in the composer. Put transport-kind switching in the list heading.
 

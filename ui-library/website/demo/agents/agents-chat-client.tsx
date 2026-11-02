@@ -109,7 +109,7 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: false,
     isMyDefault: true,
-    runnerNames: [L('Demo runtime', '演示执行机')],
+    runnerNames: [L('Dev machine', '开发机')],
     availability: online,
     personalOnly: false,
   },
@@ -122,7 +122,7 @@ const AGENTS: readonly ChatAgent[] = [
     avatar: null,
     isSystemDefault: true,
     isMyDefault: false,
-    runnerNames: [L('Demo runtime', '演示执行机')],
+    runnerNames: [L('Dev machine', '开发机')],
     availability: online,
     personalOnly: false,
   },
@@ -226,6 +226,10 @@ function conversation(
     availability: agent?.availability ?? online,
     canFallback: false,
     canRestore: false,
+    // Runner conversations run on the demo's dev machine and drive linked tasks; online ones have neither.
+    ...(fields.mode === 'online'
+      ? {}
+      : { runner: DEV_MACHINE, links: demoLinks(id) }),
     ...fields,
   };
 }
@@ -326,6 +330,7 @@ function attachment(
 }
 
 function link(
+  conversationId: string,
   id: string,
   kind: string,
   key: string | null,
@@ -334,8 +339,8 @@ function link(
   minutes: number,
 ): ConversationLink {
   return {
-    id,
-    conversationId: 'release-follow-up',
+    id: `${conversationId}:${id}`,
+    conversationId,
     kind,
     targetId: id,
     origin: 'agent',
@@ -351,72 +356,189 @@ function link(
 }
 
 /** Linked work in the plugin's generic shape: the demo's `issue` slot renders tasks, other kinds use the default. */
-const LINKS: readonly ConversationLink[] = [
-  link(
-    'pm-12',
-    'issue',
-    'PM-12',
-    L('Welcome tour', '欢迎引导'),
-    L('In review', '待验收'),
-    4,
-  ),
-  link(
-    'pm-15',
-    'issue',
-    'PM-15',
-    L('Invite emails', '邀请邮件'),
-    L('In progress', '进行中'),
-    6,
-  ),
-  link(
-    'pm-16',
-    'issue',
-    'PM-16',
-    L('Onboarding checklist copy', '新手清单文案'),
-    L('In progress', '进行中'),
-    9,
-  ),
-  link(
-    'pm-18',
-    'issue',
-    'PM-18',
-    L('Empty states', '空状态'),
-    L('Todo', '待规划'),
-    20,
-  ),
-  link(
-    'pm-9',
-    'issue',
-    'PM-9',
-    L('Sign-in redirect', '登录跳转'),
-    L('Done', '已完成'),
-    40,
-  ),
-  link(
-    'pm-10',
-    'issue',
-    'PM-10',
-    L('Workspace switcher', '工作区切换'),
-    L('Done', '已完成'),
-    60,
-  ),
-  link(
-    'pm-11',
-    'issue',
-    'PM-11',
-    L('Inbox badge', '收件箱角标'),
-    L('Done', '已完成'),
-    80,
-  ),
-  link(
-    'doc-1',
-    'document',
-    null,
-    L('Release checklist', '发布检查清单'),
-    null,
-    30,
-  ),
-];
+function releaseLinks(conversationId: string): readonly ConversationLink[] {
+  return [
+    link(
+      conversationId,
+      'pm-12',
+      'issue',
+      'PM-12',
+      L('Welcome tour', '欢迎引导'),
+      L('In review', '待验收'),
+      4,
+    ),
+    link(
+      conversationId,
+      'pm-15',
+      'issue',
+      'PM-15',
+      L('Invite emails', '邀请邮件'),
+      L('In progress', '进行中'),
+      6,
+    ),
+    link(
+      conversationId,
+      'pm-16',
+      'issue',
+      'PM-16',
+      L('Onboarding checklist copy', '新手清单文案'),
+      L('In progress', '进行中'),
+      9,
+    ),
+    link(
+      conversationId,
+      'pm-18',
+      'issue',
+      'PM-18',
+      L('Empty states', '空状态'),
+      L('Todo', '待规划'),
+      20,
+    ),
+    link(
+      conversationId,
+      'pm-9',
+      'issue',
+      'PM-9',
+      L('Sign-in redirect', '登录跳转'),
+      L('Done', '已完成'),
+      40,
+    ),
+    link(
+      conversationId,
+      'pm-10',
+      'issue',
+      'PM-10',
+      L('Workspace switcher', '工作区切换'),
+      L('Done', '已完成'),
+      60,
+    ),
+    link(
+      conversationId,
+      'pm-11',
+      'issue',
+      'PM-11',
+      L('Inbox badge', '收件箱角标'),
+      L('Done', '已完成'),
+      80,
+    ),
+    link(
+      conversationId,
+      'doc-1',
+      'document',
+      null,
+      L('Release checklist', '发布检查清单'),
+      null,
+      30,
+    ),
+  ];
+}
+
+const IN_REVIEW = L('In review', '待验收');
+const IN_PROGRESS = L('In progress', '进行中');
+const TODO = L('Todo', '待规划');
+const DONE = L('Done', '已完成');
+
+/** Every Runner conversation of the demo drives some tasks, so any one opened shows the summary row and details. */
+function demoLinks(conversationId: string): readonly ConversationLink[] {
+  if (conversationId === 'release-follow-up')
+    return releaseLinks(conversationId);
+  if (conversationId === 'flaky-test')
+    return [
+      link(
+        conversationId,
+        'pm-21',
+        'issue',
+        'PM-21',
+        L('Flaky sign-in test', '登录测试不稳定'),
+        IN_PROGRESS,
+        3,
+      ),
+      link(
+        conversationId,
+        'pm-22',
+        'issue',
+        'PM-22',
+        L('Session cookie timeout', '会话 Cookie 超时'),
+        IN_REVIEW,
+        8,
+      ),
+      link(
+        conversationId,
+        'pm-23',
+        'issue',
+        'PM-23',
+        L('Retry e2e on CI', 'CI 上重跑 e2e'),
+        TODO,
+        30,
+      ),
+      link(
+        conversationId,
+        'pm-20',
+        'issue',
+        'PM-20',
+        L('Sign-in page copy', '登录页文案'),
+        DONE,
+        90,
+      ),
+    ];
+  if (conversationId === 'welcome-tour')
+    return [
+      link(
+        conversationId,
+        'pm-12',
+        'issue',
+        'PM-12',
+        L('Welcome tour', '欢迎引导'),
+        IN_REVIEW,
+        12,
+      ),
+      link(
+        conversationId,
+        'pm-13',
+        'issue',
+        'PM-13',
+        L('Tour last step copy', '引导最后一步文案'),
+        TODO,
+        20,
+      ),
+      link(
+        conversationId,
+        'pm-14',
+        'issue',
+        'PM-14',
+        L('Tour illustrations', '引导插图'),
+        DONE,
+        60,
+      ),
+    ];
+  return [
+    link(
+      conversationId,
+      'pm-30',
+      'issue',
+      'PM-30',
+      L('Release notes 1.4', '1.4 发布说明'),
+      IN_PROGRESS,
+      600,
+    ),
+    link(
+      conversationId,
+      'pm-31',
+      'issue',
+      'PM-31',
+      L('Changelog review', '更新日志审阅'),
+      DONE,
+      700,
+    ),
+  ];
+}
+
+/** The runner the demo's Runner conversations are bound to. */
+const DEV_MACHINE = {
+  id: 'dev-machine',
+  name: L('Dev machine', '开发机'),
+  status: 'online',
+} as const;
 
 /** Unlinks in memory, as `DELETE …/links/:id` would; the demo's API client routes that request here. */
 export function removeDemoLink(conversationId: string, linkId: string): void {
@@ -446,12 +568,6 @@ function initialStore(): Store {
         L('Release follow-up', '发布跟进'),
         {
           lastMessageAt: ago(2),
-          runner: {
-            id: 'runner-1',
-            name: L('Demo runtime', '演示执行机'),
-            status: 'online',
-          },
-          links: LINKS,
         },
       ),
       // Online agent, idle: its last messages offer edit, copy and regenerate on hover; it consulted a runner agent.
@@ -659,7 +775,10 @@ function initialStore(): Store {
           'flaky-test',
           1,
           'user',
-          'The sign-in test fails about once in ten runs. Can you find out why?',
+          L(
+            'The sign-in test fails about once in ten runs. Can you find out why?',
+            '登录测试大约每十次失败一次，能查一下原因吗？',
+          ),
           {
             attachments: [
               attachment(

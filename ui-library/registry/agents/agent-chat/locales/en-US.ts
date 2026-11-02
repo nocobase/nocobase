@@ -301,7 +301,6 @@ export interface AgentChatLocale {
     readonly detailsTitle: string;
     readonly sessionDetails: string;
     readonly runtime: string;
-    readonly unboundRuntime: string;
     readonly agent: string;
     readonly started: string;
     readonly usageTitle: string;
@@ -673,7 +672,6 @@ const agentChatEnUS: AgentChatLocale = {
     detailsTitle: 'Session details',
     sessionDetails: 'Session',
     runtime: 'Runtime',
-    unboundRuntime: 'Unbound',
     agent: 'Agent',
     started: 'Started',
     usageTitle: 'Usage',
