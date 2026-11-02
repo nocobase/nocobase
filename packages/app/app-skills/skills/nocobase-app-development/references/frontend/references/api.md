@@ -326,7 +326,7 @@ When realtime events refresh what a page shows:
 
 Test a complete event-driven refresh cycle with a request spy and an explicit completion signal, excluding the initial load: assert an upper bound on reads per event per open tab, including any follow-up read. Right: `expect(refreshRequests.length).toBeLessThanOrEqual(1)` after the cycle completes and the changed row is visible; wrong: asserting only that a request occurred or that the refresh finished quickly. Counts catch duplicate topics and per-row reads without depending on machine speed.
 
-The server side of these reads and normalized log measurements are in [server routes](../../server-routes.md#frequently-called-endpoints).
+The server side of these reads is in [list and statistics rules](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries); normalized log measurements are in [frequently called endpoints](../../server-routes.md#frequently-called-endpoints).
 
 ## Error handling
 

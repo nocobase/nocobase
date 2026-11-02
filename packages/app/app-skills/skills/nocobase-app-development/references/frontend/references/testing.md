@@ -93,30 +93,17 @@ jsdom verifies DOM continuity and request behavior, not layout or visible animat
 
 Assert the final result a user sees with auto-retrying locators; do not wait for an uncontrolled intermediate state or sleep a fixed duration, because a fast response can skip that state and a slow one can outlast the sleep. Right: `await expect(page.getByText('Project saved')).toBeVisible()`; wrong: waiting for a brief spinner before asserting success, or `await page.waitForTimeout(1000)`. Controlled pending-state tests above deliberately hold the response, so their loading assertions are deterministic.
 
-Retry geometry assertions with `expect.poll` or `toPass` until the intended layout settles; one `boundingBox()` snapshot can capture an animation frame. For example, with `panel` and `content` locators and a contract that the panel sits to the right of the content:
+Retry geometry assertions with `expect.poll` or `toPass` until the intended layout settles; one `boundingBox()` snapshot can capture an animation frame. For example, with a `panel` locator and the expected content edge `contentRight`:
 
 ```ts
-// Right: wait for the transition and re-read geometry on each attempt.
-await expect(async () => {
-  expect(
-    await panel.evaluate((element) =>
-      element
-        .getAnimations()
-        .some((animation) => animation.playState === 'running'),
-    ),
-  ).toBe(false);
-  const panelBox = await panel.boundingBox();
-  const contentBox = await content.boundingBox();
-  expect(panelBox).not.toBeNull();
-  expect(contentBox).not.toBeNull();
-  expect(panelBox!.x).toBeGreaterThanOrEqual(
-    contentBox!.x + contentBox!.width - 1,
-  );
-}).toPass();
+// Right: re-read geometry on each attempt.
+await expect
+  .poll(async () => (await panel.boundingBox())?.x)
+  .toBeGreaterThanOrEqual(contentRight);
 // Wrong: const box = await panel.boundingBox(); expect(box!.x).toBe(600);
 ```
 
-After navigation or opening an overlay, wait for a specific interactive signal before clicking: visible markup or a changed URL can precede loaded controls and the end of an opening transition. Right: await an application-owned ready marker set after initialization and the transition, then `await expect(saveButton).toBeEnabled(); await saveButton.click()`; wrong: click immediately after `page.goto()` or seeing the dialog shell. Use the actual application's signal, such as focus placed after opening or completed animations, rather than a new fixed wait.
+After navigation or opening an overlay, wait for an existing control's interactive signal before clicking: visible markup or a changed URL can precede loaded controls and the end of an opening transition. Right: `await expect(saveButton).toBeEnabled(); await saveButton.click()` when Save is enabled after loading, or `await expect(nameInput).toBeFocused()` when focus is placed after opening; wrong: click immediately after `page.goto()` or seeing the dialog shell. Use the application's existing enabled state or focus behavior rather than adding a test-only ready marker or a fixed wait.
 
 Register a request interceptor once per page-scoped test, let subsequent traffic through with `route.fallback()`, and release every held request in `finally`: failed assertions otherwise leave requests blocked and hang teardown. Do not call `unroute` or replace a handler while it is running. This schematic gate holds all matching requests; `appUrl` is the running application's entry URL:
 
@@ -143,11 +130,13 @@ try {
 } finally {
   holding = false;
   gate.resolve();
-  await Promise.all([...handlers]);
+  await Promise.allSettled([...handlers]);
 }
 // Keep the fallback handler until the page fixture closes.
 // Wrong: page.unroute(pattern) while its handler is still awaiting the gate.
 ```
+
+Use `Promise.allSettled` during cleanup so a fallback failure after the page closes does not replace the original assertion failure.
 
 Investigate intermittent failures as possible product races first: if a late response overwrites the current record, fix response ownership in the product and keep a regression test. Right: reproduce with controlled response ordering and correct the product; wrong: add retries, increase timeouts or weaken the assertion so the race passes unnoticed.
 
