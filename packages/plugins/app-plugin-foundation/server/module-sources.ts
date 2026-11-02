@@ -76,7 +76,7 @@ export async function collectModuleSources(
         continue;
       }
       const declarationFiles = await graph.walk(entry, false);
-      const backendComplete = await graph.prepare(entry);
+      const backendComplete = await graph.prepare(entry, runtime);
       const endpoints = await graph.apiDependencies();
       for (const source of declarationFiles.sources) {
         const declarations = graph.routeDeclarations(source.ast);
@@ -305,15 +305,72 @@ export class SourceGraph {
     return true;
   }
 
-  public async prepare(entry: string): Promise<boolean> {
+  public async prepare(
+    entry: string,
+    runtime: readonly RuntimeProviderEvidence[] = [],
+  ): Promise<boolean> {
     this.serverEntry = await this.conventionalEntry(
       'server/routes/index.js',
       'server/routes.js',
     );
-    const nativeSources = new Map<string, Source>(this.implementationSources);
     const serverGraph = this.serverEntry
       ? await this.walk(this.serverEntry, false)
       : undefined;
+    // Only registered package roots and exports actually imported by this backend are candidates.
+    // Preserve the external import identity; registration is a source location, never a trust verdict.
+    for (const source of serverGraph?.sources ?? []) {
+      for (const specifier of source.imports) {
+        const providers = runtime.filter(
+          (provider) =>
+            provider.rootDir &&
+            (specifier === provider.name ||
+              specifier.startsWith(`${provider.name}/`)),
+        );
+        if (providers.length !== 1) continue;
+        const provider = providers[0];
+        const root = provider.rootDir!;
+        await this.observation?.watch(path.join(root, 'package.json'));
+        try {
+          const manifest: unknown = JSON.parse(
+            await readFile(path.join(root, 'package.json'), 'utf8'),
+          );
+          if (
+            !isRecord(manifest) ||
+            manifest.name !== provider.name ||
+            (provider.version !== undefined &&
+              manifest.version !== provider.version)
+          )
+            continue;
+          const key =
+            specifier === provider.name
+              ? '.'
+              : `.${specifier.slice(provider.name.length)}`;
+          const declared =
+            typeof manifest.exports === 'string' && key === '.'
+              ? manifest.exports
+              : isRecord(manifest.exports)
+                ? manifest.exports[key]
+                : undefined;
+          const target =
+            typeof declared === 'string'
+              ? declared
+              : isRecord(declared) && typeof declared.import === 'string'
+                ? declared.import
+                : undefined;
+          if (!target?.startsWith('./')) continue;
+          await this.addImplementationSource(
+            root,
+            path.resolve(root, target),
+            source.file,
+            specifier,
+          );
+        } catch {
+          // An unavailable implementation stays external and cannot prove a contribution.
+          this.observation?.unreadable();
+        }
+      }
+    }
+    const nativeSources = new Map<string, Source>(this.implementationSources);
     serverGraph?.sources.forEach((source) =>
       nativeSources.set(source.file, source),
     );

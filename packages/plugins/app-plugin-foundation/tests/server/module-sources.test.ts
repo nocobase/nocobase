@@ -15,7 +15,10 @@ import ts from 'typescript';
 import { businessModules } from '../../client/business-modules.js';
 import { writeModuleManifest } from '../../server/module-manifest.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
-import { collectModuleSources } from '../../server/module-sources.js';
+import {
+  collectModuleSources,
+  SourceGraph,
+} from '../../server/module-sources.js';
 
 const directories: string[] = [];
 async function fixture(files: Record<string, string>): Promise<string> {
@@ -1373,3 +1376,97 @@ it('keeps ordinary translation data spreads complete during page discovery', asy
   const result = await collectModuleSources(root);
   expect(result.routes[0]?.complete).toBe(true);
 });
+
+it('selects only the actual imported export of a registered package', async () => {
+  const dependency = await fixture({
+    'package.json': JSON.stringify({
+      name: 'file-source',
+      version: '1.0.0',
+      exports: { './server': { import: './server/index.ts' } },
+    }),
+    'server/index.ts': `export function construct(options) { return [{name: options.name}]; }`,
+    'server/unrelated.ts': `throw new Error('Do not scan this file');`,
+  });
+  const root = await fixture({
+    'client/routes.ts': `export default [];`,
+    'server/routes/index.ts': `import {construct} from 'file-source/server'; export default construct({name:'records'});`,
+  });
+  const graph = await SourceGraph.create(root);
+  await graph.prepare((await graph.entry())!, [
+    {
+      name: 'file-source',
+      version: '1.0.0',
+      rootDir: dependency,
+      evidence: 'serverRegistration',
+    },
+  ]);
+  const analysis = graph.analysis!;
+  const importer = analysis
+    .evidenceSources()
+    .find(
+      (source) => source.fileName === path.join(root, 'server/routes/index.ts'),
+    )!;
+  const statement = importer.statements[0] as ts.ImportDeclaration;
+  expect(analysis.isExternalImport(statement)).toBe(true);
+  expect(analysis.importedSource(statement)?.fileName).toBe(
+    path.join(dependency, 'server/index.ts'),
+  );
+  expect(
+    analysis
+      .evidenceSources()
+      .some((source) => source.fileName.endsWith('server/unrelated.ts')),
+  ).toBe(false);
+});
+
+it.each(['missing-root', 'wrong-name', 'wrong-version', 'escaped-export'])(
+  'does not substitute an unproven registered implementation: %s',
+  async (mode) => {
+    const dependency = await fixture({
+      'package.json': JSON.stringify({
+        name: mode === 'wrong-name' ? 'different-source' : 'file-source',
+        version: '1.0.0',
+        exports: {
+          './server': {
+            import:
+              mode === 'escaped-export' ? '../outside.ts' : './server/index.ts',
+          },
+        },
+      }),
+      'server/index.ts': `export function construct(options) { return [{name: options.name}]; }`,
+    });
+    const root = await fixture({
+      'client/routes.ts': `export default [];`,
+      'server/routes/index.ts': `import {construct} from 'file-source/server'; export default construct({name:'records'});`,
+    });
+    const graph = await SourceGraph.create(root);
+    await graph.prepare((await graph.entry())!, [
+      {
+        name: 'file-source',
+        version: mode === 'wrong-version' ? '2.0.0' : '1.0.0',
+        rootDir:
+          mode === 'missing-root'
+            ? path.join(dependency, 'missing')
+            : dependency,
+        evidence: 'serverRegistration',
+      },
+    ]);
+    const analysis = graph.analysis!;
+    const importer = analysis
+      .evidenceSources()
+      .find(
+        (source) =>
+          source.fileName === path.join(root, 'server/routes/index.ts'),
+      )!;
+    expect(
+      analysis.importedSource(importer.statements[0] as ts.ImportDeclaration),
+    ).toBeUndefined();
+    expect(
+      analysis
+        .evidenceSources()
+        .some(
+          (source) =>
+            source.fileName === path.join(dependency, 'server/index.ts'),
+        ),
+    ).toBe(false);
+  },
+);
