@@ -1,6 +1,6 @@
 # Notification App Plugin
 
-The notification runtime sends complete messages through configured Channels. A Channel is a named configuration, such as `system-email`; its `type` selects a registered class, such as `EmailChannel`. Shared email, legacy SMTP/Resend, in-app, Feishu webhook, DingTalk webhook and Web Push are peer channel types supplied by their respective plugins.
+The notification runtime sends complete messages through configured Channels. A Channel is a named configuration, such as `system-email`; its `type` selects a registered class, such as `EmailChannel`. Email (application mailers), legacy SMTP/Resend, in-app, Feishu webhook, DingTalk webhook and Web Push are peer channel types supplied by their respective plugins.
 
 ```yaml
 mailers:
@@ -61,4 +61,4 @@ See the [integration guide](skills/nocobase-app-plugin-notification/references/i
 
 Use `notificationService.sendTransient({ channel, message })` for a message containing a one-time credential. It validates and prepares the message with the configured channel and submits it once with the provider timeout, without creating notification rows, jobs, retry state, or status events. The result is one provider outcome per recipient; raw provider diagnostics are replaced with generic errors while retaining an allowlisted category and submission status for credential-free troubleshooting. There is no durable idempotency or automatic retry, and a timeout is `submission_unknown`. The caller owns safe recovery, rate limits, and any credential-free audit. The external mail provider and recipient still receive the message.
 
-Prefer `type: email` with shared mailers. Declare `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Restart to apply sender changes. Legacy inline SMTP/Resend channels and their mappings remain supported through application-owned bindings; channels never close the shared mailer.
+Prefer `type: email` with application mailers. Declare `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Restart to apply sender changes. Every email Channel, including legacy inline SMTP/Resend Channels and their mappings, creates an exclusive sender through the application's `MailSenderFactory` and closes it with itself.

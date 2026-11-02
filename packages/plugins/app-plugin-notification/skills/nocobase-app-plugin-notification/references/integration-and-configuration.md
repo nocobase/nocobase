@@ -59,4 +59,4 @@ The running application documents the log routes under the `Notification` tag at
 
 Verification creates a real delivery. Scope the channel and recipient before sending, and preserve existing logs, including historical test notifications.
 
-Prefer `type: email` with shared mailers. Declare `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Restart to apply sender changes. Legacy inline SMTP/Resend channels and their mappings remain supported through application-owned bindings; channels never close the shared mailer.
+Prefer `type: email` with application mailers. Declare `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Restart to apply sender changes. Every email Channel, including legacy inline SMTP/Resend Channels and their mappings, creates an exclusive sender through the application's `MailSenderFactory` and closes it with itself.

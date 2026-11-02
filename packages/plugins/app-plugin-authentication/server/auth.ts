@@ -1,7 +1,8 @@
 import {
-  acquireApplicationMailer,
-  type ApplicationMailerLease,
+  resolveMailSenderFactory,
+  type MailSender,
 } from '@nocobase/app-server/mailers';
+import { createPasswordResetSender } from './reset-sender.js';
 import type { AuthEmailConfig } from './email-config.js';
 import {
   PasswordResetPolicy,
@@ -202,7 +203,8 @@ export class Auth {
   private readonly connection: DatabaseConnection;
   private readonly options: AuthOptions;
   private readonly resetPolicy: PasswordResetPolicy;
-  private readonly mailerLease?: ApplicationMailerLease;
+  /** Created by this instance when the caller supplied no sender; borrowed by connection bindings. */
+  private readonly ownedSender?: MailSender;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
   private userInitializers = new Set<
@@ -237,14 +239,21 @@ export class Auth {
     if (!config.secret?.trim() && !config.secrets?.length) {
       throw new Error('Authentication secret is required.');
     }
-    this.mailerLease = passwordResetServices?.mailer
-      ? undefined
-      : acquireApplicationMailer();
-    const resetServices: PasswordResetServices = {
-      ...passwordResetServices,
-      mailer: passwordResetServices?.mailer ?? this.mailerLease!.mailer,
-      source: passwordResetServices?.source ?? {},
-    };
+    let resetServices: PasswordResetServices = passwordResetServices ?? {};
+    if (!Object.hasOwn(resetServices, 'sender')) {
+      // Standalone construction: this instance selects and owns its sender.
+      const selection = createPasswordResetSender(resolveMailSenderFactory(), {
+        email,
+        passwordReset,
+        legacyChannels: resetServices.legacyChannels,
+      });
+      this.ownedSender = selection.sender;
+      resetServices = {
+        ...resetServices,
+        sender: selection.sender,
+        legacySender: selection.legacy,
+      };
+    }
     this.options = { ...options, passwordResetServices: resetServices };
     this.resetPolicy = new PasswordResetPolicy(
       passwordReset ?? {},
@@ -497,7 +506,7 @@ export class Auth {
     try {
       await this.resetPolicy.close();
     } finally {
-      await this.mailerLease?.release();
+      await this.ownedSender?.close();
     }
   }
 

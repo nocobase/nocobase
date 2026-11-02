@@ -2,7 +2,7 @@ import * as transports from '@nocobase/mailer';
 import { createServer } from 'node:http';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createTestApp } from '@nocobase/app-testing/server';
-import { applicationMailerToken } from '@nocobase/app-server/mailers';
+import { mailSenderFactoryToken } from '@nocobase/app-server/mailers';
 import { userManagementServiceToken } from '../server/tokens.js';
 import { createStandaloneServer } from './fixtures/mail-app/server/standalone.js';
 
@@ -11,7 +11,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it('submits and accepts an invitation with the shared default and no Notification or mailbox plugin', async () => {
+it('submits and accepts an invitation with the default mailer and no Notification or mailbox plugin', async () => {
   const createTransport = vi.spyOn(transports, 'createMailTransport');
   const requests: { body: { text: string }; key?: string }[] = [];
   const receiver = createServer(async (request, response) => {
@@ -104,16 +104,21 @@ it('submits and accepts an invitation with the shared default and no Notificatio
     expect(reset.status).toBe(200);
     await vi.waitFor(() => expect(requests).toHaveLength(2));
     expect(requests[1].body.text).toContain('/api/auth/reset-password/');
-    // A normal call uses the exact service the Users provider consumed.
+    // Another consumer creates its own sender from the same factory; it shares configuration, not transports.
+    const sender = app.application.container
+      .resolve(mailSenderFactoryToken)
+      .create();
     expect(
-      await app.application.container.resolve(applicationMailerToken).send({
+      await sender.send({
         to: 'other@example.test',
         subject: 'Notice',
         text: 'Synthetic',
       }),
     ).toMatchObject({ status: 'accepted' });
+    await sender.close();
     expect(requests).toHaveLength(3);
-    expect(createTransport).toHaveBeenCalledOnce();
+    // Users and Auth each allocated one transport for their own sender, plus the extra consumer.
+    expect(createTransport).toHaveBeenCalledTimes(3);
   } finally {
     await app.close();
     await new Promise<void>((resolve) => receiver.close(() => resolve()));

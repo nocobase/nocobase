@@ -8,4 +8,4 @@ A Notification is one logical send identified by `idempotencyKey`. Each Channel 
 
 The core plugin owns delivery orchestration. `@nocobase/app-plugin-notification-providers` supplies SMTP, Resend, Feishu and DingTalk. `@nocobase/app-plugin-notification-in-app` supplies durable application-user inbox messages. `@nocobase/app-plugin-notification-web-push` supplies browser push. SMS is an extension example, not a bundled type. Browser toast notifications are a separate capability.
 
-Email channels select explicit mailer references or mailers.default; several channel names may share a sender. Legacy inline SMTP/Resend channels retain independent private bindings managed by the application mailer.
+Email channels select explicit mailer references or mailers.default; several channel names may reference the same mailer, but each channel creates and closes its own sender. Legacy inline SMTP/Resend channels create their senders through the same factory.

@@ -1,4 +1,4 @@
-import { ApplicationMailerProvider } from '../mailers/index.js';
+import { MailSenderFactoryProvider } from '../mailers/index.js';
 import type { AppRuntimeLogging } from '../logging/config.js';
 import { loggingToken } from '../logging/token.js';
 import { Hono, type ExecutionContext } from 'hono';
@@ -182,7 +182,7 @@ export class Application<
       await this.start();
       return this.getWebSocketHandler()(request, env);
     };
-    this.addServiceProvider(ApplicationMailerProvider);
+    this.addServiceProvider(MailSenderFactoryProvider);
     this.addServiceProvider(RouterProvider);
     if (this.usesDefaultWebSocket) {
       this.addServiceProvider(RealtimeProvider);

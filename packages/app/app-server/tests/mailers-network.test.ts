@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ApplicationMailer } from '../src/mailers/index.js';
+import { MailSenderFactory } from '../src/mailers/index.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -55,14 +55,14 @@ it.each([
       expect(url).toBe('https://api.resend.com/emails');
       return nativeFetch(`http://127.0.0.1:${address.port}/emails`, options);
     });
-    const mailer = new ApplicationMailer({
+    const mailer = new MailSenderFactory({
       default: 'main',
       main: {
         provider: 'resend',
         apiKey: 'synthetic-private-key',
         from: 'sender@example.test',
       },
-    });
+    }).create();
     const controller = new AbortController();
     try {
       const completion = mailer.send(

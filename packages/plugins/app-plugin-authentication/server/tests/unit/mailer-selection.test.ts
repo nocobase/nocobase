@@ -1,10 +1,12 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import * as transports from '@nocobase/mailer';
 import {
-  ApplicationMailer,
+  MailSenderFactory,
   defineMailersConfig,
 } from '@nocobase/app-server/mailers';
 import { AppConfig, defaultAppConfigs } from '@nocobase/app-server/config';
 import { PasswordResetPolicy } from '../../password-reset.js';
+import { createPasswordResetSender } from '../../reset-sender.js';
 import { defineAuthConfig } from '../../config.js';
 
 const smtp = { provider: 'smtp', host: 'localhost', port: 25 } as const;
@@ -17,38 +19,47 @@ it.each([
 ])(
   'selects explicit configurations before the default: %j',
   async ({ email, channel, expected }) => {
-    const mailer = new ApplicationMailer({
+    const create = vi.spyOn(transports, 'createMailTransport');
+    const factory = new MailSenderFactory({
       default: 'main',
       main: smtp,
       other: smtp,
     });
-    const send = vi.spyOn(mailer, 'send');
+    const passwordReset = { enabled: true, emailChannel: channel };
+    const { sender, legacy } = createPasswordResetSender(factory, {
+      email,
+      passwordReset,
+    });
     const policy = new PasswordResetPolicy(
-      { enabled: true, emailChannel: channel },
+      passwordReset,
       { baseURL: 'https://example.test', emailAndPassword: { enabled: true } },
       {} as never,
-      { mailer },
+      { sender, legacySender: legacy },
       email,
     );
     expect(policy.available).toBe(expected);
-    expect(send).not.toHaveBeenCalled();
+    // Selection allocates no transport before the first send.
+    expect(create).not.toHaveBeenCalled();
     await policy.close();
-    await mailer.close();
+    await sender?.close();
   },
 );
 
 it.each([undefined, false])(
   'a default never enables automatic recovery without explicit opt-in: %s',
   async (enabled) => {
-    const mailer = new ApplicationMailer({ default: 'main', main: smtp });
+    const { sender } = createPasswordResetSender(
+      new MailSenderFactory({ default: 'main', main: smtp }),
+      { passwordReset: { enabled } },
+    );
     const policy = new PasswordResetPolicy(
       { enabled },
       { baseURL: 'https://example.test' },
       {} as never,
-      { mailer },
+      { sender },
     );
     expect(policy.available).toBe(false);
-    await mailer.close();
+    await sender?.close();
   },
 );
 
@@ -78,18 +89,14 @@ it.each([
 );
 
 it('rejects mismatched legacy aliases instead of selecting a referenced default sender', async () => {
-  const mailer = new ApplicationMailer({ default: 'main', main: smtp });
-  const policy = new PasswordResetPolicy(
-    { enabled: true, emailChannel: 'selected' },
-    { baseURL: 'https://example.test' },
-    {} as never,
+  const { sender } = createPasswordResetSender(
+    new MailSenderFactory({ default: 'main', main: smtp }),
     {
-      mailer,
+      passwordReset: { enabled: true, emailChannel: 'selected' },
       legacyChannels: {
         selected: { type: 'email', provider: 'smtp', mailer: 'main' },
       },
     },
   );
-  expect(policy.available).toBe(false);
-  await mailer.close();
+  expect(sender).toBeUndefined();
 });

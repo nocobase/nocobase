@@ -126,7 +126,7 @@ async function createProvider(
 > {
   if (mode === 'class')
     return new ResendChannel(
-      { channelName: 'email', container: mailContainer() },
+      { channelName: 'email', container: new ServiceContainer() },
       {
         type: 'resend',
         apiKey: 're_test',
@@ -168,9 +168,4 @@ function sendInput(): NotificationProviderSendInput<PreparedEmailMessage> {
       },
     },
   };
-}
-
-function mailContainer(): ServiceContainer {
-  const container = new ServiceContainer();
-  return container;
 }

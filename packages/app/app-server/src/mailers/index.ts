@@ -9,12 +9,15 @@ import {
 import {
   createServiceToken,
   ServiceProvider,
+  type ServiceResolver,
   type ServiceToken,
-  type ServiceContainer,
 } from '@nocobase/service-provider';
 import type { AppPluginApplication } from '../plugins/index.js';
 import {
-  assertMailerConfig,
+  validateResendProviderConfig,
+  validateSmtpProviderConfig,
+} from '@nocobase/mailer/config';
+import {
   assertMailerReference,
   assertMailersConfig,
   type MailersConfig,
@@ -27,32 +30,62 @@ export type {
   MailSendOptions,
 } from '@nocobase/mailer';
 
-export interface ApplicationMailSendOptions extends MailSendOptions {
-  readonly mailer?: string;
-}
-
-/** A compatibility binding cannot close an application-owned transport. */
-export interface ApplicationMailSender {
+/** What a business service needs: it sends, and its assembly owner closes. */
+export interface MailSendView {
   send(message: EmailMessage, options?: MailSendOptions): Promise<MailResult>;
 }
 
-const unavailable = (): MailResult => ({
+/** One exclusive sender. Its creator owns it and closes it after stopping its own work. */
+export interface MailSender extends MailSendView {
+  close(): Promise<void>;
+}
+
+const closedResult = (): MailResult => ({
   status: 'failed',
   disposition: 'never',
-  error: {
-    category: 'configuration',
-    message: 'Application mailer is unavailable.',
-  },
+  error: { category: 'configuration', message: 'Mail sender is closed.' },
 });
 
-/** One instance per application. Configuration changes take effect on restart. */
-export class ApplicationMailer {
+/** Allocate the transport on first send; close cancels supported network work, then waits for its original end. */
+function createMailSender(config: EmailChannelConfig): MailSender {
+  let transport: MailTransport | undefined;
+  let closing: Promise<void> | undefined;
+  const active = new Set<Promise<MailResult>>();
+  return {
+    send(message, options) {
+      if (closing) return Promise.resolve(closedResult());
+      transport ??= createMailTransport(config);
+      const completion = transport.send(message, {
+        signal: options?.signal,
+        idempotencyKey: options?.idempotencyKey,
+      });
+      active.add(completion);
+      const cleanup = (): void => {
+        active.delete(completion);
+      };
+      void completion.then(cleanup, cleanup);
+      return completion;
+    },
+    close() {
+      closing ??= (async (): Promise<void> => {
+        try {
+          await transport?.close();
+        } finally {
+          // A bounded transport wait is not completion: keep tracking the original submissions.
+          await Promise.allSettled([...active]);
+        }
+      })();
+      return closing;
+    },
+  };
+}
+
+/**
+ * Validated startup snapshot of `mailers` and the only place senders are created. The factory keeps no senders:
+ * every `create` returns a new exclusive instance owned by the caller.
+ */
+export class MailSenderFactory {
   readonly #config: MailersConfig;
-  private readonly transports = new Map<string | object, MailTransport>();
-  private readonly bindings = new WeakMap<object, ApplicationMailSender>();
-  private readonly active = new Set<Promise<MailResult>>();
-  private closed = false;
-  private closePromise?: Promise<void>;
 
   public constructor(config: MailersConfig = {}) {
     assertMailersConfig(config);
@@ -63,10 +96,7 @@ export class ApplicationMailer {
     return this.#config.default;
   }
 
-  public assertReference(name: unknown, path: string): void {
-    assertMailerReference(this.#config, name, path);
-  }
-
+  /** The provider of a configured, enabled mailer; the default when no name is given. */
   public provider(
     name: string | undefined = this.#config.default,
   ): EmailChannelConfig['provider'] | undefined {
@@ -81,154 +111,54 @@ export class ApplicationMailer {
       : undefined;
   }
 
-  public send(
-    message: EmailMessage,
-    options: ApplicationMailSendOptions = {},
-  ): Promise<MailResult> {
-    const name =
-      options.mailer === undefined ? this.#config.default : options.mailer;
-    const config =
-      name && Object.hasOwn(this.#config, name)
-        ? this.#config[name]
-        : undefined;
-    if (
-      !name ||
-      !config ||
-      typeof config !== 'object' ||
-      config.enabled === false
-    )
-      return Promise.resolve(unavailable());
-    return this.submit(name, config, message, options);
+  public assertReference(name: unknown, path: string): void {
+    assertMailerReference(this.#config, name, path);
   }
 
-  /** Source identity is private to the owning module; credentials never become cache keys. */
-  public bindInline(
-    source: object,
-    config: EmailChannelConfig,
-  ): ApplicationMailSender {
-    const existing = this.bindings.get(source);
-    if (existing) return existing;
-    assertMailerConfig(config, 'mailer');
-    const snapshot = structuredClone(config);
-    const sender: ApplicationMailSender = Object.freeze({
-      send: (
-        message: EmailMessage,
-        options?: MailSendOptions,
-      ): Promise<MailResult> => this.submit(source, snapshot, message, options),
-    });
-    this.bindings.set(source, sender);
-    return sender;
+  /** A sender for a named mailer, or `mailers.default` without a name. Missing or disabled references throw. */
+  public create(name?: string, path: string = 'mailers.default'): MailSender {
+    const selected = name ?? this.#config.default;
+    assertMailerReference(this.#config, selected, path);
+    return createMailSender(this.#config[selected!] as EmailChannelConfig);
   }
 
-  public close(): Promise<void> {
-    this.closed = true;
-    this.closePromise ??= this.closeTransports();
-    return this.closePromise;
-  }
-
-  private async closeTransports(): Promise<void> {
-    // Transport close cancels supported network operations. Keep tracking original completion, even after consumer timeouts.
-    const results = await Promise.allSettled(
-      [...this.transports.values()].map((transport) => transport.close()),
-    );
-    await Promise.allSettled([...this.active]);
-    this.transports.clear();
-    if (results.some((result) => result.status === 'rejected'))
-      throw new Error('Application mailer shutdown failed.');
-  }
-
-  private submit(
-    key: string | object,
-    config: EmailChannelConfig,
-    message: EmailMessage,
-    options?: MailSendOptions,
-  ): Promise<MailResult> {
-    if (this.closed || config.enabled === false)
-      return Promise.resolve(unavailable());
-    // Creation is synchronous and cached before invoking send: concurrent first calls share the same transport.
-    let transport = this.transports.get(key);
-    if (!transport) {
-      transport = createMailTransport(config);
-      this.transports.set(key, transport);
-    }
-    const completion = transport.send(message, {
-      signal: options?.signal,
-      idempotencyKey: options?.idempotencyKey,
-    });
-    this.active.add(completion);
-    void completion.then(
-      () => this.active.delete(completion),
-      () => this.active.delete(completion),
-    );
-    return completion;
+  /**
+   * A sender for a legacy inline configuration recognized by its owning module. Validation matches the transport's
+   * own, so configurations that worked before keep working; it runs now rather than at the first send.
+   */
+  public createFromConfig(config: EmailChannelConfig): MailSender {
+    const snapshot = { ...config };
+    if (snapshot.provider === 'smtp') validateSmtpProviderConfig(snapshot);
+    else validateResendProviderConfig(snapshot);
+    return createMailSender(snapshot);
   }
 }
 
-export const applicationMailerToken: ServiceToken<ApplicationMailer> =
-  createServiceToken<ApplicationMailer>('@nocobase/app-server/mailers');
+export const mailSenderFactoryToken: ServiceToken<MailSenderFactory> =
+  createServiceToken<MailSenderFactory>('@nocobase/app-server/mailers');
 
-/** Compatibility assembly owns service scopes; consumers never own transports. */
-export interface ApplicationMailerLease {
-  readonly mailer: ApplicationMailer;
-  release(): Promise<void>;
+/**
+ * The application's factory, or one built from `config` for hosts composed without it. Use only at an assembly
+ * boundary (a Provider or a channel constructor); business services receive a sender.
+ */
+export function resolveMailSenderFactory(
+  container?: Pick<ServiceResolver, 'has' | 'resolve'>,
+  config?: MailersConfig,
+): MailSenderFactory {
+  return container?.has(mailSenderFactoryToken)
+    ? container.resolve(mailSenderFactoryToken)
+    : new MailSenderFactory(config);
 }
 
-interface CompatibilityScope {
-  readonly mailer: ApplicationMailer;
-  leases: number;
-  managed: boolean;
-}
-
-// Lifecycle accounting only: the container token remains the sole application service registry.
-const compatibilityScopes = new WeakMap<ServiceContainer, CompatibilityScope>();
-
-export function acquireApplicationMailer(
-  container?: ServiceContainer,
-  config: MailersConfig = {},
-): ApplicationMailerLease {
-  let scope = container ? compatibilityScopes.get(container) : undefined;
-  if (!container || !container.has(applicationMailerToken)) {
-    scope = {
-      mailer: new ApplicationMailer(config),
-      leases: 0,
-      managed: false,
-    };
-    if (container) {
-      container.instance(applicationMailerToken, scope.mailer);
-      compatibilityScopes.set(container, scope);
-    }
-  }
-  const mailer = scope?.mailer ?? container!.resolve(applicationMailerToken);
-  if (scope) scope.leases += 1;
-  const owned = scope;
-  let releasePromise: Promise<void> | undefined;
-  return {
-    mailer,
-    release(): Promise<void> {
-      releasePromise ??= (async (): Promise<void> => {
-        if (owned && --owned.leases === 0 && !owned.managed)
-          await owned.mailer.close();
-      })();
-      return releasePromise;
-    },
-  };
-}
-
-export class ApplicationMailerProvider extends ServiceProvider<AppPluginApplication> {
+/** Registers the factory from the startup snapshot. Configuration changes take effect on restart. */
+export class MailSenderFactoryProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-server/mailers';
-  private lease?: ApplicationMailerLease;
   public override register(): void {
-    // Capture before lazy business services can read reloaded configuration.
-    this.lease = acquireApplicationMailer(
-      this.app.container,
-      this.app.config.get<MailersConfig>('mailers') ?? {},
+    this.app.container.instance(
+      mailSenderFactoryToken,
+      new MailSenderFactory(
+        this.app.config.get<MailersConfig>('mailers') ?? {},
+      ),
     );
-    const scope = compatibilityScopes.get(this.app.container);
-    if (scope) scope.managed = true;
-  }
-  public override async shutdown(): Promise<void> {
-    await this.lease?.release();
-    // The native application owns the final boundary, including custom consumers that never acquired a lease.
-    await this.app.container.resolve(applicationMailerToken).close();
   }
 }

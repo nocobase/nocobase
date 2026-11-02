@@ -2,7 +2,6 @@ import * as transports from '@nocobase/mailer';
 import { createServer } from 'node:http';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createTestApp } from '@nocobase/app-testing/server';
-import { applicationMailerToken } from '@nocobase/app-server/mailers';
 import { DatabaseProvider } from '@nocobase/app-server/database';
 import { AuthenticationProvider } from '@nocobase/app-plugin-authentication/server';
 import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
@@ -16,7 +15,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it('drains real Auth, invitation bookkeeping and Notification Jobs before database and shared mailer shutdown', async () => {
+it('drains real Auth, invitation bookkeeping and Notification Jobs, each closing only its own sender, before database shutdown', async () => {
   const events: string[] = [];
   const gates = {
     auth: Promise.withResolvers<void>(),
@@ -38,9 +37,12 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
   const createTransport = transports.createMailTransport;
   vi.spyOn(transports, 'createMailTransport').mockImplementation((config) => {
     const transport = createTransport(config);
+    // Each consumer owns an exclusive sender, so each transport serves exactly one role.
+    let owner = 'unused';
     return {
       async send(message, options) {
         const role = roleOf(message.subject);
+        owner = role;
         const result = await transport.send(message, options);
         events.push(`submitted:${role}`);
         await gates[role].promise;
@@ -48,7 +50,7 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
         return result;
       },
       async close() {
-        events.push('transport:close');
+        events.push(`${owner}:transport:close`);
         await transport.close();
       },
     };
@@ -163,12 +165,6 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
     expect(
       events.filter((event) => event.startsWith('submitted:')),
     ).toHaveLength(0);
-    const mailer = app.application.container.resolve(applicationMailerToken);
-    const close = mailer.close.bind(mailer);
-    const sharedClose = vi.spyOn(mailer, 'close').mockImplementation(() => {
-      events.push('shared:close');
-      return close();
-    });
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     shutdown = app.application.shutdown();
     acknowledgements.notification.resolve();
@@ -180,7 +176,7 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
     await vi.advanceTimersByTimeAsync(5001);
     expect(events).not.toContain('users:stopped');
     expect(events).not.toContain('database:stopping');
-    expect(sharedClose).not.toHaveBeenCalled();
+    expect(events).not.toContain('users:transport:close');
     await expect(
       users.invite({ emails: ['late@example.test'], invitedBy: user.id }),
     ).rejects.toThrow(/stopping/u);
@@ -190,7 +186,11 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
     await vi.waitFor(() => expect(events).toContain('auth:stopping'));
     await vi.advanceTimersByTimeAsync(5001);
     expect(events).not.toContain('auth:stopped');
-    expect(sharedClose).not.toHaveBeenCalled();
+    expect(events).not.toContain('auth:transport:close');
+    // Users closed its own sender while Auth's submission was still running.
+    expect(events.indexOf('completed:users')).toBeLessThan(
+      events.indexOf('users:transport:close'),
+    );
     gates.auth.resolve();
     await shutdown;
     expect(events.indexOf('invitation:recorded')).toBeLessThan(
@@ -202,18 +202,21 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs before databa
     expect(events.indexOf('completed:notification')).toBeLessThan(
       events.indexOf('database:stopping'),
     );
-    expect(events.indexOf('database:stopped')).toBeLessThan(
-      events.indexOf('shared:close'),
+    for (const role of ['notification', 'users', 'auth'])
+      expect(events.indexOf(`completed:${role}`)).toBeLessThan(
+        events.indexOf(`${role}:transport:close`),
+      );
+    expect(events.indexOf('auth:transport:close')).toBeLessThan(
+      events.indexOf('auth:stopped'),
     );
-    expect(sharedClose).toHaveBeenCalledOnce();
-    expect(received).toHaveLength(3);
     expect(
-      await mailer.send({
-        to: 'late@example.test',
-        subject: 'Late',
-        text: 'Synthetic',
-      }),
-    ).toMatchObject({ status: 'failed' });
+      events.filter((event) => event.endsWith(':transport:close')).sort(),
+    ).toEqual([
+      'auth:transport:close',
+      'notification:transport:close',
+      'users:transport:close',
+    ]);
+    expect(received).toHaveLength(3);
   } finally {
     for (const gate of [
       ...Object.values(gates),

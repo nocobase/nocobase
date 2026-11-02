@@ -1,7 +1,7 @@
 /** Invitation sender selection and bounded execution, with a lazy legacy Notification adapter. */
 import { loggingToken } from '@nocobase/app-server/logging';
 import {
-  acquireApplicationMailer,
+  resolveMailSenderFactory,
   type MailersConfig,
 } from '@nocobase/app-server/mailers';
 import { MailExecutions } from '@nocobase/mailer';
@@ -16,23 +16,27 @@ export function createNotificationMailer(
   app: AppPluginApplication,
 ): InvitationMailer & { close(): Promise<void> } {
   const config = app.config.get<UsersConfig>('users')?.invitations;
-  const lease = acquireApplicationMailer(
+  const factory = resolveMailSenderFactory(
     app.container,
     app.config.get<MailersConfig>('mailers') ?? {},
   );
-  const mailer = lease.mailer;
   const explicit = config?.mailer;
-  if (explicit !== undefined)
-    mailer.assertReference(explicit, 'users.invitations.mailer');
   const direct =
     explicit !== undefined ||
-    (config?.emailChannel === undefined && mailer.defaultMailer !== undefined);
+    (config?.emailChannel === undefined && factory.defaultMailer !== undefined);
+  // The invitation adapter owns this sender; it allocates no transport until the first invitation.
+  const sender = direct
+    ? factory.create(
+        explicit,
+        explicit === undefined ? 'mailers.default' : 'users.invitations.mailer',
+      )
+    : undefined;
   const name = config?.emailChannel ?? DEFAULT_CHANNEL;
   const channel = app.config.get<{
     channels?: Readonly<Record<string, { enabled?: boolean }>>;
   }>('notification')?.channels?.[name];
   if (!direct && (!channel || channel.enabled === false)) {
-    return { ...unconfiguredMailer, close: () => lease.release() };
+    return { ...unconfiguredMailer, close: () => Promise.resolve() };
   }
   const logger = app.container.has(loggingToken)
     ? app.container.resolve(loggingToken).getLogger('users')
@@ -51,8 +55,8 @@ export function createNotificationMailer(
   return {
     async send(email) {
       const execution = executions.submit(async (signal) => {
-        if (direct) {
-          const result = await mailer.send(email, { mailer: explicit, signal });
+        if (sender) {
+          const result = await sender.send(email, { signal });
           if (result.status !== 'accepted')
             throw new Error(
               `Invitation email ${result.status} (${result.error.category}).`,
@@ -85,7 +89,7 @@ export function createNotificationMailer(
         await executions.close();
         await executions.drain();
       } finally {
-        await lease.release();
+        await sender?.close();
       }
     },
   };

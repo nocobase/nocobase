@@ -1,14 +1,15 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import * as transports from '@nocobase/mailer';
 import {
-  ApplicationMailer,
-  applicationMailerToken,
+  MailSenderFactory,
+  mailSenderFactoryToken,
   defineMailersConfig,
   mailerEnvironment,
+  resolveMailSenderFactory,
 } from '../src/mailers/index.js';
 import { AppConfig, createAppPaths } from '../src/config/index.js';
 import { Application } from '../src/application/index.js';
-import { ServiceProvider } from '@nocobase/service-provider';
+import { ServiceContainer, ServiceProvider } from '@nocobase/service-provider';
 
 afterEach(() => vi.restoreAllMocks());
 const smtp = { provider: 'smtp', host: 'localhost', port: 25 } as const;
@@ -18,12 +19,34 @@ const message = {
   text: 'Synthetic',
 };
 
-it('does not choose the first entry, validates defaults and keeps diagnostics private', async () => {
-  const mailer = new ApplicationMailer({ first: smtp });
-  expect(await mailer.send(message)).toMatchObject({
-    status: 'failed',
-    error: { category: 'configuration' },
-  });
+function fakeTransports() {
+  const transportsCreated: {
+    send: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+    finish: (result: transports.MailResult) => void;
+  }[] = [];
+  const create = vi
+    .spyOn(transports, 'createMailTransport')
+    .mockImplementation(() => {
+      const pending = Promise.withResolvers<transports.MailResult>();
+      const entry = {
+        send: vi.fn(() => pending.promise),
+        close: vi.fn(async () => {}),
+        finish: pending.resolve,
+      };
+      transportsCreated.push(entry);
+      return { send: entry.send, close: entry.close };
+    });
+  return { create, created: transportsCreated };
+}
+
+it('does not choose the first entry, validates references and keeps diagnostics private', () => {
+  const factory = new MailSenderFactory({ first: smtp });
+  expect(factory.defaultMailer).toBeUndefined();
+  expect(() => factory.create()).toThrow(/mailers\.default/u);
+  expect(() => factory.create('absent', 'users.invitations.mailer')).toThrow(
+    /users\.invitations\.mailer/u,
+  );
   for (const config of [
     { default: 'absent', first: smtp },
     { default: 'first', first: { ...smtp, enabled: false } },
@@ -31,17 +54,23 @@ it('does not choose the first entry, validates defaults and keeps diagnostics pr
     { first: { provider: 'synthetic-secret' } },
     { first: { ...smtp, secure: 'synthetic-secret' } },
   ]) {
-    expect(() => new ApplicationMailer(config as never)).toThrow(/mailers/u);
+    expect(() => new MailSenderFactory(config as never)).toThrow(/mailers/u);
     try {
-      new ApplicationMailer(config as never);
+      new MailSenderFactory(config as never);
     } catch (error) {
       expect(String(error)).not.toContain('synthetic-secret');
     }
   }
   expect(() =>
+    new MailSenderFactory({ first: smtp }).createFromConfig({
+      provider: 'smtp',
+      host: '',
+      port: 25,
+    }),
+  ).toThrow();
+  expect(() =>
     defineMailersConfig({ defaults: {}, public: ['first.auth.pass'] }),
   ).toThrow(/private/u);
-  await mailer.close();
 });
 
 it('declares discoverable typed environment values and never publishes credentials', async () => {
@@ -72,56 +101,97 @@ it('declares discoverable typed environment values and never publishes credentia
   expect(factory.rules?.env?.MAILERS_TRANSACTIONAL_API_KEY.secret).toBe(true);
 });
 
-it('shares concurrent first creation, isolates applications and sources, and drains original submissions', async () => {
-  let finish!: (value: transports.MailResult) => void;
-  const completion = new Promise<transports.MailResult>((resolve) => {
-    finish = resolve;
-  });
-  const close = vi.fn(async () => {});
-  const send = vi.fn(() => completion);
-  const create = vi
-    .spyOn(transports, 'createMailTransport')
-    .mockImplementation(() => ({ send, close }));
+it('creates exclusive senders: concurrent first sends share one transport, closing one leaves others working', async () => {
+  const { create, created } = fakeTransports();
   const configured = {
     default: 'main',
     main: { ...smtp, auth: { user: 'synthetic', pass: 'original' } },
   };
-  const mailer = new ApplicationMailer(configured);
+  const factory = new MailSenderFactory(configured);
   configured.main.auth.pass = 'changed';
-  const sends = [mailer.send(message), mailer.send(message)];
+  const auth = factory.create();
+  const users = factory.create('main');
+  const inline = factory.createFromConfig(smtp);
+  const otherApplication = new MailSenderFactory({
+    default: 'main',
+    main: smtp,
+  }).create();
+  // Lazy: creating a sender allocates nothing.
+  expect(create).not.toHaveBeenCalled();
+  const first = [auth.send(message), auth.send(message)];
   expect(create).toHaveBeenCalledOnce();
   expect(create.mock.calls[0][0]).toMatchObject({ auth: { pass: 'original' } });
-  const source = {};
-  const inline = mailer.bindInline(source, smtp);
-  expect(Object.keys(inline)).toEqual(['send']);
-  expect(mailer.bindInline(source, smtp)).toBe(inline);
-  sends.push(inline.send(message), mailer.bindInline({}, smtp).send(message));
-  const other = new ApplicationMailer({ default: 'main', main: smtp });
-  sends.push(other.send(message));
+  const others = [
+    users.send(message),
+    inline.send(message),
+    otherApplication.send(message),
+  ];
   expect(create).toHaveBeenCalledTimes(4);
+  expect(auth).not.toBe(users);
+
   let closed = false;
-  const shutdown = mailer.close().then(() => {
+  const closing = auth.close().then(() => {
     closed = true;
   });
-  expect(await mailer.send(message)).toMatchObject({ status: 'failed' });
-  expect(await inline.send(message)).toMatchObject({ status: 'failed' });
+  // Closing waits for the original submissions, after cancelling through the transport.
   await Promise.resolve();
+  expect(created[0].close).toHaveBeenCalledOnce();
   expect(closed).toBe(false);
-  finish({
+  expect(await auth.send(message)).toMatchObject({
+    status: 'failed',
+    disposition: 'never',
+  });
+  created[0].finish({
     status: 'submission_unknown',
     error: { category: 'network', message: 'Synthetic failure.' },
   });
-  expect(
-    (await Promise.all(sends)).every(
-      (result) => result.status === 'submission_unknown',
-    ),
-  ).toBe(true);
-  await shutdown;
-  await other.close();
-  expect(close).toHaveBeenCalledTimes(4);
+  expect((await Promise.all(first)).map((result) => result.status)).toEqual([
+    'submission_unknown',
+    'submission_unknown',
+  ]);
+  await closing;
+  await auth.close();
+  expect(created[0].close).toHaveBeenCalledOnce();
+
+  // Other consumers keep their transports and can still send.
+  for (const entry of created.slice(1)) {
+    expect(entry.close).not.toHaveBeenCalled();
+    entry.finish({ status: 'accepted' });
+  }
+  expect((await Promise.all(others)).map((result) => result.status)).toEqual([
+    'accepted',
+    'accepted',
+    'accepted',
+  ]);
+  void users.send(message);
+  expect(created[1].send).toHaveBeenCalledTimes(2);
+  await Promise.all([users.close(), inline.close(), otherApplication.close()]);
+  // A sender that never sent closes without allocating a transport.
+  await factory.create().close();
+  expect(create).toHaveBeenCalledTimes(4);
 });
 
-it('registers once before consumers, fixes startup snapshots and closes after business producers', async () => {
+it('passes cancellation and idempotency keys through unchanged', async () => {
+  const { created } = fakeTransports();
+  const sender = new MailSenderFactory({
+    default: 'main',
+    main: smtp,
+  }).create();
+  const controller = new AbortController();
+  const pending = sender.send(message, {
+    signal: controller.signal,
+    idempotencyKey: 'synthetic-key',
+  });
+  expect(created[0].send).toHaveBeenCalledWith(message, {
+    signal: controller.signal,
+    idempotencyKey: 'synthetic-key',
+  });
+  created[0].finish({ status: 'accepted' });
+  await pending;
+  await sender.close();
+});
+
+it('registers one factory from the startup snapshot; consumers own and close their senders', async () => {
   const events: string[] = [];
   vi.spyOn(transports, 'createMailTransport').mockImplementation(() => ({
     send: async () => ({ status: 'accepted' }),
@@ -146,14 +216,17 @@ it('registers once before consumers, fixes startup snapshots and closes after bu
   });
   class Producer extends ServiceProvider<Application> {
     readonly name = 'synthetic-producer';
+    private sender?: transports.MailTransport;
+    override register(): void {
+      this.sender = this.app.container.resolve(mailSenderFactoryToken).create();
+    }
     override async start(): Promise<void> {
-      await this.app.container.resolve(applicationMailerToken).send(message);
+      await this.sender!.send(message);
     }
     override async shutdown(): Promise<void> {
       events.push('producer');
-      expect(
-        await this.app.container.resolve(applicationMailerToken).send(message),
-      ).toEqual({ status: 'accepted' });
+      expect(await this.sender!.send(message)).toEqual({ status: 'accepted' });
+      await this.sender!.close();
     }
   }
   const app = new Application({
@@ -162,36 +235,28 @@ it('registers once before consumers, fixes startup snapshots and closes after bu
   });
   app.addServiceProvider(Producer);
   await app.start();
-  const mailer = app.container.resolve(applicationMailerToken);
+  const factory = app.container.resolve(mailSenderFactoryToken);
   source = { mailers: { ...source.mailers, default: 'other' } };
   await config.reload();
   expect(config.get('mailers.default')).toBe('other');
-  expect(mailer.defaultMailer).toBe('main');
-  expect(app.container.resolve(applicationMailerToken)).toBe(mailer);
+  expect(factory.defaultMailer).toBe('main');
+  expect(app.container.resolve(mailSenderFactoryToken)).toBe(factory);
   await app.shutdown();
   expect(events).toEqual(['producer', 'transport']);
-  expect(await mailer.send(message)).toMatchObject({ status: 'failed' });
 });
 
-it('assembles legacy container scopes once and releases them only after the last consumer', async () => {
-  const { ServiceContainer } = await import('@nocobase/service-provider');
-  const { acquireApplicationMailer } = await import('../src/mailers/index.js');
+it('falls back to a factory built from configuration for hosts composed without the application factory', () => {
   const container = new ServiceContainer();
-  const first = acquireApplicationMailer(container, {
+  const fallback = resolveMailSenderFactory(container, {
     default: 'main',
     main: smtp,
   });
-  const second = acquireApplicationMailer(container);
-  expect(second.mailer).toBe(first.mailer);
-  expect(container.resolve(applicationMailerToken)).toBe(first.mailer);
-  const close = vi.spyOn(first.mailer, 'close');
-  await first.release();
-  expect(close).not.toHaveBeenCalled();
-  await second.release();
-  expect(close).toHaveBeenCalledOnce();
-  await second.release();
-  expect(close).toHaveBeenCalledOnce();
-  const isolated = acquireApplicationMailer(new ServiceContainer());
-  expect(isolated.mailer).not.toBe(first.mailer);
-  await isolated.release();
+  expect(fallback.defaultMailer).toBe('main');
+  expect(container.has(mailSenderFactoryToken)).toBe(false);
+  const registered = new MailSenderFactory();
+  container.instance(mailSenderFactoryToken, registered);
+  expect(
+    resolveMailSenderFactory(container, { default: 'main', main: smtp }),
+  ).toBe(registered);
+  expect(resolveMailSenderFactory().defaultMailer).toBeUndefined();
 });

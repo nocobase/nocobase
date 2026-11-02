@@ -555,7 +555,7 @@ it.each(['legacy', 'email', 'custom'] as const)(
   },
 );
 
-it('keeps the old standalone Auth call working and prevents connection bindings from closing its sender scope', async () => {
+it('keeps the old standalone Auth call working: it owns its sender and connection bindings only borrow it', async () => {
   const fetch = vi.fn(async () => Response.json({ id: 'synthetic-id' }));
   vi.stubGlobal('fetch', fetch);
   const create = vi.spyOn(mailer, 'createMailTransport');

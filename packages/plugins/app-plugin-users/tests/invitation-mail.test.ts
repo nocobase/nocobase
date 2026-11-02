@@ -26,14 +26,14 @@ it('includes every server language for an invitee without a saved language', asy
   expect(email.text).not.toContain('{{');
 });
 
-it('retains invitation capacity for original sends after cancellation and leaves shared shutdown to the application', async () => {
-  const { ApplicationMailer, applicationMailerToken } =
+it('retains invitation capacity for original sends after cancellation and closes its own sender only after they end', async () => {
+  const { MailSenderFactory, mailSenderFactoryToken } =
     await import('@nocobase/app-server/mailers');
   const { ServiceContainer } = await import('@nocobase/service-provider');
   const { createNotificationMailer } =
     await import('../server/invitations/notification-mailer.js');
   const { vi } = await import('vitest');
-  const service = new ApplicationMailer({
+  const factory = new MailSenderFactory({
     default: 'main',
     main: { provider: 'smtp', host: 'localhost', port: 25 },
   });
@@ -41,17 +41,25 @@ it('retains invitation capacity for original sends after cancellation and leaves
   const original = new Promise<void>((resolve) => {
     complete = resolve;
   });
-  const send = vi.spyOn(service, 'send').mockImplementation(async () => {
+  const events: string[] = [];
+  const send = vi.fn(async () => {
     await original;
-    return { status: 'accepted' };
+    events.push('sent');
+    return { status: 'accepted' as const };
   });
-  const close = vi.spyOn(service, 'close');
+  const close = vi.fn(async () => {
+    events.push('closed');
+  });
+  const create = vi
+    .spyOn(factory, 'create')
+    .mockReturnValue({ send, close } as never);
   const container = new ServiceContainer();
-  container.instance(applicationMailerToken, service);
+  container.instance(mailSenderFactoryToken, factory);
   const adapter = createNotificationMailer({
     container,
     config: { get: () => undefined },
   } as never);
+  expect(create).toHaveBeenCalledOnce();
   const message = {
     to: 'synthetic@example.test',
     subject: 'Notice',
@@ -64,42 +72,50 @@ it('retains invitation capacity for original sends after cancellation and leaves
     await vi.advanceTimersByTimeAsync(30_001);
     expect(send).toHaveBeenCalledTimes(5);
     await expect(adapter.send(message)).rejects.toThrow(/capacity/u);
-    expect(send.mock.calls.every((call) => call[1]?.signal?.aborted)).toBe(
-      true,
-    );
+    expect(
+      send.mock.calls.every(
+        (call) =>
+          (call as unknown[])[1] &&
+          ((call as unknown[])[1] as { signal: AbortSignal }).signal.aborted,
+      ),
+    ).toBe(true);
     const shutdown = adapter.close();
+    await vi.advanceTimersByTimeAsync(5_001);
+    expect(close).not.toHaveBeenCalled();
     complete();
     await Promise.all(sends);
     await shutdown;
-    expect(close).not.toHaveBeenCalled();
+    expect(events.at(-1)).toBe('closed');
+    expect(events.filter((event) => event === 'sent')).toHaveLength(5);
+    expect(close).toHaveBeenCalledOnce();
   } finally {
     complete();
     vi.useRealTimers();
     vi.restoreAllMocks();
-    await service.close();
   }
 });
 
 it('preserves explicit invitation channel selection ahead of a new default and explicit mailers ahead of channels', async () => {
   const { vi } = await import('vitest');
-  const { ApplicationMailer, applicationMailerToken } =
+  const { MailSenderFactory, mailSenderFactoryToken } =
     await import('@nocobase/app-server/mailers');
   const { ServiceContainer } = await import('@nocobase/service-provider');
   const { notificationServiceToken } =
     await import('@nocobase/app-plugin-notification/server');
   const { createNotificationMailer } =
     await import('../server/invitations/notification-mailer.js');
-  const service = new ApplicationMailer({
+  const factory = new MailSenderFactory({
     default: 'main',
     main: { provider: 'smtp', host: 'localhost', port: 25 },
     other: { provider: 'smtp', host: 'localhost', port: 26 },
   });
-  const send = vi
-    .spyOn(service, 'send')
-    .mockResolvedValue({ status: 'accepted' });
+  const send = vi.fn(async () => ({ status: 'accepted' as const }));
+  const create = vi
+    .spyOn(factory, 'create')
+    .mockImplementation(() => ({ send, close: async () => {} }) as never);
   const legacy = vi.fn(async () => [{ status: 'accepted' as const }]);
   const container = new ServiceContainer();
-  container.instance(applicationMailerToken, service);
+  container.instance(mailSenderFactoryToken, factory);
   container.instance(notificationServiceToken, {
     sendTransient: legacy,
   } as never);
@@ -122,13 +138,19 @@ it('preserves explicit invitation channel selection ahead of a new default and e
   try {
     await adapter({ emailChannel: 'legacy' }).send(email);
     expect(legacy).toHaveBeenCalledOnce();
+    expect(create).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
     await adapter({ mailer: 'other', emailChannel: 'legacy' }).send(email);
+    expect(create).toHaveBeenCalledExactlyOnceWith(
+      'other',
+      'users.invitations.mailer',
+    );
     expect(send).toHaveBeenCalledExactlyOnceWith(
       email,
-      expect.objectContaining({ mailer: 'other' }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(legacy).toHaveBeenCalledOnce();
+    create.mockRestore();
     expect(() => adapter({ mailer: 'absent' })).toThrow(
       /users.invitations.mailer/u,
     );
@@ -137,6 +159,5 @@ it('preserves explicit invitation channel selection ahead of a new default and e
     ).rejects.toThrow(/configured/u);
   } finally {
     vi.restoreAllMocks();
-    await service.close();
   }
 });

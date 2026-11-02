@@ -1,26 +1,16 @@
 import { loggingToken } from '@nocobase/app-server/logging';
 import type {
-  ChannelCapabilities,
   ChannelContext,
-  ChannelInstance,
-  ChannelPreparationInput,
-  ChannelSendInput,
   NotificationI18nText,
-  ValidatedChannelMessage,
 } from '@nocobase/app-plugin-notification';
 import {
   type NotificationProviderDefinition,
   type ProviderSendResult,
 } from '@nocobase/app-plugin-notification';
-import {
-  acquireApplicationMailer,
-  type ApplicationMailerLease,
-  type ApplicationMailSender,
-} from '@nocobase/app-server/mailers';
+import { resolveMailSenderFactory } from '@nocobase/app-server/mailers';
 import { validateResendProviderConfig } from '@nocobase/mailer';
 import { notificationProviderText } from '../../i18n.js';
-import { prepareEmailMessage, validateEmailMessage } from '../channel.js';
-import type { EmailMessage, EmailRecipient } from '../types.js';
+import { MailSenderChannel, RESEND_CAPABILITIES } from '../sender-channel.js';
 
 import type { PreparedEmailMessage, ResendProviderConfig } from '../types.js';
 
@@ -40,31 +30,28 @@ export function createResendProviderDefinition(): NotificationProviderDefinition
     messageType: 'email',
     label: notificationProviderText('providers.resend', 'Resend'),
     validateConfig: validateResendProviderConfig,
-    capabilities: {
-      idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
-    },
-    async createProvider(context, config) {
-      const lease = acquireApplicationMailer(context.container);
+    capabilities: RESEND_CAPABILITIES,
+
+    async createProvider(_context, config) {
       const { type: _type, ...inline } = config as ResendProviderConfig & {
         type?: string;
       };
-      const transport = lease.mailer.bindInline({}, inline);
+      // The provider owns this exclusive sender and closes it with itself.
+      const sender = resolveMailSenderFactory().createFromConfig(inline);
       return {
         type: 'resend',
-        close: () => lease.release(),
-        capabilities: {
-          idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
-        },
+        capabilities: RESEND_CAPABILITIES,
         async send({
           message,
           deliveryId,
           signal,
         }): Promise<ProviderSendResult> {
-          return transport.send(
+          return sender.send(
             { ...message.content, to: message.to },
             { idempotencyKey: deliveryId, signal },
           );
         },
+        close: () => sender.close(),
       };
     },
   };
@@ -77,11 +64,8 @@ export interface ResendChannelConfig extends Omit<
   readonly type: 'resend';
 }
 
-export class ResendChannel implements ChannelInstance<
-  EmailMessage,
-  EmailRecipient,
-  PreparedEmailMessage
-> {
+/** Legacy inline channel. It creates its own sender from the application factory and closes it with itself. */
+export class ResendChannel extends MailSenderChannel {
   static readonly type = 'resend';
   static readonly label: NotificationI18nText = notificationProviderText(
     'providers.resend',
@@ -90,12 +74,15 @@ export class ResendChannel implements ChannelInstance<
   static validateConfig(config: ResendChannelConfig): void {
     validateResendProviderConfig({ ...config, provider: 'resend' });
   }
-  private readonly transport: ApplicationMailSender;
-  private readonly mailerLease: ApplicationMailerLease;
-  readonly capabilities: ChannelCapabilities = {
-    idempotency: { supported: true, retentionMs: 24 * 60 * 60 * 1000 },
-  };
   constructor(context: ChannelContext, config: ResendChannelConfig) {
+    const { type: _type, ...inline } = config;
+    super(
+      resolveMailSenderFactory(context.container).createFromConfig({
+        ...inline,
+        provider: 'resend',
+      }),
+      RESEND_CAPABILITIES,
+    );
     if (context.container.has(loggingToken))
       context.container
         .resolve(loggingToken)
@@ -104,34 +91,5 @@ export class ResendChannel implements ChannelInstance<
           {},
           'Legacy inline email channel configuration remains supported. Migrate to mailers and type: email.',
         );
-    this.mailerLease = acquireApplicationMailer(context.container);
-    const { type: _type, ...inline } = config;
-    this.transport = this.mailerLease.mailer.bindInline(
-      {},
-      { ...inline, provider: 'resend' },
-    );
-  }
-  validateMessage(
-    input: unknown,
-  ): ValidatedChannelMessage<EmailMessage, EmailRecipient> {
-    return validateEmailMessage(input);
-  }
-  prepare(
-    input: ChannelPreparationInput<EmailMessage, EmailRecipient>,
-  ): Promise<PreparedEmailMessage> {
-    return prepareEmailMessage(input);
-  }
-  send({
-    message,
-    deliveryId,
-    signal,
-  }: ChannelSendInput<PreparedEmailMessage>): Promise<ProviderSendResult> {
-    return this.transport.send(
-      { ...message.content, to: message.to },
-      { idempotencyKey: deliveryId, signal },
-    );
-  }
-  close(): Promise<void> {
-    return this.mailerLease.release();
   }
 }

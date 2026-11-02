@@ -230,7 +230,7 @@ async function createProvider(
 > {
   if (mode === 'class')
     return new SmtpChannel(
-      { channelName: 'email', container: mailContainer() },
+      { channelName: 'email', container: new ServiceContainer() },
       {
         type: 'smtp',
         host: 'smtp.example.com',
@@ -274,9 +274,4 @@ function sendInput(): NotificationProviderSendInput<PreparedEmailMessage> {
       },
     },
   };
-}
-
-function mailContainer(): ServiceContainer {
-  const container = new ServiceContainer();
-  return container;
 }

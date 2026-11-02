@@ -1,9 +1,11 @@
 import {
-  applicationMailerToken,
-  acquireApplicationMailer,
-  type ApplicationMailerLease,
+  resolveMailSenderFactory,
   type MailersConfig,
 } from '@nocobase/app-server/mailers';
+import {
+  createPasswordResetSender,
+  type PasswordResetSenderSelection,
+} from '../reset-sender.js';
 import {
   createAppCookieScope,
   joinBasePath,
@@ -77,29 +79,30 @@ export class AuthenticationProvider<
 > extends ServiceProvider<TApplication> {
   public readonly name: string = '@nocobase/app-plugin-authentication';
 
-  private readonly mailSource = {};
-  private mailerLease?: ApplicationMailerLease;
   private emailSnapshot?: Pick<AuthConfig, 'email' | 'passwordReset'>;
-  private legacyChannels?: Readonly<Record<string, unknown>>;
+  /** This Provider owns the reset sender: it closes it after Auth has stopped its own sends. */
+  private resetSender?: PasswordResetSenderSelection;
 
   public override register(): void {
-    this.mailerLease = acquireApplicationMailer(
-      this.app.container,
-      this.app.config.get<MailersConfig>('mailers') ?? {},
-    );
     // Freeze only the sender selection; other auth settings keep their lazy read so later defaults still apply.
     const auth = this.app.config.get<AuthConfig>('auth') ?? {};
     this.emailSnapshot = {
       email: auth.email && structuredClone(auth.email),
       passwordReset: auth.passwordReset && { ...auth.passwordReset },
     };
-    // Retain the startup section, including third-party channel values that may not be cloneable.
-    // AppConfig.reload replaces its snapshot; it does not mutate this one.
-    this.legacyChannels = {
-      ...this.app.config.get<{ channels?: Readonly<Record<string, unknown>> }>(
-        'notification',
-      )?.channels,
-    };
+    // Select now so an invalid reference fails startup; no transport is allocated until the first send.
+    this.resetSender = createPasswordResetSender(
+      resolveMailSenderFactory(
+        this.app.container,
+        this.app.config.get<MailersConfig>('mailers') ?? {},
+      ),
+      {
+        ...this.emailSnapshot,
+        legacyChannels: this.app.config.get<{
+          channels?: Readonly<Record<string, unknown>>;
+        }>('notification')?.channels,
+      },
+    );
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
     );
@@ -151,11 +154,6 @@ export class AuthenticationProvider<
    * does not build Better Auth's schema.
    */
   public override async boot(): Promise<void> {
-    const email = this.emailSnapshot?.email;
-    if (email && 'mailer' in email)
-      this.app.container
-        .resolve(applicationMailerToken)
-        .assertReference(email.mailer, 'auth.email.mailer');
     // Better Auth's endpoints are the browser's sign-in and session flow: a command line signs in its own way.
     if (this.app.container.has(cliToken))
       this.app.container.resolve(cliToken).exclude({ paths: ['/api/auth/'] });
@@ -177,7 +175,7 @@ export class AuthenticationProvider<
     try {
       await this.app.container.resolveIfCreated(authenticationToken)?.close();
     } finally {
-      await this.mailerLease?.release();
+      await this.resetSender?.sender?.close();
     }
   }
 
@@ -227,9 +225,8 @@ export class AuthenticationProvider<
       ...authConfig,
       ...this.emailSnapshot,
       passwordResetServices: {
-        mailer: container.resolve(applicationMailerToken),
-        source: this.mailSource,
-        legacyChannels: this.legacyChannels,
+        sender: this.resetSender?.sender,
+        legacySender: this.resetSender?.legacy,
         increment: (key) =>
           caching
             .getCounter({ namespace: 'password-reset-rate-limit' })
