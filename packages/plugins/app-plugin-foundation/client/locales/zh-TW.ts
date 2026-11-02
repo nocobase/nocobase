@@ -6,6 +6,10 @@ const zhTW: FoundationResource = {
     foundation: '應用底座',
   },
   page: {
+    notCounted: '未統計',
+    updatingHistory: '正在更新，目前顯示上次結果。',
+    previousKernel:
+      '目前顯示核心 {{version}} 的歷史結果，執行核心為 {{current}}。',
     identified: '已識別 {{value}}',
     counted: '已統計 {{value}}',
     partial: '部分資料待更新',

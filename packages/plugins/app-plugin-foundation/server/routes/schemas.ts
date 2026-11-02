@@ -5,24 +5,38 @@ import {
   FOUNDATION_STATUSES,
   type FoundationOverview,
   type FoundationCollectionPage,
+  type FoundationSnapshot,
+  type FoundationScanStatus,
 } from '../../shared/foundation.js';
 
-export const OverviewQuery: z.ZodObject<
-  {
-    refresh: z.ZodOptional<z.ZodCodec<z.ZodString, z.ZodBoolean>>;
-    countRecords: z.ZodOptional<z.ZodCodec<z.ZodString, z.ZodBoolean>>;
-  },
-  z.core.$strip
-> = z.object({
-  refresh: z.stringbool().optional().meta({
-    description:
-      'Collects again instead of answering a result collected within the last 30 seconds.',
+export const OverviewQuery: z.ZodType<Record<string, never>> = z.strictObject(
+  {},
+);
+
+const scanStatusShape = {
+  kernelVersion: z
+    .string()
+    .meta({ description: 'The running NocoBase server kernel version.' }),
+  snapshotKernelVersion: z.string().optional().meta({
+    description: 'The kernel version actually scanned for the saved result.',
   }),
-  countRecords: z.stringbool().optional().meta({
+  generation: z
+    .string()
+    .optional()
+    .meta({ description: 'The durable scan generation.' }),
+  status: z.enum(['idle', 'queued', 'running', 'succeeded', 'failed']),
+  needsScan: z.boolean().meta({
     description:
-      'Explicitly count records in observed tables outside the known system catalog, without asserting business ownership or an application-wide total. Omitted on ordinary page loads and refreshes.',
+      'True only before the first attempt or when the running kernel differs from the attempted kernel.',
   }),
-});
+  checkedAt: z.string().optional().meta({
+    description:
+      'Actual snapshot completion time, never the latest attempt time.',
+  }),
+};
+export const ScanStatusSchema: z.ZodType<FoundationScanStatus> = z
+  .object(scanStatusShape)
+  .meta({ ref: 'FoundationScanStatus' });
 
 export const CollectionsQuery: z.ZodType<{ offset: number; search: string }> =
   z.object({
@@ -228,3 +242,10 @@ export const OverviewSchema: z.ZodType<FoundationOverview> = z
     }),
   })
   .meta({ ref: 'FoundationOverview' });
+
+export const SnapshotSchema: z.ZodType<FoundationSnapshot> = z
+  .object({
+    ...scanStatusShape,
+    overview: OverviewSchema.optional(),
+  })
+  .meta({ ref: 'FoundationSnapshot' });

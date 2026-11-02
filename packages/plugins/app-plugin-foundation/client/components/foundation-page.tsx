@@ -16,6 +16,11 @@ import { withAvailableCapabilities } from '../../shared/available-capabilities.j
 import { businessModules } from '../business-modules.js';
 import { Button } from './ui/button.js';
 import { Skeleton } from './ui/skeleton.js';
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from './ui/collapsible.js';
 import { ModuleMatrix } from './module-matrix.js';
 import { CollectionsBrowser } from './collections-browser.js';
 import { useFoundationTranslation } from './foundation-translation.js';
@@ -31,7 +36,7 @@ import { formatFactParams, formatMetricValue, formatTime } from './format.js';
 export function FoundationPage(): ReactElement {
   const { t } = useFoundationTranslation();
   const app = useClientApplication();
-  const { overview, error, loading, refresh, countRecords } =
+  const { overview, scan, error, loading, refresh, countRecords } =
     useFoundationOverview();
 
   return (
@@ -46,6 +51,20 @@ export function FoundationPage(): ReactElement {
       </header>
       {overview && error !== 'forbidden' ? (
         <>
+          {loading ? (
+            <p role='status' className='text-sm text-muted-foreground'>
+              {t('page.updatingHistory')}
+            </p>
+          ) : null}
+          {scan?.snapshotKernelVersion &&
+          scan.snapshotKernelVersion !== scan.kernelVersion ? (
+            <p className='text-sm text-muted-foreground'>
+              {t('page.previousKernel', {
+                version: scan.snapshotKernelVersion,
+                current: scan.kernelVersion,
+              })}
+            </p>
+          ) : null}
           {error === 'failed' ? (
             <p
               role='alert'
@@ -72,13 +91,14 @@ export function FoundationPage(): ReactElement {
             {t(error === 'forbidden' ? 'page.forbidden' : 'page.loadFailed')}
           </p>
           {error === 'failed' ? (
-            <button
+            <Button
+              variant='outline'
               type='button'
               onClick={refresh}
               className='rounded-md border border-input px-3 py-1.5 hover:bg-hover'
             >
               {t('page.retry')}
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : (
@@ -211,7 +231,8 @@ export function FoundationOverviewView({
             </div>
             <div className='flex gap-2'>
               {onRefresh ? (
-                <button
+                <Button
+                  variant='outline'
                   type='button'
                   onClick={onRefresh}
                   disabled={refreshing}
@@ -225,7 +246,7 @@ export function FoundationOverviewView({
                     aria-hidden
                   />
                   {t(refreshing ? 'page.refreshing' : 'page.refresh')}
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -414,7 +435,8 @@ function CapabilityBand({
               focusKeys && !focusKeys.has(capability.key) && 'opacity-25',
             )}
           >
-            <button
+            <Button
+              variant='ghost'
               type='button'
               onClick={() => onSelect(capability.key)}
               aria-pressed={capability.key === selected}
@@ -422,7 +444,7 @@ function CapabilityBand({
               title={statusLabel}
               data-status={capability.status ?? 'undetermined'}
               className={cn(
-                'relative flex h-full min-h-20 w-full flex-col items-center justify-center gap-1.5 px-1 py-3 text-center text-xs transition-colors duration-300 motion-reduce:transition-none focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:text-sm',
+                'relative flex h-full min-h-20 w-full flex-col items-center justify-center gap-1.5 whitespace-normal border-0 px-1 py-3 text-center text-xs font-normal transition-colors duration-300 motion-reduce:transition-none focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:text-sm',
                 look === 'lighting' && 'bg-primary text-primary-foreground',
                 look === 'lit' &&
                   'bg-primary/10 text-primary hover:bg-primary/15',
@@ -446,7 +468,7 @@ function CapabilityBand({
                   inheritColor={highlighted}
                 />
               ) : null}
-            </button>
+            </Button>
           </li>
         );
       })}
@@ -466,9 +488,10 @@ function Highlights({
     overview.capabilities.some(
       (entry) =>
         entry.key === capability &&
-        entry.metrics.some(
-          (item) => item.key === metric && item.value !== null,
-        ),
+        (capability === 'dataModeling' ||
+          entry.metrics.some(
+            (item) => item.key === metric && item.value !== null,
+          )),
     ),
   );
   if (highlights.length === 0) return null;
@@ -488,44 +511,36 @@ function Highlights({
               : formatMetricValue(metric, locale);
           return (
             <li key={`${key}.${metricKey}`}>
-              <button
+              <Button
+                variant='ghost'
                 type='button'
                 onClick={() => onSelect(key)}
-                className='flex h-full w-full flex-col items-start gap-1 rounded-xl border bg-card p-4 text-left hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                className='flex h-full w-full flex-col items-start gap-1 whitespace-normal rounded-xl border border-border bg-card p-3 text-left hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
               >
-                <span
-                  className={cn(
-                    'font-heading text-2xl font-semibold tabular-nums',
-                    value === undefined &&
-                      'text-base font-normal text-muted-foreground',
-                  )}
-                  title={
-                    metric && !metric.complete && metric.value !== null
-                      ? t('page.partial')
-                      : undefined
-                  }
-                >
-                  {key === 'dataModeling'
-                    ? t(
-                        metricKey === 'businessCollections'
-                          ? 'page.identified'
-                          : 'page.counted',
-                        { value },
-                      )
-                    : metric && !metric.complete
-                      ? t('page.counted', { value })
-                      : value}
+                <span className='flex flex-wrap items-baseline gap-x-2 text-sm font-medium'>
+                  <span>{t(`metrics.${metricKey}`)}</span>{' '}
+                  <span className='font-semibold tabular-nums'>
+                    {value ??
+                      t(
+                        metricKey === 'businessRecords' &&
+                          !overview.recordCountCheckedAt
+                          ? 'page.notCounted'
+                          : 'page.unavailable',
+                      )}
+                  </span>
                 </span>
-                <span className='text-sm text-muted-foreground'>
-                  {t(`metrics.${metricKey}`)}
-                </span>
+                {metric && !metric.complete && metric.value !== null ? (
+                  <span className='text-xs font-normal text-muted-foreground'>
+                    {t('page.lowerBound')}
+                  </span>
+                ) : null}
                 <span className='text-sm text-primary'>
                   {t(`capabilities.${key}.name`)}
                 </span>
                 {metric?.checkedAt ? (
                   <RetainedAt at={metric.checkedAt} />
                 ) : null}
-              </button>
+              </Button>
             </li>
           );
         })}
@@ -665,10 +680,21 @@ function CapabilityDetail({
         </p>
       ) : null}
       {ownershipNote ? (
-        <details className='text-sm text-muted-foreground'>
-          <summary>{t('inventory.recognitionNotes')}</summary>
-          <p>{t('facts.collectionOwnershipUnknown')}</p>
-        </details>
+        <Collapsible className='text-sm text-muted-foreground'>
+          <CollapsibleTrigger
+            render={
+              <Button
+                variant='link'
+                className='h-auto p-0 text-muted-foreground'
+              />
+            }
+          >
+            {t('inventory.recognitionNotes')}
+          </CollapsibleTrigger>
+          <CollapsibleContent keepMounted>
+            <p>{t('facts.collectionOwnershipUnknown')}</p>
+          </CollapsibleContent>
+        </Collapsible>
       ) : null}
       {capability.completeness !== 'complete' ? (
         <div
@@ -683,23 +709,34 @@ function CapabilityDetail({
                   : 'detail.partial',
               )}
             </p>
-            <details key={capability.key}>
-              <summary>{t('detail.readNotes')}</summary>
-              {capability.issues.some(
-                (issue) => issue.code === 'COLLECTOR_TIMEOUT',
-              ) ? (
-                <p className='text-muted-foreground'>{t('detail.timeout')}</p>
-              ) : null}
-              {unreadable.length > 0 ? (
-                <p className='text-muted-foreground'>
-                  {t('detail.unreadable', {
-                    sources: new Intl.ListFormat(locale, {
-                      style: 'short',
-                    }).format(unreadable),
-                  })}
-                </p>
-              ) : null}
-            </details>
+            <Collapsible key={capability.key}>
+              <CollapsibleTrigger
+                render={
+                  <Button
+                    variant='link'
+                    className='h-auto p-0 text-muted-foreground'
+                  />
+                }
+              >
+                {t('detail.readNotes')}
+              </CollapsibleTrigger>
+              <CollapsibleContent keepMounted>
+                {capability.issues.some(
+                  (issue) => issue.code === 'COLLECTOR_TIMEOUT',
+                ) ? (
+                  <p className='text-muted-foreground'>{t('detail.timeout')}</p>
+                ) : null}
+                {unreadable.length > 0 ? (
+                  <p className='text-muted-foreground'>
+                    {t('detail.unreadable', {
+                      sources: new Intl.ListFormat(locale, {
+                        style: 'short',
+                      }).format(unreadable),
+                    })}
+                  </p>
+                ) : null}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </div>
       ) : null}
@@ -812,39 +849,19 @@ function CapabilityDetail({
                   const value = formatMetricValue(metric, locale);
                   return (
                     <li key={metric.key} className='rounded-lg bg-muted p-3'>
-                      <p
-                        className={cn(
-                          'font-heading text-xl font-semibold tabular-nums',
-                          value === undefined &&
-                            'text-sm font-normal text-muted-foreground',
-                        )}
-                        title={!metric.complete ? t('page.partial') : undefined}
-                      >
-                        {capability.key === 'dataModeling'
-                          ? t(
-                              [
-                                'businessCollections',
-                                'views',
-                                'systemCollections',
-                              ].includes(metric.key)
-                                ? 'page.identified'
-                                : 'page.counted',
-                              { value },
-                            )
-                          : !metric.complete
-                            ? t('page.counted', { value })
-                            : value}
-                      </p>
-                      <p className='text-xs text-muted-foreground'>
-                        {word(`metrics.${metric.key}`)}
+                      <p className='flex flex-wrap items-baseline gap-x-2 text-sm'>
+                        <span className='text-muted-foreground'>
+                          {word(`metrics.${metric.key}`)}
+                        </span>{' '}
+                        <span className='font-semibold tabular-nums'>
+                          {value ?? t('page.unavailable')}
+                        </span>
                       </p>
                       {metric.checkedAt ? (
                         <RetainedAt at={metric.checkedAt} />
-                      ) : !metric.complete &&
-                        value !== undefined &&
-                        capability.key === 'files' ? (
+                      ) : !metric.complete && value !== undefined ? (
                         <p className='text-xs text-muted-foreground'>
-                          {t('page.partial')}
+                          {t('page.lowerBound')}
                         </p>
                       ) : null}
                     </li>

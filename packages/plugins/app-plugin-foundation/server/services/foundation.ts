@@ -32,10 +32,7 @@ import {
   collectProviderInventory,
   type RuntimeProviderEvidence,
 } from '../provider-inventory.js';
-import type {
-  FoundationOverviewOptions,
-  FoundationService,
-} from '../tokens.js';
+import type { FoundationOverviewOptions } from '../tokens.js';
 
 export interface FoundationServiceOptions {
   readonly container: ServiceContainer;
@@ -59,7 +56,20 @@ const DATABASE_FREE: ReadonlySet<string> = new Set(['interface', 'audit']);
 /** How many capabilities read the database at once. */
 const CONCURRENCY = 4;
 
-export class DefaultFoundationService implements FoundationService {
+export interface FoundationCheckpoint {
+  readonly historyScope?: string;
+  readonly catalogScope?: string;
+  readonly definitionShapes: readonly (readonly [string, string])[];
+  readonly recordCount?: {
+    readonly signature: string;
+    readonly checkedAt: string;
+    readonly metric: FoundationMetric;
+  };
+  readonly collections?: readonly CollectionSummary[];
+}
+
+/** The synchronous collector, invoked by the background scan rather than page requests. */
+export class DefaultFoundationService {
   private readonly history = new ReliableHistory();
   private historyScope?: string;
   private catalogScope?: string;
@@ -339,6 +349,34 @@ export class DefaultFoundationService implements FoundationService {
         })),
       total: matching.length,
     };
+  }
+
+  public checkpoint(): FoundationCheckpoint {
+    return {
+      ...(this.historyScope ? { historyScope: this.historyScope } : {}),
+      ...(this.catalogScope ? { catalogScope: this.catalogScope } : {}),
+      definitionShapes: [...this.definitionShapes],
+      ...(this.recordCount ? { recordCount: this.recordCount } : {}),
+      ...(this.applicationCollections
+        ? { collections: this.applicationCollections }
+        : {}),
+    };
+  }
+
+  public restore(
+    overview: FoundationOverview,
+    checkpoint: FoundationCheckpoint,
+  ): void {
+    const database = this.options.container.resolve(databaseManagerToken);
+    this.connectionIdentity = database.connection();
+    this.historyScope = checkpoint.historyScope;
+    this.catalogScope = checkpoint.catalogScope;
+    this.definitionShapes.clear();
+    for (const [name, shape] of checkpoint.definitionShapes)
+      this.definitionShapes.set(name, shape);
+    this.recordCount = checkpoint.recordCount;
+    for (const capability of overview.capabilities)
+      this.history.retain(capability, overview.checkedAt);
   }
 
   private async run(

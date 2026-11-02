@@ -6,6 +6,10 @@ const ptBR: FoundationResource = {
     foundation: 'Base do aplicativo',
   },
   page: {
+    notCounted: 'Não contado',
+    updatingHistory: 'Atualizando… Exibindo o resultado anterior.',
+    previousKernel:
+      'Exibindo o histórico do núcleo {{version}}; núcleo em execução: {{current}}.',
     identified: 'Identificados: {{value}}',
     counted: 'Contabilizado: {{value}}',
     partial: 'Alguns dados aguardam atualização',

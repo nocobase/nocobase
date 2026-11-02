@@ -6,6 +6,10 @@ const frFR: FoundationResource = {
     foundation: 'Socle de l’application',
   },
   page: {
+    notCounted: 'Non compté',
+    updatingHistory: 'Mise à jour… Affichage du résultat précédent.',
+    previousKernel:
+      'Historique du noyau {{version}} affiché ; noyau en cours : {{current}}.',
     identified: 'Identifiés : {{value}}',
     counted: 'Comptabilisé : {{value}}',
     partial: 'Certaines données attendent une mise à jour',
