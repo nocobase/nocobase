@@ -42,6 +42,8 @@ export class PasswordResetPolicy {
   public readonly automatic: boolean;
   private readonly sender: ResetSender | undefined;
   private readonly executions: MailExecutions;
+  private readonly customSender: boolean;
+  private closePromise?: Promise<void>;
   private readonly buckets = new Map<
     string,
     { count: number; expires: number }
@@ -61,6 +63,7 @@ export class PasswordResetPolicy {
     const configuredSender = options.emailAndPassword?.sendResetPassword;
     const custom =
       typeof configuredSender === 'function' ? configuredSender : undefined;
+    this.customSender = custom !== undefined;
     const selected = services.sender;
     this.automatic =
       !custom &&
@@ -293,10 +296,32 @@ export class PasswordResetPolicy {
     return bucket.count;
   }
 
-  public async close(): Promise<void> {
-    await this.executions.close();
-    // Custom callbacks retain their existing bounded shutdown contract.
-    if (this.automatic) await this.executions.drain();
+  public close(): Promise<void> {
+    this.closePromise ??= this.closeInternal();
+    return this.closePromise;
+  }
+
+  private async closeInternal(): Promise<void> {
+    const failures: unknown[] = [];
+    try {
+      this.executions.stop();
+    } catch (error) {
+      failures.push(error);
+    }
+
+    try {
+      const waiting = this.executions.wait();
+      if (this.customSender) {
+        if (!(await waitBounded(waiting, 5_000)))
+          this.services.report?.('shutdown_timeout');
+      } else {
+        await waiting;
+      }
+    } catch (error) {
+      failures.push(error);
+    }
+    if (failures.length)
+      throw new AggregateError(failures, 'Password reset shutdown failed.');
   }
 
   public runRequest<T>(address: string | undefined, handler: () => T): T {
@@ -328,6 +353,22 @@ export class PasswordResetPolicy {
         code: 'INVALID_TOKEN',
         message: 'Invalid token.',
       });
+  }
+}
+
+async function waitBounded(
+  completion: Promise<void>,
+  waitMs: number,
+): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<false>((resolve) => {
+    timer = setTimeout(() => resolve(false), waitMs);
+    timer.unref();
+  });
+  try {
+    return await Promise.race([completion.then(() => true), timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 

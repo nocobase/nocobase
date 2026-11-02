@@ -32,6 +32,49 @@ import {
 import { authenticationToken } from '../../tokens.js';
 
 describe('authentication provider', () => {
+  it('closes its sender while Auth is still completing and observes both failures', async () => {
+    const authClose = Promise.withResolvers<void>();
+    const authFailure = new Error('Auth close failed.');
+    const senderFailure = new Error('Sender close failed.');
+    const auth = { close: vi.fn(() => authClose.promise) };
+    const sender = {
+      close: vi.fn(() => {
+        throw senderFailure;
+      }),
+    };
+    const provider = Object.assign(
+      Object.create(AuthenticationProvider.prototype),
+      {
+        app: {
+          container: {
+            resolveIfCreated: vi.fn(() => auth),
+          },
+        },
+        resetSender: { sender },
+      },
+    ) as AuthenticationProvider;
+
+    const shutdown = provider.shutdown();
+    expect(provider.shutdown()).toBe(shutdown);
+    expect(auth.close).toHaveBeenCalledOnce();
+    expect(sender.close).toHaveBeenCalledOnce();
+    let settled = false;
+    const observed = shutdown.catch((error: unknown) => {
+      settled = true;
+      return error;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    authClose.reject(authFailure);
+    const error = await observed;
+    expect(error).toBeInstanceOf(AggregateError);
+    expect((error as AggregateError).errors).toEqual([
+      authFailure,
+      senderFailure,
+    ]);
+  });
+
   it('registers authentication with the application runtime and dependencies', async () => {
     const connection = { kind: 'connection' };
     const database = {

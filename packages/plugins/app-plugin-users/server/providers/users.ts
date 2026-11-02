@@ -41,6 +41,20 @@ const USER_ACTIONS = new Set([
 /** The cap `UserAdministrationService.list` applies to a page. */
 const ACCOUNT_PAGE_SIZE = 100;
 
+function startShutdownOperation(
+  operation: () => void | Promise<void>,
+): Promise<void> {
+  try {
+    return Promise.resolve(operation());
+  } catch (error) {
+    return Promise.reject(
+      error instanceof Error
+        ? error
+        : new Error('Users shutdown operation failed.', { cause: error }),
+    );
+  }
+}
+
 export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-users';
   private releasePermissionSetScope?: () => void;
@@ -189,10 +203,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   private async closeInvitations(): Promise<void> {
-    const drained = this.invitationWork.close();
+    this.invitationWork.stop();
     const results = await Promise.allSettled([
-      drained,
-      Promise.resolve().then(() => this.invitationMailer?.close()),
+      startShutdownOperation(() => this.invitationMailer?.close()),
+      startShutdownOperation(() => this.invitationWork.wait()),
     ]);
     this.releasePermissionSetScope?.();
     this.releasePermissionSetScope = undefined;

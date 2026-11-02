@@ -15,8 +15,14 @@ export class InvitationWork {
     return completion;
   }
 
-  public async close(): Promise<void> {
+  public stop(): void {
     this.stopped = true;
-    await Promise.allSettled([...this.active]);
+  }
+
+  /** Observe complete invitation operations, including delivery bookkeeping. */
+  public async wait(): Promise<void> {
+    while (this.active.size) {
+      await Promise.allSettled([...this.active]);
+    }
   }
 }

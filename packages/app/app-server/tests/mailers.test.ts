@@ -220,6 +220,46 @@ it('can close a sender after its first transport initialization fails', async ()
   expect(create).toHaveBeenCalledOnce();
 });
 
+it('observes a synchronous transport close failure and still waits for active sends', async () => {
+  const failure = new Error('Synthetic close failure.');
+  const pending = Promise.withResolvers<transports.MailResult>();
+  const create = vi.spyOn(transports, 'createMailTransport').mockReturnValue({
+    send: vi.fn(() => pending.promise),
+    close: () => {
+      throw failure;
+    },
+  });
+  const sender = new MailSenderFactory().createFromConfig(smtp);
+  const sending = sender.send(message);
+  let settled = false;
+  const closing = sender.close();
+  const sameClosing = sender.close();
+  expect(sameClosing).toBe(closing);
+  await expect(sender.send(message)).resolves.toMatchObject({
+    status: 'failed',
+    disposition: 'never',
+  });
+  const observed = closing.then(
+    () => {
+      settled = true;
+      return undefined;
+    },
+    (error: unknown) => {
+      settled = true;
+      return error;
+    },
+  );
+  await Promise.resolve();
+  expect(create).toHaveBeenCalledOnce();
+  expect(settled).toBe(false);
+  pending.resolve({ status: 'accepted' });
+  await expect(sending).resolves.toMatchObject({ status: 'accepted' });
+  const error = await observed;
+  expect(error).toBeInstanceOf(AggregateError);
+  expect((error as AggregateError).errors).toContain(failure);
+  expect(settled).toBe(true);
+});
+
 it('passes cancellation and idempotency keys through unchanged', async () => {
   const { created } = fakeTransports();
   const sender = new MailSenderFactory({

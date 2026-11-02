@@ -1,5 +1,6 @@
 ---
 '@nocobase/app-server': major
+'@nocobase/mailer': major
 '@nocobase/app-cli': patch
 '@nocobase/app-host': patch
 '@nocobase/app-host-docker': patch
@@ -47,4 +48,4 @@
 '@nocobase/app-template-examples': patch
 ---
 
-**Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+**Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.

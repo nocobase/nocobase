@@ -75,6 +75,33 @@ const trustedSessionPlugin = {
   },
 } satisfies BetterAuthPlugin;
 
+function settleShutdown(
+  operations: readonly (() => void | Promise<void>)[],
+  message: string,
+): Promise<void> {
+  const started = operations.map((operation) => {
+    try {
+      return Promise.resolve(operation());
+    } catch (error) {
+      return Promise.reject(asError(error));
+    }
+  });
+  return Promise.allSettled(started).then((results) => {
+    const failures: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length) throw new AggregateError(failures, message);
+  });
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Authentication shutdown operation failed.', {
+        cause: value,
+      });
+}
+
 export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   connection: DatabaseConnection;
   email?: AuthEmailConfig;
@@ -203,6 +230,7 @@ export class Auth {
   private readonly connection: DatabaseConnection;
   private readonly options: AuthOptions;
   private readonly resetPolicy: PasswordResetPolicy;
+  private closePromise?: Promise<void>;
   /** Created by this instance when the caller supplied no sender; borrowed by connection bindings. */
   private readonly ownedSender?: MailSender;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
@@ -502,12 +530,12 @@ export class Auth {
     return this.resetPolicy.available;
   }
 
-  async close(): Promise<void> {
-    try {
-      await this.resetPolicy.close();
-    } finally {
-      await this.ownedSender?.close();
-    }
+  close(): Promise<void> {
+    this.closePromise ??= settleShutdown(
+      [() => this.resetPolicy.close(), () => this.ownedSender?.close()],
+      'Authentication shutdown failed.',
+    );
+    return this.closePromise;
   }
 
   async getSession(

@@ -52,6 +52,7 @@ export function createResendTransport(
   validateResendProviderConfig(config);
   const client = new PrivateResend(config.apiKey);
   const executions = new MailExecutions();
+  let closing: Promise<void> | undefined;
   return {
     async send(
       message: EmailMessage,
@@ -97,7 +98,27 @@ export function createResendTransport(
             },
           };
     },
-    close: () => executions.close(),
+    close() {
+      closing ??= (async () => {
+        const failures: unknown[] = [];
+        try {
+          executions.stop();
+        } catch (error) {
+          failures.push(error);
+        }
+        try {
+          await executions.wait();
+        } catch (error) {
+          failures.push(error);
+        }
+        if (failures.length)
+          throw new AggregateError(
+            failures,
+            'Resend transport shutdown failed.',
+          );
+      })();
+      return closing;
+    },
   };
 }
 

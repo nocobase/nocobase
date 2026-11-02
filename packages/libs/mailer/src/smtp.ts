@@ -15,6 +15,7 @@ import type {
 export function createSmtpTransport(config: SmtpProviderConfig): MailTransport {
   validateSmtpProviderConfig(config);
   const executions = new MailExecutions();
+  let closing: Promise<void> | undefined;
   return {
     async send(
       message: EmailMessage,
@@ -131,7 +132,24 @@ export function createSmtpTransport(config: SmtpProviderConfig): MailTransport {
             },
           };
     },
-    close: () => executions.close(),
+    close() {
+      closing ??= (async () => {
+        const failures: unknown[] = [];
+        try {
+          executions.stop();
+        } catch (error) {
+          failures.push(error);
+        }
+        try {
+          await executions.wait();
+        } catch (error) {
+          failures.push(error);
+        }
+        if (failures.length)
+          throw new AggregateError(failures, 'SMTP transport shutdown failed.');
+      })();
+      return closing;
+    },
   };
 }
 

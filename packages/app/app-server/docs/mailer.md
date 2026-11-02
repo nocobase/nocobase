@@ -61,7 +61,7 @@ const result = await sender.send(
   { to: 'recipient@example.com', subject: 'Notice', text: 'Hello' },
   { signal, idempotencyKey },
 );
-// After the owner has stopped and drained its own work:
+// The owner stops new work and closes this sender while waiting for completion:
 await sender.close();
 ```
 
@@ -69,10 +69,10 @@ await sender.close();
 
 Results remain `accepted`, `failed` (disposition `never` or `same_provider`) and `submission_unknown`. Accepted means submission accepted, not delivery received. Each call makes one submission, forwarding cancellation and idempotency keys. SMTP has no server-side idempotency promise. Each SMTP message opens/closes its own connection. There is no pooling, automatic retry, failover or sender switching. Notification retains existing durable retries, delivery identity and records. Reset/invitation messages bypass notification history and durable retry queues.
 
-Ownership is single and local: whoever creates a sender closes it, after stopping its own work. Senders are never shared, so closing one never affects another consumer. `close()` refuses new sends, closes the transport (which cancels supported network operations through its bounded wait) and then waits for the original submissions to end; a timed-out wait is not treated as completion. Owners in the native application:
+Ownership is single and local: whoever creates a sender closes it, after stopping its own work. Senders are never shared, so closing one never affects another consumer. `close()` refuses new sends, then closes the transport while it waits for original submissions to finish. It has no local timeout. The application's `APP_SHUTDOWN_TIMEOUT_MS` remains the outer process budget. Owners in the native application:
 
-- `AuthenticationProvider` selects and creates the reset sender at registration, injects it into Auth, and closes it after Auth has cancelled and drained its native sends. Custom Auth callbacks retain their existing bounded shutdown contract. Connection-bound Auth instances borrow the sender.
-- `UsersProvider` creates the invitation sender through its invitation adapter. On shutdown it refuses new invitations, cancels and drains invitation sends, closes the sender, and drains post-submission bookkeeping before the database closes.
+- `AuthenticationProvider` selects and creates the reset sender at registration, injects it into Auth, and closes it while Auth waits for native work to finish. Provider shutdown starts both branches together and reports failures after observing both. Custom Auth callbacks retain their five-second bounded shutdown wait; a timeout reports unfinished work and leaves its completion tracked. Connection-bound Auth instances borrow the sender.
+- `UsersProvider` creates the invitation sender through its invitation adapter. On shutdown it refuses new invitations, cancels and closes the sender while waiting for sends, then waits through post-submission bookkeeping before the database closes.
 - Each Notification email channel (`type: email`, and legacy `smtp`/`resend`) creates its sender in its constructor and closes it in `close()`, which Notification calls after draining its Jobs; an `initialize()` failure also calls `close()`.
 - A standalone `new Auth({ email, ... })` without an injected sender selects and owns its own sender and closes it in `close()`.
 

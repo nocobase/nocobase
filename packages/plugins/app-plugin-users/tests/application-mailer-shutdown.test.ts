@@ -50,8 +50,9 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs, each closing
         return result;
       },
       async close() {
-        events.push(`${owner}:transport:close`);
+        events.push(`${owner}:transport:closing`);
         await transport.close();
+        events.push(`${owner}:transport:closed`);
       },
     };
   });
@@ -176,7 +177,7 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs, each closing
     await vi.advanceTimersByTimeAsync(5001);
     expect(events).not.toContain('users:stopped');
     expect(events).not.toContain('database:stopping');
-    expect(events).not.toContain('users:transport:close');
+    expect(events).toContain('users:transport:closing');
     await expect(
       users.invite({ emails: ['late@example.test'], invitedBy: user.id }),
     ).rejects.toThrow(/stopping/u);
@@ -186,10 +187,9 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs, each closing
     await vi.waitFor(() => expect(events).toContain('auth:stopping'));
     await vi.advanceTimersByTimeAsync(5001);
     expect(events).not.toContain('auth:stopped');
-    expect(events).not.toContain('auth:transport:close');
-    // Users closed its own sender while Auth's submission was still running.
-    expect(events.indexOf('completed:users')).toBeLessThan(
-      events.indexOf('users:transport:close'),
+    expect(events).toContain('auth:transport:closing');
+    expect(events.indexOf('users:transport:closing')).toBeLessThan(
+      events.indexOf('completed:users'),
     );
     gates.auth.resolve();
     await shutdown;
@@ -202,19 +202,22 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs, each closing
     expect(events.indexOf('completed:notification')).toBeLessThan(
       events.indexOf('database:stopping'),
     );
+    expect(events.indexOf('completed:notification')).toBeLessThan(
+      events.indexOf('notification:transport:closing'),
+    );
+    expect(events.indexOf('auth:transport:closing')).toBeLessThan(
+      events.indexOf('completed:auth'),
+    );
     for (const role of ['notification', 'users', 'auth'])
       expect(events.indexOf(`completed:${role}`)).toBeLessThan(
-        events.indexOf(`${role}:transport:close`),
+        events.indexOf('database:stopping'),
       );
-    expect(events.indexOf('auth:transport:close')).toBeLessThan(
-      events.indexOf('auth:stopped'),
-    );
     expect(
-      events.filter((event) => event.endsWith(':transport:close')).sort(),
+      events.filter((event) => event.endsWith(':transport:closing')).sort(),
     ).toEqual([
-      'auth:transport:close',
-      'notification:transport:close',
-      'users:transport:close',
+      'auth:transport:closing',
+      'notification:transport:closing',
+      'users:transport:closing',
     ]);
     expect(received).toHaveLength(3);
   } finally {

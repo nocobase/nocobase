@@ -80,8 +80,9 @@ export class AuthenticationProvider<
   public readonly name: string = '@nocobase/app-plugin-authentication';
 
   private emailSnapshot?: Pick<AuthConfig, 'email' | 'passwordReset'>;
-  /** This Provider owns the reset sender: it closes it after Auth has stopped its own sends. */
+  /** This Provider owns the reset sender and closes it alongside Auth's native work. */
   private resetSender?: PasswordResetSenderSelection;
+  private shutdownPromise?: Promise<void>;
 
   public override register(): void {
     // Freeze only the sender selection; other auth settings keep their lazy read so later defaults still apply.
@@ -171,12 +172,15 @@ export class AuthenticationProvider<
     );
   }
 
-  public override async shutdown(): Promise<void> {
-    try {
-      await this.app.container.resolveIfCreated(authenticationToken)?.close();
-    } finally {
-      await this.resetSender?.sender?.close();
-    }
+  public override shutdown(): Promise<void> {
+    this.shutdownPromise ??= settleShutdown(
+      [
+        () => this.app.container.resolveIfCreated(authenticationToken)?.close(),
+        () => this.resetSender?.sender?.close(),
+      ],
+      'Authentication provider shutdown failed.',
+    );
+    return this.shutdownPromise;
   }
 
   private createAuthentication(container: ServiceResolver): Auth {
@@ -290,6 +294,33 @@ export class AuthenticationProvider<
       );
     return auth;
   }
+}
+
+function settleShutdown(
+  operations: readonly (() => void | Promise<void>)[],
+  message: string,
+): Promise<void> {
+  const started = operations.map((operation) => {
+    try {
+      return Promise.resolve(operation());
+    } catch (error) {
+      return Promise.reject(asError(error));
+    }
+  });
+  return Promise.allSettled(started).then((results) => {
+    const failures: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length) throw new AggregateError(failures, message);
+  });
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Authentication shutdown operation failed.', {
+        cause: value,
+      });
 }
 
 export interface CookiePrefixOptions {

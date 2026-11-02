@@ -12,6 +12,24 @@ import { unconfiguredMailer, type InvitationMailer } from './mail.js';
 
 const DEFAULT_CHANNEL = 'system-email';
 
+function startShutdownOperation(
+  operation: () => void | Promise<void>,
+): Promise<void> {
+  try {
+    return Promise.resolve(operation());
+  } catch (error) {
+    return Promise.reject(asError(error));
+  }
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Invitation mail shutdown operation failed.', {
+        cause: value,
+      });
+}
+
 export function createNotificationMailer(
   app: AppPluginApplication,
 ): InvitationMailer & { close(): Promise<void> } {
@@ -52,6 +70,7 @@ export function createNotificationMailer(
       'Legacy invitation email channels remain supported. Migrate users.invitations.emailChannel to mailers.',
     );
   const executions = new MailExecutions(5, 30_000);
+  let closing: Promise<void> | undefined;
   return {
     async send(email) {
       const execution = executions.submit(async (signal) => {
@@ -84,13 +103,26 @@ export function createNotificationMailer(
         throw new Error('Invitation email submission capacity unavailable.');
       await execution.completion;
     },
-    async close() {
-      try {
-        await executions.close();
-        await executions.drain();
-      } finally {
-        await sender?.close();
-      }
+    close() {
+      closing ??= closeMailer();
+      return closing;
     },
   };
+
+  async function closeMailer(): Promise<void> {
+    const failures: unknown[] = [];
+    try {
+      executions.stop();
+    } catch (error) {
+      failures.push(error);
+    }
+    const results = await Promise.allSettled([
+      startShutdownOperation(() => sender?.close()),
+      startShutdownOperation(() => executions.wait()),
+    ]);
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length)
+      throw new AggregateError(failures, 'Invitation mailer shutdown failed.');
+  }
 }

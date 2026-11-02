@@ -39,23 +39,25 @@ export class MailExecutions {
     return { completion, signal: controller.signal };
   }
 
-  /** Wait for original work after stopping, without treating a bounded cancellation wait as completion. */
-  public async drain(): Promise<void> {
-    await Promise.allSettled([...this.active.values()]);
+  /** Stop admission and signal cancellation without releasing active work early. */
+  public stop(): void {
+    this.stopped = true;
+    const errors: unknown[] = [];
+    for (const controller of this.active.keys()) {
+      try {
+        controller.abort();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length)
+      throw new AggregateError(errors, 'Mail execution cancellation failed.');
   }
 
-  public async close(waitMs: number = 5_000): Promise<void> {
-    this.stopped = true;
-    for (const controller of this.active.keys()) controller.abort();
-    if (!this.active.size) return;
-    // Shutdown's bounded wait does not change the original work or its accounting.
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    await Promise.race([
-      Promise.allSettled([...this.active.values()]),
-      new Promise<void>((resolve) => {
-        timer = setTimeout(resolve, waitMs);
-      }),
-    ]);
-    clearTimeout(timer);
+  /** Observe real completion; the application shutdown boundary owns any time limit. */
+  public async wait(): Promise<void> {
+    while (this.active.size) {
+      await Promise.allSettled([...this.active.values()]);
+    }
   }
 }

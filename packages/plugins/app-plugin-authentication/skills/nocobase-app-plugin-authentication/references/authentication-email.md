@@ -40,7 +40,7 @@ auth:
     from: App <noreply@example.com>
 ```
 
-The existing password sign-in and public application origin requirements still apply. Merely adding `auth.email` does not enable recovery. SMTP permits an unauthenticated relay when `auth` is omitted, following the mailer contract. No notification or mailbox plugin is required. There are four execution slots, a 20-second cancellation deadline and a five-second bounded shutdown wait. A callback that ignores cancellation retains its slot until it finishes. Each SMTP submission opens its own connection and closes it when the submission ends; nothing is written to notification records or a retry queue. Do not add application-level retries: failed or uncertain submissions never switch senders or automatically resend.
+The existing password sign-in and public application origin requirements still apply. Merely adding `auth.email` does not enable recovery. SMTP permits an unauthenticated relay when `auth` is omitted, following the mailer contract. No notification or mailbox plugin is required. There are four execution slots and a 20-second cancellation deadline. Native Auth shutdown closes its sender while waiting for original sends; only custom callbacks retain the five-second bounded shutdown wait. A callback that ignores cancellation keeps its slot and late failures remain observed after that wait. The application shutdown budget remains `APP_SHUTDOWN_TIMEOUT_MS`. Each SMTP submission opens its own connection and closes it when the submission ends; nothing is written to notification records or a retry queue. Do not add application-level retries: failed or uncertain submissions never switch senders or automatically resend.
 
 ## Environment configuration
 

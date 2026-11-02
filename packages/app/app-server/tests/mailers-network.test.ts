@@ -110,6 +110,11 @@ it.each([
     const submitted = new Promise<void>((resolve) => {
       received = resolve;
     });
+    let networkClose!: () => void;
+    const networkClosed = new Promise<void>((resolve) => {
+      networkClose = resolve;
+    });
+    let networkClosedFlag = false;
     let count = 0;
     const server = createServer(async (request, response) => {
       for await (const _chunk of request) {
@@ -118,6 +123,14 @@ it.each([
       count += 1;
       expect(request.headers['idempotency-key']).toBe('synthetic-key');
       received();
+      if (mode === 'shutdown') {
+        const markClosed = (): void => {
+          networkClosedFlag = true;
+          networkClose();
+        };
+        request.socket.once('close', markClosed);
+        response.once('close', markClosed);
+      }
       if (mode === 'disconnected') {
         request.socket.destroy();
         return;
@@ -164,7 +177,11 @@ it.each([
       );
       await submitted;
       if (mode === 'cancelled') controller.abort();
-      if (mode === 'shutdown') await mailer.close();
+      if (mode === 'shutdown') {
+        await mailer.close();
+        await networkClosed;
+        expect(networkClosedFlag).toBe(true);
+      }
       const result = await completion;
       expect(result.status).toBe(
         mode === 'accepted'

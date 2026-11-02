@@ -498,7 +498,8 @@ it.each([false, true])(
       expect(send).toHaveBeenCalledOnce();
       expect(report).toHaveBeenCalledWith('capacity');
       const shutdown = fixture.auth.close();
-      expect(close).not.toHaveBeenCalled();
+      expect(fixture.auth.close()).toBe(shutdown);
+      expect(close).toHaveBeenCalledOnce();
       expect(executions.inFlight).toBe(1);
       completion.resolve({ status: 'accepted' });
       await shutdown;
@@ -578,9 +579,10 @@ it('preserves the bounded shutdown wait for custom callbacks that ignore cancell
   const completion = Promise.withResolvers<void>();
   const executions = new MailExecutions(1);
   const sender = vi.fn(() => completion.promise);
+  const report = vi.fn();
   const fixture = await setup({
     emailAndPassword: { enabled: true, sendResetPassword: sender },
-    passwordResetServices: { executions },
+    passwordResetServices: { executions, report },
   });
   await fixture.signUp();
   await fixture.router.request(
@@ -591,9 +593,13 @@ it('preserves the bounded shutdown wait for custom callbacks that ignore cancell
   vi.useFakeTimers();
   try {
     const closed = fixture.auth.close();
+    expect(fixture.auth.close()).toBe(closed);
     await vi.advanceTimersByTimeAsync(5001);
     await closed;
     expect(executions.inFlight).toBe(1);
+    expect(report).toHaveBeenCalledWith('shutdown_timeout');
+    completion.reject(new Error('Synthetic late callback failure.'));
+    await vi.waitFor(() => expect(report).toHaveBeenCalledWith('sender'));
   } finally {
     completion.resolve();
     vi.useRealTimers();

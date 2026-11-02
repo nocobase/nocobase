@@ -69,10 +69,17 @@ function createMailSender(config: EmailChannelConfig): MailSender {
         // Initialization has not submitted anything; do not expose provider or configuration details.
         return Promise.resolve(initializationFailure());
       }
-      const completion = transport.send(message, {
-        signal: options?.signal,
-        idempotencyKey: options?.idempotencyKey,
-      });
+      let completion: Promise<MailResult>;
+      try {
+        completion = Promise.resolve(
+          transport.send(message, {
+            signal: options?.signal,
+            idempotencyKey: options?.idempotencyKey,
+          }),
+        );
+      } catch (error) {
+        completion = Promise.reject(asError(error));
+      }
       active.add(completion);
       const cleanup = (): void => {
         active.delete(completion);
@@ -81,17 +88,51 @@ function createMailSender(config: EmailChannelConfig): MailSender {
       return completion;
     },
     close() {
-      closing ??= (async (): Promise<void> => {
-        try {
-          await transport?.close();
-        } finally {
-          // A bounded transport wait is not completion: keep tracking the original submissions.
-          await Promise.allSettled([...active]);
-        }
-      })();
+      closing ??= settleShutdown(
+        [
+          () => transport?.close(),
+          async () => {
+            const results = await Promise.allSettled([...active]);
+            const failures: unknown[] = [];
+            for (const result of results)
+              if (result.status === 'rejected') failures.push(result.reason);
+            if (failures.length)
+              throw new AggregateError(
+                failures,
+                'Mail submissions failed during shutdown.',
+              );
+          },
+        ],
+        'Mail sender shutdown failed.',
+      );
       return closing;
     },
   };
+}
+
+function settleShutdown(
+  operations: readonly (() => void | Promise<void>)[],
+  message: string,
+): Promise<void> {
+  const started = operations.map((operation) => {
+    try {
+      return Promise.resolve(operation());
+    } catch (error) {
+      return Promise.reject(asError(error));
+    }
+  });
+  return Promise.allSettled(started).then((results) => {
+    const failures: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length) throw new AggregateError(failures, message);
+  });
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Mail shutdown operation failed.', { cause: value });
 }
 
 /**

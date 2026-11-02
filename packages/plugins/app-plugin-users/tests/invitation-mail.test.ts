@@ -80,12 +80,19 @@ it('retains invitation capacity for original sends after cancellation and closes
       ),
     ).toBe(true);
     const shutdown = adapter.close();
-    await vi.advanceTimersByTimeAsync(5_001);
-    expect(close).not.toHaveBeenCalled();
+    expect(adapter.close()).toBe(shutdown);
+    let closed = false;
+    const completed = shutdown.then(() => {
+      closed = true;
+    });
+    await Promise.resolve();
+    expect(close).toHaveBeenCalledOnce();
+    expect(closed).toBe(false);
     complete();
     await Promise.all(sends);
+    await completed;
     await shutdown;
-    expect(events.at(-1)).toBe('closed');
+    expect(events.indexOf('closed')).toBeLessThan(events.indexOf('sent'));
     expect(events.filter((event) => event === 'sent')).toHaveLength(5);
     expect(close).toHaveBeenCalledOnce();
   } finally {
