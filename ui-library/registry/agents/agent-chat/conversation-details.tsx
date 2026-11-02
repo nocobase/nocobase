@@ -1,10 +1,15 @@
-import { useAgentText } from '@nocobase/app-plugin-agents/client/chat';
+import {
+  CHAT_MOBILE_QUERY,
+  useAgentText,
+} from '@nocobase/app-plugin-agents/client/chat';
 import type {
   ConversationDetail,
   ConversationLink,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement, ReactNode } from 'react';
+import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
+import { XIcon } from 'lucide-react';
+import { Button } from '#components/ui/button';
 import {
   Sheet,
   SheetContent,
@@ -15,6 +20,7 @@ import { ConversationAssociations } from './conversation-associations.js';
 import { useChatTranslation } from './chat-i18n.js';
 import { useConversationUsage } from './use-conversation-usage.js';
 import { UsageSection } from './usage.js';
+import { useMediaQuery } from './use-media-query.js';
 
 export function ConversationDetails({
   beside = false,
@@ -35,6 +41,7 @@ export function ConversationDetails({
 }): ReactElement | null {
   const { t } = useChatTranslation();
   const { i18n } = useTranslation();
+  const phone = useMediaQuery(CHAT_MOBILE_QUERY);
   const agent = useAgentText();
   const usage = useConversationUsage(conversation.id, false, { passive: true });
   const content = (
@@ -87,6 +94,17 @@ export function ConversationDetails({
         {content}
       </aside>
     ) : null;
+  if (!phone)
+    return open ? (
+      <PaneSheet
+        title={t('chat.detailsTitle')}
+        testId={testId}
+        onClose={onClose}
+      >
+        {content}
+      </PaneSheet>
+    ) : null;
+  // A phone's conversation fills the screen, so the full-screen sheet is the conversation area.
   return (
     <Sheet
       open={open}
@@ -106,5 +124,81 @@ export function ConversationDetails({
         {content}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/**
+ * The details over the conversation pane only: the overlay and the sheet are positioned against the nearest
+ * `relative` ancestor (the conversation's own container), so the application's sidebar, header and a session list
+ * beside the conversation stay sharp and usable. Escape and the overlay close it; focus moves into it on opening.
+ */
+function PaneSheet({
+  title,
+  testId,
+  onClose,
+  children,
+}: {
+  readonly title: string;
+  readonly testId: string;
+  readonly onClose: () => void;
+  readonly children: ReactNode;
+}): ReactElement {
+  const { t } = useChatTranslation();
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+    const opener =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    element.focus();
+    // Native, so it runs before a host panel's own Escape handling on an ancestor.
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onClose();
+    }
+    element.addEventListener('keydown', onKeyDown);
+    return () => {
+      element.removeEventListener('keydown', onKeyDown);
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [onClose]);
+  return (
+    <>
+      <div
+        aria-hidden='true'
+        data-slot='pane-sheet-overlay'
+        className='absolute inset-0 z-40 animate-in bg-black/10 duration-150 fade-in supports-backdrop-filter:backdrop-blur-xs'
+        onClick={onClose}
+      />
+      <aside
+        ref={ref}
+        tabIndex={-1}
+        role='dialog'
+        aria-modal='false'
+        aria-label={title}
+        data-testid={testId}
+        data-placement='pane'
+        className='absolute inset-y-0 right-0 z-40 flex w-[min(100%,22rem)] animate-in flex-col border-l bg-popover text-sm text-popover-foreground shadow-lg duration-200 outline-none slide-in-from-right-10 fade-in'
+      >
+        <header className='flex shrink-0 items-center gap-2 border-b px-5 py-3'>
+          <h2 className='min-w-0 flex-1 truncate text-base font-medium'>
+            {title}
+          </h2>
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            aria-label={t('chat.close')}
+            onClick={onClose}
+          >
+            <XIcon />
+          </Button>
+        </header>
+        {children}
+      </aside>
+    </>
   );
 }

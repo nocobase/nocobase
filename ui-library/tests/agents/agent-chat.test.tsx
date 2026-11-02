@@ -759,7 +759,11 @@ it('uses the linked panel independently with default generic details and a retur
   fireEvent.click(
     await within(panel).findByRole('button', { name: 'Show details' }),
   );
-  expect(await screen.findByTestId('chat-conversation-details')).toBeVisible();
+  const details = await screen.findByTestId('chat-conversation-details');
+  expect(details).toBeVisible();
+  // Off a phone the details cover only the conversation pane: rendered inside the panel, not portaled over the page.
+  expect(details).toHaveAttribute('data-placement', 'pane');
+  expect(panel.contains(details)).toBe(true);
   fireEvent.click(
     within(screen.getByTestId('chat-conversation-details')).getByRole(
       'button',
