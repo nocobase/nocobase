@@ -64,6 +64,13 @@ function Open({
   return null;
 }
 
+function OpenHistoryButton(): ReactElement {
+  const panel = useChatPanel();
+  return (
+    <ChatHeaderButton onOpen={() => panel.openChat({ view: 'history' })} />
+  );
+}
+
 function Shell({
   children,
   path = '/',
@@ -760,4 +767,54 @@ it('uses the linked panel independently with default generic details and a retur
     within(panel).queryByRole('button', { name: 'New conversation' }),
   ).toBeNull();
   expect(within(panel).getByRole('button', { name: 'Close' })).toBeVisible();
+});
+
+it('creates an empty conversation in an independent linked panel and deletes an existing one once', async () => {
+  render(
+    <Shell>
+      <OpenHistoryButton />
+      <LinkedChatPanel />
+    </Shell>,
+  );
+
+  fireEvent.click(screen.getByTestId('chat-header-button'));
+  const panel = await screen.findByTestId('chat-panel');
+  expect(await within(panel).findByTestId('chat-history')).toBeVisible();
+  fireEvent.click(
+    within(panel).getByRole('button', { name: 'New conversation' }),
+  );
+
+  expect(
+    await within(panel).findByRole('heading', { name: 'New conversation' }),
+  ).toBeVisible();
+  expect(
+    within(panel).getByRole('button', { name: 'Back to list' }),
+  ).toBeVisible();
+  expect(within(panel).getByTestId('chat-expand')).toBeVisible();
+  expect(within(panel).getByRole('button', { name: 'Close' })).toBeVisible();
+  expect(
+    within(panel).queryByRole('button', { name: 'New conversation' }),
+  ).toBeNull();
+  expect(
+    within(panel).queryByRole('button', { name: 'Show details' }),
+  ).toBeNull();
+  expect(within(panel).queryByRole('button', { name: 'More' })).toBeNull();
+
+  fireEvent.click(within(panel).getByRole('button', { name: 'Back to list' }));
+  const existingConversation = panel.querySelector<HTMLButtonElement>(
+    '[data-conversation="welcome-tour"] > button',
+  );
+  expect(existingConversation).not.toBeNull();
+  fireEvent.click(existingConversation!);
+  fireEvent.click(within(panel).getByRole('button', { name: 'More' }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+
+  const dialogs = await screen.findAllByRole('alertdialog');
+  expect(dialogs).toHaveLength(1);
+  expect(
+    within(dialogs[0]!).getByRole('button', { name: 'Cancel' }),
+  ).toBeVisible();
+  expect(
+    within(dialogs[0]!).getByRole('button', { name: 'Delete' }),
+  ).toBeVisible();
 });

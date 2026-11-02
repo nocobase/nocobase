@@ -167,16 +167,8 @@ function LinkedConversation(): ReactElement {
             ) : null
           }
           menuItems={
-            <>
-              {detail && (
-                <DeleteConversationDialog
-                  conversation={detail}
-                  open={deleting}
-                  onOpenChange={setDeleting}
-                  onDeleted={() => panel.selectConversation(null)}
-                />
-              )}
-              {detail && (
+            detail ? (
+              <>
                 <DropdownMenuItem
                   onClick={() =>
                     actions.archive.mutate({
@@ -188,8 +180,6 @@ function LinkedConversation(): ReactElement {
                   <ArchiveIcon />
                   {t('chat.archive')}
                 </DropdownMenuItem>
-              )}
-              {detail && (
                 <DropdownMenuItem
                   variant='destructive'
                   onClick={() => setDeleting(true)}
@@ -197,8 +187,8 @@ function LinkedConversation(): ReactElement {
                   <Trash2Icon />
                   {t('chat.delete')}
                 </DropdownMenuItem>
-              )}
-            </>
+              </>
+            ) : null
           }
         />
         <ConversationView conversationId={panel.conversationId} />
