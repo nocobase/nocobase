@@ -607,7 +607,7 @@ function ConversationBody({
     <section
       className={cn(
         'relative flex h-full min-h-0 min-w-0 flex-col',
-        page ? 'gap-0' : 'gap-3',
+        page ? 'gap-0' : 'gap-3 p-3',
         className,
       )}
       aria-label={conversation?.title ?? t('chat.newConversation')}
