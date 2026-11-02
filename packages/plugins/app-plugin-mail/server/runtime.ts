@@ -1,4 +1,5 @@
 import { notifyMailMessageChange } from './realtime.js';
+import { MailError } from './services/errors.js';
 import { MailAccountRemovals } from './runtime/account-removals.js';
 import { MailBackgroundTasks } from './runtime/background-tasks.js';
 import { MailOutboxRelay } from './runtime/outbox-relay.js';
@@ -105,7 +106,10 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
             'Scheduled Mail submission failed.',
           );
           await options.store.failScheduledSubmission(payload.submissionId, {
-            code: 'MAIL_SCHEDULED_SEND_FAILED',
+            code:
+              error instanceof MailError && error.status === 'INVALID_ARGUMENT'
+                ? error.reason
+                : 'MAIL_SCHEDULED_SEND_FAILED',
             message:
               error instanceof Error
                 ? error.message

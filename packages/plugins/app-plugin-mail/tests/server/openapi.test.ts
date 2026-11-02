@@ -230,6 +230,33 @@ describe('Mail API document', () => {
     ).toEqual(expect.arrayContaining(['pageSize', 'pageToken', 'accountId']));
   });
 
+  it('documents optional source folders for move bodies and deletion queries', () => {
+    const move = operation(
+      document,
+      'post',
+      '/api/mail/accounts/{accountId}/messages/{messageId}/move',
+    );
+    const schema = (move.requestBody as OpenAPIV3_1.RequestBodyObject).content[
+      'application/json'
+    ].schema as OpenAPIV3_1.SchemaObject;
+    expect(schema.properties).toHaveProperty('sourceProviderFolderId');
+    expect(schema.required).not.toContain('sourceProviderFolderId');
+    const deletion = operation(
+      document,
+      'delete',
+      '/api/mail/accounts/{accountId}/messages/{messageId}',
+    );
+    expect(deletion.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'sourceProviderFolderId',
+          in: 'query',
+        }),
+      ]),
+    );
+    expect(move.description).toContain('MAIL_IMAP_MOVE_OUTCOME_UNKNOWN');
+  });
+
   it('documents the response bodies with shared schemas', () => {
     const get = operation(
       document,

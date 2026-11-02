@@ -18,8 +18,10 @@ import { StaticValues } from './static-values.js';
 import { RouteEvidence } from './route-evidence.js';
 import { sourceAliases, aliasMatches } from './source-aliases.js';
 
-const MAX_FILES = 400;
+// A larger application reports its module evidence as incomplete rather than being read without bound.
+const MAX_FILES = 2_000;
 const MAX_BYTES = 512_000;
+const MAX_TOTAL_BYTES = 32_000_000;
 const SOURCE_SUFFIXES = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 
 interface Source {
@@ -160,8 +162,12 @@ export async function collectModuleSources(
 }
 
 /** A bounded package-local graph; symlinks, aliases and relative paths cannot escape the owning package. */
-class SourceGraph {
+export class SourceGraph {
   private readonly files = new Map<string, Source | undefined>();
+  private bytes = 0;
+  private readonly implementationSources = new Map<string, Source>();
+  private readonly implementationResolutions = new Map<string, string>();
+  private readonly implementationImports = new Set<string>();
   private analysis: SourceEvidence | undefined;
   private serverEntry: string | undefined;
   private constructor(
@@ -242,14 +248,76 @@ class SourceGraph {
     return undefined;
   }
 
+  /** Add one explicitly resolved installed export without changing its original package ownership. */
+  public async addImplementationSource(
+    root: string,
+    entry: string,
+    from: string,
+    specifier: string,
+  ): Promise<boolean> {
+    if (
+      this.analysis ||
+      !inside(this.root, from) ||
+      this.isLocal(specifier) ||
+      (await this.local(from, specifier))
+    )
+      return false;
+    if ((await this.resolve(from)) !== from) return false;
+    const importer = await this.read(from);
+    if (!importer?.imports.includes(specifier)) return false;
+    const dependency = await SourceGraph.create(root, this.observation);
+    const target = await dependency.resolve(entry);
+    if (!target || target !== (await realpath(entry))) return false;
+    const graph = await dependency.walk(target, false);
+    if (!graph.complete) return false;
+    const added = graph.sources.filter(
+      (source) => !this.files.has(source.file),
+    );
+    const bytes = added.reduce(
+      (total, source) => total + Buffer.byteLength(source.ast.text),
+      0,
+    );
+    if (
+      this.files.size + added.length > MAX_FILES ||
+      this.bytes + bytes > MAX_TOTAL_BYTES
+    )
+      return false;
+    const resolutions = new Map<string, string>();
+    for (const source of graph.sources) {
+      for (const imported of [
+        ...source.imports,
+        ...dynamicImports(source.ast),
+      ]) {
+        const resolved = await dependency.local(source.file, imported);
+        if (resolved) resolutions.set(`${source.file}\0${imported}`, resolved);
+      }
+    }
+    for (const source of added) {
+      this.files.set(source.file, source);
+      this.implementationSources.set(source.file, source);
+    }
+    this.bytes += bytes;
+    for (const [key, value] of resolutions)
+      this.implementationResolutions.set(key, value);
+    const key = `${from}\0${specifier}`;
+    this.implementationResolutions.set(key, target);
+    this.implementationImports.add(key);
+    return true;
+  }
+
   public async prepare(entry: string): Promise<boolean> {
     this.serverEntry = await this.conventionalEntry(
       'server/routes/index.js',
       'server/routes.js',
     );
-    let backendComplete = this.serverEntry
-      ? (await this.walk(this.serverEntry, false)).complete
-      : false;
+    const nativeSources = new Map<string, Source>(this.implementationSources);
+    const serverGraph = this.serverEntry
+      ? await this.walk(this.serverEntry, false)
+      : undefined;
+    serverGraph?.sources.forEach((source) =>
+      nativeSources.set(source.file, source),
+    );
+    let backendComplete = serverGraph?.complete ?? false;
     const providerEntries: string[] = [];
     for (const name of [
       'server/providers/index.js',
@@ -261,6 +329,9 @@ class SourceGraph {
         providerEntries.push(provider);
         const graph = await this.walk(provider, false);
         backendComplete &&= graph.complete;
+        graph.sources.forEach((source) =>
+          nativeSources.set(source.file, source),
+        );
       }
     }
     const identityEntries = {
@@ -286,6 +357,13 @@ class SourceGraph {
         identitySources.set(source.file, source),
       );
     }
+    let nativeComplete = true;
+    for (const root of [this.serverEntry, ...providerEntries]) {
+      if (!root || identitySources.has(root)) continue;
+      const graph = await this.walk(root, true);
+      nativeComplete &&= graph.complete;
+      graph.sources.forEach((source) => nativeSources.set(source.file, source));
+    }
     // Read backend declarations before lazy page graphs can exhaust the shared source budget.
     await this.walk(entry, true);
     const resolutions = new Map<string, string>();
@@ -305,6 +383,13 @@ class SourceGraph {
       ),
       resolutions,
       (specifier) => this.isLocal(specifier),
+      {
+        // These are executable backend roots already traversed for API and identity evidence.
+        // Browser-only pages are not executed in the process owning Node's crypto intrinsics.
+        sources: [...new Map([...nativeSources, ...identitySources]).values()],
+        complete: backendComplete && identityComplete && nativeComplete,
+      },
+      this.implementationImports,
     );
     this.analysis.registerServices(providerEntries);
     this.analysis.authorizationIdentityResolved =
@@ -320,18 +405,25 @@ class SourceGraph {
   public evidence(
     file: string,
     roots?: readonly ts.Node[],
+    contextualCalls = false,
   ): {
     sources: (Source & { nodes: ReadonlySet<ts.Node> })[];
     providers: Set<string>;
+    collections: Set<string>;
     complete: boolean;
+    unsafeCapability: boolean;
+    unsafeValue: boolean;
   } {
-    const slice = this.analysis?.collect(file, roots);
+    const slice = this.analysis?.collect(file, roots, contextualCalls);
     const providers = new Set<string>();
     for (const reference of slice?.references ?? [])
       addProvider(providers, reference);
     return {
       providers,
+      collections: slice?.collections ?? new Set(),
       complete: slice?.complete ?? false,
+      unsafeCapability: slice?.unsafeCapability ?? true,
+      unsafeValue: slice?.unsafeValue ?? true,
       sources: [...(slice?.nodes ?? [])].flatMap(([name, nodes]) => {
         const source = this.files.get(name);
         return source ? [{ ...source, nodes }] : [];
@@ -403,7 +495,15 @@ class SourceGraph {
       source.ast,
       (await this.walk(source.file, false)).sources,
       this.analysis,
-      (file, nodes) => [...this.evidence(file, nodes).providers].sort(),
+      (file, nodes) => {
+        const evidence = this.evidence(file, nodes, true);
+        return evidence.unsafeCapability || evidence.unsafeValue
+          ? { providers: [], collections: [] }
+          : {
+              providers: [...evidence.providers].sort(),
+              collections: [...evidence.collections].sort(),
+            };
+      },
     );
   }
 
@@ -421,6 +521,10 @@ class SourceGraph {
     from: string,
     specifier: string,
   ): Promise<string | undefined> {
+    const implementation = this.implementationResolutions.get(
+      `${from}\0${specifier}`,
+    );
+    if (implementation) return implementation;
     if (specifier.startsWith('.'))
       return this.resolve(path.resolve(path.dirname(from), specifier));
     if (!specifier.startsWith('#')) {
@@ -519,7 +623,10 @@ class SourceGraph {
     this.files.set(file, undefined);
     await this.observation?.watch(file);
     try {
-      if ((await stat(file)).size > MAX_BYTES) return undefined;
+      const size = (await stat(file)).size;
+      if (size > MAX_BYTES || this.bytes + size > MAX_TOTAL_BYTES)
+        return undefined;
+      this.bytes += size;
       const ast = ts.createSourceFile(
         file,
         await readFile(file, 'utf8'),

@@ -44,6 +44,8 @@ export {
   formFeedbackErrors,
 } from '../../../../packages/app/app-client/src/form-feedback.js';
 
+export { getAvatarInitials } from '../../../../packages/app/app-client/src/avatar-initials.js';
+
 // Registry demos run at their own website routes rather than an application's configured base path.
 export const resolveAppUrl: typeof AppClient.resolveAppUrl = (href) =>
   href ?? '/';

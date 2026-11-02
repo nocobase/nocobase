@@ -134,3 +134,29 @@ it('reports a failed load and offers a retry', async () => {
   );
   expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible();
 });
+
+it.each([
+  ['周 建国', '建国'],
+  ['欧阳娜娜', '娜娜'],
+  ['Li Lei', 'L'],
+])(
+  'shows the customer avatar for %s while keeping the full name',
+  async (name, expected) => {
+    request.mockImplementation(({ path }) =>
+      Promise.resolve({
+        data:
+          path === 'crmCustomers/count'
+            ? 1
+            : [
+                {
+                  ...orders[0],
+                  customer: { ...orders[0]!.customer, displayName: name },
+                },
+              ],
+      }),
+    );
+    await mount();
+    expect(await screen.findByText(name)).toBeVisible();
+    expect(screen.getByText(expected)).toBeVisible();
+  },
+);

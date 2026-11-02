@@ -6,6 +6,10 @@ const zhCN: FoundationResource = {
     foundation: '应用底座',
   },
   page: {
+    notCounted: '未统计',
+    updatingHistory: '正在更新，当前展示上次结果。',
+    previousKernel:
+      '当前展示内核 {{version}} 的历史结果，运行内核为 {{current}}。',
     identified: '已识别 {{value}}',
     counted: '已统计 {{value}}',
     partial: '部分数据待更新',

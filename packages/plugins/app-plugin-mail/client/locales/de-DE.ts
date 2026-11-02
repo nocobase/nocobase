@@ -43,6 +43,16 @@ const deDE: LocaleResource<typeof enUS> = {
     refresh: 'Aktualisieren',
   },
   workspace: {
+    imapSourceRequired:
+      'Öffnen Sie den Quellordner, bevor Sie diese Nachricht verschieben oder löschen.',
+    imapTrashMissing:
+      'Dieses Konto hat keinen Papierkorb. Verwenden Sie Ihren E-Mail-Client.',
+    deleteUnsupported:
+      'Dieses Konto unterstützt das Löschen nicht. Verwenden Sie Ihren E-Mail-Client.',
+    imapScheduled:
+      'Brechen Sie den geplanten Versand ab, bevor Sie diesen Entwurf löschen.',
+    invalidRecipient:
+      'Korrigieren Sie die E-Mail-Adresse oder den Anzeigenamen: {{value}}. Verwenden Sie höchstens 100 Empfänger pro Feld.',
     senderLabel: 'Von',
     attachmentNumber: 'Anhang {{number}}',
     pendingDelivery:

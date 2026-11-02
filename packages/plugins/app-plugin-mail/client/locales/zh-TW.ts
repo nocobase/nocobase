@@ -40,6 +40,12 @@ const zhTW: LocaleResource<typeof enUS> = {
     refresh: '重新整理',
   },
   workspace: {
+    imapSourceRequired: '請開啟來源資料夾後再移動或刪除這封郵件。',
+    imapTrashMissing: '此信箱沒有垃圾桶資料夾，請到郵件用戶端中操作。',
+    deleteUnsupported: '此信箱不支援刪除，請到郵件用戶端中操作。',
+    imapScheduled: '請先取消排程寄送，再刪除此草稿。',
+    invalidRecipient:
+      '請修正電子郵件地址或顯示名稱：{{value}}。每個欄位最多可填寫 100 位收件人。',
     senderLabel: '來自',
     attachmentNumber: '附件 {{number}}',
     pendingDelivery: '無法確認這些傳送請求。它們的內容儲存在這裡。',

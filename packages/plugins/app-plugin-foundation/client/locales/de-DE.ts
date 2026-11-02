@@ -6,6 +6,10 @@ const deDE: FoundationResource = {
     foundation: 'Anwendungsbasis',
   },
   page: {
+    notCounted: 'Nicht gezählt',
+    updatingHistory: 'Aktualisierung… Das vorherige Ergebnis wird angezeigt.',
+    previousKernel:
+      'Verlauf von Kernel {{version}}; ausgeführter Kernel: {{current}}.',
     identified: 'Erkannt: {{value}}',
     counted: 'Erfasst: {{value}}',
     partial: 'Einige Daten warten auf Aktualisierung',

@@ -158,7 +158,7 @@ function ImagePreview(inputProps: {
     <img
       src={url}
       alt={file.filename}
-      className='max-h-[70vh] max-w-full object-contain'
+      className='mx-auto block max-h-[70vh] max-w-full object-contain'
       onError={() => setFailedUrl(url)}
     />
   );
