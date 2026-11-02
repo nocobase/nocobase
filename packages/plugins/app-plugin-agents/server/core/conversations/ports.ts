@@ -284,7 +284,7 @@ export interface ConversationService {
     id: string,
     agentId: string,
   ): Promise<ConversationDetail>;
-  /** Cancels the conversation's open runs: a queued one at once, a working one is asked to stop. */
+  /** Cancels open runs; after a working Runner turn stops, queued messages it never received continue in the next turn. */
   stop(userId: string, id: string): Promise<ConversationDetail>;
   /**
    * Deletes the owner's conversation for good: its open runs are cancelled, its messages, files, links and kept

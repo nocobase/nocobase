@@ -29,6 +29,153 @@ const context: OnlineAgentContext = {
   } as AuthorizationContext,
 };
 
+it.each(['notSteered', 'steered', 'acknowledged', 'withdrawn'] as const)(
+  'continues only unreceived queued messages after a user stop (%s)',
+  async (delivery) => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const agentId = await h.createAgent({ source: 'runner', name: 'Helper' });
+    const agent = await h.services.onlineAgent.realtime(context, { agentId });
+    const report = (id: string, action: string, body: unknown = {}) =>
+      h.request('POST', `/agents/runners/runs/${id}/${action}`, {
+        runnerKey: runner.key,
+        body,
+      });
+    await agent.send([{ role: 'user', content: 'First' }]);
+    const [first] = await claim(h, runner);
+    await report(first.run.id, 'start', {
+      workDir: '/work/chat',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    await agent.queue(
+      [{ role: 'user', content: 'Continue this exact message' }],
+      {
+        clientId: 'queued-client',
+      },
+    );
+    const queued = (await agent.history()).find(
+      (m) => m.metadata?.clientId === 'queued-client',
+    )!;
+    if (delivery === 'withdrawn')
+      await h.services.conversations.withdraw(
+        'alice',
+        agent.sessionId,
+        queued.id,
+      );
+    if (delivery === 'steered' || delivery === 'acknowledged')
+      await h.request('GET', `/agents/runners/runs/${first.run.id}/status`, {
+        runnerKey: runner.key,
+      });
+    const inputs = (await h.services.runs.detail(first.run.id)).inputs;
+    const pending = inputs.find((input) =>
+      input.text.includes('Continue this exact message'),
+    )!;
+    await agent.abort();
+    // Cancellation drains late native acknowledgement without a mode: turn event.
+    if (delivery === 'acknowledged')
+      await report(first.run.id, 'events', {
+        events: [
+          {
+            seq: 1,
+            at: h.clock.now().toISOString(),
+            type: 'input',
+            content: pending.text,
+            meta: { inputId: pending.id },
+          },
+        ],
+      });
+    expect(
+      (
+        await report(first.run.id, 'cancelAck', {
+          handledInputIds: inputs
+            .filter((i) => i.id !== pending.id || delivery === 'acknowledged')
+            .map((i) => i.id),
+        })
+      ).status,
+    ).toBe(200);
+    const continues = delivery === 'notSteered' || delivery === 'steered';
+    const next = await claim(h, runner);
+    expect(next).toHaveLength(continues ? 1 : 0);
+    if (continues) {
+      expect(next[0].run.id).not.toBe(first.run.id);
+      expect(next[0].inputs).toHaveLength(1);
+      expect(next[0].inputs[0].payload).toMatchObject({ messageId: queued.id });
+      await report(next[0].run.id, 'start', {
+        workDir: '/work/chat',
+        adapter: { kind: 'claude' },
+        acceptsInput: true,
+      });
+      await report(next[0].run.id, 'events', {
+        events: [
+          {
+            seq: 1,
+            at: h.clock.now().toISOString(),
+            type: 'input',
+            content: next[0].inputs[0].text,
+            meta: { inputId: next[0].inputs[0].id, mode: 'prompt' },
+          },
+        ],
+      });
+    }
+    // A new backend instance reads the same saved row after refresh.
+    const restored = await h.services.onlineAgent.realtime(context, {
+      sessionId: agent.sessionId,
+    });
+    const saved = (await restored.history()).filter(
+      (m) => m.metadata?.clientId === 'queued-client',
+    );
+    expect(saved).toHaveLength(1);
+    expect(saved[0].id).toBe(queued.id);
+    expect(saved[0].metadata?.queue).toBe(
+      delivery === 'withdrawn' ? 'withdrawn' : undefined,
+    );
+  },
+);
+
+it.each(['complete', 'fail', 'otherUserCancel'] as const)(
+  'does not continue queued messages after %s',
+  async (outcome) => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const agentId = await h.createAgent({
+      source: 'runner',
+      name: 'Helper',
+      maxAttempts: 1,
+    });
+    const agent = await h.services.onlineAgent.realtime(context, { agentId });
+    await agent.send([{ role: 'user', content: 'First' }]);
+    const [first] = await claim(h, runner);
+    const report = (action: string, body: unknown) =>
+      h.request('POST', `/agents/runners/runs/${first.run.id}/${action}`, {
+        runnerKey: runner.key,
+        body,
+      });
+    await report('start', {
+      workDir: '/work/chat',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    await agent.queue([{ role: 'user', content: 'Not automatically retried' }]);
+    if (outcome === 'otherUserCancel')
+      await h.services.runs.cancel(first.run.id, 'bob');
+    const handledInputIds = (
+      await h.services.runs.detail(first.run.id)
+    ).inputs.map((input) => input.id);
+    const result = await report(
+      outcome === 'otherUserCancel' ? 'cancelAck' : outcome,
+      outcome === 'fail'
+        ? { reason: 'toolProcess', detail: 'Test tool failed.' }
+        : { summary: 'Done', handledInputIds, usage: [] },
+    );
+    expect(result.status).toBe(200);
+    expect(await claim(h, runner)).toHaveLength(0);
+    expect(
+      (await agent.history()).filter((m) => m.metadata?.queue === 'unanswered'),
+    ).toHaveLength(1);
+  },
+);
+
 it('queues messages into the run at work, withdraws one the runner has not taken, and answers each in order', async () => {
   h = await createHarness();
   const runner = await h.registerRunner();
