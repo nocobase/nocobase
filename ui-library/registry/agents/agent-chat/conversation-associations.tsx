@@ -10,7 +10,7 @@ import {
 } from './conversation-links.js';
 import type { ConversationLink } from '@nocobase/app-plugin-agents/shared/conversations';
 import { resolveAppUrl } from '@nocobase/app-client';
-import { PanelRightIcon, UnlinkIcon } from 'lucide-react';
+import { LinkIcon, PanelRightIcon, UnlinkIcon } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import { useChatTranslation } from './chat-i18n.js';
 
@@ -22,7 +22,8 @@ export interface AssociationSectionProps {
 export interface ConversationAssociationSlot {
   readonly label: string;
   readonly hidden?: boolean;
-  readonly render: (props: AssociationSectionProps) => ReactNode;
+  /** Omitted: the kind keeps the default rows under its own label. */
+  readonly render?: (props: AssociationSectionProps) => ReactNode;
 }
 export interface ConversationAssociationOptions {
   readonly slots?: Readonly<Record<string, ConversationAssociationSlot>>;
@@ -75,18 +76,36 @@ export function ConversationAssociationSummary({
         })}
       </>
     );
+  // Generic links only say where each stands in words; count them per status, in first-seen order.
+  const statuses = new Map<string, number>();
+  for (const link of links)
+    if (link.view?.status)
+      statuses.set(link.view.status, (statuses.get(link.view.status) ?? 0) + 1);
   return (
-    <Button
-      variant='ghost'
-      size='sm'
+    <button
+      type='button'
+      title={t('chat.showDetails')}
       onClick={onOpenDetails}
-      className='justify-start text-xs'
+      className='flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left text-xs hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+      data-testid='conversation-association-summary'
     >
-      <span>
+      <LinkIcon className='size-4 shrink-0' aria-hidden />
+      <span className='shrink-0 font-medium'>
         {t('chat.relatedWork')} {links.length}
       </span>
-      <PanelRightIcon className='ml-auto' />
-    </Button>
+      {/* One line only: a status that does not fit wraps onto the hidden second line, whole, never cut mid-word. */}
+      <span className='flex h-4 min-w-0 flex-1 flex-wrap items-center gap-x-2 overflow-hidden text-muted-foreground'>
+        {[...statuses].map(([status, count]) => (
+          <span key={status} className='h-4 shrink-0 whitespace-nowrap'>
+            {status} {count}
+          </span>
+        ))}
+      </span>
+      <PanelRightIcon
+        className='size-3.5 shrink-0 text-muted-foreground'
+        aria-hidden
+      />
+    </button>
   );
 }
 export function ConversationAssociations({
@@ -123,7 +142,7 @@ export function ConversationAssociations({
                 {items.length}
               </span>
             </h3>
-            {slot ? (
+            {slot?.render ? (
               slot.render({ conversationId, links: items, onOpen: open })
             ) : (
               <DefaultAssociations

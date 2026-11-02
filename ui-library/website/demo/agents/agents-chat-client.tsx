@@ -49,6 +49,7 @@ export {
 import type {
   ChatAgent,
   ConversationDetail,
+  ConversationLink,
   ResolvedPageContext,
   ConversationMode,
   ConversationNotice,
@@ -92,36 +93,42 @@ const ago = (minutes: number): string =>
 
 const online = { online: true, reason: null, onlineRunners: 1 } as const;
 
+/** `?lang=zh-CN` previews the sample data in Chinese as well as the interface. */
+const zh =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('lang') === 'zh-CN';
+const L = (en: string, cn: string): string => (zh ? cn : en);
+
 const AGENTS: readonly ChatAgent[] = [
   {
     id: 'assistant',
-    name: 'Assistant',
+    name: L('Assistant', '助手'),
     description: 'Everyday coding and writing.',
     nameText: null,
     descriptionText: null,
     avatar: null,
     isSystemDefault: false,
     isMyDefault: true,
-    runnerNames: ['Demo runtime'],
+    runnerNames: [L('Demo runtime', '演示执行机')],
     availability: online,
     personalOnly: false,
   },
   {
     id: 'coder',
-    name: 'Coding agent',
+    name: L('Coding agent', '编码 Agent'),
     description: 'Works in a repository on a runner.',
     nameText: null,
     descriptionText: null,
     avatar: null,
     isSystemDefault: true,
     isMyDefault: false,
-    runnerNames: ['Demo runtime'],
+    runnerNames: [L('Demo runtime', '演示执行机')],
     availability: online,
     personalOnly: false,
   },
   {
     id: 'release',
-    name: 'Release manager',
+    name: L('Release manager', '发布经理'),
     description: null,
     nameText: null,
     descriptionText: null,
@@ -134,7 +141,7 @@ const AGENTS: readonly ChatAgent[] = [
   },
   {
     id: 'online',
-    name: 'Online agent',
+    name: L('Online agent', '在线 Agent'),
     description: 'Chat with a configured model and registered tools.',
     nameText: null,
     descriptionText: null,
@@ -163,11 +170,21 @@ function configuredAgents(): readonly ChatAgent[] {
 const MODELS: readonly ModelService[] = [
   {
     name: 'demo',
-    title: 'Demo models',
+    title: L('Demo models', '演示模型'),
     provider: 'openai',
     models: [
-      { value: 'fast', label: 'Fast model', kind: 'chat', dimensions: null },
-      { value: 'deep', label: 'Deep model', kind: 'chat', dimensions: null },
+      {
+        value: 'fast',
+        label: L('Fast model', '快速模型'),
+        kind: 'chat',
+        dimensions: null,
+      },
+      {
+        value: 'deep',
+        label: L('Deep model', '深度模型'),
+        kind: 'chat',
+        dimensions: null,
+      },
     ],
   },
 ];
@@ -308,6 +325,111 @@ function attachment(
   };
 }
 
+function link(
+  id: string,
+  kind: string,
+  key: string | null,
+  title: string,
+  status: string | null,
+  minutes: number,
+): ConversationLink {
+  return {
+    id,
+    conversationId: 'release-follow-up',
+    kind,
+    targetId: id,
+    origin: 'agent',
+    createdAt: ago(minutes),
+    view: {
+      key,
+      title,
+      status,
+      url: null,
+      targetUpdatedAt: ago(minutes),
+    },
+  };
+}
+
+/** Linked work in the plugin's generic shape: the demo's `issue` slot renders tasks, other kinds use the default. */
+const LINKS: readonly ConversationLink[] = [
+  link(
+    'pm-12',
+    'issue',
+    'PM-12',
+    L('Welcome tour', '欢迎引导'),
+    L('In review', '待验收'),
+    4,
+  ),
+  link(
+    'pm-15',
+    'issue',
+    'PM-15',
+    L('Invite emails', '邀请邮件'),
+    L('In progress', '进行中'),
+    6,
+  ),
+  link(
+    'pm-16',
+    'issue',
+    'PM-16',
+    L('Onboarding checklist copy', '新手清单文案'),
+    L('In progress', '进行中'),
+    9,
+  ),
+  link(
+    'pm-18',
+    'issue',
+    'PM-18',
+    L('Empty states', '空状态'),
+    L('Todo', '待规划'),
+    20,
+  ),
+  link(
+    'pm-9',
+    'issue',
+    'PM-9',
+    L('Sign-in redirect', '登录跳转'),
+    L('Done', '已完成'),
+    40,
+  ),
+  link(
+    'pm-10',
+    'issue',
+    'PM-10',
+    L('Workspace switcher', '工作区切换'),
+    L('Done', '已完成'),
+    60,
+  ),
+  link(
+    'pm-11',
+    'issue',
+    'PM-11',
+    L('Inbox badge', '收件箱角标'),
+    L('Done', '已完成'),
+    80,
+  ),
+  link(
+    'doc-1',
+    'document',
+    null,
+    L('Release checklist', '发布检查清单'),
+    null,
+    30,
+  ),
+];
+
+/** Unlinks in memory, as `DELETE …/links/:id` would; the demo's API client routes that request here. */
+export function removeDemoLink(conversationId: string, linkId: string): void {
+  update((current) => ({
+    ...current,
+    conversations: current.conversations.map((item) =>
+      item.id === conversationId
+        ? { ...item, links: item.links?.filter((entry) => entry.id !== linkId) }
+        : item,
+    ),
+  }));
+}
+
 interface Store {
   readonly conversations: readonly ConversationDetail[];
   readonly messages: Readonly<Record<string, readonly Chat.AppUIMessage[]>>;
@@ -317,42 +439,98 @@ interface Store {
 function initialStore(): Store {
   return {
     conversations: [
+      // Runner agent with linked work: the linked panel's summary row and details list them.
+      conversation(
+        'release-follow-up',
+        'coder',
+        L('Release follow-up', '发布跟进'),
+        {
+          lastMessageAt: ago(2),
+          runner: {
+            id: 'runner-1',
+            name: L('Demo runtime', '演示执行机'),
+            status: 'online',
+          },
+          links: LINKS,
+        },
+      ),
       // Online agent, idle: its last messages offer edit, copy and regenerate on hover; it consulted a runner agent.
-      conversation('release-plan', 'online', 'Plan the onboarding release', {
-        lastMessageAt: ago(3),
-        mode: 'online',
-        execution: { status: 'idle' },
-      }),
+      conversation(
+        'release-plan',
+        'online',
+        L('Plan the onboarding release', '规划新手引导发布'),
+        {
+          lastMessageAt: ago(3),
+          mode: 'online',
+          execution: { status: 'idle' },
+        },
+      ),
       // Online agent, archived.
-      conversation('naming', 'online', 'Name the onboarding checklist', {
-        lastMessageAt: ago(300),
-        archivedAt: ago(240),
-        mode: 'online',
-        execution: { status: 'idle' },
-      }),
+      conversation(
+        'naming',
+        'online',
+        L('Name the onboarding checklist', '给新手清单起名'),
+        {
+          lastMessageAt: ago(300),
+          archivedAt: ago(240),
+          mode: 'online',
+          execution: { status: 'idle' },
+        },
+      ),
       // Runner agent at work, with an unread reply on its way.
-      conversation('flaky-test', 'coder', 'Fix the flaky sign-in test', {
-        read: false,
-        run: { id: 'run-7', status: 'running', acceptsInput: true },
-        lastMessageAt: ago(1),
-      }),
+      conversation(
+        'flaky-test',
+        'coder',
+        L('Fix the flaky sign-in test', '修复不稳定的登录测试'),
+        {
+          read: false,
+          run: { id: 'run-7', status: 'running', acceptsInput: true },
+          lastMessageAt: ago(1),
+        },
+      ),
       // Runner agent, started from the issue page's "Ask agent", with the issue as its context.
       conversation(
         'welcome-tour',
         'assistant',
-        'Summarize PM-12 Welcome tour',
+        L('Summarize PM-12 Welcome tour', '总结 PM-12 欢迎引导'),
         {
           source: 'askAgent',
           lastMessageAt: ago(12),
         },
       ),
       // Runner agent, archived after its run failed.
-      conversation('notes', 'release', 'Release notes draft', {
-        archivedAt: ago(600),
-        lastMessageAt: ago(900),
-      }),
+      conversation(
+        'notes',
+        'release',
+        L('Release notes draft', '发布说明草稿'),
+        {
+          archivedAt: ago(600),
+          lastMessageAt: ago(900),
+        },
+      ),
     ],
     messages: {
+      'release-follow-up': [
+        message(
+          'release-follow-up',
+          1,
+          'user',
+          L(
+            'Follow up on the tasks for this release.',
+            '帮我跟进这次发布相关的任务。',
+          ),
+        ),
+        message(
+          'release-follow-up',
+          2,
+          'assistant',
+          L(
+            'PM-12 is waiting for your review, and PM-15 and PM-16 are in progress. I will keep following up on the rest.',
+            'PM-12 在等你验收，PM-15 和 PM-16 正在进行。其余任务我会继续跟进。',
+          ),
+          { metadata: { agentId: 'coder' } },
+        ),
+      ],
       naming: [
         message(
           'naming',
@@ -375,7 +553,10 @@ function initialStore(): Store {
           'welcome-tour',
           1,
           'user',
-          'Summarize this issue and what is left to do.',
+          L(
+            'Summarize this issue and what is left to do.',
+            '总结一下这个任务还剩什么。',
+          ),
           {
             workContext: {
               route: '/',
@@ -396,7 +577,10 @@ function initialStore(): Store {
           'welcome-tour',
           2,
           'assistant',
-          'PM-12 adds a short tour for new members: the projects, the inbox and how to ask an agent. The tour is built and in review with Lin; what is left is the review and the copy for the last step.',
+          L(
+            'PM-12 adds a short tour for new members: the projects, the inbox and how to ask an agent. The tour is built and in review with Lin; what is left is the review and the copy for the last step.',
+            'PM-12 为新成员加一段简短引导：项目、收件箱，以及怎样问 Agent。引导已完成，正在由 Lin 验收；剩下验收和最后一步的文案。',
+          ),
           { metadata: { agentId: 'assistant' } },
         ),
       ],
@@ -405,7 +589,10 @@ function initialStore(): Store {
           'release-plan',
           1,
           'user',
-          'What is left before we can ship the onboarding release?',
+          L(
+            'What is left before we can ship the onboarding release?',
+            '新手引导发布之前还剩哪些事？',
+          ),
           {
             workContext: {
               route: '/projects/onboarding',
@@ -415,7 +602,7 @@ function initialStore(): Store {
                   kind: 'project',
                   id: 'p1',
                   key: null,
-                  title: 'Onboarding',
+                  title: L('Onboarding', '新手引导'),
                   url: null,
                 },
               ],
@@ -426,7 +613,10 @@ function initialStore(): Store {
           'release-plan',
           2,
           'assistant',
-          'Three issues are still open:\n\n| Issue | Status | Owner |\n| --- | --- | --- |\n| PM-12 Welcome tour | In review | Lin |\n| PM-15 Invite emails | In progress | Coding agent |\n| PM-18 Empty states | Todo | — |\n\nPM-12 only needs a review; I can **ask the coding agent** to finish PM-15.',
+          L(
+            'Three issues are still open:\n\n| Issue | Status | Owner |\n| --- | --- | --- |\n| PM-12 Welcome tour | In review | Lin |\n| PM-15 Invite emails | In progress | Coding agent |\n| PM-18 Empty states | Todo | — |\n\nPM-12 only needs a review; I can **ask the coding agent** to finish PM-15.',
+            '还有三个任务没完成：\n\n| 任务 | 状态 | 负责人 |\n| --- | --- | --- |\n| PM-12 欢迎引导 | 待验收 | Lin |\n| PM-15 邀请邮件 | 进行中 | 编码 Agent |\n| PM-18 空状态 | 待规划 | — |\n\nPM-12 只差验收；我可以**请编码 Agent** 完成 PM-15。',
+          ),
           {
             metadata: {
               agentId: 'online',
@@ -434,24 +624,35 @@ function initialStore(): Store {
             },
           },
         ),
-        message('release-plan', 3, 'system', 'Consulted Coding agent', {
-          metadata: {
-            notice: {
-              code: 'consultation',
-              callId: 'call-1',
-              runId: 'run-3',
-              agentId: 'coder',
-              agentName: 'Coding agent',
-              question: 'How long until PM-15 can be reviewed?',
-              state: 'completed',
-              answer:
-                'About an hour: the templates are done, the tests remain.',
-              error: null,
-              usage: { inputTokens: 1840, outputTokens: 212 },
-              plans: 3,
+        message(
+          'release-plan',
+          3,
+          'system',
+          L('Consulted Coding agent', '咨询了编码 Agent'),
+          {
+            metadata: {
+              notice: {
+                code: 'consultation',
+                callId: 'call-1',
+                runId: 'run-3',
+                agentId: 'coder',
+                agentName: L('Coding agent', '编码 Agent'),
+                question: L(
+                  'How long until PM-15 can be reviewed?',
+                  'PM-15 还要多久可以验收？',
+                ),
+                state: 'completed',
+                answer: L(
+                  'About an hour: the templates are done, the tests remain.',
+                  '大约一小时：模板已完成，还剩测试。',
+                ),
+                error: null,
+                usage: { inputTokens: 1840, outputTokens: 212 },
+                plans: 3,
+              },
             },
           },
-        }),
+        ),
       ],
       'flaky-test': [
         message(
@@ -874,14 +1075,17 @@ export const AgentAvatar: typeof Chat.AgentAvatar = ({
   </span>
 );
 
-const relative = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-const dateTime = new Intl.DateTimeFormat('en', {
+const relative = new Intl.RelativeTimeFormat(zh ? 'zh-CN' : 'en', {
+  numeric: 'auto',
+});
+const dateTime = new Intl.DateTimeFormat(zh ? 'zh-CN' : 'en', {
   dateStyle: 'medium',
   timeStyle: 'short',
 });
 const formatters: Chat.Formatters = {
   dateTime: (iso) => (iso ? dateTime.format(new Date(iso)) : '—'),
-  time: (iso) => (iso ? new Date(iso).toLocaleTimeString('en') : '—'),
+  time: (iso) =>
+    iso ? new Date(iso).toLocaleTimeString(zh ? 'zh-CN' : 'en') : '—',
   relative: (iso) => {
     if (!iso) return '—';
     const minutes = Math.round((new Date(iso).getTime() - Date.now()) / 60_000);

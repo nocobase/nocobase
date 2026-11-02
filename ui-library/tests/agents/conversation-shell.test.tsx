@@ -8,6 +8,7 @@ import { expect, it, vi } from 'vitest';
 import { ConversationHeader } from '../../registry/agents/agent-chat/conversation-header';
 import {
   ConversationAssociations,
+  ConversationAssociationSummary,
   ConversationAssociationsProvider,
 } from '../../registry/agents/agent-chat/conversation-associations';
 import enUS from '../../registry/agents/agent-chat/locales/en-US';
@@ -134,4 +135,26 @@ it('uses per-kind slots without placing business data in the generic panel', () 
   );
   expect(screen.getByText('Adapter w')).toBeVisible();
   expect(screen.queryByRole('link')).toBeNull();
+});
+it('summarizes generic links by their status words and opens the details', () => {
+  const open = vi.fn();
+  render(
+    <ConversationAssociationSummary conversationId='c' onOpenDetails={open} />,
+    { wrapper },
+  );
+  const summary = screen.getByTestId('conversation-association-summary');
+  expect(summary).toHaveTextContent(`${enUS.chat.relatedWork} 1`);
+  expect(within(summary).getByText('Ready 1')).toBeVisible();
+  fireEvent.click(summary);
+  expect(open).toHaveBeenCalledOnce();
+});
+it('keeps the default rows under a slot label without a renderer', () => {
+  render(
+    <ConversationAssociationsProvider slots={{ work: { label: 'Documents' } }}>
+      <ConversationAssociations conversationId='c' />
+    </ConversationAssociationsProvider>,
+    { wrapper },
+  );
+  expect(screen.getByRole('heading', { name: /Documents/ })).toBeVisible();
+  expect(screen.getByRole('link')).toHaveTextContent('W-1 Generic work');
 });

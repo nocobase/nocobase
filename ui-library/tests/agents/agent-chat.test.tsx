@@ -314,6 +314,11 @@ describe('ChatPanel', () => {
       within(history).getByText('Fix the flaky sign-in test'),
     ).toBeVisible();
     expect(within(history).queryByText('Release notes draft')).toBeNull();
+    // Rows carry no label of where the conversation was started; the source stays a filter only.
+    const asked = within(history)
+      .getByText('Summarize PM-12 Welcome tour')
+      .closest('li')!;
+    expect(within(asked).queryByText('Ask agent')).toBeNull();
     // Archived is a toggle at the bottom of the list, not a tab.
     const archived = within(history).getByTestId('chat-history-archived');
     expect(archived).toHaveAttribute('aria-pressed', 'false');
