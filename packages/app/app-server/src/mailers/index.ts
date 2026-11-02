@@ -46,6 +46,15 @@ const closedResult = (): MailResult => ({
   error: { category: 'configuration', message: 'Mail sender is closed.' },
 });
 
+const initializationFailure = (): MailResult => ({
+  status: 'failed',
+  disposition: 'never',
+  error: {
+    category: 'configuration',
+    message: 'Mail transport could not be initialized.',
+  },
+});
+
 /** Allocate the transport on first send; close cancels supported network work, then waits for its original end. */
 function createMailSender(config: EmailChannelConfig): MailSender {
   let transport: MailTransport | undefined;
@@ -54,7 +63,12 @@ function createMailSender(config: EmailChannelConfig): MailSender {
   return {
     send(message, options) {
       if (closing) return Promise.resolve(closedResult());
-      transport ??= createMailTransport(config);
+      try {
+        transport ??= createMailTransport(config);
+      } catch {
+        // Initialization has not submitted anything; do not expose provider or configuration details.
+        return Promise.resolve(initializationFailure());
+      }
       const completion = transport.send(message, {
         signal: options?.signal,
         idempotencyKey: options?.idempotencyKey,

@@ -194,7 +194,7 @@ it('snapshots nested legacy SMTP credentials before the first send', async () =>
 });
 
 it('can close a sender after its first transport initialization fails', async () => {
-  const failure = new Error('Synthetic transport initialization failure.');
+  const failure = new Error('Synthetic transport failure containing a secret.');
   const create = vi
     .spyOn(transports, 'createMailTransport')
     .mockImplementationOnce(() => {
@@ -202,7 +202,16 @@ it('can close a sender after its first transport initialization fails', async ()
     });
   const sender = new MailSenderFactory().createFromConfig(smtp);
 
-  expect(() => sender.send(message)).toThrow(failure);
+  const result = await sender.send(message);
+  expect(result).toEqual({
+    status: 'failed',
+    disposition: 'never',
+    error: {
+      category: 'configuration',
+      message: 'Mail transport could not be initialized.',
+    },
+  });
+  expect(JSON.stringify(result)).not.toContain('secret');
   await expect(sender.close()).resolves.toBeUndefined();
   await expect(sender.send(message)).resolves.toMatchObject({
     status: 'failed',
