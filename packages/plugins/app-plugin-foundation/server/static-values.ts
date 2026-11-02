@@ -4299,6 +4299,12 @@ export class StaticValues {
       };
     }
     if (ts.isForOfStatement(node)) {
+      // Only synchronous finite configuration arrays are supported. Do not expand a request-time async producer.
+      if (
+        node.awaitModifier ||
+        ts.isAwaitExpression(StaticValues.unwrap(node.expression))
+      )
+        return { ...CONTINUES, unknown: true };
       const arrays = this.values(node.expression).filter(
         ts.isArrayLiteralExpression,
       );

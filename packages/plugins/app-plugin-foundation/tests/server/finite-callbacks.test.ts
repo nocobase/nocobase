@@ -60,6 +60,18 @@ it('completes an ordinary upload configuration in callback order', () => {
 });
 
 it.each([
+  '(async () => { for (const entry of await entries()) { if (!entry) throw new Error(); } return "done"; })()',
+  '(async () => { for await (const entry of [1]) { if (!entry) throw new Error(); } return "done"; })()',
+])('keeps async iteration outside finite configuration proof: %s', (source) => {
+  const { evaluator, expression } = fixture(
+    source,
+    'async function entries(){return [1];}',
+  );
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+  expect(evaluator.values(expression)).toEqual([]);
+});
+
+it.each([
   '[{},{}].map(entry=>entry.missing ?? unknown())',
   "(() => {const paths=[];return ['same','same'].map(path=>{if(paths.some(existing=>existing===path))throw new Error('duplicate');paths.push(path);return path;});})()",
 ])(
