@@ -103,18 +103,24 @@ export function useFoundationOverview(): FoundationOverviewState {
 
   const refresh = useCallback(() => mutate('refresh'), [mutate]);
   const countRecords = useCallback(() => mutate('countRecords'), [mutate]);
-  const failure = query.error ?? status.error ?? submit.error;
-  const error: FoundationLoadError | undefined = failure
-    ? failure instanceof ApiClientError &&
-      (failure.status === 401 || failure.status === 403)
-      ? 'forbidden'
-      : 'failed'
-    : query.data?.status === 'failed'
+  const failures = [query.error, status.error, submit.error];
+  const forbidden = failures.some(
+    (failure) =>
+      failure instanceof ApiClientError &&
+      (failure.status === 401 || failure.status === 403),
+  );
+  const error: FoundationLoadError | undefined = forbidden
+    ? 'forbidden'
+    : failures.some(Boolean)
       ? 'failed'
-      : undefined;
+      : query.data?.status === 'failed'
+        ? 'failed'
+        : undefined;
   useEffect(() => {
-    if (error === 'forbidden')
+    if (error === 'forbidden') {
       queryClient.removeQueries({ queryKey: FOUNDATION_OVERVIEW_QUERY_KEY });
+      queryClient.removeQueries({ queryKey: STATUS_KEY });
+    }
   }, [error, queryClient]);
   return {
     ...(query.data?.overview && error !== 'forbidden'

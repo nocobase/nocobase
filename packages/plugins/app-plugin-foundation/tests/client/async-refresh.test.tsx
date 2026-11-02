@@ -14,6 +14,7 @@ import {
 import { expect, it } from 'vitest';
 
 import plugin from '../../client/plugin.js';
+import { FOUNDATION_OVERVIEW_QUERY_KEY } from '../../client/api.js';
 import { FoundationPage } from '../../client/components/foundation-page.js';
 import type {
   FoundationOverview,
@@ -217,4 +218,51 @@ it('ensures a first snapshot, shows first failure without zeroes and retries exp
   expect(
     calls.filter((call) => call.path === 'foundation/refresh'),
   ).toHaveLength(1);
+});
+
+it('hides historical internals on a refused submission even when an earlier read already failed', async () => {
+  const cache = new QueryClient();
+  let failRead = false;
+  await render((call) => {
+    const code = call.method === 'POST' ? 403 : failRead ? 500 : undefined;
+    if (code)
+      return Response.json(
+        {
+          error: {
+            code,
+            status: code === 403 ? 'PERMISSION_DENIED' : 'INTERNAL',
+            reason: 'FIXTURE_FAILURE',
+            domain: 'foundation',
+            message: 'Unavailable.',
+          },
+        },
+        { status: code },
+      );
+    return {
+      data: {
+        overview,
+        kernelVersion: 'fixture-1',
+        status: 'succeeded',
+        needsScan: false,
+      },
+    };
+  }, cache);
+  await screen.findByRole('button', { name: 'Refresh' });
+  failRead = true;
+  await act(async () => {
+    await cache.refetchQueries({ queryKey: FOUNDATION_OVERVIEW_QUERY_KEY });
+  });
+  expect(screen.getByRole('region', { name: 'Key numbers' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  await waitFor(() =>
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Only an administrator with unrestricted access',
+    ),
+  );
+  expect(
+    screen.queryByRole('region', { name: 'Key numbers' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('region', { name: 'NocoBase Core' }),
+  ).not.toBeInTheDocument();
 });
