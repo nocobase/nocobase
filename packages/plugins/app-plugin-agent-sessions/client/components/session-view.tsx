@@ -164,7 +164,14 @@ export function SessionView({
   // An open record's panel takes the details' place beside the conversation.
   const showDetails = details && !panel.opened;
   return (
-    <LinkOpenContext.Provider value={panel.open}>
+    <LinkOpenContext.Provider
+      value={(link) => {
+        const opened = panel.open(link);
+        // A page overlay yields to the record view; desktop detail columns remain available on return.
+        if (opened && !surface.panel && !detailsBeside) setDetails(false);
+        return opened;
+      }}
+    >
       <div
         ref={viewportRef}
         className={cn(
