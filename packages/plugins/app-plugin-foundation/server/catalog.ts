@@ -14,6 +14,10 @@ interface SystemCollectionOwner {
 
 const SYSTEM_COLLECTION_OWNERS: readonly SystemCollectionOwner[] = [
   {
+    packageName: '@nocobase/app-plugin-foundation',
+    names: ['foundationSnapshots'],
+  },
+  {
     // Better Auth's own tables, under the names it gives them.
     packageName: '@nocobase/app-plugin-authentication',
     names: ['user', 'account', 'session', 'verification', 'deviceCode', 'jwks'],

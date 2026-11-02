@@ -6,6 +6,10 @@ const jaJP: FoundationResource = {
     foundation: 'アプリ基盤',
   },
   page: {
+    notCounted: '未集計',
+    updatingHistory: '更新中です。前回の結果を表示しています。',
+    previousKernel:
+      'カーネル {{version}} の履歴を表示中。実行中のカーネルは {{current}} です。',
     identified: '識別済み {{value}}',
     counted: '集計済み {{value}}',
     partial: '一部のデータは更新待ちです',

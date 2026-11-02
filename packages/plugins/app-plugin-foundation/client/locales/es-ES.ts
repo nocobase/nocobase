@@ -6,6 +6,10 @@ const esES: FoundationResource = {
     foundation: 'Base de la aplicación',
   },
   page: {
+    notCounted: 'Sin contar',
+    updatingHistory: 'Actualizando… Se muestra el resultado anterior.',
+    previousKernel:
+      'Se muestra el historial del núcleo {{version}}; núcleo en ejecución: {{current}}.',
     identified: 'Identificados: {{value}}',
     counted: 'Contabilizado: {{value}}',
     partial: 'Algunos datos están pendientes de actualizar',

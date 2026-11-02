@@ -6,6 +6,10 @@ const enUS = {
     foundation: 'App foundation',
   },
   page: {
+    notCounted: 'Not counted',
+    updatingHistory: 'Updating… Showing the previous result.',
+    previousKernel:
+      'Showing history from kernel {{version}}; running kernel {{current}}.',
     identified: 'Identified {{value}}',
     counted: 'Counted {{value}}',
     partial: 'Some data is pending update',
