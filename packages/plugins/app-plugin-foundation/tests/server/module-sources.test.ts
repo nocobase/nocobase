@@ -1402,6 +1402,75 @@ it('keeps ordinary translation data spreads complete during page discovery', asy
   expect(result.routes[0]?.complete).toBe(true);
 });
 
+it.each(['token', 'schema', 'RuntimeService'])(
+  'keeps runtime-only %s imports external instead of reading their package graph',
+  async (name) => {
+    const dependency = await fixture({
+      'package.json': JSON.stringify({
+        name: 'runtime-package',
+        version: '1.0.0',
+        exports: { './server': { import: './server/index.ts' } },
+      }),
+      'server/index.ts':
+        'export const token={};export const schema={};export class RuntimeService{};',
+    });
+    const root = await fixture({
+      'client/routes.ts': 'export default [];',
+      'server/routes/index.ts': `import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {${name}} from 'runtime-package/server';export default defineApiRoutes(app=>{const router=new Hono();router.get('/items',c=>unknown(${name}));return router;});`,
+    });
+    const watched: string[] = [];
+    const graph = await SourceGraph.create(root, {
+      async watch(file) {
+        watched.push(file);
+      },
+      unreadable() {},
+    });
+    await graph.prepare((await graph.entry())!, [
+      {
+        name: 'runtime-package',
+        version: '1.0.0',
+        rootDir: dependency,
+        evidence: 'serverRegistration',
+      },
+    ]);
+    expect(watched.some((file) => file.startsWith(dependency + path.sep))).toBe(
+      false,
+    );
+  },
+);
+
+it('selects declaration factories through a called local wrapper and exported alias', async () => {
+  const dependency = await fixture({
+    'package.json': JSON.stringify({
+      name: 'declaration-package',
+      version: '1.0.0',
+      exports: { './server': { import: './server/index.ts' } },
+    }),
+    'server/index.ts': 'export const construct=()=>[];',
+  });
+  const root = await fixture({
+    'client/routes.ts': 'export default [];',
+    'server/routes/index.ts':
+      "import {construct} from 'declaration-package/server';function create(){return construct();}const routes=create();export default routes;",
+  });
+  const watched: string[] = [];
+  const graph = await SourceGraph.create(root, {
+    async watch(file) {
+      watched.push(file);
+    },
+    unreadable() {},
+  });
+  await graph.prepare((await graph.entry())!, [
+    {
+      name: 'declaration-package',
+      version: '1.0.0',
+      rootDir: dependency,
+      evidence: 'serverRegistration',
+    },
+  ]);
+  expect(watched).toContain(path.join(dependency, 'server/index.ts'));
+});
+
 it('selects only the actual imported export of a registered package', async () => {
   const dependency = await fixture({
     'package.json': JSON.stringify({

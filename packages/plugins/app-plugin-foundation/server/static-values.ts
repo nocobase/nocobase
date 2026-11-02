@@ -837,9 +837,20 @@ export class StaticValues {
     node: ts.CallExpression,
     resolveArguments = true,
   ): readonly Invocation[] {
+    const selected = this.values(node.expression).filter(ts.isFunctionLike);
     const functions = new Set<ts.SignatureDeclaration>([
-      ...this.analysis.functions(node.expression),
-      ...this.values(node.expression).filter(ts.isFunctionLike),
+      ...this.analysis
+        .functions(node.expression)
+        .filter(
+          (fn) =>
+            !selected.some(
+              (value) =>
+                value !== fn &&
+                ts.getOriginalNode(value) === ts.getOriginalNode(fn) &&
+                this.captures.has(value),
+            ),
+        ),
+      ...selected,
     ]);
     const result: Invocation[] = [];
     for (const fn of functions) {
@@ -3446,7 +3457,7 @@ export class StaticValues {
       const flow = this.initialization(node, seen, depth + 1);
       unknown ||= flow.unknown;
       throws ||= flow.throws;
-      if (!flow.continues)
+      if (unknown || !flow.continues)
         return { ...flow, values: [], returns: false, unknown, throws };
     }
     return { values: [], continues: true, returns: false, throws, unknown };
@@ -5059,6 +5070,27 @@ export class StaticValues {
       );
       return fn;
     }
+    if (ts.isFunctionExpression(value)) {
+      const fn = this.origin(
+        ts.factory.createFunctionExpression(
+          value.modifiers,
+          value.asteriskToken,
+          value.name,
+          value.typeParameters,
+          value.parameters,
+          value.type,
+          value.body,
+        ),
+        value,
+      );
+      this.captures.set(
+        fn,
+        this.snapshotBindings(
+          new Map([...this.bindings, ...(this.captures.get(value) ?? [])]),
+        ),
+      );
+      return fn;
+    }
     const numeric = this.numericConstant(value, new Set());
     if (typeof numeric === 'number' && Number.isFinite(numeric))
       return this.origin(
@@ -5336,6 +5368,12 @@ export class StaticValues {
     bindings: Bindings,
     snapshotLocals = true,
   ): void {
+    if (
+      ts.isFunctionLike(node) &&
+      ts.getOriginalNode(node) !== node &&
+      this.captures.has(node)
+    )
+      return;
     // Retain the lexical dependencies of this value, not unrelated callers' parameters. Shared helper syntax
     // otherwise accumulates contradictory activations even when those bindings cannot be referenced by it.
     const needed = new Set<ts.Declaration>();
@@ -5669,7 +5707,57 @@ export class StaticValues {
     return result;
   }
 
+  private snapshotReturnedLiteral(node: ts.Node, depth = 0): ts.Node {
+    if (depth >= MAX_VALUES) return node;
+    if (ts.isArrowFunction(node) || ts.isFunctionExpression(node))
+      return this.materialize(node, new Set()) ?? node;
+    if (
+      ts.isObjectLiteralExpression(node) &&
+      node.properties.length <= MAX_VALUES &&
+      this.ordinaryRecord(node) &&
+      node.properties.every(
+        (property) =>
+          !ts.isShorthandPropertyAssignment(property) ||
+          (this.values(property.name).length === 1 &&
+            this.values(property.name).every(
+              (value) =>
+                ts.isStringLiteralLike(value) ||
+                ts.isNumericLiteral(value) ||
+                value.kind === ts.SyntaxKind.TrueKeyword ||
+                value.kind === ts.SyntaxKind.FalseKeyword ||
+                value.kind === ts.SyntaxKind.NullKeyword,
+            )),
+      )
+    ) {
+      const properties = node.properties.map((property) =>
+        ts.isPropertyAssignment(property)
+          ? this.origin(
+              ts.factory.createPropertyAssignment(
+                property.name,
+                this.snapshotReturnedLiteral(
+                  property.initializer,
+                  depth + 1,
+                ) as ts.Expression,
+              ),
+              property,
+            )
+          : property,
+      );
+      const value = this.origin(
+        ts.factory.createObjectLiteralExpression(properties),
+        node,
+      );
+      this.capture(value, this.bindings);
+      return value;
+    }
+    return node;
+  }
+
   private snapshotContributionList(node: ts.Node): ts.Node {
+    if (ts.isObjectLiteralExpression(node))
+      return this.snapshotReturnedLiteral(node);
+    if (ts.isArrowFunction(node) || ts.isFunctionExpression(node))
+      return this.materialize(node, new Set()) ?? node;
     if (ts.isNewExpression(node) && this.global(node.expression) === 'Proxy') {
       const value = this.origin(
         ts.factory.createNewExpression(

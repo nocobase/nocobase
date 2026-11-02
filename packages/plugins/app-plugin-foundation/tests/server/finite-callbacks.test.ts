@@ -35,6 +35,65 @@ it('reads absent own configuration fields and short circuits a non-nullish path'
   ).toEqual(['/uploads/hr-files']);
 });
 
+it.each(['()=>name', 'function(){return name;}'])(
+  'keeps returned closure activations separate: %s',
+  (closure) => {
+    const { evaluator, expression } = fixture(
+      '[one(),two()]',
+      `function factory(name){return ${closure};}const one=factory('one');const two=factory('two');`,
+    );
+    const elements = (expression as ts.ArrayLiteralExpression).elements;
+    expect(elements.map((element) => evaluator.strings(element))).toEqual([
+      ['one'],
+      ['two'],
+    ]);
+    expect(elements.map((element) => evaluator.strings(element))).toEqual([
+      ['one'],
+      ['two'],
+    ]);
+  },
+);
+
+it('preserves an inner closure when it is returned through another activation', () => {
+  const { evaluator, expression } = fixture(
+    '[one(),two()]',
+    "function factory(name,existing){if(existing)return existing;return()=>name;}const one=factory('one');const two=factory('two',one);",
+  );
+  expect(
+    (expression as ts.ArrayLiteralExpression).elements.map((element) =>
+      evaluator.strings(element),
+    ),
+  ).toEqual([['one'], ['one']]);
+});
+
+it.each([false, true])(
+  'keeps returned policy records isolated with a second create=%s',
+  (create) => {
+    const { evaluator, expression } = fixture(
+      '[one.create,two.create]',
+      `function policy(base){const create=base.create;return{create,read:{scope:true,fields:['id'],relations:{}},update:false,delete:false};}const one=policy({create:false});const two=policy({create:${create}});`,
+    );
+    const elements = (expression as ts.ArrayLiteralExpression).elements;
+    expect(elements.map((element) => evaluator.booleans(element))).toEqual([
+      [false],
+      [create],
+    ]);
+    expect(elements.map((element) => evaluator.booleans(element))).toEqual([
+      [false],
+      [create],
+    ]);
+  },
+);
+
+it('does not turn an escaped returned record into a fresh owned value', () => {
+  const { evaluator, expression } = fixture(
+    "factory('value')",
+    'function factory(value){const record={value};external(record);return record;}',
+  );
+  expect(evaluator.expressionBarrier(expression)).toBe('unknown');
+  expect(evaluator.values(expression)).toEqual([]);
+});
+
 it.each([
   '[{get actions(){ unknown(); return {}; }}].map(entry => { const {missing,...actions}=entry.actions; return actions; })',
   '[{actions:{__proto__:unknown}}].map(entry => entry.actions.missing)',
