@@ -741,10 +741,6 @@ export class StaticValues {
         return [this.origin(ts.factory.createNumericLiteral(maximum), node)];
       const inputs = this.initializers(node.arguments, new Set(seen), 0);
       if (inputs.unknown || !inputs.continues) return [];
-      if (this.authorizationCall(node) || this.requestRead(node)) {
-        this.capture(node, this.bindings);
-        return [node];
-      }
       const keys = this.recordKeys(node);
       if (keys) return [keys];
       if (this.contextJson(node))
@@ -780,7 +776,11 @@ export class StaticValues {
         : undefined;
       if (service) return service;
       const invocations = evaluator.invocations(node);
-      if (!invocations.length) return [node];
+      if (!invocations.length) {
+        // Retain the lexical environment of an unresolved value without proving that its call completes.
+        this.capture(node, this.bindings);
+        return [node];
+      }
       return invocations
         .flatMap((invocation) =>
           ts
@@ -2317,8 +2317,8 @@ export class StaticValues {
     return stable;
   }
 
-  /** A native optional trim reads only a request string (or an absent value), never an arbitrary receiver. */
-  private requestText(node: ts.Node, seen = new Set<ts.Node>()): boolean {
+  /** A native optional trim reads only a query string (or an absent value), never an arbitrary receiver. */
+  private queryText(node: ts.Node, seen = new Set<ts.Node>()): boolean {
     node = StaticValues.unwrap(node);
     if (seen.has(node) || seen.size >= MAX_VALUES) return false;
     const next = new Set(seen).add(node);
@@ -2342,7 +2342,7 @@ export class StaticValues {
           : []);
       return (
         values.length > 0 &&
-        values.every((value) => this.requestText(value, next))
+        values.every((value) => this.queryText(value, next))
       );
     }
     if (
@@ -2352,7 +2352,7 @@ export class StaticValues {
       )
     )
       return (
-        this.requestText(node.left, next) && this.requestText(node.right, next)
+        this.queryText(node.left, next) && this.queryText(node.right, next)
       );
     if (ts.isCallExpression(node)) {
       const captured = this.captures.get(node),
@@ -2361,6 +2361,8 @@ export class StaticValues {
           : this;
       return (
         node.arguments.length === 1 &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === 'query' &&
         evaluator.requestRead(node) &&
         evaluator.strings(node.arguments[0]).length === 1 &&
         evaluator.strings(node.arguments[0])[0] !== ''
@@ -2386,16 +2388,16 @@ export class StaticValues {
           if (properties.length !== 1) return false;
           const property = properties[0];
           return ts.isPropertyAssignment(property)
-            ? evaluator.requestText(property.initializer, next)
+            ? evaluator.queryText(property.initializer, next)
             : ts.isShorthandPropertyAssignment(property) &&
-                evaluator.requestText(property.name, next);
+                evaluator.queryText(property.name, next);
         })
       );
     }
     return false;
   }
 
-  private requestTrim(
+  private queryTrim(
     node: ts.CallExpression,
   ): node is ts.CallExpression & { expression: ts.PropertyAccessExpression } {
     return (
@@ -2405,7 +2407,7 @@ export class StaticValues {
       ts.isPropertyAccessExpression(node.expression) &&
       !!node.expression.questionDotToken &&
       node.expression.name.text === 'trim' &&
-      this.requestText(node.expression.expression)
+      this.queryText(node.expression.expression)
     );
   }
 
@@ -3330,7 +3332,7 @@ export class StaticValues {
       return { ...CONTINUES, values: [node] };
     const string = this.stringOperation(node);
     if (string) return { ...CONTINUES, values: [string] };
-    if (this.requestTrim(node)) {
+    if (this.queryTrim(node)) {
       const receiver = this.initialization(
         node.expression.expression,
         seen,
