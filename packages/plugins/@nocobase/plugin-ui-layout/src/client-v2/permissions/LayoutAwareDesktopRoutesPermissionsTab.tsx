@@ -97,13 +97,14 @@ function toRouteItems(
   items: DesktopRouteRecord[] | undefined,
   parentId?: number,
   parentReadOnly = false,
+  editableLegacyPages = false,
 ): RoutePermissionRecord[] {
   if (!Array.isArray(items)) {
     return [];
   }
   return items.map((item) => {
-    const readOnly = parentReadOnly || item.type === 'page';
-    const children = toRouteItems(item.children, item.id, readOnly);
+    const readOnly = parentReadOnly || (!editableLegacyPages && item.type === 'page');
+    const children = toRouteItems(item.children, item.id, readOnly, editableLegacyPages);
     return {
       id: item.id,
       readOnly,
@@ -132,14 +133,14 @@ function getEditableRouteIds(items: RoutePermissionRecord[] | undefined): number
     .map((item) => item.id);
 }
 
-function removeHiddenRouteItems(items: RoutePermissionRecord[]): RoutePermissionRecord[] {
+function removeHiddenRouteItems(items: RoutePermissionRecord[], includeLegacyPages = false): RoutePermissionRecord[] {
   return items.reduce<RoutePermissionRecord[]>((visibleItems, item) => {
     if (item.hidden) {
       return visibleItems;
     }
 
-    const children = removeHiddenRouteItems(item.children ?? []);
-    if (item.type === 'page' && !children.length) {
+    const children = removeHiddenRouteItems(item.children ?? [], includeLegacyPages);
+    if (!includeLegacyPages && item.type === 'page' && !children.length) {
       return visibleItems;
     }
     visibleItems.push({
@@ -222,10 +223,16 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
       refreshDeps: [active, layoutFilter],
     },
   );
-  const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
+  const routeItems = useMemo(
+    () => toRouteItems(routeService.data, undefined, false, props.layoutUid === DEFAULT_ADMIN_UI_LAYOUT.uid),
+    [routeService.data, props.layoutUid],
+  );
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
   const allIds = useMemo(() => getEditableRouteIds(routeItems), [routeItems]);
-  const displayRouteItems = useMemo(() => removeHiddenRouteItems(routeItems), [routeItems]);
+  const displayRouteItems = useMemo(
+    () => removeHiddenRouteItems(routeItems, props.layoutUid === DEFAULT_ADMIN_UI_LAYOUT.uid),
+    [routeItems, props.layoutUid],
+  );
   const visibleRouteItems = useMemo(
     () => filterRouteItems(displayRouteItems, routeKeyword, t),
     [displayRouteItems, routeKeyword, t],
@@ -349,15 +356,20 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
 
-    if (item.parentId) {
-      const parent = itemById.get(item.parentId);
-      const selectedSibling = parent?.children?.some((child) => nextIds.includes(child.id));
-      if (checked && !parent?.readOnly && !selectedSibling) {
-        nextIds = nextIds.filter((id) => id !== item.parentId);
+    let parent = item.parentId === undefined ? undefined : itemById.get(item.parentId);
+    while (parent) {
+      if (parent.readOnly) {
+        break;
       }
-      if (!checked && !parent?.readOnly && !nextIds.includes(item.parentId)) {
-        nextIds.push(item.parentId);
+      if (checked) {
+        if (parent.children?.some((child) => nextIds.includes(child.id))) {
+          break;
+        }
+        nextIds = nextIds.filter((id) => id !== parent.id);
+      } else if (!nextIds.includes(parent.id)) {
+        nextIds.push(parent.id);
       }
+      parent = parent.parentId === undefined ? undefined : itemById.get(parent.parentId);
     }
 
     await applyPermissionChanges(nextIds);
