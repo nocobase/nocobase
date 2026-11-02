@@ -503,7 +503,7 @@
       "description": "Preserves form input, maps safe field errors and focuses the first editable error in layout order. Preinstalled in the templates.",
       "categories": ["form"],
       "dependencies": [
-        "@nocobase/app-client@^4.0.0-beta.3",
+        "@nocobase/app-client@^4.0.0-beta.4",
         "@nocobase/i18n@^2.0.0-beta.1"
       ],
       "files": [
