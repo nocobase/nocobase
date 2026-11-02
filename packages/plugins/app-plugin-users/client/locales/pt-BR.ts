@@ -13,6 +13,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     loading: 'Carregando o convite…',
     email: 'E-mail',
     name: 'Nome',
+    username: 'Nome de usuário (opcional)',
+    usernameHint: 'Você pode usar este nome de usuário para entrar.',
     password: 'Senha',
     nameRequired: 'Digite seu nome.',
     passwordTooShort: 'A senha precisa de pelo menos caracteres {{min}}.',
@@ -32,6 +34,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       accepted: 'Este convite já foi aceito.',
       revoked: 'Este convite foi revogado.',
       password: 'A senha não atende aos requisitos.',
+      usernameConflict:
+        'Este nome já é usado como nome de usuário ou e-mail. Escolha outro.',
       accountConflict: 'Uma conta com este endereço não pode ser criada.',
       failed: 'Algo correu mal. Por favor, tente novamente.',
     },

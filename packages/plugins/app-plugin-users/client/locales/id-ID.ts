@@ -13,6 +13,8 @@ const idID: LocaleResource<typeof enUS> = {
     loading: 'Memuat undangan…',
     email: 'Email',
     name: 'Nama',
+    username: 'Nama pengguna (opsional)',
+    usernameHint: 'Anda dapat menggunakan nama pengguna ini untuk masuk.',
     password: 'Kata sandi',
     nameRequired: 'Masukkan nama Anda.',
     passwordTooShort: 'Kata sandi memerlukan setidaknya karakter {{min}}.',
@@ -32,6 +34,8 @@ const idID: LocaleResource<typeof enUS> = {
       accepted: 'Undangan ini telah diterima.',
       revoked: 'Undangan ini telah dicabut.',
       password: 'Kata sandi tidak memenuhi persyaratan.',
+      usernameConflict:
+        'Nama ini sudah digunakan sebagai nama pengguna atau email. Pilih nama lain.',
       accountConflict: 'Akun dengan alamat ini tidak dapat dibuat.',
       failed: 'Ada yang tidak beres. Silakan coba lagi.',
     },

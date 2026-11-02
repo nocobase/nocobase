@@ -13,6 +13,9 @@ const frFR: LocaleResource<typeof enUS> = {
     loading: "Chargement de l'invitation…",
     email: 'E-mail',
     name: 'Nom',
+    username: 'Nom d’utilisateur (facultatif)',
+    usernameHint:
+      'Vous pouvez utiliser ce nom d’utilisateur pour vous connecter.',
     password: 'Mot de passe',
     nameRequired: 'Entrez votre nom.',
     passwordTooShort:
@@ -33,6 +36,8 @@ const frFR: LocaleResource<typeof enUS> = {
       accepted: 'Cette invitation a déjà été acceptée.',
       revoked: 'Cette invitation a été révoquée.',
       password: 'Le mot de passe ne répond pas aux exigences.',
+      usernameConflict:
+        'Ce nom est déjà utilisé comme nom d’utilisateur ou adresse e-mail. Choisissez-en un autre.',
       accountConflict: 'Un compte avec cette adresse ne peut pas être créé.',
       failed: "Quelque chose s'est mal passé. Veuillez réessayer.",
     },

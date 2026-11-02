@@ -13,6 +13,8 @@ const deDE: LocaleResource<typeof enUS> = {
     loading: 'Die Einladung wird geladen…',
     email: 'E-Mail',
     name: 'Name',
+    username: 'Benutzername (optional)',
+    usernameHint: 'Du kannst dich mit diesem Benutzernamen anmelden.',
     password: 'Passwort',
     nameRequired: 'Geben Sie Ihren Namen ein.',
     passwordTooShort: 'Das Passwort benötigt mindestens {{min}} Zeichen.',
@@ -32,6 +34,8 @@ const deDE: LocaleResource<typeof enUS> = {
       accepted: 'Diese Einladung wurde bereits angenommen.',
       revoked: 'Diese Einladung wurde widerrufen.',
       password: 'Das Passwort entspricht nicht den Anforderungen.',
+      usernameConflict:
+        'Dieser Name wird bereits als Benutzername oder E-Mail-Adresse verwendet. Wähle einen anderen.',
       accountConflict:
         'Ein Konto mit dieser Adresse kann nicht erstellt werden.',
       failed: 'Etwas ist schief gelaufen. Bitte versuchen Sie es erneut.',

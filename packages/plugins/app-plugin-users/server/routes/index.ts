@@ -852,7 +852,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         // The sign-up page's: accepting creates the account from the invitation link.
         ...cliRoute(false),
         description:
-          'The token authorizes only this invitation. Creating an account requires `name` and `password`; an existing account must be signed in as the invited user.',
+          'The token authorizes only this invitation. Creating an account requires `name` and `password` and accepts an optional `username` for sign-in. An existing account must be signed in as the invited user; its name, username and password remain unchanged.',
         security: [],
         responses: {
           200: dataResponse(AcceptedInvitationSchema),
@@ -863,7 +863,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...apiErrorResponses,
           409: apiErrorResponse(
             409,
-            'The new account conflicts with an existing account.',
+            'The new account conflicts with an existing email or username (`USER_IDENTITY_CONFLICT`). Choose another username and retry with the same invitation.',
           ),
         },
       }),

@@ -13,6 +13,8 @@ const esES: LocaleResource<typeof enUS> = {
     loading: 'Cargando la invitación…',
     email: 'Correo electrónico',
     name: 'Nombre',
+    username: 'Nombre de usuario (opcional)',
+    usernameHint: 'Puedes usar este nombre de usuario para iniciar sesión.',
     password: 'Contraseña',
     nameRequired: 'Ingrese su nombre.',
     passwordTooShort: 'La contraseña necesita al menos caracteres {{min}}.',
@@ -32,6 +34,8 @@ const esES: LocaleResource<typeof enUS> = {
       accepted: 'Esta invitación ya ha sido aceptada.',
       revoked: 'Esta invitación ha sido revocada.',
       password: 'La contraseña no cumple con los requisitos.',
+      usernameConflict:
+        'Este nombre ya se usa como nombre de usuario o correo electrónico. Elige otro.',
       accountConflict: 'No se puede crear una cuenta con esta dirección.',
       failed: 'Algo salió mal. Por favor inténtalo de nuevo.',
     },

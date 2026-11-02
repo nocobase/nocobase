@@ -52,26 +52,26 @@ a stable `409 ALREADY_EXISTS` instead of exposing a database error.
 
 ## HTTP API
 
-| Method   | Path                                          | Success                                                |
-| -------- | --------------------------------------------- | ------------------------------------------------------ |
-| `GET`    | `/api/users/options`                          | `200 { data }`                                         |
-| `GET`    | `/api/users`                                  | `200 { data: [...], meta: { page, pageSize, total } }` |
-| `POST`   | `/api/users`                                  | `201 { data }`                                         |
-| `PATCH`  | `/api/users/:userId`                          | `200 { data }`                                         |
-| `DELETE` | `/api/users/:userId?confirm=true`             | `204`                                                  |
-| `POST`   | `/api/users/:userId/disable`                  | `200 { data }`                                         |
-| `POST`   | `/api/users/:userId/enable`                   | `200 { data }`                                         |
-| `PUT`    | `/api/users/:userId/roleScopes/:scope`        | `200 { data }`                                         |
-| `POST`   | `/api/users/:userId/resetPassword`            | `204`                                                  |
-| `POST`   | `/api/users/:userId/revokeSessions`           | `204`                                                  |
-| `GET`    | `/api/users/invitations`                      | `200 { data: [...], meta: { total } }`                 |
-| `POST`   | `/api/users/invitations`                      | `201 { data: [...] }`, one result per address          |
-| `POST`   | `/api/users/invitations/:invitationId/resend` | `200 { data }`                                         |
-| `DELETE` | `/api/users/invitations/:invitationId`        | `204`, revokes a pending invitation                    |
-| `POST`   | `/api/users/invitations/lookup`               | `200 { data }`, public, `{ token }`                    |
-| `POST`   | `/api/users/invitations/accept`               | `200 { data }`, public, `{ token, name, password }`    |
+| Method   | Path                                          | Success                                                        |
+| -------- | --------------------------------------------- | -------------------------------------------------------------- |
+| `GET`    | `/api/users/options`                          | `200 { data }`                                                 |
+| `GET`    | `/api/users`                                  | `200 { data: [...], meta: { page, pageSize, total } }`         |
+| `POST`   | `/api/users`                                  | `201 { data }`                                                 |
+| `PATCH`  | `/api/users/:userId`                          | `200 { data }`                                                 |
+| `DELETE` | `/api/users/:userId?confirm=true`             | `204`                                                          |
+| `POST`   | `/api/users/:userId/disable`                  | `200 { data }`                                                 |
+| `POST`   | `/api/users/:userId/enable`                   | `200 { data }`                                                 |
+| `PUT`    | `/api/users/:userId/roleScopes/:scope`        | `200 { data }`                                                 |
+| `POST`   | `/api/users/:userId/resetPassword`            | `204`                                                          |
+| `POST`   | `/api/users/:userId/revokeSessions`           | `204`                                                          |
+| `GET`    | `/api/users/invitations`                      | `200 { data: [...], meta: { total } }`                         |
+| `POST`   | `/api/users/invitations`                      | `201 { data: [...] }`, one result per address                  |
+| `POST`   | `/api/users/invitations/:invitationId/resend` | `200 { data }`                                                 |
+| `DELETE` | `/api/users/invitations/:invitationId`        | `204`, revokes a pending invitation                            |
+| `POST`   | `/api/users/invitations/lookup`               | `200 { data }`, public, `{ token }`                            |
+| `POST`   | `/api/users/invitations/accept`               | `200 { data }`, public, `{ token, name, password, username? }` |
 
-The invitation list holds pending and expired invitations only, so it is not paged. `lookup` needs no session. New accounts supply the invitation token, name and password to `accept`; existing accounts must authenticate with the invited email.
+The invitation list holds pending and expired invitations only, so it is not paged. `lookup` needs no session. New accounts supply the invitation token, name and password to `accept`, with an optional username they can use to sign in. Usernames are trimmed and lowercased as in account creation; a username matching an existing username or email returns `409 USER_IDENTITY_CONFLICT`, leaving the invitation pending for retry. Existing accounts must authenticate with the invited email; supplied name, username and password do not change their account.
 
 Each route is described, with its parameters, request and response schemas and error statuses, in the application's API document at `/api/swagger/docs` (JSON at `/api/swagger`, served to a signed-in user or a valid API key), under the `Users` tag with operation ids such as `usersDisableUser`.
 
