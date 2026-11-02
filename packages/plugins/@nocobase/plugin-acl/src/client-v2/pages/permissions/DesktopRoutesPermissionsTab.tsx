@@ -17,6 +17,8 @@ import React, { useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import type { PermissionTabProps, Role } from '../../registries';
 
+const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
+
 interface DesktopRoutePayload {
   data?: DesktopRouteRecord[];
 }
@@ -101,6 +103,7 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
         paginate: false,
         filter: {
           hidden: { $ne: true },
+          'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT_UID,
         },
       });
       return toPayload(response?.data).data ?? [];
@@ -126,6 +129,7 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
         paginate: false,
         filter: {
           hidden: { $ne: true },
+          'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT_UID,
         },
       });
       return toPayload(response?.data).data?.map((item) => item.id) ?? [];
@@ -160,15 +164,17 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
 
-    if (item.parentId) {
-      const parent = itemById.get(item.parentId);
-      const selectedSibling = parent?.children?.some((child) => nextIds.includes(child.id));
-      if (checked && !selectedSibling) {
-        nextIds = nextIds.filter((id) => id !== item.parentId);
+    let parent = item.parentId == null ? undefined : itemById.get(item.parentId);
+    while (parent) {
+      if (checked) {
+        if (parent.children?.some((child) => nextIds.includes(child.id))) {
+          break;
+        }
+        nextIds = nextIds.filter((id) => id !== parent.id);
+      } else if (!nextIds.includes(parent.id)) {
+        nextIds.push(parent.id);
       }
-      if (!checked && !nextIds.includes(item.parentId)) {
-        nextIds.push(item.parentId);
-      }
+      parent = parent.parentId == null ? undefined : itemById.get(parent.parentId);
     }
 
     setSelectedIds(nextIds);

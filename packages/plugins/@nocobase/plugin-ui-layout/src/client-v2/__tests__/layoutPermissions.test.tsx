@@ -90,7 +90,8 @@ describe('plugin-ui-layout route permissions', () => {
     expect(screen.getByRole('checkbox', { name: 'Allow access to Route group' })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Allow access to Docs link' })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Allow access to Page tabs' })).not.toBeChecked();
-    expect(screen.queryByText('Legacy page')).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Allow access to Legacy page' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Allow access to Legacy page' })).not.toBeDisabled();
     expect(screen.queryByText('Layout access')).not.toBeInTheDocument();
     expect(screen.queryByText('New layouts are allowed to be accessed by default')).not.toBeInTheDocument();
     expect(screen.queryByText('Allow access to this layout')).not.toBeInTheDocument();
@@ -157,6 +158,7 @@ describe('plugin-ui-layout route permissions', () => {
     expect(await screen.findByText('Mobile routes')).toBeInTheDocument();
     const mobileRoute = screen.getByRole('checkbox', { name: 'Allow access to Mobile route' });
     expect(mobileRoute).not.toBeChecked();
+    expect(screen.queryByText('Legacy mobile page')).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(resource.desktopRoutesList).toHaveBeenCalledWith(
@@ -245,7 +247,7 @@ describe('plugin-ui-layout route permissions', () => {
     expect(resource.messageSuccess).not.toHaveBeenCalled();
   });
 
-  it('shows authorized legacy ancestors as read-only and preserves them when changing v2 routes', async () => {
+  it('allows editing legacy pages and tabs alongside v2 routes', async () => {
     const resource = createRoutePermissionResources({
       selectedRouteIds: [9, 10, 11, 1],
       desktopRoutes: [
@@ -264,8 +266,9 @@ describe('plugin-ui-layout route permissions', () => {
     );
     const legacy = await screen.findByRole('checkbox', { name: 'Allow access to Legacy parent' });
     await waitFor(() => expect(legacy).toBeChecked());
-    expect(legacy).toBeDisabled();
-    expect(screen.queryByText('V1 only')).not.toBeInTheDocument();
+    await waitFor(() => expect(legacy).not.toBeDisabled());
+    expect(screen.getByRole('checkbox', { name: 'Allow access to V1 only' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Allow access to V1 only' })).not.toBeDisabled();
     const v2 = screen.getByRole('checkbox', { name: 'Allow access to V2 page' });
     await waitFor(() => expect(v2).not.toBeDisabled());
     expect(resource.roleRoutesAdd).not.toHaveBeenCalled();
@@ -286,10 +289,19 @@ describe('plugin-ui-layout route permissions', () => {
     });
     const tab = await screen.findByRole('checkbox', { name: 'Allow access to Legacy tab' });
     expect(tab).toBeChecked();
-    expect(tab).toBeDisabled();
+    expect(tab).not.toBeDisabled();
+    await act(async () => {
+      await userEvent.click(tab);
+    });
+    await waitFor(() => expect(resource.roleRoutesRemove).toHaveBeenLastCalledWith({ values: [9, 10] }));
+    expect(resource.getSelectedRouteIds()).toEqual([11, 1]);
+    await act(async () => {
+      await userEvent.click(tab);
+    });
+    await waitFor(() => expect(resource.roleRoutesAdd).toHaveBeenLastCalledWith({ values: [9, 10] }));
   });
 
-  it('does not grant previously denied v1 permissions when selecting all v2 routes', async () => {
+  it('grants and revokes both v1 and v2 permissions when toggling all routes', async () => {
     const resource = createRoutePermissionResources({
       selectedRouteIds: [],
       desktopRoutes: [
@@ -306,19 +318,86 @@ describe('plugin-ui-layout route permissions', () => {
       />,
     );
     const legacy = await screen.findByRole('checkbox', { name: 'Allow access to Denied V1' });
-    expect(legacy).toBeDisabled();
+    await waitFor(() => expect(legacy).not.toBeDisabled());
     expect(legacy).not.toBeChecked();
     const all = screen.getByRole('checkbox', { name: /^Allow access$/ });
     await waitFor(() => expect(all).not.toBeDisabled());
     await act(async () => {
       await userEvent.click(all);
     });
-    await waitFor(() => expect(resource.roleRoutesAdd).toHaveBeenCalledWith({ values: [1] }));
-    expect(resource.getSelectedRouteIds()).toEqual([1]);
+    await waitFor(() => expect(resource.roleRoutesAdd).toHaveBeenCalledWith({ values: [9, 10, 1] }));
+    expect(resource.getSelectedRouteIds()).toEqual([9, 10, 1]);
+    expect(legacy).toBeChecked();
+    await act(async () => {
+      await userEvent.click(all);
+    });
+    await waitFor(() => expect(resource.getSelectedRouteIds()).toEqual([]));
+    expect(resource.roleRoutesRemove).toHaveBeenCalledWith({ values: [9, 10, 1] });
+  });
+
+  it.each(['p1', 'p2'])('updates every ancestor when toggling fourth-level page %s', async (title) => {
+    const resource = createRoutePermissionResources({
+      selectedRouteIds: [],
+      desktopRoutes: [
+        {
+          id: 20,
+          title: 'g1',
+          type: 'group',
+          children: [
+            {
+              id: 21,
+              title: 'g2',
+              type: 'group',
+              children: [
+                {
+                  id: 22,
+                  title: 'g3',
+                  type: 'group',
+                  children: [
+                    { id: 23, title: 'p2', type: 'flowPage' },
+                    { id: 24, title: 'p1', type: 'page' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    flowMocks.context = resource.context;
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+    await screen.findByText('g1');
+    await act(async () => {
+      await userEvent.type(screen.getByPlaceholderText('Search routes'), 'p');
+    });
+    const legacy = await screen.findByRole('checkbox', { name: 'Allow access to p1' });
+    await waitFor(() => expect(legacy).not.toBeDisabled());
+    expect(legacy).not.toBeChecked();
+    const page = screen.getByRole('checkbox', { name: `Allow access to ${title}` });
+    const pageId = title === 'p1' ? 24 : 23;
+    await waitFor(() => expect(page).not.toBeDisabled());
+    await act(async () => {
+      await userEvent.click(page);
+    });
+    await waitFor(() => expect(resource.getSelectedRouteIds()).toEqual(expect.arrayContaining([20, 21, 22, pageId])));
+    expect(resource.getSelectedRouteIds()).not.toContain(title === 'p1' ? 23 : 24);
+    for (const routeTitle of ['g1', 'g2', 'g3', title]) {
+      expect(screen.getByRole('checkbox', { name: `Allow access to ${routeTitle}` })).toBeChecked();
+    }
+    await act(async () => {
+      await userEvent.click(page);
+    });
+    await waitFor(() => expect(resource.getSelectedRouteIds()).toEqual([]));
     expect(legacy).not.toBeChecked();
   });
 
-  it('never removes legacy descendants when toggling a shared menu group', async () => {
+  it('removes both legacy and v2 descendants when toggling a shared menu group', async () => {
     const resource = createRoutePermissionResources({
       selectedRouteIds: [20, 9, 10, 1],
       desktopRoutes: [
@@ -347,9 +426,8 @@ describe('plugin-ui-layout route permissions', () => {
       await userEvent.click(group);
     });
     await waitFor(() => expect(resource.roleRoutesRemove).toHaveBeenCalled());
-    expect(resource.getSelectedRouteIds()).toContain(9);
-    expect(resource.getSelectedRouteIds()).toContain(10);
-    expect(resource.getSelectedRouteIds()).toContain(20);
+    expect(resource.getSelectedRouteIds()).toEqual([]);
+    expect(resource.roleRoutesRemove).toHaveBeenCalledWith({ values: [20, 9, 10, 1] });
   });
 });
 
