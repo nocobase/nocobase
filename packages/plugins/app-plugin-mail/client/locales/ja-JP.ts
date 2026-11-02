@@ -42,6 +42,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     refresh: '更新',
   },
   workspace: {
+    invalidRecipient:
+      'メールアドレスまたは表示名を修正してください: {{value}}。各欄の宛先は最大100件です。',
     senderLabel: 'から',
     attachmentNumber: 'アタッチメント {{number}}',
     pendingDelivery:

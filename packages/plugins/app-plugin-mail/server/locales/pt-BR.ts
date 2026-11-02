@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   errors: {
+    invalidRecipient:
+      'Corrija os endereços de e-mail e os nomes de exibição dos destinatários antes de enviar.',
     accessDenied: 'O acesso ao correio é necessário.',
     idempotencyConflict:
       'A chave de idempotência já está associada a outra solicitação.',

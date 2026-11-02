@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   errors: {
+    invalidRecipient:
+      'Sửa địa chỉ email và tên hiển thị của người nhận trước khi gửi.',
     accessDenied: 'Cần có quyền truy cập thư.',
     idempotencyConflict:
       'Khóa bình thường đã được liên kết với một yêu cầu khác.',

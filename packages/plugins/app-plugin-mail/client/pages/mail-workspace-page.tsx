@@ -9,6 +9,7 @@ import {
 } from '../lib/mail-forward-content.js';
 import {
   EMPTY_COMPOSER,
+  formatAddressList,
   type ComposerState,
 } from '../lib/mail-composer-state.js';
 import {
@@ -1582,12 +1583,6 @@ function isMessageInTrash(
     .get(message.accountId)
     ?.find((folder) => folder.type === 'trash');
   return Boolean(trash && message.folderIds.includes(trash.providerFolderId));
-}
-
-function formatAddressList(
-  addresses: readonly { address: string; name?: string }[],
-): string {
-  return addresses.map((address) => address.address).join(', ');
 }
 
 function forwardSubject(subject: string): string {

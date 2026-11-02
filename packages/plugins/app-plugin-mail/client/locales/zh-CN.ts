@@ -37,6 +37,8 @@ const zhCN: MailResource = {
     refresh: '刷新',
   },
   workspace: {
+    invalidRecipient:
+      '请修正邮箱地址或显示名：{{value}}。每个字段最多填写 100 位收件人。',
     senderLabel: '发件人',
     attachmentNumber: '附件 {{number}}',
     pendingDelivery: '以下发送请求的结果尚未确认，邮件内容已保存在这里。',

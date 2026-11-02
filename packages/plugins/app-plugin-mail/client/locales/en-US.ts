@@ -40,6 +40,8 @@ const enUS = {
     refresh: 'Refresh',
   },
   workspace: {
+    invalidRecipient:
+      'Correct the email address or display name: {{value}}. Use at most 100 recipients per field.',
     senderLabel: 'From',
     attachmentNumber: 'Attachment {{number}}',
     pendingDelivery:

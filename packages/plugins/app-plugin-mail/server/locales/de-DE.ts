@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
   errors: {
+    invalidRecipient:
+      'Korrigieren Sie vor dem Senden die E-Mail-Adressen und Anzeigenamen der Empfänger.',
     accessDenied: 'E-Mail-Zugriff ist erforderlich.',
     idempotencyConflict:
       'Der Idempotenzschlüssel ist bereits einer anderen Anfrage zugeordnet.',

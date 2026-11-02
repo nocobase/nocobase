@@ -42,6 +42,8 @@ const idID: LocaleResource<typeof enUS> = {
     refresh: 'Segarkan',
   },
   workspace: {
+    invalidRecipient:
+      'Perbaiki alamat email atau nama tampilan: {{value}}. Gunakan maksimal 100 penerima per kolom.',
     senderLabel: 'Dari',
     attachmentNumber: 'Lampiran {{number}}',
     pendingDelivery:

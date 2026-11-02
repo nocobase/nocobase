@@ -2,6 +2,7 @@ import type { MailServerResource } from './en-US.js';
 
 const zhCN: MailServerResource = {
   errors: {
+    invalidRecipient: '请修正收件人邮箱地址和显示名后再发送。',
     accessDenied: '需要邮件访问权限。',
     idempotencyConflict: '该幂等键已关联到另一个请求。',
     invalidRequest: '邮件请求无效。',

@@ -40,6 +40,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     refresh: '重新整理',
   },
   workspace: {
+    invalidRecipient:
+      '請修正電子郵件地址或顯示名稱：{{value}}。每個欄位最多可填寫 100 位收件人。',
     senderLabel: '來自',
     attachmentNumber: '附件 {{number}}',
     pendingDelivery: '無法確認這些傳送請求。它們的內容儲存在這裡。',

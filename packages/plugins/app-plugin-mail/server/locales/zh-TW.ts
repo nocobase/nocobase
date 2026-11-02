@@ -4,6 +4,7 @@ import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
   errors: {
+    invalidRecipient: '請修正收件人電子郵件地址和顯示名稱後再傳送。',
     accessDenied: '需要郵件存取許可權。',
     idempotencyConflict: '冪等金鑰已與另一個請求關聯。',
     invalidRequest: '郵件請求無效。',

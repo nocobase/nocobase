@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
   errors: {
+    invalidRecipient:
+      '送信する前に、宛先のメールアドレスと表示名を修正してください。',
     accessDenied: 'メールアクセスが必要です。',
     idempotencyConflict:
       '冪等キーはすでに別のリクエストに関連付けられています。',
