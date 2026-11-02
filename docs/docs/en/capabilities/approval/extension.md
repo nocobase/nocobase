@@ -29,14 +29,16 @@ Re-entry requires fresh review by default. `reuse: 'unchanged'` reuses earlier o
 
 ## Pages and approval centers
 
-| Contract                            | Purpose                                                                    |
-| ----------------------------------- | -------------------------------------------------------------------------- |
-| `previewRoute`                      | Route preview before submission                                            |
-| `runViewsFor` / `upcomingStagesFor` | Current and historical rounds, and future stages                           |
-| `actionsFor` / `runActionsFor`      | Current user's task or round operations                                    |
-| `candidatesFor`                     | Qualified candidates for transfer, added reviewers, and similar operations |
-| `perform` / `performBatch`          | Individual actions and batch handling with per-item results                |
-| `tasksOf`                           | Task aggregation; APIs still need business authorization                   |
+| Contract                            | Purpose                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| `previewRoute`                      | Route preview before submission                                                            |
+| `runViewsFor` / `upcomingStagesFor` | Current and historical rounds, and future stages                                           |
+| `actionsFor` / `runActionsFor`      | Current user's task or round operations                                                    |
+| `candidatesFor`                     | Qualified candidates for transfer, added reviewers, and similar operations                 |
+| `perform` / `performBatch`          | Individual actions and batch handling with per-item results                                |
+| `tasksFor` / `runsFor`              | Authoritative tasks and runs for a business record; APIs still need business authorization |
+
+The host owns handover discovery scope and completeness. Task Center projections provide candidates; supplement them with business records and use `tasksFor()` / `runsFor()` to verify the original assignee and current run, stage and version. Execute explicit task IDs through the business action entry or `performBatch({ action: 'reassign', targets, ... })`, then recheck remaining responsibilities. Assignee-wide `tasksOf()` and the global `reassign()` that automatically discovered all tasks have been removed. The single-task `reassign` action retains its authorization, qualification, concurrency, transaction and audit checks.
 
 The UI Library's `approval-ui` supplies progress, timeline, route preview, action bar, branch, and receipt components. The Agent maps server data into them; business forms and pages belong to the application. Approval centers can include other work sources, each independently authorizing reads and actions.
 
