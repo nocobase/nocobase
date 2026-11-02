@@ -17,6 +17,8 @@ import React, { useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import type { PermissionTabProps, Role } from '../../registries';
 
+const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
+
 interface DesktopRoutePayload {
   data?: DesktopRouteRecord[];
 }
@@ -101,6 +103,7 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
         paginate: false,
         filter: {
           hidden: { $ne: true },
+          'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT_UID,
         },
       });
       return toPayload(response?.data).data ?? [];
@@ -126,6 +129,7 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
         paginate: false,
         filter: {
           hidden: { $ne: true },
+          'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT_UID,
         },
       });
       return toPayload(response?.data).data?.map((item) => item.id) ?? [];

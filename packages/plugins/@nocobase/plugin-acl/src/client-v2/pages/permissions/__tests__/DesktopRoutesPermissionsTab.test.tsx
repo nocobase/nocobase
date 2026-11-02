@@ -13,6 +13,9 @@ import DesktopRoutesPermissionsTab from '../DesktopRoutesPermissionsTab';
 
 const state = vi.hoisted(() => ({
   selected: [] as number[],
+  routes: [] as Array<{ id: number; title: string; type: string }>,
+  routesList: vi.fn(),
+  set: vi.fn(),
   add: vi.fn(),
   remove: vi.fn(),
   list: vi.fn(),
@@ -26,9 +29,10 @@ vi.mock('@nocobase/flow-engine', () => ({
       resource: (name: string) =>
         name === 'desktopRoutes'
           ? {
-              list: async () => ({
+              list: state.routesList.mockImplementation(async () => ({
                 data: {
                   data: [
+                    ...state.routes,
                     {
                       id: 1,
                       title: 'Root',
@@ -45,9 +49,9 @@ vi.mock('@nocobase/flow-engine', () => ({
                     },
                   ],
                 },
-              }),
+              })),
             }
-          : { list: state.list, add: state.add, remove: state.remove },
+          : { list: state.list, add: state.add, remove: state.remove, set: state.set },
     },
     message: { success: state.success },
   }),
@@ -82,6 +86,10 @@ describe('DesktopRoutesPermissionsTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     state.selected = [];
+    state.routes = [];
+    state.set.mockImplementation(async ({ values }: { values: number[] }) => {
+      state.selected = values;
+    });
     state.list.mockImplementation(async () => ({ data: { data: state.selected.map((id) => ({ id })) } }));
     state.add.mockImplementation(async ({ values }: { values: number[] }) => {
       state.selected = [...new Set([...state.selected, ...values])];
@@ -89,6 +97,40 @@ describe('DesktopRoutesPermissionsTab', () => {
     state.remove.mockImplementation(async ({ values }: { values: number[] }) => {
       state.selected = state.selected.filter((id) => !values.includes(id));
     });
+  });
+
+  it('lists v1 and v2 menus in the same admin layout and grants access to both', async () => {
+    state.routes = [
+      { id: 6, title: 'V1 page', type: 'page' },
+      { id: 7, title: 'V2 page', type: 'flowPage' },
+    ];
+    state.selected = [6];
+    renderPermissions();
+    expect(await screen.findByText('V1 page')).toBeInTheDocument();
+    expect(await screen.findByText('V2 page')).toBeInTheDocument();
+    await waitFor(() => expect(checkbox('V1 page')).toBeChecked());
+    expect(checkbox('V2 page')).not.toBeChecked();
+    const filter = { hidden: { $ne: true }, 'uiLayouts.uid': 'admin-layout-model' };
+    expect(state.routesList).toHaveBeenCalledWith({ tree: true, sort: 'sort', paginate: false, filter });
+    expect(state.list).toHaveBeenCalledWith({ paginate: false, filter });
+
+    fireEvent.click(checkbox('V2 page'));
+    await waitFor(() => expect(state.success).toHaveBeenCalledTimes(1));
+    expect(state.add).toHaveBeenCalledWith({ values: [7] });
+    expect(checkbox('V1 page')).toBeChecked();
+    expect(checkbox('V2 page')).toBeChecked();
+
+    fireEvent.click(checkbox('V1 page'));
+    await waitFor(() => expect(state.success).toHaveBeenCalledTimes(2));
+    expect(state.remove).toHaveBeenCalledWith({ values: [6] });
+    expect(checkbox('V1 page')).not.toBeChecked();
+    expect(checkbox('V2 page')).toBeChecked();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Allow access' }));
+    await waitFor(() => expect(state.success).toHaveBeenCalledTimes(3));
+    expect(state.set).toHaveBeenCalledWith({ values: [6, 7, 1, 2, 3, 4, 5] });
+    expect(checkbox('V1 page')).toBeChecked();
+    expect(checkbox('V2 page')).toBeChecked();
   });
 
   it('selects and persists every ancestor without selecting siblings, including after reloading', async () => {
