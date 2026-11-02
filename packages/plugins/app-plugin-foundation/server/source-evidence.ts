@@ -966,6 +966,17 @@ export class SourceEvidence {
         nodes.set(sourceFile.fileName, selected);
       }
       if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) return;
+      if (
+        contextualCalls &&
+        ts.isForOfStatement(node) &&
+        StaticValues.asyncIteration(node)
+      ) {
+        // Async input and iteration are outside finite configuration proof, including their possible escapes.
+        complete = false;
+        collecting = false;
+        unsafeValueEscaped = true;
+        return;
+      }
       const evaluate = (expression: ts.Node): boolean => {
         visit(expression, bindings, active);
         const barrier = new StaticValues(

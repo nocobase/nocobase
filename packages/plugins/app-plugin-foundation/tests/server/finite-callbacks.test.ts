@@ -15,7 +15,11 @@ function fixture(expression: string, prelude = '') {
   if (!last || !ts.isExportAssignment(last))
     throw new Error('Missing expression');
   const analysis = new SourceEvidence([{ file, ast }], new Map());
-  return { evaluator: new StaticValues(analysis), expression: last.expression };
+  return {
+    analysis,
+    evaluator: new StaticValues(analysis),
+    expression: last.expression,
+  };
 }
 
 it('reads absent own configuration fields and short circuits a non-nullish path', () => {
@@ -88,6 +92,24 @@ it.each([
   visit(expression);
   expect(element).toBeDefined();
   expect(evaluator.values(element!)).toEqual([]);
+});
+
+it.each([
+  'for (const entry of await entries()) { consume(entry); }',
+  'for await (const entry of [1]) { consume(entry); }',
+])('does not collect a body behind unsupported async iteration: %s', (loop) => {
+  const { analysis, expression } = fixture(
+    `async () => { ${loop} }`,
+    'async function entries(){return [1];}',
+  );
+  const fn = expression as ts.ArrowFunction;
+  const statement = (fn.body as ts.Block).statements[0] as ts.ForOfStatement;
+  const result = analysis.collect('/finite-callbacks.ts', [statement], true);
+  expect(result.complete).toBe(false);
+  expect(result.unsafeValue).toBe(true);
+  expect(
+    result.nodes.get('/finite-callbacks.ts')?.has(statement.statement),
+  ).toBe(false);
 });
 
 it.each([

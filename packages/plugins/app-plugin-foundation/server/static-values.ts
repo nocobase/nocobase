@@ -706,11 +706,7 @@ export class StaticValues {
       if (node.initializer) return next(node.initializer);
       const loop = node.parent.parent;
       if (ts.isForOfStatement(loop)) {
-        if (
-          loop.awaitModifier ||
-          ts.isAwaitExpression(StaticValues.unwrap(loop.expression))
-        )
-          return [];
+        if (StaticValues.asyncIteration(loop)) return [];
         return this.values(loop.expression, seen)
           .flatMap((value) =>
             ts.isArrayLiteralExpression(value)
@@ -2888,6 +2884,14 @@ export class StaticValues {
     );
   }
 
+  /** Async producers and async iterators cannot establish a finite synchronous configuration loop. */
+  public static asyncIteration(node: ts.ForOfStatement): boolean {
+    return Boolean(
+      node.awaitModifier ||
+      ts.isAwaitExpression(StaticValues.unwrap(node.expression)),
+    );
+  }
+
   /**
    * The JavaScript order of one assignment, shared by the completion check and the evidence walk: the target's
    * receiver, then its key; for compound and logical forms the current value is read (running a getter); a logical
@@ -4306,10 +4310,7 @@ export class StaticValues {
     }
     if (ts.isForOfStatement(node)) {
       // Only synchronous finite configuration arrays are supported. Do not expand a request-time async producer.
-      if (
-        node.awaitModifier ||
-        ts.isAwaitExpression(StaticValues.unwrap(node.expression))
-      )
+      if (StaticValues.asyncIteration(node))
         return { ...CONTINUES, unknown: true };
       const arrays = this.values(node.expression).filter(
         ts.isArrayLiteralExpression,
