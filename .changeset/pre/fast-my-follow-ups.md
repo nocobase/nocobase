@@ -1,5 +1,4 @@
 ---
-'@nocobase/studio': patch
 '@nocobase/app-plugin-projects': patch
 '@nocobase/app-plugin-agents': patch
 ---

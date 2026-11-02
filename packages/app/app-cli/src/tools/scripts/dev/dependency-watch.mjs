@@ -1,5 +1,7 @@
 import path from 'node:path';
 
+import { findWorkspaceRoot } from '../utils/workspace-packages.mjs';
+
 /**
  * How long the dependency files have to stay unchanged before the server
  * restarts.
@@ -20,20 +22,23 @@ export const DEPENDENCY_SETTLE_MS = 3000;
  * wait, so one install produces one restart.
  */
 export function resolveDependencyWatch(rootDir) {
-  return [
+  const workspaceRoot = findWorkspaceRoot(rootDir);
+  const roots = [...new Set([rootDir, workspaceRoot].filter(Boolean))];
+  return roots.flatMap((directory) => [
     {
-      directory: rootDir,
+      directory,
       filenames: new Set([
         'package.json',
         'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
         'package-lock.json',
         'yarn.lock',
       ]),
     },
     {
       // Written when linking finishes, which is the last thing an install does.
-      directory: path.join(rootDir, 'node_modules'),
+      directory: path.join(directory, 'node_modules'),
       filenames: new Set(['.modules.yaml', '.package-lock.json']),
     },
-  ];
+  ]);
 }

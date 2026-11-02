@@ -48,6 +48,14 @@ function IssuePage(): ReactElement {
         Ask agent starts a new conversation: its agent, and the model of an
         online agent, are chosen in the composer before the first message, and
         the header then shows that agent for as long as the conversation lasts.
+        The next new conversation starts with the agent used last.
+      </p>
+      <p className='text-sm text-muted-foreground'>
+        The switch in the panel&apos;s header moves between the online agent and
+        runner agents, each with its own conversations. Click a context chip to
+        see what it carries. Open the demo with <code>?agents=online</code> or{' '}
+        <code>?agents=runner</code> to see the panel with one kind of agent and
+        no switch.
       </p>
     </div>
   );
@@ -81,7 +89,11 @@ function OpenOnArrival(): null {
 export function AgentChatDemo(): ReactElement {
   return (
     <BrowserRouter basename='/demo/agents/agent-chat'>
-      <ChatProvider conversationPath={(id) => `/chat/${id}`}>
+      <ChatProvider
+        conversationPath={(id) => `/chat/${id}`}
+        // The signed-in person's id in an application, so the agent last used is remembered for them.
+        memoryScope='demo-user'
+      >
         <OpenOnArrival />
         <div className='flex h-svh flex-col bg-background'>
           <header className='flex h-14 shrink-0 items-center justify-between border-b px-4'>

@@ -42,8 +42,8 @@ export type ProposePlanRequest = Omit<CreatePlanRequest, 'source'> & {
 };
 
 export const ProposePlanBody: z.ZodType<ProposePlanRequest> = z.strictObject({
-  title: z.string(),
-  description: z.string().optional(),
+  title: z.string().describe('The display title.'),
+  description: z.string().optional().describe('A description of the record.'),
   source: z
     .strictObject({
       kind: z.string().min(1),
@@ -65,8 +65,10 @@ export const ProposePlanBody: z.ZodType<ProposePlanRequest> = z.strictObject({
     })
     .nullable()
     .optional(),
-  deciderUserId: id.optional(),
-  rows: z.array(planRow),
+  deciderUserId: id.optional().describe('The decider user identifier.'),
+  rows: z
+    .array(planRow)
+    .describe('The operations in the plan, in execution order.'),
 });
 
 /** `GET /plans`, with `all` for a caller whose plans the application sources. */
@@ -74,16 +76,30 @@ export type PlanListParams = PlanListQuery & { readonly all?: boolean };
 
 export const PlanListParamsSchema: z.ZodType<PlanListParams> = z
   .object({
-    status: z.enum(['open', ...PLAN_STATUSES]).optional(),
-    sourceKind: text,
-    sourceKey: text,
-    issueId: text,
+    status: z
+      .enum(['open', ...PLAN_STATUSES])
+      .optional()
+      .describe('The status to set or filter by.'),
+    sourceKind: text.describe('The kind of source to filter by.'),
+    sourceKey: text.describe('The source identifier to filter by.'),
+    issueId: text.describe('The issue identifier.'),
     all: z.enum(['true', 'false']).optional().meta({
       description:
         'From an agent in a conversation: every plan of the person rather than the conversation’s.',
     }),
-    pageSize: z.coerce.number().int().min(1).max(50).default(20),
-    pageToken: z.string().min(1).max(2048).optional(),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(50)
+      .default(20)
+      .describe('The maximum number of records to return.'),
+    pageToken: z
+      .string()
+      .min(1)
+      .max(2048)
+      .optional()
+      .describe('The continuation token returned by the previous page.'),
   })
   .transform(({ pageSize: limit, pageToken: cursor, all, ...filters }) => ({
     ...Object.fromEntries(

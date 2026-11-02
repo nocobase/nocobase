@@ -20,7 +20,7 @@ import {
 import { bindCliSurface, type CliSurface } from '../server/cli/surface.js';
 import type { Agents } from '../server/composition.js';
 import type { CallerIdentity } from '../server/core/callers/index.js';
-import type { CommandSurface } from '../server/online/index.js';
+import type { CommandSurface } from '../server/online/sandbox/types.js';
 
 /** The security of a route a person (by API key) or a run may call. */
 export const personOrRun: Record<string, string[]>[] = [
@@ -130,17 +130,18 @@ export function createCliApp(
     commandsOf: async (identity, token) => ({
       bin: 'acme',
       commands: (await manifestFor(identity)).commands,
-      send: (request) =>
+      send: (request, signal) =>
         Promise.resolve(
           app.fetch(
             new Request(`http://application${request.path}`, {
               method: request.method,
+              signal,
               headers: {
                 [HEADERS.runToken]: token,
                 accept: 'application/json',
-                ...(request.body === undefined
-                  ? {}
-                  : { 'content-type': 'application/json' }),
+                ...(typeof request.body === 'string'
+                  ? { 'content-type': 'application/json' }
+                  : {}),
               },
               ...(request.body === undefined ? {} : { body: request.body }),
             }),

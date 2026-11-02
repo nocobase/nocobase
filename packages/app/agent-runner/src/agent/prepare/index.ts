@@ -5,9 +5,9 @@
 // agent's start.
 //
 //   variables  the variables the run asks the runner for by name are ones it provides (`workspace.passthrough`)
-//   workspace  lock the subject's work directory; start over when the run asks (`workspace.clean`)
+//   workspace  register shared task use and create a private attempt directory; reset only when the run asks (`workspace.clean`)
 //   cli        install or reuse the application's CLI, put it on the agent's PATH, write the run's credentials
-//   dirs       the working directories: check repositories out, take directories used in place
+//   dirs       fetch or create stable worktrees and register in-place directory use
 //   skills     fetch the run's skills (cached by hash) and place them in the runner's folder
 //   mounts     fetch the run's mounts (cached by hash) and copy each to its target in the work directory
 //

@@ -204,6 +204,30 @@ export const react: Linter.Config[] = [
   },
 ];
 
+/** Browser source must work on plain HTTP as well as secure origins. */
+export const browserApis: Linter.Config[] = [
+  {
+    name: '@nocobase/dev-config/browser-apis',
+    files: ['{src,client,shared,registry,website}/**/*.{js,jsx,ts,tsx}'],
+    ignores: ['**/{server,cli,scripts,tests,test}/**'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          property: 'randomUUID',
+          message:
+            'Use createUuid() from @nocobase/app-client for HTTP-compatible UUIDs.',
+        },
+        {
+          property: 'clipboard',
+          message:
+            'Use copyText() from @nocobase/app-client for HTTP-compatible copying and handle its result.',
+        },
+      ],
+    },
+  },
+];
+
 export const vitest: Linter.Config[] = [
   {
     ...vitestRecommended,
@@ -368,6 +392,7 @@ export const createClientLibraryConfig: (
     ...options,
     environment: [
       ...react,
+      ...browserApis,
       ...scopeConfigs(node, applicationNodeFiles),
       ...(options.environment ?? []),
     ],
@@ -422,6 +447,9 @@ export const createApplicationConfig: (
     ...options,
     environment: [
       ...scopeConfigs(react, applicationClientFiles),
+      ...scopeConfigs(browserApis, [
+        '{client,shared,registry}/**/*.{js,jsx,ts,tsx}',
+      ]),
       ...scopeConfigs(node, applicationNodeFiles),
       ...createShadcnRegistryConfig(),
       ...(options.environment ?? []),

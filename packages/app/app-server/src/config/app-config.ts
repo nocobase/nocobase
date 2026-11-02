@@ -22,6 +22,7 @@ import type {
 } from './app-config-types.js';
 import type { AppPaths } from './types.js';
 import type { AppConfigRules } from './define-app-config.js';
+import { normalizeNotificationChannelAliases } from './channel-type.js';
 import {
   AppConfigInvalidError,
   collectPublicConfig,
@@ -105,6 +106,7 @@ export class AppConfig {
     defaults.merge(new Config({}, values));
     const next = defaults.copy();
     next.merge(this.overrides);
+    normalizeNotificationChannelAliases(next);
     this.defaults = defaults;
     this.current = next;
   }
@@ -302,6 +304,7 @@ export class AppConfig {
     }
     const next = this.defaults.copy();
     next.merge(overrides);
+    normalizeNotificationChannelAliases(next);
     this.overrides = overrides;
     return next;
   }

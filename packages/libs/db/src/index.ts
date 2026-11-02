@@ -28,6 +28,8 @@ export type {
   DirectoryCollectionMetadataStoreConfig,
 } from './database/config.js';
 export type { DatabaseConnection } from './database/connection.js';
+export type { RestrictedDatabase } from './database/restricted-database.js';
+export type { DatabasePolicyMap } from './database/policy-map.js';
 export type { TransactionCallbackPhase } from './database/internal/transaction-callbacks.js';
 export { defineRepositoryEventMeta } from './repository/events/meta.js';
 export type {
@@ -482,3 +484,5 @@ export {
 } from './repository/writable-fields.js';
 
 export type { DatabaseTaskConfig } from './task-config.js';
+
+export { getRepositoryMutationIdentity } from './repository/mutation-identity.js';

@@ -787,7 +787,7 @@ builder.createCollection('projects', {
 ```text
 要绑几张表？
 ├─ 一张 ──────────────── repository('x').withPolicy(...)
-└─ 多张，或需要事务 ──── conn.withPolicies({ ... }, principal)
+└─ 多张，或需要事务 ──── conn.restrict({ ... }, principal)
 
 写 policy 时身份在手边吗？
 ├─ 在（请求处理函数里）── 第一参数写字面量，没有第二参数
@@ -899,19 +899,21 @@ const projects = conn.repository('projects').withPolicy({ ... });
 ### 2.2 多表：绑在 Connection 上
 
 ```ts
-const scoped = conn.withPolicies(
+const restricted = conn.restrict(
   { projects: projectPolicy, tasks: taskPolicy },
   principal,
 );
 
-await scoped.repository('projects').findMany({ filter: { status: 'draft' } });
-await scoped.repository('tasks').updateOne({ filter: { id }, values });
+await restricted
+  .repository('projects')
+  .findMany({ filter: { status: 'draft' } });
+await restricted.repository('tasks').updateOne({ filter: { id }, values });
 ```
 
 map 里也可以混用两种形态——字面量的那些不消费 `principal`：
 
 ```ts
-conn.withPolicies(
+conn.restrict(
   {
     projects: projectPolicy, // 函数
     tasks: {
@@ -925,26 +927,27 @@ conn.withPolicies(
 );
 ```
 
-未覆盖的 Collection：
+Unlisted direct Collection access is denied:
 
 ```ts
-scoped.repository('users');
-// users 标了 requireScope → POLICY_REQUIRED
-// users 没标 requireScope → 返回未绑定的 Repository，完全不受限
+// restricted.repository('users'); // Type error for this literal map.
+// Dynamic maps are checked at runtime and throw POLICY_REQUIRED.
 ```
+
+The returned `RestrictedDatabase` exposes restricted repositories, transactions, commit/rollback callbacks, and policy explanations. It has no raw connection capabilities. `withPolicies()` remains supported without deprecation for policy binding with full connection capabilities, including unlisted-Collection and raw access. See [Restricted database access](../../../restricted-database.md) to choose the appropriate access boundary.
 
 ### 2.3 事务
 
 事务内派生的 Repository 自动携带同一份 policy，不需要重新绑：
 
 ```ts
-await scoped.transaction(async (tx) => {
+await restricted.transaction(async (tx) => {
   await tx.repository('projects').updateOne({ filter: { id }, values });
   await tx.repository('tasks').createOne({ values });
 });
 ```
 
-单表绑定进事务要显式换连接，这是 `withPolicies` 更常用的原因之一：
+A repository bound individually must be recreated from the transaction connection. `connection.restrict()` carries the policies into the callback automatically:
 
 ```ts
 // ✗ tx.repository('projects') 是未绑定的
@@ -1043,8 +1046,8 @@ conn.repository('projects').withPolicy({
 ### 6.3 同一请求，不同接口不同收窄
 
 ```ts
-const scoped = conn.withPolicies({ projects: projectPolicy }, principal);
-const base = scoped.repository('projects');
+const restricted = conn.restrict({ projects: projectPolicy }, principal);
+const base = restricted.repository('projects');
 
 const listEndpoint = base.narrow({ read: { fields: ['id', 'title'] } });
 const detailEndpoint = base; // 完整字段
@@ -1056,7 +1059,7 @@ const exportEndpoint = base.narrow({
 ### 6.4 分租户的只读副本
 
 ```ts
-const readonly = conn.withPolicies(
+const readonly = conn.restrict(
   {
     projects: (p) => ({
       read: { scope: { tenantId: p.tenantId } },

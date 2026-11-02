@@ -10,7 +10,7 @@ import {
   type RepositoryPolicy,
 } from '@nocobase/db';
 import { createTestDatabase } from '@nocobase/app-testing/server';
-import { createDriveManager } from '@nocobase/drive';
+import { createDriveManager, type DriveDriverFactory } from '@nocobase/drive';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { createPublicBasePathAdapter } from '@nocobase/app-server/runtime';
 import {
@@ -72,11 +72,13 @@ async function fixture(
     storageUrl = 'https://cdn.example.test/storage',
     databaseSize,
     databaseJsonField,
+    createCustomDriver,
   }: {
     publicBasePath?: string;
     storageUrl?: string;
     databaseSize?: (value: unknown) => unknown;
     databaseJsonField?: string;
+    createCustomDriver?: (location: string) => ReturnType<DriveDriverFactory>;
   } = {},
 ) {
   const root = await mkdtemp(path.join(tmpdir(), 'file-repository-'));
@@ -127,6 +129,7 @@ async function fixture(
         visibility: 'public',
         url: storageUrl,
       },
+      ...(createCustomDriver ? { custom: () => createCustomDriver(root) } : {}),
     },
   });
   const manager = new ServerFileRepositoryManager(db, drive);
@@ -199,6 +202,36 @@ const file = (name = 'hello.txt', text = 'hello'): File =>
   new File([text], name, { type: 'text/plain' });
 
 describe('server repository and Client API', () => {
+  it('uploads, queries metadata, and downloads content through a custom disk factory', async () => {
+    const createCustomDriver = vi.fn(
+      (location: string) =>
+        createDriveManager({
+          default: 'local',
+          disks: { local: { driver: 'fs', location, visibility: 'private' } },
+        }).use().driver,
+    );
+    const { client, router, drive } = await fixture(
+      { disk: 'custom' },
+      { createCustomDriver },
+    );
+    expect(createCustomDriver).not.toHaveBeenCalled();
+    const { record } = await client.uploadOne({ file: file() });
+    expect(record).toMatchObject({
+      disk: 'custom',
+      filename: 'hello.txt',
+      size: 5,
+    });
+    expect(await client.findOne({ filter: { id: record.id } })).toMatchObject({
+      id: record.id,
+      disk: 'custom',
+    });
+    const response = await router.request(record.contentUrl!);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('hello');
+    expect(await drive.use('custom').get(record.key)).toBe('hello');
+    expect(createCustomDriver).toHaveBeenCalledOnce();
+  });
+
   it('encloses uploads in a caller transaction and removes objects on rollback', async () => {
     const { db, manager, drive } = await fixture();
     let rolledBackKey = '';

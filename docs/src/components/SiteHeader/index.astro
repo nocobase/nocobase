@@ -1,0 +1,22 @@
+---
+/**
+ * The site header: logo, language menu and outbound links. The markup is the static header the hand-built pages
+ * were designed with (`header.<lang>.json`), so every page carries the same header.
+ */
+import type { LanguageLink } from '../../lib/language-menu.ts';
+import { headerMarkup } from './markup.ts';
+import './header.scss';
+
+interface Props {
+  language: string;
+  languageLinks: LanguageLink[];
+}
+
+const { language, languageLinks } = Astro.props;
+---
+
+<div class='docs-top-nav' set:html={headerMarkup(language, languageLinks)} />
+
+<script>
+  import '../../scripts/language-menu.ts';
+</script>

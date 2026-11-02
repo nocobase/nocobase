@@ -10,7 +10,11 @@ import {
 } from '@nocobase/db';
 
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
-import type { Issue, IssueProject } from '../../../shared/issues.js';
+import type {
+  Issue,
+  IssueProject,
+  IssueSummary,
+} from '../../../shared/issues.js';
 import type { Label } from '../../../shared/labels.js';
 import { oneOf } from '../../kernel/db.js';
 import { conflict } from '../../kernel/errors.js';
@@ -27,6 +31,7 @@ export interface IssueRecord {
   readonly statusKey: string;
   readonly needsYou: string | null;
   readonly next: string | null;
+  readonly acceptance: string | null;
   readonly priority: Priority;
   /** `PRIORITIES` index of `priority`, kept by the writes below. */
   readonly priorityRank: number;
@@ -95,6 +100,7 @@ const FIELDS = [
   'statusKey',
   'needsYou',
   'next',
+  'acceptance',
   'priority',
   'ownerUserId',
   'executorType',
@@ -127,6 +133,18 @@ export function toIssue(record: IssueRecord): Issue {
         ? { type: executorType, id: executorId }
         : null,
   };
+}
+
+/** A bounded batch of card fields, using the same visibility predicate as issue lists. */
+export async function findIssueSummaries(
+  conn: DatabaseConnection,
+  filter: RepositoryFilter<IssueRecord>,
+): Promise<IssueSummary[]> {
+  return issues(conn).findMany({
+    filter,
+    select: (select) => select.fields('id', 'identifier', 'title', 'statusKey'),
+    limit: 100,
+  });
 }
 
 /** Complete authorized projections without owner, executor, project or label hydration. */
@@ -192,6 +210,31 @@ export async function findIssueRows(
     limit: query.limit,
   });
   return rows.map((row) => toRow(row as Parameters<typeof toRow>[0]));
+}
+
+/** The sort fields of an issue, for placing it in a list without reading what the list shows of it. */
+export type IssueRef = Pick<
+  Issue,
+  'id' | 'number' | 'priority' | 'createdAt' | 'updatedAt'
+>;
+
+/** The ids and sort fields of the issues `query` lists, in its order: a cheap first step before `findIssueRows`. */
+export async function findIssueRefs(
+  conn: DatabaseConnection,
+  query: IssueQuery,
+): Promise<IssueRef[]> {
+  const rows = await issues(conn).findMany({
+    ...(query.filter ? { filter: query.filter } : {}),
+    ...(query.cursor ? { cursor: query.cursor } : {}),
+    select: (select) =>
+      select.fields('id', 'number', 'priority', 'createdAt', 'updatedAt'),
+    sort: (sort) =>
+      query.direction === 'asc'
+        ? [sort.field(query.order).asc(), sort.field('id').asc()]
+        : [sort.field(query.order).desc(), sort.field('id').desc()],
+    limit: query.limit,
+  });
+  return rows;
 }
 
 const IDENTIFIER = /^[A-Za-z][A-Za-z0-9]*-\d+$/u;
@@ -390,6 +433,18 @@ export async function issuesExecutedBy(
   return rows.map((row) => toIssue(row as IssueRecord));
 }
 
+/** Matching issue ids without loading their detail projections. */
+export async function findIssueIds(
+  conn: DatabaseConnection,
+  filter: RepositoryFilter<IssueRecord>,
+): Promise<string[]> {
+  const rows = await issues(conn).findMany({
+    filter,
+    select: (select) => select.fields('id'),
+  });
+  return rows.map((row) => row.id);
+}
+
 /** Issues by id, deleted or not; ids that match nothing are left out. */
 export async function findIssues(
   conn: DatabaseConnection,
@@ -407,16 +462,38 @@ export async function findIssues(
 export async function liveChildren(
   conn: DatabaseConnection,
   parentIds: readonly string[],
+  readableIds?: ReadonlySet<string>,
 ): Promise<Issue[]> {
   if (parentIds.length === 0) return [];
   const rows = await issues(conn).findMany({
     filter: (f) =>
       f.and([
         oneOf(f, 'parentIssueId', [...new Set(parentIds)]),
+        ...(readableIds ? [oneOf(f, 'id', [...readableIds])] : []),
         f.date('deletedAt').empty(),
       ]),
     select: (select) => select.fields(...FIELDS),
     sort: (sort) => [sort.field('number').asc()],
+  });
+  return rows.map((row) => toIssue(row as IssueRecord));
+}
+
+/** Every live sub-issue in a stage that is not in one of `finishedKeys`, of any parent. */
+export async function unfinishedStagedChildren(
+  conn: DatabaseConnection,
+  finishedKeys: readonly string[],
+  parentIds?: readonly string[],
+): Promise<Issue[]> {
+  const rows = await issues(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('parentIssueId').ne(null),
+        ...(parentIds ? [oneOf(f, 'parentIssueId', parentIds)] : []),
+        f.number('stage').ne(null),
+        f.date('deletedAt').empty(),
+        ...finishedKeys.map((key) => f.string('statusKey').ne(key)),
+      ]),
+    select: (select) => select.fields(...FIELDS),
   });
   return rows.map((row) => toIssue(row as IssueRecord));
 }

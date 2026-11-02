@@ -1,3 +1,4 @@
+import { expenseTimingGroup } from '../configuration/definitions.js';
 import { expenseParameterGroup } from '../configuration/definitions.js';
 import {
   defineLifecycle,
@@ -140,7 +141,7 @@ export const expenseLifecycle: Lifecycle<ExpenseTypes> =
     parameterConfiguration: {
       readMode: 'snapshot',
       snapshotTransition: 'submit',
-      groups: [expenseParameterGroup],
+      groups: [expenseParameterGroup, expenseTimingGroup],
     },
     parameters: {
       autoApproveLimit: 5000,

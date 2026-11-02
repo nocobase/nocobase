@@ -1,0 +1,552 @@
+{
+  "title": "Application deployment",
+  "intro": "Deploy to your own server with PM2 or Docker, or deploy to NocoBase Studio. Choose a method and use an Agent or follow the manual steps.",
+  "navigationLabel": "Choose a deployment method",
+  "copy": "Copy",
+  "copied": "Copied",
+  "copyFailed": "Copy failed. Select and copy the text manually.",
+  "backHome": "Back to quick start",
+  "guides": [
+    {
+      "id": "pm2",
+      "label": "PM2",
+      "title": "Deploy an application with PM2",
+      "description": "Build an archive locally, install and update it over SSH with app-installer, and let PM2 manage the application process.",
+      "sections": [
+        {
+          "id": "pm2-prepare",
+          "title": "1. Prepare the PM2 environment",
+          "blocks": [
+            {
+              "text": "Install Node.js 24+ and pnpm locally, and configure SSH access. Install Node.js 24 and tar on the Linux server, then install PM2 (4.3+) as the deployment account:"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "npm install --global pm2",
+              "language": "bash"
+            },
+            {
+              "text": "Make sure non-interactive SSH sessions can find node and pm2. The deployment account must be able to write to the installation directory and its parent; use a new or empty directory for the first installation."
+            }
+          ]
+        },
+        {
+          "id": "pm2-install",
+          "title": "2. Build and install with PM2",
+          "blocks": [
+            {
+              "context": "Local · application project root",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar",
+              "language": "bash"
+            },
+            {
+              "text": "The archive is written to storage/exports/dist.tar.gz. Supply the initial administrator password through the local INITIAL_ADMIN_PASSWORD environment variable, then install:"
+            },
+            {
+              "context": "Local · application project root",
+              "code": "npx --yes @nocobase/app-installer@beta install \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --origin https://purchase.example.com \\\n  --base-path /main \\\n  --port 13000 --name nocobase-purchase \\\n  --set-from-env users.initialAdmin.password=INITIAL_ADMIN_PASSWORD \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "The installer uploads the archive, generates configuration, runs migrations, and starts the application. These examples use @beta; pin a tested installer version in CI."
+            }
+          ]
+        },
+        {
+          "id": "pm2-verify",
+          "title": "3. Configure PM2 startup and verify",
+          "blocks": [
+            {
+              "context": "Server · deployment account",
+              "code": "pm2 startup",
+              "language": "bash"
+            },
+            {
+              "text": "Run the system service command printed by PM2, then save the process list as the same deployment account:"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "pm2 save",
+              "language": "bash"
+            },
+            {
+              "text": "After configuring HTTPS and the reverse proxy described above, check application status and public access:"
+            },
+            {
+              "context": "Local · application project root",
+              "code": "npx --yes @nocobase/app-installer@beta status \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase --json\n\ncurl --fail --silent --show-error \\\n  https://purchase.example.com/main/api/healthz",
+              "language": "bash"
+            },
+            {
+              "text": "Confirm that status reports result.health.ok as true and result.pending as null, and that the health endpoint returns ok: true. Open the application and verify sign-in. Also check page refresh, sign-in and permissions, and a main business operation. Verify uploads and downloads when file storage is used, and persistence after restart when storage changes."
+            }
+          ]
+        },
+        {
+          "id": "pm2-update",
+          "title": "Update the PM2 application",
+          "blocks": [
+            {
+              "text": "Rebuild the archive, check status for unfinished operations, then run the upgrade preflight:"
+            },
+            {
+              "context": "Local · application project root",
+              "code": "npx --yes @nocobase/app-installer@beta upgrade \\\n  --ssh deploy@server.example.com \\\n  --dir /srv/apps/purchase \\\n  --archive storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "Review the preflight result, downtime, and backup plan, then repeat the command with --yes to apply the update. Repeat the status and access checks afterward. The installer backs up SQLite and configuration; back up uploads separately. For an external database, back it up first and add --backup-done."
+            }
+          ]
+        }
+      ],
+      "skill": {
+        "id": "pm2-skill",
+        "title": "Use an Agent for PM2 deployment",
+        "blocks": [
+          {
+            "text": "Install the nocobase-app-installer Skill, start a new Agent session in the application directory, and send the prompt below. Use this Skill for external databases, rollback, and CI/CD as well."
+          },
+          {
+            "context": "Local · application project root",
+            "code": "npx skills@latest add nocobase/skills-v3 --skill nocobase-app-installer -g",
+            "language": "bash"
+          },
+          {
+            "context": "Send to the Agent",
+            "code": "Use the nocobase-app-installer Skill to deploy this application with PM2.\nSSH: deploy@server.example.com\nDirectory: /srv/apps/purchase\nPublic URL: https://purchase.example.com/main\nDatabase: SQLite\nCheck the environment and configuration, then deploy and verify.",
+            "language": "text"
+          }
+        ]
+      }
+    },
+    {
+      "id": "docker",
+      "label": "Docker",
+      "title": "Deploy an application with Docker",
+      "description": "Build an image with the Dockerfile included in your application, then run it on the server with configuration and data mounted. Install Docker on both machines and sign in to your image registry.",
+      "sections": [
+        {
+          "id": "docker-build",
+          "title": "1. Build and distribute the Docker image",
+          "blocks": [
+            {
+              "context": "Local · application project root",
+              "code": "docker build --platform linux/amd64 \\\n  -t registry.example.com/purchase:release-001 .\ndocker push registry.example.com/purchase:release-001",
+              "language": "bash"
+            },
+            {
+              "text": "The Dockerfile installs dependencies and builds the application; no prior pnpm build is needed. Keep Dockerfile.dockerignore alongside it to exclude configuration, secrets, and data. This example targets x64; use linux/arm64 for an ARM64 server."
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "docker pull registry.example.com/purchase:release-001",
+              "language": "bash"
+            }
+          ]
+        },
+        {
+          "id": "docker-config",
+          "title": "2. Prepare Docker configuration and data",
+          "blocks": [
+            {
+              "text": "For the first deployment, create dedicated directories and generate a SQLite configuration with unique secrets. The container runs as UID 1000 and needs read and write access to these directories."
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "sudo install -d -o 1000 -g 1000 -m 750 \\\n  /srv/apps/purchase /srv/apps/purchase/storage\n\ndocker run --rm \\\n  --mount type=bind,src=/srv/apps/purchase,dst=/config \\\n  registry.example.com/purchase:release-001 \\\n  node dist/cli/index.js config init \\\n  --config /config/config.yml --dialect sqlite",
+              "language": "bash"
+            },
+            {
+              "text": "Supply the initial administrator password through the server’s INITIAL_ADMIN_PASSWORD environment variable, then write it to the configuration:"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "docker run --rm -e INITIAL_ADMIN_PASSWORD \\\n  --mount type=bind,src=/srv/apps/purchase/config.yml,dst=/app/config.yml \\\n  registry.example.com/purchase:release-001 \\\n  node dist/cli/index.js config set --from-env \\\n  users.initialAdmin.password=INITIAL_ADMIN_PASSWORD",
+              "language": "bash"
+            },
+            {
+              "text": "Keep config.yml and storage/ on the host and reuse them across image updates. The project’s .env is not passed to the container automatically; supply any additional variables with the same -e or --env-file options for configuration checks and startup."
+            }
+          ]
+        },
+        {
+          "id": "docker-start",
+          "title": "3. Start and verify the Docker container",
+          "blocks": [
+            {
+              "text": "Check the configuration, then start the container after the check passes:"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "docker run --rm \\\n  -v /srv/apps/purchase/config.yml:/app/config.yml:ro \\\n  -v /srv/apps/purchase/storage:/app/storage \\\n  registry.example.com/purchase:release-001 \\\n  node dist/cli/index.js config check",
+              "language": "bash"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "docker run -d --name purchase \\\n  --init --restart unless-stopped --stop-timeout 60 \\\n  -p 127.0.0.1:13000:13000 \\\n  -e APP_PUBLIC_ORIGIN=https://purchase.example.com \\\n  -e APP_BASE_PATH=/main \\\n  -v /srv/apps/purchase/config.yml:/app/config.yml:ro \\\n  -v /srv/apps/purchase/storage:/app/storage \\\n  registry.example.com/purchase:release-001",
+              "language": "bash"
+            },
+            {
+              "text": "After configuring HTTPS and the reverse proxy described above, check the container and public access:"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "docker inspect --format '{{.State.Health.Status}}' purchase\n\ncurl --fail --silent --show-error \\\n  https://purchase.example.com/main/api/healthz",
+              "language": "bash"
+            },
+            {
+              "text": "Wait for the container to become healthy, confirm that the health endpoint returns ok: true, and verify sign-in in the application. To investigate failures, run docker logs --tail 100 purchase. Also check page refresh, sign-in and permissions, and a main business operation. For persistence configuration changes, confirm that the database and uploaded files survive container recreation."
+            }
+          ]
+        },
+        {
+          "id": "docker-update",
+          "title": "Update the Docker application",
+          "blocks": [
+            {
+              "text": "Rebuild and push with a new tag, such as release-002, keeping the old image. Pull the new image, repeat the configuration check with its tag, and stop the old container only after the check passes:"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "docker pull registry.example.com/purchase:release-002",
+              "language": "bash"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "docker stop --timeout 60 purchase",
+              "language": "bash"
+            },
+            {
+              "text": "While the application is stopped, back up config.yml, storage/, and any external database. After confirming the backup, remove the old container:"
+            },
+            {
+              "context": "Server · deployment account",
+              "code": "docker rm purchase",
+              "language": "bash"
+            },
+            {
+              "text": "Repeat the start command with release-002, keeping the same configuration, data mounts, and environment variables, then repeat the checks. Restarting a container does not update its image. Docker does not back up data automatically; check database compatibility before reverting to an older image."
+            }
+          ]
+        }
+      ],
+      "skill": {
+        "id": "docker-skill",
+        "title": "Use an Agent for Docker deployment",
+        "blocks": [
+          {
+            "text": "The application already includes the nocobase-deployment Skill. Ask an Agent to use it from the project directory, including for multi-platform builds, offline distribution, and CI/CD."
+          },
+          {
+            "context": "Send to the Agent",
+            "code": "Use the nocobase-deployment Skill to deploy this application with Docker.\nSSH: deploy@server.example.com\nImage: registry.example.com/purchase:release-001\nDirectory: /srv/apps/purchase\nPublic URL: https://purchase.example.com/main\nDatabase: SQLite\nCheck the configuration and data mounts, then deploy and verify.",
+            "language": "text"
+          }
+        ]
+      }
+    },
+    {
+      "id": "studio",
+      "label": "NocoBase Studio",
+      "title": "Deploy to NocoBase Studio",
+      "description": "Follow these steps to build, upload, and deploy your local application to an existing NocoBase Studio. Run all commands on your local computer. The target environment must accept archives, and Studio must be able to determine the application’s source repository and verify its commit.",
+      "skill": {
+        "id": "studio-skill",
+        "title": "Deploy to Studio with an Agent",
+        "blocks": [
+          {
+            "text": "Open your coding agent in the application project directory, replace the URL and IDs below, and send the prompt. For the first connection, give the agent the setup instructions from Use Studio in your agent in Studio’s avatar menu, then approve sign-in in your browser."
+          },
+          {
+            "context": "Send to your local coding agent",
+            "language": "text",
+            "code": "Use the nocobase-deployment Skill to deploy the current project to NocoBase Studio.\n\nStudio URL: https://studio.example.com/studio\nApplication ID: purchase\nEnvironment ID: preview\n\nReuse the existing CLI connection, then build, upload, and deploy.\nPreserve existing configuration and data during updates; ask me for any missing required information.\nCheck deployment status, error logs, and application access. Return the application URL and verification results.\nIf approval is required, submit a request and report its current status."
+          }
+        ]
+      },
+      "sections": [
+        {
+          "id": "studio-cli",
+          "title": "1. Install the CLI",
+          "blocks": [
+            {
+              "text": "Open Use Studio in your agent from Studio’s avatar menu. Copy its CLI installation command and run it in a local Bash terminal. Use the complete command generated by the page; the example below only shows its format. Skip installation if the CLI is already available."
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "curl -fsSL https://studio.example.com/studio/api/agents/dist/installScript \\\n  | sh -s -- --token '<download-token>'",
+              "language": "bash"
+            },
+            {
+              "text": "After installation, check that the command is available:"
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "export PATH=\"$HOME/.local/bin:$PATH\"\nnb-studio --version",
+              "language": "bash"
+            }
+          ]
+        },
+        {
+          "id": "studio-login",
+          "title": "2. Sign in to Studio",
+          "blocks": [
+            {
+              "text": "Replace the URL with your Studio URL, including its deployment path such as /studio. This guide names the local connection studio. If you are already signed in to the intended Studio, go directly to whoami to check the connection."
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "nb-studio --profile studio login \\\n  --server https://studio.example.com/studio",
+              "language": "bash"
+            },
+            {
+              "text": "Check the verification code and approve sign-in in your browser, then check your identity:"
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "nb-studio --profile studio whoami --json",
+              "language": "bash"
+            }
+          ]
+        },
+        {
+          "id": "studio-app",
+          "title": "3. Select the application",
+          "blocks": [
+            {
+              "text": "List the applications and find the ID of the application to deploy:"
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "nb-studio --profile studio app list --json",
+              "language": "bash"
+            },
+            {
+              "text": "The following commands use purchase; replace it with your chosen application ID. If you do not have an application yet, create one under Release management → Apps in Studio, select an environment that accepts archives, and complete the source association required for upload."
+            }
+          ]
+        },
+        {
+          "id": "studio-build",
+          "title": "4. Build locally",
+          "blocks": [
+            {
+              "text": "Run these commands from the local application project root. This example targets Linux x64 and Node.js 24; adjust the build options for your environment:"
+            },
+            {
+              "context": "Local · app project root · Bash",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar",
+              "language": "bash"
+            },
+            {
+              "text": "The deployment archive is generated at storage/exports/dist.tar.gz."
+            }
+          ]
+        },
+        {
+          "id": "studio-upload",
+          "title": "5. Upload the archive",
+          "blocks": [
+            {
+              "text": "Upload the archive using the connection from step 2. Replace <commit-sha> with the full commit SHA used for this build, which Studio must be able to verify:"
+            },
+            {
+              "context": "Local · app project root · Bash",
+              "code": "nb-studio --profile studio release upload \\\n  --app purchase \\\n  --sha '<commit-sha>' \\\n  --file storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "Confirm that result.data.superseded is false and result.data.release is present, then copy result.data.release.id for the next step. Uploading does not deploy the application."
+            }
+          ]
+        },
+        {
+          "id": "studio-deploy",
+          "title": "6. Deploy",
+          "blocks": [
+            {
+              "text": "Replace <release-id> with the ID returned above, then check the required configuration:"
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "nb-studio --profile studio app env list purchase \\\n  --release '<release-id>' --json",
+              "language": "bash"
+            },
+            {
+              "text": "If any entries show missing: true, fill them in on the application’s Variables tab in Studio. For an unprotected environment, deploy with:"
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "nb-studio --profile studio app deploy purchase \\\n  --release '<release-id>' --wait true --json",
+              "language": "bash"
+            },
+            {
+              "text": "If the environment requires approval, submit a deployment request instead and check the result after approval:"
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "nb-studio --profile studio deploy request purchase \\\n  --release '<release-id>' --json",
+              "language": "bash"
+            },
+            {
+              "text": "--wait true waits for up to about 100 seconds. If deployment is still queued, in progress, or awaiting approval, continue checking as described in step 7."
+            }
+          ]
+        },
+        {
+          "id": "studio-verify",
+          "title": "7. Check status and error logs",
+          "blocks": [
+            {
+              "text": "Check the deployment record, application status, and error logs:"
+            },
+            {
+              "context": "Local · Bash terminal",
+              "code": "nb-studio --profile studio deploy list purchase --limit 5 --json\nnb-studio --profile studio app get purchase --json\nnb-studio --profile studio app logs purchase --level error --json",
+              "language": "bash"
+            },
+            {
+              "text": "Find the deployment whose releaseId matches this upload. Confirm that status is succeeded and app.currentDeploymentId from app get matches its id. Open result.data.url to verify sign-in and the main workflows. For an application that starts on demand or is dormant, visit it first to wake it, then confirm runtime.state is running."
+            },
+            {
+              "text": "Initial administrator credentials generated by Studio are available on the application’s Overview tab while they are retained and have not been dismissed."
+            }
+          ]
+        },
+        {
+          "id": "studio-update",
+          "title": "Update an application on Studio",
+          "blocks": [
+            {
+              "text": "Keep the existing application ID, configuration, and storage. Back up the database and uploaded files before updating."
+            },
+            {
+              "text": "Rebuild and upload the archive, replacing <commit-sha> with the full commit SHA for the updated source. Uploading the same application and SHA again reuses its existing release; use a new source commit for changed build content:"
+            },
+            {
+              "context": "Local · app project root · Bash",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar\n\nnb-studio --profile studio release upload \\\n  --app purchase \\\n  --sha '<commit-sha>' \\\n  --file storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "After confirming that the upload returned a valid release, replace <release-id> with result.data.release.id. Complete required configuration as in step 6. Run the command below for an unprotected environment; submit a deployment request instead if approval is required."
+            },
+            {
+              "context": "Local · app project root · Bash",
+              "code": "nb-studio --profile studio app deploy purchase \\\n  --release '<release-id>' --wait true --json",
+              "language": "bash"
+            },
+            {
+              "text": "After deployment, follow step 7 to confirm that this deployment succeeded and check error logs, sign-in, and the main workflows."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "legacyAnchors": {
+    "app-installer": "pm2",
+    "通过-pm2-部署应用": "pm2",
+    "通过-docker-部署应用": "docker",
+    "deploy-an-application-with-pm2": "pm2",
+    "deploy-an-application-with-docker": "docker",
+    "部署前准备": "docker-config",
+    "before-you-deploy": "docker-config",
+    "部署后检查": "docker-start",
+    "docker-release-checks": "docker-start",
+    "更新-docker-部署": "docker-update",
+    "update-a-docker-deployment": "docker-update",
+    "deploy": "pm2",
+    "first-deployment": "pm2",
+    "update-an-existing-deployment": "pm2-update",
+    "pm2-management": "pm2-verify",
+    "pipeline-integration": "pm2-skill",
+    "recovery-and-special-cases": "pm2-skill",
+    "prepare-the-runner-and-server": "pm2-prepare",
+    "build-the-deployment-archive": "pm2-install",
+    "install-the-application": "pm2-install",
+    "configure-startup-and-access": "pm2-verify",
+    "verify-the-deployment": "pm2-verify",
+    "roll-back-a-release": "pm2-skill",
+    "external-databases-and-file-backups": "pm2-skill",
+    "ssh-interruption-and-unknown-state": "pm2-skill",
+    "migration-checksum-changes": "pm2-skill",
+    "view-command-help": "pm2-skill",
+    "docker-first-deployment": "docker",
+    "docker-management": "docker-start",
+    "docker-ci": "docker-skill",
+    "docker-recovery": "docker-skill",
+    "docker-distribute": "docker-build",
+    "docker-verify": "docker-start",
+    "docker-rollback": "docker-skill",
+    "docker-offline": "docker-skill",
+    "docker-prebuilt": "docker-skill",
+    "docker-multiplatform": "docker-skill",
+    "docker-cdn": "docker-skill",
+    "docker-database": "docker-skill",
+    "选择部署方式": "deployment-title",
+    "choose-a-deployment-method": "deployment-title",
+    "应用部署": "deployment-title",
+    "application-deployment": "deployment-title",
+    "示例环境与访问": "deployment-example",
+    "example-environment-and-access": "deployment-example",
+    "studio-prepare": "studio-cli"
+  },
+  "layout": {
+    "eyebrow": "DEPLOYMENT GUIDE",
+    "flowLabel": "Application deployment flow",
+    "contents": "On this page",
+    "agentAction": "Deploy with an Agent",
+    "manualAction": "View manual steps",
+    "flowTitle": "From build to launch",
+    "flowArtifacts": "Deployment artifacts",
+    "flowImage": "Docker image",
+    "flowStages": [
+      {
+        "title": "Build",
+        "description": "Create an archive or image"
+      },
+      {
+        "title": "Deploy",
+        "description": "Configure and start"
+      },
+      {
+        "title": "Verify",
+        "description": "Check health and sign-in"
+      }
+    ]
+  },
+  "environment": {
+    "id": "deployment-example",
+    "title": "PM2 / Docker example environment and access",
+    "summary": "Linux x64 · SQLite",
+    "description": "The PM2 and Docker guides use the examples below. Replace the server, deployment directory, and public URL with your own before running the commands. Studio deployments use an environment configured by an administrator and the URL shown on the target App page.",
+    "parameters": [
+      {
+        "label": "Environment",
+        "value": "Linux x64 · SQLite"
+      },
+      {
+        "label": "Deployment directory",
+        "value": "/srv/apps/purchase"
+      },
+      {
+        "label": "Public URL",
+        "value": "https://purchase.example.com/main"
+      },
+      {
+        "label": "Proxy upstream",
+        "value": "127.0.0.1:13000"
+      }
+    ],
+    "accessId": "deployment-access",
+    "accessTitle": "Configure public access",
+    "accessSteps": [
+      "Point purchase.example.com to the target server and configure a TLS certificate for HTTPS.",
+      "Configure a reverse proxy on the same server, forwarding to 127.0.0.1:13000 and preserving the /main path.",
+      "Enable WebSocket support and forward the public host and protocol to the application."
+    ],
+    "note": "The deployment commands below do not configure DNS, certificates, or a reverse proxy. Complete these settings before verifying public access."
+  }
+}

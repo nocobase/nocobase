@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { interruptError, onInterrupt, takeInterrupt } from './interrupt.ts';
 
 export interface RunCommandOptions {
@@ -50,23 +50,52 @@ export class CommandFailedError extends Error {
 /** How long a stopped command's process group gets to exit after SIGTERM before it is killed. */
 const KILL_GRACE_MS = 10_000;
 
-/**
- * Signals the child's whole process group. `pnpm build` runs `tsc`, `vite` and native builds as its own children; killing
- * only `pnpm` would leave them writing into a directory the caller is about to remove.
- */
-function signalGroup(child: ChildProcess, signal: NodeJS.Signals): void {
-  if (child.pid === undefined) return;
+/** A bounded confirmation period after SIGKILL, including slow process-state checks. */
+const STOP_CHECK_MS = 2000;
+const POLL_MS = 50;
+
+/** Linux and macOS ps expose zombies as Z; they cannot execute or write, even before their parent reaps them. */
+async function groupIsRunning(pid: number): Promise<boolean> {
   try {
-    process.kill(-child.pid, signal);
-  } catch {
-    child.kill(signal);
+    process.kill(-pid, 0);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false;
+    throw error;
   }
+  const states = await new Promise<string>((resolve, reject) => {
+    // Read only group ids and states, never command lines or environment values. BSD and Linux ps support these fields.
+    execFile(
+      'ps',
+      ['-A', '-o', 'pgid=,stat='],
+      {
+        encoding: 'utf8',
+        timeout: 1000,
+        killSignal: 'SIGKILL',
+        maxBuffer: 4 * 1024 * 1024,
+      },
+      (error, stdout) =>
+        error
+          ? reject(
+              new Error('Cannot read command process states.', {
+                cause: error,
+              }),
+            )
+          : resolve(stdout),
+    );
+  });
+  return states
+    .trim()
+    .split('\n')
+    .some((line) => {
+      const [group, state] = line.trim().split(/\s+/);
+      return Number(group) === pid && !/^[ZX]/.test(state ?? '');
+    });
 }
 
 /**
  * Runs a child process, collecting its output, and rejects with `CommandFailedError` on a non-zero exit. The child leads
  * its own process group, so a timeout or an interrupt stops everything it started, and the promise settles only once
- * the group has exited.
+ * the group has no runnable members. If that cannot be confirmed within the stop deadline, the failure says so.
  */
 export const runCommand: RunCommand = (command, args, options = {}) =>
   new Promise((resolve, reject) => {
@@ -90,16 +119,60 @@ export const runCommand: RunCommand = (command, args, options = {}) =>
     let stdout = '';
     let stderr = '';
     let stopReason: 'timeout' | 'interrupt' | undefined;
+    let settled = false;
+    let closed = false;
+    let groupStopped = false;
+    let exitCode: number | null = null;
     let killTimer: NodeJS.Timeout | undefined;
+    let pollTimer: NodeJS.Timeout | undefined;
+    let deadlineTimer: NodeJS.Timeout | undefined;
+    let stopError: unknown;
+    const signalGroup = (signal: NodeJS.Signals) => {
+      if (child.pid === undefined) return;
+      try {
+        process.kill(-child.pid, signal);
+      } catch (error) {
+        // The group may disappear between observing it and signalling it. Other errors must not imply success.
+        if ((error as NodeJS.ErrnoException).code !== 'ESRCH')
+          stopError = error;
+      }
+    };
+    const checkStopped = async () => {
+      try {
+        const running =
+          child.pid !== undefined && (await groupIsRunning(child.pid));
+        if (settled) return;
+        if (!running) {
+          // Once every member is dead, none can create another member. Do not signal this group id again.
+          groupStopped = true;
+          clearTimeout(killTimer);
+          if (closed) finish(exitCode);
+          return;
+        }
+      } catch (error) {
+        stopError = error;
+      }
+      if (!settled) pollTimer = setTimeout(() => void checkStopped(), POLL_MS);
+    };
     const stop = (reason: 'timeout' | 'interrupt') => {
-      if (stopReason) return;
+      if (stopReason || settled) return;
       stopReason = reason;
-      signalGroup(child, 'SIGTERM');
-      killTimer = setTimeout(
-        () => signalGroup(child, 'SIGKILL'),
-        KILL_GRACE_MS,
-      );
-      killTimer.unref();
+      signalGroup('SIGTERM');
+      // These timers stay referenced even when the direct child closes its pipes and leaves no other Node handles.
+      killTimer = setTimeout(() => signalGroup('SIGKILL'), KILL_GRACE_MS);
+      deadlineTimer = setTimeout(() => {
+        const detail =
+          stopError instanceof Error ? ` ${stopError.message}` : '';
+        finish(
+          exitCode,
+          `Could not confirm the command process group stopped.${detail}`,
+        );
+        child.stdin?.destroy();
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+        child.unref();
+      }, KILL_GRACE_MS + STOP_CHECK_MS);
+      void checkStopped();
     };
     const timer = options.timeoutMs
       ? setTimeout(() => stop('timeout'), options.timeoutMs)
@@ -116,21 +189,28 @@ export const runCommand: RunCommand = (command, args, options = {}) =>
       options.echo?.write(chunk);
     });
 
-    const settle = () => {
+    const finish = (
+      code: number | null,
+      cleanupFailure?: string,
+      spawnFailure?: Error,
+    ) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
       clearTimeout(killTimer);
+      clearTimeout(pollTimer);
+      clearTimeout(deadlineTimer);
       stopListening();
-    };
-    child.once('error', (error: Error) => {
-      settle();
-      reject(error);
-    });
-    child.once('close', (code: number | null) => {
-      settle();
+      if (spawnFailure) {
+        reject(spawnFailure);
+        return;
+      }
       if (stopReason === 'interrupt') {
         // The interrupt is this step's failure; later recovery steps must not see it again.
         takeInterrupt();
-        reject(interruptError());
+        const error = interruptError();
+        if (cleanupFailure) error.message = `Interrupted. ${cleanupFailure}`;
+        reject(error);
         return;
       }
       if (stopReason === 'timeout') {
@@ -140,7 +220,7 @@ export const runCommand: RunCommand = (command, args, options = {}) =>
             code,
             stdout,
             stderr,
-            `${label} timed out after ${Math.round(options.timeoutMs! / 1000)}s.`,
+            `${label} timed out after ${Math.round(options.timeoutMs! / 1000)}s.${cleanupFailure ? ` ${cleanupFailure}` : ''}`,
           ),
         );
         return;
@@ -150,6 +230,16 @@ export const runCommand: RunCommand = (command, args, options = {}) =>
         return;
       }
       reject(new CommandFailedError(label, code, stdout, stderr));
+    };
+    child.once('error', (error: Error) => {
+      // A spawn failure has no process group. Errors after stopping begins must not bypass group confirmation.
+      if (stopReason && child.pid !== undefined) stopError = error;
+      else finish(null, undefined, error);
+    });
+    child.once('close', (code: number | null) => {
+      closed = true;
+      exitCode = code;
+      if (!stopReason || groupStopped) finish(code);
     });
   });
 

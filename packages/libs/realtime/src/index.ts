@@ -1,6 +1,10 @@
 export {
   createRealtimeClient,
   type RealtimeClient,
+  type RealtimeConnectionState,
+  type RealtimeSubscriptionState,
+  type RealtimeSubscription,
+  type RealtimeWatchOptions,
   type RealtimeClientOptions,
   type RealtimeErrorEvent,
   type RealtimeEvent,

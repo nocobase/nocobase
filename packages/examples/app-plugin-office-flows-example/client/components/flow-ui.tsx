@@ -508,6 +508,7 @@ function TraceDetail({ detail }: { readonly detail: Plain }): ReactElement {
 export function RowsTable({
   rows,
   config,
+  parentDepartment,
   editable,
   allowAssist,
   dispatchLabel,
@@ -518,6 +519,7 @@ export function RowsTable({
 }: {
   readonly rows: readonly Plain[];
   readonly config: Config | undefined;
+  readonly parentDepartment?: string;
   readonly editable: boolean;
   readonly allowAssist?: boolean;
   readonly dispatchLabel: string;
@@ -528,14 +530,23 @@ export function RowsTable({
 }): ReactElement {
   const { t } = useTranslation(NAMESPACE);
   const [department, setDepartment] = useState('');
-  const [heads, setHeads] = useState(false);
-  const [leaders, setLeaders] = useState(false);
+  const [headsOverride, setHeadsOverride] = useState<boolean>();
+  const [leadersOverride, setLeadersOverride] = useState<boolean>();
+  const heads = headsOverride ?? config?.dispatchRules?.ccHeads ?? false;
+  const leaders = leadersOverride ?? config?.dispatchRules?.ccLeaders ?? false;
   const [assist, setAssist] = useState(false);
   const pending = rows.filter((row) => !row.dispatched).length;
-  const departments = (config?.departments ?? []).map((item) => ({
-    value: item.name,
-    label: item.name,
-  }));
+  const departments = (config?.departments ?? [])
+    .filter(
+      (item) =>
+        !config?.dispatchRules?.ownDepartmentOnly ||
+        !parentDepartment ||
+        item.name === parentDepartment,
+    )
+    .map((item) => ({
+      value: item.name,
+      label: item.name,
+    }));
   return (
     <div className='space-y-3'>
       <div className='overflow-x-auto rounded-lg border'>
@@ -543,7 +554,7 @@ export function RowsTable({
           <thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
             <tr>
               <th className='px-3 py-2 font-medium'>{t('rows.department')}</th>
-              <th className='px-3 py-2 font-medium'>{t('rows.clerks')}</th>
+              <th className='px-3 py-2 font-medium'>{t('rows.assignees')}</th>
               <th className='px-3 py-2 font-medium'>{t('rows.heads')}</th>
               <th className='px-3 py-2 font-medium'>{t('rows.leaders')}</th>
               <th className='px-3 py-2 font-medium'>{t('rows.dispatched')}</th>
@@ -626,13 +637,13 @@ export function RowsTable({
           </div>
           <div className='flex flex-wrap gap-1.5'>
             <Button size='sm' variant='default' aria-pressed disabled>
-              {t('rows.clerks')}
+              {t('rows.assignees')}
             </Button>
             <Button
               size='sm'
               aria-pressed={heads}
               variant={heads ? 'default' : 'outline'}
-              onClick={() => setHeads(!heads)}
+              onClick={() => setHeadsOverride(!heads)}
             >
               {t('rows.heads')}
             </Button>
@@ -640,7 +651,7 @@ export function RowsTable({
               size='sm'
               aria-pressed={leaders}
               variant={leaders ? 'default' : 'outline'}
-              onClick={() => setLeaders(!leaders)}
+              onClick={() => setLeadersOverride(!leaders)}
             >
               {t('rows.leaders')}
             </Button>
@@ -658,7 +669,9 @@ export function RowsTable({
           <Button
             size='sm'
             variant='secondary'
-            disabled={!department || busy}
+            disabled={
+              !departments.some((item) => item.value === department) || busy
+            }
             onClick={() => {
               onAdd({
                 departmentName: department,

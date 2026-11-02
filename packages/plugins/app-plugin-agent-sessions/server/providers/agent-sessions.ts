@@ -64,7 +64,14 @@ export class AgentSessionsProvider extends ServiceProvider<AppPluginApplication>
         ...(topic
           ? {
               publish: (userId, change) =>
-                void topic.publishFor(userId, change),
+                void topic
+                  .publishFor(userId, change)
+                  .catch((error: unknown) => {
+                    console.error(
+                      'Agent sessions realtime announcement failed.',
+                      error,
+                    );
+                  }),
             }
           : {}),
         // Asked on each use: the application's default Drive disk, through the file plugin when it is registered.

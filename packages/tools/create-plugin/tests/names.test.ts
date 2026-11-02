@@ -7,6 +7,7 @@ describe('normalizePluginName', () => {
     ['audit-log', 'audit-log'],
     ['app-plugin-audit-log', 'audit-log'],
     ['@nocobase/app-plugin-audit-log', 'audit-log'],
+    ['@my-app/app-plugin-audit-log', 'audit-log'],
   ])('normalizes %s', (input, expected) => {
     expect(normalizePluginName(input)).toBe(expected);
   });
@@ -28,6 +29,13 @@ describe('normalizePluginName', () => {
 });
 
 describe('createPluginNames', () => {
+  it('keeps a consumer scope while deriving local filenames', () => {
+    expect(createPluginNames('@my-app/app-plugin-audit-log')).toMatchObject({
+      packageName: '@my-app/app-plugin-audit-log',
+      shortName: 'audit-log',
+      directoryName: 'app-plugin-audit-log',
+    });
+  });
   it('derives package, directory, collection, and TypeScript names', () => {
     expect(createPluginNames('audit-log')).toEqual({
       collectionName: 'appPluginAuditLogRecords',

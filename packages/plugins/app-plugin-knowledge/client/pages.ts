@@ -5,6 +5,16 @@
  */
 import { withNamespace } from '@nocobase/i18n/client';
 import type { ComponentType } from 'react';
+import {
+  KnowledgeIndexingDialog as IndexingDialog,
+  type KnowledgeIndexingDialogProps,
+  KnowledgeIndexingSettings as IndexingSettings,
+  type KnowledgeIndexingSettingsProps,
+} from './components/indexing-dialog.js';
+import {
+  KnowledgeIndexingEntry as IndexingEntry,
+  type KnowledgeIndexingEntryProps,
+} from './components/indexing-entry.js';
 
 import { ACCESS_NAMESPACE } from '../shared/access.js';
 import {
@@ -28,6 +38,7 @@ export type {
   KnowledgeViewProps,
 } from './components/knowledge-view.js';
 export type { KnowledgePageProps } from './pages/knowledge-page.js';
+export type { KnowledgeIndexingEntryProps } from './components/indexing-entry.js';
 export type { KnowledgeDirectorySource } from './hooks/use-directory.js';
 export type {
   KnowledgeAccessCell,
@@ -50,5 +61,25 @@ export const ProposalActions: ComponentType<Parameters<typeof Actions>[0]> =
   withNamespace(ACCESS_NAMESPACE, Actions);
 export const ProposalKindBadge: ComponentType<Parameters<typeof KindBadge>[0]> =
   withNamespace(ACCESS_NAMESPACE, KindBadge);
+export const KnowledgeIndexingDialog: ComponentType<KnowledgeIndexingDialogProps> =
+  withNamespace(ACCESS_NAMESPACE, IndexingDialog);
+export const KnowledgeIndexingSettings: ComponentType<KnowledgeIndexingSettingsProps> =
+  withNamespace(ACCESS_NAMESPACE, IndexingSettings);
+export const KnowledgeIndexingEntry: ComponentType<KnowledgeIndexingEntryProps> =
+  withNamespace(ACCESS_NAMESPACE, IndexingEntry);
 export const KnowledgeMarkdown: ComponentType<Parameters<typeof Markdown>[0]> =
   withNamespace(ACCESS_NAMESPACE, Markdown);
+
+export {
+  KnowledgeIndexingApi,
+  knowledgeIndexingKeys,
+  useKnowledgeIndexingApi,
+  useKnowledgeIndexingSettings,
+  useKnowledgeIndexingStatus,
+  useKnowledgeIndexingInstances,
+  useKnowledgeEmbeddingModels,
+} from './indexing/api.js';
+export type {
+  KnowledgeIndexingDialogProps,
+  KnowledgeIndexingSettingsProps,
+} from './components/indexing-dialog.js';

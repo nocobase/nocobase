@@ -1,0 +1,263 @@
+---
+import chinese from './content.json';
+import english from './content.en.json';
+import './index.scss';
+
+interface Props {
+  language: string;
+}
+
+const { language } = Astro.props;
+const content = language === 'cn' ? chinese : english;
+const assets = import.meta.glob<string>('./assets/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const withAssets = (html: string) =>
+  html.replace(/\.\/assets\/[\w-]+\.png/g, (path) => {
+    const asset = assets[path];
+    if (!asset) throw new Error(`Missing Studio guide asset: ${path}`);
+    return asset;
+  });
+const number = (index: number) => String(index + 1).padStart(2, '0');
+---
+
+<div
+  class='studio-guide'
+  id='top'
+  data-copy-status={content.copyStatus}
+  data-copy-fallback={content.copyFallback}
+  data-copied={content.copied}
+>
+  <a class='guide-skip' href='#main-content'>
+    {content.skip}
+  </a>
+  <div class='guide-container'>
+    <header class='guide-intro'>
+      <div>
+        <p class='guide-eyebrow'>{content.eyebrow}</p>
+        <h1>
+          {content.heading}
+          <br />
+          <span>{content.headingAccent}</span>
+        </h1>
+        <p class='guide-lead'>{content.intro}</p>
+      </div>
+      <div class='guide-flow' aria-label={content.flowLabel}>
+        <div class='flow-heading'>
+          <span class='flow-mark' aria-hidden='true'>
+            S
+          </span>
+          <span>NocoBase Studio</span>
+          <span class='flow-label'>GUIDE</span>
+        </div>
+        <p class='flow-title'>{content.flowTitle}</p>
+        <ol>
+          {content.flow.map((stage, index) => (
+            <li>
+              <a class='flow-link' href={`#${stage.chapterId}`}>
+                <span class='flow-number' aria-hidden='true'>
+                  {number(index)}
+                </span>
+                <div>
+                  <strong>{stage.title}</strong>
+                  <p>{stage.description}</p>
+                </div>
+                <span class='flow-arrow' aria-hidden='true'>
+                  ↗
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+        <div class='flow-tools'>
+          <span>CLI</span>
+          <span>RUNNER</span>
+          <span>GIT</span>
+          <span>CI</span>
+        </div>
+      </div>
+    </header>
+    <div class='guide-layout'>
+      <aside class='guide-sidebar'>
+        <details class='guide-directory' open>
+          <summary>
+            {content.tocToggle}
+            <svg
+              class='directory-chevron'
+              width='16'
+              height='16'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='1.75'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+              aria-hidden='true'
+              focusable='false'
+            >
+              <path d='m6 9 6 6 6-6' />
+            </svg>
+          </summary>
+          <nav aria-label={content.toc}>
+            <p class='toc-title'>{content.toc}</p>
+            <ol class='toc-chapters'>
+              {content.chapters.map((chapter, index) => (
+                <li>
+                  <details class='toc-chapter' open={index === 0}>
+                    <summary
+                      aria-label={`${chapter.title}: ${content.subsectionsLabel}`}
+                    >
+                      <a href={`#${chapter.id}`} data-chapter-link>
+                        <span>{number(index)}</span>
+                        {chapter.title}
+                      </a>
+                      <span class='toc-chevron' aria-hidden='true'>
+                        <svg
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='none'
+                          stroke='currentColor'
+                          stroke-width='1.75'
+                          stroke-linecap='round'
+                          stroke-linejoin='round'
+                          focusable='false'
+                        >
+                          <path d='m9 5 7 7-7 7' />
+                        </svg>
+                      </span>
+                    </summary>
+                    <ol class='toc-sections'>
+                      {chapter.sections.map((section, sectionIndex) => (
+                        <li>
+                          <a href={`#${section.id}`} data-section-link>
+                            <span>
+                              {index + 1}.{sectionIndex + 1}
+                            </span>
+                            {section.title}
+                          </a>
+                          {section.topics.length > 0 && (
+                            <ol class='toc-topics'>
+                              {section.topics.map((topic) => (
+                                <li>
+                                  <a href={`#${topic.id}`} data-section-link>
+                                    {topic.title}
+                                  </a>
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                </li>
+              ))}
+            </ol>
+            <p class='toc-tip'>{content.tocTip}</p>
+            <div class='guide-progress'>
+              <label for='guide-progress'>
+                {content.progress}
+                <span data-progress-label>
+                  01 / {number(content.chapters.length - 1)}
+                </span>
+              </label>
+              <progress
+                id='guide-progress'
+                max={content.chapters.length}
+                value='1'
+              ></progress>
+            </div>
+          </nav>
+        </details>
+      </aside>
+      <main id='main-content' data-pagefind-body>
+        {content.chapters.map((chapter, index) => (
+          <section
+            class='chapter'
+            id={chapter.id}
+            aria-labelledby={`${chapter.id}-title`}
+          >
+            <header class='chapter-header'>
+              <span class='chapter-number' aria-hidden='true'>
+                {number(index)}
+              </span>
+              <div>
+                <h2 id={`${chapter.id}-title`}>{chapter.title}</h2>
+                <p class='chapter-summary'>{chapter.summary}</p>
+              </div>
+            </header>
+            <div class='chapter-body'>
+              {chapter.sections.map((section, sectionIndex) => (
+                <section
+                  class='guide-section'
+                  id={section.id}
+                  aria-labelledby={`${section.id}-title`}
+                >
+                  <h3 id={`${section.id}-title`}>
+                    <span class='section-number' aria-hidden='true'>
+                      {index + 1}.{sectionIndex + 1}
+                    </span>
+                    {section.title}
+                  </h3>
+                  <Fragment set:html={withAssets(section.html)} />
+                  {section.topics.map((topic) => (
+                    <section
+                      class='guide-topic'
+                      id={topic.id}
+                      aria-labelledby={`${topic.id}-title`}
+                    >
+                      <h4 id={`${topic.id}-title`}>{topic.title}</h4>
+                      <Fragment set:html={withAssets(topic.html)} />
+                    </section>
+                  ))}
+                </section>
+              ))}
+            </div>
+          </section>
+        ))}
+        <section class='guide-finish' aria-labelledby='finish-title'>
+          <span class='finish-mark' aria-hidden='true'>
+            ✓
+          </span>
+          <h2 id='finish-title'>{content.finishTitle}</h2>
+          <p>{content.finishDescription}</p>
+          <ul>
+            {content.checklist.map((item) => (
+              <li>
+                <span aria-hidden='true'>✓</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <footer class='guide-footer'>
+          <span>{content.footerNote}</span>
+          <a href='#top'>{content.backTop} ↑</a>
+        </footer>
+      </main>
+    </div>
+  </div>
+  <dialog class='guide-lightbox' aria-labelledby='image-caption'>
+    <div class='lightbox-head'>
+      <p id='image-caption'></p>
+      <div class='lightbox-actions'>
+        <a data-original-image target='_blank' rel='noopener noreferrer'>
+          {content.originalImage} ↗
+        </a>
+        <button type='button' data-close-image autofocus>
+          {content.close} <kbd>Esc</kbd>
+        </button>
+      </div>
+    </div>
+    <img class='lightbox-image' alt='' />
+  </dialog>
+  <div class='guide-status' role='status' aria-live='polite'></div>
+</div>
+<script>
+  import { initializeStudioGuide } from './interactions.ts';
+  const root = document.querySelector<HTMLElement>('.studio-guide');
+  if (root) initializeStudioGuide(root);
+</script>

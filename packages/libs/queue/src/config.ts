@@ -21,10 +21,6 @@ import type {
 
 /** The adapter that selects the in-process implementation. */
 export const IN_MEMORY_ADAPTER: QueueAdapter = 'inMemory';
-/** The adapter that selects the BullMQ implementation. */
-export const REDIS_ADAPTER: QueueAdapter = 'redis';
-/** The `queueBackend` name of BullMQ's own Redis backend, used when none is named. */
-export const REDIS_BACKEND: string = 'redis';
 /** The key queues on the built-in memory configuration are bound to. */
 export const BUILT_IN_MEMORY_KEY: string = '\0built-in-memory';
 
@@ -136,8 +132,8 @@ export function selectQueueConfig(
 export interface ResolvedQueueConfig {
   readonly key: string;
   readonly builtIn: boolean;
-  readonly adapter: QueueAdapter;
-  /** `redis` only: the registered backend factory; `undefined` for BullMQ's Redis backend. */
+  readonly adapter: string;
+  /** Optional implementation-owned backend selector. */
   readonly queueBackend: string | undefined;
   /** Handed to the backend factory as it is; `undefined` for `inMemory`. */
   readonly connection: unknown;
@@ -177,19 +173,15 @@ export function resolveQueueConfig(
     ENTRY_FIELDS,
     label,
   );
-  if (entry.adapter !== IN_MEMORY_ADAPTER && entry.adapter !== REDIS_ADAPTER) {
-    throw new TypeError(
-      `${label} needs an adapter: "${IN_MEMORY_ADAPTER}" or "${REDIS_ADAPTER}".`,
-    );
+  if (typeof entry.adapter !== 'string' || entry.adapter.trim() === '') {
+    throw new TypeError(`${label} needs a non-empty adapter name.`);
   }
   const inMemory = entry.adapter === IN_MEMORY_ADAPTER;
   if (inMemory && entry.connection !== undefined) {
     throw new TypeError(`${label} uses inMemory, which takes no connection.`);
   }
   if (inMemory && entry.queueBackend !== undefined) {
-    throw new TypeError(
-      `${label} uses inMemory, which takes no queueBackend: a backend factory only applies to redis.`,
-    );
+    throw new TypeError(`${label} uses inMemory, which takes no queueBackend.`);
   }
   if (
     entry.queueBackend !== undefined &&
@@ -197,20 +189,11 @@ export function resolveQueueConfig(
   ) {
     throw new TypeError(`${label} queueBackend must name a backend factory.`);
   }
-  const queueBackend =
-    entry.queueBackend === REDIS_BACKEND ? undefined : entry.queueBackend;
+  const queueBackend = entry.queueBackend;
   if (!inMemory && entry.persistence !== undefined) {
     throw new TypeError(
       `${label} sets persistence, which only inMemory configurations use.`,
     );
-  }
-  // A registered factory interprets its own connection; BullMQ's Redis backend needs options.
-  if (
-    !inMemory &&
-    queueBackend === undefined &&
-    (typeof entry.connection !== 'object' || entry.connection === null)
-  ) {
-    throw new TypeError(`${label} needs a redis connection.`);
   }
   const persistencePath = entry.persistence?.path;
   if (persistencePath !== undefined && typeof persistencePath !== 'string') {

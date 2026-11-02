@@ -17,7 +17,7 @@ it.skipIf(process.platform === 'win32')(
       OPENAI_API_KEY: 'synthetic-environment-key',
     };
     const inspect = async (passEnv: string[] = []) =>
-      (await detectTools(loadAdapters(source, passEnv))).find(
+      (await detectTools(loadAdapters(source, passEnv, {}, ['opencode']))).find(
         (tool) => tool.kind === 'opencode',
       );
     const install = (version: string) =>
@@ -27,9 +27,15 @@ it.skipIf(process.platform === 'win32')(
         { mode: 0o755 },
       );
     try {
-      expect(await inspect()).toBeUndefined();
+      expect(await inspect()).toMatchObject({
+        status: 'notInstalled',
+        authenticated: false,
+      });
       await install('1.9.0');
-      expect(await inspect()).toBeUndefined();
+      expect(await inspect()).toMatchObject({
+        status: 'notInstalled',
+        authenticated: false,
+      });
       await install('2.0.28');
       expect(await inspect()).toMatchObject({
         version: '2.0.28',

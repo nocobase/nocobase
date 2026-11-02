@@ -3,12 +3,14 @@
  * the places that decide before any run exists: whether an agent can take a person's work now (`availability`),
  * whether work may be queued to run as the person who asks, and whether a conversation should answer with another
  * agent. A runner counts when it fits the agent and the person (`fitsActor`: tool, local policy, named runners, trust,
- * features) and, when the work gets a variable for team runners only (`teamRunnersOnly`), is a team runner.
+ * features) and, when the work gets a variable for shared runners only (`teamRunnersOnly`), is a shared runner.
  *
  * The variables are the agent's and those of the scopes the caller names, which a claim would take from the subject's
  * assembly, merged as a run gets them; the features are those the caller names besides `secrets`, which follows from
  * the variables. What only the assembled payload tells (working directories, skills) is the claim's to check.
  */
+import type { Clock } from '../../kernel/clock.js';
+
 import type { RunnerFeature } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -31,9 +33,20 @@ export interface EligibilityRequest {
   readonly requires?: readonly RunnerFeature[];
   /** A request-local snapshot of the runners, for callers checking several agents. Never cache across requests. */
   readonly runners?: readonly Runner[];
+  readonly variableState?: {
+    readonly held: boolean;
+    readonly teamOnly: boolean;
+  };
 }
 
 export interface ClaimEligibility {
+  prepare(
+    conn: DatabaseConnection,
+    agents: readonly Agent[],
+    request: Pick<EligibilityRequest, 'scopes'>,
+  ): Promise<
+    ReadonlyMap<string, { readonly held: boolean; readonly teamOnly: boolean }>
+  >;
   /** The online runners that would take the work now; none for an online or archived agent. */
   runnersFor(
     conn: DatabaseConnection,
@@ -49,14 +62,14 @@ export interface ClaimEligibility {
   /**
    * Whether queuing the work can lead anywhere: false only when runners that fit the agent and the person are
    * registered, online or not, and none of them would take it, such as only personal ones for work that gets a
-   * variable for team runners only. With no fitting runner registered at all, the work may wait for one.
+   * variable for shared runners only. With no fitting runner registered at all, the work may wait for one.
    */
   mayQueue(
     conn: DatabaseConnection,
     agent: Agent,
     request: EligibilityRequest,
   ): Promise<boolean>;
-  /** The variables the work would get that are for team runners only. */
+  /** The variables the work would get that are for shared runners only. */
   teamOnly(
     conn: DatabaseConnection,
     agent: Agent,
@@ -65,11 +78,15 @@ export interface ClaimEligibility {
 }
 
 export function createClaimEligibility(deps: {
+  readonly clock: Clock;
   readonly runners: {
     online(conn: DatabaseConnection): Promise<Runner[]>;
     all(conn: DatabaseConnection): Promise<Runner[]>;
   };
-  readonly variables: Pick<VariableService, 'holding' | 'teamOnly'>;
+  readonly variables: Pick<
+    VariableService,
+    'holding' | 'teamOnly' | 'admissionMetadata'
+  >;
 }): ClaimEligibility {
   const targetsOf = (
     agent: Agent,
@@ -86,29 +103,67 @@ export function createClaimEligibility(deps: {
     candidates: readonly Runner[],
   ): Promise<Runner[]> {
     if (agent.status !== 'enabled') return [];
+    const now = deps.clock.now().getTime();
     // No variable reads when the tool, policy and trust rules already rule every runner out.
     const possible = candidates.filter(
       (runner) =>
         (!request.workspaceKey || supportsWorkspaceKey(runner)) &&
-        fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
+        fitsActor(
+          runner,
+          agent,
+          request.actorUserId,
+          request.requires ?? [],
+          now,
+        ),
     );
     if (possible.length === 0) return [];
     const targets = targetsOf(agent, request);
-    const held = await deps.variables.holding(conn, targets);
-    if (held.length === 0) return possible;
+    const held =
+      request.variableState?.held ??
+      (await deps.variables.holding(conn, targets)).length > 0;
+    if (!held) return possible;
     const requires = cleanList([
       ...(request.requires ?? []),
       'secrets',
     ]) as RunnerFeature[];
-    const teamOnly = (await deps.variables.teamOnly(conn, targets)).length > 0;
+    const teamOnly =
+      request.variableState?.teamOnly ??
+      (await deps.variables.teamOnly(conn, targets)).length > 0;
     return possible.filter(
       (runner) =>
-        fitsActor(runner, agent, request.actorUserId, requires) &&
+        fitsActor(runner, agent, request.actorUserId, requires, now) &&
         (!teamOnly || runner.trust === 'team'),
     );
   }
 
   return {
+    async prepare(conn, agents, request) {
+      const metadata = await deps.variables.admissionMetadata(
+        conn,
+        agents.flatMap((agent) => targetsOf(agent, request)),
+      );
+      const result = new Map<string, { held: boolean; teamOnly: boolean }>();
+      if (!metadata) return result;
+      for (const agent of agents) {
+        const merged = new Map<string, boolean>();
+        let held = false;
+        for (const target of targetsOf(agent, request)) {
+          const records = metadata.filter(
+            (record) =>
+              record.scope === target.scope &&
+              record.scopeId === target.scopeId,
+          );
+          held ||= records.some((record) => record.kind === 'value');
+          for (const record of records)
+            merged.set(record.name, record.teamRunnersOnly);
+        }
+        result.set(agent.id, {
+          held,
+          teamOnly: [...merged.values()].some(Boolean),
+        });
+      }
+      return result;
+    },
     runnersFor: async (conn, agent, request) =>
       eligible(
         conn,
@@ -129,13 +184,25 @@ export function createClaimEligibility(deps: {
       );
     },
     async mayQueue(conn, agent, request) {
-      const registered = (
-        request.runners ?? (await deps.runners.all(conn))
-      ).filter(
-        (runner) =>
-          runner.status !== 'revoked' &&
-          fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
-      );
+      const now = deps.clock.now().getTime();
+      const registered = (request.runners ?? (await deps.runners.all(conn)))
+        .map((runner) => ({
+          ...runner,
+          unavailableModels: (runner.unavailableModels ?? []).filter(
+            (mark) => mark.reason !== 'toolQuota',
+          ),
+        }))
+        .filter(
+          (runner) =>
+            runner.status !== 'revoked' &&
+            fitsActor(
+              runner,
+              agent,
+              request.actorUserId,
+              request.requires ?? [],
+              now,
+            ),
+        );
       if (registered.length === 0) return true;
       return (await eligible(conn, agent, request, registered)).length > 0;
     },

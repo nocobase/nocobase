@@ -98,6 +98,7 @@ const enUS = {
     remove: 'Remove {{name}}',
   },
   rows: {
+    assignees: 'Assignees',
     department: 'Department',
     clerks: 'Clerks',
     heads: 'Copy: heads and others',

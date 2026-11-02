@@ -1,6 +1,6 @@
 import { setTimeout as abortableDelay } from 'node:timers/promises';
 import type { GitInvocationOptions } from './git.ts';
-// Retrying git's network operations (clone, fetch, the submodules' update) where they fail for a moment.
+// Retrying transient Git preparation failures, including network transfers and short metadata lock conflicts.
 //
 // Only a failure whose message names a passing cause is retried: a TLS handshake cut off, a connection reset, refused
 // or timed out, a transfer that stalled (`http.lowSpeedLimit`/`Time`, which every network call sets, so a stalled
@@ -49,6 +49,8 @@ const PERMANENT: readonly { pattern: RegExp; hint?: string }[] = [
 
 /** Failures that pass on their own. */
 const TRANSIENT: readonly RegExp[] = [
+  // Git writers outside this runner can briefly own a ref/config/index lock too.
+  /cannot lock ref [^\n]+: (?:is at \S+ but expected \S+|reference already exists)|Unable to create [^\n]+\.lock['"]?: File exists|could not lock (?:config|configuration) file [^\n]+: File exists/iu,
   // TLS cut off: gnutls (Debian's git) and OpenSSL.
   /gnutls_handshake\(\) failed|tls connection was non-properly terminated|gnutls recv error|ssl_error_syscall|unexpected eof while reading/iu,
   // Connections reset, refused, dropped or timed out.
@@ -78,7 +80,7 @@ export function classifyGitFailure(message: string): GitFailure {
   return { kind: 'permanent' };
 }
 
-/** A git network operation that kept failing for a passing cause through every retry. */
+/** A Git operation that exhausted transient retries; its historical name also covers metadata lock contention. */
 export class GitNetworkError extends Error {
   override name = 'GitNetworkError';
   /** How many times it was retried after the first attempt. */
@@ -88,7 +90,7 @@ export class GitNetworkError extends Error {
 
   constructor(operation: string, retries: number, lastError: string) {
     super(
-      `${operation} failed on the network after ${retries} ${retries === 1 ? 'retry' : 'retries'} on this runner; the last error: ${lastError}`,
+      `${operation} failed after ${retries} ${retries === 1 ? 'retry' : 'retries'} on this runner; the last error: ${lastError}`,
     );
     this.retries = retries;
     this.lastError = lastError;

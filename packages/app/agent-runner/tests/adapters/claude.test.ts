@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ClaudeAdapter,
+  quietEnv,
   DEFAULT_MIN_CLAUDE_VERSION,
   compareVersions,
 } from '../../src/agent/adapters/claude.ts';
@@ -17,7 +18,8 @@ import type {
 import { calls, replay, setScript, setSupportedModels } from './fake-sdk.ts';
 import { SESSION_ID, assistant, init, result, toolResult } from './messages.ts';
 
-vi.mock('@anthropic-ai/claude-agent-sdk', async () => ({
+vi.mock('@anthropic-ai/claude-agent-sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@anthropic-ai/claude-agent-sdk')>()),
   query: (await import('./fake-sdk.ts')).fakeQuery,
 }));
 
@@ -83,6 +85,10 @@ describe('missing conversations', () => {
       expect(ctx.options.systemPrompt).toMatchObject({ append: 'BRIEF' });
       const prompt = await ctx.nextInput();
       expect(prompt?.message.content).toContain('previous conversation');
+      // The new session hears what came before, as the server gave it for this case.
+      expect(prompt?.message.content).toContain(
+        'What came before:\n\nAlice asked for a test task.',
+      );
       expect(prompt?.message.content).toContain('Create hello.txt');
       yield init();
       const steer = await ctx.nextInput();
@@ -94,7 +100,10 @@ describe('missing conversations', () => {
       expect(await ctx.nextInput()).toBeUndefined();
     });
     const handle = adapterWith('9.0.0', dir).start(
-      session({ resumeSessionId: 'missing' }),
+      session({
+        resumeSessionId: 'missing',
+        recoveryContext: 'Alice asked for a test task.',
+      }),
     );
     expect(await handle.steer('early', 'early-input')).toBe(true);
     const events = await collect(handle.events);
@@ -386,7 +395,11 @@ describe('model detection', () => {
     expect(closed).toBe(true);
     expect(options).toMatchObject({
       settingSources: [],
-      env: { PATH: dir, HOME: '/home/runner' },
+      env: {
+        PATH: dir,
+        HOME: '/home/runner',
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+      },
       pathToClaudeCodeExecutable: path.join(dir, 'claude'),
     });
     expect(options.cwd).toBe(cwd);
@@ -433,6 +446,16 @@ describe('model detection', () => {
 });
 
 describe('query options', () => {
+  it("leaves Claude Code's nonessential traffic alone when allowed, or when the run decides it", () => {
+    expect(quietEnv({ HOME: '/h' }, true)).toEqual({ HOME: '/h' });
+    expect(
+      quietEnv({ CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '0' }, false),
+    ).toEqual({ CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '0' });
+    expect(quietEnv({}, false)).toEqual({
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+    });
+  });
+
   it('passes the brief, settings, permission mode, env and executable', async () => {
     setScript(replay([init(), result()]));
     const handle = adapterWith('9.0.0', dir).start(
@@ -453,7 +476,12 @@ describe('query options', () => {
     expect(options.settingSources).toEqual(['project']);
     expect(options.permissionMode).toBe('bypassPermissions');
     expect(options.allowDangerouslySkipPermissions).toBe(true);
-    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: dir });
+    // Claude Code's nonessential traffic, which blocks its start, is off unless the runner's owner allows it.
+    expect(options.env).toEqual({
+      PATH: '/usr/bin',
+      HOME: dir,
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+    });
     expect(options.cwd).toBe('/work');
     expect(options.pathToClaudeCodeExecutable).toBe(path.join(dir, 'claude'));
     expect(options).toMatchObject({
@@ -507,6 +535,40 @@ describe('query options', () => {
 });
 
 describe('message mapping', () => {
+  it('reports how full the context window is after the turn', async () => {
+    setScript(
+      replay([
+        init(),
+        assistant([{ type: 'text', text: 'Working.' }], {
+          message: {
+            id: 'msg_2',
+            role: 'assistant',
+            model: 'claude-test-1',
+            content: [{ type: 'text', text: 'Working.' }],
+            stop_reason: null,
+            usage: {
+              input_tokens: 12,
+              cache_read_input_tokens: 30_000,
+              cache_creation_input_tokens: 500,
+              output_tokens: 88,
+            },
+          },
+        }),
+        result(),
+      ]),
+    );
+    const handle = adapterWith('9.0.0', dir).start(session());
+    const events = await collect(handle.events);
+    expect(
+      events.filter((e) => e.type === 'status' && e.content === 'context'),
+    ).toEqual([
+      expect.objectContaining({
+        meta: { context: { used: 30_600, size: 200_000 } },
+      }),
+    ]);
+    await handle.result;
+  });
+
   it('maps a replayed run to events and a result', async () => {
     setScript(
       replay([
@@ -825,4 +887,182 @@ describe('stopping', () => {
     expect(res.exit).toBe('aborted');
     expect(calls).toHaveLength(0);
   });
+});
+
+it('uses actual non-contiguous partial indexes and deduplicates completed snapshots', async () => {
+  const partial = (event: unknown) =>
+    ({
+      type: 'stream_event',
+      event,
+      parent_tool_use_id: null,
+      session_id: SESSION_ID,
+      uuid: randomUUID(),
+    }) as import('@anthropic-ai/claude-agent-sdk').SDKMessage;
+  setScript(async function* (ctx) {
+    await ctx.nextInput();
+    yield init();
+    yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+    yield partial({
+      type: 'content_block_start',
+      index: 2,
+      content_block: { type: 'thinking', thinking: '' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 2,
+      delta: { type: 'thinking_delta', thinking: 'Plan' },
+    });
+    yield partial({
+      type: 'content_block_start',
+      index: 7,
+      content_block: { type: 'text', text: 'Hello' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 7,
+      delta: { type: 'text_delta', text: ' world' },
+    });
+    yield assistant([{ type: 'thinking', thinking: 'Plan' }]);
+    yield assistant([{ type: 'text', text: 'Hello world' }]);
+    yield assistant([
+      { type: 'thinking', thinking: 'Plan' },
+      { type: 'text', text: 'Hello world' },
+    ]);
+    yield result();
+  });
+  const handle = adapterWith('9.0.0', dir).start(
+    session({ outputBlocks: true }),
+  );
+  const events = await collect(handle.events);
+  const deltas = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'delta',
+  );
+  expect(
+    deltas
+      .filter((e) => e.type === 'text')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Hello world');
+  expect(
+    deltas
+      .filter((e) => e.type === 'thinking')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Plan');
+  const ends = events.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(ends.map((e) => e.content)).toEqual(['Plan', 'Hello world']);
+  expect(calls[0]?.options.includePartialMessages).toBe(true);
+  expect((await handle.result).summary).toBeDefined();
+});
+
+it.each(['max_tokens', 'cancelled', 'crash'])(
+  'retains native partial output on %s without duplicate completion',
+  async (ending) => {
+    const partial = (event: unknown) =>
+      ({
+        type: 'stream_event',
+        event,
+        parent_tool_use_id: null,
+        session_id: SESSION_ID,
+        uuid: randomUUID(),
+      }) as import('@anthropic-ai/claude-agent-sdk').SDKMessage;
+    let ready!: () => void;
+    const started = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+      yield partial({
+        type: 'content_block_start',
+        index: 7,
+        content_block: { type: 'text', text: '' },
+      });
+      yield partial({
+        type: 'content_block_delta',
+        index: 7,
+        delta: { type: 'text_delta', text: 'Partial answer' },
+      });
+      ready();
+      if (ending === 'cancelled') {
+        await ctx.aborted;
+        await new Promise(() => {});
+      }
+      if (ending === 'crash') throw new Error('process failed');
+      yield partial({
+        type: 'message_delta',
+        delta: { stop_reason: 'max_tokens' },
+      });
+      yield assistant([{ type: 'text', text: 'Partial answer' }]);
+      yield result();
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ outputBlocks: true }),
+    );
+    const reading = collect(handle.events);
+    await started;
+    if (ending === 'cancelled') await handle.stop();
+    const events = await reading;
+    const ends = events.filter(
+      (e) =>
+        e.type === 'text' &&
+        (e.meta?.output as { phase?: string })?.phase === 'end',
+    );
+    expect(ends).toHaveLength(1);
+    expect(ends[0]?.content).toBe(
+      ending === 'crash' ? undefined : 'Partial answer',
+    );
+    expect(ends[0]?.meta?.truncated).toBe(
+      ending === 'crash' ? undefined : true,
+    );
+  },
+);
+
+it('matches a long UTF-8 reply using its bounded prefix and emits the native snapshot once', async () => {
+  const text = '界'.repeat(30_000) + 'final';
+  const partial = (event: unknown) =>
+    ({
+      type: 'stream_event',
+      event,
+      parent_tool_use_id: null,
+      session_id: SESSION_ID,
+      uuid: randomUUID(),
+    }) as import('@anthropic-ai/claude-agent-sdk').SDKMessage;
+  setScript(async function* (ctx) {
+    await ctx.nextInput();
+    yield init();
+    yield partial({ type: 'message_start', message: { id: 'msg_1' } });
+    yield partial({
+      type: 'content_block_start',
+      index: 2,
+      content_block: { type: 'text', text: '' },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 2,
+      delta: { type: 'text_delta', text: text.slice(0, -5) },
+    });
+    yield partial({
+      type: 'content_block_delta',
+      index: 2,
+      delta: { type: 'text_delta', text: 'final' },
+    });
+    yield assistant([{ type: 'text', text }]);
+    yield assistant([{ type: 'text', text }]);
+    yield result();
+  });
+  const handle = adapterWith('9.0.0', dir).start(
+    session({ outputBlocks: true }),
+  );
+  const events = await collect(handle.events);
+  const ends = events.filter(
+    (e) =>
+      e.type === 'text' &&
+      (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(ends.map((e) => e.content)).toEqual([text]);
+  expect(ends[0]?.meta?.truncated).toBeUndefined();
 });

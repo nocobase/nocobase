@@ -15,6 +15,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SessionView } from '../../client/components/session-view.js';
 import plugin from '../../client/plugin.js';
+import {
+  SessionsLayoutContext,
+  type SessionsLayoutState,
+} from '../../client/sessions-layout.js';
 import type { Session, SessionLink } from '../../shared/api.js';
 
 const session: Session = {
@@ -26,6 +30,7 @@ const session: Session = {
     'A long conversation title about planning and following the mobile layout work',
   titleSource: 'owner',
   state: null,
+  startup: null,
   settings: {},
   running: false,
   waiting: false,
@@ -92,7 +97,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function setup(links: readonly SessionLink[] = []) {
+async function setup(
+  links: readonly SessionLink[] = [],
+  layout: SessionsLayoutState | null = null,
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -104,7 +112,9 @@ async function setup(links: readonly SessionLink[] = []) {
   });
   await renderWithApp(
     <QueryClientProvider client={client}>
-      <SessionView sessionId='session' />
+      <SessionsLayoutContext.Provider value={layout}>
+        <SessionView sessionId='session' />
+      </SessionsLayoutContext.Provider>
     </QueryClientProvider>,
     {
       plugins: [plugin({ routes: false })],
@@ -178,6 +188,44 @@ function scrollGeometry() {
     },
   };
 }
+
+describe('session details on the page', () => {
+  const layout = (
+    state: Pick<SessionsLayoutState, 'detailsOpen' | 'right'>,
+  ): SessionsLayoutState => ({
+    breakpoint: 'md',
+    list: 'column',
+    setListUnfolded: vi.fn(),
+    setDetailsOpen: vi.fn(),
+    reportTask: vi.fn(),
+    ...state,
+  });
+  const details = () =>
+    screen.queryByRole('complementary', { name: 'Session details' });
+
+  it('stays closed when the layout keeps the details closed, and asks the layout to open them', async () => {
+    const closed = layout({ detailsOpen: false, right: 'column' });
+    await setup([], closed);
+    expect(details()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Tasks 0.*No tasks/ }));
+    expect(closed.setDetailsOpen).toHaveBeenCalledWith(true);
+  });
+
+  it('shows the details as a column beside the conversation without a backdrop', async () => {
+    await setup([], layout({ detailsOpen: true, right: 'column' }));
+    expect(details()?.className).toContain('w-[296px]');
+    expect(details()?.className).not.toContain('absolute');
+    expect(document.querySelector('.bg-black\\/30')).toBeNull();
+  });
+
+  it('shows the details as a sheet that records closing from its backdrop', async () => {
+    const sheet = layout({ detailsOpen: true, right: 'sheet' });
+    await setup([], sheet);
+    expect(details()?.className).toContain('absolute');
+    fireEvent.click(document.querySelector('.bg-black\\/30')!);
+    expect(sheet.setDetailsOpen).toHaveBeenCalledWith(false);
+  });
+});
 
 describe('session mobile layout', () => {
   it.each([0, 1, 50, 79, 150])(
@@ -349,12 +397,36 @@ describe('session mobile layout', () => {
     expect(
       screen.getByRole('heading', { name: session.title }).className,
     ).toContain('truncate');
-    expect(screen.getByRole('button', { name: /Tasks 4/ })).toBeTruthy();
+    const compact = screen.getByRole('button', {
+      name: 'Tasks 4',
+      exact: true,
+    });
+    expect(compact).toHaveTextContent('4');
+    fireEvent.click(compact);
+    expect(
+      screen.getByRole('complementary', { name: 'Session details' }),
+    ).toBeTruthy();
     client.setQueryData(['agentSessions', 'session', 'session'], {
       ...session,
       links: [link('1', 'Done', 'done')],
     });
     await screen.findByRole('button', { name: /Tasks 1.*Done 1/ });
+    expect(
+      screen.getByRole('button', { name: 'Tasks 1', exact: true }),
+    ).toHaveTextContent('1');
+    client.setQueryData(['agentSessions', 'session', 'session'], {
+      ...session,
+      links: [],
+    });
+    await screen.findByRole('button', { name: 'Tasks 0', exact: true });
+    (scroller as HTMLDivElement).scrollTop = 0;
+    fireEvent.wheel(scroller!, { deltaY: -100 });
+    expect(
+      screen.queryByRole('button', { name: 'Tasks 0', exact: true }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: /Tasks 0.*No tasks/ }),
+    ).toBeTruthy();
   });
 
   it('expands the reply without losing multiline text and keeps the draft on a failed send', async () => {
@@ -382,10 +454,16 @@ describe('session mobile layout', () => {
     expect(requests.mock.calls.some(([call]) => call.method === 'POST')).toBe(
       false,
     );
-    requests.mockImplementation(({ method }) =>
-      method === 'POST' ? new Response(null, { status: 500 }) : { data: [] },
+    const read = requests.getMockImplementation()!;
+    requests.mockImplementation((call) =>
+      call.method === 'POST' ? new Response(null, { status: 500 }) : read(call),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await screen.findByRole('button', { name: 'Retry original submission' });
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Edit as new message' }),
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Send' }).hasAttribute('disabled'),
@@ -396,4 +474,32 @@ describe('session mobile layout', () => {
     );
     expect(document.querySelector('img')).toBeTruthy();
   });
+});
+
+it('says what the bridge is doing while the agent opens, then that the agent is working', async () => {
+  let current: Session = { ...session, running: true, startup: 'starting' };
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  await renderWithApp(
+    <QueryClientProvider client={client}>
+      <SessionView sessionId='session' />
+    </QueryClientProvider>,
+    {
+      plugins: [plugin({ routes: false })],
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      fetch: answerApi(({ path, method }) =>
+        path === 'agentSessions/sessions/session' && method === 'GET'
+          ? { data: current }
+          : { data: [], meta: {} },
+      ),
+      route: '/agent-sessions/session',
+    },
+  );
+  await screen.findByText('Starting the agent on your computer…');
+  current = { ...current, startup: null };
+  await act(async () => {
+    await client.refetchQueries();
+  });
+  await screen.findByText('The agent is working…');
 });

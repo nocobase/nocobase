@@ -48,9 +48,10 @@ it('persists the fluent declarations and all per-table fixtures with their relat
         fixture.database.connection().repository(name),
     });
     for (const set of permissionSets)
-      expect(await fixture.authorization.permissionSets.get(set.key)).toEqual(
-        set,
-      );
+      expect(await fixture.authorization.permissionSets.get(set.key)).toEqual({
+        ...set,
+        revision: 'initial',
+      });
     for (const [table, declarations] of [
       ['authorizationDefaultAccessRules', defaultAccessRules],
       ['authorizationSharingRules', sharingRules],

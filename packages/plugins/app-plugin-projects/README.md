@@ -24,7 +24,7 @@ Projects, issues, fixed statuses, labels and members for a NocoBase application.
   also do work (`work`, an `IssueWorkHandler`, `server/kernel/work.ts`): unless a plugin binds `projectsTriggersToken`,
   every change, comment and release is handed, in its transaction, to the work handler of each kind it concerns (the
   executor before and after, the kinds a comment mentions or answers), which answers what it started (`RunAttempt[]`;
-  `collectRunAttempts` gathers them around a call). A handler asks `projects.subtasks.blockersOf` whether the issue
+  `collectRunAttempts` gathers them around a call). A handler that opts into `observesIssueChanges` also receives creations and updates with an empty or different executor kind, once per change. Service writes pass their already authorized viewer to the observer, so nested routing need not acquire a second connection for permission reads. Issue responses and update events use the final snapshot after these transactional handlers. Creation in `in_progress` or a transition into it starts work; there is no separate start option. A handler asks `projects.subtasks.blockersOf` whether the issue
   waits for unfinished issues and then starts nothing (`skipped: 'blocked'`); it starts nothing either for an issue in
   backlog (`BACKLOG_STATUS`, `skipped: 'dormant'`), or for a principal's comment past a limit the kind keeps
   (`skipped: 'limited'`). A comment of anyone but the system reaches the handlers, with the person it
@@ -71,6 +71,9 @@ issueId)` says where firing it would take one issue without moving it (for a con
   `projects.comments.post` (`CommentWriter`) and reacts to new comments through `projectsTriggersToken`
   (`IssueTriggers.onCommentCreated`, answering whom it woke). Writing a comment touches the issue's last activity
   without changing its `revision`, so an open edit of the issue does not conflict.
+
+Server writers may pass an application-defined `message: { type, params }` alongside `origin` in `projects.comments.post` options. The namespaced type must match `^[a-z][a-z0-9-]*(\.[a-zA-Z][a-zA-Z0-9]*)+$` and be at most 100 characters. Parameters have at most 10 keys, with string, finite number or boolean values only; each string is at most 500 characters. Values are preserved without coercion or trimming. The writer validates and stores this generic envelope in the existing origin JSON. Reads expose only its type and public parameters as optional `IssueComment.message`, never other provenance, and omit it after deletion. Ordinary HTTP create/edit bodies reject this field. Applications define and validate their own message names and parameter contracts before writing, translate recognized types, and keep safe fallback Markdown in `content` for unknown types. Adding an application message needs no framework change, migration or additional read/write.
+
 - **Attachments** (`shared/attachments.ts`, `server/domains/attachments/`): files on an issue (its own) or sent with a
   comment, any type, up to 20 MiB each, stored through the file plugin (`@nocobase/app-plugin-file`) on the App's
   default Drive disk. A file starts as an upload of its uploader's attached to nothing (a person, or an agent working
@@ -94,7 +97,7 @@ issueId)` says where firing it would take one issue without moving it (for a con
   finished) or that are among the ids given (whatever their status), with `truncated` past the limit, and
   `subscriptions.followedBy(conn, userId, issueIds)` those of them a person follows. An application's board of work joins its own records to issues with
   them, without a query per issue.
-- **Hierarchy reads**: `issueQueries.hierarchy(viewer, query)` returns the complete independently authorized live issue scope, filtered matching IDs and internal dependency-wait facts before paging. It is an uncapped input for application-owned grouping, never a substitute for authorization. `hierarchyItems(viewer, ids)` hydrates at most 100 independently reauthorized rows with visible child/dependency counts; callers must replace raw parent IDs at unreadable boundaries. Applications own attention policy, grouping and continuation consistency. No new task statuses or persistence are required.
+- **Hierarchy reads**: `issueQueries.hierarchy(viewer, query)` returns the complete independently authorized live issue scope, filtered matching IDs and internal dependency-wait facts before paging. It is an uncapped input for application-owned grouping, never a substitute for authorization. `hierarchy(viewer, query, { unfinishedOnly: true, includeIds })` instead reads unfinished tasks, explicitly included visible tasks and contiguous visible ancestors; dependency facts are scoped to those targets without exposing hidden blockers. `hierarchySource(viewer, query)` supplies authorized, filtered SQL relations for database-side hierarchy aggregation and pagination without materializing historical records. `visibleIds(viewer, ids)` reauthorizes explicit IDs without row or relationship hydration. `hierarchyItems(viewer, ids)` hydrates at most 500 independently reauthorized rows with visible child/dependency counts; callers must replace raw parent IDs at unreadable boundaries. Applications own attention policy, grouping and continuation consistency. No new task statuses or persistence are required.
 - **Operation plans** (`shared/plans.ts`, `server/domains/plans/`): a short list of changes (create or update an
   issue, comment, add or remove a dependency, create a project; 1–50 rows, later rows may refer to what earlier ones
   create) that one person, the decider, reviews and executes as a whole. Creating, editing and retrying a plan
@@ -153,6 +156,7 @@ New accounts register directly from the invitation link with a name and password
 | `POST /comments/{commentId}/resolve`, `…/unresolve`                                | Resolves or reopens a thread (on its root)                  |
 | `POST /issues/{issueId}/subscribe`, `…/unsubscribe`                                | Follows or unfollows the issue                              |
 | `GET/POST /issues/{issueId}/attachments`                                           | The issue's own files; uploads one onto it                  |
+| `GET /issues/{issueId}/screenshots`                                                | Latest 100 live Agent comment images and comment provenance |
 | `POST /attachments`                                                                | Uploads one file, attached to nothing yet                   |
 | `GET /attachments/{attachmentId}`, `…/content`, `DELETE`                           | A file, its bytes (`?download=true`), removing it           |
 | `POST /issues/{issueId}/dependencies`                                              | Adds a link (`{ dependsOnIssueId, type }`)                  |
@@ -233,6 +237,8 @@ The plugin seeds no roles: the application that assembles it seeds its own (the 
 
 My tasks combines owned and executed issues, and the New issue dialog opens on its "AI draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start now?" any more: moving an issue to `in_progress` starts its work.
 
+Applications that create tasks through conversation can render the retained create and subtask pages under `IssueCreationModeContext.Provider` (from `client/kit`) with `value='manual'`. This shows only the original guarded form, ignoring old AI tab parameters and preferences, without changing the default plugin pages.
+
 The settings pages are exported for the application to route under its own `/config` (`client/config.ts`: the issue
 prefix and labels), and components it reuses on its member pages are exported from
 `client/kit.ts`. The application routes an issue's page itself and presents it (for example, with the UI Library's
@@ -246,7 +252,7 @@ wording helpers. It routes a project's page the same way, as a child of the plug
 visibility (`useProjectMembership`), working directories (`useProjectResources`, `useResourceValidation`), deleting it
 (`useDeleteProject`), and the progress, numbers and permission helpers. The pages are behind the `pm-my-issues`, `pm-issues` and `pm-projects` page grants. They hide
 what the server would refuse (`client/lib/permissions.ts` mirrors its rules); the server still checks every request.
-Open pages refresh when the server announces a change on the `pm:changes` realtime topic: once for the events of a moment, naming the issues that changed when no change moved an issue between lists (`issueIds`), so a page refreshes only what it shows of them (`announcedIssueIds`, `changedIssueSegments` and `isIssueRead` in `client/kit`).
+Open pages refresh when the server announces a change on the `pm:changes` realtime topic: once for the events of a moment, naming known changed issues (`issueIds`), so a page refreshes only what it shows of them (`announcedIssueIds`, `changedIssueSegments` and `isIssueRead` in `client/kit`). `embeddedIssueSegments` additionally matches cached details containing a changed parent, child, dependency, related issue or blocker. Refresh those detail snapshots without expanding transitively or refreshing their unrelated discussions and projections.
 
 ## Layout
 
@@ -277,4 +283,14 @@ Invitation emails use `notificationService.sendTransient()` so credentials never
 
 `Issue` exposes nullable text `needsYou` and `next`. `PATCH /api/projects/issues/{issueId}` and `issue.update` plan rows accept them in the same transaction as `statusKey`. Both fields are optional for people, agents, plans and system events. Omitted needsYou is retained in Blocked or In review; null, empty or whitespace clears it. Applications may constrain authenticated callers at their request boundary. Leaving these states clears it. Omitted `next` is retained; nonblank text replaces it; null, an empty string or whitespace clears it. Done and Cancelled always clear it. Both fields allow at most 2,000 characters. Progress-only writes advance revision and emit the existing refresh event. System status events share the optional-field validation and clearing rules. The new reversible migration adds the two columns without backfilling comments.
 
+`Issue` also exposes nullable Markdown `acceptance`: the issue's delivery report — how it was, the agreed approach, what changed, how it was checked, open issues and details — ending with the acceptance criteria the owner checks and where. `PATCH /api/projects/issues/{issueId}` accepts it in any status, normally with the move to In review (`nb-studio issue update <issue> --status in_review --acceptance-file report.md`). It is kept across status changes, including Done, Cancelled and a move back to In progress, and the next delivery replaces it; omitted it is retained, and null, an empty string or whitespace clears it. It allows at most 20,000 characters (`ISSUE_ACCEPTANCE_MAX`). Its reversible migration adds the column without backfilling.
+
 Manual issue descriptions accept pasted images through the existing protected attachment upload. Creation accepts optional `attachmentIds` of the caller's own unattached uploads and requires `pm.attachments` `upload` in addition to issue creation permission. Files are bound in the creation transaction before work starts, so the first agent context includes them. Descriptions remain Markdown; image nodes survive detail edits. Uploading blocks submission; cancelling leaves unattached files to the existing purge.
+
+Applications can provide `ExecutorPresentationContext` from the client kit to render the identity and availability of their registered executor kind in new issue and subtask selectors. It changes presentation only; the server still supplies candidates and enforces qualifications.
+
+### Issue card summaries
+
+`GET /api/projects/issues/summaries?refs=PM-12,123` accepts 1–100 IDs or identifiers and returns `{ data: [{ id, identifier, title, statusKey }], meta: { total } }`. It requires authentication and `pm.issues/view`; deleted, invisible and credential-project-excluded issues are omitted without distinguishing them from missing references. Duplicate references return one row. The batch performs one business query with the existing visibility predicate and no comment, member or relation hydration. Browser consumers may call `PmApi.issueSummaries(refs)` and use `FIXED_STATUSES` for labels and colors.
+
+`pm.changed` preserves known `issueIds` for creation, deletion and membership changes too. `listsChanged: true` means lists and project counts must refresh while issue details remain scoped to those IDs and their directly embedded references. Child deletion and restoration also name the already-known parent, including when the restored child is absent from the parent's current snapshot. Batches larger than 100 IDs are split; events with unknown scope still omit `issueIds`. Re-read after each subscription acknowledgement to recover missed events.

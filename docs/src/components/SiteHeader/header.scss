@@ -1,0 +1,150 @@
+.docs-top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  .topbar {
+    height: 64px;
+    padding: 0 max(24px, calc((100vw - 1248px) / 2 + 24px));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background: #f8f9fb;
+    border-bottom: 1px solid #dce0e7;
+  }
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+  a:focus-visible {
+    outline: 2px solid #3e60ed;
+    outline-offset: 4px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+  }
+  .brand-logo {
+    width: 144px;
+    height: auto;
+  }
+  .version {
+    border: 1px solid #c2c8d2;
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 12px;
+    color: #737b8b;
+  }
+  .doc-label {
+    border-left: 1px solid #c2c8d2;
+    margin-left: 4px;
+    padding-left: 16px;
+    font-size: 14px;
+    color: #4b5260;
+  }
+  .toplinks {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    color: #4b5260;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .toplinks a:hover {
+    color: #3e60ed;
+  }
+  @media (max-width: 640px) {
+    .topbar {
+      padding-inline: 16px;
+      gap: 12px;
+    }
+    .brand {
+      gap: 8px;
+    }
+    .brand-logo {
+      width: 122px;
+    }
+    .doc-label,
+    .language {
+      display: none;
+    }
+    .toplinks {
+      gap: 12px;
+      font-size: 13px;
+    }
+  }
+}
+
+.toplinks .docs-language-menu {
+  position: relative;
+  summary {
+    cursor: pointer;
+    list-style: none;
+    padding-block: 8px;
+    &::-webkit-details-marker {
+      display: none;
+    }
+    &::after {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin: 0 2px 3px 8px;
+      border-right: 1px solid currentColor;
+      border-bottom: 1px solid currentColor;
+      transform: rotate(45deg);
+    }
+    &:hover {
+      color: #3e60ed;
+    }
+    &:focus-visible {
+      outline: 2px solid #3e60ed;
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+  }
+  nav {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 60;
+    min-width: 140px;
+    padding: 6px;
+    border: 1px solid #dce0e7;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 6px 24px #2027381a;
+  }
+  nav a,
+  nav span {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 4px;
+  }
+  nav a:hover,
+  [aria-current='page'] {
+    color: #3e60ed;
+    background: #eef1ff;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar .toplinks {
+    gap: 8px;
+  }
+  .topbar .toplinks:has(a[href$='/studio']) {
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    align-items: center;
+    gap: 2px 12px;
+    font-size: 12px;
+    .docs-language-menu summary {
+      padding-block: 2px;
+    }
+  }
+  .topbar .brand .brand-logo {
+    width: 96px;
+  }
+}

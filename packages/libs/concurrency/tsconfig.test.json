@@ -1,0 +1,4 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/node-tooling.json",
+  "include": ["src", "tests", "vitest.config.ts"]
+}

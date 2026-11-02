@@ -38,6 +38,36 @@ const ended = (promptId: string, extra: Record<string, unknown> = {}) => ({
 });
 
 describe('foldTranscript', () => {
+  it('keeps withdrawal distinct from cancellation and ignores stale starts and endings', () => {
+    const list = events(
+      { ...prompt('a', 'active'), withdrawable: true },
+      { kind: 'turnStarted', promptId: 'a' },
+      { ...prompt('b', 'waiting'), withdrawable: true },
+      prompt('legacy', 'old bridge'),
+      { kind: 'withdrawalRequested', promptId: 'b' },
+    );
+    expect(
+      foldTranscript(list).filter((item) => item.type === 'prompt'),
+    ).toMatchObject([
+      { state: 'running', withdrawable: true },
+      { state: 'withdrawing', withdrawable: true },
+      { state: 'queued', withdrawable: false },
+    ]);
+    const final = foldTranscript([
+      ...list,
+      ...events(
+        { kind: 'promptWithdrawn', promptId: 'b' },
+        { kind: 'turnStarted', promptId: 'b' },
+        ended('b'),
+      ),
+    ]);
+    expect(final.filter((item) => item.type === 'prompt')).toMatchObject([
+      { state: 'running' },
+      { state: 'withdrawn' },
+      { state: 'queued' },
+    ]);
+    expect(final.some((item) => item.type === 'turn')).toBe(false);
+  });
   it('shows a turn as the prompt, one message and how it ended', () => {
     const items = foldTranscript(
       events(

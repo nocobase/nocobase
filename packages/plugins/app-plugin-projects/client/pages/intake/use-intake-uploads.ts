@@ -1,5 +1,7 @@
+import { createUuid } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useRef, useState, type DragEvent } from 'react';
+import { useRef, type DragEvent, type SetStateAction } from 'react';
+import { useIntakeDraft } from '../../kit/intake-draft.js';
 
 import {
   INTAKE_FILES_MAX,
@@ -37,7 +39,13 @@ export function useIntakeUploads(): IntakeUploads {
   const { t } = useTranslation();
   const api = usePlanApi();
   const notify = useNotify();
-  const [uploads, setUploads] = useState<readonly Upload[]>([]);
+  const [draft, setDraft] = useIntakeDraft();
+  const uploads = draft.uploads;
+  const setUploads = (next: SetStateAction<readonly Upload[]>) =>
+    setDraft((current) => ({
+      ...current,
+      uploads: typeof next === 'function' ? next(current.uploads) : next,
+    }));
   const counterRef = useRef(0);
 
   function add(files: readonly File[]): void {
@@ -53,7 +61,7 @@ export function useIntakeUploads(): IntakeUploads {
         continue;
       }
       counterRef.current += 1;
-      const key = `upload-${counterRef.current}`;
+      const key = `upload-${createUuid()}-${counterRef.current}`;
       setUploads((current) => [
         ...current,
         { key, name: file.name, file: null },

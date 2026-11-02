@@ -331,7 +331,9 @@ describe('environment dialog', () => {
       }),
     ]);
     renderPage();
-    const docker = (await screen.findByText('Apps')).closest('tr')!;
+    const docker = (await screen.findByRole('link', { name: 'Apps' })).closest(
+      'tr',
+    )!;
     expect(
       within(docker as HTMLElement).getByText('Docker'),
     ).toBeInTheDocument();

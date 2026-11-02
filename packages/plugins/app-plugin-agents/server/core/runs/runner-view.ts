@@ -4,6 +4,8 @@
  * subject's link of a private kind's run the viewer is not part of. `runnerForViewer` leaves out what identifies a
  * runner's machine for those who may not see it.
  */
+import type { Clock } from '../../kernel/clock.js';
+
 import type { AgentTool } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -11,15 +13,18 @@ import {
   runnerTakesAgent,
   type Runner,
   type RunnerHeldItem,
-  type RunnerRecentRun,
+  type RunnerRunsPage,
+  type RunnerRunsCursor,
   type RunnerWorkTarget,
 } from '../../../shared/runners.js';
+import { CONVERSATION_SUBJECT } from '../../../shared/conversations.js';
 import type { Run } from '../../../shared/runs.js';
 import type { AgentService } from '../agents/agent.service.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
+import type { ConversationService } from '../conversations/ports.js';
 
-import { ACTIVE, runsRepo, toRun } from './run.store.js';
+import { ACTIVE, runsRepo, toRun, type RunRecord } from './run.store.js';
 
 /** How many runs each of `runnerIds` holds now; they take its slots. */
 export async function runsHeldBy(
@@ -73,7 +78,7 @@ export async function runsHeldSnapshot(
 }
 
 /** How many of a runner's latest runs its page shows. */
-export const RECENT_RUNS = 10;
+export const RECENT_RUNS = 20;
 
 /** What a runner shows its viewer of its machine. */
 export interface RunnerMachineView {
@@ -88,13 +93,22 @@ export interface RunnerMachineView {
  * wake an agent see them (the routes decide); everyone else sees none of them, and of the working directories only
  * their totals.
  */
-export function runnerForViewer<T extends Runner>(
+/** Internal quota revisions never cross a user-facing runtime boundary. */
+export function runnerPublicData<T extends Runner>(
   runner: T,
+): Omit<T, 'quotaRevision'> {
+  const { quotaRevision: _revision, ...visible } = runner;
+  return visible;
+}
+
+export function runnerForViewer(
+  runner: Runner,
   seesMachine: boolean,
-): Omit<T, 'hostname' | 'tools'> & RunnerMachineView {
-  if (seesMachine) return { ...runner, canSeeMachine: true };
+): Omit<Runner, 'hostname' | 'tools' | 'quotaRevision'> & RunnerMachineView {
+  const visible = runnerPublicData(runner);
+  if (seesMachine) return { ...visible, canSeeMachine: true };
   return {
-    ...runner,
+    ...visible,
     canSeeMachine: false,
     hostname: null,
     tools: runner.tools.map(({ path: _path, ...tool }) => tool),
@@ -104,19 +118,34 @@ export function runnerForViewer<T extends Runner>(
   };
 }
 
+/** null means inaccessible; an empty title is an owned, untitled conversation. */
+export type ConversationLabel = (title: string | null) => string;
+
 export interface RunnerView {
+  recentCount(runnerId: string): Promise<number>;
   /** What each of `runners` takes work for: the agents it may run, by what people configured and what it reported. */
   takes(
     runners: readonly Runner[],
   ): Promise<ReadonlyMap<string, readonly RunnerWorkTarget[]>>;
   /** For a runner's page: the runs it holds now, as `viewerUserId` may see them. */
-  held(runner: Runner, viewerUserId: string): Promise<RunnerHeldItem[]>;
+  held(
+    runner: Runner,
+    viewerUserId: string,
+    conversationLabel: ConversationLabel,
+  ): Promise<RunnerHeldItem[]>;
   /** For a runner's page: its latest runs, newest first, as `viewerUserId` may see them. */
-  recent(runner: Runner, viewerUserId: string): Promise<RunnerRecentRun[]>;
+  recent(
+    runner: Runner,
+    viewerUserId: string,
+    cursor: RunnerRunsCursor | undefined,
+    conversationLabel: ConversationLabel,
+  ): Promise<RunnerRunsPage>;
 }
 
 export function createRunnerView(deps: {
+  readonly clock: Clock;
   readonly agents: Pick<AgentService, 'list' | 'names'>;
+  readonly conversations: Pick<ConversationService, 'ownedTitles'>;
   readonly subjects: Pick<SubjectRegistry, 'get'>;
   readonly tx: TxRunner;
 }): RunnerView {
@@ -138,8 +167,65 @@ export function createRunnerView(deps: {
       ? binding.path.replaceAll('{id}', encodeURIComponent(run.subject.id))
       : null;
   };
+  const subjectLabels = async (
+    runs: readonly Run[],
+    viewerUserId: string,
+  ): Promise<Map<string, string>> => {
+    const labels = new Map<string, string>();
+    const byKind = new Map<string, string[]>();
+    for (const run of runs)
+      if (
+        run.subject.kind === CONVERSATION_SUBJECT ||
+        pathOf(run, viewerUserId)
+      )
+        byKind.set(run.subject.kind, [
+          ...(byKind.get(run.subject.kind) ?? []),
+          run.subject.id,
+        ]);
+    for (const [kind, ids] of byKind) {
+      if (kind === CONVERSATION_SUBJECT) {
+        const titles = await deps.conversations.ownedTitles(
+          deps.tx.read(),
+          viewerUserId,
+          [...new Set(ids)],
+        );
+        for (const [id, title] of titles) labels.set(`${kind}:${id}`, title);
+        continue;
+      }
+      const facts = await deps.subjects
+        .get(kind)
+        ?.reports?.describe(deps.tx.read(), viewerUserId, [...new Set(ids)]);
+      for (const [id, fact] of facts ?? [])
+        if (fact.visible) labels.set(`${kind}:${id}`, fact.label);
+    }
+    return labels;
+  };
+  const subjectView = (
+    run: Run,
+    viewerUserId: string,
+    labels: Map<string, string>,
+    label: ConversationLabel,
+  ) => {
+    const title = labels.get(`${run.subject.kind}:${run.subject.id}`);
+    if (run.subject.kind === CONVERSATION_SUBJECT)
+      return {
+        subjectLabel: label(title ?? null),
+        path:
+          title !== undefined
+            ? `?chat=${encodeURIComponent(run.subject.id)}`
+            : null,
+      };
+    return {
+      subjectLabel: title ?? null,
+      path: pathOf(run, viewerUserId),
+    };
+  };
+  const recentCount = (runnerId: string): Promise<number> =>
+    runsRepo(deps.tx.read()).count({ filter: { runnerId } });
   return {
+    recentCount,
     async takes(runners) {
+      const now = deps.clock.now().getTime();
       const agents = (await deps.agents.list()).filter(
         (agent) => agent.status === 'enabled',
       );
@@ -147,12 +233,12 @@ export function createRunnerView(deps: {
         runners.map((runner) => [
           runner.id,
           agents
-            .filter((agent) => runnerTakesAgent(runner, agent))
+            .filter((agent) => runnerTakesAgent(runner, agent, now))
             .map((agent) => ({ id: agent.id, name: agent.name })),
         ]),
       );
     },
-    async held(runner, viewerUserId) {
+    async held(runner, viewerUserId, conversationLabel) {
       const records = await runsRepo(deps.tx.read()).findMany({
         filter: (f) =>
           f.and([
@@ -162,34 +248,96 @@ export function createRunnerView(deps: {
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
       });
       const names = await agentNames(records);
-      return records.map(toRun).map((run) => ({
+      const runs = records.map(toRun);
+      const labels = await subjectLabels(runs, viewerUserId);
+      return runs.map((run) => ({
+        ...subjectView(run, viewerUserId, labels, conversationLabel),
+        failureReason: run.failureReason,
         id: run.id,
         kind: 'run' as const,
         title: names.get(run.agentId) ?? run.agentId,
         status: run.status === 'running' ? 'running' : 'dispatched',
         startedAt: run.startedAt ?? run.dispatchedAt,
-        path: pathOf(run, viewerUserId),
       }));
     },
-    async recent(runner, viewerUserId) {
-      const records = await runsRepo(deps.tx.read()).findMany({
-        filter: (f) => f.string('runnerId').eq(runner.id),
-        sort: (sort) => [
-          sort.field('createdAt').desc(),
-          sort.field('id').desc(),
-        ],
-        limit: RECENT_RUNS,
-      });
+    async recent(runner, viewerUserId, cursor, conversationLabel) {
+      const query = deps.tx
+        .read()
+        .query.selectFrom('agRuns')
+        .selectAll()
+        .where('runnerId', '=', runner.id);
+      const records: RunRecord[] = [];
+      // Separate index ranges avoid scanning all preceding pages or sorting NULLs
+      // differently across dialects. Never-started runs follow dated runs.
+      if (cursor?.startedAt) {
+        records.push(
+          ...(await query
+            .where('startedAt', '=', cursor.startedAt)
+            .where('id', '<', cursor.id)
+            .orderBy('id', 'desc')
+            .limit(RECENT_RUNS + 1)
+            .execute<RunRecord>()),
+        );
+      }
+      if (
+        (!cursor || cursor.startedAt !== null) &&
+        records.length < RECENT_RUNS + 1
+      ) {
+        const older = cursor
+          ? query.where('startedAt', '<', cursor.startedAt)
+          : query.where('startedAt', 'is not', null);
+        records.push(
+          ...(await older
+            .orderBy('startedAt', 'desc')
+            .orderBy('id', 'desc')
+            .limit(RECENT_RUNS + 1 - records.length)
+            .execute<RunRecord>()),
+        );
+      }
+      if (records.length < RECENT_RUNS + 1) {
+        const undated = query.where('startedAt', 'is', null);
+        records.push(
+          ...(await (
+            cursor?.startedAt === null
+              ? undated.where('id', '<', cursor.id)
+              : undated
+          )
+            .orderBy('id', 'desc')
+            .limit(RECENT_RUNS + 1 - records.length)
+            .execute<RunRecord>()),
+        );
+      }
+      const hasMore = records.length > RECENT_RUNS;
+      records.length = Math.min(records.length, RECENT_RUNS);
+      const last = records.at(-1);
+      const nextCursor =
+        hasMore && last
+          ? Buffer.from(
+              JSON.stringify({
+                startedAt:
+                  last.startedAt === null
+                    ? null
+                    : new Date(last.startedAt).toISOString(),
+                id: last.id,
+              }),
+            ).toString('base64url')
+          : null;
       const names = await agentNames(records);
-      return records.map(toRun).map((run) => ({
-        id: run.id,
-        title: names.get(run.agentId) ?? run.agentId,
-        status: run.status,
-        startedAt: run.startedAt ?? run.dispatchedAt,
-        finishedAt: run.finishedAt,
-        createdAt: run.createdAt,
-        path: pathOf(run, viewerUserId),
-      }));
+      const runs = records.map(toRun);
+      const labels = await subjectLabels(runs, viewerUserId);
+      return {
+        meta: { nextCursor, total: await recentCount(runner.id) },
+        data: runs.map((run) => ({
+          ...subjectView(run, viewerUserId, labels, conversationLabel),
+          failureReason: run.failureReason,
+          id: run.id,
+          title: names.get(run.agentId) ?? run.agentId,
+          status: run.status,
+          startedAt: run.startedAt ?? run.dispatchedAt,
+          finishedAt: run.finishedAt,
+          createdAt: run.createdAt,
+        })),
+      };
     },
   };
 }

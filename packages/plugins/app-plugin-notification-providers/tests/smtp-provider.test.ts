@@ -1,3 +1,4 @@
+import { ServiceContainer } from '@nocobase/service-provider';
 import type {
   NotificationProvider,
   NotificationProviderContext,
@@ -6,6 +7,7 @@ import type {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  SmtpChannel,
   createSmtpProviderDefinition,
   defineSmtpProviderConfig,
 } from '../server/email/providers/smtp.js';
@@ -22,7 +24,7 @@ vi.mock('nodemailer', () => ({
   },
 }));
 
-describe('SMTP Provider', () => {
+describe.each(['legacy', 'class'] as const)('Smtp %s', (mode) => {
   beforeEach(() => {
     smtpMock.close.mockReset();
     smtpMock.sendMail.mockReset();
@@ -30,7 +32,7 @@ describe('SMTP Provider', () => {
 
   it('returns the SMTP message ID after acceptance', async () => {
     smtpMock.sendMail.mockResolvedValue({ messageId: 'smtp-message-1' });
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     expect(provider.capabilities).toBeUndefined();
     await expect(provider.send(sendInput())).resolves.toEqual({
@@ -51,7 +53,7 @@ describe('SMTP Provider', () => {
     smtpMock.sendMail.mockRejectedValue(
       Object.assign(new Error('Invalid credentials'), { code: 'EAUTH' }),
     );
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     await expect(provider.send(sendInput())).resolves.toEqual({
       status: 'failed',
@@ -71,7 +73,7 @@ describe('SMTP Provider', () => {
         { code: 'EAUTH' },
       ),
     );
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     const result = await provider.send(sendInput());
     expect(JSON.stringify(result)).not.toContain('secret-token');
@@ -98,7 +100,7 @@ describe('SMTP Provider', () => {
           responseCode,
         }),
       );
-      const provider = await createProvider();
+      const provider = await createProvider(mode);
 
       await expect(provider.send(sendInput())).resolves.toEqual({
         status: 'failed',
@@ -119,7 +121,7 @@ describe('SMTP Provider', () => {
         command: 'CONN',
       }),
     );
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     await expect(provider.send(sendInput())).resolves.toEqual({
       status: 'submission_unknown',
@@ -138,7 +140,7 @@ describe('SMTP Provider', () => {
         command: 'DATA',
       }),
     );
-    const provider = await createProvider();
+    const provider = await createProvider(mode);
 
     await expect(provider.send(sendInput())).resolves.toEqual({
       status: 'submission_unknown',
@@ -159,7 +161,7 @@ describe('SMTP Provider', () => {
           command: 'CONN',
         }),
       );
-      const provider = await createProvider();
+      const provider = await createProvider(mode);
 
       await expect(provider.send(sendInput())).resolves.toMatchObject({
         status: 'submission_unknown',
@@ -174,7 +176,7 @@ describe('SMTP Provider', () => {
       smtpMock.sendMail.mockRejectedValue(
         Object.assign(new Error('Connection lost'), { code, command: 'DATA' }),
       );
-      const provider = await createProvider();
+      const provider = await createProvider(mode);
 
       await expect(provider.send(sendInput())).resolves.toMatchObject({
         status: 'submission_unknown',
@@ -195,7 +197,7 @@ describe('SMTP Provider', () => {
           cause: Object.assign(new Error('Socket failed'), { code: 'ESOCKET' }),
         }),
       );
-      const provider = await createProvider();
+      const provider = await createProvider(mode);
 
       await expect(provider.send(sendInput())).resolves.toMatchObject({
         status,
@@ -210,7 +212,7 @@ describe('SMTP Provider', () => {
       smtpMock.sendMail.mockRejectedValue(
         Object.assign(new Error('Connection not established'), { code }),
       );
-      const provider = await createProvider();
+      const provider = await createProvider(mode);
 
       await expect(provider.send(sendInput())).resolves.toMatchObject({
         status: 'failed',
@@ -221,9 +223,22 @@ describe('SMTP Provider', () => {
   );
 });
 
-async function createProvider(): Promise<
-  NotificationProvider<PreparedEmailMessage>
+async function createProvider(
+  mode: 'legacy' | 'class',
+): Promise<
+  Pick<NotificationProvider<PreparedEmailMessage>, 'send' | 'capabilities'>
 > {
+  if (mode === 'class')
+    return new SmtpChannel(
+      { channelName: 'email', container: new ServiceContainer() },
+      {
+        type: 'smtp',
+        host: 'smtp.example.com',
+        port: 587,
+        from: 'NocoBase <notifications@example.com>',
+        replyTo: 'support@example.com',
+      },
+    );
   return createSmtpProviderDefinition().createProvider(
     providerContext(),
     defineSmtpProviderConfig({

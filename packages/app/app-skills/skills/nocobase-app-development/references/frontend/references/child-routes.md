@@ -139,43 +139,47 @@ The parent page, `client/pages/project-reports/index.tsx`:
 ```tsx
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
-import {
-  matchPath,
-  Navigate,
-  NavLink,
-  Outlet,
-  useLocation,
-  useResolvedPath,
-} from 'react-router';
+import { Navigate, NavLink, Outlet } from 'react-router';
 
 import { PageContainer } from '#components/page-container';
+import { useListTabs } from '#hooks/use-list-tabs';
 import { PageHeader } from '#components/page-header';
 import { buttonVariants } from '#components/ui/button';
 import { cn } from 'cn';
 
 export default function ProjectReportsPage(): ReactElement {
   const { t } = useTranslation();
-  const location = useLocation();
-  const parentPath = useResolvedPath('.');
-  // Redirect to the default tab only when the URL is exactly the parent page (/project-reports or /project-reports/).
-  const isParentEntry =
-    matchPath({ path: parentPath.pathname, end: true }, location.pathname) !==
-    null;
 
   // The order is the display order. Both tabs use the parent page's access, so the first one is the default tab.
   const tabs = [
-    { path: 'summary', label: t('projectReports.tabs.summary') },
-    { path: 'owners', label: t('projectReports.tabs.owners') },
+    {
+      path: 'summary',
+      dataset: 'summary',
+      label: t('projectReports.tabs.summary'),
+    },
+    {
+      path: 'owners',
+      dataset: 'owners',
+      label: t('projectReports.tabs.owners'),
+    },
   ];
 
-  if (isParentEntry) {
+  const tabState = useListTabs({
+    tabs,
+    parameterKeys: [
+      'q',
+      'status',
+      'page',
+      'pageSize',
+      'sort',
+      'order',
+      'orderBy',
+    ],
+  });
+
+  if (tabState.fallback) {
     // replace: leaves no parent URL in the history, so going back does not get redirected again.
-    return (
-      <Navigate
-        replace
-        to={{ pathname: tabs[0].path, search: location.search }}
-      />
-    );
+    return <Navigate replace to={tabState.fallback} />;
   }
 
   return (
@@ -196,14 +200,14 @@ export default function ProjectReportsPage(): ReactElement {
               'text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
             )}
             key={tab.path}
-            to={{ pathname: tab.path, search: location.search }}
+            to={tabState.destination(tab)}
           >
             {tab.label}
           </NavLink>
         ))}
       </nav>
-      {/* Content of the current tab */}
-      <Outlet />
+      {/* Detail pages can use this source in their declared breadcrumb. */}
+      <Outlet context={{ source: tabState.source }} />
     </PageContainer>
   );
 }
@@ -248,7 +252,7 @@ Behavior:
 - Opening `/project-reports?range=30d` redirects with `replace` to `/project-reports/summary?range=30d`.
 - Opening `/project-reports/owners` directly stays on "By owner".
 - Clicking a tab adds a history entry, and the content renders where the Outlet is; the sidebar keeps "Project reports" highlighted (tab routes have no menu entry, so the nearest ancestor is highlighted).
-- Switching tabs keeps the query string, so the parameters of the page this one covers survive it. A tab's own parameters, named apart from everything else ([section 5 of `table.md`](table.md#5-writing-search-and-filters-to-the-url)), may stay when switching tabs or be dropped, as the business decides; the page removes them when the user leaves ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)).
+- `useListTabs` derives the selected tab from the route. Give different datasets different `dataset` values and list every parameter owned by these lists in `parameterKeys`; changing datasets clears those keys and starts the destination at its defaults, retaining enclosing-page parameters. Display tabs for the same dataset share a `dataset` value and retain compatible state. Pass only accessible tabs and `pending: true` while permission checks load; an absent/deleted tab then replaces the URL with the first accessible tab. Keep the parent route mounted for unknown descendants (for example a final `:unavailableTab` child with a null component and children matching the declared detail paths, such as `:id`; static tab routes take precedence) so it can apply that fallback; the global unmatched-route redirect cannot infer a tab owner.
 
 Tabs are implemented as links because they are page navigation, announced as links with `aria-current` on the selected one. To borrow the button look, apply `buttonVariants` to `NavLink`. `<Button render={<NavLink />}>` would announce each tab as a button, which is right for an action that opens a route ("New project", [section 2 of `styling.md`](styling.md#2-components-are-built-on-base-ui-not-radix)) but not for navigation. The `tabs` primitive is for tabs inside one view that are not routes: it brings the ARIA tab keyboard behavior, and its `TabsTrigger` elements sit inside `TabsList` (the skill's composition rules). Using it for route tabs would mean keeping its selected value in sync with the URL yourself.
 
@@ -421,28 +425,17 @@ The parent page checks the same permission with `useCan`: tabs without permissio
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
-import {
-  matchPath,
-  Navigate,
-  NavLink,
-  Outlet,
-  useLocation,
-  useResolvedPath,
-} from 'react-router';
+import { Navigate, NavLink, Outlet } from 'react-router';
 
 import { Loading } from '#components/loading';
 import { PageContainer } from '#components/page-container';
+import { useListTabs } from '#hooks/use-list-tabs';
 import { PageHeader } from '#components/page-header';
 import { buttonVariants } from '#components/ui/button';
 import { cn } from 'cn';
 
 export default function ProjectReportsPage(): ReactElement {
   const { t } = useTranslation();
-  const location = useLocation();
-  const parentPath = useResolvedPath('.');
-  const isParentEntry =
-    matchPath({ path: parentPath.pathname, end: true }, location.pathname) !==
-    null;
   // Keep in sync with the authz of the owners child route in routes.ts.
   const ownersAccess = useCan({
     resource: { type: 'page', id: 'project-reports-owners' },
@@ -452,13 +445,36 @@ export default function ProjectReportsPage(): ReactElement {
   // Tabs without permission are not shown. can is false while the check is pending and when it fails, so a failed check
   // hides the tab like a denial (page.md section 8); the tab route's own check still decides a direct URL.
   const tabs = [
-    { path: 'summary', label: t('projectReports.tabs.summary') },
+    {
+      path: 'summary',
+      dataset: 'summary',
+      label: t('projectReports.tabs.summary'),
+    },
     ...(ownersAccess.can
-      ? [{ path: 'owners', label: t('projectReports.tabs.owners') }]
+      ? [
+          {
+            path: 'owners',
+            dataset: 'owners',
+            label: t('projectReports.tabs.owners'),
+          },
+        ]
       : []),
   ];
 
-  if (isParentEntry) {
+  const tabState = useListTabs({
+    tabs,
+    parameterKeys: [
+      'q',
+      'status',
+      'page',
+      'pageSize',
+      'sort',
+      'order',
+      'orderBy',
+    ],
+  });
+
+  if (tabState.fallback) {
     // Redirecting before the permission check finishes may land on the wrong tab: show a loading state first.
     if (ownersAccess.isPending) {
       return (
@@ -471,12 +487,7 @@ export default function ProjectReportsPage(): ReactElement {
     }
     // The business specifies "By owner" as the default tab; when it is not accessible, use the first accessible tab.
     const target = tabs.find((tab) => tab.path === 'owners') ?? tabs[0];
-    return (
-      <Navigate
-        replace
-        to={{ pathname: target.path, search: location.search }}
-      />
-    );
+    return <Navigate replace to={tabState.destination(target)} />;
   }
 
   return (
@@ -497,14 +508,14 @@ export default function ProjectReportsPage(): ReactElement {
               'text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
             )}
             key={tab.path}
-            to={{ pathname: tab.path, search: location.search }}
+            to={tabState.destination(tab)}
           >
             {tab.label}
           </NavLink>
         ))}
       </nav>
-      {/* Content of the current tab */}
-      <Outlet />
+      {/* Detail pages can use this source in their declared breadcrumb. */}
+      <Outlet context={{ source: tabState.source }} />
     </PageContainer>
   );
 }
@@ -645,3 +656,28 @@ A page that shows a record whose detail is a page of its own — an orders list'
 9. Pages with tabs whose header opens overlays: from a tab other than the default, open each one. Its URL is the tab's URL plus its own segment, the tab stays selected and its content mounted behind it, and closing, saving, Esc and Back all return to that tab; opening that URL directly shows the same tab behind it.
 
 Write these behaviors as tests in `tests/` (see [`testing.md`](testing.md)).
+
+## List-tab breadcrumbs and private conditions
+
+Register each detail under its actual list tab, including when several tabs open the same detail component. The list places `Outlet` after its table and the detail returns `RouteChildPage`; this is a full child page, not a dialog. Keep sensitive conditions in the mounted list's `useState` only. Do not put them in URLs, history state, browser storage, logs or a global cache. Refresh resets them; the template's identity-keyed session boundary unmounts the list on account changes. Keep page and sorting state in that same local owner when they depend on private conditions, and reset the page when a condition changes.
+
+A private condition must filter the complete authorized dataset before computing its total and slicing a page; filtering only the fetched server page loses matching records and leaves the total wrong. For a small bounded dataset, fetch the complete authorized collection through its existing API and keep the condition, dependent pagination and sorting in list memory. For larger data, use an existing approved private query channel rather than adding URL or persistent state. Changing or clearing the condition starts at page one. Test with a condition that matches a record outside the previously visible page, then verify the total, all three return paths, refresh and account changes.
+
+For a tab layout that supplies its own breadcrumb, pass `tabState.source` through outlet context and use it as the list level of `usePageBreadcrumb` in the detail, followed by the detail's label. This links directly to the source tab and its recorded list query instead of the tab group's default redirect. Keep existing enclosing breadcrumb levels. A direct detail has no recorded list query and uses the source tab's default list. The standard `BackButton` follows the actual parent tab; browser Back follows its original history entry. Never hard-code the other module's list for a shared detail.
+
+Declare a final child under the tab group with `path: ":unavailableTab"`, a null component, and fallback children matching every supported detail shape. For example:
+
+```ts
+{
+  name: "reports-unavailable-tab",
+  path: ":unavailableTab",
+  componentLoader: () => import("./missing-tab.js"),
+  children: [{
+    name: "reports-unavailable-detail",
+    path: ":id",
+    componentLoader: () => import("./missing-tab.js"),
+  }],
+}
+```
+
+`missing-tab.js` default-exports a component returning `null`. Include any deeper supported routes (such as `:id/edit`) as well: a single `:unavailableTab` only matches the list URL and cannot recover `/reports/deleted/42`. The parent `useListTabs` fallback handles it. The runtime does not accept wildcard page paths. Give this route the same inherited access boundary as its parent and no menu or breadcrumb.

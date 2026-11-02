@@ -46,12 +46,24 @@ export async function detectTools(
             signal,
             TOOL_DETECTION_TIMEOUT_MS,
           );
-          if (installed && !signal.aborted)
-            return ToolInfoSchema.parse({ kind, ...base });
+          if (!signal.aborted)
+            return ToolInfoSchema.parse({
+              kind,
+              ...base,
+              status:
+                base.status ??
+                (installed
+                  ? base.authenticated
+                    ? 'ready'
+                    : 'needsLogin'
+                  : 'notInstalled'),
+            });
         } catch {
           // A failed inspection must not advertise the previous installation.
         }
-        return undefined;
+        return signal.aborted
+          ? undefined
+          : { kind, authenticated: false, status: 'failed' };
       },
     ),
   );
@@ -63,6 +75,8 @@ export class ToolCapabilitiesCache {
   private pending?: Promise<void>;
   private readonly detecting = new Set<Promise<unknown>>();
   private lastRefresh = -Infinity;
+  private readonly fingerprints = new Map<AgentTool, string>();
+  private force = new Set<AgentTool>();
   private readonly stopped = new AbortController();
   private readonly adaptersFor: () => ReadonlyMap<AgentTool, AgentAdapter>;
   public tools: readonly ToolInfo[];
@@ -80,6 +94,12 @@ export class ToolCapabilitiesCache {
     this.timeoutMs = timeoutMs;
   }
 
+  invalidate(): void {
+    this.force = new Set(this.adaptersFor().keys());
+    this.lastRefresh = -Infinity;
+    this.refresh();
+  }
+
   refresh(): void {
     if (
       this.stopped.signal.aborted ||
@@ -88,40 +108,61 @@ export class ToolCapabilitiesCache {
     )
       return;
     this.lastRefresh = this.now();
-    this.pending = Promise.all(
-      [...this.adaptersFor()].map(async ([kind, adapter]) => {
+    const adapters = [...this.adaptersFor()];
+    const forced = this.force;
+    this.force = new Set();
+    let cursor = 0;
+    const inspectNext = async (): Promise<void> => {
+      while (cursor < adapters.length && !this.stopped.signal.aborted) {
+        const [kind, adapter] = adapters[cursor++];
         try {
+          const fingerprint = adapter.fingerprint
+            ? await adapter.fingerprint()
+            : undefined;
+          if (
+            fingerprint !== undefined &&
+            this.fingerprints.get(kind) === fingerprint &&
+            !forced.has(kind)
+          )
+            continue;
+          if (fingerprint !== undefined)
+            this.fingerprints.set(kind, fingerprint);
           const detected = await this.inspect((signal) =>
             adapter.detect(signal),
           );
-          if (!detected.installed) {
-            this.replace(kind);
-            return;
+          const { installed, ...fields } = detected;
+          const base = ToolInfoSchema.parse({
+            kind,
+            ...fields,
+            status:
+              fields.status ??
+              (installed
+                ? fields.authenticated
+                  ? 'ready'
+                  : 'needsLogin'
+                : 'notInstalled'),
+          });
+          if (!installed || !base.authenticated) {
+            this.replace(kind, base);
+            continue;
           }
-          const { installed: _installed, ...fields } = detected;
-          const base = ToolInfoSchema.parse({ kind, ...fields });
-          this.replace(kind, base);
+          if (!adapter.detectModels) {
+            this.replace(kind, {
+              ...base,
+              modelsDetectionStatus:
+                base.modelsDetectionStatus ?? 'unsupported',
+            });
+            continue;
+          }
           try {
-            const capability = await this.inspect(
-              (signal) =>
-                adapter.detectModels?.(signal) ??
-                Promise.resolve({
-                  modelsDetectionStatus: 'unsupported' as const,
-                }),
+            const capability = await this.inspect((signal) =>
+              adapter.detectModels!(signal),
             );
             this.replace(
               kind,
               ToolInfoSchema.parse({
                 ...base,
-                modelsDetectionStatus: capability.modelsDetectionStatus,
-                modelsDetectionError:
-                  capability.modelsDetectionStatus === 'failed'
-                    ? capability.modelsDetectionError
-                    : undefined,
-                models:
-                  capability.modelsDetectionStatus === 'detected'
-                    ? capability.models
-                    : undefined,
+                ...capability,
                 modelsDetectedAt: new Date(this.now()).toISOString(),
               }),
             );
@@ -138,14 +179,16 @@ export class ToolCapabilitiesCache {
             });
           }
         } catch {
-          this.replace(kind);
+          this.replace(kind, { kind, authenticated: false, status: 'failed' });
         }
-      }),
-    )
+      }
+    };
+    this.pending = Promise.all([inspectNext(), inspectNext()])
       .then(() => undefined)
       .finally(async () => {
         await this.cleanup();
         this.pending = undefined;
+        if (this.force.size) this.refresh();
       });
   }
 

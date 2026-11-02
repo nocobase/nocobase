@@ -35,7 +35,11 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Run } from '../../../shared/runs.js';
-import type { ClaimContext, SubjectAssembly } from './ports.js';
+import type {
+  ClaimContext,
+  SubjectAssembly,
+  SubjectRegistry,
+} from './ports.js';
 
 /** Before the claim's transaction: what a provider needs from outside the claim's connection. */
 export type ExtensionPrepare = (run: Run) => Promise<unknown>;
@@ -235,12 +239,23 @@ export interface RepoAccessContext {
    * `issue` answers `onDemand` with the URLs it issues for, and no `credentials`.
    */
   readonly onDemand: boolean;
+  /** Whether the runner wraps code host CLIs (the `gitTools` feature); without it, `RunGit.tools` is dropped. */
+  readonly tools: boolean;
+  /**
+   * Who answers for the run's subject now (`SubjectBinding.responsibleUserId`), such as an issue's owner; null when the
+   * binding does not say or nobody does. Whose credential the run gets is the provider's decision.
+   */
+  readonly responsibleUserId: string | null;
 }
 
 /** What a repository access provider's `prepare` is told besides the run. */
 export interface RepoPrepareOptions {
   /** As `RepoAccessContext.onDemand`: when true, a provider that implements `issue` has nothing to mint now. */
   readonly onDemand: boolean;
+  /** As `RepoAccessContext.tools`. */
+  readonly tools: boolean;
+  /** As `RepoAccessContext.responsibleUserId`. */
+  readonly responsibleUserId: string | null;
 }
 
 /** A runner asks for the credential of one of its run's on-demand repositories. */
@@ -253,12 +268,15 @@ export interface RepoCredentialRequest {
   readonly url: string;
   /** The runner's last credential for it was refused by the remote: issue a new one rather than a cached one. */
   readonly refresh: boolean;
+  /** As `RepoAccessContext.responsibleUserId`, read again for each request. */
+  readonly responsibleUserId: string | null;
   /** Aborted when the server stops waiting (`ISSUE_TIMEOUT_MS`). */
   readonly signal: AbortSignal;
 }
 
 /** A credential for one repository and when it stops working. */
 export interface RepoCredentialGrant {
+  /** The username its code host expects with it (`x-access-token`, `oauth2`): git gets no other. */
   readonly username: string;
   readonly password: string;
   /** RFC 3339, in the future. */
@@ -331,11 +349,22 @@ export function createRepoAccessRegistry(): RepoAccessRegistry {
   };
 }
 
+/** Who answers for `run`'s subject now, as its binding says; null without a binding that says. */
+export async function responsibleOf(
+  conn: DatabaseConnection,
+  subjects: Pick<SubjectRegistry, 'get'> | undefined,
+  subject: { readonly kind: string; readonly id: string },
+): Promise<string | null> {
+  const read = subjects?.get(subject.kind)?.responsibleUserId;
+  return read === undefined ? null : await read(conn, subject.id);
+}
+
 /**
  * The run's git, from every provider: the first author given, every trailer and credential in order (one credential
  * per URL, the first). With `context.onDemand`, the URLs any provider lists in `onDemand` (only repositories of the
  * run) are asked for on demand, and no credential of the claim is handed out for them; without it, `onDemand` is
- * dropped.
+ * dropped. With `context.tools`, the first tool given for each bin is kept when its repository has a credential in
+ * the payload; without it, `tools` is dropped.
  */
 export async function repoAccessFor(
   conn: DatabaseConnection,
@@ -352,6 +381,7 @@ export async function repoAccessFor(
   >();
   const repoUrls = new Set(context.repos.map((repo) => repo.url));
   const onDemand = new Set<string>();
+  const tools = new Map<string, NonNullable<RunGit['tools']>[number]>();
   for (const provider of registry?.list() ?? []) {
     const given = await provider.forRun(
       conn,
@@ -368,8 +398,14 @@ export async function repoAccessFor(
     if (context.onDemand)
       for (const url of given.onDemand ?? [])
         if (repoUrls.has(url)) onDemand.add(url);
+    if (context.tools)
+      for (const tool of given.tools ?? [])
+        if (!tools.has(tool.bin)) tools.set(tool.bin, tool);
   }
   for (const url of onDemand) credentials.delete(url);
+  for (const [bin, tool] of tools)
+    if (!onDemand.has(tool.url) && !credentials.has(tool.url))
+      tools.delete(bin);
   if (
     !author &&
     trailers.length === 0 &&
@@ -382,6 +418,7 @@ export async function repoAccessFor(
     ...(trailers.length > 0 ? { trailers } : {}),
     ...(credentials.size > 0 ? { credentials: [...credentials.values()] } : {}),
     ...(onDemand.size > 0 ? { onDemand: [...onDemand] } : {}),
+    ...(tools.size > 0 ? { tools: [...tools.values()] } : {}),
   };
 }
 
@@ -398,7 +435,11 @@ export async function prepareExtensions(
   mounts: RunMountRegistry | undefined,
   onError?: (error: unknown) => void,
   repoAccess?: RepoAccessRegistry,
-  repoOptions: RepoPrepareOptions = { onDemand: false },
+  repoOptions: RepoPrepareOptions = {
+    onDemand: false,
+    tools: false,
+    responsibleUserId: null,
+  },
 ): Promise<Prepared> {
   const prepared = new Map<string, unknown>();
   const hooks: [string, ExtensionPrepare][] = [

@@ -1,6 +1,10 @@
 # AGENTS.md
 
-This is a NocoBase application plugin: a package published to a registry and installed into an application someone else assembled. That makes it a guest, and most of the rules below follow from it.
+Read the owning App's `AGENTS.md` and `<app-root>/.agents/skills/nocobase-app-plugin-development/SKILL.md` by path before implementation. The Skill comes from the App's installed `@nocobase/app-skills`; do not install a global copy or edit synchronized output. If missing, check the installed package and App upgrade guidance. In the NocoBase source repository, read the same Skill at `packages/app/app-skills/skills/nocobase-app-plugin-development/SKILL.md` and the repository's `.agents/rules/plugin-development.md`.
+
+This is a NocoBase application plugin. It may live in an application workspace or be published for other applications. Use the host application’s public contracts and keep plugin implementation separate from application composition.
+
+Editable UI is maintained in the UI Library. Install its components and blocks into this plugin's `client/` when needed; do not create a plugin-owned `registry/` or publish Registry recipes. Keep plugin runtime contracts in public exports and document the UI Library items consumers can install.
 
 ## Adding a dependency
 
@@ -12,10 +16,9 @@ Where a package goes depends on who has to resolve the import, and there are thr
 | ------------------------------------------- | -------------------------------------------- |
 | `server/` or `database/`, at runtime        | `dependencies`                               |
 | `client/`, as a value import                | `peerDependencies`                           |
-| `registry/`                                 | nothing — the application compiles it        |
 | Tests, build scripts, or `import type` only | `devDependencies`                            |
 
-`pnpm deps:check` at the repository root enforces the server row and runs in CI.
+In the NocoBase source repository, `pnpm deps:check` enforces the server row. In an application workspace, run the plugin checks and the consuming application build.
 
 ### Why the client row is different
 
@@ -31,11 +34,10 @@ Do not mark such a peer `optional`. An optional peer is not auto-installed anywh
 
 So `hono` in `server/routes/` is a `dependency`, and `lucide-react` in `client/` is a peer. Shared runtime packages follow the peer rule below even in server code. A dynamic `import()` counts as a value import. A type-only import is erased from JavaScript but can survive in published declarations; if consumers must resolve it, declare the dependency or shared peer instead of relying on a devDependency.
 
-`registry/` is the exception: it is source a consumer copies into itself and compiles there, against that package's own `react` and `package.json#imports`. The recipe's publishing plugin never resolves those imports, so declaring them would claim dependencies it does not have.
 
 ### Prefer what the application already has
 
-Before adding a client package, check whether `packages/templates/app-template-default` already declares it. Reusing that version means the application bundles one copy instead of resolving two, and it keeps this plugin from pinning a range the application then has to work around. Use `catalog:` for anything the repository catalog already names.
+Before adding a client package, check the consuming application’s installed version. Reuse compatible versions so the application bundles one copy. Use `workspace:` only for packages included in the current workspace, and `catalog:` only when that workspace defines the corresponding entry.
 
 ### Runtime packages are peers, never dependencies
 
@@ -52,9 +54,14 @@ Tests live in `tests/`, never beside the source they cover, grouped by the sourc
 A test takes its fixtures from `@nocobase/app-testing` alone, never from `@nocobase/db-testing` or `@nocobase/app-cli/testing` directly: `./server` carries everything a database test needs, `./cli` carries the command runner, and `./client` renders pages, described under "Testing a page" below. A test that needs a database takes it from there rather than configuring one: `createDatabaseTest()` gives each test migrated databases, and `describeMigration()` is the test every migration needs, applying, rolling back and reapplying it. Both run on SQLite by default and on the dialect `NOCOBASE_TEST_DB_DIALECT` names otherwise, so do not import a `@nocobase/db-<dialect>` package, configure `dialect: 'sqlite'` or `':memory:'`, or assert with SQL only one database understands, such as `PRAGMA` or `sqlite_master`; assert on the schema with `expectCollection()`. `pnpm db-tests:check` at the repository root enforces this, and `pnpm test:db <dialect> --filter <this-package>` runs the tests on another dialect. The `database` capability generates `tests/database/migrations.test.ts` in this shape.
 
 
+## Testing through an application
+
+Use `createAppTest()` from `@nocobase/app-testing/server` for real sign-in, permissions and plugin integration. Pass a fixture application's `createStandaloneServer` that registers this plugin and its required dependencies, or add the integration case to the target application's suite. One application serves the file by default; select `scope: 'test'` for independent application data. Sign in through `@nocobase/app-plugin-authentication/testing` and cover anonymous, authenticated-but-denied and authorized access. A command that opens the application uses `createTestAppConfig()` and `bindTestAppCommand()` from `@nocobase/app-testing/cli`, with isolated storage and configuration disposal in `finally`. The `nocobase-app-plugin-development` Skill's testing reference provides complete fixture and command examples.
+
 ## Testing a page
 
-A page test renders the page with `renderWithApp()` from `@nocobase/app-testing/client` rather than mocking `@nocobase/app-client`. Pass this plugin in `plugins`, as `plugins: [plugin()]` with the factory `client/plugin.ts` exports, so its service providers run and its locales load; a plugin left out registers nothing, and the strict translations fail on the first key it would have supplied. `answerApi()` answers the requests the page sends, and `services` registers a stand-in for another plugin's client service. `useToaster()` is a test toaster whose messages `toasts()` lists. A plugin generated with client code has `@nocobase/app-testing` and the jsdom test packages in `devDependencies`, so put page tests in `tests/client/`, which `vitest.config.ts` runs under jsdom.
+A page test renders the page with `renderWithApp()` from `@nocobase/app-testing/client` rather than mocking `@nocobase/app-client`. Pass this plugin in `plugins`, as `plugins: [plugin()]` with the factory `client/plugin.ts` exports, so its service providers run and its locales load; a plugin left out registers nothing, and the strict translations fail on the first key it would have supplied. `answerApi()` answers the requests the page sends; return a `Response` for errors and unexpected requests. `services` registers a stand-in for another plugin's client service; do not also register the plugin whose service it replaces. The helper owns the memory router, so render `Routes` and child `Route` elements inside it and pass the starting URL as `route`. Host route guards need a target-application test too. `useToaster()` is a test toaster whose messages `toasts()` lists. A plugin generated with client code has `@nocobase/app-testing` and the jsdom test packages in `devDependencies`, so put page tests in `tests/client/`, which `vitest.config.ts` runs under jsdom.
+
 ## Contributing CLI commands
 
 A plugin can add commands to an application's `pnpm nocobase`, and can ask an application to run a command during its `pnpm build` or `pnpm dev`. Both are declared in `cli/index.ts` through `defineCliPlugin`, and the `cli` capability generates that entry with one example command.
@@ -111,7 +118,7 @@ pnpm --filter <this-package> build
 
 Every server route owns and tests its own authentication and authorization boundary; mounting under `/api` authenticates nothing. Keep declarations, exports, dependencies, tests, README, and Plugin Skills aligned when capabilities change.
 
-The repository root `AGENTS.md` covers the rest — package publishing, test layout, migrations, and the reasoning behind the rules summarized here.
+Read the host project’s root `AGENTS.md` for application development and verification. App-local plugins live in `packages/`; register the exported Client, Server and CLI entries in the host application after linking its workspace dependency.
 
 ## Migrations and seeds
 
@@ -134,7 +141,7 @@ Two consequences follow, and both surface in someone else's application rather t
 
 Execution history records this package name alongside each migration, so history stays attributable per plugin even though the run is shared.
 
-How to write the files themselves — self-contained, immutable once merged, `builder` for structure and `query` for data — is in the repository root `AGENTS.md`.
+Keep migrations self-contained and immutable once merged. Use `builder` for structure and `query` for data.
 
 **A merged migration is never edited; the schema changes incrementally.** This plugin is published, and an installation records each migration as executed and never runs it again, so an edited migration leaves existing installations on the old schema while fresh ones get the new one. Leave a merged migration's file untouched, its formatting and comments included, and add a new migration that sorts after it and takes an installation from what the earlier migrations left behind to the target. Test that upgrade path with `describeMigration()`.
 

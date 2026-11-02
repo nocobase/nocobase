@@ -1,8 +1,5 @@
-import { StoredLifecycleParameters } from '@nocobase/lifecycle';
-import {
-  PARAMETER_COLLECTIONS,
-  exampleParameterRegistration,
-} from '../server/configuration/store.js';
+import { WorkflowParameterStore } from '../server/configuration/workflow-parameter-store.js';
+import { exampleParameterRegistration } from '../server/configuration/store.js';
 // Edits and transitions racing on one expense report, on the test database:
 // every edit moves the lifecycle version on, so a submit decided on the
 // report before an edit landed is refused rather than committed over values
@@ -39,7 +36,7 @@ function serviceOn(database: DatabaseManager): LifecycleExampleService {
   runtime.register(expenseLifecycle, {
     services: createExampleServices({ info: () => undefined }),
     parameterConfiguration: exampleParameterRegistration(
-      new StoredLifecycleParameters(store, PARAMETER_COLLECTIONS),
+      new WorkflowParameterStore(store),
       'expenses',
     ),
   });

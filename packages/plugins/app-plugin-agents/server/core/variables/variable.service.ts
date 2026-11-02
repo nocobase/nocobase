@@ -93,6 +93,18 @@ export interface VariableTarget {
 }
 
 export interface VariableService {
+  admissionMetadata(
+    conn: DatabaseConnection,
+    targets: readonly VariableTarget[],
+  ): Promise<
+    readonly {
+      scope: string;
+      scopeId: string;
+      name: string;
+      teamRunnersOnly: boolean;
+      kind: 'value' | 'runner';
+    }[]
+  >;
   /** A claim-local sealed snapshot. Delivery opens values and audits only after admission. */
   prepareRun(
     conn: DatabaseConnection,
@@ -139,7 +151,7 @@ export interface VariableService {
     targets: readonly VariableTarget[],
   ): Promise<string[]>;
   /**
-   * The variables of `targets`, merged in order as a run gets them, that only team runners may receive: by the scope
+   * The variables of `targets`, merged in order as a run gets them, that only shared runners may receive: by the scope
    * whose value the run would get.
    */
   teamOnly(
@@ -171,7 +183,7 @@ export interface VariableService {
   /**
    * For a job's claim: the values of the named variables, by `scope`, `scopeId` and `name` joined with NUL, recorded
    * as delivered for the job. A variable that is not set is left out. Throws `JobSecretsNotAllowed` before opening
-   * any value if a referenced variable is for team runners only and the stored runner is not a team runner.
+   * any value if a referenced variable is for shared runners only and the stored runner is not a shared runner.
    */
   forJob(
     conn: DatabaseConnection,
@@ -504,7 +516,7 @@ export function createVariableService(
             );
           if (options.teamRunnersOnly === true)
             throw invalid(
-              'A variable taken from the runner never leaves the runner; it cannot be for team runners only.',
+              'A variable taken from the runner never leaves the runner; it cannot be for shared runners only.',
               { reason: 'teamRunnersOnlyNotAllowed' },
             );
           const change = await setFromRunner(conn, target, name, userId);
@@ -644,6 +656,43 @@ export function createVariableService(
         .filter(([, entry]) => entry.kind === 'value')
         .map(([name]) => name)
         .sort();
+    },
+
+    async admissionMetadata(conn, targets) {
+      if (!targets.length) return [];
+      const filter = (f: import('@nocobase/db').FilterBuilder) =>
+        f.or(
+          targets.map((target) =>
+            f.and([
+              f.string('scope').eq(target.scope),
+              f.string('scopeId').eq(target.scopeId),
+            ]),
+          ),
+        );
+      const valued = await secrets(conn).findMany({
+        filter,
+        select: (s) => s.fields('scope', 'scopeId', 'name', 'teamRunnersOnly'),
+      });
+      const taken = await runnerVariables(conn).findMany({
+        filter,
+        select: (s) => s.fields('scope', 'scopeId', 'name'),
+      });
+      return [
+        ...valued.map((record) => ({
+          scope: record.scope,
+          scopeId: record.scopeId,
+          name: record.name,
+          teamRunnersOnly: Boolean(record.teamRunnersOnly),
+          kind: 'value' as const,
+        })),
+        ...taken.map((record) => ({
+          scope: record.scope,
+          scopeId: record.scopeId,
+          name: record.name,
+          teamRunnersOnly: false,
+          kind: 'runner' as const,
+        })),
+      ];
     },
 
     async teamOnly(conn, targets) {

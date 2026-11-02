@@ -122,7 +122,7 @@ acp
       agentCapabilities: {
         loadSession: true,
         mcpCapabilities: { http: true },
-        ...(authStage === 'resume'
+        ...(authStage === 'resume' || variant === 'resume'
           ? { sessionCapabilities: { resume: {} } }
           : {}),
       },
@@ -163,6 +163,7 @@ acp
     return { sessionId, configOptions: options('ask') };
   })
   .onRequest('session/load', async ({ params, client }) => {
+    trace('load', params);
     checkAuth('load');
     open(params.sessionId, params);
     await client.notify(acp.methods.client.session.update, {
@@ -176,6 +177,7 @@ acp
     return { configOptions: options('ask') };
   })
   .onRequest('session/resume', ({ params }) => {
+    trace('resume', params);
     checkAuth('resume');
     open(params.sessionId, params);
     return { configOptions: options('ask') };

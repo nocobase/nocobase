@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-plugin-agents': minor
-'@nocobase/studio': minor
 ---
 
 Allow workflow Run agent rules to start a fresh session on every stage entry while preserving working directories and other agents' sessions. Preserve the choice across queued run merges, confirmation requests and retries, and expose it in run responses.

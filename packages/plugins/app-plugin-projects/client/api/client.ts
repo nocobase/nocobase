@@ -29,6 +29,7 @@ import {
   type ActivityPage,
   type CreateIssueRequest,
   type Issue,
+  type IssueSummary,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -89,9 +90,10 @@ const ORDER_FIELDS: Readonly<Record<IssueSort, string>> = {
 
 /** The list query as URL parameters: the filters, `orderBy`, and a page of `ISSUE_PAGE_LIMIT.default` issues. */
 function issueQuery(query: IssueListQuery): Query {
-  const { sort, direction, cursor, limit, ...filters } = query;
+  const { sort, direction, cursor, limit, issueIds, ...filters } = query;
   return present({
     ...filters,
+    issueIds: issueIds?.join(','),
     orderBy: `${ORDER_FIELDS[sort ?? 'updated']} ${direction ?? 'desc'}`,
     pageSize: limit ?? ISSUE_PAGE_LIMIT.default,
     pageToken: cursor,
@@ -270,6 +272,11 @@ export class PmApi {
       'projects/issues/board',
       issueQuery({ ...query, cursor: undefined }),
     );
+  }
+
+  /** The visible live card fields of at most 100 IDs or identifiers. */
+  public issueSummaries(refs: readonly string[]): Promise<IssueSummary[]> {
+    return this.get('projects/issues/summaries', { refs: refs.join(',') });
   }
 
   /** One issue, by id or identifier (`PM-12`). */

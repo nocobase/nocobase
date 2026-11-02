@@ -1,8 +1,8 @@
+/** Date and time in the current language, or "—" for an empty value. */
 import { useLocale } from '@nocobase/i18n/client';
 import { useMemo } from 'react';
 
 export interface Formatters {
-  /** Date and time in the current language, or "—" for an empty value. */
   readonly dateTime: (iso: string | null | undefined) => string;
   /** Time of day only, for transcript rows. */
   readonly time: (iso: string | null | undefined) => string;
@@ -86,4 +86,37 @@ export function parseList(text: string): string[] {
     if (value) seen.add(value);
   }
   return [...seen];
+}
+
+/** Reset and activity times omit seconds and years; same-day resets need only the time. */
+export function compactDateTime(
+  iso: string,
+  locale: string,
+  now: number = Date.now(),
+): string {
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return '—';
+  const time = new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+  return date.toDateString() === new Date(now).toDateString()
+    ? time
+    : `${new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(date)} ${time}`;
+}
+
+export function quotaWindowLabel(window: string): string {
+  return (
+    (
+      {
+        five_hour: '5h',
+        seven_day: '7d',
+        seven_day_opus: '7d · Opus',
+        seven_day_sonnet: '7d · Sonnet',
+        '300m': '5h',
+        '10080m': '7d',
+      } as Readonly<Record<string, string>>
+    )[window] ?? window
+  );
 }

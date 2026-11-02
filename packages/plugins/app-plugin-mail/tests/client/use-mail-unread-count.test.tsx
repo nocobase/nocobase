@@ -34,6 +34,33 @@ import { MAIL_UNREAD_COUNT_CHANGED_EVENT } from '../../client/subscription.js';
 /** Only the transport is fake: the hook uses the production subscription. */
 class TestRealtime implements RealtimeClient {
   public connected = false;
+  public readonly state = 'open' as const;
+  public readonly ready = true;
+  public readonly active = true;
+  public onReady(listener: () => void): () => void {
+    return this.onOpen(listener);
+  }
+  public onStateChange(): () => void {
+    return () => {};
+  }
+  public watch<Payload>(
+    topic: string,
+    options: import('@nocobase/app-client').RealtimeWatchOptions<Payload> = {},
+  ): import('@nocobase/app-client').RealtimeSubscription {
+    const stop = this.subscribe<Payload>(topic, (event) =>
+      options.onEvent?.(event),
+    );
+    const stopReady = this.onOpen(() => options.onReady?.());
+    return {
+      state: 'subscribed',
+      error: undefined,
+      retry: () => {},
+      close: () => {
+        stop();
+        stopReady();
+      },
+    };
+  }
   public readonly topics = new Map<string, Set<RealtimeListener<unknown>>>();
   public readonly opens = new Set<() => void>();
   public readonly errors = new Set<(event: RealtimeErrorEvent) => void>();

@@ -15,7 +15,7 @@ import {
   workRootOf,
 } from './helpers.ts';
 
-it('reports a periodic fresh installation on heartbeats while a running task remains active', async () => {
+it('reports a changed program on heartbeats while a running task remains active', async () => {
   const home = tempDir('runner-status-');
   const server = new FakeServer();
   let daemon: RunnerDaemon | undefined;
@@ -85,11 +85,17 @@ it('reports a periodic fresh installation on heartbeats while a running task rem
     });
     const link = daemon['links'][0]!;
     await daemon.heartbeat(link);
+    await (
+      await link.detection?.capabilities
+    )?.['pending'];
+    await daemon.heartbeat(link);
     expect(server.lastHeartbeat()?.tools[0]?.version).toBe('2.0.28');
     version = '2.0.29';
     elapsed += MODEL_REFRESH_INTERVAL_MS;
     await daemon.heartbeat(link);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await (
+      await link.detection?.capabilities
+    )?.['pending'];
     await daemon.heartbeat(link);
     expect(server.lastHeartbeat()?.tools[0]).toMatchObject({
       version: '2.0.29',

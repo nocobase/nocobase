@@ -1,15 +1,21 @@
 // @vitest-environment node
 
 import { createServer, type Socket } from 'node:net';
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+import * as mailer from '@nocobase/mailer';
+
+afterEach(() => vi.restoreAllMocks());
 import { createTestApp } from '@nocobase/app-testing/server';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { authenticationToken } from '../../tokens.js';
+import { mailerToken } from '@nocobase/app-server/mailer';
 
 async function receiver(stall = false) {
   const sockets = new Set<Socket>();
   const messages: string[] = [];
+  let connections = 0;
   const server = createServer((socket) => {
+    connections += 1;
     sockets.add(socket);
     socket.on('close', () => sockets.delete(socket));
     socket.write('220 local.test ESMTP\r\n');
@@ -34,6 +40,7 @@ async function receiver(stall = false) {
           socket.write('250-local.test\r\n250 PIPELINING\r\n');
         else if (line === 'DATA') {
           data = true;
+          message = '';
           socket.write('354 send data\r\n');
         } else if (line === 'QUIT') socket.end('221 bye\r\n');
         else socket.write('250 ok\r\n');
@@ -47,35 +54,71 @@ async function receiver(stall = false) {
     for (const socket of sockets) socket.destroy();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   };
-  return { port: address.port, messages, sockets, close };
+  return {
+    port: address.port,
+    messages,
+    sockets,
+    connections: () => connections,
+    close,
+  };
 }
 
-it.each(['http://localhost', 'https://public.example.test'])(
-  'resets through real SMTP without notification or authorization using public origin %s',
-  async (publicOrigin) => {
+it.each([
+  ['http://localhost', false],
+  ['https://public.example.test', false],
+  ['https://public.example.test', true],
+] as const)(
+  'resets through real SMTP without notification or authorization using public origin %s (independent %s)',
+  async (publicOrigin, independent) => {
     const json = (body: unknown) => ({
       method: 'POST',
       headers: { 'content-type': 'application/json', origin: publicOrigin },
       body: JSON.stringify(body),
     });
     const smtp = await receiver();
+    const create = mailer.createMailTransport;
+    const sends: Promise<mailer.MailResult>[] = [];
+    vi.spyOn(mailer, 'createMailTransport').mockImplementation((...args) => {
+      const transport = create(...args);
+      const send = transport.send.bind(transport);
+      vi.spyOn(transport, 'send').mockImplementation((...sendArgs) => {
+        const completion = send(...sendArgs);
+        sends.push(completion);
+        return completion;
+      });
+      return transport;
+    });
     const app = await createTestApp({
       createServer: createStandaloneServer,
       config: {
         app: { publicOrigin },
-        notification: {
-          channels: {
-            'system-email': {
-              provider: 'smtp',
-              host: '127.0.0.1',
-              port: smtp.port,
-              from: 'sender@example.test',
-            },
-          },
-        },
+        ...(independent
+          ? {
+              auth: {
+                email: {
+                  provider: 'smtp',
+                  host: '127.0.0.1',
+                  port: smtp.port,
+                  from: 'sender@example.test',
+                },
+              },
+            }
+          : {
+              notification: {
+                channels: {
+                  'system-email': {
+                    provider: 'smtp',
+                    host: '127.0.0.1',
+                    port: smtp.port,
+                    from: 'sender@example.test',
+                  },
+                },
+              },
+            }),
       },
     });
     try {
+      expect(app.application.container.has(mailerToken)).toBe(false);
       const capabilities = await app.request('/authentication/capabilities');
       expect(await capabilities.json()).toEqual({
         data: { passwordResetAvailable: true },
@@ -100,7 +143,20 @@ it.each(['http://localhost', 'https://public.example.test'])(
       );
       expect(response.status).toBe(200);
       await vi.waitFor(() => expect(smtp.messages).toHaveLength(1));
-      const decoded = smtp.messages[0]!.replace(/=\r\n/gu, '').replace(
+      await expect(sends[0]).resolves.toMatchObject({ status: 'accepted' });
+      await app.request(
+        '/auth/request-password-reset',
+        json({
+          email: 'synthetic@example.test',
+          redirectTo: `${publicOrigin}/main/reset-password`,
+        }),
+      );
+      await vi.waitFor(() => expect(smtp.messages).toHaveLength(2));
+      await expect(sends[1]).resolves.toMatchObject({ status: 'accepted' });
+      // Each submission opens its own connection and releases it when it ends.
+      expect(smtp.connections()).toBe(2);
+      await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
+      const decoded = smtp.messages[1]!.replace(/=\r\n/gu, '').replace(
         /=([0-9A-F]{2})/gu,
         (_match, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)),
       );
@@ -154,6 +210,7 @@ it.each(['http://localhost', 'https://public.example.test'])(
       ).toBeUndefined();
     } finally {
       await app.close();
+      await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
       await smtp.close();
     }
   },

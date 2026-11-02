@@ -46,7 +46,11 @@ export interface ReplaceSubjectAssignmentsInput {
 
 export interface PermissionSetsApi<TTransaction = unknown> {
   create(input: CreatePermissionSetInput): Promise<PermissionSet>;
-  update(key: string, input: CreatePermissionSetInput): Promise<PermissionSet>;
+  update(
+    key: string,
+    input: CreatePermissionSetInput,
+    expectedRevision?: string,
+  ): Promise<PermissionSet>;
   delete(key: string): Promise<void>;
   get(key: string): Promise<PermissionSet | undefined>;
   list(): Promise<readonly PermissionSet[]>;
@@ -466,6 +470,7 @@ class PermissionSetService<
   async update(
     key: string,
     input: CreatePermissionSetInput,
+    expectedRevision?: string,
   ): Promise<PermissionSet> {
     if (!(await this.store.get(key))) {
       throw new PermissionSetNotFoundError(key);
@@ -479,6 +484,7 @@ class PermissionSetService<
     const permissionSet = await this.store.update(
       key,
       this.toPermissionSet(input),
+      expectedRevision,
     );
     await this.notifySubjectsChanged(affectedSubjects);
     return permissionSet;
@@ -768,7 +774,15 @@ class PermissionSetService<
       assignments.map((assignment) => assignment.permissionSet),
     );
     const requested = [...keys];
-    const sets = await Promise.all(requested.map((key) => this.store.get(key)));
+    if (requested.length === 0) return [];
+    const found = this.store.getMany
+      ? new Map(
+          (await this.store.getMany(requested)).map((set) => [set.key, set]),
+        )
+      : undefined;
+    const sets = found
+      ? requested.map((key) => found.get(key))
+      : await Promise.all(requested.map((key) => this.store.get(key)));
     const missing = sets.findIndex((set) => set === undefined);
     if (missing >= 0) {
       throw new Error(`Unknown Permission Set: ${requested[missing]}`);

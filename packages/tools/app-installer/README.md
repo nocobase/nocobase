@@ -1,6 +1,6 @@
 # @nocobase/app-installer
 
-Installs, upgrades and rolls back a NocoBase 3 application on a server, and runs it under pm2. Use `--app studio` to download and build the published `@nocobase/studio` application on the server, or `--archive` to unpack a deployment archive built elsewhere with `pnpm build --tar`. Only npm application installs need pnpm (11 or later); neither route needs a repository checkout.
+Installs, upgrades and rolls back a NocoBase 3 application on a server, and runs it under pm2. Use `--app <package>` to download and build a published application from npm on the server, or `--archive` to unpack a deployment archive built elsewhere with `pnpm build --tar`. Only npm application installs need pnpm (11 or later); neither route needs a repository checkout.
 
 Each installation lives in a directory of its own, with its own port and pm2 process, so one server can run several. Docker remains the other way to run an application.
 
@@ -9,13 +9,12 @@ Earlier versions could also build the published Hub template on the server (`--t
 ## Published applications
 
 ```bash
-npx --yes --registry=https://registry.npmjs.org @nocobase/app-installer install /srv/nocobase/studio --app studio --origin https://studio.example.com
-# Equivalent application name: --app @nocobase/studio
-# Select a version or tag: --app studio@beta or --app @nocobase/studio@<version>
-npx --yes --registry=https://registry.npmjs.org @nocobase/app-installer upgrade --dir /srv/nocobase/studio --yes
+npx --yes --registry=https://registry.npmjs.org @nocobase/app-installer install /srv/nocobase/crm --app @acme/crm --origin https://crm.example.com
+# Select a version or tag: --app @acme/crm@beta or --app @acme/crm@<version>
+npx --yes --registry=https://registry.npmjs.org @nocobase/app-installer upgrade --dir /srv/nocobase/crm --yes
 ```
 
-Bare application names expand to `@nocobase/<name>`. Other publishers use the full scoped name, such as `--app @acme/crm`. Choose exactly one of `--app` and `--archive`; `--template` is not supported. A published application includes its buildable sources, development dependencies, `build` script and `nocobase.templateKind: app`. The installer preserves its package name and version, installs dependencies and builds its deployment archive in a temporary directory, then removes the sources and build dependencies. The application package and dependencies execute their normal install/build scripts, so choose a publisher you trust. A requested database driver must be declared by the application package.
+Bare application names expand to `@nocobase/<name>`; other publishers use the full scoped name, as above. Choose exactly one of `--app` and `--archive`; `--template` is not supported. A published application includes its buildable sources, development dependencies, `build` script and `nocobase.templateKind: app`. The installer preserves its package name and version, installs dependencies and builds its deployment archive in a temporary directory, then removes the sources and build dependencies. The application package and dependencies execute their normal install/build scripts, so choose a publisher you trust. A requested database driver must be declared by the application package.
 
 `--registry` (or `NOCOBASE_REGISTRY`) selects the registry used for the application and its dependencies and is saved in `installer.json`. npm and pnpm use the service user's registry credentials. Installing an npm application requires npm and pnpm 11+ on PATH, in addition to Node and pm2. The build needs more memory, disk space and time than unpacking an archive.
 
@@ -49,6 +48,8 @@ npx --yes @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.t
 The target must be new or empty. Before writing anything, the command also checks that the port is free — naming a free one when it is not — that no pm2 process already uses the name (`pm2 start` on a taken name would restart that process with this installation's configuration rather than start a new one), and that every variable named by `--set-from-env` is set. It then unpacks the archive into a release directory; writes the configuration; applies the database migrations; and starts the application with pm2, waiting until its health check answers or pm2 reports the process as crashed. Anything it wrote is removed again if it fails before the application is switched on, so running it again starts clean.
 
 Ctrl-C (or SIGTERM) stops the step that is running and lets that cleanup happen; a second one exits at once.
+
+On a command timeout or the first interrupt, the installer sends SIGTERM to the command's process group and waits until no member can execute or write, including descendants that closed their output. Members that ignore SIGTERM receive SIGKILL after 10 seconds. Linux and macOS require `ps` on PATH to distinguish running members from terminated, unreaped zombies. Confirmation is bounded to another 2 seconds; if signals or state checks fail or members remain, the failure explicitly says the stop could not be confirmed. Normal successful commands have no added wait. This covers the local process group; it cannot stop descendants that deliberately leave the group or remote operations after an SSH connection ends.
 
 | Flag               | Default                      | Purpose                                                                                                               |
 | ------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |

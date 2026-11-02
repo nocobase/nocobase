@@ -42,6 +42,8 @@ const zhCN: MailResource = {
     deleteUnsupported: '此邮箱不支持删除，请到邮箱客户端中操作。',
     imapScheduled: '请先取消定时发送，再删除此草稿。',
 
+    invalidRecipient:
+      '请修正邮箱地址或显示名：{{value}}。每个字段最多填写 100 位收件人。',
     senderLabel: '发件人',
     attachmentNumber: '附件 {{number}}',
     pendingDelivery: '以下发送请求的结果尚未确认，邮件内容已保存在这里。',
@@ -557,6 +559,7 @@ const zhCN: MailResource = {
     },
   },
   errors: {
+    messageNotFound: '未找到邮件。',
     requestFailed: '邮件请求失败。',
     authorizationFailed: '无法发起邮件授权。',
     syncFailed: '无法开始邮箱同步。',

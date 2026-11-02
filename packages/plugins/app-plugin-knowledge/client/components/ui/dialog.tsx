@@ -1,3 +1,4 @@
+import { ACCESS_NAMESPACE } from '../../../shared/access.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
@@ -52,7 +53,7 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
 }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation(ACCESS_NAMESPACE);
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -77,7 +78,7 @@ function DialogContent({
             }
           >
             <XIcon />
-            <span className='sr-only'>{t('actions.close')}</span>
+            <span className='sr-only'>{t('knowledge.permissions.close')}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>
@@ -106,7 +107,7 @@ function DialogFooter({
 }: React.ComponentProps<'div'> & {
   showCloseButton?: boolean;
 }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation(ACCESS_NAMESPACE);
   return (
     <div
       data-slot='dialog-footer'
@@ -119,7 +120,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close render={<Button variant='outline' />}>
-          {t('actions.close')}
+          {t('knowledge.permissions.close')}
         </DialogPrimitive.Close>
       )}
     </div>

@@ -27,6 +27,7 @@ describe('@nocobase/app-plugin-releases', () => {
       '202610170001_rel_drop_app_preview_values',
       '202610210001_rel_protected_requires_approval',
       '202610260002_rel_bound_artifact_keys',
+      '202611020001_rel_environment_purpose',
     ]);
   });
 });

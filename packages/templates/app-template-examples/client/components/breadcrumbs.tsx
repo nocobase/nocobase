@@ -23,6 +23,7 @@ import { cn } from 'cn';
 
 import {
   useRouteTrail,
+  useRouteSearches,
   type RouteTrailEntry,
 } from '../routing/route-context.js';
 import { routeKey } from '../routing/route-navigation.js';
@@ -51,6 +52,7 @@ export function Breadcrumbs({
   denied,
 }: BreadcrumbsProps = {}): ReactElement | null {
   const trail = useRouteTrail();
+  const searches = useRouteSearches();
   const declared = usePageBreadcrumbLevels();
   const { t } = useTranslation();
   const trailLevels =
@@ -64,7 +66,16 @@ export function Breadcrumbs({
             ns: entry.route.packageName,
             defaultValue: title,
           }),
-          ...(entry.route.componentLoader ? { to: entry.pathname } : {}),
+          ...(entry.route.componentLoader
+            ? {
+                to: {
+                  pathname: entry.pathname,
+                  search:
+                    searches.get(entry.pathname.replace(/\/+$/u, '') || '/') ??
+                    '',
+                },
+              }
+            : {}),
         },
       ];
     });

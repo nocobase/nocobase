@@ -188,6 +188,19 @@ describe('install script', () => {
   });
 
   it('refuses missing arguments and a bad token, installing nothing', async () => {
+    const missingServer = await install([
+      '--runner',
+      '--token',
+      'unused',
+      '--prefix',
+      path.join(root, 'missing-server'),
+    ]);
+    expect(missingServer.code).toBe(2);
+    expect(missingServer.stderr).toContain('--runner requires --server <url>');
+    expect(missingServer.stderr).toContain(
+      '--runner --server <server> --token',
+    );
+    expect(existsSync(path.join(root, 'missing-server'))).toBe(false);
     expect((await install(['--server', base])).code).toBe(2);
     const prefix = path.join(root, 'refused');
     const refused = await install([
@@ -435,6 +448,55 @@ describe('install script', () => {
       writeFileSync(manifestFile, manifest);
     }
   });
+
+  it.each(['corrupt', 'missing'] as const)(
+    'keeps the real error and fails when the archive is %s',
+    async (failure) => {
+      const productDir = path.join(root, 'dist', 'stable', 'acme');
+      const manifestFile = path.join(productDir, 'manifest.json');
+      const archive = path.join(
+        productDir,
+        '0.7.0',
+        `acme-v0.7.0-${target}.tar.gz`,
+      );
+      const originalManifest = readFileSync(manifestFile, 'utf8');
+      const originalArchive = readFileSync(archive);
+      try {
+        if (failure === 'missing') {
+          rmSync(archive);
+        } else {
+          const corrupt = Buffer.from('not a gzip archive');
+          writeFileSync(archive, corrupt);
+          // A matching checksum ensures this exercises extraction, rather than stopping at checksum validation.
+          writeFileSync(
+            manifestFile,
+            originalManifest.replace(
+              /"sha256":"[0-9a-f]{64}"/u,
+              `"sha256":"${createHash('sha256').update(corrupt).digest('hex')}"`,
+            ),
+          );
+        }
+        const prefix = path.join(root, failure);
+        const result = await install([
+          '--runner',
+          '--server',
+          base,
+          '--token',
+          await newToken(),
+          '--prefix',
+          prefix,
+        ]);
+        expect(result.code).not.toBe(0);
+        expect(result.stderr).toMatch(
+          failure === 'missing' ? /404/u : /gzip|tar:/u,
+        );
+        expect(existsSync(path.join(prefix, 'current'))).toBe(false);
+      } finally {
+        writeFileSync(archive, originalArchive);
+        writeFileSync(manifestFile, originalManifest);
+      }
+    },
+  );
 });
 
 describe('install script, the CLI alone', () => {

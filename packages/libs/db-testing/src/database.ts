@@ -41,6 +41,17 @@ export interface OpenTestDatabaseOptions {
   readonly seeds?: readonly SeedSource[];
 }
 
+export interface CreateTestDatabaseOptions
+  extends ProvisionTestDatabasesOptions, OpenTestDatabaseOptions {
+  /**
+   * Migrates and seeds once per process into a template, and gives each call a copy of it, where the dialect can copy
+   * a database (`TestDatabaseProvisioner.clone`, SQLite). Elsewhere, and with a `metadataStore` of the caller's own,
+   * each call migrates its own databases as without it. The template is shared by every call with the same dialect,
+   * connections, migrations and seeds.
+   */
+  readonly template?: boolean;
+}
+
 export interface TestDatabase {
   readonly dialect: string;
   readonly database: DatabaseManager;
@@ -83,27 +94,49 @@ export async function provisionTestDatabases(
   const env = options.env ?? process.env;
   const dialect = options.provisioner?.dialect ?? testDatabaseDialect(env);
   const names = options.connections ?? [DEFAULT_TEST_CONNECTION];
+  assertConnectionNames(names);
+  const provisioner =
+    options.provisioner ?? (await loadTestDatabaseProvisioner(dialect));
+  await removeStaleDatabases(provisioner, env);
+  const provisioned = await provisionEach(names, env, (name) =>
+    provisioner.provision({ name, env }),
+  );
+  return provisionedDatabases(dialect, names, provisioned);
+}
+
+function assertConnectionNames(names: readonly string[]): void {
   if (names.length === 0 || new Set(names).size !== names.length) {
     throw new Error(
       'Test database connections must be a non-empty list of distinct names.',
     );
   }
-  const provisioner =
-    options.provisioner ?? (await loadTestDatabaseProvisioner(dialect));
-  await removeStaleDatabases(provisioner, env);
+}
+
+/** One isolated database per connection name, each from `create` under a fresh name; all dropped if one fails. */
+async function provisionEach(
+  names: readonly string[],
+  env: TestDatabaseEnvironment,
+  create: (name: string, index: number) => Promise<ProvisionedTestDatabase>,
+): Promise<Array<[string, ProvisionedTestDatabase, string]>> {
   const prefix = isolatedDatabasePrefix(env);
-  const provisioned: Array<[string, ProvisionedTestDatabase]> = [];
+  const provisioned: Array<[string, ProvisionedTestDatabase, string]> = [];
   try {
     for (const [index, name] of names.entries()) {
-      provisioned.push([
-        name,
-        await provisioner.provision({ name: `${prefix}_${index}`, env }),
-      ]);
+      const isolated = `${prefix}_${index}`;
+      provisioned.push([name, await create(isolated, index), isolated]);
     }
   } catch (error) {
     await dropAll(provisioned.map(([, database]) => database));
     throw error;
   }
+  return provisioned;
+}
+
+function provisionedDatabases(
+  dialect: string,
+  names: readonly string[],
+  provisioned: ReadonlyArray<[string, ProvisionedTestDatabase, string]>,
+): ProvisionedTestDatabases {
   const configs = new Map(
     provisioned.map(([name, database]) => [name, database.connection]),
   );
@@ -128,9 +161,12 @@ export async function provisionTestDatabases(
 
 /** Provisions isolated databases and opens them in one step; `destroy()` drops them again. */
 export async function createTestDatabase(
-  options: ProvisionTestDatabasesOptions & OpenTestDatabaseOptions = {},
+  options: CreateTestDatabaseOptions = {},
 ): Promise<TestDatabase> {
-  const provisioned = await provisionTestDatabases(options);
+  const provisioned =
+    (options.template && !options.metadataStore
+      ? await cloneTemplate(options)
+      : undefined) ?? (await provisionTestDatabases(options));
   let database: TestDatabase;
   try {
     database = await provisioned.open(options);
@@ -150,11 +186,89 @@ export async function createTestDatabase(
   };
 }
 
+/** The isolated names of each template's databases, by provisioner and by what was applied to them. */
+const templates = new WeakMap<
+  TestDatabaseProvisioner,
+  Map<string, Promise<readonly string[]>>
+>();
+
+/**
+ * Copies of a template migrated and seeded once, opened without resetting them: what `open` would otherwise apply is
+ * already there. Undefined when the dialect cannot copy a database.
+ */
+async function cloneTemplate(
+  options: CreateTestDatabaseOptions,
+): Promise<ProvisionedTestDatabases | undefined> {
+  const env = options.env ?? process.env;
+  const dialect = options.provisioner?.dialect ?? testDatabaseDialect(env);
+  const provisioner =
+    options.provisioner ?? (await loadTestDatabaseProvisioner(dialect));
+  const clone = provisioner.clone?.bind(provisioner);
+  if (!clone) return undefined;
+  const names = options.connections ?? [DEFAULT_TEST_CONNECTION];
+  assertConnectionNames(names);
+  const key = JSON.stringify([
+    dialect,
+    names,
+    options.migrations ?? [],
+    options.seeds ?? [],
+  ]);
+  let byKey = templates.get(provisioner);
+  if (!byKey)
+    templates.set(
+      provisioner,
+      (byKey = new Map<string, Promise<readonly string[]>>()),
+    );
+  let template = byKey.get(key);
+  if (!template) {
+    template = (async () => {
+      await removeStaleDatabases(provisioner, env);
+      const created = await provisionEach(names, env, (name) =>
+        provisioner.provision({ name, env }),
+      );
+      const provisioned = provisionedDatabases(dialect, names, created);
+      const database = await provisioned.open(options).catch(async (error) => {
+        await provisioned.drop();
+        throw error;
+      });
+      // Closed, so that every copy is complete. A run's templates live as long as its process; the next run drops
+      // them with the other databases dead processes left behind.
+      await database.destroy();
+      return created.map(([, , isolated]) => isolated);
+    })();
+    byKey.set(key, template);
+    template.catch(() => byKey.delete(key));
+  }
+  const sources = await template;
+  const copies = await provisionEach(names, env, (name, index) =>
+    clone({ source: sources[index] ?? '', name, env }),
+  );
+  const copied = provisionedDatabases(dialect, names, copies);
+  return {
+    ...copied,
+    open: (openOptions = {}) =>
+      openTestDatabase(
+        dialect,
+        names,
+        (name) => copied.connectionConfig(name),
+        {
+          ...(openOptions.metadataStore
+            ? { metadataStore: openOptions.metadataStore }
+            : {}),
+          prepared: true,
+        },
+      ),
+  };
+}
+
 async function openTestDatabase(
   dialect: string,
   names: readonly string[],
   connectionConfig: (name?: string) => AnyConnectionConfig,
-  options: OpenTestDatabaseOptions,
+  options: OpenTestDatabaseOptions & {
+    /** The databases are a template's copies: already reset, migrated and seeded. */
+    readonly prepared?: boolean;
+  },
 ): Promise<TestDatabase> {
   const defaultName = names[0] ?? DEFAULT_TEST_CONNECTION;
   const database = createDatabaseManager({
@@ -192,9 +306,11 @@ async function openTestDatabase(
     await createSeeder({ database, connection, sources }).run();
   };
   try {
-    await reset();
-    await migrate(options.migrations ?? []);
-    await seed(options.seeds ?? []);
+    if (!options.prepared) {
+      await reset();
+      await migrate(options.migrations ?? []);
+      await seed(options.seeds ?? []);
+    }
   } catch (error) {
     await database.destroy();
     throw error;

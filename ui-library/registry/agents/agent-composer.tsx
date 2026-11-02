@@ -10,6 +10,9 @@
  * text, an image as a thumbnail and anything else as a chip, until it is removed or sent. A file over the size limit
  * or one that failed to upload is marked and keeps the message from being sent; a message sent while files upload
  * goes once they are done.
+ *
+ * With `context.inspect`, clicking a chip opens a small dialog with what it carries (`ContextPreviewDialog`, which a
+ * page can also open for the context a sent message carried).
  */
 import {
   filterText,
@@ -52,6 +55,12 @@ import {
 import { Badge } from '#components/ui/badge';
 import { Button } from '#components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '#components/ui/dialog';
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupTextarea,
@@ -80,6 +89,11 @@ export interface AgentComposerLabels {
   readonly contextSelection: string;
   /** A chip's remove button; `{label}` is the chip's text. */
   readonly contextRemove: string;
+  readonly contextFailed?: string;
+  /** A chip's button that shows what it carries; `{label}` is the chip's text. */
+  readonly contextInspect?: string;
+  /** The title of the dialog that shows what a chip carries; `{label}` is the chip's text. */
+  readonly contextPreview?: string;
   /** The attach button. */
   readonly attach: string;
   /** The files' accessible name. */
@@ -111,6 +125,10 @@ const defaultAgentComposerLabels: AgentComposerLabels = {
   contextFilter: 'Filter: {filter}',
   contextSelection: 'Selected text: “{text}”',
   contextRemove: 'Remove context: {label}',
+  contextFailed:
+    'Could not read the selected context or send the message. Check the current page and try again.',
+  contextInspect: 'Show context: {label}',
+  contextPreview: 'Context: {label}',
   attach: 'Attach files',
   attachmentsLabel: 'Files the next message carries',
   attachmentRemove: 'Remove {name}',
@@ -175,7 +193,13 @@ export interface AgentComposerContext {
   readonly chips: readonly ChatContextChip[];
   readonly onRemove: (key: string) => void;
   /** The context a message sent now carries; called on send. */
-  readonly build: () => PageContext | undefined;
+  readonly build: () =>
+    PageContext | undefined | Promise<PageContext | undefined>;
+  /**
+   * What a chip carries, shown in a dialog when the chip is clicked: text as it is, anything else as JSON. Left out,
+   * the chips are not clickable.
+   */
+  readonly inspect?: (chip: ChatContextChip) => unknown;
 }
 
 /** Text put in the box from elsewhere, such as an "Ask agent" button; each new `nonce` fills it once. */
@@ -226,10 +250,66 @@ export interface AgentComposerProps {
 function ChipIcon({ chip }: { readonly chip: ChatContextChip }): ReactElement {
   if (chip.kind === 'filter') return <FilterIcon aria-hidden='true' />;
   if (chip.kind === 'selection') return <QuoteIcon aria-hidden='true' />;
-  return chip.pinned ? (
+  return chip.kind === 'item' && chip.pinned ? (
     <PinIcon aria-hidden='true' />
   ) : (
     <SquareDashedMousePointerIcon aria-hidden='true' />
+  );
+}
+
+export interface ContextPreviewDialogProps {
+  /** The chip's text; the dialog's title is `labels.contextPreview` with it. */
+  readonly label: string;
+  /** Text shows as it is, anything else as JSON. */
+  readonly content: unknown;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly labels?: Partial<AgentComposerLabels>;
+}
+
+function previewText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (content === undefined) return '';
+  try {
+    return JSON.stringify(content, null, 2) ?? '';
+  } catch {
+    // A cycle or a BigInt: nothing better to show than its type.
+    return typeof content;
+  }
+}
+
+/** A small dialog with what a piece of context carries, for a chip in the composer or under a sent message. */
+export function ContextPreviewDialog({
+  label,
+  content,
+  open,
+  onOpenChange,
+  labels,
+}: ContextPreviewDialogProps): ReactElement {
+  const words = labels
+    ? { ...defaultAgentComposerLabels, ...labels }
+    : defaultAgentComposerLabels;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className='flex max-h-[min(80dvh,36rem)] flex-col gap-3 sm:max-w-lg'
+        data-testid='chat-context-preview'
+      >
+        <DialogHeader>
+          <DialogTitle className='pr-6 break-words'>
+            {format(
+              words.contextPreview ??
+                defaultAgentComposerLabels.contextPreview ??
+                '{label}',
+              { label },
+            )}
+          </DialogTitle>
+        </DialogHeader>
+        <pre className='min-h-0 flex-1 overflow-auto rounded-md bg-muted p-3 font-mono text-xs whitespace-pre-wrap break-words text-foreground'>
+          {previewText(content)}
+        </pre>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -237,29 +317,38 @@ export interface ComposerContextChipsProps {
   readonly chips: readonly ChatContextChip[];
   readonly onRemove: (key: string) => void;
   readonly labels?: Partial<AgentComposerLabels>;
+  /** What a chip carries; with it, clicking a chip opens `ContextPreviewDialog`. */
+  readonly inspect?: ((chip: ChatContextChip) => unknown) | undefined;
 }
 
-/** What the next message carries; each chip holds its own remove button. */
+/** What the next message carries; each chip holds its own remove button, and opens what it carries with `inspect`. */
 export function ComposerContextChips({
   chips,
   onRemove,
   labels,
+  inspect,
 }: ComposerContextChipsProps): ReactElement | null {
   const words = labels
     ? { ...defaultAgentComposerLabels, ...labels }
     : defaultAgentComposerLabels;
+  const [shown, setShown] = useState<{
+    readonly label: string;
+    readonly content: unknown;
+  } | null>(null);
   if (chips.length === 0) return null;
   const text = (chip: ChatContextChip): string =>
-    chip.kind === 'item'
-      ? chip.item.label
-      : chip.kind === 'filter'
-        ? format(words.contextFilter, {
-            filter: chip.filter.label ?? filterText(chip.filter),
-          })
-        : format(words.contextSelection, {
-            text: selectionPreview(chip.selection.text),
-          });
-  return (
+    chip.kind === 'ui'
+      ? chip.source.label
+      : chip.kind === 'item'
+        ? chip.item.label
+        : chip.kind === 'filter'
+          ? format(words.contextFilter, {
+              filter: chip.filter.label ?? filterText(chip.filter),
+            })
+          : format(words.contextSelection, {
+              text: selectionPreview(chip.selection.text),
+            });
+  const list = (
     <ul
       className='flex w-full min-w-0 flex-wrap items-center gap-1'
       aria-label={words.contextLabel}
@@ -287,7 +376,24 @@ export function ComposerContextChips({
               title={chip.kind === 'selection' ? chip.selection.text : label}
             >
               <ChipIcon chip={chip} />
-              <span className='min-w-0 truncate'>{label}</span>
+              {inspect ? (
+                <button
+                  type='button'
+                  className='min-w-0 truncate rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
+                  aria-label={format(
+                    words.contextInspect ??
+                      defaultAgentComposerLabels.contextInspect ??
+                      '{label}',
+                    { label },
+                  )}
+                  onClick={() => setShown({ label, content: inspect(chip) })}
+                  data-testid='chat-context-chip-inspect'
+                >
+                  {label}
+                </button>
+              ) : (
+                <span className='min-w-0 truncate'>{label}</span>
+              )}
               <Button
                 variant='ghost'
                 size='icon-xs'
@@ -302,6 +408,22 @@ export function ComposerContextChips({
         );
       })}
     </ul>
+  );
+  return inspect ? (
+    <>
+      {list}
+      <ContextPreviewDialog
+        label={shown?.label ?? ''}
+        content={shown?.content}
+        open={shown !== null}
+        onOpenChange={(open) => {
+          if (!open) setShown(null);
+        }}
+        labels={words}
+      />
+    </>
+  ) : (
+    list
   );
 }
 
@@ -447,6 +569,20 @@ export function AgentComposer({
   const inputId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState('');
+  const [preparing, setPreparing] = useState(false);
+  const [contextError, setContextError] = useState(false);
+  const submissionRef = useRef(false);
+  const mountedRef = useRef(false);
+  const latestRef = useRef({ disabled, sending, onSend, context });
+  useLayoutEffect(() => {
+    latestRef.current = { disabled, sending, onSend, context };
+  });
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   // The box registers how to focus it as it mounts, and undoes that as it unmounts.
   const attach = useCallback(
     (node: HTMLTextAreaElement | null) => {
@@ -504,7 +640,7 @@ export function AgentComposer({
   const addFiles = useCallback(
     (added: readonly File[]): void => {
       const source = attachmentsRef.current;
-      if (!source || added.length === 0) return;
+      if (!mountedRef.current || !source || added.length === 0) return;
       const room = Math.max(0, maxCount - filesRef.current.length);
       setTooMany(added.length > room);
       const taken = added.slice(0, room).map((file): ComposerFile => {
@@ -569,8 +705,8 @@ export function AgentComposer({
   const registerAdd = attachments?.registerAdd;
   useEffect(() => registerAdd?.(addFiles), [registerAdd, addFiles]);
 
-  // Leaving: uploads stop, files never sent are discarded, thumbnails freed.
-  useEffect(
+  // Leaving: abort before late upload callbacks can run, discard unsent files and free thumbnails.
+  useLayoutEffect(
     () => () => {
       for (const file of filesRef.current) {
         file.controller?.abort();
@@ -594,12 +730,17 @@ export function AgentComposer({
     !blocked &&
     !disabled &&
     !sending &&
-    !waiting;
+    !waiting &&
+    !preparing;
   const showStop =
-    running && empty && files.length === 0 && onStop !== undefined;
+    running &&
+    (disabled || (empty && files.length === 0)) &&
+    onStop !== undefined;
 
   function submit(): void {
-    if (!canSend) return;
+    if (!canSend || submissionRef.current) return;
+    submissionRef.current = true;
+    setContextError(false);
     const carried = filesRef.current;
     if (!uploading) {
       send(
@@ -617,8 +758,10 @@ export function AgentComposer({
           : (uploadsRef.current.get(file.key) ?? Promise.resolve(null)),
       ),
     ).then((uploaded) => {
+      if (!mountedRef.current) return;
       setWaiting(false);
       if (uploaded.every((file) => file !== null)) send(uploaded, carried);
+      else submissionRef.current = false;
     });
   }
 
@@ -627,8 +770,14 @@ export function AgentComposer({
     carried: readonly ComposerFile[],
   ): void {
     const sent = content;
-    const taken = onSend(sent, context?.build(), uploaded);
-    const clear = (): void => {
+    setPreparing(true);
+    const finish = (ok: boolean, failed = false): void => {
+      submissionRef.current = false;
+      if (!mountedRef.current) return;
+      setPreparing(false);
+      setContextError(failed);
+      if (!ok) return;
+      setContent((current) => (current === sent ? '' : current));
       for (const file of carried) {
         if (file.preview) URL.revokeObjectURL(file.preview);
         uploadsRef.current.delete(file.key);
@@ -637,18 +786,35 @@ export function AgentComposer({
       setFiles((current) => current.filter((file) => !sentKeys.has(file.key)));
       setTooMany(false);
     };
-    if (taken === true) {
-      setContent('');
-      clear();
-    } else if (taken !== false)
-      void taken.then(
-        (ok) => {
-          if (!ok) return;
-          setContent((current) => (current === sent ? '' : current));
-          clear();
-        },
-        () => undefined,
-      );
+    const dispatch = (snapshot: PageContext | undefined): void => {
+      if (
+        !mountedRef.current ||
+        latestRef.current.disabled ||
+        latestRef.current.sending
+      ) {
+        finish(false);
+        return;
+      }
+      try {
+        const taken = latestRef.current.onSend(sent, snapshot, uploaded);
+        if (typeof taken === 'boolean') finish(taken);
+        else
+          void taken.then(
+            (ok) => finish(ok),
+            () => finish(false, true),
+          );
+      } catch {
+        finish(false, true);
+      }
+    };
+    try {
+      const built = latestRef.current.context?.build();
+      if (built instanceof Promise)
+        void built.then(dispatch, () => finish(false, true));
+      else dispatch(built);
+    } catch {
+      finish(false, true);
+    }
   }
 
   function onPaste(event: ClipboardEvent<HTMLTextAreaElement>): void {
@@ -692,6 +858,7 @@ export function AgentComposer({
     <ComposerContextChips
       chips={context.chips}
       onRemove={context.onRemove}
+      inspect={context.inspect}
       labels={words}
     />
   ) : null;
@@ -781,7 +948,7 @@ export function AgentComposer({
       title={words.send}
       data-testid='chat-send'
     >
-      {sending || waiting ? <Spinner /> : <ArrowUpIcon />}
+      {sending || waiting || preparing ? <Spinner /> : <ArrowUpIcon />}
     </Button>
   );
 
@@ -864,6 +1031,11 @@ export function AgentComposer({
       </InputGroup>
       {tooLongNote}
       {fileNote}
+      {contextError ? (
+        <p role='alert' className='text-xs text-destructive'>
+          {words.contextFailed ?? defaultAgentComposerLabels.contextFailed}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -139,7 +139,7 @@ export type ProjectTarget = string | RowRef;
 
 /**
  * `issue.create`: a new issue, as `POST /api/projects/issues` takes it (`CreateIssueRequest`), with targets where it names
- * other issues or a project. `start: false` sets an agent executor without starting its work now.
+ * other issues or a project.
  */
 export interface IssueCreateParams {
   readonly title: string;
@@ -155,7 +155,6 @@ export interface IssueCreateParams {
   readonly startDate?: string | null;
   readonly dueDate?: string | null;
   readonly blockedBy?: readonly IssueTarget[];
-  readonly start?: boolean;
 }
 
 /** The fields `issue.update` may change; at least one. Changing `statusKey` moves the issue as its decider may. */
@@ -184,7 +183,6 @@ export interface IssueFieldChanges {
 export interface IssueUpdateParams {
   readonly issue: IssueTarget;
   readonly set: IssueFieldChanges;
-  readonly start?: boolean;
 }
 
 /** `comment.create`: a comment or a reply. Mentions wake agents as any person's comment does; `/note` wakes none. */

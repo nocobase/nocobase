@@ -1,5 +1,5 @@
 import type { Config } from '@oclif/core';
-import { existsSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import {
   mkdir,
   mkdtemp,
@@ -13,8 +13,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import type { PluginCapability } from '../../../tools/create-plugin/src/lib/capabilities.ts';
-import { createPlugin } from '../../../tools/create-plugin/src/lib/scaffold.ts';
+import type { PluginCapability } from '@nocobase/create-plugin/src/lib/capabilities.ts';
+import { createPlugin } from '@nocobase/create-plugin/src/lib/scaffold.ts';
 import { loadTestConfig, runCommand } from './helpers.ts';
 
 const created: string[] = [];
@@ -38,18 +38,28 @@ function moduleDirectory(packageName: string): string {
 }
 
 /**
- * Where the fixture's workspace dependencies live, relative to `packages/`.
- *
- * They are linked from their source directories rather than resolved by name, because the CLI does not depend on
- * them — the fixture only needs them on disk for the generated app to import. The paths are spelled out because the
- * four sit in three different category directories.
+ * The workspace packages the generated app imports. The CLI does not use them itself; they are devDependencies of
+ * this package only so the fixture can link them from this package's own `node_modules`, and so the workspace graph
+ * knows this test reads them.
  */
-const FIXTURE_DEPENDENCY_DIRECTORIES: Readonly<Record<string, string>> = {
-  '@nocobase/app-client': 'app/app-client',
-  '@nocobase/app-server': 'app/app-server',
-  '@nocobase/dev-config': 'tools/dev-config',
-  '@nocobase/service-provider': 'libs/service-provider',
-};
+const FIXTURE_DEPENDENCIES = [
+  '@nocobase/app-client',
+  '@nocobase/app-server',
+  '@nocobase/dev-config',
+  '@nocobase/service-provider',
+] as const;
+
+/** A declared dependency's directory, read from the link pnpm put in this package's `node_modules`. */
+function declaredDependencyDirectory(packageName: string): string {
+  return realpathSync(
+    path.join(
+      import.meta.dirname,
+      '..',
+      'node_modules',
+      ...packageName.split('/'),
+    ),
+  );
+}
 
 async function createLoopFixture(
   capabilities: readonly PluginCapability[],
@@ -100,12 +110,8 @@ async function createLoopFixture(
       'junction',
     );
   }
-  for (const dependency of Object.keys(FIXTURE_DEPENDENCY_DIRECTORIES)) {
-    const packageDirectory = path.resolve(
-      import.meta.dirname,
-      '../../..',
-      FIXTURE_DEPENDENCY_DIRECTORIES[dependency],
-    );
+  for (const dependency of FIXTURE_DEPENDENCIES) {
+    const packageDirectory = declaredDependencyDirectory(dependency);
     for (const modulesRoot of [
       path.join(appRoot, 'node_modules'),
       path.join(workspaceRoot, 'node_modules'),

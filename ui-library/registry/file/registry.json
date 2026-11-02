@@ -1,0 +1,142 @@
+{
+  "items": [
+    {
+      "name": "file-component-ui",
+      "type": "registry:block",
+      "title": "NocoBase File Component UI",
+      "description": "Application-owned upload, list, thumbnail, and preview components for business file endpoints.",
+      "dependencies": [
+        "@nocobase/app-plugin-file@>=1.0.0-beta.0 <2.0.0",
+        "lucide-react@^0.487.0",
+        "react-markdown@^10.1.0",
+        "remark-gfm@^4.0.1",
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "@silurus/ooxml@0.85.1"
+      ],
+      "registryDependencies": [
+        "button",
+        "dialog",
+        "spinner",
+        "@nocobase/attachment-list"
+      ],
+      "docs": "Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them.",
+      "meta": {
+        "group": "File",
+        "iframeHeight": 740
+      },
+      "categories": ["file"],
+      "files": [
+        {
+          "path": "file-component-ui/components/file-list.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/components/file-list.tsx"
+        },
+        {
+          "path": "file-component-ui/components/file-preview-dialog.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/components/file-preview-dialog.tsx"
+        },
+        {
+          "path": "file-component-ui/components/file-preview-field.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/components/file-preview-field.tsx"
+        },
+        {
+          "path": "file-component-ui/components/file-thumbnail.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/components/file-thumbnail.tsx"
+        },
+        {
+          "path": "file-component-ui/components/file-upload-field.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/components/file-upload-field.tsx"
+        },
+        {
+          "path": "file-component-ui/components/previewers/file-preview-content.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/components/previewers/file-preview-content.tsx"
+        },
+        {
+          "path": "file-component-ui/components/previewers/office-open-xml-preview.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/components/previewers/office-open-xml-preview.tsx"
+        },
+        {
+          "path": "file-component-ui/index.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/index.ts"
+        },
+        {
+          "path": "file-component-ui/lib/file-preview.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/lib/file-preview.ts"
+        },
+        {
+          "path": "file-component-ui/lib/file-url.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/lib/file-url.ts"
+        },
+        {
+          "path": "file-component-ui/lib/message-key.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/lib/message-key.ts"
+        },
+        {
+          "path": "file-component-ui/locales/de-DE.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/de-DE.ts"
+        },
+        {
+          "path": "file-component-ui/locales/en-US.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/en-US.ts"
+        },
+        {
+          "path": "file-component-ui/locales/es-ES.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/es-ES.ts"
+        },
+        {
+          "path": "file-component-ui/locales/fr-FR.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/fr-FR.ts"
+        },
+        {
+          "path": "file-component-ui/locales/id-ID.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/id-ID.ts"
+        },
+        {
+          "path": "file-component-ui/locales/ja-JP.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/ja-JP.ts"
+        },
+        {
+          "path": "file-component-ui/locales/pt-BR.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/pt-BR.ts"
+        },
+        {
+          "path": "file-component-ui/locales/vi-VN.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/vi-VN.ts"
+        },
+        {
+          "path": "file-component-ui/locales/zh-CN.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/zh-CN.ts"
+        },
+        {
+          "path": "file-component-ui/locales/zh-TW.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/locales/zh-TW.ts"
+        },
+        {
+          "path": "file-component-ui/types.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-file-component-ui/types.ts"
+        }
+      ]
+    }
+  ]
+}

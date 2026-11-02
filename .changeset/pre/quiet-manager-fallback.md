@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-plugin-agents': patch
-'@nocobase/studio': patch
 '@nocobase/agent-protocol': patch
 '@nocobase/agent-runner': patch
 ---

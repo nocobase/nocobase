@@ -391,7 +391,7 @@ describe('SSH transport', () => {
     const run = vi.fn<RunCommand>();
     for (const values of [
       { ...flags, dir: 'relative' },
-      { ...flags, app: 'studio@beta' },
+      { ...flags, app: 'example-app@beta' },
     ])
       await expect(
         runRemote('install', values, undefined, [], {

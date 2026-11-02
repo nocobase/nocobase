@@ -40,9 +40,14 @@ export function NewIssueButton({
       }
     >
       <PlusIcon data-icon='inline-start' />
-      {t('issues.new')}
+      {/* A phone shows the plus alone, beside the page's title. */}
+      <span className='max-sm:sr-only'>{t('issues.new')}</span>
       {variant === 'default' ? (
-        <Kbd data-icon='inline-end' aria-hidden='true'>
+        <Kbd
+          data-icon='inline-end'
+          aria-hidden='true'
+          className='max-sm:hidden'
+        >
           C
         </Kbd>
       ) : null}

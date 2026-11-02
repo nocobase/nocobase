@@ -3,7 +3,7 @@
  * Proposals that carry a file: a new file entry or a file's replacement, uploaded with the proposal or later through a
  * one-time ticket, decided like any other; rejecting or withdrawing deletes the file.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { Hono } from 'hono';
@@ -143,11 +143,18 @@ describe('proposals with files', () => {
       { kind: 'create', space: project, reason: 'Two.' },
       fixture('sample.json'),
     );
-    expect(await storedFiles()).toHaveLength(2);
+    const uploaded = await storedFiles();
+    expect(uploaded).toHaveLength(2);
+    for (const file of uploaded)
+      expect(existsSync(path.join(h.storage, file.key))).toBe(true);
     await proposals.reject(h.user('lead'), rejected.id, { comment: 'No.' });
+    expect((await storedFiles()).map((file) => file.id)).toEqual([
+      withdrawn.file!.id,
+    ]);
     await proposals.withdraw(h.user('member'), withdrawn.id);
-    await h.knowledge.files.idle();
     expect(await storedFiles()).toEqual([]);
+    for (const file of uploaded)
+      expect(existsSync(path.join(h.storage, file.key))).toBe(false);
   });
 
   it('takes an agent’s file through a one-time ticket', async () => {

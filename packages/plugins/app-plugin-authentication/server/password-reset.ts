@@ -1,7 +1,17 @@
+import { assertAuthEmailConfig, type AuthEmailConfig } from './email-config.js';
 import { createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { MailExecutions, type EmailMessage } from '@nocobase/mailer';
-import type { Mailer } from '@nocobase/app-server/mailer';
+import {
+  createMailTransport,
+  MailExecutions,
+  type MailTransport,
+  type EmailMessage,
+} from '@nocobase/mailer';
+import { resolveChannelType } from '@nocobase/app-server/config';
+import {
+  isMailChannelConfig,
+  type EmailChannelConfig,
+} from '@nocobase/mailer/config';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   APIError,
@@ -18,13 +28,15 @@ type ResetData = Parameters<ResetSender>[0];
 
 export interface PasswordResetConfig {
   readonly enabled?: boolean;
+  /** @deprecated Legacy applications only. Configure auth.email instead. */
   readonly emailChannel?: string;
   readonly template?: (data: ResetData, appName: string) => EmailMessage;
 }
 
 export interface PasswordResetServices {
-  readonly mailer?: Mailer;
+  readonly legacyChannels?: Readonly<Record<string, unknown>>;
   readonly increment?: (key: string) => Promise<number>;
+  readonly warning?: (message: string) => void;
   readonly report?: (category: string) => void;
   readonly executions?: MailExecutions;
 }
@@ -34,6 +46,7 @@ export class PasswordResetPolicy {
   public readonly automatic: boolean;
   private readonly sender: ResetSender | undefined;
   private readonly executions: MailExecutions;
+  private transport?: MailTransport;
   private readonly buckets = new Map<
     string,
     { count: number; expires: number }
@@ -46,21 +59,45 @@ export class PasswordResetPolicy {
     private readonly options: BetterAuthOptions,
     private readonly connection: DatabaseConnection,
     private readonly services: PasswordResetServices,
+    email?: AuthEmailConfig,
   ) {
+    assertAuthEmailConfig(email);
     this.executions = services.executions ?? new MailExecutions();
     const configuredSender = options.emailAndPassword?.sendResetPassword;
     const custom =
       typeof configuredSender === 'function' ? configuredSender : undefined;
-    const channel = config.emailChannel ?? 'system-email';
+    const selected =
+      email ??
+      (!custom && config.enabled === true
+        ? legacyEmailConfig(
+            services.legacyChannels?.[config.emailChannel ?? 'system-email'],
+          )
+        : undefined);
     this.automatic =
       !custom &&
       config.enabled === true &&
       configuredResetOrigin(options.baseURL) &&
-      services.mailer?.available(channel) === true;
+      selected !== undefined;
     this.available =
       options.emailAndPassword?.enabled !== false &&
       config.enabled !== false &&
       (Boolean(custom) || this.automatic);
+    if (this.available) {
+      if (custom && email !== undefined)
+        services.warning?.(
+          'auth.email is unused for password reset; auth.emailAndPassword.sendResetPassword takes precedence.',
+        );
+      if (config.emailChannel !== undefined && (custom || email !== undefined))
+        services.warning?.(
+          custom
+            ? 'auth.passwordReset.emailChannel is unused; auth.emailAndPassword.sendResetPassword takes precedence.'
+            : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
+        );
+      if (this.automatic && email === undefined)
+        services.warning?.(
+          'auth.passwordReset.emailChannel is deprecated. Migrate to auth.email; legacy applications remain supported.',
+        );
+    }
     this.sender = this.available
       ? (custom ??
         (async (data, request) => {
@@ -68,9 +105,10 @@ export class PasswordResetPolicy {
             data,
             options.appName ?? 'NocoBase',
           );
-          const result = await services.mailer!.send(channel, message, {
-            signal: request?.signal,
-          });
+          const sendOptions = { signal: request?.signal };
+          // Lazily allocate once: transaction-bound administration instances never open an unused sender.
+          const transport = (this.transport ??= createMailTransport(selected!));
+          const result = await transport.send(message, sendOptions);
           if (result.status !== 'accepted')
             services.report?.(result.error.category);
         }))
@@ -264,8 +302,9 @@ export class PasswordResetPolicy {
     return bucket.count;
   }
 
-  public close(): Promise<void> {
-    return this.executions.close();
+  public async close(): Promise<void> {
+    await this.executions.close();
+    await this.transport?.close();
   }
 
   public runRequest<T>(address: string | undefined, handler: () => T): T {
@@ -360,4 +399,22 @@ export function defaultPasswordResetEmail(
     text: `Reset your ${appName} password using this link:\n${data.url}\n\n请通过此链接重置密码。若非本人申请，请忽略此邮件。\nIf you did not request this, ignore this email.`,
     html: `<p>Reset your ${escape(appName)} password / 重置密码</p><p><a href="${escape(data.url)}">Reset password / 重置密码</a></p><p>If you did not request this, ignore this email. 若非本人申请，请忽略此邮件。</p>`,
   };
+}
+
+/** Preserve legacy channel aliases, validation and enablement without a host sending service. */
+function legacyEmailConfig(channel: unknown): EmailChannelConfig | undefined {
+  if (!channel || typeof channel !== 'object') return undefined;
+  try {
+    const type: unknown = Reflect.get(channel, 'type');
+    const provider: unknown = Reflect.get(channel, 'provider');
+    const normalized = {
+      ...channel,
+      provider: resolveChannelType({ type, provider }),
+    };
+    return isMailChannelConfig(normalized) && normalized.enabled !== false
+      ? normalized
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }

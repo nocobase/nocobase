@@ -1,7 +1,7 @@
 /* The default application template's whole stylesheet, so the preview renders the items exactly as an application
    does: its theme presets and tokens, and the treatments it gives every page (focus, card frames, line tabs, overlays,
    table headers, pointer cursors, scrollbars). Nothing here overrides a token; change the template, not the preview. */
-@import '../../packages/templates/app-template-default/client/styles.css';
+@import '@nocobase/app-template-default/client/styles.css';
 
 @source '../registry';
 @source './';

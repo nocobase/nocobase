@@ -1,4 +1,6 @@
-// Host-side Git must never execute configuration or hooks supplied by an agent's writable checkout.
+// Host-side Git in an agent's checkout. The checkout's configuration is the agent's and applies; every call here
+// overrides the settings below (hooks, fsmonitor, credentials, remote URL, protocols), and only redirected metadata,
+// which would make host Git read another repository, is refused.
 import { lstat, readdir, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -21,29 +23,43 @@ export interface TaskGitContext {
 export interface TaskGitOptions extends GitInvocationOptions {
   /** Run credentials replace every host helper; rejection must not fall back to machine credentials. */
   readonly auth?: GitAuth;
-  /** Submodules may share credentials only within their parent's HTTP origin. Defaults to the repository URL. */
-  readonly authScope?: string;
 }
 
-// Keep this list narrow: new Git configuration can introduce new ways to execute code or redirect credentials.
-// Overrides below neutralize the explicitly listed executable settings. Multi-valued URL rewrites and includes
-// cannot reliably be erased with -c; reject those (and unknown settings) before invoking Git in the checkout.
-const SAFE_KEYS = [
-  /^core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|symlinks|autocrlf|safecrlf|eol|hooksPath|fsmonitor|sshCommand|sparsecheckout|sparsecheckoutcone)$/iu,
-  /^user\.(name|email)$/iu,
-  /^remote\.[^.]+\.(url|pushurl|fetch)$/iu,
-  /^branch\..+\.(remote|merge|rebase|vscode-merge-base)$/iu,
-  /^submodule\..+\.(url|active|update|branch|ignore|fetchrecursesubmodules)$/iu,
-  /^submodule\.active$/iu,
-  /^pull\.rebase$/iu,
-  /^push\.(default|autosetupremote)$/iu,
-  /^rerere\.enabled$/iu,
-  /^commit\.gpgsign$/iu,
-  /^credential\.helper$/iu,
-  /^extensions\.(objectformat|worktreeconfig)$/iu,
-  /^gc\.(auto|pruneexpire)$/iu,
-  /^maintenance\.auto$/iu,
-];
+/** Git in the runner's cache, with the same overrides as `taskGit`. */
+export async function cacheGit(
+  cache: string,
+  url: string,
+  args: string[],
+  env: Record<string, string> = {},
+  options: GitInvocationOptions = {},
+): Promise<string> {
+  const helper =
+    Object.keys(env).length === 0
+      ? await git(
+          ['config', '--global', '--get-urlmatch', 'credential.helper', url],
+          path.dirname(cache),
+        ).catch(() => '')
+      : '';
+  return git(
+    [
+      '-c',
+      `core.hooksPath=${path.join(cache, 'hooks')}`,
+      '-c',
+      'core.fsmonitor=false',
+      '-c',
+      'core.sshCommand=ssh',
+      '-c',
+      'credential.helper=',
+      ...(helper
+        ? ['--config-env=credential.helper=NOCOBASE_RUNNER_CACHE_HELPER']
+        : []),
+      ...args,
+    ],
+    cache,
+    { ...env, NOCOBASE_RUNNER_CACHE_HELPER: helper },
+    options,
+  );
+}
 
 async function regularFile(file: string): Promise<boolean> {
   const info = await lstat(file).catch((error: NodeJS.ErrnoException) => {
@@ -91,53 +107,31 @@ export async function taskGitDir(context: TaskGitContext): Promise<string> {
   return gitDir;
 }
 
-async function checkConfig(
-  config: string,
-  context: TaskGitContext,
-): Promise<void> {
-  if (!(await regularFile(config))) return;
-  // --file + --no-includes, in the protected cache: parsing never loads checkout includes or executes its settings.
-  const entries = await git(
-    ['config', '--file', config, '--no-includes', '--null', '--list'],
-    context.cache,
-  );
-  for (const entry of entries.split('\0')) {
-    if (entry === '') continue;
-    const key = entry.split('\n', 1)[0] ?? '';
-    if (
-      key.toLowerCase() === 'core.worktree' &&
-      config !== path.join(context.dir, '.git', 'config')
-    ) {
-      const target = path.resolve(
-        path.dirname(config),
-        entry.slice(key.length + 1),
-      );
-      if (isInside(context.dir, target)) continue;
-    }
-    // Git copies standard update policies from .gitmodules during initialization; custom commands remain unsafe.
-    const customSubmoduleUpdate =
-      /^submodule\..+\.update$/iu.test(key) &&
-      entry
-        .slice(key.length + 1)
-        .trimStart()
-        .startsWith('!');
-    if (
-      customSubmoduleUpdate ||
-      !SAFE_KEYS.some((pattern) => pattern.test(key))
-    )
-      throw new CheckoutError(
-        `${config}: unsafe or unsupported Git configuration ${key}; remove it before resuming or pushing`,
-      );
-  }
-}
-
-/** Checks existing submodule configs too: submodule update launches child Git processes. */
+/** Refuses redirected submodule metadata: submodule commands launch child Git processes in it. */
 async function checkMetadata(
   dir: string,
   context: TaskGitContext,
 ): Promise<void> {
-  await checkConfig(path.join(dir, 'config'), context);
-  await checkConfig(path.join(dir, 'config.worktree'), context);
+  // core.worktree is the one setting that moves host Git to another directory.
+  // A linked worktree's plain `git config` writes the cache's common config, so it is read too.
+  for (const config of [
+    ...(dir === path.join(context.dir, '.git')
+      ? []
+      : [path.join(context.cache, 'config')]),
+    path.join(dir, 'config'),
+    path.join(dir, 'config.worktree'),
+  ]) {
+    if (!(await regularFile(config))) continue;
+    const worktree = await git(
+      ['config', '--file', config, '--no-includes', '--get', 'core.worktree'],
+      context.cache,
+    ).catch(() => '');
+    if (
+      worktree !== '' &&
+      !isInside(context.dir, path.resolve(path.dirname(config), worktree))
+    )
+      throw new CheckoutError(`${config}: redirected Git worktree`);
+  }
   const modules = path.join(dir, 'modules');
   const walk = async (current: string): Promise<void> => {
     const info = await lstat(current).catch((error: NodeJS.ErrnoException) => {
@@ -149,8 +143,7 @@ async function checkMetadata(
       throw new CheckoutError(`${current}: redirected submodule metadata`);
     for (const entry of await readdir(current, { withFileTypes: true })) {
       const file = path.join(current, entry.name);
-      if (entry.name === 'config') await checkConfig(file, context);
-      else if (entry.name === 'config.worktree' || entry.name === 'commondir')
+      if (entry.name === 'commondir')
         throw new CheckoutError(`${file}: redirected submodule configuration`);
       else if (
         !['objects', 'refs', 'logs', 'hooks'].includes(entry.name) &&
@@ -173,14 +166,6 @@ async function checkMetadata(
     for (const entry of entries.split('\0')) {
       const [key] = entry.split('\n', 1);
       if (key === undefined || key === '') continue;
-      if (
-        !/^submodule\..+\.(path|url|branch|ignore|shallow|update|fetchrecursesubmodules)$/u.test(
-          key,
-        )
-      )
-        throw new CheckoutError(
-          `${manifest}: unsupported submodule configuration ${key}`,
-        );
       if (!/^submodule\..+\.path$/u.test(key)) continue;
       const child = path.resolve(worktree, entry.slice(key.length + 1));
       if (child === worktree || !isInside(worktree, child))
@@ -219,13 +204,19 @@ export async function taskGit(
   const trustedHelpers =
     options.auth === undefined
       ? await git(
-          ['config', '--get-urlmatch', 'credential.helper', context.url],
-          context.cache,
+          [
+            'config',
+            '--global',
+            '--get-urlmatch',
+            'credential.helper',
+            context.url,
+          ],
+          path.dirname(context.cache),
         ).catch(() => '')
       : '';
   const fileTransport = await git(
-    ['config', '--get', 'protocol.file.allow'],
-    context.cache,
+    ['config', '--global', '--get', 'protocol.file.allow'],
+    path.dirname(context.cache),
   ).catch(() => 'user');
   const settings = [
     `core.hooksPath=${path.join(context.cache, 'hooks')}`,
@@ -256,14 +247,15 @@ export async function taskGit(
       helperEnv[name] = helper;
       return `--config-env=credential.helper=${name}`;
     });
+  // Shared workspaces may have an Agent committing: host status must not refresh or lock the index.
   return git(
     settings
       .flatMap((value) => ['-c', value])
-      .concat(GIT_LOW_SPEED_CONFIG, helperArgs, args),
+      .concat(['--no-optional-locks'], GIT_LOW_SPEED_CONFIG, helperArgs, args),
     context.dir,
     {
       ...env,
-      ...gitAuthEnv(options.auth, options.authScope ?? context.url),
+      ...gitAuthEnv(options.auth, context.url),
       ...helperEnv,
     },
     options,

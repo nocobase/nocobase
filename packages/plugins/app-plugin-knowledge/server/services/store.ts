@@ -320,6 +320,19 @@ export async function findSpaceById(
   return (await spacesRepo(conn).findOne({ filter: { id } })) ?? null;
 }
 
+/** Existing candidates only; no implicit page limit and no space creation. */
+export async function allSpaceRefs(
+  conn: DatabaseConnection,
+): Promise<SpaceRef[]> {
+  const records = await spacesRepo(conn).findMany({
+    select: (select) => select.fields('scope', 'scopeId'),
+    sort: (sort) => [sort.field('id').asc()],
+  });
+  return records.map(({ scope, scopeId }) => ({
+    scope,
+    scopeId: scopeId ?? '',
+  }));
+}
 /** The spaces of `refs` that exist, by `spaceKey`. */
 export async function spacesOf(
   conn: DatabaseConnection,

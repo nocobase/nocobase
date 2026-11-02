@@ -5,6 +5,7 @@ import {
   type MailResult,
   type MailSendOptions,
   type MailTransport,
+  type EmailChannelConfig,
 } from '@nocobase/mailer';
 import {
   createServiceToken,
@@ -13,6 +14,7 @@ import {
 } from '@nocobase/service-provider';
 import {
   defineAppConfig,
+  resolveChannelType,
   envString,
   type AppConfigDefinition,
   type AppConfigFactory,
@@ -20,10 +22,12 @@ import {
 } from '../config/index.js';
 import type { AppPluginApplication } from '../plugins/index.js';
 
+/** @deprecated Import MailChannelsConfig from @nocobase/app-plugin-notification-providers/config. */
 export interface MailChannelsConfig {
   readonly channels: Readonly<Record<string, unknown>>;
 }
 
+/** @deprecated Own a transport from @nocobase/mailer in the sending service. */
 export interface Mailer {
   available(channel: string): boolean;
   send(
@@ -34,34 +38,62 @@ export interface Mailer {
   close(): Promise<void>;
 }
 
+/** @deprecated Own a transport from @nocobase/mailer in the sending service. */
 export const mailerToken: ServiceToken<Mailer> = createServiceToken<Mailer>(
   '@nocobase/app-server/mailer',
 );
 
+/** @deprecated Import validateMailChannels from @nocobase/app-plugin-notification-providers/config. */
 export const validateMailChannels: ConfigValidator<MailChannelsConfig> = (
   config,
   context,
 ) => {
   for (const [name, channel] of Object.entries(config.channels ?? {})) {
+    if (!channel || typeof channel !== 'object') continue;
     if (
-      !channel ||
-      typeof channel !== 'object' ||
-      Reflect.get(channel, 'enabled') === false
+      Reflect.get(channel, 'enabled') === false &&
+      Reflect.get(channel, 'type') === undefined &&
+      Reflect.get(channel, 'provider') === undefined
     )
       continue;
-    const provider: unknown = Reflect.get(channel, 'provider');
-    if (
-      (provider === 'smtp' || provider === 'resend') &&
-      !isMailChannelConfig(channel)
-    )
+    try {
+      const normalized = normalizeChannel(channel);
+      if (Reflect.get(channel, 'enabled') === false) continue;
+      const provider: unknown = Reflect.get(normalized, 'provider');
+      if (
+        (provider === 'smtp' || provider === 'resend') &&
+        !isMailChannelConfig(normalized)
+      )
+        context.error(
+          `channels.${name}`,
+          'Invalid built-in email channel configuration.',
+        );
+    } catch (error) {
       context.error(
         `channels.${name}`,
-        'Invalid built-in email channel configuration.',
+        error instanceof Error ? error.message : String(error),
       );
+    }
   }
 };
 
-/** Declare the existing notification section without installing any notification plugin. */
+function normalizeChannel(channel: object): object {
+  const type: unknown = Reflect.get(channel, 'type');
+  const provider: unknown = Reflect.get(channel, 'provider');
+  return { ...channel, provider: resolveChannelType({ type, provider }) };
+}
+
+function mailChannel(channel: unknown): EmailChannelConfig | undefined {
+  if (!channel || typeof channel !== 'object') return undefined;
+  try {
+    const normalized = normalizeChannel(channel);
+    return isMailChannelConfig(normalized) ? normalized : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** @deprecated Import defineMailChannelsConfig from @nocobase/app-plugin-notification-providers/config. */
 export function defineMailChannelsConfig<T extends MailChannelsConfig>(
   definition: AppConfigDefinition<T>,
 ): AppConfigFactory<T> {
@@ -87,18 +119,19 @@ export function defineMailChannelsConfig<T extends MailChannelsConfig>(
   });
 }
 
+/** @deprecated Own a transport from @nocobase/mailer in the sending service. */
 export function createMailer(config: MailChannelsConfig): Mailer {
   const transports = new Map<string, MailTransport>();
   let closed = false;
   const available = (channel: string): boolean => {
-    const value = config.channels[channel];
-    return !closed && isMailChannelConfig(value) && value.enabled !== false;
+    const value = mailChannel(config.channels[channel]);
+    return !closed && value !== undefined && value.enabled !== false;
   };
   return {
     available,
     async send(channel, message, options): Promise<MailResult> {
-      const value = config.channels[channel];
-      if (!available(channel) || !isMailChannelConfig(value))
+      const value = mailChannel(config.channels[channel]);
+      if (closed || !value || value.enabled === false)
         return {
           status: 'failed',
           disposition: 'never',
@@ -124,6 +157,7 @@ export function createMailer(config: MailChannelsConfig): Mailer {
   };
 }
 
+/** @deprecated Own a transport and its lifecycle in the sending service. */
 export class MailerProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-server/mailer';
   public override register(): void {

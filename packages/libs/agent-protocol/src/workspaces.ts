@@ -5,9 +5,8 @@
  * A runner keeps one long-lived working directory per subject. It cannot tell on its own when the work there is over:
  * a branch merged with a squash is not in the default branch's history, and a subject may be reopened. So it reports
  * each directory with the last run that worked in it, and the application, which knows the run's subject, answers
- * which of those runs belong to subjects whose work has ended. The runner removes those directories, unless they hold
- * something that was never pushed, and the application keeps what the runner reported, with the free space on the disk
- * that holds them.
+ * which of those runs belong to subjects whose work has ended. The runner removes those directories whatever they hold,
+ * and the application keeps what the runner reported, with the free space on the disk that holds them.
  *
  * Added within protocol 7 as a capability rather than a version: an application that accepts reports says so in every
  * heartbeat answer (`HeartbeatResponse.workspaces`), and a runner reports only to an application that does. A runner
@@ -31,7 +30,8 @@ export interface WorkspaceReport {
   readonly sizeBytes?: number;
   /**
    * The directory holds work that may not be on the remote: changes not committed, or commits past what the runner
-   * last saw the remote task branch hold. Such a directory is never removed on the application's word.
+   * last saw the remote task branch hold. Such a directory is kept while its work goes on, and removed once the
+   * application says its work is over.
    */
   readonly unpushed: boolean;
   /** When a run last used it, RFC 3339. */

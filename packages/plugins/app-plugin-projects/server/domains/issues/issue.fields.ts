@@ -7,6 +7,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
 import {
   ISSUE_DESCRIPTION_MAX,
+  ISSUE_ACCEPTANCE_MAX,
   ISSUE_PROGRESS_MAX,
   ISSUE_TITLE_MAX,
   type CreateIssueRequest,
@@ -50,11 +51,18 @@ const MAX_PARENT_DEPTH = 50;
 /** Status writes and progress-only writes share these rules, including system events. */
 export function progressValues(
   before: Issue,
-  patch: Pick<UpdateIssueRequest, 'statusKey' | 'needsYou' | 'next'>,
+  patch: Pick<
+    UpdateIssueRequest,
+    'statusKey' | 'needsYou' | 'next' | 'acceptance'
+  >,
 ): IssueValues {
   const target = patch.statusKey ?? before.statusKey;
   const needsOwner = target === 'blocked' || target === 'in_review';
-  const values: { needsYou?: string | null; next?: string | null } = {};
+  const values: {
+    needsYou?: string | null;
+    next?: string | null;
+    acceptance?: string | null;
+  } = {};
   const text =
     patch.needsYou === undefined
       ? undefined
@@ -66,6 +74,15 @@ export function progressValues(
       ? patch.next
       : null;
   if (target === 'done' || target === 'cancelled') values.next = null;
+  // The delivery report outlives the review; only the next one replaces it.
+  if (patch.acceptance !== undefined)
+    values.acceptance = optionalText(
+      patch.acceptance,
+      'acceptance',
+      ISSUE_ACCEPTANCE_MAX,
+    )?.trim()
+      ? patch.acceptance
+      : null;
   return values;
 }
 
@@ -409,7 +426,7 @@ export async function resolveUpdate(
   const catalog = ctx.statuses.catalog();
   let statusChange: Changes['status'];
   const progress = progressValues(before, patch);
-  for (const field of ['needsYou', 'next'] as const)
+  for (const field of ['needsYou', 'next', 'acceptance'] as const)
     if (progress[field] !== undefined && progress[field] !== before[field])
       values[field] = progress[field];
   if (patch.statusKey !== undefined) {

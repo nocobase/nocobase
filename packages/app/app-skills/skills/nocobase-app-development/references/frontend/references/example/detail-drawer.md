@@ -171,7 +171,11 @@ function ProjectDetail({
       // Show no record actions before the record has loaded or when it does not exist.
       footer={
         project ? (
-          <ProjectDetailActions project={project} onDeleted={afterDelete} />
+          <ProjectDetailActions
+            project={project}
+            onDeleted={afterDelete}
+            onUncertain={reloadPage}
+          />
         ) : undefined
       }
     >
@@ -189,9 +193,11 @@ function ProjectDetail({
 function ProjectDetailActions({
   project,
   onDeleted,
+  onUncertain,
 }: {
   readonly project: Project;
   readonly onDeleted: () => void;
+  readonly onUncertain: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   const location = useLocation();
@@ -212,6 +218,7 @@ function ProjectDetailActions({
       </Button>
       {/* The delete confirmation uses component state. On success, first let the list refresh and arrange focus, then close the drawer. */}
       <ProjectDeleteDialog
+        onUncertain={onUncertain}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         project={project}

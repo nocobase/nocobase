@@ -62,7 +62,6 @@ describe('what a deployment loads', () => {
   it('declares the development tooling as optional peers', () => {
     expect(optionalPeers.sort()).toEqual([
       '@nocobase/dev-config',
-      '@refinedev/cli',
       'prettier',
       'tar',
       'tsc-alias',

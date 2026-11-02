@@ -23,7 +23,7 @@ export function parseAppSpec(value: string): AppSpec {
   if (!match) {
     throw new InstallerError(
       'INVALID_USAGE',
-      '--app expects an application name, optionally followed by @<version or tag>, e.g. studio or @nocobase/studio@beta.',
+      '--app expects an application name, optionally followed by @<version or tag>, e.g. @acme/crm or @acme/crm@beta.',
       { exitCode: EXIT_INVALID },
     );
   }

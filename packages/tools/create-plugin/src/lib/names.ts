@@ -3,7 +3,6 @@ export const DIRECTORY_PREFIX = 'app-plugin-';
 
 const pluginNamePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u;
 const MAX_SKILL_NAME_LENGTH = 64;
-const SKILL_NAME_PREFIX = 'nocobase-app-plugin-';
 
 export interface PluginNames {
   readonly collectionName: string;
@@ -20,8 +19,9 @@ export function normalizePluginName(value: string | undefined): string {
   }
 
   let shortName = value.trim();
-  if (shortName.startsWith(PACKAGE_PREFIX)) {
-    shortName = shortName.slice(PACKAGE_PREFIX.length);
+  const scoped = /^@[a-z0-9][a-z0-9-]*\/app-plugin-(.+)$/u.exec(shortName);
+  if (scoped) {
+    shortName = scoped[1]!;
   } else if (shortName.startsWith(DIRECTORY_PREFIX)) {
     shortName = shortName.slice(DIRECTORY_PREFIX.length);
   }
@@ -31,7 +31,10 @@ export function normalizePluginName(value: string | undefined): string {
       'Plugin name must start with a lowercase letter and contain only lowercase letters, numbers, and single hyphens.',
     );
   }
-  if (`${SKILL_NAME_PREFIX}${shortName}`.length > MAX_SKILL_NAME_LENGTH) {
+  const skillName = scoped
+    ? value.trim().slice(1).replace('/', '-')
+    : `nocobase-app-plugin-${shortName}`;
+  if (skillName.length > MAX_SKILL_NAME_LENGTH) {
     throw new Error(
       `Plugin name is too long: the generated Agent Skill name must not exceed ${MAX_SKILL_NAME_LENGTH} characters.`,
     );
@@ -62,7 +65,9 @@ export function createPluginNames(value: string): PluginNames {
     collectionName: `appPlugin${symbolName}Records`,
     directoryName: `${DIRECTORY_PREFIX}${shortName}`,
     moduleName: symbolName[0].toLowerCase() + symbolName.slice(1),
-    packageName: `${PACKAGE_PREFIX}${shortName}`,
+    packageName: value.trim().startsWith('@')
+      ? value.trim()
+      : `${PACKAGE_PREFIX}${shortName}`,
     shortName,
     symbolName,
   };

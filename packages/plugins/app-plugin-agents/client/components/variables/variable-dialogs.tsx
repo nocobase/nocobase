@@ -1,6 +1,6 @@
 /**
  * Adding a variable (`target.name === null`), in the scope chosen in the dialog when the panel lists several, or
- * replacing one's value or whether only team runtimes receive it, and showing revealed values. The value field starts
+ * replacing one's value or whether only shared runtimes receive it, and showing revealed values. The value field starts
  * empty: stored values never reach the browser except through the audited reveal, and an empty value when replacing
  * keeps the stored one. "Take from the runtime" keeps a name only: the runtime that takes a run provides the value.
  *
@@ -93,9 +93,9 @@ export function VariableDialog({
         if (!open) requestClose();
       }}
     >
-      <DialogContent className='sm:max-w-md'>
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-md'>
+        <DialogHeader className='shrink-0'>
+          <DialogTitle className='pr-6 break-all'>
             {target?.name
               ? t('envVars.editTitle', { name: target.name })
               : t('envVars.addTitle')}
@@ -197,7 +197,7 @@ function VariableForm({
     if (problem || tooLong || valueMissing) return;
     setSaving(true);
     try {
-      // Replacing with an empty value keeps the stored one: only whether team runtimes alone receive it changes.
+      // Replacing with an empty value keeps the stored one: only whether shared runtimes alone receive it changes.
       await api.setVariable(
         scope.scope,
         scope.scopeId,
@@ -222,8 +222,12 @@ function VariableForm({
   }
 
   return (
-    <form onSubmit={(event) => void submit(event)} noValidate>
-      <FieldGroup>
+    <form
+      className='flex min-h-0 flex-1 flex-col gap-4'
+      onSubmit={(event) => void submit(event)}
+      noValidate
+    >
+      <FieldGroup className='-mx-4 min-h-0 w-auto flex-1 overflow-y-auto px-4 pb-1'>
         {scopes.length > 1 ? (
           <Field>
             <FieldLabel htmlFor='ag-env-scope'>{t('envVars.scope')}</FieldLabel>
@@ -330,21 +334,21 @@ function VariableForm({
             <FieldError>{saveError}</FieldError>
           </Field>
         ) : null}
-        <DialogFooter>
-          <Button
-            type='button'
-            variant='outline'
-            disabled={saving}
-            onClick={onCancel}
-          >
-            {t('actions.cancel')}
-          </Button>
-          <Button type='submit' disabled={saving}>
-            {saving ? <Spinner data-icon='inline-start' /> : null}
-            {t('actions.save')}
-          </Button>
-        </DialogFooter>
       </FieldGroup>
+      <DialogFooter className='shrink-0'>
+        <Button
+          type='button'
+          variant='outline'
+          disabled={saving}
+          onClick={onCancel}
+        >
+          {t('actions.cancel')}
+        </Button>
+        <Button type='submit' disabled={saving}>
+          {saving ? <Spinner data-icon='inline-start' /> : null}
+          {t('actions.save')}
+        </Button>
+      </DialogFooter>
     </form>
   );
 }

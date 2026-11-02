@@ -9,11 +9,11 @@ import { LocationProbe } from './location-probe.js';
 export function renderAt(
   path: string,
   routes: { readonly path: string; readonly element: ReactElement }[],
-): RenderResult {
+): RenderResult & { queryClient: QueryClient } {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
@@ -25,4 +25,5 @@ export function renderAt(
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...view, queryClient: client };
 }

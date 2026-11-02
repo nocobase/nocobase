@@ -2,21 +2,21 @@ import type { AccessLocale } from './access.en-US.js';
 
 const accessZhCN: AccessLocale = {
   access: {
-    section: 'Agent 团队',
-    businessSection: 'Agent 团队',
+    section: 'Agent 管理',
+    businessSection: 'Agent 管理',
     businesses: {
       agents: {
         title: 'Agent 和技能',
-        description: '团队的 Agent 以及它们使用的技能。',
+        description: 'Agents 以及它们使用的技能。',
         actions: {
           edit: {
-            title: '修改 Agent 和技能',
+            title: '管理 Agent 和技能',
             description:
               '修改 Agent 的设置、技能和环境变量，归档、恢复和删除 Agent，编辑技能。授予 Agent 的能力不能超出自己的权限',
-            related: '修改 Agent 和技能（自己负责的 Agent 和自己创建的技能）',
+            related: '管理 Agent 和技能（自己负责的 Agent 和自己创建的技能）',
             relatedLabel: '我负责的 Agent 和我创建的技能',
             relatedHint: '我是负责人的 Agent，以及我创建的技能',
-            all: '修改 Agent 和技能（全部）',
+            all: '管理 Agent 和技能（全部）',
           },
         },
       },
@@ -34,7 +34,7 @@ const accessZhCN: AccessLocale = {
       agents: {
         title: 'Agent',
         description:
-          '查看 Agent、技能和运行；修改 Agent 和技能，取消和重试运行。',
+          '查看 Agent、技能和运行；管理 Agent 和技能，取消和重试运行。',
       },
       runners: {
         title: '运行环境',

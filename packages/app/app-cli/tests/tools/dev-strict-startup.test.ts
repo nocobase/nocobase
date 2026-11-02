@@ -67,6 +67,7 @@ it('preserves startup failure and delegates descendant cleanup to the supervisor
       dependencyRestartTimer: undefined,
       dependencyWatchers: [{ close: closeDependencyWatcher }],
       instanceLock: { release },
+      connectionProxy: undefined,
       process: processMock,
     },
   );

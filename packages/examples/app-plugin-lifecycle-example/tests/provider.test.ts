@@ -41,6 +41,79 @@ let directory: string;
 const logger = { info: () => {}, warn: () => {}, error: () => {} };
 
 describe('parameter configuration against the real repository', () => {
+  test('updates one workflow row atomically with one shared revision and preserves unedited fields', async ({
+    database,
+  }) => {
+    const running = await start(database);
+    try {
+      const config = running.container.resolve(
+        parameterConfigurationServiceToken,
+      );
+      const before = await config.readWorkflow('zhao', 'expenses');
+      expect(before.revision).toBe(0);
+      await config.saveWorkflow(
+        { autoApproveLimit: 6000, escalateAfterMinutes: 9 },
+        0,
+        'whole-flow',
+        'zhao',
+        'expenses',
+      );
+      const saved = await config.readWorkflow('zhao', 'expenses');
+      expect(saved.revision).toBe(1);
+      expect(saved.groups.map((group) => group.revision)).toEqual([1, 1]);
+      expect(saved.values).toEqual({
+        autoApproveLimit: 6000,
+        financeLimit: 50000,
+        escalateAfterMinutes: 9,
+      });
+      await expect(
+        config.saveWorkflow(
+          { autoApproveLimit: 7000, escalateAfterMinutes: -1 },
+          1,
+          'invalid-flow',
+          'zhao',
+          'expenses',
+        ),
+      ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' });
+      expect((await config.readWorkflow('zhao', 'expenses')).values).toEqual(
+        saved.values,
+      );
+      await expect(
+        config.saveWorkflow(
+          { financeLimit: 60000 },
+          0,
+          'stale-node',
+          'zhao',
+          'expenses',
+        ),
+      ).rejects.toMatchObject({ code: 'CONFIGURATION_CONFLICT' });
+      await config.saveWorkflow(
+        { financeLimit: 60000 },
+        1,
+        'node',
+        'zhao',
+        'expenses',
+      );
+      const row = await database
+        .repository('lifecycleExampleWorkflowParameters')
+        .findOne({ filter: { id: 'lifecycle.expenses' } });
+      expect(row).toMatchObject({
+        revision: 2,
+        values: { ...saved.values, financeLimit: 60000 },
+      });
+      expect(
+        await database
+          .repository('lifecycleExampleWorkflowParameters')
+          .count({ filter: { id: 'lifecycle.expenses' } }),
+      ).toBe(1);
+      expect(
+        await config.store.read('demo', 'lifecycle.expenses.expenseTiming'),
+      ).toMatchObject({ revision: 2, values: { escalateAfterMinutes: 9 } });
+      expect((await config.readWorkflow('zhao', 'tickets')).revision).toBe(0);
+    } finally {
+      await running.stop();
+    }
+  });
   test('searches one scoped reference type and pages newly added active users', async ({
     database,
   }) => {
@@ -120,11 +193,11 @@ describe('parameter configuration against the real repository', () => {
       const config = running.container.resolve(
         parameterConfigurationServiceToken,
       );
-      const record = await config.createReview('reviewerDemo', 'lin');
+      const record = { id: 'pagination-record' };
       for (let index = 0; index < 105; index++)
         await config.store.saveUsage({
           scope: 'demo',
-          lifecycle: 'reviewerDemo',
+          lifecycle: 'expenses',
           recordId: record.id,
           kind: 'action',
           associationId: 'pagination-' + index,
@@ -132,11 +205,7 @@ describe('parameter configuration against the real repository', () => {
           sources: {},
           at: '2026-10-01T00:00:00.000Z',
         });
-      const facts = await config.store.listUsage(
-        'demo',
-        'reviewerDemo',
-        record.id,
-      );
+      const facts = await config.store.listUsage('demo', 'expenses', record.id);
       expect(
         facts.filter((fact) => fact.associationId.startsWith('pagination-')),
       ).toHaveLength(105);
@@ -200,8 +269,13 @@ describe('parameter configuration against the real repository', () => {
         await config.store.read('other-scope', 'expenseThresholds'),
       ).toBeUndefined();
       expect(
-        await database.repository('lifecycleExampleParameterVersions').count(),
-      ).toBe(1);
+        await database
+          .repository('lifecycleExampleWorkflowParameters')
+          .findOne({ filter: { id: 'lifecycle.expenses' } }),
+      ).toMatchObject({
+        revision: 1,
+        values: { ...values, escalateAfterMinutes: 3 },
+      });
     } finally {
       await running.stop();
     }
@@ -299,124 +373,6 @@ describe('parameter configuration against the real repository', () => {
       expect(
         (await config.history('expenses', id, 'lin')).usages.length,
       ).toBeGreaterThan(1);
-    } finally {
-      await running.stop();
-    }
-  });
-
-  test('stores flat rules, filters candidates and retains rules rather than organization membership', async ({
-    database,
-  }) => {
-    const running = await start(database);
-    try {
-      const config = running.container.resolve(
-        parameterConfigurationServiceToken,
-      );
-      const rule = {
-        reviewerRule: [
-          { group: 1, type: 'department', referenceId: 'finance-one' },
-          { group: 1, type: 'role', referenceId: 'reviewer' },
-          { group: 2, type: 'user', referenceId: 'lin' },
-          { group: 3, type: 'user', referenceId: 'disabled' },
-        ],
-      };
-      await config.save('financeReviewers', rule, 0, 'rule-1', 'zhao');
-      expect(await config.candidates(rule, 'lin', 'zhao')).toEqual(['zhao']);
-      expect(
-        await database
-          .repository('lifecycleExampleParameterSelections')
-          .count(),
-      ).toBe(4);
-      const snapshot = await config.createReview('reviewerDemo', 'lin');
-      const live = await config.createReview('reviewerLiveDemo', 'lin');
-      for (const [name, record] of [
-        ['reviewerDemo', snapshot],
-        ['reviewerLiveDemo', live],
-      ] as const) {
-        await config.runtime.fire(name, record.id, 'submit', {
-          actor: { id: 'lin' },
-          input: {},
-        });
-        expect(
-          (await config.runtime.view(name, record.id, { id: 'zhao' })).record
-            .candidates,
-        ).toEqual(['zhao']);
-      }
-      await config.save(
-        'financeReviewers',
-        {
-          reviewerRule: [
-            { group: 1, type: 'department', referenceId: 'finance-two' },
-            { group: 1, type: 'role', referenceId: 'reviewer' },
-          ],
-        },
-        1,
-        'rule-2',
-        'zhao',
-      );
-      await database.repository('lifecycleExampleMemberships').createOne({
-        values: {
-          id: 'wang-finance',
-          scope: 'demo',
-          userId: 'wang',
-          departmentId: 'finance-one',
-          roleId: 'reviewer',
-        },
-      });
-      expect(
-        (await config.runtime.view('reviewerDemo', snapshot.id, { id: 'wang' }))
-          .record.candidates,
-      ).toEqual(['zhao']);
-      for (const [name, record] of [
-        ['reviewerDemo', snapshot],
-        ['reviewerLiveDemo', live],
-      ] as const) {
-        await config.runtime.fire(name, record.id, 'withdraw', {
-          actor: { id: 'lin' },
-          input: {},
-        });
-        await config.runtime.fire(name, record.id, 'submit', {
-          actor: { id: 'lin' },
-          input: {},
-        });
-      }
-      expect(
-        (await config.runtime.view('reviewerDemo', snapshot.id, { id: 'zhao' }))
-          .record.candidates,
-      ).toEqual(['wang', 'zhao']);
-      expect(
-        (await config.runtime.view('reviewerLiveDemo', live.id, { id: 'sun' }))
-          .record.candidates,
-      ).toEqual(['sun']);
-      const outcomes = await Promise.allSettled(
-        ['wang', 'zhao'].map((id) =>
-          config.runtime.fire('reviewerDemo', snapshot.id, 'approve', {
-            actor: { id },
-            input: {},
-          }),
-        ),
-      );
-      expect(
-        outcomes.filter((outcome) => outcome.status === 'fulfilled'),
-      ).toHaveLength(1);
-      expect(
-        (
-          await config.runtime.view('reviewerDemo', snapshot.id, { id: 'lin' })
-        ).history.transitions.filter((entry) => entry.transition === 'approve'),
-      ).toHaveLength(1);
-      await database.repository('lifecycleExampleDepartments').createOne({
-        values: { id: 'foreign', scope: 'foreign', name: 'Foreign' },
-      });
-      for (const referenceId of ['foreign', 'nonexistent'])
-        await expect(
-          config.save(
-            'financeReviewers',
-            { reviewerRule: [{ group: 1, type: 'department', referenceId }] },
-            2,
-            referenceId,
-            'zhao',
-          ),
-        ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' });
     } finally {
       await running.stop();
     }
@@ -1033,9 +989,9 @@ describe('pushes instead of polling', () => {
       defineTopic: (topic: string) => {
         topics.push(topic);
         return {
-          publish: (payload: unknown) => {
+          publish: async (payload: unknown) => {
             published.push(payload);
-            return { topic, subscriberCount: 1 };
+            return { topic, eventId: 'event-1' };
           },
           close: () => {},
         };
@@ -1080,4 +1036,61 @@ describe('pushes instead of polling', () => {
       await stop();
     }
   });
+});
+
+test('publishes a committed email effect outcome without a follow-up transition', async ({
+  database,
+}) => {
+  const observed: string[] = [];
+  let inspect: (() => Promise<void>) | undefined;
+  const realtime = {
+    defineTopic: (topic: string) => ({
+      publish: async () => {
+        await inspect?.();
+        return { topic, eventId: 'effect-change' };
+      },
+      close: () => {},
+    }),
+  };
+  const { container, stop } = await start(database, (services) =>
+    services.instance(realtimeServiceToken, realtime as never),
+  );
+  try {
+    const service = container.resolve(lifecycleExampleServiceToken);
+    const ticket = await service.createTicket(
+      {
+        subject: 'Cannot sign in',
+        category: 'account',
+        priority: 'high',
+        description: 'Session expired',
+        failNotifications: 0,
+      },
+      'customer-li',
+    );
+    const id = String(ticket.id);
+    inspect = async () => {
+      const view = await service.runtime.view('tickets', id, {
+        id: 'agent-zhou',
+      });
+      for (const run of view.history.effectRuns)
+        observed.push(`${view.state}:${run.status}`);
+    };
+    await service.runtime.fire('tickets', id, 'reply', {
+      actor: { id: 'agent-zhou' },
+      input: { message: 'Please try again.' },
+    });
+    await eventually(
+      async () => observed,
+      (values) => values.includes('awaitingCustomer:succeeded'),
+    );
+    const view = await service.runtime.view('tickets', id, {
+      id: 'agent-zhou',
+    });
+    expect(view.history.transitions.map((entry) => entry.transition)).toEqual([
+      CREATE_TRANSITION,
+      'reply',
+    ]);
+  } finally {
+    await stop();
+  }
 });

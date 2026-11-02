@@ -1,0 +1,699 @@
+{
+  "version": 1,
+  "scenario": "customers",
+  "cases": [
+    {
+      "id": "CUSTOMERS-001",
+      "label": "Save parent and children, then reread persisted data",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": true,
+            "childCount": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-002",
+      "label": "Search and filter actual page list and reference picker",
+      "category": "business",
+      "channel": "browser",
+      "steps": [
+        {
+          "action": "ui",
+          "input": {
+            "actor": "owner",
+            "flow": "search-filter",
+            "query": "Alpha",
+            "active": true
+          },
+          "expect": {
+            "listFiltered": true,
+            "candidates": ["allowed"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-003",
+      "label": "Add, edit and remove children through page, persist and reopen",
+      "category": "business",
+      "channel": "browser",
+      "steps": [
+        {
+          "action": "ui",
+          "input": {
+            "actor": "owner",
+            "flow": "edit-children",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "reopened": true,
+            "childCount": 2,
+            "editedChildVisible": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-004",
+      "label": "Other owner cannot read protected list",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "list",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-005",
+      "label": "Other owner cannot read protected detail",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-006",
+      "label": "Other owner cannot read protected children",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "children",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-007",
+      "label": "Anonymous and unassigned users cannot read protected records",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "anonymous",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        },
+        {
+          "action": "read",
+          "input": {
+            "actor": "outsider",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-008",
+      "label": "Other owner cannot update parent or child",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "otherOwner",
+            "target": "draft",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-009",
+      "label": "Candidate API searches and filters permitted active references",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "owner",
+            "surface": "candidates",
+            "query": {
+              "search": "Alpha",
+              "active": true
+            }
+          },
+          "expect": {
+            "visible": ["allowed"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-010",
+      "label": "Save rechecks inactive reference",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "inactive",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-011",
+      "label": "Save rechecks restricted reference",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "restricted",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-012",
+      "label": "Cannot steal a foreign child",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ],
+              "childId": "foreignChild"
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "foreignDocument"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-013",
+      "label": "Cannot forge ownership or protected workflow/assignment fields",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "record": {
+              "owner": "otherOwner",
+              "state": "completed",
+              "reviewer": "otherReviewer",
+              "assignee": "owner"
+            }
+          },
+          "expect": {
+            "forbiddenEffect": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-014",
+      "label": "Failure after first child write rolls back new parent and children",
+      "category": "consistency",
+      "channel": "database",
+      "steps": [
+        {
+          "action": "snapshot",
+          "input": {},
+          "expect": {
+            "fixtureIntact": true
+          }
+        },
+        {
+          "action": "failChildWrite",
+          "input": {
+            "actor": "owner",
+            "mode": "create",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false,
+            "firstChildWritten": true
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {},
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-015",
+      "label": "Failure after first child write preserves all existing values",
+      "category": "consistency",
+      "channel": "database",
+      "steps": [
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "fixtureIntact": true
+          }
+        },
+        {
+          "action": "failChildWrite",
+          "input": {
+            "actor": "owner",
+            "mode": "update",
+            "target": "draft",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false,
+            "firstChildWritten": true
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-016",
+      "label": "Reject invalid customer/contact value 15",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "name": "",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-017",
+      "label": "Reject invalid customer/contact value 16",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Bad",
+                  "email": "not-email"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-018",
+      "label": "Reject invalid customer/contact value 17",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "",
+                  "email": "valid@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-019",
+      "label": "Form resubmission creates one parent and one child set",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "concurrent",
+          "input": {
+            "actor": "owner",
+            "operation": "create",
+            "sameOperationKey": true,
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "createdParents": 1,
+            "createdChildren": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-020",
+      "label": "Other owner cannot create under forged ownership",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "otherOwner",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ],
+              "owner": "owner"
+            }
+          },
+          "expect": {
+            "forbiddenEffect": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "CUSTOMERS-021",
+      "label": "Anonymous and unassigned users cannot write",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "anonymous",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "create",
+          "input": {
+            "actor": "outsider",
+            "record": {
+              "name": "Alpha Customer",
+              "reference": "allowed",
+              "active": true,
+              "contacts": [
+                {
+                  "name": "Ada",
+                  "email": "ada@baseline.invalid"
+                },
+                {
+                  "name": "Lin",
+                  "email": "lin@baseline.invalid"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    }
+  ]
+}

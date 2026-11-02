@@ -26,6 +26,8 @@ export interface CliFlagOptions {
   readonly alias?: string;
   /** Also take `--<flag>-file <path>`, whose contents become the value; for long text such as Markdown. */
   readonly contentFile?: boolean;
+  /** Reject empty or whitespace-only content files before sending a request. */
+  readonly contentFileNonEmpty?: boolean;
   /** Ask for a missing value when a terminal is attached. */
   readonly prompt?: boolean;
   /**
@@ -193,6 +195,8 @@ export interface CliParameter {
   readonly default?: unknown;
   readonly alias?: string;
   readonly contentFile?: boolean;
+  /** Reject empty or whitespace-only content files before sending a request. */
+  readonly contentFileNonEmpty?: boolean;
   readonly prompt?: boolean;
   /** `--from-env` fills it from the environment variable named by the value of this field (`CliFlagOptions.fromEnv`). */
   readonly fromEnv?: string;
@@ -274,6 +278,8 @@ export interface CliCaller {
   readonly runId?: string;
   /** The business actions the caller holds; a command with an action outside them is left out. None when absent. */
   readonly actions?: ReadonlySet<string>;
+  /** Settings permissions for display only; absent when the application does not provide them. */
+  readonly settings?: readonly string[];
 }
 
 export interface CliManifestIdentity {
@@ -283,6 +289,8 @@ export interface CliManifestIdentity {
   readonly runId?: string;
   /** The business actions the caller holds, sorted; what decides which commands that name one it is offered. */
   readonly actions: readonly string[];
+  /** Settings permissions for display only; never used for command admission. */
+  readonly settings?: readonly string[];
 }
 
 /**

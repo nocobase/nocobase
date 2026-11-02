@@ -12,8 +12,11 @@ import {
   type RecordDetail,
 } from '../lib/api.js';
 import { flowApi } from '../lib/flow-api.js';
-import { useFollowUp } from '../lib/use-follow-up.js';
-import { useLifecycleChanges } from '../lib/use-lifecycle-changes.js';
+import { RefreshNotice } from '../components/refresh-notice.js';
+import {
+  useLifecycleChanges,
+  refreshLifecycleViews,
+} from '../lib/use-lifecycle-changes.js';
 import { ago, NAMESPACE } from '../lib/format.js';
 import { visitedStates } from '../lib/diagram.js';
 import {
@@ -107,7 +110,12 @@ export function FlowPage(props: FlowPageProps): ReactElement {
   const [creating, setCreating] = useState(false);
   const [revision, setRevision] = useState(0);
 
-  const list = useLoader(() => client.list(flow), flow);
+  const list = useLoader(
+    (signal) => client.list(flow, signal),
+    flow,
+    '',
+    false,
+  );
   const lifecycle = useExampleLifecycle(flow, selected);
   const detail: RecordDetail | undefined =
     lifecycle.view && lifecycle.description
@@ -126,15 +134,17 @@ export function FlowPage(props: FlowPageProps): ReactElement {
     await Promise.all([list.reload(), reloadRecord()]);
   };
 
-  // Told by the server, never by a timer: a change to this flow reloads the
-  // list, and one to the record on screen reloads the record too.
-  useLifecycleChanges((change) => {
-    if (change && change.lifecycle !== flow) return;
-    void list.reload();
-    if (!change || change.recordId === selected) void reloadRecord();
-  });
-  // Except while an effect is still under way, which says nothing when done.
-  useFollowUp(lifecycle.view, reloadRecord);
+  const updates = useLifecycleChanges(
+    flow,
+    `${flow}:${selected ?? ''}`,
+    async (signal) => {
+      await refreshLifecycleViews([
+        list.refresh(signal),
+        lifecycle.refresh(signal),
+      ]);
+      if (!signal.aborted) setRevision((value) => value + 1);
+    },
+  );
 
   return (
     <PageContainer>
@@ -142,6 +152,7 @@ export function FlowPage(props: FlowPageProps): ReactElement {
         title={t(`${flow}.title`)}
         description={props.description(list.data?.parameters ?? {})}
       />
+      <RefreshNotice error={updates.error} retry={updates.retry} />
       <ExampleGuide page={flow} />
 
       <div className='grid gap-6 lg:grid-cols-[minmax(18rem,22rem)_1fr]'>

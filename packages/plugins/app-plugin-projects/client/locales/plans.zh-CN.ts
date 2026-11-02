@@ -188,7 +188,7 @@ const plansZhCN: typeof plansEnUS = {
     count: '{{count}} / {{max}}',
     files: '文件',
     filesHint:
-      '最多 {{count}} 个文件，每个不超过 {{size}} MB。会读取文本、Markdown、CSV、Word、Excel、PowerPoint 和 PDF；图片只记录文件名。',
+      '最多 {{count}} 个文件，每个不超过 {{size}} MB。会读取文本、Markdown、CSV、Word、Excel、PowerPoint 和 PDF；让 Agent 整理可通过图片工具读取 PNG/JPEG；读取失败可返回修改并重试。规则拆分仅使用图片文件名。',
     addFiles: '添加文件',
     dropFiles: '把文件拖到这里',
     removeFile: '移除 {{name}}',

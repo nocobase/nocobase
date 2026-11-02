@@ -12,6 +12,58 @@ describe('admin API', () => {
     await h?.close();
   });
 
+  it('lists only usable registration token metadata within the caller visibility, with pagination', async () => {
+    h = await createHarness();
+    const expired = await h.services.runners.createRegistrationToken(
+      'alice',
+      {},
+    );
+    h.clock.advance(11 * 60_000);
+    const alice = await h.services.runners.createRegistrationToken('alice', {});
+    const bob = await h.services.runners.createRegistrationToken('bob', {});
+    await h.registerRunner({ ownerUserId: 'alice' });
+    const route = '/agents/runners/registrationTokens';
+    expect((await h.request('GET', route)).status).toBe(401);
+    const own = await h.request('GET', route, { user: 'alice' });
+    expect(own.status).toBe(200);
+    expect(own.body.data.map((token: { id: string }) => token.id)).toEqual([
+      alice.id,
+    ]);
+    expect(own.body.meta.total).toBe(1);
+    const page = await h.request('GET', `${route}?pageSize=1`, {
+      user: 'admin',
+      can: ADMIN,
+    });
+    expect(page.body.data).toHaveLength(1);
+    expect(page.body.meta.total).toBe(2);
+    const next = await h.request('GET', `${route}?pageSize=1&page=2`, {
+      user: 'admin',
+      can: ADMIN,
+    });
+    expect(
+      new Set(
+        [...page.body.data, ...next.body.data].map(
+          (token: { id: string }) => token.id,
+        ),
+      ),
+    ).toEqual(new Set([alice.id, bob.id]));
+    const text = JSON.stringify(own.body);
+    for (const secret of [
+      alice.token,
+      bob.token,
+      expired.token,
+      'tokenHash',
+      'runnerKey',
+    ])
+      expect(text).not.toContain(secret);
+    expect(
+      (await h.request('GET', route, { user: 'stranger' })).body.data,
+    ).toEqual([]);
+    expect(
+      (await h.request('GET', `${route}?page=0`, { user: 'alice' })).status,
+    ).toBe(400);
+  });
+
   it('lists workspace totals and loads directory diagnostics only for an authorized detail request', async () => {
     h = await createHarness();
     const runner = await h.registerRunner({ ownerUserId: 'alice' });
@@ -42,23 +94,25 @@ describe('admin API', () => {
     expect(list.body.data[0].workspaceUsage).not.toHaveProperty('workspaces');
     const detail = await h.request(
       'GET',
-      `/agents/runners/${runner.runnerId}`,
+      `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'alice' },
     );
-    expect(detail.body.data.workspaceUsage.workspaces).toEqual([
-      expect.objectContaining(directory),
-    ]);
+    expect(detail.body.data).toEqual([expect.objectContaining(directory)]);
     const redacted = await h.request(
       'GET',
-      `/agents/runners/${runner.runnerId}`,
+      `/agents/runners/${runner.runnerId}/workspaces`,
       { user: 'bob', can: ['agents.runners/read'] },
     );
-    expect(redacted.body.data.workspaceUsage.workspaces).toEqual([]);
+    expect(redacted.body.data).toEqual([]);
     expect(
       (
-        await h.request('GET', `/agents/runners/${runner.runnerId}`, {
-          user: 'charlie',
-        })
+        await h.request(
+          'GET',
+          `/agents/runners/${runner.runnerId}/workspaces`,
+          {
+            user: 'charlie',
+          },
+        )
       ).status,
     ).toBe(404);
   });
@@ -66,11 +120,11 @@ describe('admin API', () => {
   it('lets anyone signed in read agents, and only a manager of agents change them', async () => {
     h = await createHarness();
     expect((await h.request('GET', '/agents')).status).toBe(401);
-    const id = await h.createAgent({ source: 'runner', status: 'pending' });
+    const id = await h.createAgent({ source: 'runner', status: 'disabled' });
     const list = await h.request('GET', '/agents', { user: 'bob' });
     expect(list.status).toBe(200);
     expect(list.body.data).toEqual([
-      expect.objectContaining({ id, status: 'pending', canEdit: false }),
+      expect.objectContaining({ id, status: 'disabled', canEdit: false }),
     ]);
     const reader = await h.request('PATCH', `/agents/${id}`, {
       user: 'bob',
@@ -83,7 +137,7 @@ describe('admin API', () => {
       can: ADMIN,
     });
     expect(managed.body.data[0].canEdit).toBe(true);
-    // Anyone signed in may add a personal runner; a team runner needs the runners item.
+    // Anyone signed in may add a personal runner; a shared runner needs the runners item.
     const personal = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
@@ -105,7 +159,7 @@ describe('admin API', () => {
     h = await createHarness();
     const id = await h.createAgent({
       source: 'runner',
-      status: 'pending',
+      status: 'disabled',
       modelEntries: [{ tool: 'codex', model: 'gpt-6-astra', effort: 'medium' }],
     });
     const bare = await h.request('PATCH', `/agents/${id}`, {
@@ -316,7 +370,7 @@ describe('admin API', () => {
     expect(revoked.body.data.status).toBe('revoked');
     expect(await h.services.runs.get(runId)).toMatchObject({
       status: 'queued',
-      failureReason: 'runnerOffline',
+      failureReason: 'runnerOfflineBeforeStart',
     });
     // A manager revoking someone else's runner tells its owner.
     expect(notices).toEqual([
@@ -479,6 +533,12 @@ describe('admin API', () => {
     });
     expect(early.status).toBe(400);
     expect(early.body.error.reason).toBe('RUNNER_NOT_REVOKED');
+    expect(early.body.error.message).toContain(
+      `runtime revoke ${runner.runnerId}`,
+    );
+    expect(early.body.error.message).toContain(
+      `runtime delete ${runner.runnerId}`,
+    );
     expect(
       (
         await h.request('DELETE', path, {
@@ -532,6 +592,47 @@ describe('admin API', () => {
         path: '/samples/7',
       }),
     ]);
+  });
+
+  it('pages multiple run statuses together and preserves run visibility', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const id = await h.enqueue(agentId, String(i), { actorUserId: 'bob' });
+      ids.push(id);
+      if (i % 2 === 0) await h.services.runs.cancel(id, 'bob');
+    }
+    await h.enqueue(agentId, 'private', { actorUserId: 'carol' });
+    const path = '/agents/runs?status=queued,cancelled,queued&pageSize=2';
+    expect((await h.request('GET', path)).status).toBe(401);
+    expect(
+      (
+        await h.request('GET', '/agents/runs?status=queued,invalid', {
+          user: 'bob',
+        })
+      ).status,
+    ).toBe(400);
+    const seen: string[] = [];
+    let token: string | undefined;
+    do {
+      const page = await h.request(
+        'GET',
+        path + (token ? `&pageToken=${token}` : ''),
+        { user: 'bob' },
+      );
+      expect(page.status).toBe(200);
+      seen.push(...page.body.data.map((run: { id: string }) => run.id));
+      token = page.body.meta.nextPageToken;
+    } while (token);
+    expect(seen).toEqual([...ids].reverse());
+    const single = await h.request('GET', '/agents/runs?status=cancelled', {
+      user: 'bob',
+    });
+    expect(single.body.data).toHaveLength(3);
+    expect(
+      (await h.request('GET', path, { user: 'stranger' })).body.data,
+    ).toEqual([]);
   });
 
   it('shows people their own runs, and every run to readers', async () => {
@@ -829,7 +930,7 @@ describe('admin API', () => {
     expect(shared.body.data.trust).toBe('team');
   });
 
-  it('lets only the owner choose its coding tools', async () => {
+  it('lets owners and shared runner managers choose tools without granting other settings', async () => {
     h = await createHarness();
     const token = await h.request(
       'POST',
@@ -849,7 +950,7 @@ describe('admin API', () => {
     const unknown = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
-      { user: 'bob', body: { enabledTools: ['cursor'] } },
+      { user: 'bob', body: { enabledTools: ['unknown-tool'] } },
     );
     expect(unknown.status).toBe(400);
 
@@ -888,14 +989,34 @@ describe('admin API', () => {
     });
     expect(owner.status).toBe(200);
     expect(owner.body.data.enabledTools).toEqual(['claude', 'codex']);
-    expect(await online()).toBe(1);
+    // A newly enabled tool must report again before it is offered work.
+    expect(await online()).toBe(0);
     const manager = await h.request('PATCH', path, {
       user: 'carol',
       can: ['agents.runners/manage'],
       body: { enabledTools: [] },
     });
-    expect(manager.status).toBe(403);
-    expect(await online()).toBe(1);
+    expect(manager.status).toBe(200);
+    expect(await online()).toBe(0);
+    const rename = await h.request('PATCH', path, {
+      user: 'carol',
+      can: ['agents.runners/manage'],
+      body: { enabledTools: ['gemini'], name: 'Changed by manager' },
+    });
+    expect(rename.status).toBe(403);
+    const personal = await h.registerRunner({
+      trust: 'ownerOnly',
+      ownerUserId: 'bob',
+    });
+    expect(
+      (
+        await h.request('PATCH', `/agents/runners/${personal.runnerId}`, {
+          user: 'carol',
+          can: ['agents.runners/manage'],
+          body: { enabledTools: ['gemini'] },
+        })
+      ).status,
+    ).toBe(403);
   });
 
   it('refuses variables with SECRETS_KEY_MISSING when no secrets key is configured', async () => {

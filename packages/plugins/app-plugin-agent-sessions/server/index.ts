@@ -6,6 +6,7 @@ export {
   AgentSessionsService,
   type LinkResolver,
   type LinkView,
+  type CommittedSessionEvent,
 } from './service.js';
 export type {
   SessionNotice,

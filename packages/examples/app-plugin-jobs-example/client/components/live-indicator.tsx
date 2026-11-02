@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useSyncExternalStore, type ReactElement } from 'react';
 import type { RealtimeClient } from '@nocobase/app-client';
 
 export interface LiveIndicatorProps {
@@ -7,23 +7,17 @@ export interface LiveIndicatorProps {
   readonly offline: string;
 }
 
-/** Shows whether pushed changes are arriving. */
+/** Shows the transport state; topic readiness is acknowledged separately. */
 export function LiveIndicator({
   realtime,
   live,
   offline,
 }: LiveIndicatorProps): ReactElement {
-  const [connected, setConnected] = useState(realtime.connected);
-  useEffect(() => {
-    // `connected` has no change event of its own; a short poll keeps the
-    // indicator honest after the socket drops.
-    const timer = setInterval(() => setConnected(realtime.connected), 1000);
-    const stopOpen = realtime.onOpen(() => setConnected(true));
-    return () => {
-      clearInterval(timer);
-      stopOpen();
-    };
-  }, [realtime]);
+  const connected = useSyncExternalStore(
+    realtime.onStateChange,
+    () => realtime.connected,
+    () => false,
+  );
   return (
     <span className='flex items-center gap-2 text-xs text-muted-foreground'>
       <span

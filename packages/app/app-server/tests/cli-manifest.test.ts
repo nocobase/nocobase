@@ -75,7 +75,11 @@ function trackerRouter(): Hono {
         command: 'issue comment add',
         action: 'tracker.issues/comment',
         flags: {
-          content: { contentFile: true, fromEnv: 'issueId' },
+          content: {
+            contentFile: true,
+            contentFileNonEmpty: true,
+            fromEnv: 'issueId',
+          },
           parentId: {
             name: 'reply-to',
             env: ['TRACKER_PARENT', { file: 'EVENT_PATH', path: 'comment.id' }],
@@ -380,6 +384,7 @@ describe('deriveCliCommands', () => {
         required: true,
         description: 'Markdown.',
         contentFile: true,
+        contentFileNonEmpty: true,
         fromEnv: 'issueId',
       },
       {
@@ -554,6 +559,16 @@ describe('deriveCliCommands', () => {
       actions: [],
     });
     expect(manifest.etag).toMatch(/^[0-9a-f]{32}$/u);
+    const withSettings = deriveCliCommands(document, {
+      ...run,
+      settings: ['settings/z', 'settings/a'],
+    });
+    expect(withSettings.identity.settings).toEqual([
+      'settings/a',
+      'settings/z',
+    ]);
+    expect(withSettings.commands).toEqual(manifest.commands);
+    expect(withSettings.etag).not.toBe(manifest.etag);
   });
 
   it('says why each command a caller is not offered is withheld', async () => {

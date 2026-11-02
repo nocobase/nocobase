@@ -11,6 +11,7 @@ const zhCN: MailServerResource = {
     imapMoveOutcomeUnknown:
       '移动未完成或结果未知，请先核对远端邮箱，勿盲目重试。',
 
+    invalidRecipient: '请修正收件人邮箱地址和显示名后再发送。',
     accessDenied: '需要邮件访问权限。',
     idempotencyConflict: '该幂等键已关联到另一个请求。',
     invalidRequest: '邮件请求无效。',

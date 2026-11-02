@@ -222,6 +222,50 @@ describe('run lifecycle', () => {
     expect(late.body.error.reason).toBe('RUN_NOT_ACTIVE');
   });
 
+  it('stores reports carrying NUL characters without them', async () => {
+    h = await createHarness();
+    const { runner, runId, inputIds } = await claimed();
+    await post(runner, runId, 'start', start);
+    const reported = await post(runner, runId, 'events', {
+      events: [
+        {
+          seq: 1,
+          at: '2026-10-01T00:00:01.000Z',
+          type: 'text',
+          content: 'a\0b',
+        },
+        {
+          seq: 2,
+          at: '2026-10-01T00:00:02.000Z',
+          type: 'toolResult',
+          tool: 'Ba\0sh',
+          input: { 'com\0mand': ['c\0at', { nested: 'x\0y' }] },
+          output: 'bin\0ary',
+          meta: { note: 'm\0eta' },
+        },
+      ],
+    });
+    expect(reported.body.data).toMatchObject({ accepted: 2 });
+    const page = await h.services.runs.events(runId, 0, 100);
+    expect(page.events[0]).toMatchObject({ content: 'ab' });
+    expect(page.events[1]).toMatchObject({
+      tool: 'Bash',
+      input: { command: ['cat', { nested: 'xy' }] },
+      output: 'binary',
+      meta: { note: 'meta' },
+    });
+    expect(JSON.stringify(page.events)).not.toContain('\\u0000');
+
+    const done = await post(runner, runId, 'complete', {
+      summary: 'Fix\0ed.',
+      handledInputIds: inputIds,
+    });
+    expect(done.status).toBe(200);
+    expect(await h.services.runs.detail(runId)).toMatchObject({
+      summary: 'Fixed.',
+    });
+  });
+
   it('delivers input added while a run is dispatched or running, and fences completion on it', async () => {
     h = await createHarness();
     const { runner, runId, inputIds } = await claimed();
@@ -580,7 +624,7 @@ describe('run lifecycle', () => {
     expect(h.finished).toHaveLength(1);
   });
 
-  it('requeues live workspace contention with a delay and releases its runner slot', async () => {
+  it('requeues workspace cleanup and cache-lock timeouts reported as workspaceBusy', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ maxAttempts: 3 });
     const runId = await h.enqueue(agentId);
@@ -591,7 +635,8 @@ describe('run lifecycle', () => {
       (
         await post(runner, runId, 'fail', {
           reason: 'workspaceBusy',
-          detail: 'Another live process holds this workspace.',
+          detail:
+            'The runner timed out waiting for workspace cleanup or cache preparation.',
         })
       ).body.data,
     ).toMatchObject({ status: 'queued' });

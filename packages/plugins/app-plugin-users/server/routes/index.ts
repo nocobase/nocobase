@@ -12,6 +12,8 @@ import { loggingToken } from '@nocobase/app-server/logging';
 import {
   ApiError,
   apiErrorHandler,
+  executeIdempotentMutation,
+  repositoryIdempotencyToken,
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -24,6 +26,8 @@ import {
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
+import { databaseManagerToken } from '@nocobase/db';
+import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
@@ -74,6 +78,88 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const authorization = container.resolve(authorizationToken);
     const users = container.resolve(userManagementServiceToken);
+    const submit = async <T>(
+      context: import('hono').Context<AuthorizationEnv>,
+      input: unknown,
+      execute: (service: typeof users) => Promise<T>,
+    ): Promise<T> => {
+      const protection = container.has(repositoryIdempotencyToken)
+        ? container.resolve(repositoryIdempotencyToken)
+        : undefined;
+      const key = context.req.header('Idempotency-Key');
+      if (!protection || (!protection.required && !key)) {
+        if (key)
+          throw new ApiError({
+            status: 'FAILED_PRECONDITION',
+            domain: 'users',
+            reason: 'IDEMPOTENCY_UNAVAILABLE',
+            message: 'Operation receipts are unavailable.',
+          });
+        return execute(users);
+      }
+      if (!key)
+        throw new ApiError({
+          status: 'INVALID_ARGUMENT',
+          domain: 'users',
+          reason: 'OPERATION_KEY_REQUIRED',
+          message: 'Standard writes require an Idempotency-Key header.',
+        });
+      const principal = await protection.principal(context);
+      if (!principal)
+        throw new ApiError({
+          status: 'PERMISSION_DENIED',
+          domain: 'users',
+          reason: 'PRINCIPAL_REQUIRED',
+          message: 'An authenticated principal is required.',
+        });
+      const result = await executeIdempotentMutation({
+        connection: container.resolve(databaseManagerToken).connection(),
+        key,
+        principal,
+        operation: `${context.req.method} ${new URL(context.req.url).pathname}`,
+        input,
+        authorize: () => undefined,
+        authorizeReplay: async () => {
+          const userId = context.req.param('userId');
+          await requireUserAction(context, userId ?? '*', 'read');
+          if (userId && context.req.method !== 'DELETE') {
+            if (context.req.method === 'PATCH') {
+              if (
+                !input ||
+                typeof input !== 'object' ||
+                !('roleScopes' in input) ||
+                Object.keys(input).some((key) => key !== 'roleScopes')
+              )
+                await users.assertCanAdminister(
+                  userId,
+                  actorOf(context),
+                  'update',
+                );
+              if (input && typeof input === 'object' && 'roleScopes' in input)
+                await users.assertCanAdminister(
+                  userId,
+                  actorOf(context),
+                  'assign-role',
+                );
+            } else {
+              const action = context.req.path.includes('/roleScopes/')
+                ? 'assign-role'
+                : context.req.path.endsWith('/resetPassword')
+                  ? 'reset-password'
+                  : context.req.path.endsWith('/revokeSessions')
+                    ? 'revoke-sessions'
+                    : context.req.path.endsWith('/disable')
+                      ? 'disable'
+                      : 'enable';
+              await users.assertCanAdminister(userId, actorOf(context), action);
+            }
+          }
+        },
+        execute: (transaction) => execute(users.withConnection(transaction)),
+      });
+      context.header('Idempotency-Replayed', String(result.replayed));
+      return result.data;
+    };
     const securityLogger = container.has(loggingToken)
       ? container.resolve(loggingToken).getLogger('security')
       : undefined;
@@ -330,10 +416,23 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ),
         },
       }),
+      apiValidator(
+        'header',
+        z.object({
+          'idempotency-key': z
+            .string()
+            .optional()
+            .describe(
+              'Required in strict operation receipt mode; reuse the original key and input for retry.',
+            ),
+        }),
+      ),
       apiValidator('json', CreateUserInput),
       async (context) => {
         const input = context.req.valid('json');
-        const user = await users.create(input);
+        const user = await submit(context, input, (service) =>
+          service.create(input),
+        );
         logSecurityEvent(securityLogger, context, 'user.create', user.id, {
           roleScopes: Object.keys(input.roleScopes ?? {}).sort(),
         });
@@ -341,9 +440,48 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       },
     );
 
+    routes.get(
+      '/:userId',
+      allowed('read'),
+      describeRoute({
+        tags,
+        summary: 'Get a user',
+        operationId: 'usersGetUser',
+        responses: {
+          200: dataResponse(ManagedUserSchema),
+          ...apiErrorResponses,
+          404: apiErrorResponse(
+            404,
+            'The user does not exist (`USER_NOT_FOUND`).',
+          ),
+        },
+      }),
+      apiValidator('param', UserParams),
+      async (context) =>
+        context.json({
+          data: await users.get(context.req.valid('param').userId),
+        }),
+    );
+
     routes.patch(
       '/:userId',
-      allowed('update'),
+      createMiddleware<AuthorizationEnv>(async (context, next) => {
+        try {
+          await requireUserAction(
+            context,
+            context.req.param('userId') ?? '',
+            'update',
+          );
+        } catch (error) {
+          if (!(error instanceof AuthorizationDeniedError)) throw error;
+          await requireUserAction(
+            context,
+            context.req.param('userId') ?? '',
+            'assign-role',
+          );
+        }
+        await next();
+      }),
       describeRoute({
         tags,
         summary: 'Update a user',
@@ -353,10 +491,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           flags: { userId: { name: 'user' } },
         }),
         description:
-          'Changes name, username or email. `username: null` removes the username.',
+          'Changes name, username or email with `update` permission. `username: null` removes the username. Optional `roleScopes` requires `assign-role`; all submitted profile fields and role scopes commit or roll back together, and omitted scopes stay unchanged.',
         responses: {
           200: dataResponse(ManagedUserSchema),
           ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'A role scope refuses the caller acting on this account (`FAILED_PRECONDITION`, the reason the scope chose).',
+          ),
           404: apiErrorResponse(404),
           409: apiErrorResponse(
             409,
@@ -365,11 +507,43 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({
+          'idempotency-key': z
+            .string()
+            .optional()
+            .describe(
+              'Required in strict operation receipt mode; reuse the original key and input for retry.',
+            ),
+        }),
+      ),
       apiValidator('json', UpdateUserInput),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.update(userId, context.req.valid('json'));
+        const input = context.req.valid('json');
+        if (
+          input.roleScopes === undefined ||
+          Object.keys(input).some((key) => key !== 'roleScopes')
+        )
+          await requireUserAction(context, userId, 'update');
+        if (input.roleScopes !== undefined)
+          await requireUserAction(context, userId, 'assign-role');
+        const user = await submit(context, input, (service) =>
+          service.update(userId, input, actorOf(context)),
+        );
         logSecurityEvent(securityLogger, context, 'user.update', userId);
+        for (const [roleScope, value] of Object.entries(input.roleScopes ?? {}))
+          logSecurityEvent(
+            securityLogger,
+            context,
+            'user.role.update',
+            userId,
+            {
+              roleScope,
+              roles: typeof value === 'string' ? [value] : [...value],
+            },
+          );
         return context.json({ data: user });
       },
     );
@@ -401,10 +575,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       apiValidator('query', DeleteUserQuery),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.remove(userId, context.get('authz').identity.principal.id);
+        await submit(context, context.req.valid('query'), async (service) => {
+          await service.remove(userId, actorOf(context));
+          return null;
+        });
         logSecurityEvent(securityLogger, context, 'user.delete', userId);
         return context.body(null, 204);
       },
@@ -434,9 +615,15 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.disable(userId);
+        const user = await submit(context, null, (service) =>
+          service.disable(userId, actorOf(context)),
+        );
         logSecurityEvent(securityLogger, context, 'user.disable', userId);
         return context.json({ data: user });
       },
@@ -456,13 +643,23 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         responses: {
           200: dataResponse(ManagedUserSchema),
           ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'A role scope refuses the caller acting on this account (`FAILED_PRECONDITION`, the reason the scope chose).',
+          ),
           404: apiErrorResponse(404),
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       async (context) => {
         const { userId } = context.req.valid('param');
-        const user = await users.enable(userId);
+        const user = await submit(context, null, (service) =>
+          service.enable(userId, actorOf(context)),
+        );
         logSecurityEvent(securityLogger, context, 'user.enable', userId);
         return context.json({ data: user });
       },
@@ -489,7 +686,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...apiErrorResponses,
           400: apiErrorResponse(
             400,
-            'The value does not fit the scope or names an unknown role (`INVALID_ROLE_SCOPE_VALUE`), or a protected role cannot be assigned or removed here (`PROTECTED_ROLE_ASSIGNMENT`).',
+            'The value does not fit the scope or names an unknown role (`INVALID_ROLE_SCOPE_VALUE`), a protected role cannot be assigned or removed here (`PROTECTED_ROLE_ASSIGNMENT`), or a role scope refuses the caller acting on this account (`FAILED_PRECONDITION`).',
           ),
           404: apiErrorResponse(
             404,
@@ -498,11 +695,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', UserRoleScopeParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       apiValidator('json', ReplaceUserRoleScopeInput),
       async (context) => {
         const { userId, scope } = context.req.valid('param');
         const { value } = context.req.valid('json');
-        const user = await users.replaceRoleScope(userId, scope, value);
+        const user = await submit(context, { scope, value }, (service) =>
+          service.replaceRoleScope(userId, scope, value, actorOf(context)),
+        );
         logSecurityEvent(securityLogger, context, 'user.role.update', userId, {
           roleScope: scope,
           roles: typeof value === 'string' ? [value] : [...value],
@@ -527,16 +730,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...apiErrorResponses,
           400: apiErrorResponse(
             400,
-            'The password is too short or too long (`PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`).',
+            'The password is too short or too long (`PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`), or a role scope refuses the caller acting on this account (`FAILED_PRECONDITION`).',
           ),
           404: apiErrorResponse(404),
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       apiValidator('json', ResetUserPasswordInput),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.resetPassword(userId, context.req.valid('json').password);
+        await submit(context, context.req.valid('json'), async (service) => {
+          await service.resetPassword(
+            userId,
+            context.req.valid('json').password,
+            actorOf(context),
+          );
+          return null;
+        });
         logSecurityEvent(
           securityLogger,
           context,
@@ -562,13 +776,24 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         responses: {
           204: emptyResponse('Every session of the user was revoked.'),
           ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'A role scope refuses the caller acting on this account (`FAILED_PRECONDITION`, the reason the scope chose).',
+          ),
           404: apiErrorResponse(404),
         },
       }),
       apiValidator('param', UserParams),
+      apiValidator(
+        'header',
+        z.object({ 'idempotency-key': z.string().optional() }),
+      ),
       async (context) => {
         const { userId } = context.req.valid('param');
-        await users.revokeSessions(userId);
+        await submit(context, null, async (service) => {
+          await service.revokeSessions(userId, actorOf(context));
+          return null;
+        });
         logSecurityEvent(
           securityLogger,
           context,
@@ -627,7 +852,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         // The sign-up page's: accepting creates the account from the invitation link.
         ...cliRoute(false),
         description:
-          'The token authorizes only this invitation. Creating an account requires `name` and `password`; an existing account must be signed in as the invited user.',
+          'The token authorizes only this invitation. Creating an account requires `name` and `password` and accepts an optional `username` for sign-in. An existing account must be signed in as the invited user; its name, username and password remain unchanged.',
         security: [],
         responses: {
           200: dataResponse(AcceptedInvitationSchema),
@@ -638,7 +863,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ...apiErrorResponses,
           409: apiErrorResponse(
             409,
-            'The new account conflicts with an existing account.',
+            'The new account conflicts with an existing email or username (`USER_IDENTITY_CONFLICT`). Choose another username and retry with the same invitation.',
           ),
         },
       }),
@@ -876,12 +1101,14 @@ function logSecurityEvent(
       }
     | undefined,
   context: {
+    readonly res: Response;
     get(key: 'authz'): AuthorizationEnv['Variables']['authz'];
   },
   event: string,
   targetUserId: string,
   details: Readonly<Record<string, unknown>> = {},
 ): void {
+  if (context.res.headers.get('Idempotency-Replayed') === 'true') return;
   logger?.info(
     {
       event,
@@ -911,8 +1138,16 @@ function allowed(
   });
 }
 
+/** The authenticated principal acting on an account, for the role scopes' target checks. */
+function actorOf(context: {
+  get(key: 'authz'): AuthorizationEnv['Variables']['authz'];
+}): string {
+  return context.get('authz').identity.principal.id;
+}
+
 async function requireUserAction(
   context: {
+    readonly res: Response;
     get(key: 'authz'): AuthorizationEnv['Variables']['authz'];
   },
   userId: string,

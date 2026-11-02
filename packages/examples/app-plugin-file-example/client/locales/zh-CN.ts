@@ -1,4 +1,5 @@
 const messages: Record<string, string> = {
+  retrySubmission: '重试原操作',
   officePreviewTitle: 'Office 本地预览',
   officePreviewDescription:
     '在下方上传 DOCX、XLSX 或 PPTX 文件，然后点击预览。文档在浏览器内渲染，无需 Office Online 或外部预览服务；订单附件也支持相同预览。',

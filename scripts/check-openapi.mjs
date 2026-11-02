@@ -57,11 +57,6 @@ export function templateTargets(root = repositoryRoot) {
   ];
 }
 
-/** The product applications under `packages/apps` this repository checks, by name. */
-export function applicationTargets(root = repositoryRoot) {
-  return [{ name: 'studio', appDir: path.join(root, 'packages/apps/studio') }];
-}
-
 /**
  * The security schemes of credentials a run carries: a route that accepts one acts for someone else within the actions
  * the run was given, so it names the business action it performs.
@@ -154,11 +149,18 @@ export function findOpenApiProblems(inspection) {
     security,
     cli,
   } of documentOperations(inspection.document)) {
+    // The shared runToken transport also carries native OnlineAgent credentials. Explicit person-only commands
+    // exclude real Runs; their route guards must still enforce that identity boundary at request time.
+    const personOnly =
+      Array.isArray(cli?.identities) &&
+      cli.identities.length === 1 &&
+      cli.identities[0] === 'person';
     const takesRun = (security ?? []).some((requirement) =>
       runSchemes.some((scheme) => scheme in (requirement ?? {})),
     );
     if (
       takesRun &&
+      !personOnly &&
       !RUN_ACTION_EXEMPT.has(operationId) &&
       !(cli && typeof cli === 'object' && cli.action)
     ) {
@@ -311,7 +313,7 @@ export async function runOpenApiCheck(
 }
 
 async function main(argv) {
-  const all = [...templateTargets(), ...applicationTargets()];
+  const all = templateTargets();
   const names = argv.filter((argument) => !argument.startsWith('-'));
   const unknown = names.filter(
     (name) => !all.some((target) => target.name === name),

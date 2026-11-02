@@ -11,6 +11,7 @@ export {
   resolveAgent,
   type AgentLauncher,
   type AgentSpec,
+  type ResolveOptions,
   type ResolvedAgent,
 } from './agents.js';
 export {

@@ -2,12 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { QueueDispatcher } from '../../src/consumer.js';
 import { withChannel } from '../../src/index.js';
-import {
-  decodeEnvelope,
-  encodeEnvelope,
-  serializeMessage,
-} from '../../src/message.js';
-import { redisQueueIdentity } from '../../src/naming.js';
+import { serializeMessage } from '../../src/message.js';
 import { assertJobId, backoffDelay } from '../../src/options.js';
 import { deferred } from '../contract/queue-contract.js';
 
@@ -93,16 +88,10 @@ describe('withChannel', () => {
 });
 
 describe('messages and IDs', () => {
-  it('encodes BullMQ JSON rules and a versioned envelope', () => {
+  it('preserves public JSON serialization rules', () => {
     expect(serializeMessage(undefined)).toBe('{}');
     expect(serializeMessage(null)).toBe('null');
     expect(() => serializeMessage(Symbol('x'))).toThrow(/serialize to JSON/u);
-    const envelope = encodeEnvelope(
-      serializeMessage({ version: 1, payload: 'x' }),
-    );
-    expect(decodeEnvelope(envelope)).toBe('{"version":1,"payload":"x"}');
-    expect(() => decodeEnvelope({ version: 2, payload: '1' })).toThrow();
-    expect(() => decodeEnvelope({ raw: true })).toThrow();
   });
 
   it('checks job IDs with the BullMQ 6.3.6 rules', () => {
@@ -117,12 +106,5 @@ describe('messages and IDs', () => {
     expect(backoffDelay(undefined, 1)).toBe(0);
     expect(backoffDelay(100, 3)).toBe(100);
     expect(backoffDelay({ type: 'exponential', delay: 100 }, 3)).toBe(400);
-  });
-
-  it('derives the Redis identity from namespace and queue', () => {
-    const a = redisQueueIdentity('crm', 'email');
-    expect(a.name).toBe('q-ZW1haWw');
-    expect(a).not.toEqual(redisQueueIdentity('crm2', 'email'));
-    expect(redisQueueIdentity('crm', 'email')).toEqual(a);
   });
 });

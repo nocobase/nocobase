@@ -50,6 +50,7 @@ export const CliParameterSchema: z.ZodType<CliParameter> = z.object({
   default: z.unknown().optional(),
   alias: z.string().optional(),
   contentFile: z.boolean().optional(),
+  contentFileNonEmpty: z.boolean().optional(),
   prompt: z.boolean().optional(),
   fromEnv: z.string().optional(),
   env: z
@@ -124,6 +125,7 @@ export const CliManifestSchema: z.ZodType<CliManifest> = z.object({
   version: z.number().int(),
   etag: z.string().min(1),
   identity: z.object({
+    settings: z.array(z.string()).optional(),
     kind: Identity,
     userId: z.string(),
     displayName: z.string(),

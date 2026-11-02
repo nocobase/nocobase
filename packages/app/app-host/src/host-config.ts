@@ -195,9 +195,13 @@ function decodeAppHostConfig(config: Config, rootDir: string): AppHostConfig {
   );
   const artifactConfig = hostConfig.cut('artifact');
   const artifactDriver = artifactConfig.string('driver');
-  if (artifactDriver !== 'fs' && artifactDriver !== 's3') {
+  if (
+    artifactDriver !== 'fs' &&
+    artifactDriver !== 's3' &&
+    artifactDriver !== 'oss'
+  ) {
     throw new Error(
-      'Invalid app-host config: host.artifact.driver must be "fs" or "s3"',
+      'Invalid app-host config: host.artifact.driver must be "fs", "s3" or "oss"',
     );
   }
   const artifact = {

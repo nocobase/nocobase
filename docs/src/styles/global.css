@@ -1,0 +1,132 @@
+/*
+ * Site-wide base styles. The hand-built pages (home, NocoBase 2 vs 3, capability overviews) were designed on top of
+ * this reset, the one the previous Rspress theme applied, so it stays the same: change it and those pages shift.
+ */
+:root {
+  --docs-bg: #f8f9fb;
+  --docs-paper: #fff;
+  --docs-panel: #f1f3f6;
+  --docs-line: #dce0e7;
+  --docs-ink: #1b202a;
+  --docs-muted: #737b8b;
+  --docs-brand: #3e60ed;
+  --docs-tint: #edf1ff;
+  --docs-header-height: 64px;
+  --docs-font-sans:
+    Archivo, 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --docs-font-mono:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: light;
+}
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+  border-style: solid;
+  border-width: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.5;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  font-family: var(--docs-font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--docs-ink);
+  background: var(--docs-bg);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* The spacing the hand-built pages were designed with; the Markdown layout resets it. */
+  letter-spacing: 0.3px;
+}
+
+body[data-layout='doc'],
+body[data-layout='not-found'] {
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  /* The previous theme's heading defaults, which the hand-built pages rely on. */
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+table {
+  text-indent: 0;
+  border-color: inherit;
+  border-collapse: collapse;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+blockquote,
+dl,
+dd,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+hr,
+figure,
+p,
+pre {
+  margin: 0;
+}
+
+ol,
+ul,
+menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  display: block;
+  vertical-align: middle;
+}
+
+button {
+  cursor: pointer;
+  background: transparent;
+}

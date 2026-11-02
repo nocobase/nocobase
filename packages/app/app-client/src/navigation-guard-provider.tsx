@@ -59,26 +59,67 @@ export function NavigationGuardProvider({
     index: number | undefined;
     delta: number;
   } | null>(null);
-  const allows = useCallback(
-    (): boolean =>
-      !restoringRef.current && [...guards].every((guard) => guard()),
-    [guards],
+  const generationRef = useRef(0);
+  const pendingRef = useRef(false);
+  useLayoutEffect(() => {
+    generationRef.current += 1;
+    return () => {
+      generationRef.current += 1;
+    };
+  }, [incoming]);
+  const allows = useCallback((): boolean | Promise<boolean> => {
+    if (restoringRef.current) return false;
+    const remaining = [...guards];
+    const next = (): boolean | Promise<boolean> => {
+      const guard = remaining.shift();
+      if (!guard) return true;
+      const decision = guard();
+      return typeof decision === 'boolean'
+        ? decision && next()
+        : decision.then((allowed) => allowed && next());
+    };
+    return next();
+  }, [guards]);
+  const requestNavigation = useCallback(
+    (proceed: () => void): void => {
+      if (pendingRef.current) return;
+      const generation = generationRef.current;
+      const decision = allows();
+      if (typeof decision === 'boolean') {
+        if (decision) proceed();
+        return;
+      }
+      pendingRef.current = true;
+      void decision
+        .then((allowed) => {
+          if (allowed && generation === generationRef.current) proceed();
+        })
+        .catch(() => {
+          // A failed guard leaves the current editor mounted.
+        })
+        .finally(() => {
+          pendingRef.current = false;
+        });
+    },
+    [allows],
   );
   const guardedNavigator = useMemo<Navigator>(
     () => ({
       ...navigator,
       push: (...args) => {
-        if (!allows()) return;
-        approvedRef.current = { index: historyIndex(navigator), delta: 1 };
-        navigator.push(...args);
+        requestNavigation(() => {
+          approvedRef.current = { index: historyIndex(navigator), delta: 1 };
+          navigator.push(...args);
+        });
       },
       replace: (...args) => {
-        if (!allows()) return;
-        approvedRef.current = { index: historyIndex(navigator), delta: 0 };
-        navigator.replace(...args);
+        requestNavigation(() => {
+          approvedRef.current = { index: historyIndex(navigator), delta: 0 };
+          navigator.replace(...args);
+        });
       },
     }),
-    [allows, navigator],
+    [requestNavigation, navigator],
   );
   const scopedNavigation = useMemo(
     () => ({ ...navigation, navigator: guardedNavigator }),
@@ -89,7 +130,7 @@ export function NavigationGuardProvider({
     let active = true;
     let timer: number | undefined;
     // Resolve after commit: a memory navigator can notify synchronously, and confirmations must not run in render.
-    queueMicrotask(() => {
+    const decide = async (): Promise<void> => {
       if (!active) return;
       if (incoming === accepted.context) return;
       const index = historyIndex(navigator);
@@ -118,7 +159,13 @@ export function NavigationGuardProvider({
         accept();
         return;
       }
-      if (wasApproved || allows()) {
+      const allowed =
+        wasApproved ||
+        (await Promise.resolve()
+          .then(allows)
+          .catch(() => false));
+      if (!active) return;
+      if (allowed) {
         accept();
         return;
       }
@@ -147,6 +194,11 @@ export function NavigationGuardProvider({
         if (current !== undefined && current !== targetIndex)
           navigator.go(targetIndex - current);
       }, 0);
+    };
+    queueMicrotask(() => {
+      void decide().catch(() => {
+        // Rejected confirmations do not authorize navigation.
+      });
     });
     return () => {
       active = false;
@@ -161,7 +213,7 @@ export function NavigationGuardProvider({
     historyEntries,
   ]);
 
-  // PUSH/REPLACE were checked synchronously above; other changes are held until the layout effect decides.
+  // PUSH/REPLACE are guarded before being sent; other changes are held until the layout effect decides.
   return (
     <NavigationGuardContext.Provider value={guards}>
       <UNSAFE_NavigationContext.Provider value={scopedNavigation}>

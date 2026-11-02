@@ -1,0 +1,21 @@
+---
+/**
+ * Every Markdown page rendered with the document layout. The pages that keep a Markdown source but render
+ * hand-built markup instead (home, comparison, capability overviews) have route files of their own; see
+ * `staticPathsOf` in `src/lib/pages.ts` for why.
+ */
+import type { GetStaticPaths } from 'astro';
+import DocLayout from '../layouts/DocLayout.astro';
+import { staticPathsOf, type DocPage } from '../lib/pages.ts';
+
+export const getStaticPaths = (() =>
+  staticPathsOf('doc')) satisfies GetStaticPaths;
+
+interface Props {
+  page: DocPage;
+}
+
+const { page } = Astro.props;
+---
+
+<DocLayout page={page} />

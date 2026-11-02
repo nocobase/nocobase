@@ -4,6 +4,7 @@
  */
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import type { DatabaseManager } from '@nocobase/db';
+import type { AppDriveConfig } from '@nocobase/drive';
 import type { Logger } from '@nocobase/logging';
 
 import { noPermissions } from '../shared/access.js';
@@ -14,6 +15,7 @@ import {
   narrowedByScope,
   type Caller,
 } from './access/caller.js';
+import { resolveArtifact, type ResolvedArtifact } from './artifact-config.js';
 import type { ReleasesPluginConfig } from './config.js';
 import type { DriverRegistry } from './drivers/types.js';
 import { UploadTicketService } from './services/credentials.js';
@@ -27,6 +29,8 @@ import type { ReleasesSecrets } from './services/secrets.js';
 import type { ReleasesAccess } from './tokens.js';
 
 export interface ReleasesCompositionOptions {
+  /** Required only when artifact references a named disk. */
+  readonly drive?: AppDriveConfig;
   readonly database: DatabaseManager;
   readonly config: Pick<
     ReleasesPluginConfig,
@@ -67,6 +71,17 @@ export interface Releases {
 }
 
 export function createReleases(options: ReleasesCompositionOptions): Releases {
+  return createResolvedReleases(
+    options,
+    resolveArtifact(options.config.artifact, options.drive),
+  );
+}
+
+/** Internal composition shared by the Provider after validating configuration, before it initializes Hosts. */
+export function createResolvedReleases(
+  options: ReleasesCompositionOptions,
+  artifact: ResolvedArtifact,
+): Releases {
   const guard = new AccessGuard(options.access);
   const events = new ReleasesEventBus(options.logger);
   const variables = new VariableStore({
@@ -97,7 +112,8 @@ export function createReleases(options: ReleasesCompositionOptions): Releases {
     registries,
     guard,
     events,
-    artifact: options.config.artifact,
+    artifact: artifact.disk,
+    artifactPrefix: artifact.prefix,
     dataDir: options.config.dataDir,
     maxArtifactBytes:
       options.config.maxArtifactSizeMB === undefined

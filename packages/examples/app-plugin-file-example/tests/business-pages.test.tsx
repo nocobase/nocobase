@@ -104,6 +104,7 @@ describe('one-to-one profile avatars page', () => {
     const files: StoredFile[] = [];
     const avatars = createFileRepository(files);
     state.manager = { repository: vi.fn(() => avatars) };
+    let loseResponse = true;
     const profiles = {
       findMany: vi.fn(() =>
         Promise.resolve([
@@ -124,6 +125,10 @@ describe('one-to-one profile avatars page', () => {
             (item) => item.id === values.avatar.connect?.id,
           );
           if (file) file.profileId = filter.id;
+          if (loseResponse) {
+            loseResponse = false;
+            return Promise.reject(new TypeError('Committed response lost'));
+          }
           if (values.avatar.disconnect)
             for (const item of files) item.profileId = null;
           return Promise.resolve({ record: {}, createdTargets: [] });
@@ -148,16 +153,25 @@ describe('one-to-one profile avatars page', () => {
     await waitFor(() =>
       expect(profiles.updateOne).toHaveBeenCalledWith({
         filter: { id: 'profile-ada' },
+        idempotencyKey: expect.any(String),
         values: { avatar: { connect: { id: 'file-1' } } },
       }),
     );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Retry original operation' }),
+    );
     await screen.findByText('ada.png');
+    expect(profiles.updateOne.mock.calls[0][0]).toEqual(
+      profiles.updateOne.mock.calls[1][0],
+    );
+    expect(avatars.uploadOne).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Remove avatar')).toBeTruthy();
 
     fireEvent.click(screen.getByText('Remove avatar'));
     await waitFor(() =>
       expect(profiles.updateOne).toHaveBeenCalledWith({
         filter: { id: 'profile-ada' },
+        idempotencyKey: expect.any(String),
         values: { avatar: { disconnect: true } },
       }),
     );
@@ -230,6 +244,7 @@ describe('one-to-many order attachments page', () => {
     await waitFor(() =>
       expect(orders.updateOne).toHaveBeenCalledWith({
         filter: { id: 'order-2401' },
+        idempotencyKey: expect.any(String),
         values: {
           attachments: { connect: [{ id: 'file-1' }, { id: 'file-2' }] },
         },
@@ -244,6 +259,7 @@ describe('one-to-many order attachments page', () => {
     await waitFor(() =>
       expect(orders.updateOne).toHaveBeenCalledWith({
         filter: { id: 'order-2401' },
+        idempotencyKey: expect.any(String),
         values: { attachments: { disconnect: [{ id: 'file-1' }] } },
       }),
     );

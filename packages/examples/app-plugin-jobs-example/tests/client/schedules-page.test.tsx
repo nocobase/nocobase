@@ -84,10 +84,11 @@ beforeEach(() => {
   state.api = { request } as unknown as ApiClient;
   state.realtime = {
     connected: true,
-    subscribe: vi.fn((_topic: string, next: typeof listener) => {
-      listener = next;
-      return unsubscribe;
+    watch: vi.fn((_topic: string, options: { onEvent: typeof listener }) => {
+      listener = options.onEvent;
+      return { close: unsubscribe };
     }),
+    onStateChange: vi.fn(() => () => undefined),
     onOpen: vi.fn(() => () => undefined),
   } as unknown as RealtimeClient;
 });
@@ -109,9 +110,12 @@ async function show(): Promise<RenderResult> {
 
 it('lists the rules, starts one and reloads on every pushed change', async () => {
   const view = await show();
-  expect(state.realtime!.subscribe).toHaveBeenCalledExactlyOnceWith(
+  expect(state.realtime!.watch).toHaveBeenCalledExactlyOnceWith(
     SCHEDULE_CHANGES_TOPIC,
-    expect.any(Function),
+    expect.objectContaining({
+      onEvent: expect.any(Function),
+      onReady: expect.any(Function),
+    }),
   );
   expect(await screen.findByText('Heartbeat')).toBeTruthy();
   expect(screen.getByText('Built in')).toBeTruthy();

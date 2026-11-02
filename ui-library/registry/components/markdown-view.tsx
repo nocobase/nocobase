@@ -4,7 +4,14 @@
  * draw itself (`renderCodeBlock`, for diagrams). Every other URL keeps react-markdown's sanitisation.
  */
 import { UserIcon } from 'lucide-react';
-import type { ComponentProps, ReactElement, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useMemo,
+  type ComponentProps,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import Markdown, { defaultUrlTransform, type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -61,6 +68,127 @@ export interface MarkdownViewProps {
   readonly mentionIcon?: (kind: string) => ReactNode;
 }
 
+const MarkdownOptionsContext = createContext<
+  Pick<MarkdownViewProps, 'renderCodeBlock' | 'mentionIcon'>
+>({});
+
+// Component types stay stable even when consumers supply new callbacks on a refresh.
+const components: Components = {
+  a: function MarkdownLink({
+    href,
+    children,
+    node: _node,
+    ...props
+  }: ComponentProps<'a'> & { readonly node?: unknown }) {
+    const { mentionIcon } = useContext(MarkdownOptionsContext);
+    const mention = href ? MENTION_HREF.exec(href) : null;
+    if (mention)
+      return (
+        <span
+          data-mention={mention[1]}
+          className='inline-flex items-center gap-0.5 rounded-md bg-secondary px-1 py-px align-baseline font-medium text-secondary-foreground [&_svg]:size-3'
+        >
+          {mentionIcon?.(mention[1] ?? '') ?? <UserIcon aria-hidden='true' />}
+          {children}
+        </span>
+      );
+    const linkProps: ComponentProps<'a'> = {
+      href,
+      target: '_blank',
+      rel: 'noreferrer',
+      className: 'font-medium text-primary underline underline-offset-4',
+      ...props,
+    };
+    const link = <a {...linkProps}>{children}</a>;
+    return link;
+  },
+  p: ({ node: _node, ...props }) => (
+    <p className='leading-6 not-first:mt-2' {...props} />
+  ),
+  ul: ({ node: _node, ...props }) => (
+    <ul className='my-2 ml-5 list-disc space-y-1' {...props} />
+  ),
+  ol: ({ node: _node, ...props }) => (
+    <ol className='my-2 ml-5 list-decimal space-y-1' {...props} />
+  ),
+  blockquote: ({ node: _node, ...props }) => (
+    <blockquote
+      className='my-2 border-l-2 pl-3 text-muted-foreground'
+      {...props}
+    />
+  ),
+  code: ({ node: _node, className: codeClass, ...props }) => (
+    <code
+      className={cn(
+        'rounded bg-muted px-1 py-0.5 font-mono text-xs',
+        codeClass,
+      )}
+      {...props}
+    />
+  ),
+  pre: function MarkdownPre({ node, ...props }) {
+    const { renderCodeBlock } = useContext(MarkdownOptionsContext);
+    const block = (
+      <pre
+        className='my-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs [&>code]:bg-transparent [&>code]:p-0'
+        {...props}
+      />
+    );
+    const code = renderCodeBlock ? codeOf(node) : null;
+    return code && renderCodeBlock ? (
+      <>{renderCodeBlock(code, block)}</>
+    ) : (
+      block
+    );
+  },
+  table: ({ node: _node, ...props }) => (
+    <div className='my-2 w-full overflow-x-auto'>
+      <table className='w-full text-sm' {...props} />
+    </div>
+  ),
+  th: ({ node: _node, ...props }) => (
+    <th className='border px-2 py-1 text-left font-medium' {...props} />
+  ),
+  td: ({ node: _node, ...props }) => (
+    <td className='border px-2 py-1' {...props} />
+  ),
+  hr: ({ node: _node, ...props }) => <hr className='my-3' {...props} />,
+  h1: ({ node: _node, ...props }) => (
+    <h1 className='mt-4 mb-2 text-lg font-semibold first:mt-0' {...props} />
+  ),
+  h2: ({ node: _node, ...props }) => (
+    <h2 className='mt-4 mb-2 text-base font-semibold first:mt-0' {...props} />
+  ),
+  h3: ({ node: _node, ...props }) => (
+    <h3 className='mt-3 mb-1.5 text-sm font-semibold first:mt-0' {...props} />
+  ),
+};
+
+interface HeadingNode {
+  type: string;
+  depth?: number;
+  children?: HeadingNode[];
+  data?: { hProperties?: Record<string, unknown> };
+}
+
+/** Assign ids in document order while parsing, independently of React's render order. */
+function remarkHeadingIds(ids: readonly string[]) {
+  return (tree: HeadingNode): void => {
+    let heading = 0;
+    const visit = (node: HeadingNode): void => {
+      if (node.type === 'heading' && node.depth && node.depth <= 3) {
+        const id = ids[heading++];
+        if (id !== undefined) {
+          node.data ??= {};
+          node.data.hProperties = { ...node.data.hProperties, id };
+        }
+      }
+      node.children?.forEach(visit);
+    };
+    visit(tree);
+  };
+}
+
 export function MarkdownView({
   content,
   className,
@@ -68,122 +196,31 @@ export function MarkdownView({
   renderCodeBlock,
   mentionIcon,
 }: MarkdownViewProps): ReactElement {
-  let heading = 0;
-  const nextId = (): string | undefined => headingIds?.[heading++];
-  const components: Components = {
-    a: ({
-      href,
-      children,
-      node: _node,
-      ...props
-    }: ComponentProps<'a'> & { readonly node?: unknown }) => {
-      const mention = href ? MENTION_HREF.exec(href) : null;
-      if (mention)
-        return (
-          <span
-            data-mention={mention[1]}
-            className='inline-flex items-center gap-0.5 rounded-md bg-secondary px-1 py-px align-baseline font-medium text-secondary-foreground [&_svg]:size-3'
-          >
-            {mentionIcon?.(mention[1] ?? '') ?? <UserIcon aria-hidden='true' />}
-            {children}
-          </span>
-        );
-      return (
-        <a
-          href={href}
-          target='_blank'
-          rel='noreferrer'
-          className='font-medium text-primary underline underline-offset-4'
-          {...props}
-        >
-          {children}
-        </a>
-      );
-    },
-    p: ({ node: _node, ...props }) => (
-      <p className='leading-6 not-first:mt-2' {...props} />
-    ),
-    ul: ({ node: _node, ...props }) => (
-      <ul className='my-2 ml-5 list-disc space-y-1' {...props} />
-    ),
-    ol: ({ node: _node, ...props }) => (
-      <ol className='my-2 ml-5 list-decimal space-y-1' {...props} />
-    ),
-    blockquote: ({ node: _node, ...props }) => (
-      <blockquote
-        className='my-2 border-l-2 pl-3 text-muted-foreground'
-        {...props}
-      />
-    ),
-    code: ({ node: _node, className: codeClass, ...props }) => (
-      <code
-        className={cn(
-          'rounded bg-muted px-1 py-0.5 font-mono text-xs',
-          codeClass,
-        )}
-        {...props}
-      />
-    ),
-    pre: ({ node, ...props }) => {
-      const block = (
-        <pre
-          className='my-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs [&>code]:bg-transparent [&>code]:p-0'
-          {...props}
-        />
-      );
-      const code = renderCodeBlock ? codeOf(node) : null;
-      return code && renderCodeBlock ? (
-        <>{renderCodeBlock(code, block)}</>
-      ) : (
-        block
-      );
-    },
-    table: ({ node: _node, ...props }) => (
-      <div className='my-2 w-full overflow-x-auto'>
-        <table className='w-full text-sm' {...props} />
-      </div>
-    ),
-    th: ({ node: _node, ...props }) => (
-      <th className='border px-2 py-1 text-left font-medium' {...props} />
-    ),
-    td: ({ node: _node, ...props }) => (
-      <td className='border px-2 py-1' {...props} />
-    ),
-    hr: ({ node: _node, ...props }) => <hr className='my-3' {...props} />,
-    h1: ({ node: _node, ...props }) => (
-      <h1
-        id={nextId()}
-        className='mt-4 mb-2 text-lg font-semibold first:mt-0'
-        {...props}
-      />
-    ),
-    h2: ({ node: _node, ...props }) => (
-      <h2
-        id={nextId()}
-        className='mt-4 mb-2 text-base font-semibold first:mt-0'
-        {...props}
-      />
-    ),
-    h3: ({ node: _node, ...props }) => (
-      <h3
-        id={nextId()}
-        className='mt-3 mb-1.5 text-sm font-semibold first:mt-0'
-        {...props}
-      />
-    ),
-  };
+  const remarkPlugins = useMemo(
+    () => [
+      remarkGfm,
+      remarkCjkAutolink,
+      [remarkHeadingIds, headingIds ?? []] as [
+        typeof remarkHeadingIds,
+        readonly string[],
+      ],
+    ],
+    [headingIds],
+  );
   return (
-    <div
-      className={cn('min-w-0 text-sm wrap-anywhere', className)}
-      data-slot='markdown-view'
-    >
-      <Markdown
-        remarkPlugins={[remarkGfm, remarkCjkAutolink]}
-        urlTransform={urlTransform}
-        components={components}
+    <MarkdownOptionsContext value={{ renderCodeBlock, mentionIcon }}>
+      <div
+        className={cn('min-w-0 text-sm wrap-anywhere', className)}
+        data-slot='markdown-view'
       >
-        {content}
-      </Markdown>
-    </div>
+        <Markdown
+          remarkPlugins={remarkPlugins}
+          urlTransform={urlTransform}
+          components={components}
+        >
+          {content}
+        </Markdown>
+      </div>
+    </MarkdownOptionsContext>
   );
 }

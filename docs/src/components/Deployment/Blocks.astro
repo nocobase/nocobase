@@ -1,0 +1,30 @@
+---
+import Command from './Command.astro';
+
+interface Block {
+  text?: string;
+  context?: string;
+  code?: string;
+  language?: string;
+}
+
+interface Props {
+  blocks: Block[];
+  content: { copy: string; copied: string; copyFailed: string };
+}
+
+const { blocks, content } = Astro.props;
+---
+
+{blocks.map((block) =>
+  block.code !== undefined ? (
+    <Command
+      text={block.code}
+      context={block.context ?? ''}
+      content={content}
+      language={block.language}
+    />
+  ) : (
+    <p>{block.text}</p>
+  ),
+)}

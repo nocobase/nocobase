@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-
+import {
+  createRealtimeRefresh,
+  realtimeClientToken,
+  useService,
+} from '@nocobase/app-client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { OFFICE_FLOWS_TOPIC } from '../../shared/realtime.js';
 import { errorMessage } from './api.js';
 
-/** How often an open page refreshes; effects and sweeps finish in the background. */
-const REFRESH_MS = 4000;
-
-/**
- * Loads `load` now and every few seconds while `key` stays the same, and
- * returns a `reload` for after an action. A failed load keeps the last data.
- */
+/** Reads on lifecycle changes, readiness and focus, with reconciliation for edits outside the lifecycle. */
 export function useLoader<T>(
   load: (() => Promise<T>) | undefined,
   key: string,
@@ -17,34 +16,57 @@ export function useLoader<T>(
   readonly error: string;
   readonly reload: () => Promise<void>;
 } {
-  // Data is kept with the key it was loaded for, so switching records never
-  // shows the previous record's data.
-  const [loaded, setLoaded] = useState<{ key: string; data: T } | undefined>();
-  const [error, setError] = useState('');
-  const reload = useCallback(async (): Promise<void> => {
-    if (!load) return;
-    try {
-      const data = await load();
-      setLoaded({ key, data });
-      setError('');
-    } catch (cause) {
-      setError(errorMessage(cause));
-    }
-    // `key` stands for everything `load` closes over.
-    // eslint-disable-next-line react-hooks/exhaustive-deps, @eslint-react/exhaustive-deps
-  }, [key]);
+  const realtime = useService(realtimeClientToken);
+  const loadRef = useRef(load);
+  const reloadRef = useRef<() => Promise<void>>(async () => {});
+  const [loaded, setLoaded] = useState<{ key: string; data: T }>();
+  const [failure, setFailure] = useState<{ key: string; message: string }>();
   useEffect(() => {
-    // The first load also waits a tick, so every refresh comes from a timer.
-    const first = setTimeout(() => void reload(), 0);
-    const timer = setInterval(() => void reload(), REFRESH_MS);
-    return () => {
-      clearTimeout(first);
-      clearInterval(timer);
+    loadRef.current = load;
+  });
+  useEffect(() => {
+    const waiting = new Set<() => void>();
+    const settle = (): void => {
+      for (const resolve of waiting) resolve();
+      waiting.clear();
     };
-  }, [reload]);
+    const scheduled = createRealtimeRefresh(
+      async (signal) => {
+        if (!loadRef.current) return;
+        const data = await loadRef.current();
+        if (signal.aborted) return;
+        setLoaded({ key, data });
+        setFailure(undefined);
+      },
+      {
+        refreshIntervalMs: 60_000,
+        onError: (error) => setFailure({ key, message: errorMessage(error) }),
+        onStateChange: ({ status }) => {
+          if (status === 'idle' || status === 'failed' || status === 'closed')
+            settle();
+        },
+      },
+    );
+    reloadRef.current = () =>
+      new Promise<void>((resolve) => {
+        waiting.add(resolve);
+        scheduled.retry();
+      });
+    const subscription = realtime.watch(OFFICE_FLOWS_TOPIC, {
+      onEvent: scheduled.request,
+      onReady: scheduled.retry,
+    });
+    scheduled.request();
+    return () => {
+      reloadRef.current = async () => {};
+      subscription.close();
+      scheduled.close();
+    };
+  }, [key, realtime]);
+  const reload = useCallback(() => reloadRef.current(), []);
   return {
     data: loaded?.key === key ? loaded.data : undefined,
-    error,
+    error: failure?.key === key ? failure.message : '',
     reload,
   };
 }

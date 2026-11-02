@@ -8,6 +8,7 @@ export {
   type EmbedRequest,
   type EmbedResult,
   type GenerateRequest,
+  type WebSearchRequest,
   type ModelEndpoint,
   type ModelSource,
   type RerankRequest,

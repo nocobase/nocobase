@@ -1,6 +1,7 @@
 export { default } from './plugin.js';
 export * from './tokens.js';
 export type {
+  ReleasesArtifactDiskReference,
   ReleasesDockerHostConfig,
   ReleasesHostConfig,
   ReleasesPluginConfig,

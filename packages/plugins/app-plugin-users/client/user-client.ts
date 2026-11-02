@@ -20,6 +20,7 @@ export interface UserRoleScopeOption {
   readonly selection: 'single' | 'multiple';
   readonly requiredOnCreate: boolean;
   readonly hasAuthenticatedDefaultAccess?: boolean;
+  readonly defaultValue?: UserRoleValue;
   readonly options: readonly UserRoleOption[];
 }
 
@@ -52,6 +53,8 @@ export interface ListUsersInput {
   /** Matches name, username and email. */
   readonly q?: string;
   readonly status?: 'enabled' | 'disabled';
+  readonly sort?: 'name';
+  readonly order?: 'asc' | 'desc';
   readonly roleScope?: string;
   readonly role?: string;
 }
@@ -65,6 +68,7 @@ export interface CreateUserInput {
 }
 
 export interface UpdateUserInput {
+  readonly roleScopes?: Readonly<Record<string, UserRoleValue>>;
   readonly name?: string;
   readonly username?: string | null;
   readonly email?: string;
@@ -112,6 +116,7 @@ export interface PublicUserInvitation {
 export interface AcceptUserInvitationInput {
   readonly token: string;
   readonly name: string;
+  readonly username?: string;
   readonly password: string;
 }
 
@@ -152,8 +157,12 @@ interface ListResponse<T> {
 export class UsersClient {
   constructor(private readonly api: ApiClient) {}
 
+  get(userId: string): Promise<ManagedUser> {
+    return this.getData<ManagedUser>(`users/${encodeURIComponent(userId)}`);
+  }
+
   options(): Promise<UsersOptions> {
-    return this.get<UsersOptions>('users/options');
+    return this.getData<UsersOptions>('users/options');
   }
 
   list(input: ListUsersInput = {}): Promise<ManagedUserPage> {
@@ -167,29 +176,41 @@ export class UsersClient {
       .then(({ data, meta }) => ({ items: data, ...meta }));
   }
 
-  create(input: CreateUserInput): Promise<ManagedUser> {
-    return this.send<ManagedUser>('users', 'POST', input);
+  create(
+    input: CreateUserInput,
+    idempotencyKey?: string,
+  ): Promise<ManagedUser> {
+    return this.send<ManagedUser>('users', 'POST', input, idempotencyKey);
   }
 
-  update(userId: string, input: UpdateUserInput): Promise<ManagedUser> {
+  update(
+    userId: string,
+    input: UpdateUserInput,
+    idempotencyKey?: string,
+  ): Promise<ManagedUser> {
     return this.send<ManagedUser>(
       `users/${encodeURIComponent(userId)}`,
       'PATCH',
       input,
+      idempotencyKey,
     );
   }
 
-  disable(userId: string): Promise<ManagedUser> {
+  disable(userId: string, idempotencyKey?: string): Promise<ManagedUser> {
     return this.send<ManagedUser>(
       `users/${encodeURIComponent(userId)}/disable`,
       'POST',
+      undefined,
+      idempotencyKey,
     );
   }
 
-  enable(userId: string): Promise<ManagedUser> {
+  enable(userId: string, idempotencyKey?: string): Promise<ManagedUser> {
     return this.send<ManagedUser>(
       `users/${encodeURIComponent(userId)}/enable`,
       'POST',
+      undefined,
+      idempotencyKey,
     );
   }
 
@@ -197,39 +218,54 @@ export class UsersClient {
     userId: string,
     scope: string,
     value: UserRoleValue,
+    idempotencyKey?: string,
   ): Promise<ManagedUser> {
     return this.send<ManagedUser>(
       `users/${encodeURIComponent(userId)}/roleScopes/${encodeURIComponent(scope)}`,
       'PUT',
       { value },
+      idempotencyKey,
     );
   }
 
-  async resetPassword(userId: string, password: string): Promise<void> {
+  async resetPassword(
+    userId: string,
+    password: string,
+    idempotencyKey?: string,
+  ): Promise<void> {
     await this.api.request({
       path: `users/${encodeURIComponent(userId)}/resetPassword`,
       method: 'POST',
       json: { password },
+      ...(idempotencyKey
+        ? { headers: { 'Idempotency-Key': idempotencyKey } }
+        : {}),
     });
   }
 
-  async remove(userId: string): Promise<void> {
+  async remove(userId: string, idempotencyKey?: string): Promise<void> {
     await this.api.request({
       path: `users/${encodeURIComponent(userId)}`,
       method: 'DELETE',
       query: { confirm: true },
+      ...(idempotencyKey
+        ? { headers: { 'Idempotency-Key': idempotencyKey } }
+        : {}),
     });
   }
 
-  async revokeSessions(userId: string): Promise<void> {
+  async revokeSessions(userId: string, idempotencyKey?: string): Promise<void> {
     await this.api.request({
       path: `users/${encodeURIComponent(userId)}/revokeSessions`,
+      ...(idempotencyKey
+        ? { headers: { 'Idempotency-Key': idempotencyKey } }
+        : {}),
       method: 'POST',
     });
   }
 
   listInvitations(): Promise<UserInvitation[]> {
-    return this.get<UserInvitation[]>('users/invitations');
+    return this.getData<UserInvitation[]>('users/invitations');
   }
 
   invite(input: InviteUsersInput): Promise<UserInvitationResult[]> {
@@ -275,7 +311,7 @@ export class UsersClient {
     );
   }
 
-  private get<T>(path: string): Promise<T> {
+  private getData<T>(path: string): Promise<T> {
     return this.api.request<DataResponse<T>>({ path }).then(({ data }) => data);
   }
 
@@ -283,11 +319,15 @@ export class UsersClient {
     path: string,
     method: 'POST' | 'PATCH' | 'PUT',
     json?: unknown,
+    idempotencyKey?: string,
   ): Promise<T> {
     return this.api
       .request<DataResponse<T>>({
         path,
         method,
+        ...(idempotencyKey
+          ? { headers: { 'Idempotency-Key': idempotencyKey } }
+          : {}),
         ...(json === undefined ? {} : { json }),
       })
       .then(({ data }) => data);

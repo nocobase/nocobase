@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react';
-import { apiClientToken, useService } from '@nocobase/app-client';
+import { createUuid, apiClientToken, useService } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { NS } from '../../catalog.js';
 import { useExample } from './use-example.js';
@@ -183,7 +183,7 @@ function RelationEditor({ id }: { id: string }): ReactElement {
                 checks: {
                   create: [
                     {
-                      id: crypto.randomUUID(),
+                      id: createUuid(),
                       title: title.trim(),
                       done: false,
                     },

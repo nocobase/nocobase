@@ -33,6 +33,7 @@ describe('@nocobase/app-plugin-authorization database', () => {
       validateMigrations(migrationsDirectory),
     ).resolves.toMatchObject([
       { name: '202608210001_create_permission_set_tables' },
+      { name: '202610150001_authorization_permission_set_revision' },
     ]);
     await expect(validateSeeds(seedsDirectory)).resolves.toMatchObject([
       {
@@ -41,6 +42,7 @@ describe('@nocobase/app-plugin-authorization database', () => {
       {
         name: '202608250002_authorization_create_member_set',
       },
+      { name: '202611010001_authorization_explicit_member_assignments' },
     ]);
   });
 
@@ -111,5 +113,40 @@ describeMigration('202608210001_create_permission_set_tables', {
     for (const name of PERMISSION_SET_COLLECTIONS) {
       await expectCollection(name).not.toExist();
     }
+  },
+});
+
+// The migration carries existing roles forward, rolls back and applies again.
+describeMigration('202610150001_authorization_permission_set_revision', {
+  sources: [pluginMigrations('app-plugin-authorization')],
+  before: async ({ connection }) => {
+    await connection.query
+      .insertInto('authorizationPermissionSets')
+      .values({
+        id: 'revision-migration',
+        key: 'revision-migration',
+        grants: '[]',
+        title: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .execute();
+  },
+  up: async ({ connection, expectCollection }) => {
+    await expectCollection('authorizationPermissionSets').toHaveField(
+      'revision',
+      { nullable: false, length: 64 },
+    );
+    const row = await connection.query
+      .selectFrom('authorizationPermissionSets')
+      .select(['revision'])
+      .where('key', '=', 'revision-migration')
+      .executeTakeFirst();
+    expect(row?.revision).toBe('initial');
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('authorizationPermissionSets').not.toHaveField(
+      'revision',
+    );
   },
 });

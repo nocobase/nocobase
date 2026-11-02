@@ -1,9 +1,61 @@
+import settings from './settings-zh-CN.js';
 import type { SystemResource } from './en-US.js';
 import deviceApprovalZhCN from '#extensions/nocobase-device-approval/locales/zh-CN';
 import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  listFeedback: {
+    loading: '加载中',
+    empty: '暂无数据',
+    noResults: '无结果',
+    forbidden: '无权访问',
+    unauthenticated: '会话已过期',
+    failed: '列表加载失败',
+    refreshFailed: '刷新失败，仍显示旧数据',
+    retry: '重试',
+    retrying: '正在重试…',
+    clear: '清空筛选',
+    signIn: '登录',
+  },
+  flowDiagram: {
+    controls: '流程图控制',
+    fitView: '适应画布',
+    fullscreen: '全屏',
+    exitFullscreen: '退出全屏',
+    escapeHint: '按 Escape 退出',
+    leavesTo: '可转到',
+    arrivesFrom: '来自',
+    otherRoutes: '其他流转',
+    minimap: '流程缩略导航',
+
+    configure: '配置',
+    overview: '流程缩略导航',
+    actualSize: '实际大小',
+    states: '状态',
+    transitions: '转移',
+    configurable: '可配置参数',
+    current: '当前',
+    visited: '已经过',
+    initial: '初始状态',
+    final: '终止状态',
+    state: '状态',
+    zoomOut: '缩小',
+    zoomIn: '放大',
+    fit: '适应画布',
+
+    empty: '暂无可展示的状态。',
+    loading: '正在布局流程图…',
+    failed: '无法布局此流程图。',
+    nodeHelp: '按 Enter 或空格键选择状态。',
+    edgeHelp: '按 Enter 或空格键选择转移。',
+  },
+  settings,
+  'auth.preparingSession': '正在准备登录会话…',
+  'auth.connectionFailed': '连接失败',
+  'auth.connectionFailedDescription':
+    '实时连接暂时无法准备就绪。请重试后进入应用，或退出登录。',
+
   'auth.passwordResetSuccess': '密码已重置，请用新密码登录。',
   'auth.requestNewResetLink': '重新申请重置链接',
 
@@ -11,6 +63,14 @@ const systemZhCN: SystemResource = {
   ...deviceApprovalZhCN,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
   ...inboxZhCN,
+  // Shared form wording overrides the defaults included by composed blocks.
+  formFeedback: {
+    field: '此字段的值未通过校验，请检查并修改后重试。',
+    invalid: '请检查标记的字段后重试。',
+    failed: '保存失败，已保留您的输入，请重试。',
+    network: '无法连接，请检查网络后重试。已保留您的输入。',
+    denied: '当前权限无法提交此表单。已保留您的输入。',
+  },
   // The UI Library component of the header's inbox button.
   'inboxButton.title': '收件箱',
   'inboxButton.pending': '收件箱，{{count}} 项待处理',
@@ -327,7 +387,7 @@ const systemZhCN: SystemResource = {
     back: '返回',
   },
   dataTable: {
-    noResults: '暂无数据。',
+    noResults: '无结果',
     sortAscending: '升序',
     sortDescending: '降序',
     hideColumn: '隐藏',

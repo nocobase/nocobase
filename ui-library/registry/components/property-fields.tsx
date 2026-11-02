@@ -11,6 +11,8 @@
  * click and edits on a double-click; a link, which a click and a double-click would open, is edited from a pencil
  * shown on hover.
  */
+import { copyText } from '@nocobase/app-client';
+
 import { format, type Locale } from 'date-fns';
 import {
   BotIcon,
@@ -207,10 +209,7 @@ export function PropertyRow({
       ''
     ).trim();
     if (!value) return;
-    void navigator.clipboard
-      ?.writeText(value)
-      .then(() => setCopied(true))
-      .catch(() => undefined);
+    void copyText(value).then((success) => setCopied(success));
   };
   const copyLabel = copied ? labels.copied : labels.copy;
   return (

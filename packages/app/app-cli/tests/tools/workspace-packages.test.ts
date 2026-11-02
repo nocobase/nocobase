@@ -61,6 +61,27 @@ function createMonorepo(patterns: readonly string[]): string {
 }
 
 describe('listWorkspacePackages', () => {
+  it('includes the root application and its internal packages without discovering neighbouring projects', () => {
+    const parent = createDirectory();
+    const root = writePackage(path.join(parent, 'app'), '@fixture/root-app');
+    writeFileSync(
+      path.join(root, 'pnpm-workspace.yaml'),
+      "packages: ['packages/*', '!packages/excluded']\n",
+    );
+    const shared = writePackage(
+      path.join(root, 'packages', 'shared'),
+      '@fixture/shared',
+    );
+    writePackage(path.join(root, 'packages', 'excluded'), '@fixture/excluded');
+    writePackage(path.join(parent, 'other'), '@fixture/other');
+    expect(listWorkspacePackages(root)).toEqual(
+      new Map([
+        ['@fixture/root-app', root],
+        ['@fixture/shared', shared],
+      ]),
+    );
+  });
+
   it('reads the workspace declaration, so an application at the repository root finds the packages under packages/', () => {
     const root = createMonorepo(['packages/*/*', 'acme']);
 

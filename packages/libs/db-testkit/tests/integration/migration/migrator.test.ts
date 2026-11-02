@@ -1,4 +1,4 @@
-import { ServiceContainer } from '../../../../service-provider/src/index.js';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { databaseManagerToken } from '../../../../db/src/index.js';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';

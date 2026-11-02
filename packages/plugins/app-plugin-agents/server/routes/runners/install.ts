@@ -141,7 +141,7 @@ usage() {
 Usage: install.sh --token <token> [--server <url>] [--runner] [options]
 
   --token <token>         A download token (the CLI alone) or, with --runner, a registration token from "Add runtime"
-  --server <url>          The application (default: the one this script came from)
+  --server <url>          The application (required with --runner; otherwise defaults to the script's application)
   --runner                Also install ${RUNNER_PRODUCT}, register this host as a runtime and start it as a user service
   --prefix <dir>          Where to install @CLI@ (default: ~/.local/share/@CLI@, or NOCOBASE_CLI_INSTALL_DIR)
   --bin-dir <dir>         Where to link the commands (default: ~/.local/bin, or NOCOBASE_CLI_BIN_DIR)
@@ -158,6 +158,7 @@ USAGE
 cli=@CLI@
 runner_cmd=${RUNNER_PRODUCT}
 server="@DEFAULT_SERVER@"
+server_explicit=0
 token=""
 name=""
 prefix="\${NOCOBASE_CLI_INSTALL_DIR:-}"
@@ -170,7 +171,7 @@ service=1
 dry_run=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --server) server="\${2:-}"; shift 2 ;;
+    --server) server="\${2:-}"; server_explicit=1; shift 2 ;;
     --token) token="\${2:-}"; shift 2 ;;
     --runner) runner=1; shift ;;
     --name) name="\${2:-}"; runner_only="$1"; shift 2 ;;
@@ -184,6 +185,10 @@ while [ $# -gt 0 ]; do
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
+if [ "$runner" = 1 ] && { [ "$server_explicit" = 0 ] || [ -z "$server" ]; }; then
+  echo '--runner requires --server <url>. Run: curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --runner --server <server> --token <registration token>' >&2
+  exit 2
+fi
 if [ -z "$server" ] || [ -z "$token" ]; then
   usage >&2
   exit 2
@@ -206,7 +211,7 @@ run() {
 # The token says what it is for; the other kind fails here, before anything is installed.
 case "$token" in
   ${CREDENTIAL_PREFIXES.download}*)
-    [ "$runner" = 0 ] || fail "This is a download token: it installs the $cli CLI only. To make this host a runtime, use the command from Agent team > Runtimes > Add runtime, which has --runner and a registration token."
+    [ "$runner" = 0 ] || fail "This is a download token: it installs the $cli CLI only. To make this host a runtime, use the command from Agent management > Runtimes > Add runtime, which has --runner and a registration token."
     header="${HEADERS.downloadToken}" ;;
   ${CREDENTIAL_PREFIXES.registration}*)
     [ "$runner" = 1 ] || fail "This is a runtime registration token: run the command with --runner, as Add runtime shows it. To install the CLI alone, use a download token."

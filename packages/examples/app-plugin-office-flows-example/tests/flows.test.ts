@@ -27,6 +27,7 @@ import {
 import { registerLifecycles } from '../server/lifecycles/index.js';
 import { apiRoutes } from '../server/routes/index.js';
 import { COLLECTIONS } from '../server/scope.js';
+import { OfficeWorkflowParameterService } from '../server/services/workflow-parameters.js';
 import { OfficeFlowsService } from '../server/services/office-flows.js';
 import { OfficeStore, people, type Plain } from '../server/services/store.js';
 import { officeFlowsServiceToken } from '../server/tokens.js';
@@ -479,6 +480,50 @@ describe('incoming document', () => {
     const [team] = (await service.myTasks('luoxin')).records;
     const teamId = String(team!.id);
     expect(team!.kind).toBe('team');
+    const parameters = new OfficeWorkflowParameterService(database);
+    const teamConfig = await parameters.read('teamTasks');
+    await expect(
+      service.addRow(
+        'team',
+        teamId,
+        { departmentName: '董事会办公室', ...allPeople },
+        'luoxin',
+      ),
+    ).rejects.toMatchObject({ reason: 'DEPARTMENT_OUT_OF_SCOPE' });
+    await parameters.save(
+      'teamTasks',
+      {
+        dispatchRules: {
+          ...teamConfig.values.dispatchRules!,
+          ownDepartmentOnly: false,
+          assigneeRole: 'heads',
+        },
+      },
+      0,
+    );
+    const roleRow = await service.addRow(
+      'team',
+      teamId,
+      { departmentName: '董事会办公室', ...allPeople },
+      'luoxin',
+    );
+    const roleAssignment = await store.find(COLLECTIONS.assignments, roleRow);
+    expect(roleAssignment?.assignees).toEqual(['fanqing']);
+    const updated = await parameters.read('teamTasks');
+    await parameters.save(
+      'teamTasks',
+      {
+        dispatchRules: {
+          ...updated.values.dispatchRules!,
+          assigneeRole: 'clerks',
+        },
+      },
+      updated.revision,
+    );
+    expect(
+      (await store.find(COLLECTIONS.assignments, roleRow))?.assignees,
+    ).toEqual(['fanqing']);
+    await service.removeRow(String(roleRow), 'luoxin');
     await service.addRow(
       'team',
       teamId,

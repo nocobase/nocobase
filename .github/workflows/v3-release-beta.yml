@@ -34,8 +34,13 @@ jobs:
     defaults:
       run:
         working-directory: release-source
+    # Pull requests read lets the changelog step read the descriptions of the pull requests this release contains.
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       release_branch: ${{ steps.branch.outputs.name }}
+      release_tag: ${{ steps.branch.outputs.tag }}
       batch: ${{ steps.branch.outputs.batch }}
       rows: ${{ steps.changed.outputs.rows }}
       base_sha: ${{ steps.release_state.outputs.base_sha }}
@@ -113,7 +118,7 @@ jobs:
           git fetch --tags --force
           DAY=$(date -u +%Y-%m-%d)
           MAX=0
-          for t in $(git tag -l "release-beta/${DAY}.*"); do
+          for t in $(git tag -l "release-beta/${DAY}.*" "nocobase-v3-beta/${DAY}.*"); do
             N="${t##*.}"
             case "$N" in ''|*[!0-9]*) continue ;; esac
             [ "$N" -gt "$MAX" ] && MAX="$N"
@@ -124,6 +129,7 @@ jobs:
           git checkout -b "$NAME"
           {
             echo "name=$NAME"
+            echo "tag=nocobase-v3-beta/${BATCH}"
             echo "batch=$BATCH"
           } >> "$GITHUB_OUTPUT"
           echo "Version: $BATCH"
@@ -155,6 +161,29 @@ jobs:
             echo "| --- | --- |"
             node scripts/list-package-versions.mjs --table
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # The root CHANGELOG.md and CHANGELOG.zh-CN.md gain this release's section, written by scripts/changelog.mjs from
+      # the type and bilingual changelog of each pull request merged since the previous beta
+      # (.github/pull_request_template.md). The release commit carries both files, and v3-github-release.yml reads the
+      # English section back for the GitHub Release. The script comes from the workflow tooling checkout and reads pull
+      # requests with this job's read-only token. Best effort: a failure warns, puts both files back as they were, and
+      # the release goes on without the section.
+      - name: Write the changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.branch.outputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          if ! node ../scripts/changelog.mjs --tag "$TAG" --repo "$REPO" --root .; then
+            echo "::warning::Writing the changelog failed; $TAG has no changelog section."
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+              if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
+                git checkout HEAD -- "$file"
+              else
+                rm -f -- "$file"
+              fi
+            done
+          fi
 
       - name: Save versioned release source
         id: release_state
@@ -291,7 +320,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [plugins, studio 1/2, studio 2/2, others]
+        shard: [plugins, others]
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -430,9 +459,8 @@ jobs:
       run:
         working-directory: release-source
     outputs:
-      tag: ${{ needs.prepare.outputs.release_branch }}
+      tag: ${{ needs.prepare.outputs.release_tag }}
       merged: ${{ steps.merge.outputs.merged }}
-      studio_version: ${{ steps.studio.outputs.version }}
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -543,25 +571,26 @@ jobs:
           RELEASE_TOKEN: ${{ steps.release_token.outputs.token }}
         run: git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/nocobase.git"
 
-      # Use full refspecs because the release branch and tag intentionally share a name for a short time.
+      # Keep the internal candidate branch separate from the public v3 Beta tag.
       - name: Tag and push release branch
         if: '!inputs.dry_run'
         env:
           RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
-          if git show-ref --verify --quiet "refs/tags/$RELEASE_BRANCH"; then
-            TAG_SHA=$(git rev-parse "refs/tags/${RELEASE_BRANCH}^{commit}")
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            TAG_SHA=$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")
             HEAD_SHA=$(git rev-parse HEAD)
             if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
-              echo "::error::Tag $RELEASE_BRANCH points to $TAG_SHA instead of release candidate $HEAD_SHA"
+              echo "::error::Tag $RELEASE_TAG points to $TAG_SHA instead of release candidate $HEAD_SHA"
               exit 1
             fi
-            echo "Tag $RELEASE_BRANCH already points to the release candidate."
+            echo "Tag $RELEASE_TAG already points to the release candidate."
           else
-            git tag "$RELEASE_BRANCH"
+            git tag "$RELEASE_TAG"
           fi
           git push origin "refs/heads/${RELEASE_BRANCH}:refs/heads/${RELEASE_BRANCH}"
-          git push origin "refs/tags/${RELEASE_BRANCH}:refs/tags/${RELEASE_BRANCH}"
+          git push origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
 
       # Publish the exact tarballs prepared and tested from the immutable release source state.
       - name: Publish to npm
@@ -569,18 +598,6 @@ jobs:
         run: pnpm changeset publish --from-pack-dir "$RUNNER_TEMP/release-publish"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # Set only once the publish above succeeded, and only when this release versions @nocobase/studio: the
-      # studio-image job builds a release image of exactly that version.
-      - name: Find the published Studio version
-        if: '!inputs.dry_run'
-        id: studio
-        run: |
-          VERSION=$(node scripts/list-package-versions.mjs \
-            --released-specs "$RUNNER_TEMP/release-state/versions-before.json" \
-            | sed -n 's|^@nocobase/studio@||p')
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Studio version in this release: ${VERSION:-none}"
 
       # changesets moves latest only when it judges a package to be publishing for the first time, so latest fell behind
       # beta and users installing without a tag got old versions. Point both beta and latest at every package in this
@@ -717,22 +734,6 @@ jobs:
           CONTENT: |
             预览版发版流程中断，请查看 Actions 日志确认失败阶段和仓库状态。
         run: ./scripts/feishu-notify.sh
-
-  # Studio's public release image (v3-studio-image.yml), from this release's tag and without baked runner packages, so
-  # the image answers npm with the versions just published. It runs only when this release published
-  # @nocobase/studio, even if a later step of the release job failed, and its failure does not fail the release.
-  studio-image:
-    name: Build the Studio release image
-    needs: release
-    if: >-
-      !cancelled() && !inputs.dry_run
-      && needs.release.outputs.tag != '' && needs.release.outputs.studio_version != ''
-    uses: ./.github/workflows/v3-studio-image.yml
-    with:
-      tag: ${{ needs.release.outputs.tag }}
-    secrets: inherit
-    permissions:
-      contents: read
 
   # npm is already published at this point. Rendering a GitHub Release is recoverable and stays in a separate job.
   github-release:

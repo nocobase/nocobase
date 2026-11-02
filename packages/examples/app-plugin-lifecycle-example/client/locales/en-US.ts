@@ -14,6 +14,58 @@ const enUS = {
     subscriptions: 'Subscriptions',
   },
   parameters: {
+    fields: {
+      paymentWindowMinutes: {
+        title: 'Payment timeout (minutes)',
+        description:
+          'Cancel an unpaid order after this wait. Changes apply to newly scheduled payment timers; existing timers keep their due time.',
+      },
+      escalateAfterMinutes: {
+        title: 'Manager review timeout (minutes)',
+        description:
+          'Escalate a pending manager review after this wait. Changes apply to newly scheduled review timers; existing timers keep their due time.',
+      },
+      waitMinutes: {
+        title: 'Customer reply timeout (minutes)',
+        description:
+          'Close a ticket if the customer does not reply within this wait. Changes apply to newly scheduled timers; existing timers keep their due time.',
+      },
+      querySeconds: {
+        title: 'Invoice status query delay (seconds)',
+        description:
+          'Query the invoice provider if no callback arrives within this wait. Changes apply to newly scheduled queries; existing queries keep their due time.',
+      },
+      pollSeconds: {
+        title: 'Export progress check interval (seconds)',
+        description:
+          'Wait this long before checking an export in progress. Changes apply to newly scheduled checks; existing checks keep their due time.',
+      },
+      maxMinutes: {
+        title: 'Export completion timeout (minutes)',
+        description:
+          'Set the completion deadline when an export job starts. An unfinished job times out at that deadline. Changes do not move existing job deadlines.',
+      },
+      periodMinutes: {
+        title: 'Subscription renewal period (minutes)',
+        description:
+          'Use this duration to calculate the new period end after a successful charge. Changes apply after the next successful charge; the current period end stays fixed.',
+      },
+      dunningMinutes: {
+        title: 'Failed renewal payment retry interval (minutes)',
+        description:
+          'Wait this long before retrying a failed renewal payment. Changes apply to newly scheduled retries; existing retries keep their due time.',
+      },
+      maxDunning: {
+        title: 'Renewal payment failure limit',
+        description:
+          'Cancel the subscription at the next automatic retry if its failed payment count has reached this limit. Changes apply at the next retry decision.',
+      },
+      reopenDays: {
+        title: 'Ticket reopening deadline (days)',
+        description:
+          'Allow reopening within this many days after a ticket closes; otherwise a new ticket is required. Each reopening request uses the latest setting.',
+      },
+    },
     loading: 'Loading parameters…',
     title: 'Runtime parameters',
     description:
@@ -36,7 +88,8 @@ const enUS = {
     databaseVersion: 'Saved configuration',
     snapshotEffect:
       'Snapshot: fixed at first submission; retained after return or withdrawal',
-    liveEffect: 'Live: read again for each execution and retry',
+    liveEffect:
+      'Future parameter reads use the latest configuration; existing timers and deadlines stay fixed.',
     yes: 'Yes',
     no: 'No',
     invalidObject: 'Enter a valid JSON object.',
@@ -57,13 +110,6 @@ const enUS = {
     effectivePreview: 'Effective values for this record now',
     firstSnapshot: 'First-submission snapshot',
     notRecorded: 'Not recorded',
-    reviewerDemo: 'Any-candidate review demonstration',
-    candidateBoundary:
-      'The first eligible candidate to decide finishes this review. Snapshot fixes selection conditions, not organization membership. Existing candidate lists stay fixed.',
-    demoWorkflow: 'Code-defined demonstration workflow',
-    snapshotDemo: 'Snapshot reviewer rule',
-    liveDemo: 'Live reviewer rule',
-    createReview: 'Create review as this persona',
     diagramEntry: 'Optional diagram entry',
     diagramHint:
       'Click a bound node or transition to open the shared editor. Unbound entries show their original details. Clicking never executes a transition.',
@@ -323,6 +369,30 @@ const enUS = {
     withdraw: 'Withdraw',
   },
   flowDiagram: {
+    controls: 'Diagram controls',
+    fitView: 'Fit to view',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    escapeHint: 'Press Escape to exit',
+    leavesTo: 'Leaves to',
+    arrivesFrom: 'Arrives from',
+    otherRoutes: 'Other routes',
+    minimap: 'Diagram overview',
+
+    overview: 'Diagram overview',
+    actualSize: 'Actual size',
+    states: 'States',
+    transitions: 'Transitions',
+    configurable: 'Parameters',
+    current: 'Current',
+    visited: 'Visited',
+    initial: 'Initial',
+    final: 'Final',
+    state: 'State',
+    zoomOut: 'Zoom out',
+    zoomIn: 'Zoom in',
+    fit: 'Fit to view',
+
     empty: 'No states to display.',
     loading: 'Laying out diagram…',
     failed: 'Unable to lay out this diagram.',
@@ -410,7 +480,7 @@ const enUS = {
       cancelled: {
         customer: 'Cancelled by the customer.',
         timeout: 'Closed: not paid in time.',
-        refundRequested: 'Refunded at the customer’s request.',
+        refundRequested: 'Refund requested by the customer.',
       },
       refunding: 'Refunding…',
       refundNeedsAttention:

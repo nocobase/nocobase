@@ -16,6 +16,7 @@ import type { CallerIdentity } from '../core/callers/index.js';
 import type { RunTokenIdentity } from '../core/runs/index.js';
 import { toApiError } from '../kernel/http.js';
 import { SECURITY_SCHEMES } from '../routes/openapi.js';
+import { ONLINE_AGENT_CREDENTIAL } from './online-credential.js';
 
 /** The `type` of a run's credential. */
 export const RUN_CREDENTIAL = 'run';
@@ -32,7 +33,7 @@ export function runCredentialResolver(
 ): CredentialResolver {
   return async (headers) => {
     const token = headers.get(HEADERS.runToken);
-    if (!token) return undefined;
+    if (!token?.startsWith('fgr_')) return undefined;
     try {
       const run = await services.runs.authenticateToken(token);
       const agent = await findAgent(services.tx.read(), run.run.agentId);
@@ -67,4 +68,17 @@ export function runIdentityOf(
     run,
     agent,
   };
+}
+
+/** Converts issued credentials without pretending an OnlineAgent execution is a Run. */
+export function callerIdentityOf(
+  auth: AuthSession | undefined,
+): CallerIdentity | undefined {
+  if (auth?.credential?.type === ONLINE_AGENT_CREDENTIAL)
+    return {
+      kind: 'user',
+      userId: auth.user.id,
+      displayName: auth.user.name || auth.user.email,
+    };
+  return runIdentityOf(auth);
 }

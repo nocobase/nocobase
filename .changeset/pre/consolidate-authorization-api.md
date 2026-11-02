@@ -12,7 +12,6 @@
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-file-example': patch
-'@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-skills': patch

@@ -1,1 +1,1 @@
-export type { NotificationConfig } from './types.js';
+export type { NotificationConfig, NotificationConfigInput } from './types.js';

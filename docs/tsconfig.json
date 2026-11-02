@@ -1,30 +1,15 @@
 {
+  "extends": [
+    "@nocobase/dev-config/tsconfig/base.json",
+    "astro/tsconfigs/strict"
+  ],
   "compilerOptions": {
-    "lib": ["DOM", "ES2020"],
-    "jsx": "react-jsx",
-    "target": "ES2020",
-    "noEmit": true,
-    "skipLibCheck": true,
-    "useDefineForClassFields": true,
-    "baseUrl": ".",
-    /* modules */
-    "module": "ESNext",
-    "moduleDetection": "force",
-    "moduleResolution": "bundler",
-    "verbatimModuleSyntax": true,
-    "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "paths": {
-      "@docs/*": ["docs/*"]
-    },
-    /* type checking */
-    "strict": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
+    "types": ["node"],
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["docs", "theme", "rspress.config.ts"],
-  "mdx": {
-    "checkMdx": true
-  }
+  "include": [".astro/types.d.ts", "astro.config.ts", "src", "shared", "tests"],
+  "exclude": ["dist", "node_modules", "docs"]
 }

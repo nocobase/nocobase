@@ -24,27 +24,83 @@ import { renderAnswer, renderCommandHelp, renderTopicHelp } from './output.ts';
 import { leadingWords } from './parse.ts';
 import { executeRest, parseRestCall, type ApiAnswer } from './rest.ts';
 import { currentSession, type Session } from './session.ts';
+import {
+  closestMatches,
+  editDistance,
+  matchDistance,
+  nearest,
+  typoAllowance,
+  type ScoredMatch,
+} from '../parse/distance.ts';
 
 let originalArgv: readonly string[] | undefined;
+let staticCommandIds: readonly string[] = [];
 
 /** Records the argv the CLI was started with (`runAppCli`). */
-export function setOriginalArgv(argv: readonly string[]): void {
+export function setOriginalArgv(
+  argv: readonly string[],
+  commandIds: readonly string[] = [],
+): void {
   originalArgv = [...argv];
+  staticCommandIds = [...commandIds];
 }
 
 export function getOriginalArgv(): readonly string[] {
   return originalArgv ?? process.argv.slice(2);
 }
 
-function unknownCommand(
+/** Uses the development CLI's matching strategy, over offered commands only. */
+export function unknownCommandError(
+  manifest: Pick<CliManifest, 'commands'>,
   argv: readonly string[],
   hint?: string,
-): Errors.CLIError {
-  const typed = leadingWords(argv).join(' ');
+): CliCommandError {
+  const typed = leadingWords(argv);
+  const scored: ScoredMatch[] = [];
+  const ids = [
+    ...staticCommandIds,
+    ...manifest.commands.map((command) => command.id),
+  ];
+  for (const id of ids) {
+    const words = id.split(':');
+    const input = typed.slice(0, words.length).join(' ');
+    const candidate = words.join(' ');
+    const distance =
+      input === typed.join(' ')
+        ? matchDistance(input, candidate)
+        : editDistance(input, candidate);
+    if (
+      distance !== undefined &&
+      (input === typed.join(' ') || distance <= typoAllowance(input))
+    )
+      scored.push({ candidate, distance });
+  }
   const { bin } = appCliConfig();
-  return new Errors.CLIError(
-    `Unknown command: ${bin} ${typed}. ${hint ?? `Run \`${bin} --help\` for the list.`}`,
-    { exit: EXIT_CODES.notFound },
+  const matches = nearest(scored);
+  const topics = [...new Set(ids.map((id) => id.split(':')[0]))];
+  const suggestions = matches.map((candidate) => ({
+    message: `Did you mean ${candidate}?`,
+    run: { command: bin, args: [...candidate.split(' '), '--help'] },
+  }));
+  if (suggestions.length === 0 && typed[0])
+    for (const topic of closestMatches(typed[0], topics))
+      suggestions.push({
+        message: `See the ${topic} commands.`,
+        run: { command: bin, args: [topic, '--help'] },
+      });
+  return new CliCommandError(
+    'INVALID_USAGE',
+    `Unknown command: ${bin} ${typed.join(' ')}.${hint ? ` ${hint}` : ''}`,
+    {
+      exit: EXIT_CODES.notFound,
+      suggestions: [
+        ...suggestions,
+        {
+          message: 'List available commands.',
+          run: { command: bin, args: ['--help'] },
+        },
+      ],
+    },
   );
 }
 
@@ -204,13 +260,12 @@ export async function runDynamic(
     throw fail(error);
   }
   if (!context) {
-    const error = unknownCommand(
+    const error = unknownCommandError(
+      { commands: [] },
       argv,
       `Business commands need a run, or \`${appCliConfig().bin} login\` first.`,
     );
-    throw json
-      ? fail(new UsageError(error.message, EXIT_CODES.notFound))
-      : error;
+    throw fail(error);
   }
   // A person's command asks whether a newer CLI is served, and says so after its own output.
   const hint =
@@ -242,10 +297,7 @@ async function runContext(
     }
     const withheld = withheldCommand(context.manifest, argv);
     if (withheld) throw fail(withheld);
-    const error = unknownCommand(argv);
-    throw json
-      ? fail(new UsageError(error.message, EXIT_CODES.notFound))
-      : error;
+    throw fail(unknownCommandError(context.manifest, argv));
   }
   const name = resolved.command.id.split(':').join(' ');
   try {

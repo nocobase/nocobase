@@ -1,3 +1,4 @@
+import { exportTimingGroup } from '../configuration/definitions.js';
 import {
   defineLifecycle,
   type InputProblem,
@@ -103,6 +104,7 @@ export const exportLifecycle: Lifecycle<ExportTypes> =
       'timedOut',
       { name: 'cancelled', final: true },
     ],
+    parameterConfiguration: { readMode: 'live', groups: [exportTimingGroup] },
     parameters: { pollSeconds: 15, maxMinutes: 3 },
     transitions: {
       submit: {

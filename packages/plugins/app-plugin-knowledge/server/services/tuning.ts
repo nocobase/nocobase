@@ -133,16 +133,19 @@ export function createChunkingService(
   let chain: Promise<void> = Promise.resolve();
 
   async function mark(spaceId: string, rechunk: boolean): Promise<void> {
-    const conn = context.read();
-    const space = await findSpaceById(conn, spaceId);
-    if (!space) return;
-    const { rechunk: _was, ...rest } = settingsOf(space.settings);
-    await spacesRepo(conn).updateMany({
-      filter: { id: spaceId },
-      values: {
-        settings: rechunk ? { ...rest, rechunk: true } : rest,
-        updatedAt: context.now().toISOString(),
-      },
+    await context.transaction(async (tx) => {
+      const conn = tx.conn;
+      const space = await findSpaceById(conn, spaceId);
+      if (!space) return;
+      const { rechunk: _was, ...rest } = settingsOf(space.settings);
+      await spacesRepo(conn).updateMany({
+        filter: { id: spaceId },
+        values: {
+          settings: rechunk ? { ...rest, rechunk: true } : rest,
+          updatedAt: context.now().toISOString(),
+        },
+      });
+      tx.emit({ type: 'space.changed', spaceId });
     });
   }
 
@@ -244,8 +247,7 @@ export function createChunkingService(
       override: own,
       effective: own ?? defaults,
       rechunking:
-        record !== null &&
-        (queued.has(record.id) || settingsOf(record.settings).rechunk === true),
+        record !== null && settingsOf(record.settings).rechunk === true,
       canManage: rights.manage && !viewer.actor,
     };
   }

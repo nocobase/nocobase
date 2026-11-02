@@ -1,0 +1,54 @@
+---
+/**
+ * The home page: static markup designed outside the documentation theme (`markup*.json`), with its own header and
+ * footer, made interactive by `interactions.mjs`.
+ */
+import {
+  withLanguageMenu,
+  type LanguageLink,
+} from '../../lib/language-menu.ts';
+import cnContent from './data.json';
+import enContent from './data.en.json';
+import cnMarkup from './markup.json';
+import enMarkup from './markup.en.json';
+import '../../styles/legacy-typography.css';
+import './index.scss';
+
+interface Props {
+  language: string;
+  languageLinks: LanguageLink[];
+  /** Capability id -> URL of its overview page, so the cards link to the page's canonical URL. */
+  capabilityHrefs: Record<string, string>;
+}
+
+const { language, languageLinks, capabilityHrefs } = Astro.props;
+const cn = language === 'cn';
+const markup = withLanguageMenu(
+  cn ? cnMarkup : enMarkup,
+  language,
+  languageLinks,
+);
+const data = JSON.stringify({
+  content: cn ? cnContent : enContent,
+  capabilityHrefs,
+}).replace(/</g, '\\u003c');
+---
+
+<div class='docs-full-home' data-language={language} set:html={markup} />
+<script type='application/json' id='docs-full-home-data' set:html={data} />
+<script>
+  import '../../scripts/language-menu.ts';
+  import { initializeHomepage } from './interactions.mjs';
+
+  const root = document.querySelector<HTMLElement>('.docs-full-home');
+  const data = document.getElementById('docs-full-home-data');
+  if (root && data) {
+    const { content, capabilityHrefs } = JSON.parse(data.textContent ?? '{}');
+    initializeHomepage(
+      root,
+      root.dataset.language ?? 'en',
+      content,
+      capabilityHrefs,
+    );
+  }
+</script>

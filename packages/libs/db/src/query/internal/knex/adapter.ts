@@ -1406,6 +1406,7 @@ type ExpressionNode =
   | { type: 'exists'; query: KnexSubqueryBuilder }
   | { type: 'ref'; reference: ReferenceExpression }
   | { type: 'val'; value: unknown }
+  | { type: 'lower'; expression: ExpressionNode }
   | {
       type: 'aggregate';
       fn: AggregateFunctionName;
@@ -1571,6 +1572,14 @@ function createExpressionBuilder(
 
 function createFunctionModule(): FunctionModule {
   return {
+    lower: (column) =>
+      createExpression({
+        type: 'lower',
+        expression:
+          typeof column === 'string'
+            ? { type: 'ref', reference: column }
+            : getExpressionNode(column),
+      }),
     count: (column) =>
       createAggregateExpression({
         type: 'aggregate',
@@ -1873,6 +1882,7 @@ function applyExpressionNode(
       break;
     case 'ref':
     case 'val':
+    case 'lower':
     case 'aggregate':
     case 'subquery':
     case 'aliasedExpression':
@@ -2394,6 +2404,7 @@ function applyJoinExpressionNode(
       break;
     case 'ref':
     case 'val':
+    case 'lower':
     case 'aggregate':
     case 'subquery':
     case 'aliasedExpression':
@@ -2653,6 +2664,11 @@ function expressionNodeToRaw(
       );
     case 'val':
       return context.client.raw('?', [expression.value] as any);
+    case 'lower': {
+      return context.client.raw('lower(?)', [
+        expressionNodeToRaw(context, expression.expression),
+      ]);
+    }
     case 'aggregate':
       return aggregateNodeToRaw(context, expression);
     case 'subquery':

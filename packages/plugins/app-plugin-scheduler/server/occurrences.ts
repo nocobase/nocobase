@@ -271,7 +271,10 @@ export class ScheduleOccurrenceStore implements ScheduleExecutionReporter {
     );
   }
 
-  public async reconcile(targets: ScheduleTargetRegistry): Promise<number> {
+  public async reconcile(
+    targets: ScheduleTargetRegistry,
+    onPersistenceError?: (error: unknown) => void,
+  ): Promise<number> {
     const rows = await this.database
       .query()
       .selectFrom<OccurrenceRow>('schedule_occurrences')
@@ -314,6 +317,8 @@ export class ScheduleOccurrenceStore implements ScheduleExecutionReporter {
           await this.complete(row.id, reference, observation.completion);
           completed += 1;
         } catch (error) {
+          if (!(error instanceof ScheduleOccurrenceError))
+            onPersistenceError?.(error);
           console.error('Schedule occurrence completion failed', {
             occurrenceId: row.id,
             reference,

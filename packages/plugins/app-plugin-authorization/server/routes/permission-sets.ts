@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { submitSettingsMutation } from '../extension/submission.js';
 import {
   ApiError,
   apiErrorResponse,
@@ -28,10 +30,13 @@ import {
 } from '@nocobase/authorization/permission-sets';
 import {
   AUTHORIZATION_ERROR_DOMAIN,
+  AuthorizationInputError,
   createRouteHandler,
   createSettingsRouter,
+  requireSettings,
   settingsAccess,
 } from '../extension/http.js';
+import { assertDatabaseScope } from '../database/scope.js';
 import { databaseHost } from '../database/api.js';
 import { databaseGrantViolations } from '../database/grant-validation.js';
 import {
@@ -68,7 +73,7 @@ export interface PermissionSetSummary extends PermissionSet {
 
 export const PERMISSION_SETS_SETTINGS = 'authorization.permission-sets';
 
-type Api = Omit<PermissionSetsApi, 'withTransaction'>;
+type Api = PermissionSetsApi;
 
 /** Every `/permissionSets` route, gated by `settings:authorization.permission-sets`. */
 export function createPermissionSetHandler(
@@ -177,16 +182,37 @@ export function createPermissionSetHandler(
         ),
       },
     }),
+    apiValidator(
+      'header',
+      z.object({
+        'idempotency-key': z
+          .string()
+          .optional()
+          .describe(
+            'Required when operation receipts are strict; reuse the original key and input when retrying.',
+          ),
+      }),
+    ),
     apiValidator('json', CreatePermissionSetBody),
     async (context) => {
       const input = permissionSetInput(context.req.valid('json'));
       validateGrants(host, input);
       await validateWriteGrants(host, input.grants);
       api.assertWritable(input.key, 'create');
-      return context.json(
-        { data: summarize(api, await api.create(input)) },
-        201,
+      const data = await submitSettingsMutation(
+        input,
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          return summarize(bound, await bound.create(input));
+        },
+        () =>
+          requireSettings(
+            context.env.authorization,
+            PERMISSION_SETS_SETTINGS,
+            'read',
+          ),
       );
+      return context.json({ data }, 201);
     },
   );
   routes.get(
@@ -350,36 +376,61 @@ export function createPermissionSetHandler(
       },
     }),
     apiValidator('param', PermissionSetParams),
+    apiValidator(
+      'header',
+      z.object({
+        'idempotency-key': z
+          .string()
+          .optional()
+          .describe(
+            'Required when operation receipts are strict; reuse the original key and input when retrying.',
+          ),
+      }),
+    ),
     apiValidator('json', UpdatePermissionSetBody),
     async (context) => {
       const { key } = context.req.valid('param');
-      const existing = await api.get(key);
-      if (!existing) throw notFound(key);
       const changes = context.req.valid('json');
-      const input = permissionSetInput({
-        key: changes.key ?? existing.key,
-        title: changes.title === undefined ? existing.title : changes.title,
-        grants: changes.grants ?? existing.grants,
-      });
-      validateGrants(host, input);
-      // Stored grants are checked only when the body replaces them, so a title change still saves a set whose grants a
-      // later schema change invalidated; startup reports those.
-      if (changes.grants !== undefined)
-        await validateWriteGrants(host, input.grants);
-      api.assertWritable(key, 'update');
-      if (input.key !== key)
-        for (const candidate of [key, input.key]) {
-          const protection = api.protection(candidate);
-          if (protection)
-            throw new PermissionSetProtectedError(
-              candidate,
-              protection.owner,
-              'update',
-            );
-        }
-      return context.json({
-        data: summarize(api, await api.update(key, input)),
-      });
+      const data = await submitSettingsMutation(
+        changes,
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          const existing = await bound.get(key);
+          if (!existing) throw notFound(key);
+          const input = permissionSetInput({
+            key: changes.key ?? existing.key,
+            title: changes.title === undefined ? existing.title : changes.title,
+            grants: changes.grants ?? existing.grants,
+          });
+          validateGrants(host, input);
+          // Stored grants are checked only when the body replaces them, so a title change still saves a set whose grants a
+          // later schema change invalidated; startup reports those.
+          if (changes.grants !== undefined)
+            await validateWriteGrants(host, input.grants);
+          api.assertWritable(key, 'update');
+          if (input.key !== key)
+            for (const candidate of [key, input.key]) {
+              const protection = api.protection(candidate);
+              if (protection)
+                throw new PermissionSetProtectedError(
+                  candidate,
+                  protection.owner,
+                  'update',
+                );
+            }
+          return summarize(
+            bound,
+            await bound.update(key, input, changes.expectedRevision),
+          );
+        },
+        () =>
+          requireSettings(
+            context.env.authorization,
+            PERMISSION_SETS_SETTINGS,
+            'read',
+          ),
+      );
+      return context.json({ data });
     },
   );
   routes.delete(
@@ -404,11 +455,28 @@ export function createPermissionSetHandler(
       },
     }),
     apiValidator('param', PermissionSetParams),
+    apiValidator(
+      'header',
+      z.object({ 'idempotency-key': z.string().optional() }),
+    ),
     async (context) => {
       const { key } = context.req.valid('param');
       api.assertWritable(key, 'delete');
-      if (!(await api.get(key))) throw notFound(key);
-      await api.delete(key);
+      await submitSettingsMutation(
+        { key },
+        async (transaction) => {
+          const bound = transaction ? api.withTransaction(transaction) : api;
+          if (!(await bound.get(key))) throw notFound(key);
+          await bound.delete(key);
+          return null;
+        },
+        () =>
+          requireSettings(
+            context.env.authorization,
+            PERMISSION_SETS_SETTINGS,
+            'read',
+          ),
+      );
       return context.body(null, 204);
     },
   );
@@ -469,7 +537,7 @@ function validateGrants(
                 Reflect.get(value, 'type') === 'recordAccess'
               ? Reflect.get(value, 'key')
               : undefined;
-        if (recordAccess === undefined) continue;
+        if (value === '' || recordAccess === undefined) continue;
         const target = dataScopeTarget(action, key).id;
         const definition =
           typeof recordAccess === 'string'
@@ -489,15 +557,81 @@ function validateGrants(
 }
 
 /**
- * A `database.collection` create or update grant may name only fields and relations a write can use; otherwise every
- * write it allows would fail. Answers `400 INVALID_ARGUMENT` with one field violation per offending member.
+ * Validate composite custom record filters against their registered database target, and reject
+ * database create/update grants naming fields or relations that cannot be written.
  */
 async function validateWriteGrants(
-  host: Pick<AuthorizationExtensionHost, 'database'>,
+  host: Pick<AuthorizationExtensionHost, 'database' | 'compositeResources'>,
   grants: readonly PermissionGrant[],
 ): Promise<void> {
   const checker = databaseHost(host.database);
   if (!checker) return;
+  for (const grant of grants) {
+    if (grant.resource.type !== 'composite') continue;
+    for (const entry of grant.actions) {
+      const action = host.compositeResources.getAction(
+        grant.resource.id,
+        entry.action,
+      );
+      for (const [key, selection] of Object.entries(
+        entry.policy?.scopes ?? {},
+      )) {
+        const record =
+          selection && typeof selection === 'object'
+            ? (selection as Record<string, unknown>)
+            : undefined;
+        if (
+          selection !== 'customFilter' &&
+          !(record?.type === 'recordAccess' && record.key === 'customFilter')
+        )
+          continue;
+        const scope = action?.dataScopes?.find((item) => item.key === key);
+        if (!scope || !action) throw new TypeError('Unknown data scope');
+        const target = dataScopeTarget(action, key).id;
+        const collection = await checker.describe(target);
+        const params: unknown = record?.params;
+        const filter: unknown =
+          params && typeof params === 'object'
+            ? Reflect.get(params, 'filter')
+            : undefined;
+        if (collection && typeof filter === 'boolean') continue;
+        if (!collection || !filter || typeof filter !== 'object')
+          throw new TypeError('Custom Filter requires configured conditions');
+        let count = 0;
+        const validate = (node: unknown, depth = 0): void => {
+          if (++count > 100 || depth > 8 || !node || typeof node !== 'object')
+            throw new TypeError('Invalid Custom Filter conditions');
+          if (Reflect.get(node, 'kind') === 'group') {
+            const items: unknown = Reflect.get(node, 'items');
+            if (!Array.isArray(items) || !items.length)
+              throw new TypeError('Custom Filter groups require conditions');
+            for (const item of items) validate(item, depth + 1);
+          } else {
+            const operator: unknown = Reflect.get(node, 'operator');
+            const value: unknown = Reflect.get(node, 'value');
+            if (
+              !['$empty', '$notEmpty', '$isTruly', '$isFalsy'].includes(
+                String(operator),
+              ) &&
+              value === undefined
+            )
+              throw new TypeError('Custom Filter conditions require a value');
+            if (typeof value === 'number' && !Number.isFinite(value))
+              throw new TypeError('Invalid Custom Filter value');
+          }
+        };
+        validate(filter);
+        try {
+          assertDatabaseScope(filter, collection.fields);
+        } catch (error) {
+          throw new AuthorizationInputError(
+            error instanceof Error ? error.message : 'Invalid Custom Filter',
+            'grants',
+          );
+        }
+      }
+    }
+  }
   const violations = await databaseGrantViolations(checker, grants);
   if (!violations.length) return;
   throw new ApiError({

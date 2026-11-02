@@ -33,6 +33,171 @@ describe('runners', () => {
     await h?.close();
   });
 
+  it('revokes every prior registration and key for the same owner, name and host', async () => {
+    h = await createHarness();
+    const register = async (owner: string, overrides = {}) => {
+      const token = await h.services.runners.createRegistrationToken(owner, {});
+      return h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+        ...overrides,
+      });
+    };
+    const otherOwner = await register('bob');
+    const otherHost = await register('alice', { hostname: 'other.local' });
+    const otherName = await register('alice', { name: 'other' });
+    const old = await register('alice');
+    const runId = await h.enqueue(await h.createAgent());
+    await h.services.runners.update(old.runnerId, { trust: 'team' });
+    // Install a usable tool before the old runtime claims work.
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: old.runnerKey,
+      body: heartbeat,
+    });
+    const claimed = await h.request('POST', '/agents/runners/claim', {
+      runnerKey: old.runnerKey,
+      body: { free: 1 },
+    });
+    expect(claimed.body.data.runs[0].run.id).toBe(runId);
+    const fresh = await register('alice');
+    expect(fresh.runnerId).not.toBe(old.runnerId);
+    expect((await h.services.runners.get(old.runnerId)).status).toBe('revoked');
+    for (const request of ['/heartbeat', '/claim']) {
+      const refused = await h.request('POST', `/agents/runners${request}`, {
+        runnerKey: old.runnerKey,
+        body: request === '/heartbeat' ? heartbeat : { free: 1 },
+      });
+      expect(refused.status).toBe(401);
+      expect(refused.body.error.reason).toBe('RUNNER_REVOKED');
+    }
+    await h.services.sweeper.sweep();
+    expect((await h.services.runs.get(runId)).status).toBe('queued');
+    for (const kept of [otherOwner, otherHost, otherName, fresh])
+      expect((await h.services.runners.get(kept.runnerId)).status).toBe(
+        'online',
+      );
+  });
+
+  it('repeatedly replaces the current registration without changing already revoked records', async () => {
+    h = await createHarness();
+    const register = async () => {
+      const token = await h.services.runners.createRegistrationToken(
+        'alice',
+        {},
+      );
+      return h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+      });
+    };
+    const first = await register();
+    h.clock.advance(1000);
+    const second = await register();
+    const revoked = await h.services.runners.get(first.runnerId);
+    h.clock.advance(1000);
+    const third = await register();
+    expect(await h.services.runners.get(first.runnerId)).toEqual(revoked);
+    for (const old of [first, second]) {
+      expect((await h.services.runners.get(old.runnerId)).status).toBe(
+        'revoked',
+      );
+      await expect(
+        h.services.runners.authenticate(old.runnerKey),
+      ).rejects.toMatchObject({
+        code: 'RUNNER_REVOKED',
+      });
+    }
+    expect((await h.services.runners.authenticate(third.runnerKey)).id).toBe(
+      third.runnerId,
+    );
+  });
+
+  it('cleans up multiple active records and all their keys on the next registration', async () => {
+    h = await createHarness();
+    const register = async (name = 'laptop') => {
+      const token = await h.services.runners.createRegistrationToken(
+        'alice',
+        {},
+      );
+      return h.services.runners.register({
+        ...registration(token.token),
+        name,
+        features: [],
+        tools: [],
+      });
+    };
+    const first = await register();
+    const second = await register('temporary');
+    // Reproduce the records simultaneous registrations can leave behind without relying on a race.
+    await h.database
+      .connection()
+      .repository('agRunners')
+      .updateMany({
+        filter: { id: second.runnerId },
+        values: { name: 'laptop' },
+      });
+    for (const old of [first, second])
+      expect((await h.services.runners.authenticate(old.runnerKey)).id).toBe(
+        old.runnerId,
+      );
+    const fresh = await register();
+    for (const old of [first, second]) {
+      expect((await h.services.runners.get(old.runnerId)).status).toBe(
+        'revoked',
+      );
+      const keys = await h.database
+        .connection()
+        .repository('agRunnerCredentials')
+        .findMany({
+          filter: { runnerId: old.runnerId },
+        });
+      expect(keys.length).toBeGreaterThan(0);
+      for (const key of keys) expect(key.revokedAt).toBeTruthy();
+      await expect(
+        h.services.runners.authenticate(old.runnerKey),
+      ).rejects.toMatchObject({
+        code: 'RUNNER_REVOKED',
+      });
+    }
+    expect((await h.services.runners.authenticate(fresh.runnerKey)).id).toBe(
+      fresh.runnerId,
+    );
+  });
+
+  it('leaves the current runner usable when a replacement token is invalid', async () => {
+    h = await createHarness();
+    const token = await h.services.runners.createRegistrationToken('alice', {});
+    const current = await h.services.runners.register({
+      ...registration(token.token),
+      features: [],
+      tools: [],
+    });
+    await expect(
+      h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+      }),
+    ).rejects.toMatchObject({ code: 'REGISTRATION_TOKEN_INVALID' });
+    const expired = await h.services.runners.createRegistrationToken(
+      'alice',
+      {},
+    );
+    h.clock.advance(11 * 60_000);
+    await expect(
+      h.services.runners.register({
+        ...registration(expired.token),
+        features: [],
+        tools: [],
+      }),
+    ).rejects.toMatchObject({ code: 'REGISTRATION_TOKEN_INVALID' });
+    expect((await h.services.runners.authenticate(current.runnerKey)).id).toBe(
+      current.runnerId,
+    );
+  });
+
   it('advertises the protocol it speaks in every heartbeat answer', async () => {
     h = await createHarness();
     const runner = await h.registerRunner();
@@ -156,11 +321,12 @@ describe('runners', () => {
     expect(await claim(h, runner)).toHaveLength(1);
   });
 
-  it('serves npm-only protocol 8 runners and preserves both features for protocol 9 runners', async () => {
+  it('registers and heartbeats old runners and the current output-block capability', async () => {
     h = await createHarness();
     for (const [protocolVersion, features] of [
       [8, ['input', 'npm']],
-      [PROTOCOL_VERSION, ['input', 'npm', 'gitCredentials']],
+      [PROTOCOL_VERSION - 1, ['input', 'npm', 'gitCredentials']],
+      [PROTOCOL_VERSION, ['input', 'npm', 'gitCredentials', 'outputBlocks']],
     ] as const) {
       const token = await h.services.runners.createRegistrationToken(null, {});
       const response = await h.request('POST', '/agents/runners/register', {
@@ -187,7 +353,7 @@ describe('runners', () => {
   it('persists per-runner capabilities from heartbeats and exposes suggestions through existing visibility', async () => {
     h = await createHarness();
     // No agent may be given work yet, so a reader of agents is no one who may use one.
-    const agentId = await h.createAgent({ status: 'pending' });
+    const agentId = await h.createAgent({ status: 'disabled' });
     const agentBefore = await h.services.agents.get(agentId);
     const first = await h.registerRunner();
     const other = await h.registerRunner({
@@ -419,16 +585,15 @@ describe('runners', () => {
     const runner = await h.services.runners.get(only.runnerId);
     expect(runner.enabledTools).toEqual(['codex']);
     // Every reported tool stays visible, enabled or not.
-    expect(runner.tools.map((tool) => tool.kind)).toEqual(['claude', 'codex']);
+    expect(runner.tools.map((tool) => tool.kind)).toEqual(['codex']);
 
-    // No choice offers every tool.
+    // New tokens default to the two common tools; explicit selections never grow with the catalog.
     const plain = await h.services.runners.createRegistrationToken('alice', {});
-    expect(plain.enabledTools).toBeNull();
+    expect(plain.enabledTools).toEqual(['claude', 'codex']);
     expect(
       (await h.services.runners.get((await register({})).runnerId))
         .enabledTools,
-    ).toBeNull();
-    // Choosing every tool is the same as not choosing: a tool added later is offered too.
+    ).toEqual(['claude', 'codex']);
     expect(
       (
         await h.services.runners.get(
@@ -439,10 +604,10 @@ describe('runners', () => {
           ).runnerId,
         )
       ).enabledTools,
-    ).toBeNull();
+    ).toEqual(['claude', 'codex', 'opencode', 'pi']);
   });
 
-  it('gives the runner the slots its token carries unless it names its own', async () => {
+  it('uses only online registration slots, defaulting to three', async () => {
     h = await createHarness();
     const register = async (
       tokenSlots: number | null | undefined,
@@ -465,9 +630,9 @@ describe('runners', () => {
       return runner.slots;
     };
     expect(await register(4)).toBe(4);
-    expect(await register(4, 2)).toBe(2);
-    expect(await register(null)).toBe(1);
-    expect(await register(undefined, 3)).toBe(3);
+    expect(await register(4, 2)).toBe(4);
+    expect(await register(null)).toBe(3);
+    expect(await register(undefined, 9)).toBe(3);
 
     const created = await h.request(
       'POST',
@@ -508,7 +673,7 @@ describe('runners', () => {
     expect(
       (await h.services.runners.update(runner.runnerId, { enabledTools: null }))
         .enabledTools,
-    ).toBeNull();
+    ).toEqual(['claude', 'codex', 'opencode', 'pi']);
   });
 
   it('keeps the variable names a runner reports it provides, names only', async () => {
@@ -581,7 +746,7 @@ describe('runners', () => {
 
   it('shows the host name and tool paths to the owner, the managers of runners and those who may use an agent', async () => {
     h = await createHarness();
-    const agentId = await h.createAgent({ status: 'pending' });
+    const agentId = await h.createAgent({ status: 'disabled' });
     const runner = await h.registerRunner({
       tools: [
         {
@@ -662,10 +827,10 @@ describe('runners', () => {
 
   it('says whether the application gives runners jobs', async () => {
     h = await createHarness();
-    await h.registerRunner();
+    const { runnerId: id } = await h.registerRunner();
     const offers = async () =>
-      (await h.request('GET', '/agents/runners', { user: 'owner' })).body
-        .data[0].offersJobs;
+      (await h.request('GET', `/agents/runners/${id}`, { user: 'owner' })).body
+        .data.offersJobs;
     expect(await offers()).toBe(false);
     h.services.jobs.register('preview.build', { executor: 'build' });
     expect(await offers()).toBe(true);
@@ -681,130 +846,134 @@ describe('runners', () => {
     expect(late.status).toBe(401);
   });
 
-  it('keeps a runner of an unsupported protocol connected as upgrade_required, gives it no work, and tells its owner once', async () => {
-    h = await createHarness();
-    const notices: AgentsNotice[] = [];
-    h.services.events.on('notice', (event) => notices.push(event.notice));
-    const cleared: unknown[] = [];
-    h.services.events.on('notice.cleared', (event) =>
-      cleared.push(event.notice),
-    );
-    await h.enqueue(await h.createAgent());
-    const old = MIN_PROTOCOL_VERSION - 1;
-    const headers = { 'x-nocobase-protocol': String(old) };
+  it.each([MIN_PROTOCOL_VERSION - 1, PROTOCOL_VERSION + 1])(
+    'keeps unsupported protocol %s connected as upgrade_required, gives it no work, and tells its owner once',
+    async (old) => {
+      h = await createHarness();
+      const notices: AgentsNotice[] = [];
+      h.services.events.on('notice', (event) => notices.push(event.notice));
+      const cleared: unknown[] = [];
+      h.services.events.on('notice.cleared', (event) =>
+        cleared.push(event.notice),
+      );
+      await h.enqueue(await h.createAgent());
+      const headers = { 'x-nocobase-protocol': String(old) };
 
-    // It registers, with features this application does not know dropped rather than refused.
-    const token = await h.services.runners.createRegistrationToken('alice', {
-      trust: 'team',
-    });
-    const registered = await h.request('POST', '/agents/runners/register', {
-      headers,
-      body: {
-        ...registration(token.token),
-        protocolVersion: old,
-        features: ['input', 'environments'],
-        labels: ['gpu'],
-      },
-    });
-    expect(registered.status).toBe(200);
-    const key = registered.body.data.runnerKey as string;
-    const id = registered.body.data.runnerId as string;
-    expect(await h.services.runners.get(id)).toMatchObject({
-      status: 'upgrade_required',
-      protocolVersion: old,
-      features: ['input'],
-    });
-    expect(notices).toEqual([
-      expect.objectContaining({
-        type: 'runner_upgrade_required',
-        userIds: ['alice'],
-        subject: { kind: 'runner', id, label: 'laptop' },
-        params: expect.objectContaining({
+      // It registers, with features this application does not know dropped rather than refused.
+      const token = await h.services.runners.createRegistrationToken('alice', {
+        trust: 'team',
+      });
+      const registered = await h.request('POST', '/agents/runners/register', {
+        headers,
+        body: {
+          ...registration(token.token),
           protocolVersion: old,
-          minProtocolVersion: MIN_PROTOCOL_VERSION,
-          maxProtocolVersion: PROTOCOL_VERSION,
-          runnerVersion: '0.0.1',
+          features: ['input', 'environments'],
+          labels: ['gpu'],
+        },
+      });
+      expect(registered.status).toBe(200);
+      const key = registered.body.data.runnerKey as string;
+      const id = registered.body.data.runnerId as string;
+      expect(await h.services.runners.get(id)).toMatchObject({
+        status: 'upgrade_required',
+        protocolVersion: old,
+        features: ['input'],
+      });
+      expect(notices).toEqual([
+        expect.objectContaining({
+          type: 'runner_upgrade_required',
+          userIds: ['alice'],
+          subject: { kind: 'runner', id, label: 'laptop' },
+          params: expect.objectContaining({
+            protocolVersion: old,
+            minProtocolVersion: MIN_PROTOCOL_VERSION,
+            maxProtocolVersion: PROTOCOL_VERSION,
+            runnerVersion: '0.0.1',
+          }),
         }),
-      }),
-    ]);
+      ]);
 
-    // Heartbeats are answered with the verdict; whatever it holds is released.
-    const beat = await h.request('POST', '/agents/runners/heartbeat', {
-      runnerKey: key,
-      headers,
-      body: { ...heartbeat, active: [{ runId: 'r1' }], extra: true },
-    });
-    expect(beat.status).toBe(200);
-    expect(beat.body.data).toMatchObject({
-      ok: true,
-      compatibility: {
-        status: 'upgradeRequired',
-        runnerProtocolVersion: old,
-        minProtocolVersion: MIN_PROTOCOL_VERSION,
+      // Heartbeats are answered with the verdict; whatever it holds is released.
+      const beat = await h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey: key,
+        headers,
+        body: { ...heartbeat, active: [{ runId: 'r1' }], extra: true },
+      });
+      expect(beat.status).toBe(200);
+      expect(beat.body.data).toMatchObject({
+        ok: true,
+        compatibility: {
+          status: 'upgradeRequired',
+          runnerProtocolVersion: old,
+          minProtocolVersion: MIN_PROTOCOL_VERSION,
+          protocolVersion: PROTOCOL_VERSION,
+        },
+        release: ['r1'],
+      });
+      // Claims find no work, and run reports are refused.
+      const claimed = await h.request('POST', '/agents/runners/claim', {
+        runnerKey: key,
+        headers,
+        body: { free: 1 },
+      });
+      expect(claimed.body.data).toEqual({ runs: [] });
+      const report = await h.request('POST', '/agents/runners/runs/r1/lease', {
+        runnerKey: key,
+        headers,
+        body: {},
+      });
+      expect(report.status).toBe(400);
+      expect(report.body.error.reason).toBe('PROTOCOL_UNSUPPORTED');
+      // The runtimes page says what it needs.
+      const listed = await h.request('GET', `/agents/runners/${id}`, {
+        user: 'alice',
+      });
+      expect(listed.body.data).toMatchObject({
+        status: 'upgrade_required',
+        protocolVersion: old,
+        requiredProtocol: { min: MIN_PROTOCOL_VERSION, max: PROTOCOL_VERSION },
+      });
+      // Silent, it goes offline; calling again it is still told, but its owner is not told twice.
+      h.clock.advance(200_000);
+      await h.services.runners.markOffline(
+        new Date(h.clock.now().getTime() - 150_000),
+      );
+      expect((await h.services.runners.get(id)).status).toBe('offline');
+      await h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey: key,
+        headers,
+        body: heartbeat,
+      });
+      expect((await h.services.runners.get(id)).status).toBe(
+        'upgrade_required',
+      );
+      expect(new Set(notices.map((notice) => notice.key)).size).toBe(1);
+
+      // Upgraded, it is online and takes the queued run.
+      const upgraded = await h.request('POST', '/agents/runners/claim', {
+        runnerKey: key,
+        body: { free: 1 },
+      });
+      expect(upgraded.body.data.runs).toHaveLength(1);
+      expect(await h.services.runners.get(id)).toMatchObject({
+        status: 'online',
         protocolVersion: PROTOCOL_VERSION,
-      },
-      release: ['r1'],
-    });
-    // Claims find no work, and run reports are refused.
-    const claimed = await h.request('POST', '/agents/runners/claim', {
-      runnerKey: key,
-      headers,
-      body: { free: 1 },
-    });
-    expect(claimed.body.data).toEqual({ runs: [] });
-    const report = await h.request('POST', '/agents/runners/runs/r1/lease', {
-      runnerKey: key,
-      headers,
-      body: {},
-    });
-    expect(report.status).toBe(400);
-    expect(report.body.error.reason).toBe('PROTOCOL_UNSUPPORTED');
-    // The runtimes page says what it needs.
-    const listed = await h.request('GET', `/agents/runners/${id}`, {
-      user: 'alice',
-    });
-    expect(listed.body.data).toMatchObject({
-      status: 'upgrade_required',
-      protocolVersion: old,
-      requiredProtocol: { min: MIN_PROTOCOL_VERSION, max: PROTOCOL_VERSION },
-    });
-    // Silent, it goes offline; calling again it is still told, but its owner is not told twice.
-    h.clock.advance(200_000);
-    await h.services.runners.markOffline(
-      new Date(h.clock.now().getTime() - 150_000),
-    );
-    expect((await h.services.runners.get(id)).status).toBe('offline');
-    await h.request('POST', '/agents/runners/heartbeat', {
-      runnerKey: key,
-      headers,
-      body: heartbeat,
-    });
-    expect((await h.services.runners.get(id)).status).toBe('upgrade_required');
-    expect(new Set(notices.map((notice) => notice.key)).size).toBe(1);
-
-    // Upgraded, it is online and takes the queued run.
-    const upgraded = await h.request('POST', '/agents/runners/claim', {
-      runnerKey: key,
-      body: { free: 1 },
-    });
-    expect(upgraded.body.data.runs).toHaveLength(1);
-    expect(await h.services.runners.get(id)).toMatchObject({
-      status: 'online',
-      protocolVersion: PROTOCOL_VERSION,
-    });
-    // Its owner's notice is over, once.
-    expect(cleared).toEqual([
-      {
-        type: 'runner_upgrade_required',
-        subject: { kind: 'runner', id, label: 'laptop' },
-      },
-    ]);
-    await h.request('POST', '/agents/runners/heartbeat', {
-      runnerKey: key,
-      body: heartbeat,
-    });
-    expect(cleared).toHaveLength(1);
-  });
+      });
+      // Its owner's notice is over, once.
+      expect(cleared).toEqual([
+        {
+          type: 'runner_upgrade_required',
+          subject: { kind: 'runner', id, label: 'laptop' },
+        },
+      ]);
+      await h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey: key,
+        body: heartbeat,
+      });
+      expect(cleared).toHaveLength(1);
+    },
+  );
 
   it('refuses a runner whose owner can no longer act, until they can again', async () => {
     h = await createHarness();

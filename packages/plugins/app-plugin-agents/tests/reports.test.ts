@@ -609,8 +609,8 @@ describe('reporting service', () => {
       estimatedCost: { USD: 5.8 },
       costByAgent: [{ agentId, name: 'Coder', cost: { USD: 5.8 } }],
       activityDays: ['2026-10-01'],
-      actorIds: ['alice', 'bob'],
     });
+    expect(figures.actorIds.toSorted()).toEqual(['alice', 'bob']);
     // Each day of the range, with the runs started that day by outcome and the day's cost by agent type.
     expect(figures.daily).toHaveLength(30);
     expect(

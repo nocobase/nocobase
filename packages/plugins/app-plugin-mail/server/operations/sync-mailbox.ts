@@ -113,6 +113,11 @@ export class SyncMailboxOperation {
       );
       return;
     }
+    notifyMailMessageChange(
+      this.dependencies.messageChangeNotifier,
+      account.userId,
+      this.dependencies.logger,
+    );
     if (run.mode === 'initial' && !isValidSyncDate(run.policy.receivedAfter)) {
       const receivedAfter = isValidSyncDate(account.initialSyncReceivedAfter)
         ? account.initialSyncReceivedAfter
@@ -159,14 +164,7 @@ export class SyncMailboxOperation {
       leaseMs,
     );
     try {
-      const changed = await this.executeStep(run, adapter, signal);
-      if (changed) {
-        notifyMailMessageChange(
-          this.dependencies.messageChangeNotifier,
-          account.userId,
-          this.dependencies.logger,
-        );
-      }
+      await this.executeStep(run, adapter, signal);
     } catch (error) {
       if (await this.isCancelledOrRemoved(run)) return;
       const normalized = normalizeError(error);
@@ -218,6 +216,7 @@ export class SyncMailboxOperation {
           if (!(await this.isCancelledOrRemoved(run))) throw releaseError;
           return;
         }
+        await this.announce(released);
         writeMailLog(
           this.dependencies.logger,
           'warn',
@@ -248,6 +247,7 @@ export class SyncMailboxOperation {
   ): Promise<void> {
     try {
       const failed = await this.dependencies.store.failSyncRun(run, error);
+      await this.announce(failed);
       writeMailLog(
         this.dependencies.logger,
         'error',
@@ -302,7 +302,27 @@ export class SyncMailboxOperation {
       },
       'Mail synchronization progress saved.',
     );
+    await this.announce(result);
     return result;
+  }
+
+  private async announce(run: MailSyncRun): Promise<void> {
+    try {
+      const account = await this.dependencies.store.getAccount(run.accountId);
+      if (account)
+        notifyMailMessageChange(
+          this.dependencies.messageChangeNotifier,
+          account.userId,
+          this.dependencies.logger,
+        );
+    } catch (error) {
+      writeMailLog(
+        this.dependencies.logger,
+        'error',
+        { event: 'mail.realtime.failed', err: mailLogError(error) },
+        'Failed to announce committed synchronization progress.',
+      );
+    }
   }
 
   private async isCancelledOrRemoved(

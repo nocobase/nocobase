@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   authenticationToken,
   type AuthEnv,
@@ -201,11 +202,30 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           'The cast and its roles, the departments, the management groups and the holidays.',
         responses: {
           200: dataResponse(OfficeConfig),
+          400: apiErrorResponse(400),
           401: unauthorized,
           500: internal,
         },
       }),
-      async (context) => context.json(data(await service.config())),
+      apiValidator(
+        'query',
+        z.object({
+          workflow: z
+            .enum([
+              'incoming',
+              'clerkTasks',
+              'teamTasks',
+              'dataRequests',
+              'executorTasks',
+              'extractions',
+            ])
+            .default('incoming'),
+        }),
+      ),
+      async (context) =>
+        context.json(
+          data(await service.config(context.req.valid('query').workflow)),
+        ),
     );
     router.get(
       `${BASE}/notices`,

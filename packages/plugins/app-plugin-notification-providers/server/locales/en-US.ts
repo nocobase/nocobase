@@ -1,28 +1,11 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
-  test: {
-    channels: { email: 'Email', im: 'IM' },
-    providers: {
-      smtp: 'SMTP',
-      resend: 'Resend',
-      feishuWebhook: 'Feishu webhook',
-      dingtalkWebhook: 'DingTalk webhook',
-    },
-    fields: {
-      subject: 'Subject',
-      text: 'Text',
-      html: 'HTML',
-      url: 'Full HTTP(S) URL',
-      recipient: 'Recipient',
-      title: 'Title',
-      message: 'Message',
-    },
-    placeholders: { email: 'name@example.com' },
-    defaults: {
-      title: 'NocoBase notification test',
-      body: 'This is a test notification from NocoBase.',
-    },
+  providers: {
+    smtp: 'SMTP',
+    resend: 'Resend',
+    feishuWebhook: 'Feishu webhook',
+    dingtalkWebhook: 'DingTalk webhook',
   },
 };
 

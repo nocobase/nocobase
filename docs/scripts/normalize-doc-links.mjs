@@ -6,7 +6,7 @@
  * 默认 dry-run，`--write` 应用修复；`--remove-unresolved-meta` 在 write
  * 模式下删掉解析不到的叶子条目。
  *
- * Markdown 链接的死链交给 rspress 内置 checkDeadLinks（build 时强制）。
+ * Dead links in Markdown bodies are caught by the site build, which checks every emitted link (src/integrations/html.ts).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -119,8 +119,8 @@ Options:
 
 Notes:
   - Only checks _meta.json sidebar links.
-  - Markdown link dead-link checking is enforced by rspress at build time
-    (via markdown.link.checkDeadLinks in rspress.config.ts).
+  - Markdown link dead-link checking is enforced by the site build, which checks
+    every emitted link (src/integrations/html.ts).
   - 'ar' is skipped by default (deferred maintenance). Pass --langs ar to force.
 `);
 }

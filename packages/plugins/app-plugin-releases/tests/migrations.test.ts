@@ -146,3 +146,62 @@ describeMigration('202610210001_rel_protected_requires_approval', {
     await expectCollection('relEnvironments').toHaveField('requiresApproval');
   },
 });
+
+// What an environment is for: preview when it holds a pull request preview App, else test.
+describeMigration('202611020001_rel_environment_purpose', {
+  sources,
+  before: async ({ connection }) => {
+    const now = new Date();
+    const environment = {
+      driver: 'host',
+      config: '{}',
+      approvers: '[]',
+      protected: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await connection.query
+      .insertInto('relEnvironments')
+      .values([
+        { ...environment, id: 'previews', name: 'Previews' },
+        { ...environment, id: 'staging', name: 'Staging' },
+      ])
+      .execute();
+    const app = {
+      enabled: true,
+      activation: 'eager',
+      labels: '{}',
+      createdVia: 'human',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await connection.query
+      .insertInto('relApps')
+      .values([
+        { ...app, id: 'shop', name: 'Shop', environmentId: 'staging' },
+        {
+          ...app,
+          id: 'shop-pr-1',
+          name: 'Shop #1',
+          environmentId: 'previews',
+          previewOf: 'shop',
+        },
+      ])
+      .execute();
+  },
+  up: async ({ connection, expectCollection }) => {
+    await expectCollection('relEnvironments').toHaveField('purpose');
+    const rows = await connection.query
+      .selectFrom('relEnvironments')
+      .select(['id', 'purpose'])
+      .orderBy('id')
+      .execute();
+    expect(rows.map((row) => [String(row.id), String(row.purpose)])).toEqual([
+      ['previews', 'preview'],
+      ['staging', 'test'],
+    ]);
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('relEnvironments').not.toHaveField('purpose');
+  },
+});

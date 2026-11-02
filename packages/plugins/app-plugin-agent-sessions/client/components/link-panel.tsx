@@ -19,24 +19,13 @@ import {
 import { useSearchParams } from 'react-router';
 
 import type { Session, SessionLink } from '../../shared/api.js';
-import { useLinkPanels } from '../config.js';
+import { useLinkPanels, useSessionSurface } from '../config.js';
+import { usePhone } from '../use-phone.js';
 import { waitingFirst } from '../lib/tones.js';
 import { LinkList, Sheet } from './link-sheet.js';
 import { Button } from './ui/button.js';
 
-function usePhone(): boolean {
-  const query = '(max-width: 767px)';
-  const [phone, setPhone] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(query).matches,
-  );
-  useEffect(() => {
-    const media = window.matchMedia(query);
-    const change = () => setPhone(media.matches);
-    media.addEventListener('change', change);
-    return () => media.removeEventListener('change', change);
-  }, []);
-  return phone;
-}
+const NO_PANELS: ReturnType<typeof useLinkPanels> = {};
 
 /** Wide enough for the panel beside the conversation; narrower, it lies over the conversation. */
 function useWide(): boolean {
@@ -85,7 +74,10 @@ export function useLinkPanel(
   onShowDetails: () => void,
 ): LinkPanelState {
   const { t } = useTranslation();
-  const linkPanels = useLinkPanels();
+  const surface = useSessionSurface();
+  // In a panel beside another page, a record opens at its own address instead.
+  const configured = useLinkPanels();
+  const linkPanels = surface.panel ? NO_PANELS : configured;
   const [params, setParams] = useSearchParams();
   const phone = usePhone();
   const wide = useWide();

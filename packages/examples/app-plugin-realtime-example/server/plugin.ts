@@ -13,6 +13,7 @@ const realtimeExamplePlugin: AppServerPlugin = defineServerPlugin({
   packageName: '@nocobase/app-plugin-realtime-example',
   serviceProviders,
   routes,
+  database: { migrations: './database/migrations' },
 });
 
 export default realtimeExamplePlugin;

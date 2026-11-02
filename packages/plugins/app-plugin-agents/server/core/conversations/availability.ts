@@ -1,6 +1,6 @@
 /**
  * Whether an agent can answer a person now: it exists, is enabled, the person may wake it, and it has where to run: an
- * online runner that has its tool and model and may run that person's work (shared with the team, or the person's
+ * online runner that has its tool and model and may run that person's work (shared with all users, or the person's
  * own), with the features and variable restrictions claim requires.
  */
 import type { Agent } from '../../../shared/agents.js';

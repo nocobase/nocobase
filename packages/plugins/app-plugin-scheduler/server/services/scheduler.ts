@@ -39,13 +39,84 @@ export type ScheduleListItem = Awaited<
   readonly targetSummary: ScheduleTargetSummary;
 };
 
+/** The provider owns resources; the service owns their shared drain boundary. */
+export interface SchedulerLifecycle {
+  stopReconciliation(): void;
+  shutdownExecutor(): Promise<void>;
+  unsubscribe(): void;
+}
+
 export class DefaultSchedulerService implements SchedulerService {
   private readonly manifest: ScheduleManifestEntry[] = [];
+  private readonly reconciliations = new Set<Promise<unknown>>();
+  private readonly writes = new Set<Promise<unknown>>();
+  private readonly drainErrors: unknown[] = [];
+  private drainPromise: Promise<void> | undefined;
+  private closing = false;
+  private reportsClosed = false;
+
+  public get draining(): boolean {
+    return this.closing;
+  }
+
+  public drain(): Promise<void> {
+    if (!this.drainPromise) {
+      this.closing = true;
+      // Defer resource callbacks until the shared promise has been assigned.
+      this.drainPromise = Promise.resolve().then(() => this.runDrain());
+      try {
+        this.lifecycle?.stopReconciliation();
+      } catch (error) {
+        this.drainErrors.push(error);
+      }
+    }
+    return this.drainPromise;
+  }
+
+  private async runDrain(): Promise<void> {
+    const executor = Promise.resolve().then(() =>
+      this.lifecycle?.shutdownExecutor(),
+    );
+    const [result] = await Promise.allSettled([
+      executor,
+      ...this.reconciliations,
+    ]);
+    if (result?.status === 'rejected') this.drainErrors.push(result.reason);
+    // No new reports can enter after producers and inspections have settled.
+    this.reportsClosed = true;
+    await Promise.allSettled([...this.writes]);
+    try {
+      this.lifecycle?.unsubscribe();
+    } catch (error) {
+      this.drainErrors.push(error);
+    }
+    if (this.drainErrors.length === 1) throw this.drainErrors[0];
+    if (this.drainErrors.length > 1) {
+      throw new AggregateError(this.drainErrors, 'Scheduler drain failed.');
+    }
+  }
+
+  private track<T>(
+    work: () => Promise<T>,
+    pending: Set<Promise<unknown>>,
+  ): Promise<T> {
+    const promise = Promise.resolve().then(work);
+    pending.add(promise);
+    void promise.then(
+      () => pending.delete(promise),
+      (error: unknown) => {
+        pending.delete(promise);
+        if (this.closing) this.drainErrors.push(error);
+      },
+    );
+    return promise;
+  }
 
   public constructor(
     private readonly store: ScheduleStore,
     private readonly occurrences: ScheduleOccurrenceStore,
     private readonly targets: ScheduleTargetRegistry,
+    private readonly lifecycle: SchedulerLifecycle | undefined = undefined,
   ) {}
 
   public defineSchedule(definition: ScheduleDefinition): void {
@@ -61,8 +132,21 @@ export class DefaultSchedulerService implements SchedulerService {
     const { type } = target;
     return {
       type,
-      reportCompletion: (occurrenceId, reference, completion) =>
-        this.occurrences.complete(occurrenceId, reference, completion, type),
+      reportCompletion: (occurrenceId, reference, completion) => {
+        if (this.reportsClosed) {
+          return Promise.reject(new Error('The Scheduler has been drained.'));
+        }
+        return this.track(
+          () =>
+            this.occurrences.complete(
+              occurrenceId,
+              reference,
+              completion,
+              type,
+            ),
+          this.writes,
+        );
+      },
     };
   }
 
@@ -151,12 +235,19 @@ export class DefaultSchedulerService implements SchedulerService {
 
   /** Records a firing this instance ran on its schedule's run state. */
   public recordEvent(event: ScheduleEvent): Promise<void> {
-    return this.store.recordEvent(event);
+    return this.track(() => this.store.recordEvent(event), this.writes);
   }
 
   /** Observes occurrences whose target completed without notifying us. */
   public reconcileOccurrences(): Promise<number> {
-    return this.occurrences.reconcile(this.targets);
+    if (this.closing) return Promise.resolve(0);
+    return this.track(
+      () =>
+        this.occurrences.reconcile(this.targets, (error) => {
+          if (this.closing) this.drainErrors.push(error);
+        }),
+      this.reconciliations,
+    );
   }
 }
 

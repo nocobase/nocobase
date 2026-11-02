@@ -1,13 +1,5 @@
-import { StoredLifecycleParameters } from '@nocobase/lifecycle';
-import {
-  PARAMETER_COLLECTIONS,
-  exampleParameterRegistration,
-} from '../configuration/store.js';
-import { reviewerServices } from '../configuration/reviewers.js';
-import {
-  reviewerDemoLifecycle,
-  reviewerLiveDemoLifecycle,
-} from '../lifecycles/reviewer-demo.js';
+import { WorkflowParameterStore } from '../configuration/workflow-parameter-store.js';
+import { exampleParameterRegistration } from '../configuration/store.js';
 import { ParameterConfigurationService } from '../services/parameter-configuration.js';
 import { parameterConfigurationServiceToken } from '../tokens.js';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
@@ -84,10 +76,11 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
   public readonly name: string = LIFECYCLE_EXAMPLE_SCOPE;
   private jobs: LifecycleJobs | undefined;
   private runtime: LifecycleRuntime | undefined;
-  private parameterStore: StoredLifecycleParameters | undefined;
+  private parameterStore: WorkflowParameterStore | undefined;
   private flows: DurableFlowService | undefined;
   private sandboxInstance: Sandbox | undefined;
   private changes: RealtimePublicTopic<LifecycleChange> | undefined;
+  private releaseChanges: (() => void) | undefined;
 
   public override register(): void {
     this.app.container.singleton(parameterConfigurationServiceToken, () => {
@@ -134,8 +127,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
 
   public override async start(): Promise<void> {
     // The pages reload when told a record changed instead of asking every
-    // few seconds. An application without realtime still works; its pages
-    // then reload only after their own actions.
+    // few seconds. A periodic snapshot also recovers missed notifications.
     if (this.app.container.has(realtimeServiceToken))
       this.changes = this.app.container
         .resolve(realtimeServiceToken)
@@ -143,19 +135,31 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
           audience: 'public',
         });
     const runtime = this.lifecycleRuntime();
+    this.releaseChanges = runtime.onChange({}, (change) => {
+      this.publishChange({
+        lifecycle: change.lifecycle,
+        recordId: String(change.recordId),
+      });
+    });
     await this.effectJobs().start(runtime);
   }
 
   public override async shutdown(): Promise<void> {
     await this.jobs?.shutdown();
     this.jobs = undefined;
+    this.releaseChanges?.();
+    this.releaseChanges = undefined;
     this.changes?.close();
     this.changes = undefined;
   }
 
   /** Tells the pages that a record changed; they read it back themselves. */
   private publishChange(change: LifecycleChange): void {
-    this.changes?.publish(change);
+    void this.changes
+      ?.publish(change)
+      .catch((error: unknown) =>
+        console.error('Realtime announcement failed.', error),
+      );
   }
 
   /** One runtime for the service and the executors, created on first use. */
@@ -173,10 +177,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
         },
       },
     );
-    const parameterStore = new StoredLifecycleParameters(
-      store,
-      PARAMETER_COLLECTIONS,
-    );
+    const parameterStore = new WorkflowParameterStore(store);
     this.parameterStore = parameterStore;
     const runtime = new LifecycleRuntime({
       store,
@@ -203,18 +204,6 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
         'expenses',
       ),
     });
-    for (const lifecycle of [reviewerDemoLifecycle, reviewerLiveDemoLifecycle])
-      runtime.register(lifecycle, {
-        services: (handle) =>
-          reviewerServices(
-            this.app.container.resolve(databaseManagerToken),
-            handle,
-          ),
-        parameterConfiguration: exampleParameterRegistration(
-          parameterStore,
-          lifecycle.name,
-        ),
-      });
     // The durable flows call the sandbox standing in for the outside
     // systems, and may fire a transition themselves when what follows
     // depends on what they found.
@@ -229,19 +218,39 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
         });
       },
     };
-    runtime.register(orderLifecycle, { services: flowServices });
-    runtime.register(invoiceLifecycle, { services: flowServices });
-    runtime.register(exportLifecycle, { services: flowServices });
+    runtime.register(orderLifecycle, {
+      services: flowServices,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'orders',
+      ),
+    });
+    runtime.register(invoiceLifecycle, {
+      services: flowServices,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'invoices',
+      ),
+    });
+    runtime.register(exportLifecycle, {
+      services: flowServices,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'exports',
+      ),
+    });
     runtime.register(purchaseLifecycle, { services: flowServices });
     runtime.register(fulfilmentLifecycle, { services: flowServices });
-    runtime.register(subscriptionLifecycle, { services: flowServices });
+    runtime.register(subscriptionLifecycle, {
+      services: flowServices,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'subscriptions',
+      ),
+    });
     // Another plugin would subscribe the same way, to refresh a page, keep a
     // to-do list or feed a search index; work that must happen is an effect.
     runtime.on('completed', {}, (event) => {
-      this.publishChange({
-        lifecycle: event.lifecycle,
-        recordId: String(event.entry.recordId),
-      });
       logger.info(
         {
           lifecycle: event.lifecycle,

@@ -1,0 +1,479 @@
+{
+  "icons": {
+    "UserRoundCheck": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-user-round-check\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"8\" r=\"5\"></circle><path d=\"M2 21a8 8 0 0 1 13.3-6\"></path><path d=\"m16 19 2 2 4-4\"></path></svg>",
+    "KeyRound": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg>",
+    "ShieldCheck": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg>",
+    "Workflow": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-workflow\" aria-hidden=\"true\"><rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"></path><rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\"></rect></svg>",
+    "ListChecks": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg>",
+    "CalendarClock": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-calendar-clock\" aria-hidden=\"true\"><path d=\"M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5\"></path><path d=\"M16 2v4\"></path><path d=\"M8 2v4\"></path><path d=\"M3 10h5\"></path><path d=\"M17.5 17.5 16 16.3V14\"></path><circle cx=\"16\" cy=\"16\" r=\"6\"></circle></svg>",
+    "Bell": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-bell\" aria-hidden=\"true\"><path d=\"M10.268 21a2 2 0 0 0 3.464 0\"></path><path d=\"M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326\"></path></svg>",
+    "Mail": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-mail\" aria-hidden=\"true\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"></rect><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"></path></svg>",
+    "Paperclip": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-paperclip\" aria-hidden=\"true\"><path d=\"M13.234 20.252 21 12.3\"></path><path d=\"m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486\"></path></svg>",
+    "Printer": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-printer\" aria-hidden=\"true\"><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"></path><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\"></path><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\"></rect></svg>",
+    "Languages": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-languages\" aria-hidden=\"true\"><path d=\"m5 8 6 6\"></path><path d=\"m4 14 6-6 2-3\"></path><path d=\"M2 5h12\"></path><path d=\"M7 2h1\"></path><path d=\"m22 22-5-10-5 10\"></path><path d=\"M14 18h6\"></path></svg>",
+    "Palette": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-palette\" aria-hidden=\"true\"><circle cx=\"13.5\" cy=\"6.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"17.5\" cy=\"10.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"8.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"6.5\" cy=\"12.5\" r=\".5\" fill=\"currentColor\"></circle><path d=\"M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z\"></path></svg>",
+    "BookOpen": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-book-open\" aria-hidden=\"true\"><path d=\"M12 7v14\"></path><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\"></path></svg>",
+    "Copy": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>",
+    "ArrowRight": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg>",
+    "ArrowUpRight": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-up-right\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"></path><path d=\"M7 17 17 7\"></path></svg>",
+    "Search": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-search\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"></circle><path d=\"m21 21-4.3-4.3\"></path></svg>",
+    "Sparkles": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-sparkles\" aria-hidden=\"true\"><path d=\"M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z\"></path><path d=\"M20 3v4\"></path><path d=\"M22 5h-4\"></path><path d=\"M4 17v2\"></path><path d=\"M5 18H3\"></path></svg>",
+    "Terminal": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-terminal\" aria-hidden=\"true\"><polyline points=\"4 17 10 11 4 5\"></polyline><line x1=\"12\" x2=\"20\" y1=\"19\" y2=\"19\"></line></svg>",
+    "MessageSquareText": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>",
+    "Check": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"></path></svg>",
+    "Database": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0\"/></svg>",
+    "Bot": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"8\" width=\"16\" height=\"12\" rx=\"3\"/><path d=\"M12 8V4H9M2 12v4m20-4v4M9 12v2m6-2v2m-6 3h6\"/></svg>"
+  },
+  "data": [
+    [
+      "auth",
+      "Authentication",
+      "",
+      "Sign in with passwords, connect a company identity provider, or let scripts use API keys. Describe your account rules to the Agent and reuse the application's authentication capabilities.",
+      ""
+    ],
+    [
+      "data-sources",
+      "Data sources",
+      "",
+      "Choose an application database and connect external databases to use existing information in business pages.",
+      ""
+    ],
+    [
+      "authorization",
+      "Authorization",
+      "",
+      "Define roles, actions, and record scopes. Ask the Agent to apply the same rules to pages and server APIs.",
+      ""
+    ],
+    [
+      "workflow",
+      "Workflow",
+      "",
+      "Coordinate transitions, background work, waits, branches, and timeouts while keeping progress and history visible.",
+      ""
+    ],
+    [
+      "approval",
+      "Approval",
+      "",
+      "Connect Pro approval capabilities for conditional routes, joint reviews, added reviewers, and handovers.",
+      ""
+    ],
+    [
+      "task-center",
+      "Task Center",
+      "✓",
+      "Bring approvals, equipment collection and other personal work together with shared status filters and counts.",
+      "Managers handle leave requests, expenses and other applications every day. They want one place to see everything waiting for their attention without checking each business separately.\nAdd a My tasks page where each person sees only their own pending, completed and cancelled items, with a count for each."
+    ],
+    [
+      "scheduler",
+      "Scheduled tasks",
+      "",
+      "Describe what should run, when it should run, and who should receive the result. Inspect schedules and execution history.",
+      ""
+    ],
+    [
+      "notification",
+      "Notifications",
+      "",
+      "Send in-app messages or email when business events occur, with useful links and traceable delivery results.",
+      ""
+    ],
+    [
+      "mail",
+      "Email",
+      "",
+      "Connect employee mailboxes to read, reply, organize messages, and relate correspondence to business records.",
+      ""
+    ],
+    [
+      "file",
+      "Files",
+      "",
+      "Upload, preview, and download files associated with records, with business permissions governing access.",
+      ""
+    ],
+    [
+      "template-print",
+      "Template printing",
+      "",
+      "Give the Agent an Office template and business requirements to implement document generation and download.",
+      ""
+    ],
+    [
+      "i18n",
+      "Languages",
+      "",
+      "Add interface and server translations, configure the default language, and preserve individual language choices.",
+      ""
+    ],
+    [
+      "theme",
+      "Themes",
+      "",
+      "Adjust colors, typography, and density while preserving clear, usable light and dark appearances.",
+      ""
+    ],
+    [
+      "ai-employee",
+      "AI employees",
+      "",
+      "Connect page context, authorized business queries, and explicitly allowed actions to an assistant using your model service.",
+      ""
+    ],
+    [
+      "ai-knowledge-base",
+      "AI knowledge base",
+      "",
+      "Organize business knowledge and connect retrieval so an assistant can answer with references to relevant documents.",
+      ""
+    ]
+  ],
+  "capabilityIcons": [
+    "KeyRound",
+    "Database",
+    "ShieldCheck",
+    "Workflow",
+    "UserRoundCheck",
+    "ListChecks",
+    "CalendarClock",
+    "Bell",
+    "Mail",
+    "Paperclip",
+    "Printer",
+    "Languages",
+    "Palette",
+    "Bot",
+    "BookOpen"
+  ],
+  "promptLibrary": {
+    "auth": {
+      "title": "Authentication",
+      "description": "Sign in with passwords, connect a company identity provider, or let scripts use API keys. Describe your account rules to the Agent and reuse the application's authentication capabilities.",
+      "prompts": {
+        "staff": {
+          "label": "Employee-only application",
+          "text": "Northstar\u2019s transport system is for company employees only.\nDisable self-registration on both the sign-in page and the server.\nBuild an Employee accounts page for administrators, with name/email search and enabled/disabled filters.\nSupport creating, disabling, and enabling accounts, and revoking sessions separately.\nKeep account creation separate from business permission assignment. Never grant administrator access by default."
+        },
+        "password": {
+          "label": "Password requirements",
+          "text": "Require at least 12 characters when setting or resetting a password.\nShow the requirement in account creation and password reset forms, with matching server-side validation.\nExisting employees can continue signing in with their current passwords without an immediate password change."
+        },
+        "recovery": {
+          "label": "Password recovery",
+          "text": "Add a forgot-password flow for Northstar employees using an email channel.\nLet employees choose Forgot password? and enter their email.\nShow the same submission message whether or not an account exists.\nUse the email link to set a password of at least 12 characters and return to sign-in.\nReuse authentication\u2019s expiring, single-use reset links."
+        },
+        "sso": {
+          "label": "Company sign-in",
+          "text": "Connect Northstar's existing corporate identity provider using OIDC.\nKeep password sign-in and add a Corporate sign-in button to the branded page.\nEmployees visit the company identity provider and sign in with their company account.\nShow consent explaining the basic identity and email requested by the transport application.\nReturn to the workspace after consent; canceling must not sign the employee into the application.\nAllow account creation at first sign-in, identified by the provider's stable user identity.\nDo not merge accounts by matching names or emails, or grant new accounts administrator access.\nList the information the provider administrator must supply, the callback to register, and application configuration."
+        },
+        "api": {
+          "label": "Script access",
+          "text": "Write a script to read Northstar transport orders.\nRead the API key from NOCOBASE_API_KEY, never source code or logs.\nUse the application's actual API documentation to select the order list endpoint and send the Key in the x-api-key header.\nThe example app is http://localhost:13200/main. GET /api/northstar returns workspace data; data.orders contains accessible orders.\nRead orders, resolve customer names using data.customers, and output order number, customer, origin, destination, and status.\nHandle API failures instead of treating them as an empty order list.\nExplain how to configure the application address and run the script."
+        },
+        "brand": {
+          "label": "Sign-in branding",
+          "text": "Customize the existing transport application's sign-in page for Northstar Logistics.\n\nUse a pale-blue truck and mountain-road illustration, a white page panel, and a pale blue-gray grid backdrop for readable text.\nShow the company name and icon at the top. Place a welcome message and transport dispatch, delivery tracking, and team collaboration copy on the left.\nPlace a white sign-in form on the right, with dark text, white inputs, and a blue sign-in button.\nPreserve username or email and password sign-in, password visibility, error feedback, and password recovery.\nDisable public registration on both the page and the server while retaining the registration page and components for future use.\nUse consistent branding on sign-in and password recovery pages, with Chinese and English copy."
+        },
+        "protect": {
+          "label": "Pages and APIs",
+          "text": "Add a public transport services page for Northstar without requiring registration or sign-in.\nUse Northstar\u2019s blue brand style to introduce its Yangtze River Delta network, regional transport, business delivery, and shipment coordination.\nShow a contact email and an Employee orders entry. Signed-in employees can visit the public page too.\nIts public reading API must not return internal orders or customer records.\nKeep authentication and business permissions on the workspace, customer and order pages, and their APIs.\nDirect anonymous visitors to sign-in when they open internal pages."
+        }
+      }
+    },
+    "data-sources": {
+      "title": "Data sources",
+      "description": "Choose an application database and connect external databases to use existing information in business pages.",
+      "prompts": {
+        "settlement": {
+          "label": "External settlement data",
+          "text": "Connect Northstar's existing settlement database as a read-only external data source without changing its tables.\nMatch records by customer number. Add Settlement information to customer details, showing the settlement cycle, credit limit, and settlement status, with the data source identified.\nKeep reading customer contact details from the primary database. Read settlement information directly from the external database without importing it into the primary database.\nRead connection credentials from server-side runtime configuration."
+        }
+      }
+    },
+    "authorization": {
+      "title": "Authorization",
+      "description": "Define roles, actions, and record scopes. Ask the Agent to apply the same rules to pages and server APIs.",
+      "prompts": {
+        "permission-sets": {
+          "label": "Roles and assignments",
+          "text": "Create Northstar permission sets for account managers, dispatchers, and drivers.\nAccount managers enter customers and orders, create orders, and view or edit records they own.\nDispatchers enter the dispatch workspace, view transport orders, and assign drivers, but cannot maintain permissions.\nDrivers view assigned tasks and accept, depart, and submit delivery evidence; they cannot change prices or reassign drivers.\nOnly authorized administrators maintain permission sets and assignments.\nProvide job editing and assignments in Team access. Initially assign Alice and Bob as account managers, Emma as dispatcher, and Daniel as driver."
+        },
+        "data-scopes": {
+          "label": "Record scopes",
+          "text": "Allow account managers to view and edit orders using the owner field linked to the current user.\nAllow drivers to view and handle tasks using the assigned driver's employee account.\nAllow dispatchers to view all orders needed for coordination, with assignment subject to current order state.\nProvide per-action scope choices in Team access and enforce consistent rules on lists, details, and mutations."
+        },
+        "default-access": {
+          "label": "Default access",
+          "text": "Keep account managers' owned-order viewing scope.\nAdd completed orders as a default viewing scope for everyone who already has View orders permission.\nLet administrators save or remove the completed-order viewing rule in Access rules.\nAdd viewing only, not editing or transport actions on other people's orders."
+        },
+        "sharing-rules": {
+          "label": "Sharing rules",
+          "text": "Alice needs Bob to help follow up transport order NS-2026-001.\nBob already has order viewing permission; share this order's viewing scope with him.\nKeep Alice as owner and preserve Bob's normal job and owned-record scope.\nDo not grant editing, driver assignment, or approval through this sharing.\nLet administrators select an employee and order in Access rules, save a view-only sharing rule, and remove it after collaboration ends."
+        },
+        "restriction-rules": {
+          "label": "Restriction rules",
+          "text": "Bob temporarily helps review transport fees and may view only orders with a transport fee of 2,000 CNY or less.\nAdd a fee limit to his View transport orders action, preserving his job and order ownership.\nApply it to his own orders, the completed-order baseline and shared orders.\nLet administrators adjust or remove it in Access rules; explain that removing it may expand visible records."
+        },
+        "inspector": {
+          "label": "Inspect permissions",
+          "text": "Provide permission inspection in Northstar Team access for authorized administrators only.\nSelect an employee and inspect pages, actions, record conditions, and sources from sets, assignments, default access, sharing, and restrictions.\nExplain Bob's owned-order scope and temporary sharing of NS-2026-001 separately.\nDo not present the inspection as an order count or let ordinary employees inspect other people's details."
+        }
+      }
+    },
+    "workflow": {
+      "title": "Workflow",
+      "description": "Coordinate transitions, background work, waits, branches, and timeouts while keeping progress and history visible.",
+      "prompts": {
+        "definition-0": {
+          "label": "Business transitions",
+          "text": "Add a workflow to Northstar orders: Awaiting dispatch \u2192 Awaiting acceptance \u2192 In transit \u2192 Delivered \u2192 Completed.\nAssign a driver during dispatch. Accept and depart starts transport. Rejection requires a reason, returns to dispatch and clears the assignment.\nRequire delivery evidence to mark delivery, then confirm completion. Allow cancellation with a reason before departure.\nShow only actions applicable to the current stage; ordinary editing must not change workflow stages directly.\nCheck stages and required inputs on the server and prevent concurrent actions from overwriting another person\u2019s result."
+        },
+        "execution-0": {
+          "label": "Background reports",
+          "text": "Add a Northstar transport report page that exports current orders to CSV.\nQueue the submitted report for background generation, then complete it automatically and provide a download.\nShow the current stage, filename, exported order count and applicant/system processing history.\nRetry generation failures according to policy and retain final failures for follow-up. Repeated execution must not create duplicate report files.\nRetain progress and results after refresh, and allow only authorized people to export orders."
+        },
+        "progress-0": {
+          "label": "Processing history",
+          "text": "Show the current workflow stage and processing history in Northstar order details.\nRecord the actor, timestamp, action, previous and next stages, and rejection reason or delivery evidence.\nMark automatic actions as performed by the system.\nKeep progress and history after refresh so the delivery process can be reviewed after completion."
+        }
+      }
+    },
+    "approval": {
+      "title": "Approval",
+      "description": "Connect Pro approval capabilities for conditional routes, joint reviews, added reviewers, and handovers.",
+      "prompts": {
+        "stages-0": {
+          "label": "Conditional approval",
+          "text": "Add approval to Northstar special transport requests with cargo details, reasons, extra fees and attachments.\nFees of CNY 2,000 or less need operations approval; higher fees continue to finance afterwards.\nPreview the route and reviewers before submission; show the current stage, offered actions and opinions in details.\nRetain the approval decision without automatically paying fees."
+        },
+        "joint-review-0": {
+          "label": "Joint and any-one review",
+          "text": "Add joint review to Northstar special cargo requests. Both operations and finance leads must approve.\nReject immediately when either rejects, requiring a reason. After one approval, keep waiting for the other.\nUse any-approval for routine dispatch: one on-duty supervisor\u2019s approval is sufficient.\nShow individual opinions and whom the request is still waiting for."
+        },
+        "handover-0": {
+          "label": "Add or transfer reviewers",
+          "text": "Allow adding a reviewer before the supervisor and transferring tasks in Northstar special transport review.\nAdded reviewers must be finance reviewers. The original supervisor continues afterwards.\nTransfers must select the on-duty dispatcher and include a reason.\nRetain original tasks, added or replacement reviewers, reasons and opinions.\nShow the added-signer and handover paths with their reviewers in a flow diagram on request details."
+        },
+        "requests-0": {
+          "label": "Return and withdraw",
+          "text": "Allow Northstar supervisors to return requests with missing materials to applicants, with a reason.\nAllow correction and resubmission, retain earlier opinions and determine reviewers again on review entry.\nAllow applicants to withdraw before completion; reviewers cannot handle closed tasks.\nDistinguish return, rejection and withdrawal, and show who should act next.\nShow the return/correction/resubmission and rejection paths as a flow diagram in request details."
+        },
+        "requests-1": {
+          "label": "Copy for information",
+          "text": "Copy Northstar special transport requests to the responsible account manager.\nProvide Copied to me and read confirmation. Recipients can view progress and opinions without deciding approval."
+        },
+        "requests-2": {
+          "label": "Timeouts and claiming",
+          "text": "Remind Northstar supervisors after one working day and escalate to their manager after two.\nAllow eligible team members to claim tasks; release claims left unhandled past their deadline.\nShow the current handler, deadline and assignment history."
+        }
+      }
+    },
+    "scheduler": {
+      "title": "Scheduled tasks",
+      "description": "Describe what should run, when it should run, and who should receive the result. Inspect schedules and execution history.",
+      "prompts": {
+        "reminder": {
+          "label": "Dispatch reminder",
+          "text": "Add a pending-dispatch reminder to the existing order application.\nAt 9:00 a.m. Beijing time on every weekday, find orders still awaiting dispatch and send one in-app notification with the count to the dispatch lead.\nOpen the pending-dispatch list when the notification is clicked. Send nothing when there are no pending orders.\nAdministrators can inspect the schedule and execution history under Automatic reminders, and pause or resume the reminder."
+        },
+        "time": {
+          "label": "Change the schedule",
+          "text": "Run the pending-dispatch reminder at 10:00 a.m. Beijing time on weekdays instead.\nKeep the existing order scope, recipients, and notification content."
+        },
+        "report": {
+          "label": "Weekly report",
+          "text": "Generate last week's sales summary at 8:00 a.m. Beijing time every Monday and notify the sales lead.\nInclude revenue, order count, and regional totals. Administrators can inspect the task and execution history."
+        },
+        "sync": {
+          "label": "Customer status sync",
+          "text": "Synchronize customer status from the existing customer system every 10 minutes and update the matching records in this application.\nPreserve other customer information. Let administrators inspect the schedule and execution history."
+        }
+      }
+    },
+    "notification": {
+      "title": "Notifications",
+      "description": "Send in-app messages or email when business events occur, with useful links and traceable delivery results.",
+      "prompts": {
+        "progress": {
+          "label": "Progress reminder",
+          "text": "Add Send progress reminder to Northstar transport orders. Send the current order's progress to the acting user's message center through an in-app notification.\nInclude the order number in the title, and the origin, destination, and current status in the body.\nOpen the corresponding order detail without hard-coding a deployment prefix.\nSend each version of an order to each recipient only once; repeated clicks must not create duplicate messages.\nPreserve the current business status; sending a notification must not change transport progress.\nAdd Message center and an administrator-only Notification logs entry to the sidebar.\nThe message center shows only the current account's messages; logs show the business source, channel, status, and attempt count."
+        },
+        "approval": {
+          "label": "Approval result",
+          "text": "Notify only the applicant when a special transport request is approved or rejected.\nInclude the order number, request reason, and decision, and link to the request details.\nSend nothing while approval is pending, and notify each result only once.\nKeep the applicant's message center and let administrators inspect delivery logs.\nA delivery failure must not undo the saved approval result."
+        },
+        "email": {
+          "label": "Email channel",
+          "text": "Add email delivery alongside the approval-result in-app notification, using the configured email channel.\nRead the applicant's email from their actual business account. Include the order number in the subject and explain the request and decision in the body.\nSend only the in-app notification if the applicant has no email. Email failure must not affect the saved result or in-app notification.\nLet administrators inspect delivery records per channel without exposing service credentials in pages or logs."
+        }
+      }
+    },
+    "mail": {
+      "title": "Email",
+      "description": "Connect employee mailboxes to read, reply, organize messages, and relate correspondence to business records.",
+      "prompts": {
+        "quick-start-0": {
+          "label": "Receive and reply",
+          "text": "Add a mail center and a mailbox account management entry to the application. Users can connect their own mailboxes, select a mailbox, synchronize incoming messages, read messages and attachments, and reply.\n\nWhen a sales representative receives a quotation request, they can reply from the mail center. Keep the original subject and conversation context, and address the reply to the original sender. Each user works with their own connected mailboxes."
+        },
+        "usage-1": {
+          "label": "Email signatures",
+          "text": "Prepare a Northstar Operations signature for the business mailbox,\nincluding Northstar Logistics, Operations team, and transport coordination details.\nLet employees manage signatures from Mailbox accounts and select them when composing."
+        },
+        "usage-2": {
+          "label": "Progress email templates",
+          "text": "Prepare a Transport progress update template with the order number in the subject\nand customer name, origin, destination, transport status, and expected delivery in the body.\nProvide the current order and customer when opening the composer from order details.\nEmployees can apply the template, edit the content, and select an existing signature."
+        },
+        "usage-3": {
+          "label": "Customer correspondence",
+          "text": "Add Correspondence to customer details.\nMatch the customer's contact email against senders, recipients, and copied recipients.\nOnly show messages accessible through the current employee's own connected mailboxes.\nSelect a message to read its body. Reply opens the mail composer with its reply relationship retained.\nThe employee reviews the content before sending. Provide Refresh mail and Load more."
+        },
+        "usage-4": {
+          "label": "Order progress email",
+          "text": "Add Compose progress email to transport order details.\nRead the recipient from the customer contact and include the order number in the subject.\nPopulate the body with the customer, origin, destination, and transport status.\nEmployees review and edit before sending through their connected mailbox.\nAllow existing templates and signatures; do not send automatically."
+        }
+      }
+    },
+    "file": {
+      "title": "Files",
+      "description": "Upload, preview, and download files associated with records, with business permissions governing access.",
+      "prompts": {
+        "attachments": {
+          "label": "Order attachments",
+          "text": "Add attachments to existing Northstar Logistics transport orders.\nPlace an attachment area in order details. Allow multiple PDF, image, and DOCX files per order.\nShow filenames and sizes, with preview, download, and remove actions.\nAssociate uploaded files with the current order when Save is clicked; keep them visible when the order is reopened.\nPeople who can view the order can view and download attachments. Applicants and dispatchers can add or remove attachments.\nRemoving an attachment unlinks it from this order and preserves the file."
+        },
+        "avatar": {
+          "label": "Employee avatars",
+          "text": "Add an avatar to each employee, with at most one image per employee.\nSupport uploading and replacing the avatar, and display it in employee lists and details.\nUse the new image after replacement and keep it visible after refreshing."
+        }
+      }
+    },
+    "templatePrint": {
+      "title": "Template printing",
+      "description": "Give the Agent an Office template and business requirements to implement document generation and download.",
+      "prompts": {
+        "docx": {
+          "label": "Generate a transport document",
+          "text": "Add Generate transport document to Northstar transport orders.\nUse my DOCX template to fill in the current order number, customer, origin, destination, cargo details, and transport status.\nPreserve the template layout and repeating line items. Include the order number in the filename and provide DOCX download.\nRead order data on the server under the current user's permissions. Do not accept arbitrary data scopes or template paths from the browser.\nCheck template fields and dependencies first, then implement generation and download and verify the document against a real order."
+        },
+        "pdf": {
+          "label": "PDF download",
+          "text": "Add PDF download to the existing transport-document DOCX generation feature.\nCheck the PDF conversion service and fonts required by the rendering approach. If using the repository's Carbone example, configure LibreOffice in the application's runtime environment.\nKeep DOCX download. Clearly report conversion failures or missing services; do not return a file disguised as a PDF.\nCompare Chinese text, detail tables, pagination, and images against the original template."
+        }
+      }
+    },
+    "i18n": {
+      "title": "Languages",
+      "description": "Add interface and server translations, configure the default language, and preserve individual language choices.",
+      "prompts": {
+        "add": {
+          "label": "Add a language",
+          "text": "Add Spanish to the application. Translate both the interface and server messages, and add Spanish to the language menu."
+        },
+        "default": {
+          "label": "Default language",
+          "text": "Set the application's default language to Simplified Chinese (zh-CN), keeping Chinese and English available.\nConfigure i18n.defaultLocale in config.yml so a browser without a saved preference initially displays Chinese.\nPreserve existing users' saved language choices.\nAfter the configuration takes effect, verify with a browser that has no saved preference and check that the page's lang attribute follows the actual language."
+        },
+        "fallback": {
+          "label": "Complete translations",
+          "text": "Check the Spanish interface for text still displayed in Chinese or English.\nComplete missing translations in the application's client and server. Override plugin text in application-owned translation files where needed.\nPreserve the fallback order: current language, application default, then English. Do not translate business records such as customer names.\nRun pnpm nocobase locales check and verify both interface and server messages."
+        }
+      }
+    },
+    "theme": {
+      "title": "Themes",
+      "description": "Adjust colors, typography, and density while preserving clear, usable light and dark appearances.",
+      "prompts": {
+        "adjust": {
+          "label": "Modify a theme",
+          "text": "Update the Compact theme: change the primary color to blue and slightly increase border radii. Keep the current font, font sizes, and compact spacing."
+        },
+        "brand": {
+          "label": "Add a brand theme",
+          "text": "Add a Northstar Brand theme for Northstar Logistics, using deep blue as the primary color.\nBase it on Compact, preserving the font, sizes, and information density while slightly increasing border radii.\nProvide both light and dark colors with readable text and clear action buttons.\nKeep the existing Comfortable and Compact themes, and provide Chinese and English theme names."
+        },
+        "remove": {
+          "label": "Remove a theme",
+          "text": "Remove the Northstar Brand theme."
+        }
+      }
+    },
+    "ai-employee": {
+      "title": "AI employees",
+      "description": "Connect page context, authorized business queries, and explicitly allowed actions to an assistant using your model service.",
+      "prompts": {
+        "index-0": {
+          "label": "Transport assistant",
+          "text": "Connect a Transport assistant to the Northstar application using my configured model service.\nIt explains orders, finds records awaiting dispatch and offers advice using transport procedures.\nConnect order-reading actions within the current user's access scope. Start with queries; do not automatically change orders or send notifications.\nProvide conversation entry points on order lists and details, with follow-up questions and links to returned orders."
+        },
+        "page-context-0": {
+          "label": "Current order context",
+          "text": "Add a Transport assistant panel beside Northstar order details.\nAssociate the conversation with the current order and use authorized business actions to read its customer, route, cargo, status, owner and driver.\nSummarize the order and explain the next action for its stage. Include the corresponding business entry point.\nUpdate context when the order changes; do not reuse the previous order's information.\nUse the existing blue theme and keep the order and conversation visible together."
+        },
+        "business-data-0": {
+          "label": "Business queries",
+          "text": "Connect order queries to Northstar's Transport assistant.\nLet employees ask for orders awaiting dispatch or filter by customer, stage or route.\nRespect the current user's data access. Return the order number, customer, route and owner as cards that open order details.\nExplain when there are no matching orders in the user's scope. Continue follow-up questions with the selected order's context."
+        }
+      }
+    },
+    "ai-knowledge-base": {
+      "title": "AI knowledge base",
+      "description": "Organize business knowledge and connect retrieval so an assistant can answer with references to relevant documents.",
+      "prompts": {
+        "index-0": {
+          "label": "Connect a knowledge center",
+          "text": "Connect a knowledge center to Northstar for transport procedures, customer service material and driver handbooks.\nProvide folders, articles, files, reading and search, with role-based access.\nLet the Transport assistant answer from transport procedures and return document and passage links.\nConnect the required model service, retrieval method and index while keeping sources clear in the employee interface."
+        },
+        "answers-0": {
+          "label": "Source-based answers",
+          "text": "Let Northstar's Transport assistant use the transport procedures space.\nRetrieve relevant material before answering procedural questions. Include document and passage links.\nSay when no supporting material was found; do not invent company rules.\nProvide a conversation panel in the knowledge center with the original text visible beside the answer.\nRespect the knowledge scopes available to the current user and assistant, including restricted finance material."
+        }
+      }
+    },
+    "task-center": {
+      "title": "Task Center",
+      "description": "Bring approvals, equipment collection and other personal work together with shared status filters and counts.",
+      "prompts": {
+        "start": {
+          "label": "1. Create an entry",
+          "text": "Managers handle leave requests, expenses and other applications every day. They want one place to see everything waiting for their attention without checking each business separately.\nAdd a My tasks page where each person sees only their own pending, completed and cancelled items, with a count for each."
+        },
+        "approvals": {
+          "label": "2. Connect approvals",
+          "text": "Include existing leave and expense requests in My tasks, showing their type and number to the person responsible for approval. Keep the approval rules unchanged.\nAfter a transfer, only the new approver needs to handle the request. Withdrawn requests no longer need approval. Do not show the same work twice."
+        },
+        "handling": {
+          "label": "3. Handle work",
+          "text": "I want to open a task, read the application and approve it, or confirm receipt when collecting equipment.\nAfter handling, move the item to completed and update the remaining count. Only people allowed to handle it may act. Explain withdrawn items and stop further handling."
+        },
+        "verification": {
+          "label": "4. Verify results",
+          "text": "Try the flow with two test accounts, Alex and Jordan: receive work, open details, handle it and check the remaining count.\nConfirm neither can see or handle the other’s personal work, repeated clicks do not create duplicate work, and failed handling is not shown as complete. Tell me what was verified and give me a path to try myself."
+        },
+        "ordinary": {
+          "label": "Equipment collection",
+          "text": "When equipment is ready for collection, show the collection record in the assigned employee’s My tasks. Let them open it, review the equipment and confirm receipt.\nSuccessful collection completes the item; an administrator withdrawing the issue cancels it. Do not show the same record twice, and keep it pending if collection fails."
+        },
+        "dashboard": {
+          "label": "Dashboard badge",
+          "text": "Show how many things I still need to handle on the home page. Clicking the number should open the matching task list.\nUpdate the count and list after each item is handled. Show “No pending work” when there is none. After switching accounts, show only the new account’s work."
+        },
+        "reassignment": {
+          "label": "Reassignment",
+          "text": "An administrator needs to reassign equipment that Alex has not collected to Jordan. Alex should no longer need or be able to confirm receipt; Jordan should see and handle the collection record.\nKeep completed collection history unchanged and avoid duplicate tasks if the reassignment is repeated."
+        },
+        "history": {
+          "label": "Historical work",
+          "text": "There are already unfinished approvals and equipment collections in this application. Let the responsible people find these in the new My tasks page while retaining the original business records.\nDo not miss new work, ask people to handle completed work again or show duplicate items. If preparation is interrupted, continue next time without starting over."
+        },
+        "notifications": {
+          "label": "Reminders",
+          "text": "When equipment is ready, remind the assigned employee inside the application and let them open the collection record from the reminder.\nRemind them only once per issue. Reading the reminder does not mean equipment has been collected; complete the task only after the employee confirms receipt successfully. A missing reminder must not prevent collection."
+        }
+      }
+    }
+  }
+}

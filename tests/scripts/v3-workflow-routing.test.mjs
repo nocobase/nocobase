@@ -1,12 +1,6 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -25,7 +19,7 @@ const triggerBranches = (source, event) => {
   return match[1]
     .trimEnd()
     .split('\n')
-    .map((line) => line.replace(/^      - /u, '').replace(/^['"]|['"]$/gu, ''));
+    .map((line) => line.replace(/^ {6}- /u, '').replace(/^['"]|['"]$/gu, ''));
 };
 
 const matchesSingleSegmentGlob = (pattern, branch) => {
@@ -46,6 +40,10 @@ test('stacked v3 targets receive PR checks without widening direct-branch trigge
     '*/v3-*',
   ]);
   assert.deepEqual(triggerBranches(guard, 'pull_request'), ['v3-main']);
+  assert.deepEqual(
+    triggerBranches(workflow('pr-description'), 'pull_request'),
+    ['v3-main', 'v3-develop', '*/v3-*'],
+  );
 
   const workflowPattern = '*/v3-*';
   const botPattern = /^[^/]+\/v3-[^/]+$/u;
@@ -106,7 +104,7 @@ test('the release smoke registry keeps scope isolation over public npm', () => {
     new URL('../../.github/verdaccio/config.yaml', import.meta.url),
     'utf8',
   );
-  assert.match(source, /nocobase:\n    url: https:\/\/registry\.npmjs\.org\//u);
+  assert.match(source, /nocobase:\n {4}url: https:\/\/registry\.npmjs\.org\//u);
   assert.match(source, /'@nocobase\/\*':[\s\S]*?proxy: nocobase/u);
   assert.doesNotMatch(source, /npm\.nocobase\.ai/u);
 });
@@ -115,7 +113,7 @@ test('v3 GitHub Releases never take the shared Latest marker', () => {
   const source = workflow('github-release');
   assert.match(
     source,
-    /release-beta\/\*\) FLAGS=\(--prerelease --latest=false\)/u,
+    /nocobase-v3-beta\/\*\|release-beta\/\*\)\s+FLAGS=\(--prerelease --latest=false\)/u,
   );
   assert.match(source, /release\/\*\)\s+FLAGS=\(--latest=false\)/u);
 });
@@ -212,222 +210,76 @@ test('Pro workflows retain the branch arguments supported by their source-owned 
   }
 });
 
-// The unindented shell of the `run: |` block of the step called `name`.
-const runBlock = (source, name) => {
-  const start = source.indexOf(`      - name: ${name}\n`);
-  assert.notEqual(start, -1, name);
-  // A step ends at the next step, or at the next job when it is the last step of its job.
-  const ends = [
-    source.indexOf('\n      - name: ', start + 1),
-    source.slice(start).search(/\n {2}[\w-]+:\n/u),
-  ].map((index, i) => (i === 1 && index !== -1 ? start + index : index));
-  const end = Math.min(...ends.filter((index) => index !== -1));
-  const lines = source
-    .slice(start, Number.isFinite(end) ? end : undefined)
-    .split('\n');
-  const begin = lines.indexOf('        run: |');
-  assert.notEqual(begin, -1, name);
-  return lines
-    .slice(begin + 1)
-    .filter((line) => line.startsWith('          ') || line === '')
-    .map((line) => line.slice(10))
-    .join('\n');
-};
-
-test('a beta release that publishes Studio builds its public release image from the release tag', (t) => {
+test('Beta batch numbering counts both tag generations and emits a separate public tag', (t) => {
+  const cwd = mkdtempSync(path.join(tmpdir(), 'v3-beta-tags-'));
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  const git = (...args) => execFileSync('git', args, { cwd, stdio: 'pipe' });
+  git('init', '-b', 'main');
+  git(
+    '-c',
+    'user.name=Test',
+    '-c',
+    'user.email=test@example.com',
+    'commit',
+    '--allow-empty',
+    '-m',
+    'fixture',
+  );
+  git('remote', 'add', 'origin', cwd);
+  const day = new Date().toISOString().slice(0, 10);
+  git('tag', `release-beta/${day}.9`);
+  git('tag', `nocobase-v3-beta/${day}.10`);
+  git('tag', `release/${day}.99`);
   const source = workflow('release-beta');
+  const step = source
+    .split('      - name: Create release branch\n')[1]
+    .split('      - name: Version\n')[0];
+  const script = step.split('        run: |\n')[1].replace(/^ {10}/gm, '');
+  const output = path.join(cwd, 'outputs');
+  execFileSync('bash', ['-e', '-c', script], {
+    cwd,
+    env: { ...process.env, GITHUB_OUTPUT: output },
+    stdio: 'pipe',
+  });
+  assert.match(
+    readFileSync(output, 'utf8'),
+    new RegExp(`tag=nocobase-v3-beta/${day}\\.11`),
+  );
+  assert.match(
+    readFileSync(output, 'utf8'),
+    new RegExp(`name=release-beta/${day}\\.11`),
+  );
+  assert.match(source, /TAG: \$\{\{ steps\.branch\.outputs\.tag \}\}/u);
   assert.match(
     source,
-    /studio_version: \$\{\{ steps\.studio\.outputs\.version \}\}/u,
+    /tag: \$\{\{ needs\.prepare\.outputs\.release_tag \}\}/u,
   );
-  const publish = source.indexOf('      - name: Publish to npm\n');
-  const find = source.indexOf(
-    '      - name: Find the published Studio version\n',
-  );
-  assert.ok(
-    publish !== -1 && find > publish,
-    'the version is read only after publishing',
-  );
-
-  const job = source.slice(
-    source.indexOf('\n  studio-image:\n'),
-    source.indexOf('\n  github-release:\n'),
-  );
-  assert.match(job, /needs: release\n/u);
+  assert.match(source, /git tag "\$RELEASE_TAG"/u);
   assert.match(
-    job,
-    /!cancelled\(\) && !inputs\.dry_run\n\s+&& needs\.release\.outputs\.tag != '' && needs\.release\.outputs\.studio_version != ''/u,
+    source,
+    /git push origin "refs\/tags\/\$\{RELEASE_TAG\}:refs\/tags\/\$\{RELEASE_TAG\}"/u,
   );
-  assert.match(job, /uses: \.\/\.github\/workflows\/v3-studio-image\.yml\n/u);
-  assert.match(
-    job,
-    /with:\n\s+tag: \$\{\{ needs\.release\.outputs\.tag \}\}\n/u,
-  );
-  assert.match(job, /secrets: inherit\n/u);
-  assert.doesNotMatch(job, /nocobase-ci|NOCOBASE_CI_DISPATCH_TOKEN/u);
+});
 
-  const directory = mkdtempSync(path.join(tmpdir(), 'studio-image-release-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
-
-  // The Studio version comes from the released specs, and is empty when Studio was not released.
-  const workspace = path.join(directory, 'workspace');
-  mkdirSync(path.join(workspace, 'scripts'), { recursive: true });
-  mkdirSync(path.join(workspace, 'packages/apps/studio'), { recursive: true });
-  mkdirSync(path.join(workspace, 'packages/libs/db'), { recursive: true });
-  execFileSync('cp', [
-    path.join(import.meta.dirname, '../../scripts/list-package-versions.mjs'),
-    path.join(workspace, 'scripts'),
-  ]);
-  writeFileSync(
-    path.join(workspace, 'packages/apps/studio/package.json'),
-    JSON.stringify({ name: '@nocobase/studio', version: '1.0.0-beta.52' }),
-  );
-  writeFileSync(
-    path.join(workspace, 'packages/libs/db/package.json'),
-    JSON.stringify({ name: '@nocobase/db', version: '1.0.0-beta.9' }),
-  );
-  mkdirSync(path.join(directory, 'release-state'));
-  const findVersion = (before) => {
-    writeFileSync(
-      path.join(directory, 'release-state/versions-before.json'),
-      JSON.stringify(before),
-    );
-    const output = path.join(directory, 'find-output');
-    writeFileSync(output, '');
-    execFileSync(
+test('GitHub Release titles identify Beta releases and retain stable titles', () => {
+  const source = workflow('github-release');
+  const script = source
+    .match(/ {10}case "\$TAG" in([\s\S]*?) {10}esac/u)[0]
+    .replace(/^ {10}/gm, '');
+  for (const prefix of ['nocobase-v3-beta', 'release-beta', 'release']) {
+    const actual = execFileSync(
       'bash',
-      ['-e', '-c', runBlock(source, 'Find the published Studio version')],
+      ['-e', '-c', script + '\nprintf "%s\n" "$TITLE" "${FLAGS[*]}"'],
       {
-        cwd: workspace,
-        env: { ...process.env, RUNNER_TEMP: directory, GITHUB_OUTPUT: output },
-      },
-    );
-    return readFileSync(output, 'utf8');
-  };
-  assert.equal(
-    findVersion({
-      '@nocobase/studio': '1.0.0-beta.51',
-      '@nocobase/db': '1.0.0-beta.8',
-    }),
-    'version=1.0.0-beta.52\n',
-  );
-  assert.equal(
-    findVersion({
-      '@nocobase/studio': '1.0.0-beta.52',
-      '@nocobase/db': '1.0.0-beta.8',
-    }),
-    'version=\n',
-  );
-
-  // The image is tagged with Studio's version and channel on Docker Hub and Aliyun's public registry.
-  const image = workflow('studio-image');
-  assert.match(image, /workflow_call:\n\s+inputs:\n\s+tag:/u);
-  assert.doesNotMatch(image, /ALI_DOCKER_REGISTRY\b|runners-dist/u);
-  // The release moves the channel tag; a manual rebuild does not unless asked, so an older release cannot take :beta.
-  assert.match(
-    image,
-    /workflow_call:[\s\S]*?update_beta_or_latest:[\s\S]*?default: true\n\s+workflow_dispatch:[\s\S]*?update_beta_or_latest:[\s\S]*?default: false\n/u,
-  );
-  // Studio's own `pnpm build` packs the runner and nb-studio into dist/runners, which the prebuilt image carries.
-  assert.doesNotMatch(image, /cli build|upload-artifact|studio-dist/u);
-  // Each architecture builds its own dist/ with its own --target, on a runner of that architecture, because the
-  // Dockerfile refuses a prebuilt dist/ built for another platform; publish joins the two digests under every tag.
-  assert.match(
-    image,
-    /- platform: linux\/amd64\n\s+runner: ubuntu-latest\n\s+target: linux-x64\n/u,
-  );
-  assert.match(
-    image,
-    /- platform: linux\/arm64\n\s+runner: ubuntu-24\.04-arm\n\s+target: linux-arm64\n/u,
-  );
-  assert.match(
-    image,
-    /- name: Build dist for \$\{\{ matrix\.target \}\}\n\s+working-directory: packages\/apps\/studio\n[\s\S]*?TARGET: \$\{\{ matrix\.target \}\}\n\s+run: pnpm build --target "\$TARGET"\n/u,
-  );
-  assert.match(image, /platforms: \$\{\{ matrix\.platform \}\}\n/u);
-  assert.match(image, /build-args: DIST=prebuilt\n/u);
-  assert.match(image, /push-by-digest=true/u);
-  // The tags hold Aliyun's registry, a secret, and GitHub drops a job output containing one, so publish names them.
-  assert.doesNotMatch(image, /needs\.\w+\.outputs\.tags/u);
-  assert.match(
-    image,
-    /\n {2}publish:\n[\s\S]*?- name: Name the tags\n[\s\S]*?TAGS: \$\{\{ steps\.tags\.outputs\.tags \}\}/u,
-  );
-  assert.match(
-    image,
-    /docker buildx imagetools create "\$\{args\[@\]\}" "nocobase\/studio@\$\{AMD64\}" "nocobase\/studio@\$\{ARM64\}"/u,
-  );
-  const name = (version, updateBetaOrLatest) => {
-    const tagWorkspace = path.join(
-      directory,
-      `tags-${version || 'none'}-${updateBetaOrLatest ?? 'unset'}`,
-    );
-    mkdirSync(path.join(tagWorkspace, 'packages/apps/studio'), {
-      recursive: true,
-    });
-    if (version)
-      writeFileSync(
-        path.join(tagWorkspace, 'packages/apps/studio/package.json'),
-        JSON.stringify({ name: '@nocobase/studio', version }),
-      );
-    const output = path.join(tagWorkspace, 'output');
-    writeFileSync(output, '');
-    const result = spawnSync(
-      'bash',
-      ['-e', '-c', runBlock(image, 'Name the tags')],
-      {
-        cwd: tagWorkspace,
+        env: { ...process.env, TAG: `${prefix}/2026-10-28.2` },
         encoding: 'utf8',
-        env: {
-          ...process.env,
-          ALI_REGISTRY: 'registry.example.com',
-          TAG: 'release-beta/2026-10-11.1',
-          GITHUB_OUTPUT: output,
-          ...(updateBetaOrLatest === undefined
-            ? {}
-            : { UPDATE_BETA_OR_LATEST: updateBetaOrLatest }),
-        },
       },
     );
-    return {
-      status: result.status,
-      stdout: result.stdout,
-      output: readFileSync(output, 'utf8'),
-    };
-  };
-  assert.equal(
-    name('1.0.0-beta.52').output,
-    [
-      'version=1.0.0-beta.52',
-      'tags<<EOF',
-      'nocobase/studio:1.0.0-beta.52',
-      'nocobase/studio:beta',
-      'registry.example.com/nocobase/studio:1.0.0-beta.52',
-      'registry.example.com/nocobase/studio:beta',
-      'EOF',
-      '',
-    ].join('\n'),
-  );
-  assert.match(name('1.0.0').output, /nocobase\/studio:latest\n/u);
-  assert.equal(
-    name('1.0.0-beta.52', 'true').output,
-    name('1.0.0-beta.52').output,
-  );
-  assert.equal(
-    name('1.0.0-beta.52', 'false').output,
-    [
-      'version=1.0.0-beta.52',
-      'tags<<EOF',
-      'nocobase/studio:1.0.0-beta.52',
-      'registry.example.com/nocobase/studio:1.0.0-beta.52',
-      'EOF',
-      '',
-    ].join('\n'),
-  );
-  const missing = name('');
-  assert.notEqual(missing.status, 0);
-  assert.match(
-    missing.stdout,
-    /::error::release-beta\/2026-10-11\.1 has no valid version/u,
-  );
+    assert.equal(
+      actual,
+      prefix === 'release'
+        ? '2026-10-28.2\n--latest=false\n'
+        : 'NocoBase v3 Beta · 2026-10-28.2\n--prerelease --latest=false\n',
+    );
+  }
 });

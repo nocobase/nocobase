@@ -1,18 +1,11 @@
 // Loads and runs the CLI. The oclif configuration is synthesized here rather than read from package.json, so the same
 // code runs from `src/` (Node strips the types) and from the compiled `dist/`.
-import {
-  Config,
-  Errors,
-  flush,
-  run,
-  settings,
-  type Command,
-} from '@oclif/core';
+import { Config, Errors, run, settings, type Command } from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { defineCommands, STATIC_TOPICS } from './commands.ts';
+import { COMMANDS, defineCommands, STATIC_TOPICS } from './commands.ts';
 import { configureAppCli, type AppCliConfig } from './config.ts';
 import { setOriginalArgv } from './dynamic/index.ts';
 import { failureEnvelope } from './lib/envelope.ts';
@@ -131,7 +124,10 @@ export async function runAppCli(
   // when a tsconfig.json sits beside the sources, which makes every cold start about half again as slow.
   settings.enableAutoTranspile = false;
   defineCommands(config, options.commands);
-  setOriginalArgv(line);
+  setOriginalArgv(
+    line,
+    Object.keys(COMMANDS).filter((id) => !COMMANDS[id]?.hidden),
+  );
   argv = line;
   try {
     const loaded = await Config.load({
@@ -139,8 +135,25 @@ export async function runAppCli(
       pjson: pjson(config, fromSource, options.topics ?? {}),
     });
     await run(argv, loaded);
-    await flush();
+    await flushStdout();
   } catch (error) {
     await Errors.handle(error as Error);
   }
+}
+
+// As in app-cli/runtime/run.ts: oclif's unref'd drain wait stays unsettled after an early pipe close.
+async function flushStdout(): Promise<void> {
+  const stdout = process.stdout;
+  if (stdout.destroyed || !stdout.writableNeedDrain) return;
+  await new Promise<void>((resolve) => {
+    const done = (): void => {
+      stdout.off('drain', done);
+      stdout.off('close', done);
+      stdout.off('error', done);
+      resolve();
+    };
+    stdout.once('drain', done);
+    stdout.once('close', done);
+    stdout.once('error', done);
+  });
 }

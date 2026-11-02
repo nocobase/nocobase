@@ -15,6 +15,8 @@ const enUS = {
     imapMoveOutcomeUnknown:
       'The move is incomplete or its result is unknown. Verify the mailbox before retrying.',
 
+    invalidRecipient:
+      'Correct the recipient email addresses and display names before sending.',
     accessDenied: 'Mail access is required.',
     idempotencyConflict:
       'The idempotency key is already associated with another request.',

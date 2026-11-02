@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-installer': minor
-'@nocobase/studio': patch
 '@nocobase/app-skills': patch
 ---
 

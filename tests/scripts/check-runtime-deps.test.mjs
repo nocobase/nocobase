@@ -142,6 +142,91 @@ test('does not ask for a declaration for a Vite virtual module', async () => {
   }
 });
 
+test('treats the declared Skill examples as source material while checking other assets and scripts', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'runtime-deps-test-'));
+  try {
+    const skill = 'skills/nocobase-app-plugin-development';
+    const appSkill = 'skills/nocobase-app-development';
+    const sources = {
+      [`${appSkill}/assets/list-edit-example/server/routes/projects.ts`]:
+        'app-example-only',
+      [`${appSkill}/assets/customer-contacts-example/server/providers/customers.ts`]:
+        'customer-example-only',
+      [`${appSkill}/assets/customer-contacts-example-extra/index.ts`]:
+        'customer-other-asset',
+      [`${appSkill}/assets/business-examples/procurement/server/routes/procurement.ts`]:
+        'procurement-example-only',
+      [`${appSkill}/assets/business-examples/procurement-extra/index.ts`]:
+        'procurement-other-asset',
+      [`${appSkill}/assets/business-examples/onboarding/server/routes/onboarding.ts`]:
+        'onboarding-example-only',
+      [`${appSkill}/assets/business-examples/onboarding-extra/index.ts`]:
+        'onboarding-other-asset',
+      [`${appSkill}/assets/business-examples/unlisted/index.ts`]:
+        'unlisted-business-runtime',
+      [`${appSkill}/assets/list-edit-example-extra/index.ts`]:
+        'app-other-asset',
+      [`${appSkill}/scripts/verify.mjs`]: 'app-script-runtime',
+      [`${skill}/assets/testing-example/client/index.ts`]: 'example-only',
+      [`${skill}/assets/other-example/index.ts`]: 'other-asset',
+      [`${skill}/scripts/verify.mjs`]: 'script-runtime',
+      'skills/another-skill/scripts/run.mjs': 'other-skill-runtime',
+    };
+    for (const [file, dependency] of Object.entries(sources)) {
+      await mkdir(path.dirname(path.join(root, file)), { recursive: true });
+      await writeFile(path.join(root, file), `import '${dependency}';`);
+    }
+
+    const violations = await findViolations(
+      root,
+      { name: '@nocobase/app-skills', files: ['skills'] },
+      new Set(),
+    );
+    assert.deepEqual(
+      violations.map(({ dependency }) => dependency),
+      [
+        'app-other-asset',
+        'app-script-runtime',
+        'customer-other-asset',
+        'onboarding-other-asset',
+        'other-asset',
+        'other-skill-runtime',
+        'procurement-other-asset',
+        'script-runtime',
+        'unlisted-business-runtime',
+      ],
+    );
+
+    // The same path in another package is not an exemption for shipped code.
+    const otherPackage = await findViolations(
+      root,
+      { name: '@example/another-package', files: ['skills'] },
+      new Set(),
+    );
+    assert.deepEqual(
+      otherPackage.map(({ dependency }) => dependency),
+      [
+        'app-example-only',
+        'app-other-asset',
+        'app-script-runtime',
+        'customer-example-only',
+        'customer-other-asset',
+        'example-only',
+        'onboarding-example-only',
+        'onboarding-other-asset',
+        'other-asset',
+        'other-skill-runtime',
+        'procurement-example-only',
+        'procurement-other-asset',
+        'script-runtime',
+        'unlisted-business-runtime',
+      ],
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('checks every source emitted into dist, including root and plugin-specific directories', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'runtime-deps-test-'));
   try {

@@ -1,0 +1,93 @@
+---
+/**
+ * One level of the sidebar. Groups render as `<details>`, collapsed unless `_meta.json` says otherwise or they
+ * contain the current page, so readers can always see where they are; `src/scripts/doc-page.ts` remembers groups a
+ * reader opened or closed for the rest of the visit.
+ */
+import { containsPath, type SidebarItem } from '../../lib/sidebar.ts';
+
+interface Props {
+  items: SidebarItem[];
+  current: string;
+  depth?: number;
+  /** Stable key of this level, used to remember which groups a reader opened. */
+  path?: string;
+}
+
+const { items, current, depth = 0, path = '' } = Astro.props;
+---
+
+<ul class='sidebar-list' data-depth={depth}>
+  {items.map((item, index) => {
+    if (item.type === 'divider')
+      return (
+        <li
+          class:list={['sidebar-divider', { dashed: item.dashed }]}
+          role='separator'
+        />
+      );
+    if (item.type === 'section')
+      return <li class='sidebar-section'>{item.text}</li>;
+    if (item.type === 'link') {
+      const active = item.href === current;
+      return (
+        <li>
+          <a
+            class:list={['sidebar-link', { active }]}
+            href={item.href}
+            aria-current={active ? 'page' : undefined}
+            target={item.newTab ? '_blank' : undefined}
+            rel={item.newTab ? 'noopener noreferrer' : undefined}
+          >
+            {item.text}
+          </a>
+        </li>
+      );
+    }
+    const key = `${path}/${index}`;
+    const open =
+      !item.collapsed ||
+      containsPath(item.items, current) ||
+      item.href === current;
+    return (
+      <li>
+        <details class='sidebar-group' open={open} data-group={key}>
+          <summary
+            class:list={[
+              'sidebar-group__title',
+              { active: item.href === current },
+            ]}
+          >
+            {item.href ? (
+              <a href={item.href} target={item.newTab ? '_blank' : undefined}>
+                {item.text}
+              </a>
+            ) : (
+              <span>{item.text}</span>
+            )}
+            <svg
+              class='sidebar-group__chevron'
+              viewBox='0 0 24 24'
+              width='14'
+              height='14'
+              aria-hidden='true'
+            >
+              <path
+                fill='none'
+                stroke='currentColor'
+                stroke-width='2'
+                d='m9 6 6 6-6 6'
+              />
+            </svg>
+          </summary>
+          <Astro.self
+            items={item.items}
+            current={current}
+            depth={depth + 1}
+            path={key}
+          />
+        </details>
+      </li>
+    );
+  })}
+</ul>

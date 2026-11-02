@@ -8,6 +8,10 @@
 // `config.example.yml` travels with it because a deployment has to write a `config.yml` before it can start, and the
 // example is the only statement of what that file may contain. It is the one file outside `dist/` that a server needs.
 //
+// The application's `Dockerfile` and `Dockerfile.dockerignore` travel with it too when the application has them, so a
+// server builds the image from the archive alone (`docker build --build-arg DIST=prebuilt .` in the extracted
+// directory), without the sources or a registry.
+//
 // Uses the `tar` package rather than the `tar` command. A build runs on macOS, Linux, and Windows, whose tars are
 // bsdtar, GNU tar, and a bundled bsdtar, and their `--exclude` patterns are anchored differently — a pattern that
 // excludes the right paths on one can silently exclude nothing on another. `filter` is a callback, so what it matches
@@ -26,6 +30,8 @@ const archivePath = path.join(storageDir, 'dist.tar.gz');
 
 /** What the archive holds, relative to the application root and in the order they appear in it. */
 const ARCHIVE_ENTRIES = ['config.example.yml', 'dist'];
+/** What it also holds when the application has it: what building the image from the archive needs. */
+const OPTIONAL_ENTRIES = ['Dockerfile', 'Dockerfile.dockerignore'];
 
 /**
  * Directories of executable shims, excluded because they do not survive the trip.
@@ -67,7 +73,12 @@ create(
     gzip: true,
     sync: true,
   },
-  ARCHIVE_ENTRIES,
+  [
+    ...OPTIONAL_ENTRIES.filter((entry) =>
+      fs.existsSync(path.join(rootDir, entry)),
+    ),
+    ...ARCHIVE_ENTRIES,
+  ],
 );
 
 console.log(

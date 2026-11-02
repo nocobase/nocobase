@@ -6,12 +6,12 @@ This package provides only the mechanism: namespaces, resource loading, locale r
 
 ## Entry points
 
-| Entry                    | Contents                                                                           |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| `@nocobase/i18n`         | Isomorphic core: the i18next instance, namespace registry, locale resolution       |
-| `@nocobase/i18n/client`  | React bindings: `I18nProvider`, `NamespaceScope`, `useTranslation`, Refine adapter |
-| `@nocobase/i18n/server`  | Node bindings: request middleware, request translator, `AppI18nError`              |
-| `@nocobase/i18n/testing` | Component tests: `createTestI18nRuntime`, `TestI18nProvider`                       |
+| Entry                    | Contents                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `@nocobase/i18n`         | Isomorphic core: the i18next instance, namespace registry, locale resolution |
+| `@nocobase/i18n/client`  | React bindings: `I18nProvider`, `NamespaceScope`, `useTranslation`           |
+| `@nocobase/i18n/server`  | Node bindings: request middleware, request translator, `AppI18nError`        |
+| `@nocobase/i18n/testing` | Component tests: `createTestI18nRuntime`, `TestI18nProvider`                 |
 
 The core depends on `i18next`; `/client` depends on `react-i18next` with `react` as a peer; `/server` takes `hono` as a peer. The entries are separate so a browser build never reaches `/server` and Node never reaches `/client`.
 
@@ -124,7 +124,7 @@ const zhCN: AppResource = {
 export default zhCN;
 ```
 
-Leaves widen to `string`, so a translation is not tied to the English wording. Use `PartialLocaleResource` for a language that is deliberately incomplete; a missing key falls back rather than breaking, but the plain type is what reports the omission.
+Leaves widen to `string`, so a translation is not tied to the English wording. Plugin and library resources use the complete `LocaleResource` type for all ten supported languages: `en-US`, `zh-CN`, `zh-TW`, `ja-JP`, `es-ES`, `pt-BR`, `fr-FR`, `de-DE`, `vi-VN`, and `id-ID`. `PartialLocaleResource` remains available for an application that deliberately supplies an incomplete resource; fallback does not count as a completed plugin translation.
 
 Keys nest and are addressed with dots:
 
@@ -136,7 +136,9 @@ const enUS: SchedulerResource = {
 t('target.states.ready'); // 'Ready'
 ```
 
-`pnpm i18n:check` reports keys a locale is missing, without blocking development. It is this monorepo's own script and reads every `locales/` directory under `packages/`; an application built from a template runs `pnpm nocobase locales check` instead, which compares the languages its `client/locales/` and `server/locales/` declare.
+`pnpm i18n:check` checks complete resources, including imported catalogues, interpolation, markup, cardinal plural categories, and lazy loaders. Plugins, example plugins, and libraries must ship all ten languages; application templates keep their own language lists. Use `pnpm i18n:check --strict` to fail on an incomplete resource. An application built from a template runs `pnpm nocobase locales check` to compare the languages its `client/locales/` and `server/locales/` declare.
+
+A plural group declared with `_one` and `_other` may add the other CLDR categories to its complete resource type. For example, French, Spanish, and Brazilian Portuguese need `_many` for quantities such as one million. Translate that form too: without it, i18next can select the English fallback even when `_other` is present. The structural check requires the categories that `Intl.PluralRules` selects for each locale. When a literal English singular such as “searched once” omits the count, French and Brazilian Portuguese also need an explicit `_zero` override: their `one` category includes zero.
 
 ### Loading
 

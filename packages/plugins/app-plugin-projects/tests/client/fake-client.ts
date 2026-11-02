@@ -79,6 +79,8 @@ export const clientMocks = {
       '@nocobase/app-client',
     );
     return {
+      createUuid: actual.createUuid,
+      copyText: actual.copyText,
       NavigationGuardProvider: actual.NavigationGuardProvider,
       useNavigationGuard: actual.useNavigationGuard,
       UnsavedChangesContext: actual.UnsavedChangesContext,

@@ -1,3 +1,4 @@
+import { OfficeWorkflowParameterService } from './workflow-parameters.js';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 
@@ -219,7 +220,12 @@ export class OfficeStore {
   }
 
   public async calendar(): Promise<WorkCalendar> {
-    const rows = await this.repository(COLLECTIONS.holidays).findMany({});
+    const rows = (
+      await new OfficeWorkflowParameterService(
+        this.database,
+        this.connection,
+      ).read('dataRequests')
+    ).values.holidays!;
     return createWorkCalendar(
       rows.map((row) => ({
         date: text(row.date),

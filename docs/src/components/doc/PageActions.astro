@@ -1,0 +1,92 @@
+---
+/**
+ * The actions under a page title: copy the page's Markdown, or hand its `.md` URL to an assistant. The Markdown is
+ * the same file `llms.txt` links to, fetched when the reader asks for it rather than embedded in the page.
+ */
+import { absoluteUrl } from '../../../shared/site.ts';
+
+interface Props {
+  language: string;
+  /** Public path of the page's Markdown copy. */
+  markdownPath: string;
+}
+
+const { language, markdownPath } = Astro.props;
+const cn = language === 'cn';
+const markdownUrl = absoluteUrl(markdownPath);
+const prompt = cn
+  ? `阅读 ${markdownUrl}，我想询问关于它的问题。`
+  : `Read ${markdownUrl}, I want to ask questions about it.`;
+const text = cn
+  ? {
+      copy: '复制 Markdown',
+      copied: '已复制',
+      failed: '复制失败',
+      more: '更多操作',
+      link: '复制 Markdown 链接',
+      chatgpt: '在 ChatGPT 中打开',
+      claude: '在 Claude 中打开',
+    }
+  : {
+      copy: 'Copy Markdown',
+      copied: 'Copied',
+      failed: 'Copy failed',
+      more: 'More actions',
+      link: 'Copy Markdown link',
+      chatgpt: 'Open in ChatGPT',
+      claude: 'Open in Claude',
+    };
+---
+
+<div class='page-actions' data-pagefind-ignore>
+  <button
+    type='button'
+    class='page-actions__button'
+    data-copy-markdown={markdownPath}
+    data-copied={text.copied}
+    data-failed={text.failed}
+  >
+    <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true'>
+      <path
+        fill='currentColor'
+        d='M20 8v12H8V8zm0-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2'
+      />
+      <path fill='currentColor' d='M4 16H2V4a2 2 0 0 1 2-2h12v2H4Z' />
+    </svg>
+    <span>{text.copy}</span>
+  </button>
+  <details class='page-actions__more'>
+    <summary class='page-actions__button' aria-label={text.more}>
+      <svg viewBox='0 0 32 32' width='14' height='14' aria-hidden='true'>
+        <path
+          fill='currentColor'
+          d='M16 22 6 12l1.4-1.4 8.6 8.6 8.6-8.6L26 12z'
+        />
+      </svg>
+    </summary>
+    <div class='page-actions__menu'>
+      <button
+        type='button'
+        data-copy-text={markdownUrl}
+        data-copied={text.copied}
+        data-failed={text.failed}
+      >
+        {text.link}
+      </button>
+      <a
+        href={`https://chatgpt.com/?hints=search&q=${encodeURIComponent(prompt)}`}
+        target='_blank'
+        rel='noopener noreferrer'
+      >
+        {text.chatgpt}
+      </a>
+      <a
+        href={`https://claude.ai/new?q=${encodeURIComponent(prompt)}`}
+        target='_blank'
+        rel='noopener noreferrer'
+      >
+        {text.claude}
+      </a>
+    </div>
+  </details>
+</div>

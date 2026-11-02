@@ -40,6 +40,7 @@ const manifest: CliManifest = {
 };
 
 describe('manifest and business request authentication', () => {
+  let settings: readonly string[] | undefined;
   let server: ServerType;
   let url: string;
   let home: string;
@@ -87,14 +88,22 @@ describe('manifest and business request authentication', () => {
       await next();
     });
     app.get(`/main${CLI_ROUTES.manifest}`, (c) => {
-      if (c.req.header('if-none-match') === '"commands-v1"')
+      const etag =
+        settings === undefined
+          ? 'commands-v1'
+          : `settings-${settings.join(',')}`;
+      if (c.req.header('if-none-match') === `"${etag}"`)
         return c.body(null, 304);
       return c.json({
         data: {
           ...manifest,
+          etag,
           identity: c.req.header(HEADERS.runToken)
             ? { ...manifest.identity, kind: 'run', runId: 'r1' }
-            : manifest.identity,
+            : {
+                ...manifest.identity,
+                ...(settings === undefined ? {} : { settings }),
+              },
         },
       });
     });
@@ -113,6 +122,7 @@ describe('manifest and business request authentication', () => {
   });
 
   beforeEach(() => {
+    settings = undefined;
     home = tempDir('manifest-auth-');
     env = cliEnv(home);
     delete env.ACME_API_KEY;
@@ -121,6 +131,20 @@ describe('manifest and business request authentication', () => {
     seen.length = 0;
     refuseManifest = false;
     return () => removeDir(home);
+  });
+
+  it('distinguishes unavailable settings from empty and granted settings in whoami', async () => {
+    env.ACME_SERVER = url;
+    env.ACME_API_KEY = 'ci-key';
+    const absent = await cli(['whoami'], env, { cwd: home });
+    expect(absent.code).toBe(0);
+    expect(absent.stdout).toContain('Settings (not provided)');
+    settings = [];
+    const empty = await cli(['whoami'], env, { cwd: home });
+    expect(empty.stdout).toContain('Settings (none)');
+    settings = ['agents.agents/read'];
+    const provided = await cli(['whoami', '--json'], env, { cwd: home });
+    expect(JSON.parse(provided.stdout).result.settings).toEqual(settings);
   });
 
   it.each(['environment key', 'run token', 'profile session'] as const)(

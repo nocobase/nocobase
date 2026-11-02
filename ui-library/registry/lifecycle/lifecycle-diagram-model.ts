@@ -43,16 +43,22 @@ export function lifecycleDiagramGraph(
   const graph: FlowDiagramGraph = {
     nodes: description.stateInfo.map((state) => ({
       id: state.name,
-      width: 160,
-      height: 48,
+      width: 232,
+      height: 104,
       label: options.stateLabel?.(state) ?? state.title,
+      configurable: (description.parameterConfiguration?.groups ?? []).some(
+        (group) =>
+          Object.values(group.fields).some((field) =>
+            field.bindings?.some((binding) => binding.state === state.name),
+          ),
+      ),
       visited: visitedStates.has(state.name),
       highlighted: state.name === options.currentState,
-      className: state.final
-        ? 'border-double border-4'
+      kind: state.final
+        ? 'final'
         : description.initialStates.includes(state.name)
-          ? 'rounded-full'
-          : undefined,
+          ? 'initial'
+          : 'state',
     })),
     edges: description.transitions.flatMap((transition) =>
       transition.from.flatMap((source) =>
@@ -61,6 +67,14 @@ export function lifecycleDiagramGraph(
           source,
           target,
           label: options.transitionLabel?.(transition) ?? transition.title,
+          configurable: (description.parameterConfiguration?.groups ?? []).some(
+            (group) =>
+              Object.values(group.fields).some((field) =>
+                field.bindings?.some(
+                  (binding) => binding.transition === transition.name,
+                ),
+              ),
+          ),
           visited: visitedEdges.has(
             JSON.stringify([transition.name, source, target]),
           ),
@@ -109,4 +123,95 @@ export function lifecycleDiagramGraph(
       })),
     ],
   };
+}
+
+export type LifecycleConfigurationTarget =
+  | { readonly kind: 'state'; readonly name: string }
+  | { readonly kind: 'transition'; readonly name: string };
+export type LifecycleParameterGroup = NonNullable<
+  LifecycleDescription['parameterConfiguration']
+>['groups'][number];
+export type LifecycleParameterField = LifecycleParameterGroup['fields'][string];
+export interface LifecycleConfigurationSelection {
+  readonly target: LifecycleConfigurationTarget;
+  /** Only bound, authorized fields. Editors must merge into a complete group before saving. */
+  readonly groups: readonly LifecycleParameterGroup[];
+}
+export interface LifecycleDiagramConfiguration {
+  readonly label: (target: LifecycleConfigurationTarget) => string;
+  /** UI affordance only: the server must independently authorize reads and writes. */
+  readonly canConfigure: (
+    group: LifecycleParameterGroup,
+    field: string,
+    definition: LifecycleParameterField,
+  ) => boolean;
+  readonly onConfigure: (selection: LifecycleConfigurationSelection) => void;
+}
+
+/** Selects declared bindings only; never guesses parameters from node names or labels. */
+export function lifecycleConfigurationSelection(
+  description: LifecycleDescription,
+  target: LifecycleConfigurationTarget,
+  canConfigure: LifecycleDiagramConfiguration['canConfigure'],
+): LifecycleConfigurationSelection | undefined {
+  const exists =
+    target.kind === 'state'
+      ? description.stateInfo.some((state) => state.name === target.name)
+      : description.transitions.some(
+          (transition) => transition.name === target.name,
+        );
+  if (!exists) return undefined;
+  const groups = (description.parameterConfiguration?.groups ?? []).flatMap(
+    (group) => {
+      const fields = Object.fromEntries(
+        Object.entries(group.fields).filter(
+          ([key, field]) =>
+            field.bindings?.some(
+              (binding) => binding[target.kind] === target.name,
+            ) && canConfigure(group, key, field),
+        ),
+      );
+      return Object.keys(fields).length ? [{ ...group, fields }] : [];
+    },
+  );
+  return groups.length ? { target, groups } : undefined;
+}
+
+/** Surface an outgoing transition's declared policy on its owning node as well. */
+export function lifecycleNodeConfigurationSelections(
+  description: LifecycleDescription,
+  state: string,
+  canConfigure: LifecycleDiagramConfiguration['canConfigure'],
+): readonly LifecycleConfigurationSelection[] {
+  if (!description.stateInfo.some((item) => item.name === state)) return [];
+  const own = lifecycleConfigurationSelection(
+    description,
+    { kind: 'state', name: state },
+    canConfigure,
+  );
+  const covered = new Set(
+    own?.groups.flatMap((group) =>
+      Object.keys(group.fields).map((field) =>
+        JSON.stringify([group.key, field]),
+      ),
+    ),
+  );
+  const outgoing = description.transitions.flatMap((transition) => {
+    if (!transition.from.includes(state)) return [];
+    const selection = lifecycleConfigurationSelection(
+      description,
+      { kind: 'transition', name: transition.name },
+      canConfigure,
+    );
+    // A dual state/transition binding already has an entry on this node. Keep
+    // distinct transitions distinct, even when they happen to share fields.
+    return selection?.groups.some((group) =>
+      Object.keys(group.fields).some(
+        (field) => !covered.has(JSON.stringify([group.key, field])),
+      ),
+    )
+      ? [selection]
+      : [];
+  });
+  return own ? [own, ...outgoing] : outgoing;
 }

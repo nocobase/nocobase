@@ -2,6 +2,11 @@
  * Issue reads for the browser: a page of the list, the board, one issue in detail, and older activities. Everything is
  * limited to what the viewer may see (`issue.access.ts`).
  */
+import {
+  hierarchySource,
+  type IssueHierarchySource,
+} from './issue.hierarchy-source.js';
+import type { Knex } from 'knex';
 import type {
   DatabaseConnection,
   FilterBuilder,
@@ -13,8 +18,8 @@ import {
   ACTIVITY_PAGE_LIMIT,
   ISSUE_PAGE_LIMIT,
   type ActivityPage,
-  type BoardColumn,
   type Issue,
+  type IssueSummary,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -22,7 +27,7 @@ import {
   type IssuePage,
   type StatusDefinition,
 } from '../../../shared/issues.js';
-import type { Viewer } from '../../access/viewer.js';
+import { requireAction, type Viewer } from '../../access/viewer.js';
 import {
   AGENT_VIA_KIND,
   readActivities,
@@ -31,15 +36,19 @@ import {
 } from '../../kernel/activity.js';
 import { decodeCursor, pageLimit, pageOf } from '../../kernel/pagination.js';
 import type { TxRunner } from '../../kernel/tx.js';
+import { notFound } from '../../kernel/errors.js';
 import type { UserDirectory } from '../../kernel/users.js';
 import {
+  canSee,
   deletedIssues,
   requireVisible,
   visibleIssues,
+  visibleIssueIds,
 } from './issue.access.js';
 import {
+  findIssueSummaries,
   findIssue,
-  findIssueRow,
+  findIssueRefs,
   findIssueRows,
   hierarchyRecords,
   priorityRank,
@@ -50,17 +59,42 @@ import {
 import type { KindRegistry } from '../../kernel/kinds.js';
 import { isTerminal, type IssueExtras, type StatusService } from './ports.js';
 import { FIXED_STATUSES } from '../../../shared/statuses.js';
+import { oneOf } from '../../kernel/db.js';
 
 export interface IssueQueries {
+  /** At most 100 IDs or identifiers, filtered by current visibility in one read. */
+  summaries(viewer: Viewer, refs: readonly string[]): Promise<IssueSummary[]>;
+  /** Reauthorize explicit ids without hydrating issue rows, children or dependency counts. */
+  visibleIds(
+    viewer: Viewer,
+    ids: readonly string[],
+  ): Promise<ReadonlySet<string>>;
+  /** Authorized relations for database-side tree grouping and exact statistics. */
+  hierarchySource(
+    viewer: Viewer,
+    query: IssueListQuery,
+  ): Promise<IssueHierarchySource>;
   /** The fixed statuses, in order. */
   statuses(): StatusDefinition[];
   page(viewer: Viewer, query: IssueListQuery): Promise<IssuePage>;
-  /** Complete live authorized hierarchy and filter matches; no list-page or matching cap. */
-  hierarchy(viewer: Viewer, query: IssueListQuery): Promise<IssueHierarchy>;
-  /** Hydrates a bounded page of IDs after independently rechecking visibility. */
+  /** Complete authorized hierarchy by default; optionally unfinished records, explicit inclusions and visible ancestors. */
+  hierarchy(
+    viewer: Viewer,
+    query: IssueListQuery,
+    options?: {
+      readonly unfinishedOnly?: boolean;
+      readonly includeIds?: readonly string[];
+    },
+  ): Promise<IssueHierarchy>;
+  /**
+   * Hydrates a bounded set of IDs (at most `HIERARCHY_ITEMS_MAX`) after independently rechecking visibility, in a fixed
+   * number of queries. `readableIds`, the ids `hierarchy` answered for the same viewer, saves reading them again for the
+   * sub-task counts. An authorized visible relation instead limits count candidates to these rows' children, blockers and staged siblings.
+   */
   hierarchyItems(
     viewer: Viewer,
     ids: readonly string[],
+    readableIds?: ReadonlySet<string> | IssueHierarchySource['visible'],
   ): Promise<IssueListItem[]>;
   /** A page per status column; with `statusKey`, that column only, continuing from `cursor`. */
   board(viewer: Viewer, query: IssueListQuery): Promise<IssueBoard>;
@@ -110,6 +144,9 @@ export interface IssueMatches {
   readonly truncated: boolean;
 }
 
+/** The most issues `IssueQueries.hierarchyItems` hydrates at once. */
+export const HIERARCHY_ITEMS_MAX = 500;
+
 /** The most issues `IssueQueries.matching` answers. */
 export const MATCHING_LIMIT = 500;
 
@@ -134,6 +171,7 @@ function listFilter(viewer: Viewer, query: IssueListQuery) {
     const nodes: FilterNode[] = [
       query.deleted ? deletedIssues(f, viewer) : visibleIssues(f, viewer),
     ];
+    if (query.issueIds) nodes.push(oneOf(f, 'id', query.issueIds));
     if (query.statusKey) nodes.push(f.string('statusKey').eq(query.statusKey));
     if (query.projectId) nodes.push(f.string('projectId').eq(query.projectId));
     if (query.involvesUserId)
@@ -164,12 +202,32 @@ function listFilter(viewer: Viewer, query: IssueListQuery) {
     if (q)
       nodes.push(
         f.or([
-          f.string('title').includes(q),
-          f.string('identifier').includes(q),
+          f.string('title').includes(q, { mode: 'insensitive' }),
+          f.string('identifier').includes(q, { mode: 'insensitive' }),
         ]),
       );
     return f.and(nodes);
   };
+}
+
+/**
+ * The list's filters as a test of an issue already read, when they are all exact matches on its own fields (no search
+ * text, no label); null otherwise, and the filters are read from the database.
+ */
+function exactMatcher(
+  query: IssueListQuery,
+): ((issue: Issue) => boolean) | null {
+  if (query.q?.trim() || query.labelId || query.parentIssueId || query.issueIds)
+    return null;
+  return (issue) =>
+    (!query.statusKey || issue.statusKey === query.statusKey) &&
+    (!query.projectId || issue.projectId === query.projectId) &&
+    (!query.involvesUserId ||
+      issue.ownerUserId === query.involvesUserId ||
+      (issue.executor?.type === 'user' &&
+        issue.executor.id === query.involvesUserId)) &&
+    (!query.ownerUserId || issue.ownerUserId === query.ownerUserId) &&
+    (!query.executorId || issue.executor?.id === query.executorId);
 }
 
 function cursorOf(
@@ -206,13 +264,11 @@ async function listItems(
   }));
 }
 
-async function page(
-  deps: QueryDeps,
-  conn: DatabaseConnection,
-  viewer: Viewer,
-  query: IssueListQuery,
-  limit: number,
-): Promise<IssuePage> {
+/** The sort field and direction a list query orders by. */
+function orderOf(query: IssueListQuery): {
+  readonly order: Order;
+  readonly direction: 'asc' | 'desc';
+} {
   const order: Order =
     query.sort === 'created'
       ? 'createdAt'
@@ -226,21 +282,94 @@ async function page(
     order === 'priorityRank'
       ? query.direction !== 'asc'
       : query.direction === 'asc';
+  return { order, direction: ascending ? 'asc' : 'desc' };
+}
+
+const cursorFieldsOf =
+  (order: Order) =>
+  (
+    row: Pick<Issue, 'id' | 'priority' | 'createdAt' | 'updatedAt' | 'number'>,
+  ) => ({
+    [order]: order === 'priorityRank' ? priorityRank(row.priority) : row[order],
+    id: row.id,
+  });
+
+async function page(
+  deps: QueryDeps,
+  conn: DatabaseConnection,
+  viewer: Viewer,
+  query: IssueListQuery,
+  limit: number,
+): Promise<IssuePage> {
+  const { order, direction } = orderOf(query);
   const rows = await findIssueRows(conn, {
     filter: listFilter(viewer, query),
     order,
-    direction: ascending ? 'asc' : 'desc',
+    direction,
     limit: limit + 1,
     ...(query.cursor ? { cursor: cursorOf(query.cursor, order) } : {}),
   });
-  const result = pageOf(rows, limit, (row) => ({
-    [order]: order === 'priorityRank' ? priorityRank(row.priority) : row[order],
-    id: row.id,
-  }));
+  const result = pageOf(rows, limit, cursorFieldsOf(order));
   return {
     data: await listItems(deps, conn, result.rows),
     nextCursor: result.nextCursor,
   };
+}
+
+/**
+ * The first page of each of `statusKeys`, in a fixed number of reads whatever the number of issues: the ids of each
+ * column in its order, then the rows of every column at once, and what the rows show beside them at once.
+ */
+async function columnPages(
+  deps: QueryDeps,
+  conn: DatabaseConnection,
+  viewer: Viewer,
+  query: IssueListQuery,
+  statusKeys: readonly string[],
+  limit: number,
+): Promise<Map<string, IssuePage>> {
+  const { order, direction } = orderOf(query);
+  const refs = new Map<
+    string,
+    { readonly ids: string[]; readonly nextCursor: string | null }
+  >();
+  for (const statusKey of statusKeys) {
+    const found = await findIssueRefs(conn, {
+      filter: listFilter(viewer, { ...query, statusKey, cursor: undefined }),
+      order,
+      direction,
+      limit: limit + 1,
+    });
+    const result = pageOf(found, limit, cursorFieldsOf(order));
+    refs.set(statusKey, {
+      ids: result.rows.map((row) => row.id),
+      nextCursor: result.nextCursor,
+    });
+  }
+  const ids = [...refs.values()].flatMap((column) => column.ids);
+  const rows =
+    ids.length > 0
+      ? await findIssueRows(conn, {
+          filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))),
+          order: 'number',
+          limit: ids.length,
+        })
+      : [];
+  const items = new Map(
+    (await listItems(deps, conn, rows)).map((item) => [item.id, item]),
+  );
+  return new Map(
+    [...refs].map(([statusKey, column]) => [
+      statusKey,
+      {
+        data: column.ids.flatMap((id) => {
+          const item = items.get(id);
+          return item ? [item] : [];
+        }),
+        nextCursor: column.nextCursor,
+      },
+    ]),
+  );
 }
 
 /** An unknown status some issue is still in gets a plain column of its own. */
@@ -249,35 +378,141 @@ function unknownStatus(key: string): StatusDefinition {
 }
 
 export function createIssueQueries(deps: QueryDeps): IssueQueries {
+  /** The caller has already checked visibility for this issue in the same read. */
+  async function activityPage(
+    conn: DatabaseConnection,
+    issueId: string,
+    viewer: Viewer,
+    options: Parameters<IssueQueries['activities']>[2],
+  ): Promise<ActivityPage> {
+    const limit = pageLimit(
+      options.limit,
+      ACTIVITY_PAGE_LIMIT.default,
+      ACTIVITY_PAGE_LIMIT.max,
+    );
+    const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
+    const rows = await readActivities(
+      conn,
+      issueId,
+      limit,
+      cursor
+        ? { createdAt: String(cursor.createdAt), id: String(cursor.id) }
+        : undefined,
+    );
+    const result = pageOf(rows, limit, (row) => ({
+      createdAt: row.createdAt,
+      id: row.id,
+    }));
+    const name = await deps.kinds.nameAll(conn, [
+      ...result.rows.map((row) => ({ type: row.actorType, id: row.actorId })),
+      ...tracedAgents(result.rows),
+    ]);
+    return {
+      // Oldest first, as the timeline reads.
+      data: result.rows.reverse().map((row) => ({
+        id: row.id,
+        actorType: row.actorType,
+        actorId: row.actorId,
+        actorName: name(row.actorType, row.actorId),
+        action: row.action,
+        ...splitVia(
+          row.details,
+          (agentId) => name(AGENT_VIA_KIND, agentId),
+          viewer,
+        ),
+        createdAt: row.createdAt,
+      })),
+      nextCursor: result.nextCursor,
+    };
+  }
+
   return {
-    async hierarchy(viewer, query) {
+    summaries: (viewer, refs) => {
+      requireAction(viewer, 'pm.issues', 'view', 'You may not view issues.');
+      return findIssueSummaries(deps.tx.read(), (f) =>
+        f.and([
+          visibleIssues(f, viewer),
+          f.or([oneOf(f, 'id', refs), oneOf(f, 'identifier', refs)]),
+        ]),
+      );
+    },
+    visibleIds: (viewer, ids) => visibleIssueIds(deps.tx.read(), viewer, ids),
+    hierarchySource: (viewer, query) =>
+      hierarchySource(deps.tx.read(), viewer, query),
+    async hierarchy(viewer, query, options) {
       const conn = deps.tx.read();
       const issues = await hierarchyRecords(conn, (f) =>
-        visibleIssues(f, viewer),
+        f.and([
+          visibleIssues(f, viewer),
+          ...(options?.unfinishedOnly
+            ? [
+                options.includeIds?.length
+                  ? f.or([
+                      f.and(
+                        FINISHED_KEYS.map((key) =>
+                          f.string('statusKey').ne(key),
+                        ),
+                      ),
+                      oneOf(f, 'id', options.includeIds),
+                    ])
+                  : f.and(
+                      FINISHED_KEYS.map((key) => f.string('statusKey').ne(key)),
+                    ),
+              ]
+            : []),
+        ]),
       );
-      const matches = await hierarchyRecords(
-        conn,
-        listFilter(viewer, { ...query, deleted: false }),
-      );
-      const blockedIds = new Set<string>();
-      // Bound SQL parameter counts while retaining the full scope.
-      for (let at = 0; at < issues.length; at += 100) {
-        const counts = await deps
-          .extras()
-          .listCounts(conn, issues.slice(at, at + 100));
-        for (const [id, value] of counts)
-          if (value.blockedCount > 0) blockedIds.add(id);
+      if (options?.unfinishedOnly) {
+        const known = new Set(issues.map((issue) => issue.id));
+        let layer = issues;
+        while (layer.length) {
+          const parents = [
+            ...new Set(
+              layer.flatMap((issue) =>
+                issue.parentIssueId && !known.has(issue.parentIssueId)
+                  ? [issue.parentIssueId]
+                  : [],
+              ),
+            ),
+          ];
+          if (!parents.length) break;
+          // Cut a path at an invisible parent, as the complete authorized hierarchy does.
+          layer = await hierarchyRecords(conn, (f) =>
+            f.and([visibleIssues(f, viewer), oneOf(f, 'id', parents)]),
+          );
+          for (const issue of layer) known.add(issue.id);
+          issues.push(...layer);
+        }
       }
+      const exact = exactMatcher(query);
+      const matches = exact
+        ? issues.filter(exact)
+        : await hierarchyRecords(conn, (f) =>
+            f.and([
+              listFilter(viewer, { ...query, deleted: false })(f),
+              ...(options?.unfinishedOnly
+                ? [
+                    oneOf(
+                      f,
+                      'id',
+                      issues.map((issue) => issue.id),
+                    ),
+                  ]
+                : []),
+            ]),
+          );
       return {
         issues,
         matchingIds: matches.map((issue) => issue.id),
-        blockedIds,
+        blockedIds: await deps.extras().blockedIds(conn, issues),
       };
     },
-    async hierarchyItems(viewer, ids) {
+    async hierarchyItems(viewer, ids, readableIds) {
       if (ids.length === 0) return [];
-      if (ids.length > 100)
-        throw new Error('Hierarchy hydration accepts at most 100 tasks.');
+      if (ids.length > HIERARCHY_ITEMS_MAX)
+        throw new Error(
+          `Hierarchy hydration accepts at most ${HIERARCHY_ITEMS_MAX} tasks.`,
+        );
       const conn = deps.tx.read();
       const rows = await findIssueRows(conn, {
         filter: (f) =>
@@ -289,15 +524,51 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         direction: 'asc',
         limit: ids.length,
       });
-      const readable = await hierarchyRecords(conn, (f) =>
-        visibleIssues(f, viewer),
-      );
-      return listItems(
-        deps,
-        conn,
-        rows,
-        new Set(readable.map((issue) => issue.id)),
-      );
+      let countIds: ReadonlySet<string> | undefined;
+      if (readableIds && 'sql' in readableIds) {
+        // The rows above are independently authorized. Scope count candidates without hydrating the hierarchy.
+        const client = await conn.client<Knex>();
+        const raw = (source: IssueHierarchySource['visible']) =>
+          client.raw(source.sql, [...source.parameters] as Knex.RawBinding[]);
+        const targets = conn.query
+          .selectFrom('pmIssueDependencies')
+          .select('dependsOnIssueId')
+          .where(
+            'issueId',
+            'in',
+            rows.map((row) => row.id),
+          )
+          .where('type', '=', 'blockedBy')
+          .compile();
+        const candidates = (await client
+          .with('visible', raw(readableIds))
+          .select('id')
+          .from('visible')
+          .where((w) => {
+            w.whereIn(
+              'parent',
+              rows.map((row) => row.id),
+            )
+              .orWhereIn(
+                'parent',
+                rows.flatMap((row) =>
+                  row.stage !== null && row.parentIssueId
+                    ? [row.parentIssueId]
+                    : [],
+                ),
+              )
+              .orWhereRaw('?? in (?)', ['id', raw(targets)]);
+          })) as { id: string }[];
+        countIds = new Set(candidates.map((row) => row.id));
+      } else countIds = readableIds;
+      const readable =
+        countIds ??
+        new Set(
+          (await hierarchyRecords(conn, (f) => visibleIssues(f, viewer))).map(
+            (issue) => issue.id,
+          ),
+        );
+      return listItems(deps, conn, rows, readable);
     },
     statuses() {
       return [...deps.statuses.catalog().statuses];
@@ -350,22 +621,21 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
       for (const key of await statusesOf(conn, listFilter(viewer, query)))
         if (!statuses.some((status) => status.key === key))
           statuses.push(unknownStatus(key));
-      const columns: BoardColumn[] = [];
-      for (const status of statuses) {
-        const column = await page(
-          deps,
-          conn,
-          viewer,
-          { ...query, statusKey: status.key, cursor: undefined },
-          limit,
-        );
-        columns.push({
+      const pages = await columnPages(
+        deps,
+        conn,
+        viewer,
+        query,
+        statuses.map((status) => status.key),
+        limit,
+      );
+      return {
+        columns: statuses.map((status) => ({
           status,
-          issues: column.data,
-          nextCursor: column.nextCursor,
-        });
-      }
-      return { columns };
+          issues: pages.get(status.key)?.data ?? [],
+          nextCursor: pages.get(status.key)?.nextCursor ?? null,
+        })),
+      };
     },
 
     visible(viewer, idOrKey) {
@@ -374,15 +644,32 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
 
     async detail(viewer, idOrKey) {
       const conn = deps.tx.read();
-      const issue = await requireVisible(conn, viewer, idOrKey);
-      const row = await findIssueRow(conn, issue.id);
-      const [item] = await listItems(deps, conn, row ? [row] : []);
-      const parent = issue.parentIssueId
-        ? await findIssue(conn, issue.parentIssueId)
-        : undefined;
+      const lookup = (filter: { id: string } | { identifier: string }) =>
+        findIssueRows(conn, { filter, order: 'updatedAt', limit: 1 });
+      let [issue] = await lookup({ id: idOrKey });
+      if (!issue && /^[A-Za-z][A-Za-z0-9]*-\d+$/u.test(idOrKey))
+        [issue] = await lookup({ identifier: idOrKey.toUpperCase() });
+      if (!issue || !(await canSee(conn, viewer, issue)))
+        throw notFound('Issue');
+      const extras = deps.extras();
+      const [
+        [item],
+        parent,
+        activities,
+        threads,
+        subscribers,
+        attachments,
+        relations,
+      ] = await Promise.all([
+        listItems(deps, conn, [issue]),
+        issue.parentIssueId ? findIssue(conn, issue.parentIssueId) : undefined,
+        activityPage(conn, issue.id, viewer, {}),
+        extras.threads(conn, issue, viewer),
+        extras.subscribers(conn, issue),
+        extras.attachments(conn, viewer, issue),
+        extras.relations(conn, viewer, issue),
+      ]);
       const catalog = deps.statuses.catalog();
-      const activities = await this.activities(viewer, issue.id, {});
-      const threads = await deps.extras().threads(conn, issue, viewer);
       return {
         ...item,
         parent:
@@ -398,9 +685,9 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         activitiesNextCursor: activities.nextCursor,
         threads: threads.data,
         threadsNextCursor: threads.nextCursor,
-        subscribers: await deps.extras().subscribers(conn, issue),
-        attachments: await deps.extras().attachments(conn, viewer, issue),
-        ...(await deps.extras().relations(conn, viewer, issue)),
+        subscribers,
+        attachments,
+        ...relations,
       };
     },
 
@@ -460,45 +747,7 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
     async activities(viewer, idOrKey, options) {
       const conn = deps.tx.read();
       const issue = await requireVisible(conn, viewer, idOrKey);
-      const limit = pageLimit(
-        options.limit,
-        ACTIVITY_PAGE_LIMIT.default,
-        ACTIVITY_PAGE_LIMIT.max,
-      );
-      const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
-      const rows = await readActivities(
-        conn,
-        issue.id,
-        limit,
-        cursor
-          ? { createdAt: String(cursor.createdAt), id: String(cursor.id) }
-          : undefined,
-      );
-      const result = pageOf(rows, limit, (row) => ({
-        createdAt: row.createdAt,
-        id: row.id,
-      }));
-      const name = await deps.kinds.nameAll(conn, [
-        ...result.rows.map((row) => ({ type: row.actorType, id: row.actorId })),
-        ...tracedAgents(result.rows),
-      ]);
-      return {
-        // Oldest first, as the timeline reads.
-        data: result.rows.reverse().map((row) => ({
-          id: row.id,
-          actorType: row.actorType,
-          actorId: row.actorId,
-          actorName: name(row.actorType, row.actorId),
-          action: row.action,
-          ...splitVia(
-            row.details,
-            (agentId) => name(AGENT_VIA_KIND, agentId),
-            viewer,
-          ),
-          createdAt: row.createdAt,
-        })),
-        nextCursor: result.nextCursor,
-      };
+      return activityPage(conn, issue.id, viewer, options);
     },
   };
 }

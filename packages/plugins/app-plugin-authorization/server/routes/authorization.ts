@@ -1,3 +1,6 @@
+import { withSettingsSubmission } from '../extension/submission.js';
+import type { DatabaseConnection } from '@nocobase/db';
+import type { RepositoryIdempotencyConfig } from '@nocobase/app-server/router';
 import type { Auth } from '@nocobase/app-plugin-authentication';
 import {
   apiErrorHandler,
@@ -20,6 +23,10 @@ import { AuthorizationSnapshotSchema } from './schemas.js';
 export function createAuthorizationRoutes(
   auth: Auth,
   authorization: AppAuthorization,
+  submission?: {
+    connection: DatabaseConnection;
+    protection?: RepositoryIdempotencyConfig;
+  },
 ): Hono<AuthorizationEnv> {
   const routes = new Hono<AuthorizationEnv>();
   routes.onError(apiErrorHandler);
@@ -48,11 +55,15 @@ export function createAuthorizationRoutes(
   // `describeRoute()` here would apply to every route below it. The provider registers the settings routers it forwards
   // to with the API documentation (`documentAuthorizationRoutes`), which documents and checks them at their full paths.
   routes.all('*', async (context, next) => {
-    const response = authorization.routes.handle({
-      request: withRequestId(context.req.raw, getRequestId(context)),
-      path: mountedPath(context),
-      authorization: context.get('authz'),
-    });
+    const dispatch = () =>
+      authorization.routes.handle({
+        request: withRequestId(context.req.raw, getRequestId(context)),
+        path: mountedPath(context),
+        authorization: context.get('authz'),
+      });
+    const response = submission
+      ? withSettingsSubmission({ ...submission, context }, dispatch)
+      : dispatch();
     if (response) return await response;
     await next();
   });

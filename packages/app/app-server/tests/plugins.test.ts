@@ -90,16 +90,27 @@ describe('server plugin definitions', () => {
     expect(Object.isFrozen(plugin.routes)).toBe(true);
   });
 
-  // Resolved from `app-template-examples`, which is where the example plugins are installed. They used to live in
-  // `app-template-default` and were moved out; a test naming the wrong template fails with "could not be resolved",
-  // which reads like a defect in resolution rather than a stale path.
+  // The plugin is a package written into a temporary application, so these tests depend on no other package's
+  // directory.
+  function writeExamplePlugin() {
+    const rootDir = mkdtempSync(
+      path.join(tmpdir(), 'nocobase-plugin-contribution-paths-'),
+    );
+    tempDirs.push(rootDir);
+    const packageName = '@example/contribution-paths-plugin';
+    writePackage(rootDir, packageName, '1.0.0');
+    return {
+      rootDir,
+      packageName,
+      baseDir: path.join(rootDir, 'node_modules', packageName),
+    };
+  }
+
   it('ignores configured contribution paths that do not exist', () => {
+    const { rootDir, packageName, baseDir } = writeExamplePlugin();
     const plugin = defineServerPlugin({
-      baseDir: path.resolve(
-        import.meta.dirname,
-        '../../../examples/app-plugin-service-provider-example',
-      ),
-      packageName: '@nocobase/app-plugin-service-provider-example',
+      baseDir,
+      packageName,
       database: {
         migrations: './missing/migrations',
         seeds: './missing/seeds',
@@ -110,7 +121,7 @@ describe('server plugin definitions', () => {
     });
 
     const resolved = resolveAppServerPlugins(
-      path.resolve(process.cwd(), '../../templates/app-template-examples'),
+      rootDir,
       defineServerPlugins([plugin]),
     ).plugins[0]?.metadata;
 
@@ -122,22 +133,17 @@ describe('server plugin definitions', () => {
   it.each(['../outside', './a/../outside', './/outside', './a\\outside'])(
     'rejects unsafe optional contribution path %s',
     (configuredPath) => {
+      const { rootDir, packageName, baseDir } = writeExamplePlugin();
       const plugin = defineServerPlugin({
-        baseDir: path.resolve(
-          import.meta.dirname,
-          '../../../examples/app-plugin-service-provider-example',
-        ),
-        packageName: '@nocobase/app-plugin-service-provider-example',
+        baseDir,
+        packageName,
         database: {
           migrations: configuredPath,
         },
       });
 
       expect(() =>
-        resolveAppServerPlugins(
-          path.resolve(process.cwd(), '../../templates/app-template-examples'),
-          defineServerPlugins([plugin]),
-        ),
+        resolveAppServerPlugins(rootDir, defineServerPlugins([plugin])),
       ).toThrow(
         `Server plugin path "${configuredPath}" must be a safe baseDir-relative path beginning with "./".`,
       );

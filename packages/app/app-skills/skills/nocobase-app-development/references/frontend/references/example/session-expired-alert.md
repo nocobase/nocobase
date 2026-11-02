@@ -6,7 +6,7 @@ Part of the [projects worked example](../example.md).
 
 **Add first**: `yes n | pnpm exec shadcn add alert`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
 
-Rules: "Session ended (401)" under ["Handling each kind of error" in `api.md`](../api.md#handling-each-kind-of-error), and guideline S4. Shared by every loader in the example, so it lives in `client/components/`.
+Rules: "Session ended (401)" under ["Handling each kind of error" in `api.md`](../api.md#handling-each-kind-of-error), and guideline S4. Shared by every loader in the example, so it lives in `client/components/`. Forms pass `inline` when using it inside `FeedbackForm.errorContent`, retaining one alert boundary.
 
 ```tsx
 // client/components/session-expired-alert.tsx
@@ -23,18 +23,35 @@ import { Button } from '#components/ui/button';
  * while it runs, AuthenticationGuard renders nothing, so the signed-in pages (and any input in them) unmount, and
  * RequiredAuthentication then sends the user to sign in. That is why the user starts it, never an effect or a catch.
  */
-export function SessionExpiredAlert(): ReactElement {
+export function SessionExpiredAlert({
+  inline = false,
+}: {
+  readonly inline?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
   const { refresh } = useAuthentication();
+  const signIn = (
+    <Button
+      type='button'
+      variant='outline'
+      size='sm'
+      onClick={() => void refresh()}
+    >
+      {t('actions.signInAgain')}
+    </Button>
+  );
+  if (inline)
+    return (
+      <>
+        <span>{t('status.sessionExpired')}</span>
+        {signIn}
+      </>
+    );
   return (
     <Alert variant='destructive'>
       <AlertCircleIcon />
       <AlertDescription>{t('status.sessionExpired')}</AlertDescription>
-      <AlertAction>
-        <Button variant='outline' size='sm' onClick={() => void refresh()}>
-          {t('actions.signInAgain')}
-        </Button>
-      </AlertAction>
+      <AlertAction>{signIn}</AlertAction>
     </Alert>
   );
 }

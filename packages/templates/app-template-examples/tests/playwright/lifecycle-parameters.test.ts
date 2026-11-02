@@ -11,7 +11,7 @@ test.use({
     : {},
 });
 
-test('shares configuration editors, preserves conflicts and enforces read-only controls', async ({
+test('opens workflow-owned configuration and preserves conflicting drafts', async ({
   page,
 }) => {
   const app = applicationUrl!.replace(/\/$/, '');
@@ -24,92 +24,70 @@ test('shares configuration editors, preserves conflicts and enforces read-only c
     .fill(process.env.E2E_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.waitForURL((url) => !url.pathname.endsWith('/login'));
-  await page.goto(app + '/lifecycle-example/parameters');
+  await page.goto(app + '/workflows/definitions/lifecycle.expenses');
   await expect(
-    page.getByRole('heading', { name: 'Expense thresholds', exact: true }),
+    page.getByRole('heading', { name: 'Draft', exact: true }),
   ).toBeVisible();
   const endpoint =
-    app + '/api/lifecycleExample/parameterGroups/expenseThresholds?actAs=zhao';
+    app + '/api/workflows/definitions/lifecycle.expenses/parameters';
   const read = async (): Promise<{
     values: Record<string, number>;
     revision: number;
-  }> => (await (await page.request.get(endpoint)).json()).data;
+  }> => {
+    const result = await (await page.request.get(endpoint)).json();
+    return result.data;
+  };
   const original = await read();
   try {
-    const expense = page
-      .locator('section')
-      .filter({
-        has: page.getByRole('heading', {
-          name: 'Expense thresholds',
-          exact: true,
-        }),
-      })
-      .last();
+    const expense = page.getByRole('region', { name: 'Parameter settings' });
     const input = expense.getByLabel('Automatic approval limit (yuan)');
     await input.fill('501');
-    await expense
-      .getByRole('button', { name: 'Save values', exact: true })
+    await page
+      .getByRole('button', { name: 'Save parameters', exact: true })
       .click();
-    await expect(
-      expense.getByText('Configuration saved.', { exact: true }),
-    ).toBeVisible();
+    await expect
+      .poll(async () => (await read()).revision)
+      .toBe(original.revision + 1);
     const saved = await read();
     await input.fill('502');
     const competing = await page.request.put(endpoint, {
       headers: { origin: new URL(app).origin },
       data: {
+        kind: 'lifecycle',
         values: original.values,
         expectedRevision: saved.revision,
         requestId: 'browser-competing-' + Date.now(),
       },
     });
     expect(competing.status()).toBe(200);
-    await expense
-      .getByRole('button', { name: 'Save values', exact: true })
+    await page
+      .getByRole('button', { name: 'Save parameters', exact: true })
       .click();
-    await expect(
-      expense.getByText(
-        'The revision changed. Your inputs have been preserved; review the current values before retrying.',
-      ),
-    ).toBeVisible();
+    await expect(page.getByRole('alert')).toBeVisible();
     await expect(input).toHaveValue('502');
-    await expense
-      .getByRole('button', { name: 'Keep my inputs and use this revision' })
+    await page
+      .getByRole('button', { name: 'Load latest revision and keep draft' })
       .click();
-    await expense
-      .getByRole('button', { name: 'Save values', exact: true })
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await page
+      .getByRole('button', { name: 'Save parameters', exact: true })
       .click();
-    await expect(
-      expense.getByText('Configuration saved.', { exact: true }),
-    ).toBeVisible();
-    await page.getByTestId('rf__node-awaitingManager').click();
-    const dialog = page.getByRole('dialog');
-    await expect(
-      dialog.getByRole('heading', { name: 'Edit current configuration' }),
-    ).toBeVisible();
-    await expect(
-      dialog.getByLabel('Automatic approval limit (yuan)'),
-    ).toBeVisible();
-    await expect(
-      dialog.getByLabel('Finance review limit (yuan)'),
-    ).toBeVisible();
-    await dialog.getByRole('button', { name: 'Close' }).click();
-    await page.getByTestId('rf__node-paid').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await page.getByRole('combobox', { name: 'Signed in as' }).click();
-    await page.getByRole('option', { name: '林晓 · 市场部 · 专员' }).click();
+    await expect
+      .poll(async () => (await read()).revision)
+      .toBe(saved.revision + 2);
+    await page.getByTestId('rf__node-awaitingManager').click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(
-      page.getByRole('button', { name: 'Save values', exact: true }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByLabel('Automatic approval limit (yuan)'),
-    ).toBeDisabled();
+      expense.getByLabel('Finance review limit (yuan)'),
+    ).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
     const current = await read();
     const restored = await page.request.put(endpoint, {
       headers: { origin: new URL(app).origin },
       data: {
+        kind: 'lifecycle',
         values: original.values,
         expectedRevision: current.revision,
         requestId: 'browser-restore-' + Date.now(),

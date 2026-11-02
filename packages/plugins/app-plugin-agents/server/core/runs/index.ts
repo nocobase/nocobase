@@ -65,6 +65,7 @@ export {
 export {
   DEFAULT_TOOL_POLICY,
   MAX_CLAIM_FAILURES,
+  retryBaseDelayMs,
   retryDelayMs,
   toolPolicyFor,
 } from './policy.js';
@@ -104,6 +105,7 @@ export { createSweeper, type Sweeper, type SweepReport } from './sweeper.js';
 export {
   executionForViewer,
   runForViewer,
+  runMachineViewerFor,
   type RunMachineViewer,
 } from './execution-view.js';
 export {

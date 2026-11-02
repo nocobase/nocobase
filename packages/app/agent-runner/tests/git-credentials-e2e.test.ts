@@ -113,8 +113,8 @@ describe('repository credentials on demand', () => {
     expect(runner?.register.features).toContain('gitCredentials');
   });
 
-  it('pushes past an expired credential, for the agent and at the end, with each repository’s own, never showing one', async () => {
-    const workDir = path.join(workRootOf(home), 'test-app', 'PM-9');
+  it('lets the agent explicitly push each repository past an expired credential without showing one', async () => {
+    const workDir = path.join(workRootOf(home), 'test-app', 'PM-9.task');
     expireMarker = path.join(workDir, 'app', 'expire-now');
     const run = server.enqueue({
       subject: { key: 'PM-9', url: 'http://app.test/PM-9' },
@@ -135,8 +135,10 @@ describe('repository credentials on demand', () => {
           'write expire-now x',
           'bash git push origin HEAD:refs/heads/agent/PM-9',
           'bash git push origin HEAD:refs/heads/agent/PM-9',
-          // And again before the runner pushes the other repository at the end.
+          // The agent also explicitly publishes the second repository after refreshing its credential.
           'write expire-now x',
+          'bash git -C ../lib push origin HEAD:refs/heads/agent/PM-9',
+          'bash git -C ../lib push origin HEAD:refs/heads/agent/PM-9',
           'say done',
         ].join('\n'),
       },

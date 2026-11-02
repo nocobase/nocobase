@@ -1,5 +1,4 @@
 ---
-'@nocobase/studio': minor
 '@nocobase/app-plugin-knowledge': minor
 ---
 

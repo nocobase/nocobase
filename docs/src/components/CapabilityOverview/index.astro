@@ -1,0 +1,98 @@
+---
+/**
+ * A capability module's overview: static markup (`pages*.json`) with a scenario picker driven by
+ * `interactions.mjs`. Only this module's scenarios and prompts are embedded in the page.
+ */
+import { getImage } from 'astro:assets';
+import type { LanguageLink } from '../../lib/language-menu.ts';
+import cnHome from '../FullHome/data.json';
+import enHome from '../FullHome/data.en.json';
+import cnPages from './pages.json';
+import enPages from './pages.en.json';
+import { headerMarkup } from '../SiteHeader/markup.ts';
+import './index.scss';
+
+interface Props {
+  language: string;
+  module: string;
+  languageLinks: LanguageLink[];
+}
+
+const { language, module, languageLinks } = Astro.props;
+const cn = language === 'cn';
+const pages = (cn ? cnPages : enPages) as Record<
+  string,
+  { markup: string; promptKey: string; scenarios: Scenario[] }
+>;
+const home = cn ? cnHome : enHome;
+const page = pages[module];
+
+interface Scenario {
+  id: string;
+  image?: string | null;
+  [key: string]: unknown;
+}
+
+// Screenshots referenced by name in the markup and the scenarios. They live with the Chinese pages' assets, which
+// carry the English screenshots too. Going through `getImage` gives them the same output file the Markdown pages use
+// for the same screenshot, and only the ones a page references are published.
+const assets = import.meta.glob<ImageMetadata>(
+  '../../../docs/cn/capabilities/assets/*.{png,jpg,jpeg,svg}',
+  { eager: true, import: 'default' },
+);
+const imageUrls = new Map<string, string>();
+async function imageUrl(file: string): Promise<string | undefined> {
+  const source = assets[`../../../docs/cn/capabilities/assets/${file}`];
+  if (!source) return undefined;
+  if (!imageUrls.has(file))
+    imageUrls.set(file, (await getImage({ src: source })).src);
+  return imageUrls.get(file);
+}
+
+const referenced = [
+  ...new Set([
+    ...[...page.markup.matchAll(/assets\/([^"\s]+)/g)].map(([, file]) => file),
+    ...page.scenarios.flatMap(({ image }) => (image ? [image] : [])),
+  ]),
+];
+for (const file of referenced) await imageUrl(file);
+
+const markup =
+  headerMarkup(language, languageLinks) +
+  page.markup.replace(
+    /assets\/([^"\s]+)/g,
+    (source, file: string) => imageUrls.get(file) ?? source,
+  );
+const library = home.promptLibrary[
+  page.promptKey as keyof typeof home.promptLibrary
+].prompts as Record<string, { label: string; text: string }>;
+const scenarios = page.scenarios.map((scenario) => ({
+  ...scenario,
+  label: library[scenario.id].label,
+  prompt: library[scenario.id].text,
+  image: scenario.image ? imageUrls.get(scenario.image) : undefined,
+}));
+const data = JSON.stringify(scenarios).replace(/</g, '\\u003c');
+---
+
+<div
+  class='capability-overview'
+  lang={cn ? 'zh-CN' : 'en'}
+  data-language={language}
+  data-pagefind-body
+  set:html={markup}
+/>
+<script type='application/json' id='capability-overview-data' set:html={data} />
+<script>
+  import '../../scripts/language-menu.ts';
+  import { initializeOverview } from './interactions.mjs';
+
+  const root = document.querySelector<HTMLElement>('.capability-overview');
+  const data = document.getElementById('capability-overview-data');
+  if (root && data)
+    initializeOverview(
+      root,
+      JSON.parse(data.textContent ?? '[]'),
+      root.dataset.language ?? 'en',
+    );
+</script>

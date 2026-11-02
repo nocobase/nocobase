@@ -10,7 +10,7 @@ export interface MailFocusTarget {
 }
 
 export function subscribeToMailInvalidations(
-  realtime: RealtimeClient,
+  realtime: Pick<RealtimeClient, 'watch'>,
   target: MailFocusTarget,
   refresh: () => void,
   onFocus: () => void = refresh,
@@ -24,19 +24,17 @@ export function subscribeToMailInvalidations(
     lastFocusRefresh = now;
     onFocus();
   };
-  const unsubscribeOpen = realtime.onOpen(refresh);
-  const unsubscribeTopic = realtime.subscribe<unknown>(
-    MAIL_REALTIME_TOPIC,
-    (event): void => {
+  const subscription = realtime.watch<unknown>(MAIL_REALTIME_TOPIC, {
+    onReady: refresh,
+    onEvent: (event): void => {
       if (isMailChanged(event.payload)) refresh();
     },
-  );
+  });
   target.addEventListener('focus', handleFocus);
 
   return (): void => {
     target.removeEventListener('focus', handleFocus);
-    unsubscribeTopic();
-    unsubscribeOpen();
+    subscription.close();
   };
 }
 

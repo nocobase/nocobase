@@ -1,0 +1,1255 @@
+{
+  "auth": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">认证</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>身份与访问</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg></span><h1>认证</h1></div><p class=\"auth-lead\">让合适的人，以合适的方式进入应用。</p><p class=\"auth-intro\">员工用账号登录，企业接入统一身份平台，外部脚本通过 API key 访问。告诉 Agent 你的账号规则，复用 NocoBase 已有的认证能力。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\" aria-label=\"认证和权限的关系\"><p>每一次访问，都有明确的身份</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>用户 / 程序</strong><small>发起访问</small></div><span aria-hidden=\"true\">→</span><div class=\"identity-box\"><strong>认证</strong><small>确认你是谁</small></div><span aria-hidden=\"true\">→</span><div class=\"identity-box\"><strong>权限</strong><small>决定能做什么</small></div></div><footer>登录成功不代表可以访问所有数据。业务操作仍需要通过应用的权限检查。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">账号与会话</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些需要接入</h2><p>以默认应用模板为起点，先确定你的需求属于哪一类。</p></div><div class=\"availability\">\n<article><span class=\"badge ready\">模板已提供</span><h3>账号登录与会话</h3><p>用户名或邮箱密码登录，注册、忘记密码和重置密码页面，以及登录状态和退出。API keys 能力供程序以用户身份访问。</p></article>\n<article><span class=\"badge\">需要配置</span><h3>注册规则与邮件流程</h3><p>按业务调整注册和密码规则。邮箱验证、找回密码需要可用的发件渠道，并接入对应认证流程。</p></article>\n<article><span class=\"badge\">需要扩展接入</span><h3>企业与第三方登录</h3><p>接入 OIDC、第三方账号或内部登录协议。需要平台配置与账号关联规则，默认模板未开启这些入口。</p></article>\n</div><p class=\"boundary\"><strong>认证解决身份，权限解决范围。</strong> “员工必须登录”属于认证；“客户经理只能看自己负责的运输订单”属于<a href=\"/zh-CN/capabilities/authorization/\">权限 →</a>。</p></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>以下以 Northstar 运输系统为例。按你的业务替换名称和规则，再把提示词交给应用项目中的开发 Agent。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"认证场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>身份确认后，访问仍有边界</h2><p>把这些行为和具体业务一起验证，避免只检查登录页是否好看。</p></div><div class=\"rules\"><article><h3>退出、禁用与重新登录</h3><p>退出结束当前会话；会话过期后需要重新登录。管理员禁用账号后，该账号不能继续访问受保护的功能，重新启用后需要再次登录。</p></article><article><h3>页面和接口一起保护</h3><p>未登录用户进入内部页面时跳转到登录页；直接访问受保护接口也必须被拦截。登录身份由服务端读取，业务数据范围继续交给权限模块。</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2><p>先完成一个场景，再按需要查阅配置、接入与开发参考。</p></div><div class=\"resources\">\n<a href=\"/zh-CN/capabilities/auth/password\"><strong>密码认证与账号 <span>↗</span></strong><p>员工开户、停用、密码规则与找回密码。</p></a>\n<a href=\"/zh-CN/capabilities/auth/sign-in-methods\"><strong>增加认证方式 <span>↗</span></strong><p>企业身份平台、第三方登录与账号关联。</p></a>\n<a href=\"/zh-CN/capabilities/auth/api-keys\"><strong>API keys <span>↗</span></strong><p>创建、保存、使用与撤销程序访问凭据。</p></a>\n<a href=\"/zh-CN/capabilities/auth/login-pages\"><strong>定制登录页面 <span>↗</span></strong><p>应用品牌、文案和登录入口布局。</p></a>\n<a href=\"/zh-CN/capabilities/auth/protecting-access\"><strong>保护接口和页面 <span>↗</span></strong><p>页面声明、接口认证与当前用户身份。</p></a>\n<a href=\"/zh-CN/capabilities/auth/protecting-access#账号停用与部署\"><strong>部署时的认证配置 <span>↗</span></strong><p>公开地址、应用路径、Cookie 与共享配置。</p></a>\n</div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/authorization/\">继续了解权限 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "staff",
+        "title": "只让公司员工进入应用",
+        "summary": "以 Northstar 运输系统为例，由管理员统一开通客户经理、调度员和司机的账号，并管理员工的启用状态。",
+        "status": "调整现有能力",
+        "decisions": [
+          [
+            "账号管理",
+            "由 Agent 搭建员工账号页面，支持搜索、创建、停用和重新启用。"
+          ],
+          ["注册入口", "页面和服务端同时关闭自助注册。"],
+          ["业务权限", "开户与分配权限分开，新账号不自动获得管理员权限。"]
+        ],
+        "checks": [
+          "员工账号页面支持搜索、状态筛选和创建账号。",
+          "页面没有注册入口，服务端也禁止自助注册。",
+          "停用后已有会话失效，业务记录保留；重新启用后需要重新登录。"
+        ],
+        "note": "员工账号页面按应用需求搭建，不是默认模板中固定的管理入口。只需要员工重新登录时，可以单独撤销会话。",
+        "image": "northstar-employee-accounts-en.png",
+        "imageAlt": "Northstar 员工账号列表及启用状态",
+        "doc": "/zh-CN/capabilities/auth/password"
+      },
+      {
+        "id": "password",
+        "title": "让新密码符合团队要求",
+        "summary": "在管理员创建账号和员工重置密码时统一校验，已有员工仍可使用原密码登录。",
+        "status": "调整现有能力",
+        "decisions": [
+          ["新密码要求", "本例至少 12 个字符，可替换为团队要求。"],
+          ["适用流程", "创建账号和重置密码使用一致的规则与提示。"],
+          ["已有账号", "本次不要求已有员工立即修改密码。"]
+        ],
+        "checks": [
+          "创建账号和重置密码表单显示至少 12 个字符的要求。",
+          "页面和服务端都拒绝不符合规则的新密码。",
+          "已有账号仍能使用原密码登录。"
+        ],
+        "note": "如果还需要强制改密或其他规则，请单独说明适用人群和生效时间。",
+        "doc": "/zh-CN/capabilities/auth/password",
+        "image": "northstar-password-policy-en.png",
+        "imageAlt": "Northstar 创建员工账号时显示密码长度要求"
+      },
+      {
+        "id": "recovery",
+        "title": "让用户通过邮箱重置密码",
+        "summary": "复用已有页面，接入发件渠道，完成从申请重置到重新登录的完整过程。",
+        "status": "需要配置邮件",
+        "decisions": [
+          ["发件渠道", "准备可用的邮件渠道，由 Agent 接入认证流程。"],
+          ["访问地址", "提供用户实际使用的域名和应用路径。"],
+          ["交互提示", "邮箱存在或不存在，都返回相同提示。"]
+        ],
+        "checks": [
+          "真实测试邮箱能收到邮件，链接使用实际的应用访问地址。",
+          "修改后可以使用新密码登录，旧密码不能继续用于登录。",
+          "让 Agent 验证：过期或已使用的重置链接不能再次使用。",
+          "填写不存在的邮箱时，不暴露该邮箱是否注册。"
+        ],
+        "note": "模板已提供忘记密码和重置密码页面，发送邮件仍需配置并接入。",
+        "doc": "/zh-CN/capabilities/auth/password",
+        "image": "northstar-forgot-password-en.png",
+        "imageAlt": "Northstar 员工填写邮箱申请重置密码"
+      },
+      {
+        "id": "sso",
+        "title": "接入企业已有的身份平台",
+        "summary": "Northstar 员工在独立企业身份平台验证并授权，再返回运输应用。首次开户与业务权限分配分开。",
+        "status": "需要扩展接入",
+        "decisions": [
+          ["身份平台", "采用 OIDC，准备平台地址、应用信息、凭据和回调地址。"],
+          ["首次登录", "允许创建应用账号，不自动授予管理员或订单权限。"],
+          ["账号关联", "使用稳定用户标识，不按同名或相同邮箱自动合并。"]
+        ],
+        "checks": [
+          "保留密码登录，企业登录跳转到独立身份平台。",
+          "允许授权后返回应用并显示正确身份；取消则不进入应用。",
+          "同一企业账号重复登录不重复开户，不错误合并已有账号。",
+          "新账号的订单访问与操作仍受应用业务权限限制。"
+        ],
+        "note": "本例展示平台授权确认；是否展示或记住授权由身份平台配置决定。企业登录入口需要接入后才可使用。",
+        "image": "northstar-company-consent-en.png",
+        "imageAlt": "Northstar 企业身份平台显示员工身份及授权范围",
+        "doc": "/zh-CN/capabilities/auth/sign-in-methods"
+      },
+      {
+        "id": "api",
+        "title": "让外部系统以明确身份访问",
+        "summary": "客户经理使用自己的 API key 读取有权查看的运输订单，供外部报表脚本使用。",
+        "status": "复用 API keys",
+        "decisions": [
+          ["调用身份", "Key 代表创建它的员工，沿用该员工的数据权限。"],
+          [
+            "密钥管理",
+            "按需增加「集成密钥」入口，完整 Key 仅在创建后显示一次。"
+          ],
+          [
+            "调用目标",
+            "本例读取工作台返回的订单和客户；自己的应用需核对实际接口。"
+          ]
+        ],
+        "checks": [
+          "脚本输出有权读取的订单编号、客户、起终点和状态。",
+          "Key 从环境变量读取，不出现在源码或日志中。",
+          "撤销、过期或账号停用后调用失败，错误不会被当作空订单。"
+        ],
+        "note": "localhost:13200、/api/northstar 及返回字段是 Northstar 示例，不是每个应用默认具备的订单接口。本例无需分页；使用时替换应用地址并确认接口。",
+        "image": "northstar-keys-en.png",
+        "imageAlt": "Northstar 员工管理自己的运输报表集成密钥",
+        "doc": "/zh-CN/capabilities/auth/api-keys"
+      },
+      {
+        "id": "brand",
+        "title": "让登录入口属于你的应用",
+        "summary": "以 Northstar Logistics 为例，用浅蓝色卡车插画与白色表单调整登录页，同时保留账号登录与密码恢复流程。",
+        "status": "定制应用页面",
+        "decisions": [
+          [
+            "视觉内容",
+            "浅蓝卡车与山路插画、白色面板、浅灰蓝网格背景与蓝色按钮。"
+          ],
+          [
+            "登录流程",
+            "保留密码登录、错误提示和找回密码，前后端关闭自助注册。"
+          ],
+          ["多语言", "登录与密码恢复页保持品牌一致，提供中英文文案。"]
+        ],
+        "checks": [
+          "页面呈现运输品牌，手机上也能完整操作登录表单。",
+          "密码显示切换、错误提示和找回密码入口正常。",
+          "服务端禁止自助注册，原注册组件保留供以后恢复。"
+        ],
+        "note": "登录页属于应用源码，开发 Agent 可以直接调整。界面变化不应改变认证规则。",
+        "image": "northstar-branded-login-en.png",
+        "imageAlt": "Northstar Logistics 浅蓝卡车插画、白色登录表单与蓝色按钮",
+        "doc": "/zh-CN/capabilities/auth/login-pages"
+      },
+      {
+        "id": "protect",
+        "title": "区分公开内容和内部业务",
+        "summary": "访客可浏览 Northstar 运输服务介绍；工作台、客户和运输订单仅供具备权限的员工访问。",
+        "status": "接入业务页面",
+        "decisions": [
+          ["公开范围", "列清无需登录的页面及其读取的数据。"],
+          ["内部内容", "业务页面和接口都要检查登录身份。"],
+          ["业务权限", "登录后的数据范围继续由权限模块决定。"]
+        ],
+        "checks": [
+          "访客可以浏览运输介绍，公开接口不返回内部客户或订单。",
+          "未登录访问内部订单页面时进入登录页。",
+          "内部接口缺少身份返回 401；登录后缺少权限返回 403。",
+          "创建订单的操作人由服务端读取，不接受提交他人身份冒用。"
+        ],
+        "note": "订单创建人、负责人和司机是不同字段。服务端提供可信操作人；业务分工与数据范围由权限规则决定。",
+        "doc": "/zh-CN/capabilities/auth/protecting-access",
+        "image": "northstar-public-services-en.png",
+        "imageAlt": "访客无需登录即可浏览 Northstar 运输服务介绍"
+      }
+    ],
+    "promptKey": "auth"
+  },
+  "data-sources": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">数据源</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>数据库与业务数据</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0\"/></svg></span><h1>数据源</h1></div><p class=\"auth-lead\">让已有数据，参与新的业务。</p><p class=\"auth-intro\">为应用选择合适的主数据库，也可以接入已有外部数据库。告诉 Agent 数据在哪里、如何关联，以及谁可以使用，让业务页面直接使用这些数据。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\" aria-label=\"客户详情的数据来源\"><p>一个客户详情，两处数据来源</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>应用主库</strong><small>客户联系信息</small></div><span aria-hidden=\"true\">→</span><div class=\"identity-box\"><strong>客户详情</strong><small>按客户编号关联</small></div><span aria-hidden=\"true\">←</span><div class=\"identity-box\"><strong>外部结算库</strong><small>账期与信用额度</small></div></div><footer>外部资料由原系统维护。本例直接读取，不复制到应用主库。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#databases\">数据库类型</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">接入边界</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>先确定数据放在哪里</h2><p>应用主数据库与外部数据源承担不同职责，可以按业务需要一起使用。</p></div><div class=\"availability\"><article><span class=\"badge ready\">应用主数据库</span><h3>保存应用自己的数据</h3><p>默认模板使用 SQLite。使用其他数据库时，安装对应驱动并配置连接。</p></article><article><span class=\"badge\">外部数据源</span><h3>使用已有系统的数据</h3><p>接入独立数据库，在业务页面读取已有资料。明确字段对应、读取范围与访问权限。</p></article><article><span class=\"badge\">需要准备</span><h3>连接信息与表结构</h3><p>提供数据库类型、服务端连接条件和字段说明。连接凭据通过服务端运行配置管理。</p></article></div><p class=\"boundary\"><strong>连接不等于迁移或同步。</strong> 更换主库连接不会自动迁移原有数据；接入外部数据源，也不会自动将数据复制到主库。</p></section>\n<section id=\"databases\"><div class=\"section-head\"><h2>可以选择哪些数据库</h2><p>先确认对应驱动支持的版本、部署平台和服务端连接条件，再配置应用。</p></div><div class=\"database-table\"><table><thead><tr><th scope=\"col\">数据库</th><th scope=\"col\">配置中的类型</th></tr></thead><tbody><tr><td>SQLite</td><td><code>sqlite</code></td></tr><tr><td>PostgreSQL</td><td><code>postgres</code></td></tr><tr><td>MySQL、MariaDB</td><td><code>mysql</code></td></tr><tr><td>Microsoft SQL Server</td><td><code>mssql</code></td></tr><tr><td>Oracle Database</td><td><code>oracle</code></td></tr><tr><td>达梦</td><td><code>dameng</code></td></tr><tr><td>人大金仓 KingbaseES</td><td><code>kingbase</code></td></tr><tr><td>OceanBase</td><td><code>oceanbase</code></td></tr></tbody></table></div><p class=\"database-note\">这些是可配置的数据库类型，不表示所有驱动都已安装。已有应用更换数据库时，需要单独安排数据迁移。</p></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>以下以 Northstar 运输系统为例。按你的业务替换名称和规则，再把提示词交给应用项目中的开发 Agent。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"数据源场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看客户详情的结算资料示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>Harbor Retail 的联系信息来自主库，月结账期与 80,000 元信用额度来自外部结算库。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>接入前，说清四件事</h2><p>让数据来源、使用方式和业务权限都能被验证。</p></div><div class=\"rules\"><article><h3>数据如何对应</h3><p>本例按客户编号匹配。明确两边的字段关系，避免只凭客户名称关联到错误记录。</p></article><article><h3>是否允许修改</h3><p>本例只读外部资料。需要写回时，另行说明允许修改的表和字段。</p></article><article><h3>哪些人可以查看</h3><p>连通数据库不等于所有员工都能查看资料。由服务端按业务要求检查访问权限。</p></article><article><h3>是否需要同步</h3><p>本例访问页面时直接读取外部数据。需要复制到主库时，另行明确同步频率与失败处理方式。</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2><p>按业务需要继续了解数据接入、权限与周期任务。</p></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/data-sources/usage\"><strong>数据源使用文档 <span>↗</span></strong><p>数据库类型、外部结算资料与接入边界。</p></a><a href=\"/zh-CN/capabilities/authorization/\"><strong>权限 <span>→</span></strong><p>限定页面、操作与数据访问范围。</p></a><a href=\"/zh-CN/capabilities/scheduler/\"><strong>定时任务 <span>↗</span></strong><p>需要周期同步时，明确执行时间与失败处理。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/authorization/\">继续了解权限 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "settlement",
+        "status": "外部数据源 · 只读接入",
+        "title": "在客户详情中展示结算资料",
+        "summary": "Northstar 的客户联系信息保存在主数据库，账期、信用额度与结算状态由独立结算系统维护。让员工在同一页面查看两边的数据。",
+        "decisions": [
+          ["对应关系", "用客户编号匹配两边记录，明确应用字段与外部字段。"],
+          ["读取范围", "只读取结算周期、信用额度和结算状态，不修改外部表。"],
+          [
+            "连接准备",
+            "准备数据库类型、连接信息和表结构；凭据从服务端运行配置读取。"
+          ]
+        ],
+        "checks": [
+          "Harbor Retail 的联系信息来自主库，结算区域来自外部数据库，并标明来源。",
+          "示例客户展示月结账期与 80,000 元信用额度；自己的数据按实际记录显示。",
+          "只读取约定的外部表和字段，不写回、不自动导入主库。",
+          "服务端按业务权限控制结算资料访问，连接凭据不暴露在页面中。"
+        ],
+        "note": "这是访问页面时读取外部数据的示例。需要写回或定时同步时，应另行说明允许修改的字段、同步频率和失败处理。",
+        "image": "northstar-settlement-en.png",
+        "imageAlt": "Northstar 客户详情：主库联系信息与外部结算资料同屏展示",
+        "doc": "/zh-CN/capabilities/data-sources/usage"
+      }
+    ],
+    "promptKey": "data-sources"
+  },
+  "authorization": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">权限</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>身份与访问</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg></span><h1>权限</h1></div><p class=\"auth-lead\">让不同岗位，各司其职。</p><p class=\"auth-intro\">告诉 Agent 谁负责什么、能处理哪些记录。复用 NocoBase 的权限能力，让客户经理、调度员和司机在同一应用中按职责协作。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\" aria-label=\"权限的三个层次\"><p>从业务职责，落实到每一次访问</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>页面</strong><small>能进入哪里</small></div><span>→</span><div class=\"identity-box\"><strong>操作</strong><small>能做什么</small></div><span>→</span><div class=\"identity-box\"><strong>数据范围</strong><small>能处理哪些记录</small></div></div><footer>能打开订单页面，不代表可以修改所有订单。服务端还要检查操作、记录范围和业务状态。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">规则如何配合</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>先说明职责，再接入权限</h2><p>权限能力提供授权计算，应用负责定义业务和管理入口。</p></div><div class=\"availability\"><article><span class=\"badge ready\">已有能力</span><h3>权限集与访问规则</h3><p>组合页面、操作与数据范围，支持共同范围、共享、限制及授权来源检查。</p></article><article><span class=\"badge\">需要业务接入</span><h3>明确每项操作与范围</h3><p>告诉 Agent 谁可以查看、编辑或分配司机，以及「本人」对应哪个业务字段，在服务端执行。</p></article><article><span class=\"badge\">由管理员维护</span><h3>分配人员与调整规则</h3><p>按需搭建「团队访问」与「访问规则」入口，复用已有能力。页面位置和呈现由应用决定。</p></article></div><p class=\"boundary\"><strong>登录确认身份，权限决定范围。</strong> 员工登录属于<a href=\"/zh-CN/capabilities/auth/\">认证</a>；司机只能办理分配给自己的任务属于权限。隐藏菜单不能代替真实授权。</p></section>\n<section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>以下以 Northstar 运输系统为例。按你的业务替换名称和规则，再把提示词交给应用项目中的开发 Agent。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"权限场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>增加协作范围，也保留业务边界</h2><p>先具备对应页面和操作权限，再判断记录范围；业务状态仍决定当前能否办理。</p></div><div class=\"rules\"><article><h3>先合并，再限制</h3><p>岗位范围、默认共同范围和共享范围先合并，再同时满足适用的限制。共同范围与共享不额外授予操作；限制不会增加原本没有的访问权。</p></article><article><h3>用真实员工验证结果</h3><p>本例最终 Bob 的范围是：本人订单、完成订单与指定共享先合并，再限制运输费用不超过 2,000 元。权限检查解释来源，实际订单页面验证可见记录。</p></article></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2><p>先完成一个场景，再按需要查阅配置、接入与开发参考。</p></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/authorization/permission-sets\"><strong>岗位与分配 <span>↗</span></strong><p>为每个岗位明确职责。</p></a><a href=\"/zh-CN/capabilities/authorization/data-scopes\"><strong>数据范围 <span>↗</span></strong><p>同一个页面，各自看到负责的记录。</p></a><a href=\"/zh-CN/capabilities/authorization/default-access\"><strong>共同范围 <span>↗</span></strong><p>让有查看权限的人查阅完成订单。</p></a><a href=\"/zh-CN/capabilities/authorization/sharing-rules\"><strong>临时共享 <span>↗</span></strong><p>让 Bob 协助查看 Alice 的一笔订单。</p></a><a href=\"/zh-CN/capabilities/authorization/restriction-rules\"><strong>限制规则 <span>↗</span></strong><p>将 Bob 的订单查看范围收窄到 2,000 元以内。</p></a><a href=\"/zh-CN/capabilities/authorization/inspector\"><strong>检查权限 <span>↗</span></strong><p>解释 Bob 为什么能看到这笔订单。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/auth/\">查看认证 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "permission-sets",
+        "title": "为每个岗位明确职责",
+        "summary": "客户经理维护运输需求，调度员安排司机，司机办理任务。把页面、操作和记录范围组合成可分配的权限集。",
+        "status": "复用权限能力 · 按业务接入",
+        "decisions": [
+          ["岗位职责", "客户经理、调度员和司机各有独立的页面与操作。"],
+          ["人员分配", "Alice、Bob 为客户经理，Emma 为调度员，Daniel 为司机。"],
+          ["管理入口", "由 Agent 搭建「团队访问」，仅授权管理员可维护。"]
+        ],
+        "checks": [
+          "Alice、Bob 共用客户经理岗位，但分别看到本人负责的订单。",
+          "Emma 可查看调度订单；司机不能修改价格或重新分配司机。",
+          "普通员工不能通过页面或接口维护岗位与分配。"
+        ],
+        "note": "截图展示已接入的查看权限与人员分配。提示词中的创建、编辑和调度动作仍需逐项接入并验证；不要把示例截图当作全部操作已完成。",
+        "image": "northstar-team-access-en.png",
+        "imageAlt": "为每个岗位明确职责 · Northstar 界面示例",
+        "doc": "/zh-CN/capabilities/authorization/permission-sets"
+      },
+      {
+        "id": "data-scopes",
+        "title": "同一个页面，各自看到负责的记录",
+        "summary": "明确「本人」对应负责人还是分配司机，让列表、详情和修改接口执行同一范围。",
+        "status": "复用权限能力 · 按业务接入",
+        "decisions": [
+          ["客户经理", "按订单负责人关联当前用户，不一律使用创建人。"],
+          ["司机", "按任务分配司机对应的员工账号限定范围。"],
+          ["调度员", "可统筹全部订单，分配动作还要检查订单状态。"]
+        ],
+        "checks": [
+          "仅应用岗位范围时，Alice 可见本人负责的 6 笔订单，Emma 可见全部 10 笔。",
+          "直接打开他人订单详情或提交修改，也受服务端范围约束。",
+          "已完成的订单不能仅因有调度权限就重新分配司机。"
+        ],
+        "note": "6 笔与 10 笔是示例数据在只应用岗位范围时的结果。共同范围、共享和限制加入后，数量会变化。",
+        "image": "northstar-alice-orders-en.png",
+        "imageAlt": "同一个页面，各自看到负责的记录 · Northstar 界面示例",
+        "doc": "/zh-CN/capabilities/authorization/data-scopes"
+      },
+      {
+        "id": "default-access",
+        "title": "让有查看权限的人查阅完成订单",
+        "summary": "在本人订单之外增加已完成订单作为共同参考，原有范围仍然保留。",
+        "status": "复用权限能力 · 按业务接入",
+        "decisions": [
+          ["适用人员", "仅对已经具有查看订单权限的人员生效。"],
+          ["共同条件", "按 Completed 阶段增加记录，与原有范围取并集。"],
+          ["操作边界", "只增加查看，不因此允许编辑或办理运输动作。"]
+        ],
+        "checks": [
+          "保存共同范围后，Alice 从 6 笔增加到 7 笔，新增 Bob 负责的 NS-2026-003。",
+          "本人负责的未完成订单仍然可见。",
+          "没有查看权限的人不会获得查看能力，也不会因此获得编辑权限。"
+        ],
+        "note": "本例仅按完成阶段判断，没有自动排除敏感订单。如需排除，应明确字段和条件。",
+        "image": "northstar-default-after-en.png",
+        "imageAlt": "让有查看权限的人查阅完成订单 · Northstar 界面示例",
+        "doc": "/zh-CN/capabilities/authorization/default-access"
+      },
+      {
+        "id": "sharing-rules",
+        "title": "让 Bob 协助查看 Alice 的一笔订单",
+        "summary": "共享 NS-2026-001 的查看范围，保留原负责人和 Bob 的日常岗位。",
+        "status": "复用权限能力 · 按业务接入",
+        "decisions": [
+          ["共享对象", "Bob 已有订单查看权限，本次只增加指定记录范围。"],
+          ["共享操作", "仅查看，不增加编辑、分配司机或审批。"],
+          ["协作结束", "管理员移除规则，再核对是否还有其他授权来源。"]
+        ],
+        "checks": [
+          "仅加入共享时，Bob 从本人 4 笔订单增加到 5 笔。",
+          "NS-2026-001 的负责人仍为 Alice，Bob 不能因此编辑或调度。",
+          "撤销共享后检查其他来源，不把撤销一条规则当作撤销所有访问。"
+        ],
+        "note": "4 → 5 展示尚未加入共同范围和费用限制时的变化。共享不能绕过已有的限制规则。",
+        "image": "northstar-sharing-after-en.png",
+        "imageAlt": "让 Bob 协助查看 Alice 的一笔订单 · Northstar 界面示例",
+        "doc": "/zh-CN/capabilities/authorization/sharing-rules"
+      },
+      {
+        "id": "restriction-rules",
+        "title": "将 Bob 的订单查看范围收窄到 2,000 元以内",
+        "summary": "在已有岗位、共同范围和共享之上增加费用上限；所有来源都需满足限制。",
+        "status": "复用权限能力 · 按业务接入",
+        "decisions": [
+          ["限制条件", "运输费用不超过 2,000 元，包含恰好 2,000 元。"],
+          ["适用操作", "本例只限制查看；编辑或审批需分别说明。"],
+          ["规则移除", "删除限制可能扩大可见范围，确认影响后再移除。"]
+        ],
+        "checks": [
+          "本人订单、共同订单与共享订单都受费用条件约束。",
+          "本例最终仅保留费用 1,600 元的共享订单 NS-2026-001。",
+          "没有原始授权的低费用订单，不会因为符合金额条件而变得可见。"
+        ],
+        "note": "这是运输订单费用，不是特殊运输申请的额外费用审批。多项限制需要同时满足。",
+        "image": "northstar-restriction-after-en.png",
+        "imageAlt": "将 Bob 的订单查看范围收窄到 2,000 元以内 · Northstar 界面示例",
+        "doc": "/zh-CN/capabilities/authorization/restriction-rules"
+      },
+      {
+        "id": "inspector",
+        "title": "解释 Bob 为什么能看到这笔订单",
+        "summary": "从实际员工出发查看操作、数据条件和授权来源，找到应调整的规则。",
+        "status": "复用权限能力 · 按业务接入",
+        "decisions": [
+          ["检查对象", "选择实际员工；团队分配不等于每位成员的完整权限。"],
+          ["来源解释", "展开岗位、人员或组织分配、共同范围、共享及限制。"],
+          ["访问控制", "只向授权管理员开放，普通员工不能查询他人详情。"]
+        ],
+        "checks": [
+          "检查 Bob 时能看到岗位、共同范围、指定订单共享和费用限制来源。",
+          "显示数据条件与来源，不把条件数量显示成订单条数。",
+          "使用普通业务账号打开实际订单页面，核对最终效果。"
+        ],
+        "note": "超级管理员具有不受限访问，不适合展示岗位差异。检查页解释规则，修改应回到相应规则管理入口。",
+        "image": "northstar-inspector-en.png",
+        "imageAlt": "解释 Bob 为什么能看到这笔订单 · Northstar 界面示例",
+        "doc": "/zh-CN/capabilities/authorization/inspector"
+      }
+    ],
+    "promptKey": "authorization"
+  },
+  "workflow": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">工作流</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-workflow\" aria-hidden=\"true\"><rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"></path><rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\"></rect></svg></span><h1>工作流</h1></div><p class=\"auth-lead\">让每一步业务，都按规则推进。</p><p class=\"auth-intro\">定义运输订单的阶段、办理条件与等待规则，保留当前进度和处理历史。Agent 将流程接入实际业务页面。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>从业务需求到可验证的结果</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>说明需求</strong><small>准备条件与规则</small></div><div class=\"identity-box\"><strong>接入能力</strong><small>真实数据与权限</small></div><div class=\"identity-box\"><strong>验证结果</strong><small>页面与执行记录</small></div></div><footer>下面的提示词发送给应用项目中的开发 Agent。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">流程定义</span><h3>阶段、分支与条件</h3><p>明确哪些人可以执行哪一步，服务端检查信息与并发状态。</p></article><article><span class=\"badge\">可靠执行</span><h3>等待与失败处理</h3><p>保存等待状态，按规则处理重试、重复回调与补救动作。</p></article><article><span class=\"badge\">业务展示</span><h3>进度与办理历史</h3><p>按应用需要呈现阶段栏、流程图和记录列表。</p></article></div><p class=\"boundary\">按当前应用接入相应能力，管理入口与业务页面由应用按需要构建。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"工作流场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>选择合适的能力</h3><p>单次事件消息可直接使用通知；固定时间处理可用定时任务。工作流连接同一笔业务的多个步骤。</p></article><article><h3>流程图不是设计器</h3><p>这里的流程图展示实际执行进度。流程规则由 Agent 按业务需求开发到应用中。</p></article><article><h3>保存与后续事项</h3><p>办理结果与相关业务数据一起保存，通知或外部调用失败后重试，不撤销已保存的办理结果。</p></article><article><h3>人工决策</h3><p>复杂多级、会签、加签与转交使用审批能力。</p></article></div></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/workflow/\"><strong>工作流使用文档 <span>↗</span></strong><p>查阅场景、接入准备与使用说明。</p></a><a href=\"/zh-CN/capabilities/approval/\"><strong>审批 <span>↗</span></strong><p>继续了解相关业务能力。</p></a><a href=\"/zh-CN/capabilities/notification/\"><strong>通知 <span>↗</span></strong><p>继续了解相关业务能力。</p></a><a href=\"/zh-CN/capabilities/scheduler/\"><strong>定时任务 <span>↗</span></strong><p>继续了解相关业务能力。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/approval/\">继续了解审批 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "definition-0",
+        "title": "控制业务流转",
+        "summary": "运输订单按调度、接单、运输、签收和核对顺序推进，每一步检查当前阶段与必要信息。",
+        "decisions": [
+          ["阶段顺序", "待调度 → 待接单 → 运输中 → 已送达 → 已完成。"],
+          ["操作条件", "拒单填写原因，签收提交凭证；普通编辑不能直接改阶段。"],
+          ["并发处理", "服务端检查版本，避免覆盖其他人已提交的结果。"]
+        ],
+        "checks": [
+          "详情仅展示当前可执行操作，直接请求同样检查阶段和权限。",
+          "拒单返回待调度并清除分配，缺少必填信息不能推进。",
+          "同时处理时后提交方获得进度变化提示。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-process-before-en.png",
+        "imageAlt": "待接单订单展示当前阶段和对应操作",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/workflow/definition"
+      },
+      {
+        "id": "execution-0",
+        "title": "后台导出报表",
+        "summary": "以订单 CSV 导出展示等待、后台执行、失败重试与结果下载。",
+        "decisions": [
+          ["前置授权", "只有获准人员可以导出其有权访问的订单。"],
+          ["等待处理", "提交后展示等待，后台完成后提供文件。"],
+          ["重复与失败", "重复执行不重复生成，最终失败保留结果。"]
+        ],
+        "checks": [
+          "刷新后仍能查看进度、订单数量与处理记录。",
+          "成功后可下载真实 CSV 文件。",
+          "失败与重复处理符合规则，不伪造成功结果。"
+        ],
+        "note": "图示展示后台导出的一个实现；其他外部调用的超时与补救规则需按业务说明。",
+        "image": "northstar-workflow-export-completed-en.png",
+        "imageAlt": "运输订单报表执行完成，显示订单数量、文件下载和后台执行结果",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/workflow/execution"
+      },
+      {
+        "id": "progress-0",
+        "title": "查看处理历史",
+        "summary": "在订单详情回看实际走过的阶段、操作人和提交资料。",
+        "decisions": [
+          ["记录内容", "操作人、时间、动作、前后阶段与提交资料。"],
+          ["系统操作", "自动动作明确标记为系统执行。"],
+          ["展示形式", "阶段栏、流程图或记录列表由应用选择。"]
+        ],
+        "checks": [
+          "完成订单仍可查看之前的签收与核对记录。",
+          "刷新不丢失记录，系统动作与人工动作可区分。",
+          "流程图反映实际进度，不伪装成拖拽设计器。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-process-completed-en.png",
+        "imageAlt": "已完成订单展示当前阶段及三次实际处理记录",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/workflow/progress"
+      }
+    ],
+    "promptKey": "workflow"
+  },
+  "approval": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">审批</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg></span><h1>审批</h1></div><p class=\"auth-lead\">让每次决策，都有清楚的责任。</p><p class=\"auth-intro\">明确由谁审批、按什么路线推进、怎样形成结果，并保留意见和责任变化。以 Northstar 特殊运输申请为例。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>从业务需求到可验证的结果</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>说明需求</strong><small>准备条件与规则</small></div><div class=\"identity-box\"><strong>接入能力</strong><small>真实数据与权限</small></div><div class=\"identity-box\"><strong>验证结果</strong><small>页面与执行记录</small></div></div><footer>下面的提示词发送给应用项目中的开发 Agent。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">接入条件</span><h3>Pro 审批插件</h3><p>需要 @nocobase/app-plugin-approval 的相应授权与兼容版本。</p></article><article><span class=\"badge\">审批规则</span><h3>路线与多人决策</h3><p>支持条件分级、会签、或签，以及加签和转交。</p></article><article><span class=\"badge\">业务页面</span><h3>申请、待办与进度</h3><p>可嵌入业务详情，也可设置我的申请、待我审批和抄送给我。</p></article></div><p class=\"boundary\">按当前应用接入相应能力，管理入口与业务页面由应用按需要构建。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"审批场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>批准不等于执行成功</h3><p>付款、预留资源或更新正式数据属于后续执行，应单独展示结果与失败处理。</p></article><article><h3>预计与实际路线</h3><p>提交前可以预览，实际进入环节时按规则确定审批人。</p></article><article><h3>责任变化可追溯</h3><p>加签、转交、退回和重新提交保留原任务、人员、原因与意见。</p></article><article><h3>适用范围</h3><p>简单单人确认可作为工作流操作；复杂人工决策使用审批能力。</p></article></div></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/approval/\"><strong>审批使用文档 <span>↗</span></strong><p>查阅场景、接入准备与使用说明。</p></a><a href=\"/zh-CN/capabilities/workflow/\"><strong>工作流 <span>↗</span></strong><p>继续了解相关业务能力。</p></a><a href=\"/zh-CN/capabilities/notification/\"><strong>通知 <span>↗</span></strong><p>继续了解相关业务能力。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/workflow/\">继续了解工作流 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "stages-0",
+        "title": "多级与条件审批",
+        "summary": "以额外运输费用决定审批路线，主管与财务依次处理。",
+        "decisions": [
+          ["金额条件", "不超过 2,000 元由主管审批，超过时继续财务审批。"],
+          ["处理人", "提交前预览路线，进入环节时按规则确定实际审批人。"],
+          ["后续执行", "批准保留结论，不自动支付。"]
+        ],
+        "checks": [
+          "2,000 元与超过 2,000 元的申请走正确路线。",
+          "主管通过后符合条件的申请进入财务待办。",
+          "审批通过不被显示为付款已完成。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-approval-review-en.png",
+        "imageAlt": "运营主管审核特殊运输申请",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/approval/stages"
+      },
+      {
+        "id": "joint-review-0",
+        "title": "会签与或签",
+        "summary": "特殊货物要求运营与财务都同意，普通调度允许任一人同意。",
+        "decisions": [
+          ["会签", "两人同意才通过，一人拒绝即驳回并填写原因。"],
+          ["或签", "任一人同意即可通过。"],
+          ["等待对象", "显示每个人的意见及当前等待谁。"]
+        ],
+        "checks": [
+          "会签只有一人同意时继续等待。",
+          "或签一人同意后通过，其他待办正确关闭。",
+          "每位审批人的意见可追溯。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-approval-all-waiting-en.png",
+        "imageAlt": "会签中运营已同意，申请仍等待财务负责人",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/approval/joint-review"
+      },
+      {
+        "id": "handover-0",
+        "title": "加签与转交",
+        "summary": "主管可以请财务先审核，或将任务转给符合条件的当班调度。",
+        "decisions": [
+          ["前加签", "新增财务先处理，原主管等待后继续。"],
+          ["转交", "仅可选当班调度，必须说明原因。"],
+          ["责任记录", "保留原任务、接手人、原因与处理意见。"]
+        ],
+        "checks": [
+          "前加签后处理顺序正确，原主管没有跳过新增人员。",
+          "转交后由接手人处理，原任务留有记录。",
+          "不能选择不符合条件的人，也不能处理已结束任务。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-approval-handover-flow-en.png",
+        "imageAlt": "特殊运输申请内的前加签与转交流程图",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/approval/handover"
+      },
+      {
+        "id": "requests-0",
+        "title": "退回与撤回",
+        "summary": "资料不足时退回补充，重新提交保留历史；允许阶段内申请人可撤回。",
+        "decisions": [
+          ["退回", "返回申请人补充，再确定重新进入审批的处理人。"],
+          ["驳回", "结束当前申请，保留拒绝原因。"],
+          ["撤回", "未结束时申请人撤回，原审批人不能继续办理。"]
+        ],
+        "checks": [
+          "退回、驳回、撤回呈现不同结果。",
+          "重新提交保留旧意见，重新确定处理人。",
+          "撤回后旧审批任务不能再处理。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-approval-return-flow-en.png",
+        "imageAlt": "申请详情内展示退回与驳回的审批流程",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/approval/requests"
+      },
+      {
+        "id": "requests-1",
+        "title": "抄送阅知",
+        "summary": "让负责客户经理查看进度与意见，但不参与决策。",
+        "decisions": [
+          ["抄送对象", "负责该业务的客户经理。"],
+          ["阅读入口", "提供抄送给我与已读确认。"],
+          ["决策权限", "抄送不会变成审批权限。"]
+        ],
+        "checks": [
+          "抄送人可查看被授权申请与意见。",
+          "已读确认有记录，抄送人无审批操作。"
+        ],
+        "note": "这是进一步接入场景，需按真实人员与访问范围实现。",
+        "image": null,
+        "imageAlt": "抄送阅知 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/approval/requests"
+      },
+      {
+        "id": "requests-2",
+        "title": "超时与认领",
+        "summary": "对超过时限的审批提醒或升级，为团队待办提供认领与释放。",
+        "decisions": [
+          ["时间规则", "超过一个工作日提醒，超过两个工作日升级。"],
+          ["人员资格", "仅符合岗位的人员可以认领。"],
+          ["责任变化", "记录当前处理人、截止时间与任务分配。"]
+        ],
+        "checks": [
+          "按业务工作日计算时限，提醒与升级对象正确。",
+          "不符合岗位的人员不能认领。",
+          "超时未处理的认领按约定释放并保留记录。"
+        ],
+        "note": "需要明确业务日历、工作日与认领超时时限。",
+        "image": null,
+        "imageAlt": "超时与认领 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/approval/requests"
+      }
+    ],
+    "promptKey": "approval"
+  },
+  "scheduler": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">定时任务</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-calendar-clock\" aria-hidden=\"true\"><path d=\"M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5\"></path><path d=\"M16 2v4\"></path><path d=\"M8 2v4\"></path><path d=\"M3 10h5\"></path><path d=\"M17.5 17.5 16 16.3V14\"></path><circle cx=\"16\" cy=\"16\" r=\"6\"></circle></svg></span><h1>定时任务</h1></div><p class=\"auth-lead\">把周期性的工作，交给应用。</p><p class=\"auth-intro\">每天提醒待办、每周生成报表，或按周期同步数据。说明时间、时区、数据范围和结果，让 Agent 接入实际业务处理。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>触发、执行与投递分别核对</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>定时触发</strong><small>时间与时区</small></div><div class=\"identity-box\"><strong>业务执行</strong><small>处理数据与结果</small></div><div class=\"identity-box\"><strong>通知投递</strong><small>各渠道状态</small></div></div><footer>任务 succeeded 表示业务逻辑成功，最终通知投递还需查看通知日志。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">定时能力</span><h3>按时间触发</h3><p>按指定时间或周期触发业务目标，保留执行时间、耗时与状态。</p></article><article><span class=\"badge\">业务接入</span><h3>查找、汇总与处理</h3><p>订单查询、报表生成和同步逻辑由 Agent 接入，不由时间配置自动产生。</p></article><article><span class=\"badge\">管理员维护</span><h3>查看与启停</h3><p>按需提供「自动提醒」入口，查看任务与记录，并暂停或恢复。</p></article></div><p class=\"boundary\">说明业务时区，避免依赖默认值。持续运行需要应用进程提供执行服务。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"定时任务场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>暂停不是中止</h3><p>暂停后不再产生新的定时触发，历史记录保留；已开始的业务处理由执行逻辑继续完成。</p></article><article><h3>任务状态与业务结果</h3><p>先查看执行记录，再检查业务页面。提醒看消息中心，报表看文件，同步看更新后的记录。</p></article><article><h3>应用必须运行</h3><p>应用停止时没有进程执行任务。多实例部署需配置共享调度后端。</p></article><article><h3>时间与定义调整</h3><p>由 Agent 修改任务定义并核对下次触发时间。未指定时区默认 UTC，本例显式使用 Asia/Shanghai。</p></article></div><details class=\"reference-image\" style=\"margin-top:20px\"><summary>查看待调度汇总提醒</summary><img src=\"assets/northstar-scheduler-notice-en.png\" loading=\"lazy\" alt=\"查看待调度汇总提醒\"></details></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/scheduler/usage\"><strong>定时任务使用文档 <span>↗</span></strong><p>任务管理与部署参考。</p></a><a href=\"/zh-CN/capabilities/notification/\"><strong>通知 <span>↗</span></strong><p>核对每个渠道的投递结果。</p></a><a href=\"/zh-CN/capabilities/data-sources/\"><strong>数据源 <span>↗</span></strong><p>接入外部业务数据。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/notification/\">继续了解通知 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "reminder",
+        "title": "每个工作日提醒调度负责人",
+        "summary": "按北京时间汇总仍待调度的订单，没有待办时不发送。",
+        "decisions": [
+          ["运行时间", "每个工作日 09:00，明确使用 Asia/Shanghai 时区。"],
+          ["处理范围", "查找仍待调度的订单，汇总数量后发送一条站内通知。"],
+          ["人员与入口", "绑定真实调度负责人，消息打开待调度订单列表。"]
+        ],
+        "checks": [
+          "任务详情显示正确时间、时区与下次触发时间。",
+          "有待调度订单时收到汇总，无订单时不发送。",
+          "执行记录可查，通知中的数量与业务范围一致。",
+          "管理员可以暂停、恢复任务，历史记录保留。"
+        ],
+        "note": "截图用短周期演示一次后恢复工作日 09:00。示例发给演示管理员；实际团队需按岗位绑定负责人。",
+        "image": "northstar-scheduler-en.png",
+        "imageAlt": "每个工作日提醒调度负责人 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/scheduler/usage"
+      },
+      {
+        "id": "time",
+        "title": "把已有提醒改到上午十点",
+        "summary": "只调整运行时间，保留原来的业务范围、收件人和内容。",
+        "decisions": [
+          ["修改范围", "由 Agent 修改已有任务定义，不重复创建提醒。"],
+          ["保留规则", "订单范围、收件人与通知内容不变。"],
+          ["核对结果", "查看新时间、时区和下次触发时间。"]
+        ],
+        "checks": [
+          "任务改为工作日北京时间 10:00 运行。",
+          "业务规则不变，没有新增一条重复任务。",
+          "已有执行记录和管理员的启停选择保留。"
+        ],
+        "note": "增加、修改或移除任务由 Agent 更新应用代码；管理员在业务入口查看和启停。",
+        "image": null,
+        "imageAlt": "把已有提醒改到上午十点 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/scheduler/usage"
+      },
+      {
+        "id": "report",
+        "title": "按固定周期生成上周报表",
+        "summary": "已有报表生成能力时，接入定时生成和结果通知。",
+        "decisions": [
+          ["依赖能力", "先确认现有报表生成能力与销售数据。"],
+          ["统计周期", "每周一北京时间 08:00 生成上周汇总。"],
+          ["结果入口", "包含销售额、订单数量与区域汇总，通知销售负责人。"]
+        ],
+        "checks": [
+          "按约定统计周期生成真实报表。",
+          "负责人收到可查看报表的通知。",
+          "任务执行记录与生成的业务结果可以对应。"
+        ],
+        "note": "这是进一步使用示例，不代表 Northstar 示例已经内置完整销售报表。",
+        "image": null,
+        "imageAlt": "按固定周期生成上周报表 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/scheduler/usage"
+      },
+      {
+        "id": "sync",
+        "title": "只同步客户状态，保留其他资料",
+        "summary": "已有客户系统同步接口时，按周期更新指定字段。",
+        "decisions": [
+          ["同步周期", "每 10 分钟调用已有客户系统。"],
+          ["匹配与范围", "确认客户对应关系，只更新客户状态。"],
+          ["执行记录", "管理员可查看运行时间和每次执行结果。"]
+        ],
+        "checks": [
+          "客户状态按真实接口结果更新。",
+          "其他客户信息保持不变。",
+          "接口失败如实记录，不被当作成功同步。"
+        ],
+        "note": "接入前准备已有同步接口和字段关系。调度负责触发，读取与更新由业务逻辑完成。",
+        "image": null,
+        "imageAlt": "只同步客户状态，保留其他资料 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/scheduler/usage"
+      }
+    ],
+    "promptKey": "scheduler"
+  },
+  "notification": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">通知</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-bell\" aria-hidden=\"true\"><path d=\"M10.268 21a2 2 0 0 0 3.464 0\"></path><path d=\"M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326\"></path></svg></span><h1>通知</h1></div><p class=\"auth-lead\">在需要的时候，把消息送到人。</p><p class=\"auth-intro\">明确业务何时通知、发给谁，以及点击后去哪里。通知能力负责投递和记录，Agent 将它与真实业务结果连接。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>各渠道独立保存投递结果</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>业务事件</strong><small>收件人与内容</small></div><div class=\"identity-box\"><strong>通知渠道</strong><small>站内信 / 邮件 / 群消息</small></div></div><footer>投递处理完成，不等于收件人已经阅读。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">站内信</span><h3>应用消息中心</h3><p>向实际用户发送业务提醒，提供对应业务页面入口。</p></article><article><span class=\"badge\">邮件</span><h3>SMTP 或 Resend</h3><p>配置邮件服务与发件地址，向收件人邮箱发送通知。</p></article><article><span class=\"badge\">群消息</span><h3>飞书与钉钉</h3><p>接入群机器人 Webhook，需要时配置签名密钥。</p></article></div><p class=\"boundary\">消息中心与通知日志可按应用需求搭建。通知日志读取实际记录，不是固定的统一设置页面。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"通知场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>多渠道分别处理</h3><p>同一业务可使用多个渠道，各自保存状态，一个渠道失败不代表全部失败。</p></article><article><h3>重试前先核实</h3><p>失败可按记录重试。结果未知时先确认外部服务是否接收，避免再次发送造成重复。</p></article><article><h3>提醒不改变业务权限</h3><p>消息链接仍检查业务权限。收到通知不等于获得记录的访问权。</p></article><article><h3>通知与个人邮件</h3><p>业务通知按事件投递；关联个人邮箱阅读和回复来信，属于邮件模块。</p></article></div></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/notification/usage\"><strong>通知使用文档 <span>↗</span></strong><p>渠道准备与投递记录。</p></a><a href=\"/zh-CN/capabilities/scheduler/\"><strong>定时任务 <span>↗</span></strong><p>按时间产生业务提醒。</p></a><a href=\"/zh-CN/capabilities/mail/\"><strong>邮件 <span>↗</span></strong><p>处理个人邮箱的业务往来。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/scheduler/\">继续了解定时任务 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "progress",
+        "title": "把当前订单进度发到消息中心",
+        "summary": "先用手动提醒验证真实消息投递和订单跳转，不改变业务状态。",
+        "decisions": [
+          ["收件人", "本例发送给当前操作人，不自动发送给所有订单相关人员。"],
+          ["重复处理", "同一订单、同一版本、同一收件人只发送一次。"],
+          ["页面入口", "消息中心显示本人消息，通知日志仅向业务管理员开放。"]
+        ],
+        "checks": [
+          "消息含订单编号、起终点和状态，刷新后仍可查看。",
+          "重复点击不产生重复消息，也不修改订单进度。",
+          "消息链接可打开对应订单，仍需通过订单权限检查。",
+          "其他用户不能读取本人的消息，普通用户不能访问管理日志。"
+        ],
+        "note": "收到消息不会额外授予订单访问权。示例 NS-2026-003 的消息发给执行按钮的演示账号。",
+        "image": "northstar-notification-en.png",
+        "imageAlt": "把当前订单进度发到消息中心 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/notification/usage"
+      },
+      {
+        "id": "approval",
+        "title": "只在审批有结果时通知申请人",
+        "summary": "已有真实申请人和审批结果后，再接入结果通知。",
+        "decisions": [
+          ["触发时机", "审批通过或驳回后发送，待审批不发送。"],
+          ["身份来源", "使用实际申请人账号，不靠消息标题模拟审批。"],
+          ["失败影响", "通知失败不撤销已保存的审批结果。"]
+        ],
+        "checks": [
+          "通知仅发送给该申请的实际申请人。",
+          "同一次结果只产生一次通知，跳转对应申请详情。",
+          "发送失败时审批结果保留，并可查看投递记录。"
+        ],
+        "note": "需要先有可用的申请与审批业务。流程负责产生结果，通知负责投递。",
+        "image": null,
+        "imageAlt": "只在审批有结果时通知申请人 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/notification/usage"
+      },
+      {
+        "id": "email",
+        "title": "在站内信之外增加邮件渠道",
+        "summary": "复用已配置邮件渠道，从申请人实际账号读取邮箱，各渠道分别记录结果。",
+        "decisions": [
+          ["渠道准备", "先配置 SMTP 或 Resend，凭据保存在服务端。"],
+          ["缺少邮箱", "没有邮箱时只发送站内信。"],
+          ["独立结果", "邮件失败不影响业务结果或站内信。"]
+        ],
+        "checks": [
+          "有邮箱的申请人收到对应申请结果邮件。",
+          "没有邮箱时站内信正常发送。",
+          "日志按渠道显示结果、来源和尝试次数，不显示凭据。"
+        ],
+        "note": "completed 表示各项投递已完成处理，不等于收件人已经阅读。投递结果未知时先核实外部服务接收情况。",
+        "image": "northstar-notification-logs-en.png",
+        "imageAlt": "在站内信之外增加邮件渠道 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/notification/usage"
+      }
+    ],
+    "promptKey": "notification"
+  },
+  "mail": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">邮件</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-mail\" aria-hidden=\"true\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"></rect><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"></path></svg></span><h1>邮件</h1></div><p class=\"auth-lead\">把客户沟通，放回业务现场。</p><p class=\"auth-intro\">关联员工自己的邮箱，在邮件中心、客户和订单页面阅读、回复与编写邮件。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>从业务需求到可验证的结果</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>说明需求</strong><small>准备条件与规则</small></div><div class=\"identity-box\"><strong>接入能力</strong><small>真实数据与权限</small></div><div class=\"identity-box\"><strong>验证结果</strong><small>页面与执行记录</small></div></div><footer>下面的提示词发送给应用项目中的开发 Agent。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">管理员准备</span><h3>邮箱服务商</h3><p>配置 IMAP/SMTP 或 Gmail、Microsoft 365 的授权与回调信息。</p></article><article><span class=\"badge\">员工关联</span><h3>自己的邮箱</h3><p>通过账号页关联邮箱，选择首次同步日期。</p></article><article><span class=\"badge\">业务组合</span><h3>签名、模板与上下文</h3><p>从客户或订单页面准备内容，员工核对后发送。</p></article></div><p class=\"boundary\">按当前应用接入相应能力，管理入口与业务页面由应用按需要构建。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"邮件场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>邮件与通知不同</h3><p>个人邮箱往来由员工阅读和回复；业务事件自动投递使用通知模块。</p></article><article><h3>接入方式有差异</h3><p>IMAP/SMTP 不完整同步其他客户端中的已读、删除和移动状态。Gmail 与 Microsoft 365 提供较完整的同步整理能力。</p></article><article><h3>先确认同步范围</h3><p>没有看到来信时检查起始日期、同步记录和后台服务。大量历史邮件首次导入需要时间。</p></article><article><h3>业务权限与个人邮箱</h3><p>客户邮箱匹配不会开放其他员工的私人邮箱。所有业务组合仍限定当前员工可访问的邮件。</p></article></div></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/mail/\"><strong>邮件使用文档 <span>↗</span></strong><p>查阅场景、接入准备与使用说明。</p></a><a href=\"/zh-CN/capabilities/notification/\"><strong>通知 <span>↗</span></strong><p>继续了解相关业务能力。</p></a><a href=\"/zh-CN/capabilities/file/\"><strong>文件 <span>↗</span></strong><p>继续了解相关业务能力。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/notification/\">继续了解通知 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "quick-start-0",
+        "title": "收取与回复",
+        "summary": "员工关联自己的邮箱，在邮件中心阅读客户咨询并回复。",
+        "decisions": [
+          ["服务商", "先配置 IMAP/SMTP 或 Gmail、Microsoft 365 接入。"],
+          ["个人关联", "用户通过账号页关联邮箱，选择首次同步起始日期。"],
+          ["回复上下文", "保留原主题与关联，收件人使用原发件人。"]
+        ],
+        "checks": [
+          "同步范围内真实来信可阅读，正文与附件正常。",
+          "员工只能处理自己已关联的邮箱。",
+          "核对后发送回复，实际收件箱可确认结果。"
+        ],
+        "note": "截图来自专用演示邮箱。搭建页面本身不会自动发送邮件。",
+        "image": "northstar-mail-reading-en.png",
+        "imageAlt": "新版邮件中心中的车队业务来信",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/mail/quick-start"
+      },
+      {
+        "id": "usage-1",
+        "title": "邮件签名",
+        "summary": "为业务邮箱保存团队名称和运输协调说明，写信时按需使用。",
+        "decisions": [
+          ["归属", "签名属于邮箱账号。"],
+          ["内容", "Northstar Logistics、Operations team 与协调说明。"],
+          ["使用方式", "员工维护签名并在写信时选择。"]
+        ],
+        "checks": [
+          "签名可保存并在邮件编辑器中使用。",
+          "不同邮箱账号的签名不混用。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-mail-signatures-en.png",
+        "imageAlt": "邮箱账号页管理签名",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-2",
+        "title": "进度邮件模板",
+        "summary": "将当前订单和客户资料填入模板，再由员工编辑与发送。",
+        "decisions": [
+          ["字段", "订单号、客户、起终点、状态和预计交付日期。"],
+          ["上下文", "从订单详情传入当前业务信息。"],
+          ["发送前", "模板填入后仍可编辑，并选择签名。"]
+        ],
+        "checks": [
+          "当前订单的数据正确填入主题和正文。",
+          "缺失字段妥善提示，不误用其他订单资料。",
+          "应用不自动发送，员工核对后使用自己的邮箱发出。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-mail-template-applied-en.png",
+        "imageAlt": "订单资料填入模板并附上签名",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-3",
+        "title": "客户往来邮件",
+        "summary": "在客户详情查阅当前员工邮箱中，与客户联系人匹配的邮件。",
+        "decisions": [
+          ["匹配关系", "按联系人邮箱匹配发件、收件或抄送地址。"],
+          ["权限范围", "只显示当前员工自己可访问的已关联邮箱邮件。"],
+          ["交互", "阅读、回复、刷新和加载更多。"]
+        ],
+        "checks": [
+          "邮件确实与客户邮箱关联，不暴露其他员工邮件。",
+          "回复保留关联，用户确认内容后才发送。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-customer-mail-en.png",
+        "imageAlt": "客户详情中的往来邮件和正文",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/mail/usage"
+      },
+      {
+        "id": "usage-4",
+        "title": "订单进度邮件",
+        "summary": "从运输订单直接准备给客户的进度邮件。",
+        "decisions": [
+          ["收件人", "读取当前客户联系人邮箱。"],
+          ["业务内容", "带入订单号、客户、线路与状态。"],
+          ["员工确认", "编辑内容、模板和签名后再发送。"]
+        ],
+        "checks": [
+          "收件人和内容来自当前订单关联客户。",
+          "可以选择已有模板与签名。",
+          "未经员工确认不自动发送。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-order-mail-en.png",
+        "imageAlt": "订单信息带入邮件编辑器",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/mail/usage"
+      }
+    ],
+    "promptKey": "mail"
+  },
+  "file": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">文件</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-paperclip\" aria-hidden=\"true\"><path d=\"M13.234 20.252 21 12.3\"></path><path d=\"m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486\"></path></svg></span><h1>文件</h1></div><p class=\"auth-lead\">让业务资料，跟着记录走。</p><p class=\"auth-intro\">上传运输资料、预览文档，或为员工关联头像。向 Agent 说明文件数量、格式与访问规则，把文件能力接入业务页面。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>上传与保存关联，是两个步骤</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>上传文件</strong><small>创建文件记录</small></div><div class=\"identity-box\"><strong>保存附件</strong><small>关联到业务记录</small></div></div><footer>本例移除附件只解除关联，实际文件仍然保留。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">已有能力</span><h3>上传、预览与下载</h3><p>在业务页面中接入文件组件，支持文档、图片等文件的展示。</p></article><article><span class=\"badge\">业务接入</span><h3>数量与访问规则</h3><p>明确文件放在哪个页面、谁能操作，以及允许的格式和大小。</p></article><article><span class=\"badge\">存储准备</span><h3>本地或对象存储</h3><p>默认本地存储，也支持 S3 兼容存储。服务端管理配置与凭据。</p></article></div><p class=\"boundary\">文件信息与关联保存在数据库中，实际内容保存在存储中；备份时需要同时覆盖两者。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"文件场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>预览格式</h3><p>支持图片、PDF、文本、Markdown、音视频，以及浏览器本地预览 DOCX、XLSX、PPTX。其他格式可提供下载。</p></article><article><h3>移除与删除</h3><p>本例移除只解除当前订单关联。彻底清理文件前，需考虑其他业务记录的引用。</p></article><article><h3>更换存储</h3><p>切换配置后，新上传文件使用新存储。已有文件搬迁需要单独明确迁移范围。</p></article><article><h3>上传限制</h3><p>明确格式、大小和附件数量，并在服务端限制。内置单文件请求上限默认 5 MiB，批量请求默认 20 MiB，均包含整个请求内容。</p></article></div><details class=\"reference-image\" style=\"margin-top:20px\"><summary>查看运输附件的 DOCX 预览</summary><img src=\"assets/northstar-file-preview-en.png\" loading=\"lazy\" alt=\"查看运输附件的 DOCX 预览\"></details></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/file/usage\"><strong>文件使用文档 <span>↗</span></strong><p>文件存储、预览与常见问题。</p></a><a href=\"/zh-CN/capabilities/authorization/\"><strong>权限 <span>↗</span></strong><p>让附件访问跟随业务记录。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/notification/\">继续了解通知 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "attachments",
+        "title": "把运输资料保存在对应订单中",
+        "summary": "客户经理上传报价单和货物说明，调度员可以直接在订单中查阅。",
+        "decisions": [
+          ["附件规则", "每条订单可关联多个 PDF、图片和 DOCX 文件。"],
+          ["保存关联", "上传后点击保存，将文件与当前订单关联。"],
+          [
+            "操作人员",
+            "有权查看订单的人可查看和下载；申请人和调度员可添加或移除。"
+          ]
+        ],
+        "checks": [
+          "保存后重新打开订单，附件仍然存在。",
+          "有权访问的人员可以预览、下载原文件。",
+          "移除并保存后只解除当前订单关联，实际文件保留。",
+          "直接访问上传、列表、预览和下载接口也遵守登录与业务权限。"
+        ],
+        "note": "上传成功与关联保存是两步。需要彻底删除文件时，应另行明确其他业务引用的处理方式。",
+        "image": "northstar-attachments-en.png",
+        "imageAlt": "把运输资料保存在对应订单中 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/file/usage"
+      },
+      {
+        "id": "avatar",
+        "title": "为每位员工关联一张头像",
+        "summary": "用于员工列表和详情中的直观辨认，更换头像后使用新关联。",
+        "decisions": [
+          ["文件数量", "每名员工最多一张头像。"],
+          ["展示位置", "员工列表和详情都显示当前头像。"],
+          ["更换行为", "上传新头像并替换关联；是否清理旧文件需另行说明。"]
+        ],
+        "checks": [
+          "上传头像后，员工列表和详情显示一致。",
+          "更换并刷新后仍显示新的头像。",
+          "不能通过直接请求修改无权维护的员工头像。"
+        ],
+        "note": "单文件关联适用于头像或产品封面，多文件关联适用于相册和业务附件。",
+        "image": null,
+        "imageAlt": "为每位员工关联一张头像 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/file/usage"
+      }
+    ],
+    "promptKey": "file"
+  },
+  "template-print": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">模板打印</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-printer\" aria-hidden=\"true\"><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"></path><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\"></path><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\"></rect></svg></span><h1>模板打印</h1></div><p class=\"auth-lead\">把业务数据，变成可交付的文档。</p><p class=\"auth-intro\">向 Agent 提供模板、字段与输出要求，在应用中实现生成、预览或下载。模板打印指引帮助开发，并非安装后自动出现的打印功能。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>从业务需求到可验证的结果</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>说明需求</strong><small>准备条件与规则</small></div><div class=\"identity-box\"><strong>接入能力</strong><small>真实数据与权限</small></div><div class=\"identity-box\"><strong>验证结果</strong><small>页面与执行记录</small></div></div><footer>下面的提示词发送给应用项目中的开发 Agent。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">实现指引</span><h3>由 Agent 接入</h3><p>模板打印包提供 Skill 与参考示例，不自带运行时打印接口或页面。</p></article><article><span class=\"badge\">准备内容</span><h3>Office 模板与字段</h3><p>明确模板格式、数据来源、明细与图片等需求。</p></article><article><span class=\"badge\">输出条件</span><h3>DOCX 与 PDF</h3><p>仓库可运行示例生成 DOCX；PDF 另需服务端转换工具。</p></article></div><p class=\"boundary\">按当前应用接入相应能力，管理入口与业务页面由应用按需要构建。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。本页提示词根据仓库实现指引整理，具体输出需使用你的模板验证。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"模板打印场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>按权限读取数据</h3><p>服务端核对当前用户对业务记录的访问权，再读取打印数据。</p></article><article><h3>模板不是任意路径</h3><p>模板路径与渲染选项由服务端管理，请求不应任意指定。</p></article><article><h3>转换依赖要落到部署</h3><p>使用仓库示例的 PDF 转换时，应用运行环境需要 LibreOffice 与合适字体。</p></article><article><h3>新增格式先确认</h3><p>Excel、图片、二维码及其他输出需求由 Agent 结合模板和渲染方案实现，不默认全部可用。</p></article></div></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"https://github.com/nocobase/nocobase/blob/v3-develop/packages/plugins/app-plugin-template-print/README.md\"><strong>模板打印说明 <span>↗</span></strong><p>仓库中的实现指引与能力边界。</p></a><a href=\"https://github.com/nocobase/nocobase/blob/v3-develop/packages/examples/app-plugin-template-print-example/README.md\"><strong>可运行示例 <span>↗</span></strong><p>DOCX 生成与 PDF 转换的参考实现。</p></a><a href=\"/zh-CN/capabilities/file/\"><strong>文件 <span>↗</span></strong><p>继续了解相关业务能力。</p></a><a href=\"/zh-CN/capabilities/authorization/\"><strong>权限 <span>↗</span></strong><p>继续了解相关业务能力。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/file/\">继续了解文件 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "docx",
+        "title": "按 Word 模板生成运输单",
+        "summary": "提供真实模板及字段说明，让 Agent 在应用中实现文档生成和下载。",
+        "decisions": [
+          ["准备模板", "提供 DOCX 文件、字段映射与需要重复的明细。"],
+          ["真实数据", "服务端读取当前用户有权访问的订单。"],
+          ["输出结果", "生成可下载的 DOCX，保留约定布局。"]
+        ],
+        "checks": [
+          "实际下载文件能打开，字段与当前订单一致。",
+          "重复明细、中文和版式符合模板。",
+          "越权下载被拒绝，不允许任意模板路径或数据范围。"
+        ],
+        "note": "此提示词根据仓库模板打印指引整理。Skill 包提供实现知识，不自带打印页面、渲染引擎或接口。",
+        "image": null,
+        "imageAlt": "按 Word 模板生成运输单 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/template-print/usage"
+      },
+      {
+        "id": "pdf",
+        "title": "在文档生成后接入 PDF 转换",
+        "summary": "先确认服务端转换能力，再提供 PDF 下载和失败提示。",
+        "decisions": [
+          ["运行条件", "确认转换工具、字体与应用运行环境。"],
+          ["兼容输出", "保留 DOCX 下载，不因 PDF 缺失阻断原功能。"],
+          ["内容验证", "核对字体、表格、图片与分页。"]
+        ],
+        "checks": [
+          "下载真实 PDF 并打开验证内容。",
+          "缺少转换能力时清晰提示，DOCX 仍可用。",
+          "PDF 与 DOCX 都执行同一业务数据访问检查。"
+        ],
+        "note": "仓库示例的 PDF 转换需要 LibreOffice。其他实现的转换条件应由 Agent 核对。",
+        "image": null,
+        "imageAlt": "在文档生成后接入 PDF 转换 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/template-print/usage"
+      }
+    ],
+    "promptKey": "templatePrint"
+  },
+  "i18n": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">多语言</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-languages\" aria-hidden=\"true\"><path d=\"m5 8 6 6\"></path><path d=\"m4 14 6-6 2-3\"></path><path d=\"M2 5h12\"></path><path d=\"M7 2h1\"></path><path d=\"m22 22-5-10-5 10\"></path><path d=\"M14 18h6\"></path></svg></span><h1>多语言</h1></div><p class=\"auth-lead\">用熟悉的语言，处理同一套业务。</p><p class=\"auth-intro\">应用内置中文和英文。用户可以切换界面语言，也可以让 Agent 增加新语言、补齐翻译或调整首次访问的默认语言。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>语言改变，业务记录保持原样</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>界面与提示</strong><small>按所选语言显示</small></div><div class=\"identity-box\"><strong>业务记录</strong><small>保持原有内容</small></div></div><footer>切换语言不会自动翻译客户名称、运输起终点等业务数据。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">内置能力</span><h3>中文与英文</h3><p>从头像菜单选择语言，即时生效，无需刷新页面，插件界面也跟随切换。</p></article><article><span class=\"badge\">个人偏好</span><h3>当前浏览器保存</h3><p>刷新保留选择，不影响其他用户，也不会随账号自动同步到其他设备。</p></article><article><span class=\"badge\">应用定制</span><h3>新语言与默认语言</h3><p>增加前后端翻译，或设置没有保存语言偏好时使用的默认语言。</p></article></div><p class=\"boundary\">默认语言只影响没有做过选择的浏览器；已有语言偏好保持不变。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"多语言场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>默认语言与翻译回落</h3><p>未配置默认语言时使用 en-US。缺少当前语言的文案时，按应用默认语言、英文的顺序回落。</p></article><article><h3>前后端语言保持一致</h3><p>仅增加前端语言仍可切换，但缺少服务端语言时会回落到英文，并通过普通提示告知用户。</p></article><article><h3>新增语言后的检查</h3><p>运行 pnpm nocobase locales check 核对两侧语言；新增文件后重启开发服务，再刷新检查菜单。</p></article><article><h3>多个标签页的已知限制</h3><p>同一账号的标签页共用会话，后切换的语言会影响服务端产生的提示；各标签页的界面仍保持各自语言。</p></article></div></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/i18n/usage\"><strong>多语言使用文档 <span>↗</span></strong><p>语言切换、新增语言与常见问题。</p></a><a href=\"/zh-CN/capabilities/theme/\"><strong>主题 <span>↗</span></strong><p>定制配色、字体与信息密度。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/theme/\">继续了解主题 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "add",
+        "title": "让界面与服务端一起支持西班牙语",
+        "summary": "在现有中文、英文基础上增加语言，让用户使用熟悉的语言操作同一套业务。",
+        "decisions": [
+          ["翻译范围", "同时覆盖应用界面和服务端提示。"],
+          ["语言入口", "在用户菜单的语言选项中提供西班牙语。"],
+          ["检查一致", "运行 pnpm nocobase locales check，并重启开发服务。"]
+        ],
+        "checks": [
+          "重启开发服务并刷新后，菜单中出现西班牙语。",
+          "切换后应用界面和服务端提示使用对应翻译。",
+          "语言一致性检查通过；插件缺失的文案按需要补充。"
+        ],
+        "note": "下图展示现有中文切换效果，不是已完成的西班牙语翻译。业务记录中的客户名称和起终点不会被自动翻译。",
+        "image": "northstar-workspace-cn.png",
+        "imageAlt": "让界面与服务端一起支持西班牙语 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/i18n/usage"
+      },
+      {
+        "id": "default",
+        "title": "让首次访问的用户默认看到中文",
+        "summary": "为没有保存语言偏好的浏览器设置默认语言，不覆盖已经做出的个人选择。",
+        "decisions": [
+          ["生效对象", "没有保存语言偏好的浏览器；不覆盖已有选择。"],
+          ["应用配置", "设置 i18n.defaultLocale；未配置时默认 en-US。"],
+          ["验证方式", "配置生效后刷新，用未保存偏好的浏览器检查。"]
+        ],
+        "checks": [
+          "未保存偏好的浏览器首次打开显示中文。",
+          "已有英文偏好的浏览器继续使用英文。",
+          "当前语言缺少文案时，按默认语言、英文顺序回落。"
+        ],
+        "note": "这条提示词根据默认语言配置说明整理。部署后修改默认语言不需要重新构建客户端。",
+        "image": null,
+        "imageAlt": "让首次访问的用户默认看到中文 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/i18n/usage"
+      },
+      {
+        "id": "fallback",
+        "title": "让应用和插件的文案保持一致",
+        "summary": "新增语言后，部分插件或服务端文案可能尚未翻译，需要根据来源补齐。",
+        "decisions": [
+          ["插件文案", "插件未必提供应用支持的所有语言，可由应用覆盖。"],
+          ["回落顺序", "当前语言 → 应用默认语言 → 英文。"],
+          ["服务端", "仅有前端翻译时，服务端缺失语言会回落英文。"]
+        ],
+        "checks": [
+          "指定界面文案采用补充后的翻译。",
+          "缺少服务端语言时补齐对应文件，检查前后端支持一致。",
+          "业务记录保持原内容，缺失翻译仍可正常回落。"
+        ],
+        "note": "提示词根据文档中的翻译回落与常见问题整理。前端可切换不代表服务端已支持同一种语言。",
+        "image": null,
+        "imageAlt": "让应用和插件的文案保持一致 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/i18n/usage"
+      }
+    ],
+    "promptKey": "i18n"
+  },
+  "theme": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">主题</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-palette\" aria-hidden=\"true\"><circle cx=\"13.5\" cy=\"6.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"17.5\" cy=\"10.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"8.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle><circle cx=\"6.5\" cy=\"12.5\" r=\".5\" fill=\"currentColor\"></circle><path d=\"M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z\"></path></svg></span><h1>主题</h1></div><p class=\"auth-lead\">让应用呈现你的品牌。</p><p class=\"auth-intro\">从内置宽松、紧凑主题开始，告诉 Agent 希望调整的配色、字体与信息密度。主题代码就在应用项目里，无需开发或安装主题插件。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>主题与颜色模式，是两个独立选项</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>主题</strong><small>宽松 / 紧凑 / 品牌</small></div><div class=\"identity-box\"><strong>颜色模式</strong><small>浅色 / 深色 / 跟随系统</small></div></div><footer>同一套主题支持不同颜色模式，选择保存在当前浏览器。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">内置主题</span><h3>宽松与紧凑</h3><p>两套主题使用相同配色，紧凑主题通过间距、部分行高和圆角提高信息密度。</p></article><article><span class=\"badge\">个人选择</span><h3>外观面板</h3><p>选择主题与颜色模式。刷新保留选择，不随账号自动同步到其他设备。</p></article><article><span class=\"badge\">应用定制</span><h3>修改、新增或删除</h3><p>由 Agent 调整主题代码，维护主题列表、样式加载和多语言名称。</p></article></div><p class=\"boundary\">切换当前浏览器的主题，与修改应用的主题代码，是两种不同的操作。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"主题场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>个人选择与应用修改</h3><p>面板切换只影响当前浏览器。修改一套主题的代码，会影响所有使用它的人。</p></article><article><h3>浅色和深色一起检查</h3><p>同一套业务数据与操作保持一致，同时检查表格、表单、按钮和错误提示的可读性。</p></article><article><h3>删除后的默认外观</h3><p>被删除的主题不再可选，原选择回退到默认主题。删除默认主题时先指定新的默认项。</p></article><article><h3>图片与第三方内容</h3><p>图片、嵌入页面和部分第三方组件需要单独调整，可把具体要求一起告诉 Agent。</p></article></div><details class=\"reference-image\" style=\"margin-top:20px\"><summary>对照查看 Northstar 品牌深色效果</summary><img src=\"assets/northstar-brand-dark-en.png\" loading=\"lazy\" alt=\"Northstar 品牌主题的深色运输工作台\"><p>与「新增品牌主题」中的浅色截图是同一套业务。</p></details></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/theme/usage\"><strong>主题使用文档 <span>↗</span></strong><p>内置主题、定制方式与开发参考。</p></a><a href=\"/zh-CN/capabilities/i18n/\"><strong>多语言 <span>↗</span></strong><p>补齐主题名称和应用界面的翻译。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/i18n/\">继续了解多语言 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "adjust",
+        "title": "保留紧凑布局，微调品牌外观",
+        "summary": "明确要修改的主题、需要改变的效果，以及保留哪些字体和间距。",
+        "decisions": [
+          ["目标主题", "修改现有「紧凑」主题，不是只切换当前浏览器。"],
+          ["保留效果", "保留字体、字号与紧凑间距，仅调整主色和圆角。"],
+          ["具体要求", "可以补充品牌色值、字体要求或参考截图。"]
+        ],
+        "checks": [
+          "外观面板中选中紧凑主题后，颜色与圆角符合要求。",
+          "表格、表单的字体与紧凑间距保持原有效果。",
+          "浅色和深色模式下，文字与操作按钮都清晰可读。"
+        ],
+        "note": "修改主题代码会影响所有使用这套主题的人；在外观面板切换主题，仅改变当前浏览器的选择。",
+        "image": "northstar-appearance-en.png",
+        "imageAlt": "保留紧凑布局，微调品牌外观 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/theme/usage"
+      },
+      {
+        "id": "brand",
+        "title": "为 Northstar 增加独立品牌主题",
+        "summary": "保留宽松、紧凑主题，让运输工作台拥有深蓝色品牌外观，同时支持浅色与深色。",
+        "decisions": [
+          ["基于哪套", "以紧凑主题为基础，保持现有信息密度。"],
+          ["两种模式", "为同一个品牌主题提供浅色和深色配色。"],
+          ["主题名称", "新增「Northstar 品牌」，补齐中英文名称。"]
+        ],
+        "checks": [
+          "外观面板可选择新品牌主题，原宽松、紧凑主题仍可用。",
+          "浅色与深色均保持可读，切换不改变业务数据或操作。",
+          "中文与英文界面显示对应主题名称。"
+        ],
+        "note": "图片、嵌入页面和部分第三方组件可能需要单独调整，不能假定都会自动跟随主题。",
+        "image": "northstar-brand-light-en.png",
+        "imageAlt": "为 Northstar 增加独立品牌主题 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/theme/usage"
+      },
+      {
+        "id": "remove",
+        "title": "移除不再使用的主题",
+        "summary": "删除外观选项后，让原来选择它的浏览器回到应用默认主题。",
+        "decisions": [
+          ["删除对象", "本例删除「Northstar 品牌」主题。"],
+          ["回退外观", "原选择失效后使用应用默认主题。"],
+          ["默认主题", "如果删除的是默认主题，同时指定新的默认选项。"]
+        ],
+        "checks": [
+          "外观面板不再提供已删除的主题。",
+          "曾选择该主题的浏览器能正常回到默认外观。",
+          "默认主题有效，其余主题与颜色模式仍可正常使用。"
+        ],
+        "note": "若该主题当前是默认主题，请在提示词中补充要改用哪套默认主题。",
+        "image": null,
+        "imageAlt": "移除不再使用的主题 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/theme/usage"
+      }
+    ],
+    "promptKey": "theme"
+  },
+  "ai-employee": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">AI 员工</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-sparkles\" aria-hidden=\"true\"><path d=\"M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z\"></path><path d=\"M20 3v4\"></path><path d=\"M22 5h-4\"></path><path d=\"M4 17v2\"></path><path d=\"M5 18H3\"></path></svg></span><h1>AI 员工</h1></div><p class=\"auth-lead\">让助手理解业务，也遵守业务规则。</p><p class=\"auth-intro\">为应用接入可理解上下文、查询数据并按职责工作的助手。先接入真实读取操作，再按需开放业务动作。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>从业务需求到可验证的结果</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>说明需求</strong><small>准备条件与规则</small></div><div class=\"identity-box\"><strong>接入能力</strong><small>真实数据与权限</small></div><div class=\"identity-box\"><strong>验证结果</strong><small>页面与执行记录</small></div></div><footer>下面的提示词发送给应用项目中的开发 Agent。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">准备条件</span><h3>可用模型服务</h3><p>接入 Agents 能力与云端或本地模型，配置模型地址与凭据。</p></article><article><span class=\"badge\">业务工具</span><h3>授权的数据与操作</h3><p>助手通过服务端操作访问业务，沿用当前用户权限。</p></article><article><span class=\"badge\">交互入口</span><h3>页面中的对话</h3><p>独立页面、区块或侧栏均可，回答连接到真实业务记录。</p></article></div><p class=\"boundary\">按当前应用接入相应能力，管理入口与业务页面由应用按需要构建。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"AI 员工场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>开发与使用是两件事</h3><p>开发 Agent 搭建应用；AI 员工供应用中的业务人员处理日常问题。</p></article><article><h3>上下文不等于授权</h3><p>传入记录编号不代表有访问权，服务端仍需检查。</p></article><article><h3>查询、建议与写入分开</h3><p>建议下一步不修改记录。开放写入时明确输入、权限、确认方式和执行记录。</p></article><article><h3>结合企业知识</h3><p>需要制度或规范依据时连接知识库，并提供可查阅来源。</p></article></div></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/ai-employee/\"><strong>AI 员工使用文档 <span>↗</span></strong><p>查阅场景、接入准备与使用说明。</p></a><a href=\"/zh-CN/capabilities/ai-knowledge-base/\"><strong>AI 知识库 <span>↗</span></strong><p>继续了解相关业务能力。</p></a><a href=\"/zh-CN/capabilities/authorization/\"><strong>权限 <span>↗</span></strong><p>继续了解相关业务能力。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/ai-knowledge-base/\">继续了解AI 知识库 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "index-0",
+        "title": "接入运输助理",
+        "summary": "先开放解释和查询，让应用中的助手在明确职责内工作。",
+        "decisions": [
+          ["准备模型", "使用已配置的可用模型服务。"],
+          ["允许操作", "先只开放查询，不自动修改订单或发送通知。"],
+          ["页面入口", "订单列表和详情都能对话并打开回答中的订单。"]
+        ],
+        "checks": [
+          "助手读取真实业务数据，沿用当前用户范围。",
+          "未开放的修改与发送操作不会执行。",
+          "回答中的订单可打开并继续追问。"
+        ],
+        "note": "开发 Agent 负责搭建；AI 员工是应用交付后供业务用户使用的助手。",
+        "image": null,
+        "imageAlt": "接入运输助理 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/ai-employee/"
+      },
+      {
+        "id": "page-context-0",
+        "title": "理解当前订单",
+        "summary": "用户围绕正在看的订单提问，不需要重复复制客户、线路和状态。",
+        "decisions": [
+          ["记录上下文", "关联当前订单，通过授权操作读取必要信息。"],
+          ["页面体验", "订单详情与对话同时可见。"],
+          ["切换记录", "切换订单时更新上下文，不混用上一笔资料。"]
+        ],
+        "checks": [
+          "对当前订单给出准确概括与下一步入口。",
+          "切换订单后回答不沿用旧订单信息。",
+          "仅知道订单编号也不能读取越权记录。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-ai-order-context-en.png",
+        "imageAlt": "订单详情与运输助理对话同屏展示",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/ai-employee/page-context"
+      },
+      {
+        "id": "business-data-0",
+        "title": "查询业务数据",
+        "summary": "用自然语言查询待调度订单，并把结果连接回业务页面。",
+        "decisions": [
+          ["过滤条件", "支持客户、阶段与线路查询。"],
+          ["结果内容", "订单号、客户、线路、负责人及可打开的卡片。"],
+          ["权限与空结果", "沿用用户范围，没有结果时如实说明。"]
+        ],
+        "checks": [
+          "查询结果对应真实、当前可访问的订单。",
+          "结果卡片可进入订单，追问保留该记录上下文。",
+          "无结果时不编造订单。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-ai-order-query-en.png",
+        "imageAlt": "运输助理以订单卡片展示待调度查询结果",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/ai-employee/business-data"
+      }
+    ],
+    "promptKey": "ai-employee"
+  },
+  "ai-knowledge-base": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a>\n<main class=\"auth-page\" id=\"content\">\n<nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">AI 知识库</span></nav>\n<section class=\"auth-hero\"><div><div class=\"section-label\"><b>应用能力</b><i></i><span>应用体验</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-book-open\" aria-hidden=\"true\"><path d=\"M12 7v14\"></path><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\"></path></svg></span><h1>AI 知识库</h1></div><p class=\"auth-lead\">让业务回答，有资料可查。</p><p class=\"auth-intro\">组织运输规范、客户服务说明和司机手册，让员工查阅，让 AI 在允许范围内检索并引用依据。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">选择一个场景 <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></a><a class=\"secondary\" href=\"#provided\">了解已有能力</a></div></div>\n<aside class=\"identity\"><p>从业务需求到可验证的结果</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>说明需求</strong><small>准备条件与规则</small></div><div class=\"identity-box\"><strong>接入能力</strong><small>真实数据与权限</small></div><div class=\"identity-box\"><strong>验证结果</strong><small>页面与执行记录</small></div></div><footer>下面的提示词发送给应用项目中的开发 Agent。</footer></aside></section>\n<nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#provided\">已有能力</a><a href=\"#scenarios\">场景与提示词</a><a href=\"#boundaries\">使用说明</a><a href=\"#references\">进一步使用</a></nav>\n<section id=\"provided\"><div class=\"section-head\"><h2>哪些已经就绪，哪些可以定制</h2></div><div class=\"availability\"><article><span class=\"badge\">资料组织</span><h3>阅读与搜索</h3><p>使用空间、文件夹、文章和文件组织企业知识。</p></article><article><span class=\"badge\">协作维护</span><h3>权限与版本</h3><p>按岗位控制阅读和维护，保留更新及文件处理状态。</p></article><article><span class=\"badge\">AI 使用</span><h3>检索与来源</h3><p>AI 回答需要模型，语义检索还需相应模型和索引。</p></article></div><p class=\"boundary\">按当前应用接入相应能力，管理入口与业务页面由应用按需要构建。</p></section><section id=\"scenarios\"><div class=\"section-head\"><h2>从一个业务场景开始</h2><p>选择要调整的内容，修改提示词后交给应用项目中的开发 Agent。示例截图来自 Northstar 运输应用。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"AI 知识库场景\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\" target=\"_blank\" rel=\"noopener\">查看详细使用文档 ↗</a></div></section>\n<section id=\"boundaries\"><div class=\"section-head\"><h2>日常使用时，需要了解这些</h2></div><div class=\"rules\"><article><h3>知识库与 AI 员工</h3><p>知识库提供资料、检索和权限；AI 员工结合这些资料解释业务问题。</p></article><article><h3>没有依据时说明</h3><p>检索无结果不能编造企业规定，应指出缺少的资料。</p></article><article><h3>引用同样需要权限</h3><p>答案与文档入口都只展示允许访问的资料，不能通过摘要泄露受限内容。</p></article><article><h3>更新后的可用性</h3><p>资料更新后检查解析和索引处理状态，再核对回答是否引用有效内容。</p></article></div></section><section id=\"references\"><div class=\"section-head\"><h2>需要更多细节时</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/ai-knowledge-base/\"><strong>AI 知识库使用文档 <span>↗</span></strong><p>查阅场景、接入准备与使用说明。</p></a><a href=\"/zh-CN/capabilities/ai-employee/\"><strong>AI 员工 <span>↗</span></strong><p>继续了解相关业务能力。</p></a><a href=\"/zh-CN/capabilities/file/\"><strong>文件 <span>↗</span></strong><p>继续了解相关业务能力。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"/zh-CN/capabilities/ai-employee/\">继续了解AI 员工 →</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n",
+    "scenarios": [
+      {
+        "id": "index-0",
+        "title": "接入知识中心",
+        "summary": "将运输规范、服务说明和司机手册组织为可维护的业务资料。",
+        "decisions": [
+          ["组织方式", "空间、文件夹、文章与文件，提供阅读和搜索。"],
+          ["访问与维护", "按岗位分配阅读、提出修改、编辑和管理权限。"],
+          ["AI 接入", "模型服务、检索方式和索引由应用接入。"]
+        ],
+        "checks": [
+          "员工可查阅自己有权访问的资料。",
+          "维护入口遵守岗位权限，内容更新可追溯。",
+          "AI 引用能打开相应文档和段落。"
+        ],
+        "note": "基础资料维护与阅读可独立使用；AI 回答需要可用模型，语义检索还需相应模型与索引。",
+        "image": null,
+        "imageAlt": "接入知识中心 · Northstar 示例",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/ai-knowledge-base/"
+      },
+      {
+        "id": "answers-0",
+        "title": "依据知识回答",
+        "summary": "运输助理查阅温控规范，给出有来源的处理建议。",
+        "decisions": [
+          ["先查后答", "检索运输规范后整理回答，不凭空编造企业规定。"],
+          ["可查来源", "提供文档和段落入口，原文与回答同时可见。"],
+          ["访问范围", "同时遵守用户与助手允许的资料范围。"]
+        ],
+        "checks": [
+          "温度异常问题的回答能定位到规范相关段落。",
+          "没有依据时明确说明，不假装有制度支持。",
+          "受限财务资料不会通过回答或引用泄露。"
+        ],
+        "note": "按当前应用的业务规则接入，使用真实业务账号和记录验证结果。",
+        "image": "northstar-ai-knowledge-answer-en.png",
+        "imageAlt": "温控运输规范原文、运输助理回答和资料来源",
+        "status": "由开发 Agent 在应用中调整",
+        "doc": "/zh-CN/capabilities/ai-knowledge-base/answers"
+      }
+    ],
+    "promptKey": "ai-knowledge-base"
+  },
+  "task-center": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a><main class=\"auth-page\" id=\"content\"><nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">待办中心</span></nav><section class=\"auth-hero\"><div><div class=\"section-label\"><b>Capability</b><i></i><span>个人工作入口</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg></span><h1>待办中心</h1></div><p class=\"auth-lead\">把「需要我处理的事」，汇集到一个入口。</p><p class=\"auth-intro\">让 Agent 将审批、设备领取等业务接入个人待办，按实际规则产生事项、打开详情、完成办理，并同步状态与数量。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">开始接入 →</a><a class=\"secondary\" href=\"#scenarios\">复制提示词</a></div></div><aside class=\"identity\"><p>由真实业务驱动的个人待办</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>业务产生</strong><small>确定接收人</small></div><div class=\"identity-box\"><strong>个人待办</strong><small>集中查看</small></div><div class=\"identity-box\"><strong>业务办理</strong><small>同步结果</small></div></div><footer>待处理 · 已完成 · 已取消。具体办理资格由业务决定。</footer></aside></section><nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#overview\">什么时候用</a><a href=\"#scenarios\">动手试用</a><a href=\"#references\">相关能力</a></nav><section id=\"overview\"><div class=\"section-head\"><h2>什么时候用，能带来什么</h2></div><div class=\"rules\"><article><h3>这些时候，用待办中心</h3><p>主管需要统一查看待自己审批的请假、报销申请；员工既要补交材料，也要确认设备领取。</p><p>当需要处理的事项分散在不同业务中，就用待办中心汇集「我的待办」。</p></article><article><h3>少找入口，更快处理</h3><p>打开一个入口，就知道有哪些事等我处理，并进入对应业务办理。</p><p>减少来回切换和遗漏；办完后同步更新状态与数量，清楚掌握剩余工作。</p></article></div></section><section id=\"scenarios\"><div class=\"section-head\"><h2>跟着四步，在项目中试一次</h2><p>先完成 1–4 步；需要更多业务时，再选后面的场景。复制提示词交给应用项目中的 Agent，完成后按清单检查。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"待办中心搭建步骤\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\">查看 Markdown 版提示词 ↗</a></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>相关能力与文档</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/approval/\"><strong>审批 ↗</strong><p>配置审批路线与处理规则。</p></a><a href=\"/zh-CN/capabilities/notification/\"><strong>通知 ↗</strong><p>为业务事项增加提醒。</p></a><a href=\"/zh-CN/capabilities/task-center.md\"><strong>Markdown 文档 ↗</strong><p>下载完整说明，交给 Agent 读取。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"#scenarios\">开始搭建 ↑</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "promptKey": "task-center",
+    "scenarios": [
+      {
+        "id": "start",
+        "title": "先有一个「我的待办」入口",
+        "summary": "把需要自己处理的事放在一起，不必逐个打开业务页面。",
+        "decisions": [["例如", "主管登录后，从导航栏进入「我的待办」。"]],
+        "checks": [
+          "登录后显示自己的待办和空状态。",
+          "可以按业务和状态找到要处理的事项。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "1. 建立入口",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "approvals",
+        "title": "把请假、报销审批放进来",
+        "summary": "已有审批业务时，让主管在一个入口看到待自己审批的申请。",
+        "decisions": [["例如", "同一位主管的请假和报销审批出现在同一列表。"]],
+        "checks": [
+          "转交后原接收人取消、新接收人待处理。",
+          "审批只展示当前允许的动作。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "2. 接入审批",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "handling",
+        "title": "从待办直接进入业务办理",
+        "summary": "点开事项查看详情，按业务允许的动作处理，办完就刷新。",
+        "decisions": [
+          ["例如", "主管批准一笔报销后，它进入已完成，待处理数量减少。"]
+        ],
+        "checks": [
+          "只有有权处理的人能查看详情并办理。",
+          "办理后列表与各处数量刷新。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "3. 完成办理",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "verification",
+        "title": "用两个账号走一遍",
+        "summary": "让 Agent 验证真实业务，再自己试一次。",
+        "decisions": [
+          ["例如", "林晓处理自己的事项，陈晨看不到也不能办理林晓的事项。"]
+        ],
+        "checks": [
+          "两个账号的数据隔离验证通过。",
+          "已验证与未验证的场景分别记录。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "4. 验证结果",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "ordinary",
+        "title": "接入一项普通业务",
+        "summary": "领取、补材料、确认交付，也可以成为待办，无需增加审批流程。",
+        "decisions": [
+          ["例如", "领取单 EQ-001 发给林晓后产生待办，确认领取后完成。"]
+        ],
+        "checks": [
+          "同一件事不会重复出现在列表里。",
+          "领取成功后事项完成，领取失败时仍待处理。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "设备领取",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "dashboard",
+        "title": "在首页看到还有多少事",
+        "summary": "不进入完整列表，也能知道当前有多少待处理。",
+        "decisions": [
+          ["例如", "两条报销、一条设备领取，全部待处理角标显示 3。"]
+        ],
+        "checks": [
+          "首页数字与打开的待办列表数量一致。",
+          "切换业务后能找到对应事项，换账号后只看到自己的工作。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "首页角标",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "reassignment",
+        "title": "工作转给另一个人",
+        "summary": "原接收人的未完成事项取消，新接收人获得待办。",
+        "decisions": [
+          ["例如", "设备领取从林晓改派给陈晨，只有陈晨还能确认领取。"]
+        ],
+        "checks": [
+          "改派后原接收人不能继续办理。",
+          "已完成历史保留，未完成事项按规则取消。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "人员改派",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "history",
+        "title": "把已有工作补进来",
+        "summary": "应用已在使用时，让旧任务和新任务出现在同一个入口。",
+        "decisions": [
+          ["例如", "补齐中断后可以继续，已在线完成的事项不会重新变成待处理。"]
+        ],
+        "checks": [
+          "中断后可续跑，重跑不产生重复记录。",
+          "已经办完的事项不会重新变成待处理。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "历史任务",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "notifications",
+        "title": "待办产生时提醒接收人",
+        "summary": "用通知提醒「有事要处理」，实际办理仍在业务中完成。",
+        "decisions": [["例如", "读过领取提醒但尚未领取，事项仍保持待处理。"]],
+        "checks": [
+          "每次业务事件只提醒一次。",
+          "阅读通知不改变待办，投递失败不撤销业务。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "业务提醒",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      }
+    ]
+  }
+}

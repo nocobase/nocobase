@@ -1,13 +1,10 @@
 import { performance } from 'node:perf_hooks';
 
-import { createRedisBackend, type BackendFactory } from 'bullmq';
-
 import {
   BUILT_IN_MEMORY_KEY,
   IN_MEMORY_ADAPTER,
   normalizeQueueConfig,
   queueConfigKeys,
-  REDIS_BACKEND,
   resolveQueueConfig,
   selectQueueConfig,
   type ResolvedQueueConfig,
@@ -21,7 +18,6 @@ import {
   type QueueJobDefaults,
   type QueueRuntimeChanges,
 } from './options.js';
-import { RedisQueueImplementation } from './redis/index.js';
 import type { QueueImplementation, QueueRuntime } from './runtime.js';
 import type {
   ConsumeHandler,
@@ -110,10 +106,8 @@ class DefaultQueueService implements QueueService, QueueHost {
   public state: ServiceState = 'idle';
   public readonly logger: QueueLogger;
   private readonly config: QueueConfig | undefined;
-  private readonly backends = new Map<string, BackendFactory>();
+  private readonly implementations = new Map<string, QueueImplementation>();
   private readonly slots = new Map<string, QueueSlot>();
-  private memory: InMemoryQueueService | undefined;
-  private redis: RedisQueueImplementation | undefined;
   private frozen = false;
   private fallbackReported = false;
   private setupPromise: Promise<void> | undefined;
@@ -127,22 +121,31 @@ class DefaultQueueService implements QueueService, QueueHost {
     this.config = normalizeQueueConfig(config, this.logger);
   }
 
-  public registerBackend(name: string, factory: BackendFactory): void {
-    if (this.frozen) {
+  public registerImplementation(
+    name: string,
+    implementation: QueueImplementation,
+  ): void {
+    if (this.frozen || this.state !== 'idle') {
       throw new Error(
-        'Queue backends must be registered before the queue service is set up.',
+        'Queue implementations must be registered before setup starts.',
       );
     }
-    if (typeof name !== 'string' || name === '') {
-      throw new TypeError('A queue backend name must be a non-empty string.');
+    if (typeof name !== 'string' || name.trim() === '') {
+      throw new TypeError('A queue adapter name must be a non-empty string.');
     }
-    if (name === REDIS_BACKEND || this.backends.has(name)) {
-      throw new Error(`Queue backend "${name}" is already registered.`);
+    if (name === IN_MEMORY_ADAPTER || this.implementations.has(name)) {
+      throw new Error(`Queue implementation "${name}" is already registered.`);
     }
-    if (typeof factory !== 'function') {
-      throw new TypeError(`Queue backend "${name}" needs a factory function.`);
+    if (
+      !implementation ||
+      typeof implementation.createRuntime !== 'function' ||
+      typeof implementation.validateConfig !== 'function'
+    ) {
+      throw new TypeError(
+        `Queue implementation "${name}" needs validateConfig and createRuntime.`,
+      );
     }
-    this.backends.set(name, factory);
+    this.implementations.set(name, implementation);
   }
 
   public manager(queue: string, configKey?: string): QueueManager {
@@ -168,21 +171,16 @@ class DefaultQueueService implements QueueService, QueueHost {
   }
 
   public implementationFor(config: ResolvedQueueConfig): QueueImplementation {
-    if (config.adapter === IN_MEMORY_ADAPTER) {
-      this.memory ??= new InMemoryQueueService();
-      return this.memory;
+    const implementation =
+      config.adapter === IN_MEMORY_ADAPTER
+        ? new InMemoryQueueService()
+        : this.implementations.get(config.adapter);
+    if (!implementation) {
+      throw new Error(
+        `Queue ${keyLabel(config.key)} uses adapter "${config.adapter}", which is not registered. Install and register its server plugin (Redis: @nocobase/app-plugin-queue-redis/server).`,
+      );
     }
-    this.redis ??= new RedisQueueImplementation((name) =>
-      this.backendFactory(name ?? REDIS_BACKEND),
-    );
-    return this.redis;
-  }
-
-  private backendFactory(name: string): BackendFactory {
-    if (name === REDIS_BACKEND) return createRedisBackend;
-    const factory = this.backends.get(name);
-    if (!factory) throw new Error(`Queue backend "${name}" is not registered.`);
-    return factory;
+    return implementation;
   }
 
   private slot(queue: string, configKey: string | undefined): QueueSlot {
@@ -218,23 +216,34 @@ class DefaultQueueService implements QueueService, QueueHost {
   }
 
   private assertBackend(config: ResolvedQueueConfig): void {
-    const name = config.queueBackend;
-    if (name !== undefined && !this.backends.has(name)) {
-      throw new Error(
-        `Queue ${keyLabel(config.key)} uses backend "${name}", which is not registered.`,
-      );
-    }
+    this.implementationFor(config).validateConfig(config);
   }
 
   /** Checks every key, including those no queue uses yet. */
   private validateConfig(): void {
-    selectQueueConfig(this.config, undefined);
+    this.assertBackend(
+      resolveQueueConfig(
+        selectQueueConfig(this.config, undefined),
+        this.defaults,
+      ),
+    );
     for (const key of queueConfigKeys(this.config)) {
       const entry = this.config?.[key];
       if (typeof entry !== 'object') {
         throw new TypeError(`queue.${key} must be a configuration object.`);
       }
-      this.assertBackend(resolveQueueConfig({ key, entry }, this.defaults));
+      const resolved = resolveQueueConfig({ key, entry }, this.defaults);
+      if (
+        resolved.adapter === IN_MEMORY_ADAPTER ||
+        this.implementations.has(resolved.adapter)
+      ) {
+        this.assertBackend(resolved);
+      } else {
+        this.logger.warn(
+          { configKey: key, adapter: resolved.adapter },
+          'Queue backend validation deferred until its implementation is registered; selecting this configuration requires its server plugin.',
+        );
+      }
     }
   }
 
@@ -447,18 +456,32 @@ class QueueSlot {
       error = new Error(
         `Queue "${this.name}" did not initialize within ${this.config.setupTimeoutMs} ms.`,
       );
-      initialization.then(
-        () =>
-          this.host.logger.warn(
-            { queue: this.name },
-            `Queue "${this.name}" finished initializing after its timeout; it has been closed.`,
-          ),
-        (late: unknown) =>
-          this.host.logger.warn(
-            { error: late, queue: this.name },
-            `Queue "${this.name}" failed to initialize after its timeout.`,
-          ),
-      );
+      // close() must tolerate unfinished open(), but initialization may acquire a
+      // resource after that first close. Sweep again when it eventually settles.
+      void initialization
+        .then(
+          () => undefined,
+          (late: unknown) =>
+            this.host.logger.warn(
+              { error: late, queue: this.name },
+              `Queue "${this.name}" failed to initialize after its timeout.`,
+            ),
+        )
+        .then(async () => {
+          const cleanup = await this.release(runtime);
+          if (cleanup !== undefined) {
+            this.host.logger.error(
+              { error: cleanup, queue: this.name },
+              'Late queue initialization cleanup failed.',
+            );
+          }
+        })
+        .catch((cleanup: unknown) => {
+          this.host.logger.error(
+            { error: cleanup, queue: this.name },
+            'Late queue initialization cleanup failed.',
+          );
+        });
     } else {
       error = result.reason;
     }

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { claim, createHarness, type Harness } from './harness.js';
 import { supportsWorkspaceKey } from '../shared/runners.js';
 import { queueStart } from '../server/core/runs/selection.js';
+import { runnersRepo } from '../server/runners/runner.store.js';
 
 let h: Harness;
 afterEach(async () => {
@@ -107,9 +108,7 @@ describe('heartbeat capacity diagnostics', () => {
         expect.objectContaining({ used: 0, limit: 2, reportedTotalFree: 0 }),
       ],
     });
-    expect(
-      (await h.services.runs.workload({ subjectKind: 'sample' })).runs[0]?.wait,
-    ).toMatchObject({
+    expect(await h.services.runs.queueWait(run)).toMatchObject({
       reason: 'runnersBusy',
       params: { used: 0, limit: 2, reportedFree: ['0'] },
     });
@@ -135,6 +134,71 @@ describe('heartbeat capacity diagnostics', () => {
 });
 
 describe('ordered models opt-in policy', () => {
+  it.each([
+    { variables: [] as string[], immediate: true },
+    { variables: null, immediate: false },
+    { variables: ['LOCAL'], immediate: false },
+  ])(
+    'keeps metadata admission consistent with diagnostics for preferred runner variables $variables',
+    async ({ variables, immediate }) => {
+      const { preferred, fallback, manager, run } = await setup();
+      await h.services.variables.set(
+        { scope: 'agent', scopeId: manager },
+        'LOCAL',
+        undefined,
+        'owner',
+        { fromRunner: true },
+      );
+      const machines = runnersRepo(h.database.connection());
+      await machines.updateMany({
+        filter: { id: preferred.runnerId },
+        values: { variables },
+      });
+      await machines.updateMany({
+        filter: { id: fallback.runnerId },
+        values: { variables: ['LOCAL'] },
+      });
+      const diagnostic = await h.services.claims.selectionWait(run);
+      const first = diagnostic!.entries[0];
+      const unavailable =
+        first.compatibleCount === 0 &&
+        first.reason !== 'unknown' &&
+        !first.blockers?.includes('unknown');
+      expect(unavailable).toBe(immediate);
+      expect(
+        (await claim(h, fallback)).map((payload) => payload.run.id),
+      ).toEqual(immediate ? [run] : []);
+    },
+  );
+
+  it('uses resource merge priority in ordered-model admission', async () => {
+    const { fallback, manager, run } = await setup();
+    h.scopes = [{ scope: 'team', scopeId: 'defaults' }];
+    await h.services.variables.set(
+      { scope: 'team', scopeId: 'defaults' },
+      'LOCAL',
+      undefined,
+      'owner',
+      { fromRunner: true },
+    );
+    await h.services.variables.set(
+      { scope: 'agent', scopeId: manager },
+      'LOCAL',
+      'agent-value',
+      'owner',
+    );
+    // The agent value overrides the runner variable, so the busy first choice stays compatible.
+    expect(
+      (await h.services.claims.selectionWait(run))!.entries[0].compatibleCount,
+    ).toBe(1);
+    expect(await claim(h, fallback)).toEqual([]);
+    h.clock.advance(120_000);
+    expect((await claim(h, fallback))[0].workspace.env).toContainEqual({
+      name: 'LOCAL',
+      value: 'agent-value',
+    });
+  });
+
   it('cancels obsolete work before selection preflight assembly', async () => {
     const { fallback, run } = await setup();
     h.services.subjects.get('sample')!.context.admit = async () => ({

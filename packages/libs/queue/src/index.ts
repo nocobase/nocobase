@@ -1,5 +1,14 @@
 export { withChannel } from './consumer.js';
-export { redisQueueIdentity, type RedisQueueIdentity } from './naming.js';
+export type {
+  QueueImplementation,
+  QueueRuntime,
+  QueueRuntimeContext,
+  QueueDispatch,
+} from './runtime.js';
+export type { ResolvedQueueConfig } from './config.js';
+export type { PreparedJob } from './message.js';
+export type { QueueJobDefaults, ResolvedJobOptions } from './options.js';
+export type { DispatchedJob, DispatchOutcome } from './consumer.js';
 export { createQueueService } from './service.js';
 export type {
   Channel,

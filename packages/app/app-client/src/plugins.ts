@@ -3,10 +3,7 @@ import type { ServiceProviderLifecycle } from '@nocobase/service-provider';
 import type { ComponentType } from 'react';
 
 import type { ClientApplication } from './application.js';
-import type {
-  AppClientReactProvider,
-  AppClientRefineConfig,
-} from './config.js';
+import type { AppClientReactProvider } from './config.js';
 
 const CONTRIBUTION_NAME_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 const RESERVED_APPLICATION_ROUTE_PATHS = new Set([
@@ -160,29 +157,6 @@ export interface AppClientRegisteredReactProvider extends AppClientReactProvider
   readonly packageName: string;
   readonly source: AppClientContributionSource;
 }
-
-export type AppClientRefineSetterValue<
-  Property extends keyof AppClientRefineConfig,
-> = Property extends 'children'
-  ? Exclude<AppClientRefineConfig[Property], undefined>
-  : NonNullable<AppClientRefineConfig[Property]>;
-
-export type AppClientRefineSetters = {
-  [
-    Property in keyof AppClientRefineConfig as `set${Capitalize<
-      Property & string
-    >}`
-  ]-?: (value: AppClientRefineSetterValue<Property>) => void;
-};
-
-export type AppClientRefineRegistry = AppClientRefineSetters & {
-  addResources(
-    resources: NonNullable<AppClientRefineConfig['resources']>,
-  ): void;
-  addLiveEventHandler(
-    handler: NonNullable<AppClientRefineConfig['onLiveEvent']>,
-  ): void;
-};
 
 export interface ClientServiceProviderContext<TOptions = unknown> {
   readonly packageName: string;

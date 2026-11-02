@@ -8,3 +8,5 @@ export {
 export type { LinkPanelProps } from './config.js';
 
 export { AgentSessionsProvider } from './application-provider.js';
+
+export * from './sessions-layout.js';

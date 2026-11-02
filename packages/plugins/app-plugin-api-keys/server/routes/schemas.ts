@@ -33,19 +33,31 @@ export const KeyScopeInputSchema: z.ZodType<KeyScopeInput> = z.strictObject({
 /** The body of `POST /apiKeys`. */
 export const CreateApiKeyInput: z.ZodType<CreateApiKeyRequest> = z.strictObject(
   {
-    name: z.string(),
-    description: z.string().nullable().optional(),
-    expiresInDays: z.number().int().nullable(),
-    scope: KeyScopeInputSchema.nullable(),
+    name: z.string().describe('The name to display.'),
+    description: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('A description of the record.'),
+    expiresInDays: z
+      .number()
+      .int()
+      .nullable()
+      .describe(
+        'The number of days until the key expires; null means no expiry.',
+      ),
+    scope: KeyScopeInputSchema.nullable().describe(
+      'The permission scope; a key can never exceed its owner’s permissions.',
+    ),
   },
 );
 
 export const ApiKeyParams: z.ZodObject<{ keyId: z.ZodString }> = z.object({
-  keyId: z.string().min(1),
+  keyId: z.string().min(1).describe('The key identifier.'),
 });
 
 export const ScopeGroupParams: z.ZodObject<{ group: z.ZodString }> = z.object({
-  group: z.string().min(1),
+  group: z.string().min(1).describe('The API key scope group.'),
 });
 
 const MAX_PICKED_IDS = 100;
@@ -55,13 +67,14 @@ export const ScopeObjectsQuery: z.ZodType<{
   q?: string | undefined;
   id?: string[] | undefined;
 }> = z.object({
-  q: z.string().max(200).optional(),
+  q: z.string().max(200).optional().describe('Text to search for.'),
   id: z
     .union([z.string().min(1), z.array(z.string().min(1)).max(MAX_PICKED_IDS)])
     .optional()
     .transform((value) =>
       value === undefined ? undefined : Array.isArray(value) ? value : [value],
-    ),
+    )
+    .describe('The record identifier.'),
 });
 
 // Response schemas: they document what the routes send; nothing validates a response against them.

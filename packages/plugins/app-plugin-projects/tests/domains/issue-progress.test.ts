@@ -56,6 +56,67 @@ describe('structured issue progress', () => {
     },
   );
 
+  it('keeps the delivery report across status changes until the next one replaces it', async () => {
+    const viewer = h.viewer('alice');
+    let issue = await h.services.issues.create(viewer, {
+      title: 'Delivery report',
+      statusKey: 'in_progress',
+    });
+    const report =
+      '## What changed\n\nExport filter.\n\n### Acceptance criteria\n\n- [ ] Export only Studio\n';
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      statusKey: 'in_review',
+      needsYou: 'Check the export and accept it.',
+      acceptance: report,
+    });
+    expect(issue.acceptance).toBe(report);
+    // Sent back, the report stays as the previous delivery.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      statusKey: 'in_progress',
+    });
+    expect(issue.acceptance).toBe(report);
+    // The next delivery replaces it.
+    const second = '## What changed\n\nExport filter, second round.\n';
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      statusKey: 'in_review',
+      needsYou: 'Check it again.',
+      acceptance: second,
+    });
+    expect(issue.acceptance).toBe(second);
+    // Accepted, it stays on the closed issue.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      statusKey: 'done',
+    });
+    expect(issue.acceptance).toBe(second);
+    // Omitted, it is retained; written in any status, it is kept.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      title: 'Delivery report, renamed',
+    });
+    expect(issue.acceptance).toBe(second);
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      acceptance: report,
+    });
+    expect(issue.acceptance).toBe(report);
+    // Blank clears it.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      acceptance: '  ',
+    });
+    expect(issue.acceptance).toBeNull();
+    await expect(
+      h.services.issues.update(viewer, issue.id, {
+        revision: issue.revision,
+        acceptance: 'x'.repeat(20_001),
+      }),
+    ).rejects.toThrow();
+  });
+
   it.each(['blocked', 'in_review'])(
     'allows an application-authorized agent to omit progress for %s',
     async (statusKey) => {

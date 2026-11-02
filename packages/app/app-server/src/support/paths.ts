@@ -24,6 +24,14 @@ export function normalizeBasePath(value: string): string {
   return normalized ? `/${normalized}` : '';
 }
 
+/** A cookie-name-safe scope for the complete public mount path, including the origin root. */
+export function createAppCookieScope(publicBasePath: string): string {
+  return encodeURIComponent(normalizeBasePath(publicBasePath) || '/').replace(
+    /[!'()*]/gu,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
 export function joinBasePath(basePath: string, pathInsideBase: string): string {
   const normalizedBasePath = normalizeBasePath(basePath);
   const normalizedPath = normalizeBasePath(pathInsideBase);

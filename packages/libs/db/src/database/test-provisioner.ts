@@ -25,6 +25,11 @@ export interface ProvisionedTestDatabase {
   drop(): Promise<void>;
 }
 
+export interface TestDatabaseCloneOptions extends TestDatabaseProvisionOptions {
+  /** The isolated database to copy, provisioned earlier and no longer open. */
+  readonly source: string;
+}
+
 export interface TestDatabaseListOptions {
   /** Only names starting with this prefix are returned. */
   readonly prefix: string;
@@ -57,6 +62,11 @@ export interface TestDatabaseProvisioner {
   listProvisioned?(options: TestDatabaseListOptions): Promise<string[]>;
   /** Removes one isolated database or schema named by `listProvisioned`. */
   dropProvisioned?(options: TestDatabaseProvisionOptions): Promise<void>;
+  /**
+   * Provisions `name` as a copy of `source`, schema and rows, so a test can start from a database migrated once
+   * instead of migrating its own. Absent where the dialect cannot copy a database cheaply.
+   */
+  clone?(options: TestDatabaseCloneOptions): Promise<ProvisionedTestDatabase>;
 }
 
 /**
