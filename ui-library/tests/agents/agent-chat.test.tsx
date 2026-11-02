@@ -764,6 +764,17 @@ it('uses the linked panel independently with default generic details and a retur
   // Off a phone the details cover only the conversation pane: rendered inside the panel, not portaled over the page.
   expect(details).toHaveAttribute('data-placement', 'pane');
   expect(panel.contains(details)).toBe(true);
+  // Its overlay covers only the pane and a press on it closes the details.
+  const overlay = panel.querySelector('[data-slot="sheet-overlay"]');
+  expect(overlay).not.toBeNull();
+  await userEvent.click(overlay!);
+  await waitFor(() =>
+    expect(screen.queryByTestId('chat-conversation-details')).toBeNull(),
+  );
+  fireEvent.click(
+    await within(panel).findByRole('button', { name: 'Show details' }),
+  );
+  await screen.findByTestId('chat-conversation-details');
   fireEvent.click(
     within(screen.getByTestId('chat-conversation-details')).getByRole(
       'button',
