@@ -1,3 +1,4 @@
+import { getAvatarInitials } from '@nocobase/app-client';
 import { isVisibleMailAttachment } from '../../shared/inline-images.js';
 import { MailScheduledStatus } from './mail-scheduled-status.js';
 import {
@@ -305,7 +306,13 @@ export function MailConversationView({
                   </span>
                 ) : null}
                 <span className='pointer-events-none relative grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary'>
-                  {sender?.trim().charAt(0).toUpperCase() || '?'}
+                  {getAvatarInitials(sender, {
+                    cjk: Boolean(
+                      message.from?.name &&
+                      sender !== message.from.address.trim(),
+                    ),
+                    fallback: sender.trim().charAt(0).toUpperCase() || '?',
+                  })}
                 </span>
                 <div className='pointer-events-none relative min-w-0 flex-1'>
                   <p

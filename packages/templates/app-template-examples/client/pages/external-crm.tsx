@@ -1,3 +1,4 @@
+import { getAvatarInitials } from '@nocobase/app-client';
 import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -283,7 +284,11 @@ export default function ExternalCrmPage(): ReactElement {
                       {order.customer ? (
                         <div className='flex items-center gap-2.5'>
                           <div className='flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs'>
-                            {order.customer.displayName.charAt(0).toUpperCase()}
+                            {getAvatarInitials(order.customer.displayName, {
+                              fallback: order.customer.displayName
+                                .charAt(0)
+                                .toUpperCase(),
+                            })}
                           </div>
                           <div className='space-y-0.5'>
                             <div className='font-medium text-foreground text-sm leading-none'>

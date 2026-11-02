@@ -1,4 +1,8 @@
 export {
+  getAvatarInitials,
+  type AvatarInitialsOptions,
+} from './avatar-initials.js';
+export {
   watchReadiness,
   type RealtimeReadiness,
   type ReadinessOptions,
