@@ -334,7 +334,7 @@ const agentChatZhCN: AgentChatLocale = {
       menu: '删除',
       title: '删除“{{title}}”？',
       description:
-        '它的消息、文件和任务关联会被永久删除，仍在进行的运行会被停止。任务本身会保留。此操作无法撤销。',
+        '对话中的消息、文件和关联会永久删除，正在执行的运行将停止。关联记录会保留。此操作无法撤销。',
       cancel: '取消',
       confirm: '删除',
       done: '已删除“{{title}}”',
