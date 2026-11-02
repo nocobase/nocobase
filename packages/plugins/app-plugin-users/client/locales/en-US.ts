@@ -11,6 +11,8 @@ const enUS = {
     loading: 'Loading the invitation…',
     email: 'Email',
     name: 'Name',
+    username: 'Username (optional)',
+    usernameHint: 'You can use this username to sign in.',
     password: 'Password',
     nameRequired: 'Enter your name.',
     passwordTooShort: 'The password needs at least {{min}} characters.',
@@ -23,6 +25,7 @@ const enUS = {
     signOutFailed: 'Could not sign out.',
     existingAccount:
       'This address already has an account. Sign in with it to continue.',
+    alreadyHaveAccount: 'Already have an account? Sign in',
     goToLogin: 'Go to sign in',
     errors: {
       notFound: 'This invitation link is not valid.',
@@ -30,6 +33,8 @@ const enUS = {
       accepted: 'This invitation has already been accepted.',
       revoked: 'This invitation has been revoked.',
       password: 'The password does not meet the requirements.',
+      usernameConflict:
+        'This username is already used as a username or email. Choose another.',
       accountConflict: 'An account with this address cannot be created.',
       failed: 'Something went wrong. Please try again.',
     },

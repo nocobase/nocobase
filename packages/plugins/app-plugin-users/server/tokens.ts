@@ -204,6 +204,8 @@ export interface PublicUserInvitation {
 export interface AcceptUserInvitationInput {
   readonly token: string;
   readonly name: string;
+  /** Optional sign-in name for a new account; ignored for an existing account. */
+  readonly username?: string;
   readonly password: string;
 }
 
