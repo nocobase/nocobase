@@ -43,8 +43,16 @@ const kindOf = (item) =>
 
 /** Where `shadcn add` writes the item: a block's own directory, or each of a component's files. */
 function locationOf(item) {
-  if (item.type === 'registry:block')
-    return `\`client/extensions/nocobase-${item.name}/\``;
+  if (item.type === 'registry:block') {
+    const directories = [
+      ...new Set(item.files.map((file) => path.posix.dirname(file.target))),
+    ];
+    const directory =
+      directories.length === 1
+        ? directories[0]
+        : `client/extensions/nocobase-${item.name}`;
+    return `\`${directory}/\``;
+  }
   return item.files.map((file) => `\`${file.target}\``).join(', ');
 }
 
