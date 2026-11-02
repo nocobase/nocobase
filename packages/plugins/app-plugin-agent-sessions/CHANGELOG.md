@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 6a340f9: Use Enter for new lines on phones and the send button to submit messages. Keep desktop shortcuts and prevent IME confirmation from sending.
+
 ## 1.0.0-beta.15
 
 ### Patch Changes

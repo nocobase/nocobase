@@ -2,6 +2,22 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-02.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-02.1)
+
+### 🚀 Improvements
+
+- **[Agents]** Applications can order conversation-linked work by its latest update without additional requests. ([#11283](https://github.com/nocobase/nocobase/pull/11283)) by @2013xile
+- **[Users]** Invited users can choose an optional username and correct conflicts without losing their form. ([#11289](https://github.com/nocobase/nocobase/pull/11289)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Agents]**
+  - Explain exhausted tool quota and known reset times for queued runs instead of reporting unavailable tools. ([#11279](https://github.com/nocobase/nocobase/pull/11279)) by @zhouyanliang
+  - Continue unreceived queued messages after stopping a Runner turn without creating duplicate messages. ([#11282](https://github.com/nocobase/nocobase/pull/11282)) by @zhouyanliang
+- **[Projects]** Show why a saved comment did not start work, including when the comment run limit was reached. ([#11280](https://github.com/nocobase/nocobase/pull/11280)) by @2013xile
+- **[Agent sessions]** Press Enter for new lines on phones and use the send button to submit personal agent messages. ([#11281](https://github.com/nocobase/nocobase/pull/11281)) by @app/nocobase-studio
+- **[App foundation]** Restore evidence-backed data model associations through guarded service factories in App Foundation. ([#11287](https://github.com/nocobase/nocobase/pull/11287)) by @katherinehhh
+
 ## [nocobase-v3-beta/2026-10-31.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-31.1)
 
 ### 🎉 New Features

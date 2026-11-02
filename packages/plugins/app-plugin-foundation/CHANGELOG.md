@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.12
+
+### Patch Changes
+
+- 27e5adc: Restore evidence-backed data model associations through guarded service factories while retaining unknown, mutation, escape, and termination barriers.
+
 ## 0.1.0-beta.11
 
 ### Patch Changes

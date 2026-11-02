@@ -2,6 +2,22 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-02.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-02.1)
+
+### 🚀 优化
+
+- **[Agent]** 应用可按最近更新时间排列对话关联工作，无需额外请求。 ([#11283](https://github.com/nocobase/nocobase/pull/11283)) by @2013xile
+- **[用户]** 受邀用户可选填用户名，遇到冲突时可修改重试而不丢失表单内容。 ([#11289](https://github.com/nocobase/nocobase/pull/11289)) by @2013xile
+
+### 🐛 修复
+
+- **[Agent]**
+  - 排队任务额度用完时显示额度原因和已知恢复时间，避免误报为工具不可用。 ([#11279](https://github.com/nocobase/nocobase/pull/11279)) by @zhouyanliang
+  - 停止 Runner 当前轮后，未被接收的排队消息沿用原消息继续执行，不再新增副本。 ([#11282](https://github.com/nocobase/nocobase/pull/11282)) by @zhouyanliang
+- **[项目]** 返回已保存评论未启动工作的原因，包括达到评论运行次数上限的情况。 ([#11280](https://github.com/nocobase/nocobase/pull/11280)) by @2013xile
+- **[Agent 会话]** 手机端我的 Agent 会话中按回车换行，点击发送按钮发送消息。 ([#11281](https://github.com/nocobase/nocobase/pull/11281)) by @app/nocobase-studio
+- **[应用基础]** 恢复应用底座通过受保护服务工厂识别有证据的数据模型关联。 ([#11287](https://github.com/nocobase/nocobase/pull/11287)) by @katherinehhh
+
 ## [nocobase-v3-beta/2026-10-31.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-31.1)
 
 ### 🎉 新特性

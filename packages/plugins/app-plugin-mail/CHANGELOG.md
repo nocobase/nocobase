@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- 4027fde: Parse and preserve recipient display names, show invalid recipients beside composer fields, and reject invalid single or bulk sending requests before creating deliveries while keeping unfinished drafts editable.
+
 ## 1.0.0-beta.19
 
 ### Patch Changes
