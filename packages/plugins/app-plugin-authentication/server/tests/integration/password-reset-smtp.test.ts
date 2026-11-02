@@ -8,7 +8,6 @@ afterEach(() => vi.restoreAllMocks());
 import { createTestApp } from '@nocobase/app-testing/server';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { authenticationToken } from '../../tokens.js';
-import { mailerToken } from '@nocobase/app-server/mailer';
 
 async function receiver(stall = false) {
   const sockets = new Set<Socket>();
@@ -135,7 +134,6 @@ it.each([
       },
     });
     try {
-      expect(app.application.container.has(mailerToken)).toBe(false);
       const capabilities = await app.request('/authentication/capabilities');
       expect(await capabilities.json()).toEqual({
         data: { passwordResetAvailable: true },

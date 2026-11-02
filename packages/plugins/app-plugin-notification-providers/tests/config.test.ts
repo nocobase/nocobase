@@ -1,18 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   AppConfig,
+  AppConfigInvalidError,
   buildVariablesManifest,
   envString,
   type AppConfigFactory,
   type ConfigValidator,
 } from '@nocobase/app-server/config';
-import { defineMailChannelsConfig as legacyDefinition } from '@nocobase/app-server/mailer';
 import {
   defineMailChannelsConfig,
   type MailChannelsConfig,
 } from '@nocobase/app-plugin-notification-providers/config';
 
-// These imports deliberately exercise the frozen, published compatibility API.
 async function snapshot(
   factory: AppConfigFactory<MailChannelsConfig>,
   environment: Record<string, string> = {},
@@ -52,9 +51,6 @@ describe('notification email configuration migration', () => {
         defineMailChannelsConfig(definition),
         environment,
       );
-      expect(current).toEqual(
-        await snapshot(legacyDefinition(definition), environment),
-      );
       expect(current.issues).toEqual([]);
       expect(current.public).toEqual({});
       expect(current.value).toMatchObject({
@@ -93,7 +89,6 @@ describe('notification email configuration migration', () => {
     async (channels) => {
       const definition = { defaults: { channels } };
       const current = await snapshot(defineMailChannelsConfig(definition));
-      expect(current).toEqual(await snapshot(legacyDefinition(definition)));
       expect(current.public).toEqual({});
       expect(JSON.stringify(current.issues)).not.toContain('synthetic-secret');
       expect(current.variables).toEqual(
@@ -131,18 +126,12 @@ describe('notification email configuration migration', () => {
         validate: array ? [validate] : validate,
       };
       const factory = defineMailChannelsConfig(definition);
-      expect(factory.rules?.env).toEqual(
-        legacyDefinition(definition).rules?.env,
-      );
       const environment = {
         SMTP_PASSWORD: 'synthetic-password',
         CUSTOM_HOST: 'localhost',
       };
       const current = await snapshot(factory, environment);
-      expect(current).toEqual(
-        await snapshot(legacyDefinition(definition), environment),
-      );
-      expect(validate).toHaveBeenCalledTimes(2);
+      expect(validate).toHaveBeenCalledOnce();
       expect(current.issues.map(({ message }) => message)).toEqual([
         'Invalid built-in email channel configuration.',
         'Custom warning.',
@@ -152,4 +141,43 @@ describe('notification email configuration migration', () => {
       });
     },
   );
+
+  it('rejects conflicting aliases on reload and keeps the running snapshot', async () => {
+    const source = {
+      notification: {
+        channels: { inbox: { type: 'in-app', provider: 'in-app' } },
+      },
+    };
+    const config = new AppConfig().load({
+      name: 'notification-test',
+      read: async () => ({ kind: 'map', value: source }),
+    });
+    await config.loadAll();
+    const declaration = defineMailChannelsConfig({
+      defaults: { channels: {} },
+    });
+    config.defineSections(new Map([['notification', declaration.rules!]]));
+    source.notification.channels.inbox.provider = 'smtp';
+    await expect(config.reload()).rejects.toBeInstanceOf(AppConfigInvalidError);
+    expect(config.get('notification.channels.inbox')).toEqual({
+      type: 'in-app',
+      provider: 'in-app',
+    });
+
+    const invalid = new AppConfig().load({
+      name: 'notification-invalid',
+      read: async () => ({ kind: 'map', value: source }),
+    });
+    await invalid.loadAll();
+    invalid.defineSections(new Map([['notification', declaration.rules!]]));
+    expect(invalid.raw()).toEqual(source);
+    expect(await invalid.validate()).toEqual([
+      {
+        level: 'error',
+        path: 'notification.channels.inbox',
+        message:
+          'Channel type and provider must match when both are configured.',
+      },
+    ]);
+  });
 });

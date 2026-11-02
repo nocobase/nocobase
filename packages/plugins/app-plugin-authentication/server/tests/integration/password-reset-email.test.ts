@@ -7,7 +7,6 @@ import * as mailer from '@nocobase/mailer';
 import { Auth } from '../../auth.js';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { createAuthFixture } from './support.js';
-import { mailerToken } from '@nocobase/app-server/mailer';
 
 const email = {
   provider: 'resend',
@@ -251,7 +250,6 @@ it.each([false, true])(
         : { auth: { email } },
     });
     try {
-      expect(app.application.container.has(mailerToken)).toBe(false);
       expect((await app.request('/authentication/capabilities')).status).toBe(
         200,
       );
