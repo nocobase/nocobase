@@ -230,6 +230,12 @@ test('publication checks both downloaded dependency floors before permitting upl
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');
     const registryUrl = `http://127.0.0.1:${server.address().port}`;
+    // Reproduce setup-node's scoped registry, which otherwise overrides --registry.
+    const npmrc = path.join(work, 'scoped-registry.npmrc');
+    writeFileSync(
+      npmrc,
+      '@nocobase:registry=http://127.0.0.1:9/\nfetch-retries=0\n',
+    );
     const registryFile = path.join(work, 'registry.json');
     const marker = path.join(work, 'upload-allowed');
     const runner = path.join(work, 'check.mjs');
@@ -265,12 +271,11 @@ writeFileSync(process.argv[4], 'allowed');
             : tarball(avatarVersion, runtime, declarations);
         requested.clear();
         rmSync(marker, { force: true });
-        const child = spawn(process.execPath, [
-          runner,
-          registryUrl,
-          registryFile,
-          marker,
-        ]);
+        const child = spawn(
+          process.execPath,
+          [runner, registryUrl, registryFile, marker],
+          { env: { ...process.env, NPM_CONFIG_USERCONFIG: npmrc } },
+        );
         let output = '';
         child.stdout.on('data', (data) => {
           output += data;
