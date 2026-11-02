@@ -958,7 +958,8 @@ export function apiDependencies(
         (prefix.path === '/*' ||
           prefix.path === endpoint.path ||
           (prefix.path.endsWith('/*') &&
-            endpoint.path.startsWith(prefix.path.slice(0, -1)))) &&
+            (endpoint.path === prefix.path.slice(0, -2) ||
+              endpoint.path.startsWith(prefix.path.slice(0, -1))))) &&
         prefix.conditions?.some(
           (condition) => condition.kind === 'authorizationIdentityResolved',
         ),

@@ -741,6 +741,10 @@ export class StaticValues {
         return [this.origin(ts.factory.createNumericLiteral(maximum), node)];
       const inputs = this.initializers(node.arguments, new Set(seen), 0);
       if (inputs.unknown || !inputs.continues) return [];
+      if (this.authorizationCall(node) || this.requestRead(node)) {
+        this.capture(node, this.bindings);
+        return [node];
+      }
       const keys = this.recordKeys(node);
       if (keys) return [keys];
       if (this.contextJson(node))
@@ -1042,7 +1046,11 @@ export class StaticValues {
       !ts.isIdentifier(node.expression.expression)
     )
       return false;
-    return this.handlerContext(node.expression.expression, seen);
+    const captured = this.captures.get(node);
+    const evaluator = captured
+      ? this.fork(new Map([...this.bindings, ...captured]))
+      : this;
+    return evaluator.handlerContext(node.expression.expression, seen);
   }
 
   /** The first parameter of an authorized handler, directly or through bound parameters of local helpers. */
@@ -2189,7 +2197,15 @@ export class StaticValues {
       ts.isNonNullExpression(node)
     )
       return this.returnedObjects(node.expression, seen);
-    if (ts.isObjectLiteralExpression(node)) return [[node, this]];
+    if (ts.isObjectLiteralExpression(node)) {
+      const captured = this.captures.get(node);
+      return [
+        [
+          node,
+          captured ? this.fork(new Map([...this.bindings, ...captured])) : this,
+        ],
+      ];
+    }
     if (ts.isIdentifier(node)) {
       const declarations = this.analysis.declarations(node);
       if (declarations.length !== 1 || this.mutated(declarations[0])) return [];
@@ -2299,6 +2315,98 @@ export class StaticValues {
         stable = this.stableKeySource(child, next);
     });
     return stable;
+  }
+
+  /** A native optional trim reads only a request string (or an absent value), never an arbitrary receiver. */
+  private requestText(node: ts.Node, seen = new Set<ts.Node>()): boolean {
+    node = StaticValues.unwrap(node);
+    if (seen.has(node) || seen.size >= MAX_VALUES) return false;
+    const next = new Set(seen).add(node);
+    if (
+      ts.isStringLiteralLike(node) ||
+      node.kind === ts.SyntaxKind.NullKeyword ||
+      this.undefinedArgument(node)
+    )
+      return true;
+    if (ts.isIdentifier(node)) {
+      const declarations = this.analysis.declarations(node);
+      if (declarations.length !== 1 || this.mutated(declarations[0]))
+        return false;
+      const declaration = declarations[0];
+      const values =
+        this.bindings.get(declaration) ??
+        (ts.isVariableDeclaration(declaration) &&
+        declaration.initializer &&
+        ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const
+          ? [declaration.initializer]
+          : []);
+      return (
+        values.length > 0 &&
+        values.every((value) => this.requestText(value, next))
+      );
+    }
+    if (
+      ts.isBinaryExpression(node) &&
+      [ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(
+        node.operatorToken.kind,
+      )
+    )
+      return (
+        this.requestText(node.left, next) && this.requestText(node.right, next)
+      );
+    if (ts.isCallExpression(node)) {
+      const captured = this.captures.get(node),
+        evaluator = captured
+          ? this.fork(new Map([...this.bindings, ...captured]))
+          : this;
+      return (
+        node.arguments.length === 1 &&
+        evaluator.requestRead(node) &&
+        evaluator.strings(node.arguments[0]).length === 1 &&
+        evaluator.strings(node.arguments[0])[0] !== ''
+      );
+    }
+    if (ts.isPropertyAccessExpression(node) && !node.questionDotToken) {
+      const objects = this.returnedObjects(node.expression, next);
+      return (
+        objects.length > 0 &&
+        objects.every(([object, evaluator]) => {
+          if (
+            !evaluator.ordinaryRecord(object) ||
+            object.properties.length > MAX_VALUES
+          )
+            return false;
+          const properties = object.properties.filter(
+            (property) =>
+              property.name &&
+              (ts.isIdentifier(property.name) ||
+                ts.isStringLiteralLike(property.name)) &&
+              property.name.text === node.name.text,
+          );
+          if (properties.length !== 1) return false;
+          const property = properties[0];
+          return ts.isPropertyAssignment(property)
+            ? evaluator.requestText(property.initializer, next)
+            : ts.isShorthandPropertyAssignment(property) &&
+                evaluator.requestText(property.name, next);
+        })
+      );
+    }
+    return false;
+  }
+
+  private requestTrim(
+    node: ts.CallExpression,
+  ): node is ts.CallExpression & { expression: ts.PropertyAccessExpression } {
+    return (
+      accessorIndex(this.analysis).objectPrototypeIntact &&
+      !node.questionDotToken &&
+      node.arguments.length === 0 &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      !!node.expression.questionDotToken &&
+      node.expression.name.text === 'trim' &&
+      this.requestText(node.expression.expression)
+    );
   }
 
   private requestRead(node: ts.CallExpression): boolean {
@@ -3222,6 +3330,17 @@ export class StaticValues {
       return { ...CONTINUES, values: [node] };
     const string = this.stringOperation(node);
     if (string) return { ...CONTINUES, values: [string] };
+    if (this.requestTrim(node)) {
+      const receiver = this.initialization(
+        node.expression.expression,
+        seen,
+        depth + 1,
+      );
+      if (receiver.unknown || !receiver.continues)
+        return { ...receiver, values: [] };
+      this.capture(node, this.bindings);
+      return { ...CONTINUES, values: [node] };
+    }
     if (documentationContract(node, this.analysis, this)) {
       const value = this.origin(
         ts.factory.createCallExpression(
@@ -3302,7 +3421,8 @@ export class StaticValues {
       this.requestRead(node) ||
       this.databaseAccessor(node) ||
       this.localWeakMapCall(node)
-    )
+    ) {
+      this.capture(node, this.bindings);
       return {
         values: [node],
         continues: true,
@@ -3310,6 +3430,7 @@ export class StaticValues {
         throws: false,
         unknown: false,
       };
+    }
     // Configuration reads retain an unknown value, but do not run application factories. Identify
     // the host application through its provider or route binding, never through a method name alone.
     if (this.configurationRead(node))
@@ -5417,10 +5538,12 @@ export class StaticValues {
           pending.push(child);
         });
     }
-    if (pending.length) return;
-    bindings = new Map(
-      [...bindings].filter(([declaration]) => needed.has(declaration)),
-    );
+    // Filtering is only an optimization. A large returned service still needs every proven binding;
+    // exhausting this walk must not discard its invocation environment or its methods' environments.
+    if (!pending.length)
+      bindings = new Map(
+        [...bindings].filter(([declaration]) => needed.has(declaration)),
+      );
     if (snapshotLocals && this.localArrays.size)
       bindings = this.snapshotBindings(bindings);
     if (

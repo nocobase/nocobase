@@ -1626,3 +1626,78 @@ it.each([
     ).toBe(recognized);
   },
 );
+
+it.each([false, true])(
+  'preserves a returned actor through a nested permission probe (escaped=%s)',
+  async (escaped) => {
+    const source = (
+      "function authorize(authz){return authz.authorize({resource:{type:'composite',id:'entries'},action:'view'});}" +
+      factoryProviders
+    )
+      .replace(
+        'return {database,authz};',
+        `return {database,authz,async can(ctx){${escaped ? 'return external(ctx);' : "return ctx.authz.authorize({resource:{type:'composite',id:'entries'},action:'view'});"}}};`,
+      )
+      .replace(
+        "async list(){return platform.database.query().selectFrom('entries').execute();}",
+        "async list(ctx){await authorize(ctx.authz);const rows=await platform.database.query().selectFrom('entries').execute();return {rows,allowed:await platform.can(ctx)};}",
+      );
+    const server = routes
+      .replace(
+        'export default defineApiRoutes',
+        "function actor(c){const authz=c.get('authz');const principal=authz.identity.principal;if(principal.type!=='user')throw new Error('Forbidden');return {authz,userId:String(principal.id)};}export default defineApiRoutes",
+      )
+      .replace('c=>service.list()', 'c=>service.list(actor(c))');
+    const result = await collectModuleSources(
+      await fixture(server, { 'server/providers/index.js': source }),
+    );
+    expect(
+      result.routes[0]?.apiProviders?.includes('@nocobase/db') ?? false,
+    ).toBe(!escaped);
+  },
+);
+
+it('retains invocation scopes when a returned service exceeds the capture filtering budget', async () => {
+  const padding = Array.from(
+    { length: 1600 },
+    (_, index) => `field${index}:${index}`,
+  ).join(',');
+  const source = factoryProviders.replace(
+    'return {async list()',
+    `return {unused:{${padding}},async list()`,
+  );
+  const result = await collectModuleSources(
+    await fixture(routes, { 'server/providers/index.js': source }),
+  );
+  expect(result.routes[0]?.collections).toContain('entries');
+});
+
+it.each([
+  ["c.req.query('q') || undefined", '', true],
+  ['undefined', '', true],
+  ['null', '', true],
+  ['unknown', '', false],
+  ["c.req.query('')", '', false],
+  ["c.req.header('')", '', false],
+  ["{trim(){return 'value';}}", '', true],
+  ['{trim:external}', '', false],
+  ['{get trim(){return external;}}', '', false],
+  ["c.req.query('q')", 'String.prototype.trim=external;', false],
+])(
+  'proves optional request trim only for native strings: %s / %s',
+  async (value, prefix, expected) => {
+    const source = providers.replace(
+      'list(){return',
+      'list(filters){const q=filters.q?.trim();return',
+    );
+    const server = routes
+      .replace('c=>service.list()', `c=>service.list({q:${value}})`)
+      .replace('export default', prefix + 'export default');
+    const result = await collectModuleSources(
+      await fixture(server, { 'server/providers/index.js': source }),
+    );
+    expect(result.routes[0]?.collections?.includes('entries') ?? false).toBe(
+      expected,
+    );
+  },
+);
