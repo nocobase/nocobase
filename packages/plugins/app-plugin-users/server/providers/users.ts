@@ -181,15 +181,29 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
     return Promise.resolve();
   }
 
-  public override async shutdown(): Promise<void> {
+  private shutdownPromise?: Promise<void>;
+
+  public override shutdown(): Promise<void> {
+    this.shutdownPromise ??= this.closeInvitations();
+    return this.shutdownPromise;
+  }
+
+  private async closeInvitations(): Promise<void> {
     const drained = this.invitationWork.close();
-    await this.invitationMailer?.close();
-    await drained;
+    const results = await Promise.allSettled([
+      drained,
+      Promise.resolve().then(() => this.invitationMailer?.close()),
+    ]);
     this.releasePermissionSetScope?.();
     this.releasePermissionSetScope = undefined;
     this.releaseSubjectType?.();
     this.releaseSubjectType = undefined;
-    return Promise.resolve();
+    const failures = results.filter((result) => result.status === 'rejected');
+    if (failures.length)
+      throw new AggregateError(
+        failures.map((result): unknown => result.reason),
+        'Invitation shutdown failed.',
+      );
   }
 
   /**
