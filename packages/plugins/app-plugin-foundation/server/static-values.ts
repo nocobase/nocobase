@@ -4002,6 +4002,8 @@ export class StaticValues {
         throws ||= flow.throws;
         unknown ||= flow.unknown;
         continues = flow.continues;
+        if (unknown)
+          return { values: [], continues, returns, throws, unknown: true };
         if (flow.control)
           return {
             values,
