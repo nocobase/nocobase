@@ -25,6 +25,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     signOut: '登出',
     signOutFailed: '無法登出。',
     existingAccount: '該地址已有賬戶。使用它登入以繼續。',
+    alreadyHaveAccount: '已有帳號？前往登入',
     goToLogin: '前往登入',
     errors: {
       notFound: '此邀請連結無效。',

@@ -23,6 +23,7 @@ const zhCN: UsersResource = {
     signOut: '退出登录',
     signOutFailed: '退出登录失败。',
     existingAccount: '这个邮箱已有账号，请用它登录后继续。',
+    alreadyHaveAccount: '已有账号？去登录',
     goToLogin: '去登录',
     errors: {
       notFound: '邀请链接无效。',

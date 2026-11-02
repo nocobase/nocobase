@@ -138,6 +138,38 @@ it('sends an existing account to sign-in with a return path to the pending invit
   await screen.findByText('accept.existingAccount');
   const link = await screen.findByRole('button', { name: 'accept.goToLogin' });
   expect(link.getAttribute('href')).toBe('/login?redirect=%2Finvite%2Ftoken-1');
+  expect(link.className).toContain('bg-primary');
+  expect(screen.queryByText('accept.alreadyHaveAccount')).toBeNull();
+});
+
+it('shows sign-in as a secondary link after the registration action and keeps its return path', async () => {
+  mocks.request.mockResolvedValue({
+    data: {
+      email: 'nia@example.com',
+      inviterName: 'Ann',
+      summary: [],
+      expiresAt: '2099-01-01T00:00:00Z',
+    },
+  });
+  render(
+    <MemoryRouter initialEntries={['/invite/token-1']}>
+      <Routes>
+        <Route path='/invite/:token' element={<AcceptInvitationPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  const link = await screen.findByRole('button', {
+    name: 'accept.alreadyHaveAccount',
+  });
+  const submit = screen.getByRole('button', { name: 'accept.submit' });
+  expect(
+    submit.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(link.getAttribute('href')).toBe('/login?redirect=%2Finvite%2Ftoken-1');
+  expect(link.className).toContain('hover:underline');
+  expect(link.className).not.toContain('bg-primary');
+  expect(submit.className).toContain('bg-primary');
+  expect(screen.queryByText('accept.goToLogin')).toBeNull();
 });
 
 it('allows registration from an invitation link without requesting email', async () => {

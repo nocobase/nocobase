@@ -27,6 +27,7 @@ const esES: LocaleResource<typeof enUS> = {
     signOutFailed: 'No se pudo cerrar sesión.',
     existingAccount:
       'Esta dirección ya tiene una cuenta. Inicia sesión con él para continuar.',
+    alreadyHaveAccount: '¿Ya tienes una cuenta? Inicia sesión',
     goToLogin: 'Ir a iniciar sesión',
     errors: {
       notFound: 'Este enlace de invitación no es válido.',

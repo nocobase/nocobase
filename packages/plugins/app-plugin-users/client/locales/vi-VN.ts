@@ -27,6 +27,7 @@ const viVN: LocaleResource<typeof enUS> = {
     signOutFailed: 'Không thể đăng xuất.',
     existingAccount:
       'Địa chỉ này đã có tài khoản. Đăng nhập bằng nó để tiếp tục.',
+    alreadyHaveAccount: 'Đã có tài khoản? Đăng nhập',
     goToLogin: 'Vào đăng nhập',
     errors: {
       notFound: 'Liên kết lời mời này không hợp lệ.',

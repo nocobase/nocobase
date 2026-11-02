@@ -27,6 +27,7 @@ const idID: LocaleResource<typeof enUS> = {
     signOutFailed: 'Tidak dapat keluar.',
     existingAccount:
       'Alamat ini sudah memiliki akun. Masuklah untuk melanjutkan.',
+    alreadyHaveAccount: 'Sudah punya akun? Masuk',
     goToLogin: 'Pergi untuk masuk',
     errors: {
       notFound: 'Tautan undangan ini tidak valid.',

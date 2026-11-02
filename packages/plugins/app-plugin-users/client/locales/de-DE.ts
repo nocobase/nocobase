@@ -27,6 +27,7 @@ const deDE: LocaleResource<typeof enUS> = {
     signOutFailed: 'Abmeldung konnte nicht durchgeführt werden.',
     existingAccount:
       'Für diese Adresse gibt es bereits ein Konto. Melden Sie sich damit an, um fortzufahren.',
+    alreadyHaveAccount: 'Du hast schon ein Konto? Anmelden',
     goToLogin: 'Gehen Sie zur Anmeldung',
     errors: {
       notFound: 'Dieser Einladungslink ist ungültig.',

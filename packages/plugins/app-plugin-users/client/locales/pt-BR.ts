@@ -27,6 +27,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     signOutFailed: 'Não foi possível sair.',
     existingAccount:
       'Este endereço já possui uma conta. Faça login com ele para continuar.',
+    alreadyHaveAccount: 'Já tem uma conta? Entre',
     goToLogin: 'Vá para fazer login',
     errors: {
       notFound: 'Este link de convite não é válido.',

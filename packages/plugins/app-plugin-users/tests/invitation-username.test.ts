@@ -181,6 +181,19 @@ describe('invitation usernames with real account creation', () => {
     expect(response.status).toBe(200);
   });
 
+  it('normalizes administrator-created and edited usernames like invitation usernames', async () => {
+    const created = await invitations.create({
+      name: 'Managed',
+      email: 'managed@example.test',
+      username: '  Managed.User  ',
+      password: 'secret-password',
+    });
+    expect(created.username).toBe('managed.user');
+    expect((await users.get(created.id))?.username).toBe('managed.user');
+    await invitations.update(created.id, { username: '  Renamed.User  ' });
+    expect((await users.get(created.id))?.username).toBe('renamed.user');
+  });
+
   it('uses the create-user optional nonempty username schema', () => {
     const input = { token: 'token', name: 'Nia', password: 'secret-password' };
     expect(AcceptInvitationInput.parse(input)).toEqual(input);

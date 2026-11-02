@@ -184,11 +184,18 @@ function Problem({ children }: { readonly children: ReactNode }): ReactElement {
   );
 }
 
-function LoginLink({ redirect }: { readonly redirect?: string }): ReactElement {
+function LoginLink({
+  redirect,
+  variant = 'default',
+}: {
+  readonly redirect?: string;
+  readonly variant?: 'default' | 'link';
+}): ReactElement {
   const { t } = useTranslation(NS);
   return (
     <Button
       className='w-full'
+      variant={variant}
       nativeButton={false}
       render={
         <Link
@@ -200,7 +207,7 @@ function LoginLink({ redirect }: { readonly redirect?: string }): ReactElement {
         />
       }
     >
-      {t('accept.goToLogin')}
+      {t(variant === 'link' ? 'accept.alreadyHaveAccount' : 'accept.goToLogin')}
     </Button>
   );
 }
@@ -384,9 +391,6 @@ function AcceptForm({
           </div>
         </>
       ) : null}
-      {!session ? (
-        <LoginLink redirect={`/invite/${encodeURIComponent(token)}`} />
-      ) : null}
       {problem ? <Problem>{problem}</Problem> : null}
       {done === 'signedUp' && login.error ? (
         <>
@@ -406,6 +410,12 @@ function AcceptForm({
           ? t('accept.submitting')
           : t(invitedSession ? 'accept.join' : 'accept.submit')}
       </Button>
+      {!session ? (
+        <LoginLink
+          variant='link'
+          redirect={`/invite/${encodeURIComponent(token)}`}
+        />
+      ) : null}
     </form>
   );
 }

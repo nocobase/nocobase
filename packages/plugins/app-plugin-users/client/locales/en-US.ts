@@ -25,6 +25,7 @@ const enUS = {
     signOutFailed: 'Could not sign out.',
     existingAccount:
       'This address already has an account. Sign in with it to continue.',
+    alreadyHaveAccount: 'Already have an account? Sign in',
     goToLogin: 'Go to sign in',
     errors: {
       notFound: 'This invitation link is not valid.',

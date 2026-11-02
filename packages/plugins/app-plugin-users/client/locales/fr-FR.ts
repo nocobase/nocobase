@@ -29,6 +29,7 @@ const frFR: LocaleResource<typeof enUS> = {
     signOutFailed: 'Impossible de se déconnecter.',
     existingAccount:
       'Cette adresse possède déjà un compte. Connectez-vous avec pour continuer.',
+    alreadyHaveAccount: 'Vous avez déjà un compte ? Connectez-vous',
     goToLogin: 'Allez vous connecter',
     errors: {
       notFound: "Ce lien d'invitation n'est pas valide.",

@@ -27,6 +27,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     signOutFailed: 'サインアウトできませんでした。',
     existingAccount:
       'このアドレスにはすでにアカウントがあります。続行するには、サインインしてください。',
+    alreadyHaveAccount: 'すでにアカウントをお持ちですか？ログイン',
     goToLogin: 'サインインに移動',
     errors: {
       notFound: 'この招待リンクは無効です。',
