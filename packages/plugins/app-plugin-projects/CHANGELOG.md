@@ -1,5 +1,70 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- a71b814: Include recorded work skip reasons in comment creation responses so callers can distinguish saved comments from work held by a run limit.
+- Updated dependencies [5a4ebe0]
+  - @nocobase/app-plugin-users@2.0.0-beta.13
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 88d35b8: Preserve parent and child task scope when announcing completed subtasks.
+- 83f28b1: Avoid computing application progress for browser issue details and parallelize independent detail reads. Expose authorized blocker inputs and keep hierarchy count hydration limited to related tasks. Let applications own project cache refreshes and keep request logs free of duplicate route fields.
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.28
+  - @nocobase/app-plugin-notification@2.0.0-beta.3
+  - @nocobase/app-plugin-users@2.0.0-beta.12
+
+## 0.1.0-beta.22
+
+### Minor Changes
+
+- 302d8bc: Add permission-filtered issue card summaries in batches of at most 100 references.
+- cea24b5: Allow server writers to store validated display messages on comments and expose only their public type and parameters.
+
+### Patch Changes
+
+- 7a7a51d: Expose a permission-checked, bounded read of issue and live comment attachments for evidence consumers.
+- 57ecc34: Allow applications to supply project workspaces for Runner conversations, retain their runner when changing agents, and continue from the latest conversation summary. Project selection is frozen after the first message. Project access checks can use the caller's transaction connection.
+
+  Reject Agent changes when the conversation’s bound project runner cannot run the selected Agent, preserving its workspace and queued work.
+
+- c571810: Classify confirmed discussion-only announcements and refresh comment threads and activity without reloading unrelated task projections.
+- 302d8bc: Refresh cached task details when a directly embedded parent, child, dependency or related task changes, while keeping unrelated details and discussion histories cached.
+- 5769799: Add optional unfinished hierarchy reads with visible ancestors and explicit inclusions, and authorized database relations for bounded historical task pagination. Scope dependency and subtask count reads to their requested tasks.
+- 302d8bc: Preserve known task IDs in realtime updates, including batches with opaque executor announcements, with a list membership flag and bounded announcements so unrelated task details need not reload.
+- c571810: Reuse the authorized issue when loading its activity in task details to avoid redundant database reads.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/app-plugin-notification@2.0.0-beta.2
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
 ## 0.1.0-beta.21
 
 ### Patch Changes

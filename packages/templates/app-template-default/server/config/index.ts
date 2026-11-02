@@ -12,6 +12,7 @@ import server from './server.js';
 import spa from './spa.js';
 import logging from './logging.js';
 import drive from './drive.js';
+import concurrency from './concurrency.js';
 import queue from './queue.js';
 import jobs from './jobs.js';
 import scheduler from './scheduler.js';
@@ -35,6 +36,7 @@ const defaultConfigs: AppConfigFactory<{
   spa: ReturnType<typeof spa>;
   logging: ReturnType<typeof logging>;
   drive: ReturnType<typeof drive>;
+  concurrency: ReturnType<typeof concurrency>;
   queue: ReturnType<typeof queue>;
   jobs: ReturnType<typeof jobs>;
   scheduler: ReturnType<typeof scheduler>;
@@ -57,6 +59,7 @@ const defaultConfigs: AppConfigFactory<{
   spa,
   logging,
   drive,
+  concurrency,
   queue,
   jobs,
   scheduler,

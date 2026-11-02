@@ -60,6 +60,11 @@ const viVN: LocaleResource<typeof enUS> = {
       },
     },
   },
+  runnerConversation: {
+    title: 'Cuộc trò chuyện: {{title}}',
+    other: 'Cuộc trò chuyện của người khác',
+    untitled: 'Cuộc trò chuyện mới',
+  },
 };
 
 export default viVN;

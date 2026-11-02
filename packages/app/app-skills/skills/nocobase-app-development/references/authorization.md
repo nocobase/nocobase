@@ -1,5 +1,7 @@
 # Design application permissions
 
+For an executable application-owned implementation of scoped relation choices and batch assignments, see the [customer/contact reference](frontend/references/executable-relation-batch.md). It includes native-authenticated permission tests and separate relation-picker and batch-editor entry points.
+
 Use this reference when a feature distinguishes people, jobs, teams, pages, operations, fields or records. Model access while designing the feature; adding only hidden buttons after building unrestricted endpoints leaves the system incomplete.
 
 ## Discover the capability

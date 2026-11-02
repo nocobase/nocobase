@@ -15,6 +15,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SessionView } from '../../client/components/session-view.js';
 import plugin from '../../client/plugin.js';
+import {
+  SessionsLayoutContext,
+  type SessionsLayoutState,
+} from '../../client/sessions-layout.js';
 import type { Session, SessionLink } from '../../shared/api.js';
 
 const session: Session = {
@@ -93,7 +97,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function setup(links: readonly SessionLink[] = []) {
+async function setup(
+  links: readonly SessionLink[] = [],
+  layout: SessionsLayoutState | null = null,
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -105,7 +112,9 @@ async function setup(links: readonly SessionLink[] = []) {
   });
   await renderWithApp(
     <QueryClientProvider client={client}>
-      <SessionView sessionId='session' />
+      <SessionsLayoutContext.Provider value={layout}>
+        <SessionView sessionId='session' />
+      </SessionsLayoutContext.Provider>
     </QueryClientProvider>,
     {
       plugins: [plugin({ routes: false })],
@@ -179,6 +188,44 @@ function scrollGeometry() {
     },
   };
 }
+
+describe('session details on the page', () => {
+  const layout = (
+    state: Pick<SessionsLayoutState, 'detailsOpen' | 'right'>,
+  ): SessionsLayoutState => ({
+    breakpoint: 'md',
+    list: 'column',
+    setListUnfolded: vi.fn(),
+    setDetailsOpen: vi.fn(),
+    reportTask: vi.fn(),
+    ...state,
+  });
+  const details = () =>
+    screen.queryByRole('complementary', { name: 'Session details' });
+
+  it('stays closed when the layout keeps the details closed, and asks the layout to open them', async () => {
+    const closed = layout({ detailsOpen: false, right: 'column' });
+    await setup([], closed);
+    expect(details()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Tasks 0.*No tasks/ }));
+    expect(closed.setDetailsOpen).toHaveBeenCalledWith(true);
+  });
+
+  it('shows the details as a column beside the conversation without a backdrop', async () => {
+    await setup([], layout({ detailsOpen: true, right: 'column' }));
+    expect(details()?.className).toContain('w-[296px]');
+    expect(details()?.className).not.toContain('absolute');
+    expect(document.querySelector('.bg-black\\/30')).toBeNull();
+  });
+
+  it('shows the details as a sheet that records closing from its backdrop', async () => {
+    const sheet = layout({ detailsOpen: true, right: 'sheet' });
+    await setup([], sheet);
+    expect(details()?.className).toContain('absolute');
+    fireEvent.click(document.querySelector('.bg-black\\/30')!);
+    expect(sheet.setDetailsOpen).toHaveBeenCalledWith(false);
+  });
+});
 
 describe('session mobile layout', () => {
   it.each([0, 1, 50, 79, 150])(

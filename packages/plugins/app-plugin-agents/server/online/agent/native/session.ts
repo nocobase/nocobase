@@ -47,6 +47,7 @@ abstract class NativeAgentSession implements OnlineAgent {
       source: _source,
       title: _title,
       showInChatList: _showInChatList,
+      projectId: _projectId,
       ...requested
     } = options;
     this.requestedModel = sessionId ? selectedModel : undefined;
@@ -104,6 +105,11 @@ export class NativeRealtimeOnlineAgent
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,
   ): Promise<number> {
+    if (input?.effort !== undefined)
+      throw invalid(
+        'Online agents do not support conversation reasoning effort.',
+        { reason: 'EFFORT_UNSUPPORTED' },
+      );
     const seq = await this.host.start(
       this.context,
       this.sessionId,

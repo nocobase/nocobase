@@ -1,3 +1,4 @@
+import { getRequestTranslator } from '@nocobase/i18n/server';
 import { requestToolDetection } from '../../runners/tool-detection.js';
 /**
  * The people-facing runners API, mounted at `/api/agents/runners` beside the runner protocol (`runner.ts`): runners
@@ -68,6 +69,8 @@ import {
   RunnerParams,
   RunnerPatchInput,
   RunnerRecentRunSchema,
+  RunnerRunsQuery,
+  RunnerRunsPageMetaSchema,
   RunnerSchema,
   RunnerSummarySchema,
   RunnerWorkspaceSchema,
@@ -97,6 +100,16 @@ export interface AdminAuditLogger {
 export interface AdminRoutesOptions {
   /** Without one, the record goes to the console. */
   readonly logger?: AdminAuditLogger;
+}
+
+function conversationLabel(context: Context): (title: string | null) => string {
+  const t = getRequestTranslator(context, '@nocobase/app-plugin-agents');
+  return (title) =>
+    title === null
+      ? t('runnerConversation.other')
+      : t('runnerConversation.title', {
+          title: title || t('runnerConversation.untitled'),
+        });
 }
 
 /**
@@ -501,6 +514,7 @@ export function createAdminRoutes(
       const runs = await services.runnerView.held(
         runner,
         caller(context).userId,
+        conversationLabel(context),
       );
       const jobs = (
         await services.jobs.list({ runnerId: runner.id, limit: 200 })
@@ -535,21 +549,24 @@ export function createAdminRoutes(
         columns: ['id', 'title', 'status', 'createdAt'],
       }),
       description:
-        'Its latest runs whatever their status, newest first, without the link of a private run the caller is not part of.',
+        'Twenty runs ordered by startedAt descending then id descending, with null start times last. Pass meta.nextCursor for the next page; meta.total is the exact run count. Private run links are hidden from other viewers.',
       responses: {
-        200: listResponse(RunnerRecentRunSchema),
+        200: listResponse(RunnerRecentRunSchema, RunnerRunsPageMetaSchema),
         ...apiErrorResponses,
         404: notVisible,
       },
     }),
     runnerParam,
+    apiValidator('query', RunnerRunsQuery),
     async (context) => {
       const runner = await visibleRunner(context);
-      const data = await services.runnerView.recent(
+      const page = await services.runnerView.recent(
         runner,
         caller(context).userId,
+        context.req.valid('query').cursor,
+        conversationLabel(context),
       );
-      return context.json({ data, meta: { total: data.length } });
+      return context.json(page);
     },
   );
   router.patch(

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/queue",
-  "version": "0.1.0-beta.9",
+  "version": "1.0.0-beta.10",
   "description": "Application queues with an in-process backend and application-owned backend implementations.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

@@ -1,7 +1,7 @@
 // Renders GitHub Release notes for an aggregate release tag.
 //
 // A release commit carries every tag the release produced: the aggregate tag
-// (`release-beta/2026-08-26.5`) and one `name@version` tag per package that
+// (`nocobase-v3-beta/2026-08-26.5`) and one `name@version` tag per package that
 // `changeset publish` actually published. That is the whole manifest, recorded
 // by the release itself — this script reads it back rather than reconstructing it.
 //
@@ -18,9 +18,7 @@
 //   node scripts/release-notes.mjs <aggregate-tag> --packages print `name@version` per line
 import { execFileSync } from 'node:child_process';
 
-import { extractReleaseSection } from './changelog.mjs';
-
-const AGGREGATE_PATTERN = /^release(-beta)?\/\d{4}-\d{2}-\d{2}\.\d+$/u;
+import { extractReleaseSection, parseTag } from './changelog.mjs';
 
 function git(args) {
   return execFileSync('git', args, {
@@ -45,11 +43,11 @@ function gitOrUndefined(args, { cwd } = {}) {
 }
 
 export function parseAggregateTag(tag) {
-  if (!AGGREGATE_PATTERN.test(tag)) {
+  const parsed = parseTag(tag);
+  if (!parsed) {
     throw new Error(`Not an aggregate release tag: ${tag}`);
   }
-  const [prefix, batch] = tag.split('/');
-  return { batch, channel: prefix === 'release-beta' ? 'beta' : 'stable' };
+  return { batch: tag.split('/')[1], channel: parsed.channel };
 }
 
 // A package tag is `<name>@<version>`, and scoped names carry their own `@`.
@@ -138,7 +136,14 @@ export function resolveDirectories(commit, directories, { cwd } = {}) {
 // The release's section of the root CHANGELOG.md, followed by a heading for the package table. A release cut before
 // the changelog existed, or one whose changelog step failed, has no section and renders the table alone.
 export function renderChangelogLines(changelog, tag) {
-  const section = changelog ? extractReleaseSection(changelog, tag) : undefined;
+  let section = changelog ? extractReleaseSection(changelog, tag) : undefined;
+  // A renamed historical tag still points at an immutable changelog with its original heading.
+  if (!section && changelog && tag.startsWith('nocobase-v3-beta/')) {
+    section = extractReleaseSection(
+      changelog,
+      tag.replace('nocobase-v3-beta/', 'release-beta/'),
+    );
+  }
   return section ? [section, '', '## Packages', ''] : [];
 }
 

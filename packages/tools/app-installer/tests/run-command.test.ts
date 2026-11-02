@@ -27,6 +27,7 @@ describe('runCommand', () => {
     .skipIf(process.platform !== 'linux')
     .each([
       'ordinary-timeout',
+      'ordinary-timeout-slow-start',
       'ordinary-interrupt',
       'resistant-closed-timeout',
       'resistant-inherited-timeout',
@@ -58,6 +59,8 @@ describe('runCommand', () => {
       expect(result.after.state).toBe('Z');
       expect(result.bytesAfter).toBe(result.bytesAtReturn);
       expect(result.recovery).toBe('recovered');
+      if (mode.includes('slow-start'))
+        expect(result.preparationMs).toBeGreaterThanOrEqual(1000);
       if (mode.includes('early-exit')) expect(result.outcome.exitCode).toBe(7);
       expect(stderr).toMatch(/Reaped 1 adopted probe children/);
       if (mode.includes('resistant'))

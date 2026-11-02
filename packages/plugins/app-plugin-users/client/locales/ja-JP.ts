@@ -13,6 +13,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     loading: '招待状を読み込んでいます…',
     email: 'メール',
     name: '名前',
+    username: 'ユーザー名（任意）',
+    usernameHint: 'このユーザー名でログインできます。',
     password: 'パスワード',
     nameRequired: 'あなたの名前を入力してください。',
     passwordTooShort: 'パスワードには少なくとも {{min}} 文字が必要です。',
@@ -25,6 +27,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     signOutFailed: 'サインアウトできませんでした。',
     existingAccount:
       'このアドレスにはすでにアカウントがあります。続行するには、サインインしてください。',
+    alreadyHaveAccount: 'すでにアカウントをお持ちですか？ログイン',
     goToLogin: 'サインインに移動',
     errors: {
       notFound: 'この招待リンクは無効です。',
@@ -33,6 +36,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       accepted: 'この招待はすでに承諾されています。',
       revoked: 'この招待は取り消されました。',
       password: 'パスワードが要件を満たしていません。',
+      usernameConflict:
+        'このユーザー名はユーザー名またはメールアドレスとして使用されています。別の名前を選んでください。',
       accountConflict: 'このアドレスではアカウントを作成できません。',
       failed: '問題が発生しました。もう一度試してください。',
     },

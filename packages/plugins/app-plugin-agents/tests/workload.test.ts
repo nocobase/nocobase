@@ -19,6 +19,151 @@ describe('the workload', () => {
     await h?.close();
   });
 
+  it.each([true, false])(
+    'explains quota with a known reset: %s',
+    async (known) => {
+      h = await createHarness();
+      const runner = await h.registerRunner();
+      const agent = await h.createAgent();
+      const until = known
+        ? new Date(h.clock.now().getTime() + 3_600_000).toISOString()
+        : null;
+      await h.services.tx.run((unit) =>
+        h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+          windows: [
+            {
+              scope: 'tool',
+              target: '',
+              window: 'account',
+              exhausted: true,
+              resetsAt: until,
+            },
+          ],
+        }),
+      );
+      const run = await h.enqueue(agent);
+      expect((await byId(h)).get(run)?.wait).toMatchObject({
+        reason: 'toolQuota',
+        until,
+      });
+      expect(
+        (await h.services.claims.selectionWait(run))?.entries[0],
+      ).toMatchObject({
+        reason: 'toolQuota',
+        until,
+        compatibleCount: 0,
+        runners: [expect.objectContaining({ reason: 'toolQuota' })],
+      });
+      expect(await h.services.runs.queueWait(run)).toMatchObject({
+        reason: 'toolQuota',
+        until,
+        params: { tool: 'claude', ...(until ? { until } : {}) },
+      });
+      expect(await claim(h, runner)).toEqual([]);
+      if (known) {
+        h.clock.advance(3_600_000);
+        expect((await byId(h)).get(run)?.wait?.reason).toBe('next');
+        expect(
+          (await h.services.claims.selectionWait(run))?.entries[0]?.reason,
+        ).not.toBe('toolQuota');
+      }
+    },
+  );
+
+  it('uses the first recoverable runner after all its exhausted windows reset, and permits a quota-free alternative', async () => {
+    h = await createHarness();
+    const agent = await h.createAgent();
+    for (const hours of [[1, 3], [2]]) {
+      const runner = await h.registerRunner();
+      await h.services.tx.run((unit) =>
+        h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+          windows: hours.map((hour) => ({
+            scope: 'tool' as const,
+            target: '',
+            window: `${hour}h`,
+            exhausted: true,
+            resetsAt: new Date(
+              h.clock.now().getTime() + hour * 3_600_000,
+            ).toISOString(),
+          })),
+        }),
+      );
+    }
+    const run = await h.enqueue(agent);
+    const until = new Date(
+      h.clock.now().getTime() + 2 * 3_600_000,
+    ).toISOString();
+    expect((await byId(h)).get(run)?.wait).toMatchObject({
+      reason: 'toolQuota',
+      until,
+    });
+    expect(await h.services.runs.queueWait(run)).toMatchObject({
+      reason: 'toolQuota',
+      until,
+    });
+    const alternative = await h.registerRunner();
+    expect((await byId(h)).get(run)?.wait?.reason).toBe('next');
+    expect(
+      (await h.services.claims.selectionWait(run))?.entries[0]?.reason,
+    ).not.toBe('toolQuota');
+    expect((await claim(h, alternative))[0]?.run.id).toBe(run);
+  });
+
+  it.each(['signedOut', 'disabled', 'modelUnavailable', 'otherOwner'] as const)(
+    'keeps %s distinct from quota',
+    async (cause) => {
+      h = await createHarness();
+      const runner = await h.registerRunner({
+        tools: [
+          {
+            kind: 'claude',
+            authenticated: cause !== 'signedOut',
+            models: [{ id: 'test-model' }],
+          },
+        ],
+        ...(cause === 'disabled' ? { enabledTools: ['codex'] } : {}),
+        ...(cause === 'otherOwner'
+          ? { trust: 'ownerOnly', ownerUserId: 'other' }
+          : {}),
+      });
+      const agent = await h.createAgent({
+        modelEntries: [{ tool: 'claude', model: 'test-model' }],
+      });
+      await h.services.tx.run(async (unit) => {
+        if (cause === 'modelUnavailable')
+          await h.services.runners.markModelUnavailable(
+            unit,
+            runner.runnerId,
+            'claude',
+            'test-model',
+          );
+        else
+          await h.services.runners.reportQuota(
+            unit,
+            runner.runnerId,
+            'claude',
+            'test-model',
+            {
+              windows: [
+                {
+                  scope: 'tool',
+                  target: '',
+                  window: 'account',
+                  exhausted: true,
+                  resetsAt: null,
+                },
+              ],
+            },
+          );
+      });
+      const run = await h.enqueue(agent);
+      expect((await byId(h)).get(run)?.wait?.reason).toBe('toolUnavailable');
+      expect(
+        (await h.services.claims.selectionWait(run))?.entries[0]?.reason,
+      ).toBe(cause === 'disabled' ? 'toolNotInstalled' : 'toolUnavailable');
+    },
+  );
+
   it('keeps owned incompatible runners ahead of other people personal runners', async () => {
     h = await createHarness();
     const mine = await h.registerRunner({

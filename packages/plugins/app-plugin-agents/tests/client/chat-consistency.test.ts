@@ -52,7 +52,7 @@ it('discards an older page that returns after an authoritative refresh begins', 
   const messages = vi.fn().mockImplementation(async (_id, query) => {
     if (query?.pageToken) return old.promise;
     if (query?.ids) return page([message(10)], 11);
-    return page([message(11)], 11);
+    return page([message(10), message(11)], 11);
   });
   const c = controller({ messages, conversation: async () => detail('fresh') });
   c.dispatch('c', { type: 'page', page: page([message(10)], 10, 'older') });
@@ -60,14 +60,12 @@ it('discards an older page that returns after an authoritative refresh begins', 
   await c.refresh('c');
   old.resolve(page([message(1)], 11));
   await older;
-  expect(messages.mock.calls.map((call) => call[1])).toContainEqual({
-    ids: 'm10',
-  });
+  expect(messages.mock.calls.map((call) => call[1])).toContainEqual({});
   expect(c.history('c').state.items.map((m) => m.metadata?.seq)).toEqual([
     10, 11,
   ]);
 });
-it('does not let an older detail response overwrite a newer refresh', async () => {
+it('shares the first detail read and retains one authoritative trailing refresh', async () => {
   const a = deferred<ConversationDetail>(),
     b = deferred<ConversationDetail>();
   const conversation = vi
@@ -77,10 +75,11 @@ it('does not let an older detail response overwrite a newer refresh', async () =
   const c = controller({ conversation, messages: async () => page([], 0) });
   const first = c.refresh('c'),
     second = c.refresh('c');
-  b.resolve(detail('new'));
-  await second;
+  expect(conversation).toHaveBeenCalledOnce();
   a.resolve(detail('old', 'running'));
-  await first;
+  await vi.waitFor(() => expect(conversation).toHaveBeenCalledTimes(2));
+  b.resolve(detail('new'));
+  await Promise.all([first, second]);
   expect(agentsQueryClient().getQueryData(chatKeys.conversation('c'))).toEqual(
     detail('new'),
   );

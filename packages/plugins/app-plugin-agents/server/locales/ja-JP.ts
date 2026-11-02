@@ -58,6 +58,11 @@ const jaJP: LocaleResource<typeof enUS> = {
       },
     },
   },
+  runnerConversation: {
+    title: '会話：{{title}}',
+    other: '他の人の会話',
+    untitled: '新しい会話',
+  },
 };
 
 export default jaJP;

@@ -14,6 +14,7 @@ import spa from './spa.js';
 import heartbeat from './heartbeat.js';
 import logging from './logging.js';
 import drive from './drive.js';
+import concurrency from './concurrency.js';
 import queue from './queue.js';
 import queueExample from './queue-example.js';
 import jobs from './jobs.js';
@@ -39,6 +40,7 @@ const defaultConfigs: AppConfigFactory<{
   heartbeat: ReturnType<typeof heartbeat>;
   logging: ReturnType<typeof logging>;
   drive: ReturnType<typeof drive>;
+  concurrency: ReturnType<typeof concurrency>;
   queue: ReturnType<typeof queue>;
   queueExample: ReturnType<typeof queueExample>;
   jobs: ReturnType<typeof jobs>;
@@ -64,6 +66,7 @@ const defaultConfigs: AppConfigFactory<{
   heartbeat,
   logging,
   drive,
+  concurrency,
   queue,
   queueExample,
   jobs,

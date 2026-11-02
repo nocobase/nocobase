@@ -16,11 +16,13 @@ export function QuotaLabel({
   near = false,
   reset = false,
   usage = false,
+  warning = false,
 }: {
   readonly resetsAt?: string | null;
   readonly near?: boolean;
   readonly reset?: boolean;
   readonly usage?: boolean;
+  readonly warning?: boolean;
 }): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const time = resetsAt ? compactDateTime(resetsAt, i18n.language) : '';
@@ -29,7 +31,7 @@ export function QuotaLabel({
       variant='secondary'
       data-quota-hint
       className={
-        near
+        near || warning
           ? `bg-amber-500/10 text-amber-700 dark:text-amber-300 ${FOCUSED_AMBER_QUOTA_TEXT}`
           : `bg-destructive/10 text-destructive ${FOCUSED_EXHAUSTED_QUOTA_TEXT}`
       }

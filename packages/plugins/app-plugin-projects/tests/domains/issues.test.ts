@@ -320,6 +320,35 @@ describe('visibility', () => {
 });
 
 describe('deleting issues', () => {
+  it('names the parent when a child is deleted and restored without reading its relationships again', async () => {
+    const parent = await h.services.issues.create(alice(), { title: 'Parent' });
+    const child = await h.services.issues.create(alice(), {
+      title: 'Child',
+      parentIssueId: parent.id,
+    });
+    await h.services.issues.create(alice(), {
+      title: 'Sibling',
+      parentIssueId: parent.id,
+    });
+    const changed: string[] = [];
+    const stop = h.services.events.on('issue.changed', (event) => {
+      changed.push(event.issueId);
+    });
+    try {
+      for (const action of ['remove', 'restore'] as const) {
+        changed.length = 0;
+        await h.services.issues[action](admin(), child.id);
+        expect(changed).toContain(parent.id);
+        const detail = await h.services.issueQueries.detail(admin(), parent.id);
+        expect(detail.subtasks.some((row) => row.id === child.id)).toBe(
+          action === 'restore',
+        );
+      }
+    } finally {
+      stop();
+    }
+  });
+
   it('is for administrators, and keeps the issue restorable', async () => {
     const issue = await h.services.issues.create(alice(), { title: 'A' });
     await expect(

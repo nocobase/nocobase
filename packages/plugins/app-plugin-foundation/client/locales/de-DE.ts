@@ -296,7 +296,7 @@ const deDE: FoundationResource = {
     applicationCollectionsPreview:
       '{{count}} Datentabellen erkannt, darunter {{names}}.',
     applicationCollections: '{{count}} Datentabellen erkannt: {{names}}.',
-    relations: '{{count}} Beziehungen verbinden sie.',
+    relations: '{{count}} logische Beziehungsfelder verbinden sie.',
     fileCollections: '{{count}} Dateisammlungen: {{names}}.',
     accounts: '{{count}} Konten verwenden die NocoBase-Anmeldung.',
     permissionSets:
@@ -348,7 +348,8 @@ const deDE: FoundationResource = {
     businessCollections: 'Datentabellen',
     views: 'Ansichten',
     fields: 'Felder',
-    relations: 'Beziehungen',
+    relations: 'logische Beziehungsfelder',
+    physicalForeignKeys: 'physische Fremdschlüssel',
     systemCollections: 'NocoBase-Systemsammlungen',
     files: 'Dateien',
     storedBytes: 'protokollierter Speicherplatz',

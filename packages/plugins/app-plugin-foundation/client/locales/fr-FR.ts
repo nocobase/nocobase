@@ -297,7 +297,7 @@ const frFR: FoundationResource = {
       '{{count}} tables de données identifiées, dont {{names}}.',
     applicationCollections:
       '{{count}} tables de données identifiées : {{names}}.',
-    relations: '{{count}} relations les relient.',
+    relations: '{{count}} champs de relation logique les relient.',
     fileCollections: '{{count}} collections de fichiers : {{names}}.',
     accounts: '{{count}} comptes utilisent l’authentification NocoBase.',
     permissionSets:
@@ -348,7 +348,8 @@ const frFR: FoundationResource = {
     businessCollections: 'tables de données',
     views: 'vues',
     fields: 'champs',
-    relations: 'relations',
+    relations: 'champs de relation logique',
+    physicalForeignKeys: 'clés étrangères physiques',
     systemCollections: 'collections système NocoBase',
     files: 'fichiers',
     storedBytes: 'stockage enregistré',

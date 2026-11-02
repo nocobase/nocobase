@@ -1,8 +1,97 @@
 # Changelog
 
-All notable changes to NocoBase 3 are documented in this file, one section per release: `release-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
+All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
-## [release-beta/2026-10-28.2](https://github.com/nocobase/nocobase/releases/tag/release-beta%2F2026-10-28.2)
+## [nocobase-v3-beta/2026-11-02.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-02.1)
+
+### 🚀 Improvements
+
+- **[Agents]** Applications can order conversation-linked work by its latest update without additional requests. ([#11283](https://github.com/nocobase/nocobase/pull/11283)) by @2013xile
+- **[Users]** Invited users can choose an optional username and correct conflicts without losing their form. ([#11289](https://github.com/nocobase/nocobase/pull/11289)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Agents]**
+  - Explain exhausted tool quota and known reset times for queued runs instead of reporting unavailable tools. ([#11279](https://github.com/nocobase/nocobase/pull/11279)) by @zhouyanliang
+  - Continue unreceived queued messages after stopping a Runner turn without creating duplicate messages. ([#11282](https://github.com/nocobase/nocobase/pull/11282)) by @zhouyanliang
+- **[Projects]** Show why a saved comment did not start work, including when the comment run limit was reached. ([#11280](https://github.com/nocobase/nocobase/pull/11280)) by @2013xile
+- **[Agent sessions]** Press Enter for new lines on phones and use the send button to submit personal agent messages. ([#11281](https://github.com/nocobase/nocobase/pull/11281)) by @app/nocobase-studio
+- **[App foundation]** Restore evidence-backed data model associations through guarded service factories in App Foundation. ([#11287](https://github.com/nocobase/nocobase/pull/11287)) by @katherinehhh
+
+## [nocobase-v3-beta/2026-10-31.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-31.1)
+
+### 🎉 New Features
+
+- **[Realtime updates]** Redis-backed realtime now requires explicit registration of the commercial broker plugin, while single-instance applications retain the built-in Memory broker. ([#11258](https://github.com/nocobase/nocobase/pull/11258)) by @cgyrock
+- **[App templates]** Add a four-step employee onboarding example with private recoverable drafts, conditional validation and duplicate-safe employee creation. ([#11259](https://github.com/nocobase/nocobase/pull/11259)) by @katherinehhh
+
+### 🚀 Improvements
+
+- **[Projects]** Read issue details and refresh progress with fewer database queries. ([#11264](https://github.com/nocobase/nocobase/pull/11264)) by @2013xile
+- **[Concurrency]** Keep local locks held until explicit release, task completion, or application shutdown without treating lease durations as task timeouts. ([#11269](https://github.com/nocobase/nocobase/pull/11269)) by @cgyrock
+- **[Agents]** Keep runner conversations current with fewer duplicate reads and batch linked work in conversation lists. ([#11272](https://github.com/nocobase/nocobase/pull/11272)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Realtime updates]** Reduce repeated requests when opening tasks, inboxes and conversations while preserving live updates. ([#11257](https://github.com/nocobase/nocobase/pull/11257)) by @2013xile
+- **[Agents]**
+  - Show the saved Agent description when reopening its editor immediately after saving. ([#11268](https://github.com/nocobase/nocobase/pull/11268)) by @2013xile
+  - Distinguish workspace preparation from Agent startup and keep received replies before queued follow-ups. ([#11271](https://github.com/nocobase/nocobase/pull/11271)) by @2013xile
+- **[Agent sessions]** Show the session list before the details on narrower pages, and remember whether My Agent's details are open. ([#11275](https://github.com/nocobase/nocobase/pull/11275)) by @gchust
+
+## [nocobase-v3-beta/2026-10-30.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-30.1)
+
+### 🎉 New Features
+
+- **[Concurrency]**
+  - Application developers can coordinate fixed-TTL critical sections through a reusable concurrency API and in-process backend, with cancellable waits, safe timer-failure handling, deadline-safe shutdown and automatic backend cleanup. ([#11209](https://github.com/nocobase/nocobase/pull/11209)) by @cgyrock
+  - Applications can configure named process-local concurrency services and share one lock manager across plugins. ([#11256](https://github.com/nocobase/nocobase/pull/11256)) by @cgyrock
+- **[Background jobs]** Redis-backed background and scheduled jobs now require the commercial Jobs Redis Server plugin, while Memory jobs remain available without it. ([#11229](https://github.com/nocobase/nocobase/pull/11229)) by @cgyrock
+- **[Authentication]** Configure password recovery with an independent SMTP or Resend sender while preserving existing custom callbacks and legacy email channels. ([#11233](https://github.com/nocobase/nocobase/pull/11233)) by @cgyrock
+- **[Database]** Support portable case-insensitive text searches with a LOWER expression in database queries. ([#11236](https://github.com/nocobase/nocobase/pull/11236)) by @2013xile
+- **[Agents]**
+  - Choose and retain a supported reasoning effort for each Runner conversation. ([#11239](https://github.com/nocobase/nocobase/pull/11239)) by @2013xile
+  - Allow Runner conversations to use project repositories and preserve their workspace when changing Agents. ([#11244](https://github.com/nocobase/nocobase/pull/11244)) by @2013xile
+
+### 🚀 Improvements
+
+- **[Agents]**
+  - Remove legacy Agents vector collections in Agents 2, with migration guidance and retained data, while preserving model services and Knowledge indexing. ([#11216](https://github.com/nocobase/nocobase/pull/11216)) by @cgyrock
+  - Fill Agent descriptions from a compact template menu with Undo, including automatic suggestions for newer models in known families. ([#11249](https://github.com/nocobase/nocobase/pull/11249)) by @2013xile
+- **[Projects]**
+  - Allow applications to translate automatic comment notices using their own message types while keeping private provenance hidden. ([#11220](https://github.com/nocobase/nocobase/pull/11220)) by @2013xile
+  - Allow applications to page completed task history without loading every historical task. ([#11224](https://github.com/nocobase/nocobase/pull/11224)) by @2013xile
+  - Reduce repeated database and refresh requests for task details and progress. ([#11225](https://github.com/nocobase/nocobase/pull/11225)) by @2013xile
+  - Load issue cards in lightweight batches and keep unrelated task details from reloading during live updates. ([#11240](https://github.com/nocobase/nocobase/pull/11240)) by @2013xile
+- **[Skills]** Learn list and edit interactions from a runnable, tested example included with the application development Skills. ([#11222](https://github.com/nocobase/nocobase/pull/11222)) by @chenos
+- **[Background jobs]** Redis queues now require an explicitly registered commercial Server plugin, while in-process Memory queues remain available without Redis dependencies. ([#11227](https://github.com/nocobase/nocobase/pull/11227)) by @cgyrock
+- **[App templates]** Simplify new applications by removing unused client extension entry files from both templates. ([#11228](https://github.com/nocobase/nocobase/pull/11228)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[App templates]**
+  - Template lists distinguish empty data, unmatched filters, denied access and request failures, with clear recovery actions and a verified source upgrade path for existing applications. ([#11188](https://github.com/nocobase/nocobase/pull/11188)) by @katherinehhh
+  - Prevent misleading loading indicators and table jumps when opening or closing user edit drawers. ([#11218](https://github.com/nocobase/nocobase/pull/11218)) by @chenos
+- **[Agents]**
+  - Keep active agent conversations connected when returning, synchronize saved replies when recovery is unavailable, and clear pending browser subscriptions after confirmed completion. ([#11205](https://github.com/nocobase/nocobase/pull/11205)) by @2013xile
+  - Let runners find eligible work behind up to 150 queued candidates when earlier work cannot run on them. ([#11210](https://github.com/nocobase/nocobase/pull/11210)) by @2013xile
+  - Keep a run's displayed status current when it changes while its details are first loading. ([#11226](https://github.com/nocobase/nocobase/pull/11226)) by @2013xile
+  - Browse runtime runs in pages of twenty with exact totals, open owned conversations by name, and keep status and quota badges consistent. ([#11238](https://github.com/nocobase/nocobase/pull/11238)) by @2013xile
+  - Preserve conversation completion history when marking messages as read. ([#11251](https://github.com/nocobase/nocobase/pull/11251)) by @2013xile
+  - Keep supported Agent reasoning defaults for conversations, fall back to tool defaults when unavailable, and explain when a manual selection cannot be applied. ([#11255](https://github.com/nocobase/nocobase/pull/11255)) by @2013xile
+- **[Release management]** Keep generated first administrator credentials until they are saved or the app is removed. ([#11219](https://github.com/nocobase/nocobase/pull/11219)) by @2013xile
+- **[Agent sessions]**
+  - Keep session page toolbars aligned with full session lists and let users fold and reopen the sidebar. ([#11223](https://github.com/nocobase/nocobase/pull/11223)) by @Molunerfinn
+  - Long hashes, URLs and words without spaces in your messages to an agent now wrap inside the message bubble instead of cutting off the start of each line. ([#11241](https://github.com/nocobase/nocobase/pull/11241)) by @app/nocobase-studio
+- **[Projects]** Keep attachment evidence reads bounded for tasks with long file histories. ([#11246](https://github.com/nocobase/nocobase/pull/11246)) by @app/nocobase-studio
+- **[Demo mode]** Recover settled daily demo reset failures safely and advance queued mailbox cleanup without repeating successful daily resets. ([#11248](https://github.com/nocobase/nocobase/pull/11248)) by @gchust
+- **[App foundation]**
+  - Combine duplicate Settings groups and report physical foreign keys separately from logical relationship fields. ([#11253](https://github.com/nocobase/nocobase/pull/11253)) by @katherinehhh
+  - Identify API traffic sources in request logs while keeping query context bounded and excluding sensitive parameters. ([#11254](https://github.com/nocobase/nocobase/pull/11254)) by @2013xile
+- **[Skills]** Plan frontend and backend together from the start, streamline routine CRUD development, and verify complete application features without routine design approval pauses. ([#11260](https://github.com/nocobase/nocobase/pull/11260)) by @chenos
+- **[Permissions]** Align permission data ranges across operations and groups, with consistent selector widths and responsive layouts. ([#11262](https://github.com/nocobase/nocobase/pull/11262)) by @katherinehhh
+
+## [nocobase-v3-beta/2026-10-28.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-10-28.2)
 
 ### 🎉 New Features
 

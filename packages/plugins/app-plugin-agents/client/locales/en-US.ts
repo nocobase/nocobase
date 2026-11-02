@@ -11,13 +11,27 @@ import runWaitEnUS from './runWait.en-US.js';
 const pages = {
   modelSuggestions: {
     design:
-      'Designs, architecture, hard investigations and reviews of important changes.',
-    routine: 'Well-scoped implementation, small fixes, tests and wording.',
-    small: 'Small, mechanical changes; cheap and fast.',
+      'Strongest reasoning: proposals, architecture, hard investigations and reviews of important changes; also routine implementation, cross-package changes and writing proposals.',
+    large:
+      'Larger implementations, cross-package changes, refactoring and routine implementation; also proposals, code review and small changes.',
+    review:
+      'Code review and analysis of CI failures; also proposals and hard investigations.',
+    routine:
+      'Routine implementation, small fixes, tests and wording; also analysis of CI failures.',
+    small:
+      'Small changes, mechanical edits and tests, cheap and fast; also analysis of CI failures.',
     explanation:
-      'Understanding requirements, writing proposals and explanations.',
-    large: 'Larger implementations, changes across packages and refactoring.',
-    review: 'Code review and reading CI failures.',
+      'Understanding requirements, explanations and writing proposals.',
+  },
+  goodAtTemplates: {
+    fill: 'Fill from template',
+    design: 'Design and review',
+    large: 'Larger implementation',
+    review: 'Code review and CI',
+    routine: 'Routine implementation',
+    small: 'Small changes',
+    explanation: 'Explanation and proposals',
+    undo: 'Undo',
   },
 
   actions: {
@@ -54,6 +68,8 @@ const pages = {
     title: 'Discard unsaved changes?',
   },
   errors: {
+    boundRunnerIncompatible:
+      'This runner cannot run the selected Agent. Switch runner or start a new conversation.',
     CONFLICT: 'It changed in the meantime. Reload and try again.',
     REVISION_CONFLICT: 'It changed in the meantime. Reload and try again.',
     FORBIDDEN: 'You are not allowed to do this.',
@@ -99,7 +115,7 @@ const pages = {
     unavailableNow: 'Unavailable now',
     title: 'Agents',
     description:
-      'Add agents from the models runners report. The project manager hands each step of an issue to the agent whose description fits it.',
+      'Add agents from the models runners report. The Lead Agent hands each step of an issue to the agent whose description fits it.',
     fromRunners: 'Agents from runners',
     display: {
       search: 'Search models or providers',
@@ -162,12 +178,11 @@ const pages = {
       reportedBy_other: 'Reported by {{count}} runners online: {{names}}.',
       noRunnerNow: 'No runner that has it is online now.',
       goodAtHint:
-        'The project manager decides what to hand this agent by these words. Say what it suits and what it does not.',
+        'The Lead Agent decides what to hand this agent by these words. Say what it suits and what it does not.',
       goodAtRequired: 'Write what it is good at before enabling it.',
-      effortHint:
-        'The project manager cannot change it when it hands work over.',
+      effortHint: 'The Lead Agent cannot change it when it hands work over.',
       personalOnly:
-        'Only personal runners have it: the project manager hands it work only on issues their owners start.',
+        'Only personal runners have it: the Lead Agent hands it work only on issues their owners start.',
     },
     edit: {
       button: 'Edit',

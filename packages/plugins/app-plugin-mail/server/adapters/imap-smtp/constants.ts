@@ -8,7 +8,7 @@ export const IMAP_SMTP_CAPABILITIES: MailProviderDefinition['capabilities'] = {
   folders: true,
   labels: false,
   drafts: false,
-  moveMessage: false,
+  moveMessage: true,
   aliases: false,
 };
 

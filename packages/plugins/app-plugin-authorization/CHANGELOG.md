@@ -1,5 +1,24 @@
 # @nocobase/app-plugin-authorization
 
+## 1.0.0-beta.34
+
+### Patch Changes
+
+- 83f28b1: Batch effective permission set reads so request query counts remain constant as users hold more roles.
+- 88d35b8: Wait for both permission topics on each connection identity preparation while preserving HTTP fallback.
+- 88d35b8: Share the initial permission read after both topics are acknowledged and retain HTTP fallback and reconnect recovery.
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- b29a336: Keep saved Agent descriptions current when reopening the editor before a list refresh completes, and expose the existing authorization permission topic constants to client integrations.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+
 ## 1.0.0-beta.33
 
 ### Minor Changes

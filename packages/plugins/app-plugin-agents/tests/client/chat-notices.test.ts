@@ -165,3 +165,27 @@ it.each(['en-US', 'zh-CN'] as const)(
     ).toBe('Application wording');
   },
 );
+
+it.each(['en-US', 'zh-CN'] as const)(
+  'explains an incompatible project runner in %s',
+  async (locale) => {
+    const { ApiClientError } = await import('@nocobase/app-client');
+    const { errorText } = await import('../../client/hooks/use-notify.js');
+    const namespace = '@nocobase/app-plugin-agents';
+    const runtime = await createTestI18nRuntime({
+      locale,
+      namespaces: { [namespace]: locales },
+    });
+    const t = runtime.getFixedT(namespace, locale);
+    const error = new ApiClientError('Cannot switch', {
+      status: 409,
+      reason: 'CONFLICT',
+      payload: { error: { metadata: { reason: 'boundRunnerIncompatible' } } },
+    });
+    expect(errorText(t, error, 'Failed')).toBe(
+      locale === 'en-US'
+        ? 'This runner cannot run the selected Agent. Switch runner or start a new conversation.'
+        : '此执行机无法运行所选 Agent。请更换执行机或新建对话。',
+    );
+  },
+);

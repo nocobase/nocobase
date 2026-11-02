@@ -1,3 +1,4 @@
+import type { AuthEmailConfig } from './email-config.js';
 import {
   PasswordResetPolicy,
   type PasswordResetConfig,
@@ -71,6 +72,7 @@ const trustedSessionPlugin = {
 
 export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   connection: DatabaseConnection;
+  email?: AuthEmailConfig;
   passwordReset?: PasswordResetConfig;
   passwordResetServices?: PasswordResetServices;
 }
@@ -219,19 +221,25 @@ export class Auth {
   }
 
   constructor(options: AuthOptions) {
-    const { connection, passwordReset, passwordResetServices, ...config } =
-      options;
-    this.resetPolicy = new PasswordResetPolicy(
-      passwordReset ?? {},
-      config,
+    const {
       connection,
-      passwordResetServices ?? {},
-    );
+      email,
+      passwordReset,
+      passwordResetServices,
+      ...config
+    } = options;
     this.connection = connection;
     this.options = options;
     if (!config.secret?.trim() && !config.secrets?.length) {
       throw new Error('Authentication secret is required.');
     }
+    this.resetPolicy = new PasswordResetPolicy(
+      passwordReset ?? {},
+      config,
+      connection,
+      passwordResetServices ?? {},
+      email,
+    );
     const plugins = (config.plugins ?? []).some(
       (plugin) => Reflect.get(plugin, 'id') === 'username',
     )
@@ -679,7 +687,15 @@ export class Auth {
 
   /** Binds trusted server operations to a caller-owned connection or transaction. */
   forConnection(connection: DatabaseConnection): Auth {
-    const bound = new Auth({ ...this.options, connection });
+    const bound = new Auth({
+      ...this.options,
+      connection,
+      passwordResetServices: {
+        ...this.options.passwordResetServices,
+        // Startup diagnostics belong to the main instance, not transaction bindings.
+        warning: undefined,
+      },
+    });
     bound.scopedCredentialChecks = this.scopedCredentialChecks;
     bound.credentialResolvers = this.credentialResolvers;
     bound.userInitializers = this.userInitializers;

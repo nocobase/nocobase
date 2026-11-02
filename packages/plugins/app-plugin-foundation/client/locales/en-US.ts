@@ -297,7 +297,7 @@ const enUS = {
     applicationCollectionsPreview:
       'Identified {{count}} data collections, including {{names}}.',
     applicationCollections: 'Identified {{count}} data collections: {{names}}.',
-    relations: '{{count}} relations connect them.',
+    relations: '{{count}} logical relationship fields connect them.',
     fileCollections: '{{count}} file Collections: {{names}}.',
     accounts: '{{count}} accounts sign in through NocoBase authentication.',
     permissionSets:
@@ -347,7 +347,8 @@ const enUS = {
     businessCollections: 'data tables',
     views: 'views',
     fields: 'fields',
-    relations: 'relations',
+    relations: 'logical relationship fields',
+    physicalForeignKeys: 'physical foreign keys',
     systemCollections: 'NocoBase system Collections',
     files: 'files',
     storedBytes: 'stored, as recorded',

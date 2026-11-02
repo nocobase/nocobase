@@ -62,6 +62,8 @@ import {
 } from '@nocobase/agent-protocol';
 import type { DistService } from '../../distribution/index.js';
 import {
+  chatEffortCapabilities,
+  quotaForAgent,
   runnerLowOnDisk,
   runsEntry,
   toolLimit,
@@ -698,9 +700,17 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         (runner) =>
           runner.trust === 'team' || runner.ownerUserId === run.actorUserId,
       );
+      const quota = usable.length
+        ? []
+        : quotaForAgent(installed, single, run.actorUserId, now.getTime());
       const compatible: Runner[] = [];
       const loads: ModelSelectionWait['entries'][number]['runners'][number][] =
-        [];
+        quota.map((runner) => ({
+          name: runner.runnerName,
+          ownerUserId: installed.find((item) => item.id === runner.runnerId)!
+            .ownerUserId,
+          reason: 'toolQuota',
+        }));
       let unknown = false;
       let incompatible = false;
       let ready = false;
@@ -810,11 +820,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             : 'restricted'
           : usable.length
             ? 'noSharedRunner'
-            : installed.length
-              ? 'toolUnavailable'
-              : connected.length
-                ? 'toolNotInstalled'
-                : 'offline';
+            : quota.length
+              ? 'toolQuota'
+              : installed.length
+                ? 'toolUnavailable'
+                : connected.length
+                  ? 'toolNotInstalled'
+                  : 'offline';
       if (
         !ready &&
         compatible.length > 0 &&
@@ -840,6 +852,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         tool: entry.tool,
         model: entry.model,
         reason,
+        ...(reason === 'toolQuota'
+          ? {
+              until:
+                quota
+                  .flatMap((runner) =>
+                    runner.resetsAt ? [runner.resetsAt] : [],
+                  )
+                  .sort()[0] ?? null,
+            }
+          : {}),
         compatibleCount: compatible.length,
         blockers: [
           ...(unknown ? ['unknown' as const] : []),
@@ -1084,6 +1106,17 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       claim,
       prepared.get('subject'),
     );
+    if (assembly.effort !== undefined) {
+      entry = { ...entry, effort: assembly.effort };
+      if (entry.effort) {
+        const efforts = chatEffortCapabilities(entry, [runner]);
+        if (efforts === undefined) entry = { ...entry, effort: null };
+        else if (!efforts.includes(entry.effort))
+          throw new Error(
+            `The reasoning effort "${entry.effort}" is not supported by this runtime for the selected model.`,
+          );
+      }
+    }
     // workspace.key is required for coordinating runs; old runners must not silently ignore it.
     if (
       (await assemblyCompatibility(

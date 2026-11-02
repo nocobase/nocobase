@@ -60,6 +60,11 @@ const ptBR: LocaleResource<typeof enUS> = {
       },
     },
   },
+  runnerConversation: {
+    title: 'Conversa: {{title}}',
+    other: 'Conversa de outra pessoa',
+    untitled: 'Nova conversa',
+  },
 };
 
 export default ptBR;

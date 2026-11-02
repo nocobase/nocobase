@@ -1,3 +1,4 @@
+import { ApiError } from '@nocobase/app-server/router';
 import { demoConfigurationRuntimeToken } from '../configuration/runtime-token.js';
 import { resolveDemoAgents, type DemoAgents } from '../integrations/agents.js';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
@@ -52,6 +53,10 @@ export function demoModelLoopbackUrl(
   return `http://${host}:${server.port ?? 13000}${base}/api/demoMode/models/v1`;
 }
 
+const INTERRUPTION_RECHECK_MS = 10 * 60_000;
+/** An operation interrupted this long is presumed abandoned, as after a restart, and the schedule takes it over. */
+const INTERRUPTION_TAKEOVER_MS = 60 * 60_000;
+
 /**
  * The demo dataset service. Applications register their dataset on `demoDataToken`; this provider gives it the
  * accounts, roles and model services of the official plugins it finds, the settings item that guards its routes,
@@ -62,6 +67,10 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
   private service: DefaultDemoDataService | undefined;
   private agents: DemoAgents | undefined;
   private resetJobs: ScheduleExecutor | undefined;
+  /** When the paused schedule rereads the data status next, so an interruption is not reread every minute. */
+  private interruptionRecheckAt: number | undefined;
+  /** Whether this interruption was logged, so it is reported once instead of every recheck. */
+  private interruptionReported = false;
 
   public override register(): void {
     const container = this.app.container;
@@ -195,33 +204,135 @@ export class DemoDataProvider extends ServiceProvider<AppPluginApplication> {
     return {
       name: DEMO_DATA_RESET_JOB,
       options: {
-        cron: `${schedule.minute} ${schedule.hour} * * *`,
+        cron: '* * * * *',
         tz: schedule.timezone,
       },
       payload: {},
       // A rule armed while a request ran would otherwise carry that request's policy snapshot into every firing.
-      execute: (context) =>
-        this.app.container
-          .resolve(demoConfigurationRuntimeToken)
-          .withFreshPolicy(() => this.runDailyReset(context.scheduledAt)),
+      // The rule fires every minute; idle minutes stop at the cheap admission check.
+      execute: async (context) => {
+        const configuration = this.app.container.resolve(
+          demoConfigurationRuntimeToken,
+        );
+        if (!(await configuration.dailyDue(context.runAt))) return;
+        await configuration.withFreshPolicy(() =>
+          this.runDailyReset(context.runAt),
+        );
+      },
     };
   }
 
   private async runDailyReset(scheduledAt: Date): Promise<void> {
-    const service = this.service!;
-    // Nothing to reset before the first generation, which also names the account resets run as.
-    if ((await service.status()).state === null) return;
-    const due = await this.app.container
-      .resolve(demoConfigurationRuntimeToken)
-      .claimDaily(scheduledAt);
-    if (!due) return;
-    await service.reset(undefined, due.language, { wait: true });
-    const status = await service.status();
-    if (status.failure)
+    const configuration = this.app.container.resolve(
+      demoConfigurationRuntimeToken,
+    );
+    // Manual recovery settles the daily claims itself; until it or the takeover is due, recheck rarely.
+    if (
+      this.interruptionRecheckAt !== undefined &&
+      Date.now() < this.interruptionRecheckAt
+    )
+      return;
+    const status = await this.service!.status();
+    if (status.state === null) return;
+    // A lease cannot fence arbitrary application callbacks, so a recent interruption waits for manual recovery. One
+    // that has not moved for an hour is presumed abandoned and taken over, so unattended demos keep resetting.
+    if (status.failure?.code === 'DEMO_DATA_INTERRUPTED') {
+      const since = await this.service!.interruptedSince();
+      // The operation moved on since the status was read; the next minute sees its current state.
+      if (!since) return;
+      const takeoverAt = since.getTime() + INTERRUPTION_TAKEOVER_MS;
+      if (Date.now() < takeoverAt) {
+        // The management page shows the interruption; report it once instead of every minute.
+        if (!this.interruptionReported)
+          this.logger()?.warn(
+            {
+              dataset: status.datasetId,
+              takeoverAt: new Date(takeoverAt).toISOString(),
+            },
+            'Daily demo reset paused by an interrupted operation; recover it manually or it is taken over later',
+          );
+        this.interruptionReported = true;
+        this.interruptionRecheckAt = Math.min(
+          Date.now() + INTERRUPTION_RECHECK_MS,
+          takeoverAt,
+        );
+        return;
+      }
       this.logger()?.warn(
-        { failure: status.failure },
+        { dataset: status.datasetId, interruptedSince: since.toISOString() },
+        'Daily demo reset is taking over an abandoned interrupted operation',
+      );
+    }
+    this.interruptionRecheckAt = undefined;
+    this.interruptionReported = false;
+    const claim = await configuration.claimDaily(scheduledAt, {
+      settled:
+        status.state === 'ready' || status.state === 'failed'
+          ? {
+              ready: status.state === 'ready',
+              finishedAt: status.finishedAt
+                ? new Date(status.finishedAt)
+                : null,
+            }
+          : undefined,
+    });
+    if (!claim) return;
+    let renewing: Promise<void> | undefined;
+    const heartbeat = setInterval(() => {
+      if (renewing) return;
+      renewing = configuration
+        .renewDaily(claim)
+        .catch((err: unknown) => {
+          this.logger()?.warn(
+            { err, day: claim.day, attempt: claim.attempt },
+            'Could not renew daily demo reset claim',
+          );
+        })
+        .finally(() => {
+          renewing = undefined;
+        });
+    }, 30_000);
+    heartbeat.unref();
+    try {
+      await this.service!.reset(undefined, claim.language, {
+        wait: true,
+        scheduled: true,
+      });
+    } catch (err) {
+      this.logger()?.warn(
+        { err, day: claim.day, attempt: claim.attempt },
         'The daily demo data reset failed',
       );
+      // Only a settled cleanup/generation failure or admission contention is safe to retry. Lease loss and
+      // validation/policy errors require intervention.
+      const after = await this.service!.status().catch(() => null);
+      const retryable =
+        err instanceof ApiError
+          ? err.reason === 'DEMO_DATA_BUSY'
+          : after?.state === 'failed' &&
+            after.failure?.code !== 'DEMO_DATA_INTERRUPTED';
+      // Recording the outcome must not replace the reset's own error.
+      await configuration
+        .finishDaily(claim, err, retryable)
+        .catch((finishErr: unknown) => {
+          this.logger()?.warn(
+            { err: finishErr, day: claim.day, attempt: claim.attempt },
+            'Could not record the failed daily demo reset',
+          );
+        });
+      throw err;
+    } finally {
+      clearInterval(heartbeat);
+      await renewing;
+    }
+    // Outside the failure path: a reset that completed is never recorded as failed. If this acknowledgement fails,
+    // the claim goes stale and is closed without repetition once the settled data is seen.
+    await configuration.finishDaily(claim).catch((err: unknown) => {
+      this.logger()?.warn(
+        { err, day: claim.day, attempt: claim.attempt },
+        'Could not acknowledge the completed daily demo reset',
+      );
+    });
   }
 
   /** This process's own address, so the gateway's calls to the simulated model never leave the machine. */

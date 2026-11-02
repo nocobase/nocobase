@@ -1,3 +1,5 @@
+import OnboardingRegistration from './onboarding-registration.js';
+import ProcurementRegistration from './procurement-registration.js';
 import SubmissionProvider from './submission.js';
 import type { ApplicationServiceProviderConstructor } from '@nocobase/app-server/application';
 
@@ -10,6 +12,7 @@ import AIFormFillProvider from './ai-form-fill.js';
 import ExternalCrmProvider from './external-crm.js';
 import KnowledgeAccessProvider from './knowledge-access.js';
 import KnowledgeChatProvider from './knowledge-chat.js';
+import CustomerContactsAuthorizationProvider from './customer-contacts-authorization.js';
 
 export {
   appExampleServiceToken,
@@ -18,6 +21,8 @@ export {
 
 const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
   SubmissionProvider,
+  ProcurementRegistration,
+  OnboardingRegistration,
   AppExampleProvider,
   AIFormFillProvider,
   WorkflowManagementProvider,
@@ -25,6 +30,7 @@ const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
   ExternalCrmProvider,
   KnowledgeAccessProvider,
   KnowledgeChatProvider,
+  CustomerContactsAuthorizationProvider,
 ];
 
 export default serviceProviders;

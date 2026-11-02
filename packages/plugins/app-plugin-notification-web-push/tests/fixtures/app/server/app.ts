@@ -7,7 +7,6 @@ import type { Application } from '@nocobase/app-server/application';
 import { CachingProvider } from '@nocobase/app-server/caching';
 import { DatabaseProvider } from '@nocobase/app-server/database';
 import { IdGeneratorProvider } from '@nocobase/app-server/id-generator';
-import { MailerProvider } from '@nocobase/app-server/mailer';
 import {
   createAppFromRuntime,
   type AppRuntimeContext,
@@ -18,7 +17,6 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addServiceProvider(DatabaseProvider);
   app.addServiceProvider(CachingProvider);
   app.addServiceProvider(IdGeneratorProvider);
-  app.addServiceProvider(MailerProvider);
   app.addServiceProvider(I18nProvider);
   app.addServiceProvider(LoggingProvider);
   app.addServiceProvider(SecretsProvider);

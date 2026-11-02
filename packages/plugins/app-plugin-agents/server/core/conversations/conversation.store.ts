@@ -27,6 +27,7 @@ import {
 } from './attachments.js';
 
 export interface ConversationRecord {
+  readonly projectId?: string | null;
   readonly id: string;
   readonly userId: string;
   readonly agentId: string;

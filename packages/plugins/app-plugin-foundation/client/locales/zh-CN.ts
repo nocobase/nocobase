@@ -267,7 +267,7 @@ const zhCN: FoundationResource = {
     applicationCollectionsPreview:
       '已识别 {{count}} 张数据表，包括 {{names}}。',
     applicationCollections: '已识别 {{count}} 张数据表：{{names}}。',
-    relations: '它们之间有 {{count}} 个关联关系。',
+    relations: '它们之间有 {{count}} 个逻辑关联字段。',
     fileCollections: '{{count}} 张文件表：{{names}}。',
     accounts: '{{count}} 个账号通过 NocoBase 认证登录。',
     permissionSets: '除全部权限外，还有 {{count}} 个权限集：{{names}}。',
@@ -313,7 +313,8 @@ const zhCN: FoundationResource = {
     businessCollections: '数据表',
     views: '个视图',
     fields: '个字段',
-    relations: '个关联关系',
+    relations: '个逻辑关联字段',
+    physicalForeignKeys: '个物理外键',
     systemCollections: '张 NocoBase 系统表',
     files: '个文件',
     storedBytes: '文件记录的总大小',

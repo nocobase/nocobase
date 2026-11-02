@@ -31,3 +31,5 @@ export {
   FormFeedback,
   formFeedbackErrors,
 } from '../../../../packages/app/app-client/src/form-feedback.js';
+
+export { getAvatarInitials } from '../../../../packages/app/app-client/src/avatar-initials.js';

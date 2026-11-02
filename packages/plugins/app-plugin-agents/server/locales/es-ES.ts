@@ -60,6 +60,11 @@ const esES: LocaleResource<typeof enUS> = {
       },
     },
   },
+  runnerConversation: {
+    title: 'Conversación: {{title}}',
+    other: 'Conversación de otra persona',
+    untitled: 'Nueva conversación',
+  },
 };
 
 export default esES;

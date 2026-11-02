@@ -7,6 +7,7 @@ import {
   skillsRoute,
 } from '@nocobase/app-plugin-agents/client/routes';
 import {
+  ShoppingCart,
   BrainCircuit,
   BotMessageSquare,
   Bot,
@@ -24,6 +25,7 @@ import {
   Settings,
   BookOpen,
   DatabaseZap,
+  UsersRound,
 } from 'lucide-react';
 import {
   defineAppRoutes,
@@ -31,6 +33,86 @@ import {
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  {
+    name: 'onboarding',
+    path: '/onboarding',
+    auth: 'required',
+    authz: { resource: { type: 'page', id: 'onboarding' }, action: 'access' },
+    navigation: { title: 'onboarding.title', icon: UsersRound },
+    componentLoader: () => import('./pages/onboarding/index.js'),
+    children: [
+      {
+        name: 'onboarding-new',
+        path: 'new',
+        componentLoader: () => import('./pages/onboarding/wizard.js'),
+      },
+      {
+        name: 'onboarding-detail',
+        path: ':id',
+        componentLoader: () => import('./pages/onboarding/wizard.js'),
+      },
+    ],
+  },
+  {
+    name: 'procurement',
+    path: '/procurement',
+    auth: 'required',
+    authz: { resource: { type: 'page', id: 'procurement' }, action: 'access' },
+    navigation: { title: 'procurement.title', icon: ShoppingCart },
+    componentLoader: () => import('./pages/procurement/index.js'),
+    children: [
+      {
+        name: 'procurement-new',
+        path: 'new',
+        componentLoader: () => import('./pages/procurement/detail.js'),
+      },
+      {
+        name: 'procurement-detail',
+        path: ':id',
+        componentLoader: () => import('./pages/procurement/detail.js'),
+      },
+    ],
+  },
+  {
+    name: 'customer-contacts',
+    path: '/customer-contacts',
+    auth: 'required',
+    authz: {
+      resource: { type: 'page', id: 'customer-contacts' },
+      action: 'access',
+    },
+    navigation: { title: 'customerContacts.title', icon: UsersRound },
+    componentLoader: () => import('./pages/customer-contacts/index.js'),
+    children: [
+      {
+        name: 'customer-contacts-batch',
+        path: 'batch',
+        componentLoader: () => import('./pages/customer-contacts/batch.js'),
+      },
+      {
+        name: 'customer-contacts-detail',
+        path: ':customerId',
+        componentLoader: () => import('./pages/customer-contacts/detail.js'),
+        children: [
+          {
+            name: 'customer-contacts-edit',
+            path: 'edit',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+          {
+            name: 'customer-contacts-new-contact',
+            path: 'contacts/new',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+          {
+            name: 'customer-contacts-edit-contact',
+            path: 'contacts/:contactId/edit',
+            componentLoader: () => import('./pages/customer-contacts/edit.js'),
+          },
+        ],
+      },
+    ],
+  },
   {
     name: 'skill-projects',
     path: '/skill-projects',

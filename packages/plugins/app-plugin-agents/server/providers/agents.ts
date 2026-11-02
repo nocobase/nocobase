@@ -435,6 +435,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
                   ? {
                       kind: 'conversation.changed',
                       conversationId: event.conversationId,
+                      ...(event.seenSeq === undefined
+                        ? {}
+                        : { seenSeq: event.seenSeq }),
                     }
                   : {
                       kind: 'conversation.messages',

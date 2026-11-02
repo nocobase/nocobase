@@ -16,8 +16,13 @@
  * Each component brings this plugin's translations and query cache; the hooks read that cache from any tree.
  */
 import { useTranslation } from '@nocobase/i18n/client';
-import { useQuery } from '@tanstack/react-query';
-import { createElement, type ComponentType, type ReactElement } from 'react';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
+import {
+  createElement,
+  useEffect,
+  type ComponentType,
+  type ReactElement,
+} from 'react';
 
 import { ACCESS_NAMESPACE } from '../shared/access.js';
 import type { ChatAgent } from '../shared/conversations.js';
@@ -32,6 +37,7 @@ import { useAgentText } from './hooks/use-vocabulary.js';
 import { useQuotaExpiry } from './hooks/use-quota-expiry.js';
 import { useRealtimeTopic } from './hooks/use-realtime-topic.js';
 import { RUNNERS_TOPIC } from '../shared/realtime.js';
+import { coalescedInvalidation } from './chat/coalesced-invalidation.js';
 import { pickerAgentOf } from './lib/agents.js';
 import { RunnerAgentsSection as RunnerAgents } from './pages/agents/runner-agents.js';
 import { agentsQueryClient, withAgents } from './query.js';
@@ -209,26 +215,61 @@ export function useAgentOptions(): AgentOptions {
   };
 }
 
+const candidateRefreshes = new WeakMap<
+  QueryClient,
+  Map<
+    string,
+    { refs: number; refresh: ReturnType<typeof coalescedInvalidation> }
+  >
+>();
+
 /** One candidate, including an application's system agent, using the viewer-scoped detail API. */
 export function useAgentOption(agentId: string): ChatAgent | null {
   const api = useAgentsApi();
   const text = useAgentText();
   const cache = agentsQueryClient();
+  useEffect(() => {
+    let entries = candidateRefreshes.get(cache);
+    if (!entries) {
+      entries = new Map<
+        string,
+        { refs: number; refresh: ReturnType<typeof coalescedInvalidation> }
+      >();
+      candidateRefreshes.set(cache, entries);
+    }
+    let entry = entries.get(agentId);
+    if (!entry) {
+      entry = { refs: 0, refresh: coalescedInvalidation(cache) };
+      entries.set(agentId, entry);
+    }
+    entry.refs += 1;
+    return () => {
+      if (--entry.refs === 0) {
+        entry.refresh.stop();
+        entries.delete(agentId);
+      }
+    };
+  }, [cache, agentId]);
+  const ready = useRealtimeTopic(
+    RUNNERS_TOPIC,
+    () => {
+      candidateRefreshes
+        .get(cache)
+        ?.get(agentId)
+        ?.refresh.add(agentsKeys.agent(agentId));
+    },
+    true,
+  );
   const result = useQuery(
     {
       queryKey: agentsKeys.agent(agentId),
+      enabled: ready,
       queryFn: () => api.agent(agentId),
-      staleTime: 30_000,
+      staleTime: 60_000,
     },
     cache,
   );
   useQuotaExpiry(result.data ? [result.data] : []);
-  useRealtimeTopic(RUNNERS_TOPIC, () => {
-    void cache.invalidateQueries(
-      { queryKey: agentsKeys.agent(agentId) },
-      { cancelRefetch: false },
-    );
-  });
   return result.data
     ? pickerAgentOf(result.data, text.name(result.data))
     : null;

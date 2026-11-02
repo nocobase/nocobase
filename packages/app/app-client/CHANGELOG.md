@@ -1,5 +1,20 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.6
+
+### Patch Changes
+
+- 88d35b8: Provide an acknowledgement gate for initial snapshots with HTTP fallback and reconnect recovery.
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [cf23bfe]
+  - @nocobase/realtime@1.0.0-beta.0
+
+## 4.0.0-beta.5
+
+### Patch Changes
+
+- d3f0c92: Present concise, theme-aware list feedback for loading, empty data, unmatched filters, denied access and request failures, preserve prior results after failed refreshes, and include target-guidance discovery, source reconciliation and verified completion in the existing version-selected template upgrade workflow.
+
 ## 4.0.0-beta.4
 
 ### Minor Changes

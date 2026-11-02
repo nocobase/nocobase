@@ -233,6 +233,10 @@ export interface ConversationRun {
 
 /** A conversation in the history list. */
 export interface ConversationSummary {
+  /** Linked work resolved for this conversation's owner in the list/detail snapshot. */
+  readonly links?: readonly ConversationLink[];
+  /** The optional project whose code this Runner conversation uses. */
+  readonly projectId?: string | null;
   readonly execution?: {
     readonly status: 'running' | 'idle';
     readonly outcome?: 'completed' | 'cancelled' | 'failed';
@@ -327,6 +331,8 @@ export interface ConversationUsage {
 
 /** How the application shows something a conversation is tied to, as its link kind resolves it for the viewer. */
 export interface ConversationLinkView {
+  /** When the resolved target was last updated, for ordering linked work without another read. */
+  readonly targetUpdatedAt?: string;
   /** Its short identifier, such as an issue's `ST-58`. */
   readonly key: string | null;
   readonly title: string;
@@ -363,6 +369,8 @@ export const CONVERSATION_LINK_KIND_PATTERN: RegExp =
 
 /** One conversation as the panel opens it. */
 export interface ConversationDetail extends ConversationSummary {
+  /** Saved per-conversation preference; null uses the current Agent default. */
+  readonly effort?: string | null;
   readonly availability: ChatAvailability;
   /** Another agent may take over (`POST …/fallback`): the system default agent, when it can answer. */
   readonly canFallback: boolean;
@@ -478,6 +486,7 @@ export type ConversationNoticeCode = ConversationNotice['code'];
 
 /** `aiMessages.metadata`. */
 export interface MessageMetadata {
+  readonly effort?: string;
   readonly output?: OutputBlock;
   readonly parentToolUseId?: string;
   readonly childSessionId?: string;
@@ -666,6 +675,9 @@ export interface OnlineChatConfigSnapshot {
   readonly variable?: OnlineChatJson;
 }
 export interface CreateConversationRequest {
+  readonly projectId?: string | null;
+  /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
+  readonly effort?: string | null;
   /** Defaults to true; background SDK sessions are always hidden. */
   readonly showInChatList?: boolean;
   readonly config?: {
@@ -686,6 +698,8 @@ export interface CreateConversationRequest {
 
 /** `PATCH conversation`: rename (the title becomes `user`'s and the agent may no longer change it), or archive. */
 export interface ConversationPatch {
+  /** May change only before the first user message. */
+  readonly projectId?: string | null;
   readonly title?: string;
   readonly archived?: boolean;
 }
@@ -717,6 +731,8 @@ export interface MessagePage {
 
 /** `POST messages`. */
 export interface SendMessageRequest {
+  /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
+  readonly effort?: string | null;
   /** Confirm this Runner agent only if the message is accepted while idle. */
   readonly agentId?: string;
   /** Markdown, at most `MESSAGE_CONTENT_MAX` characters; empty only when files are sent. */
@@ -769,6 +785,10 @@ export interface StartConversationRequest {
 
 /** An agent the person may chat with (`GET agents`). */
 export interface ChatAgent {
+  /** Known efforts shared by all eligible runners for the current model. Empty or absent hides selection. */
+  readonly efforts?: readonly string[];
+  /** The Agent default; it can become unsupported after a capability update. */
+  readonly effort?: string | null;
   readonly quota?: readonly QuotaLocation[];
   /** Viewer-visible eligible runtimes, for partial quota availability. */
   readonly runnerNames: readonly string[];
@@ -837,4 +857,6 @@ export type ConversationChanged =
   | {
       readonly kind: 'conversation.changed';
       readonly conversationId: string;
+      /** A read acknowledgement; other conversation data is unchanged. */
+      readonly seenSeq?: number;
     };

@@ -44,6 +44,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@nocobase/app-plugin-notification-providers": "workspace:*"
   }
 }

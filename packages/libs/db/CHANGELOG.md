@@ -1,5 +1,11 @@
 # @nocobase/db
 
+## 1.0.0-beta.24
+
+### Minor Changes
+
+- 12b1f64: Add a LOWER scalar expression for portable case-insensitive ASCII pattern matching.
+
 ## 1.0.0-beta.23
 
 ### Minor Changes

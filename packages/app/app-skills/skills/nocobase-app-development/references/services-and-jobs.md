@@ -81,7 +81,9 @@ const realtime = useService(realtimeClientToken);
 | Recurs, and administrators view, enable, disable and track it                                                                                          | A Scheduler schedule, as the Scheduler plugin's Skill describes                      |
 | Needs a delay, a priority, a job ID that deduplicates, an atomic batch, a global rate limit, cancelling a running job, or several handlers per message | A queue, in [Queues](#queues)                                                        |
 
-Both executors come from the application's jobs service and run on the `jobs` configuration; queues run on the separate `queue` configuration. An application running more than one instance sets `jobs.default`, and `queue.default` if it uses queues, to a `redis` configuration.
+For required commercial Redis backends, follow [commercial package access](plugins.md#commercial-package-access) for each package: automatically probe pkg-v3 and install/register a compatible authorized plugin without prompting. If access is unavailable, leave a brief conversation notice and continue independent work; keep distributed backend integration pending instead of selecting an unregistered adapter or treating Memory as satisfying a multi-instance requirement.
+
+Both executors come from the application's jobs service and run on the `jobs` configuration; queues run on the separate `queue` configuration. An application running more than one instance sets `jobs.default`, and `queue.default` if it uses queues, to a `redis` configuration. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
 
 Redis Queue support requires installation and explicit Server registration of `@nocobase/app-plugin-queue-redis/server`. The OSS templates declare Memory only. Add the plugin's typed Redis configuration to the existing `queue` section before selecting it; Jobs configuration is independent. Unselected legacy Redis entries do not prevent Memory startup, but selecting Redis without its implementation fails explicitly.
 
@@ -173,7 +175,7 @@ Keep `execute` thin. It should resolve a service and call one method, so the beh
 
 Two things to decide before shipping one:
 
-- **More than one instance.** `jobs.default` decides. The `redis` adapter runs each firing on exactly one instance, however many there are. The `memory` adapter — also what runs when no default is set — keeps its state in the process and writes it under `storage/jobs` when the application stops: it serves one process, every other process or instance would fire its own copy, and a process that is killed loses what changed since it started. Configure `redis` before scaling out.
+- **More than one instance.** `jobs.default` decides. The commercial Redis adapter distributes firings between workers; recovery can replay work, so effects must be idempotent. The `memory` adapter — also what runs when no default is set — keeps its state in the process and writes it under `storage/jobs` when the application stops: it serves one process, every other process or instance would fire its own copy, and a process that is killed loses what changed since it started. Configure `redis` before scaling out. Install and register the commercial `@nocobase/app-plugin-jobs-redis` Server plugin on every instance before selecting Redis; define the named `jobs` configuration with `adapter: redis`. Queue Redis is a separate capability and is unchanged.
 - **Long or heavy work.** A firing that runs for minutes holds one of the executor's slots. Prefer one that submits a task to a `JobExecutor` and returns, which also gets you its retry behavior.
 
 ## Queues

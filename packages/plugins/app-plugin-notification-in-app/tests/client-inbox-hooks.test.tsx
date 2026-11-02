@@ -36,6 +36,7 @@ vi.mock('@nocobase/app-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/app-client')>();
   return {
     ...actual,
+    useRealtimeReadiness: () => true,
     useApiClient: () => mocks.appClient,
     useService: (token: unknown) =>
       token === actual.realtimeClientToken ? mocks.realtime : mocks.appClient,
@@ -228,60 +229,45 @@ describe('in-app notification inbox hooks', () => {
     expect(result.current.actions.pending).toBe(true);
   });
 
-  it('refreshes inbox snapshots on plugin signals and extra topic readiness', async () => {
-    const stopItems = vi.fn();
-    const stopTopic = vi.fn();
-    let refreshItems: (signal: AbortSignal) => Promise<void> = async () => {};
-    let extra: RealtimeWatchOptions<unknown> = {};
-    mocks.subscribe.mockImplementation(
-      (_realtime: unknown, _target: unknown, refresh: typeof refreshItems) => {
-        refreshItems = refresh;
-        return stopItems;
-      },
-    );
-    mocks.realtime.watch.mockImplementation(
-      (_topic: string, options: RealtimeWatchOptions<unknown>) => {
-        extra = options;
-        return {
-          state: 'subscribed',
-          error: undefined,
-          retry: vi.fn(),
-          close: stopTopic,
-        };
-      },
-    );
+  it('shares inbox refresh ownership and recovers only after both topics acknowledge', async () => {
+    const callbacks = new Map<string, RealtimeWatchOptions<unknown>>();
+    const close = vi.fn();
+    mocks.realtime.watch.mockImplementation((topic, options) => {
+      callbacks.set(topic, options!);
+      return { state: 'subscribed', error: undefined, retry: vi.fn(), close };
+    });
     mocks.fetchUnreadCount.mockResolvedValue(1);
     const { queryClient, wrapper } = setup();
     const view = renderHook(
-      ({ topics }: { topics: string[] }) => {
-        useInboxRefresh(topics);
+      () => {
+        useInboxRefresh(['app:inbox']);
+        useInboxRefresh(['app:inbox']);
         return useInboxUnreadCount();
       },
-      { wrapper, initialProps: { topics: ['app:inbox'] } },
+      { wrapper },
     );
     await waitFor(() => expect(view.result.current.data).toBe(1));
+    act(() => callbacks.forEach((callback) => callback.onReady?.()));
+    expect(mocks.fetchUnreadCount).toHaveBeenCalledOnce();
     mocks.fetchUnreadCount.mockResolvedValue(2);
-    await act(() => refreshItems(new AbortController().signal));
+    act(() => {
+      callbacks.forEach((callback) => callback.onStateChange?.('pending'));
+      callbacks.forEach((callback) => callback.onReady?.());
+    });
     await waitFor(() => expect(view.result.current.data).toBe(2));
     mocks.fetchUnreadCount.mockResolvedValue(3);
-    act(() => extra.onReady?.());
-    await waitFor(() => expect(view.result.current.data).toBe(3));
-    mocks.fetchUnreadCount.mockResolvedValue(4);
     act(() =>
-      extra.onEvent?.({
+      callbacks.get('app:inbox')!.onEvent?.({
         type: 'event',
         topic: 'app:inbox',
         payload: {},
         publishedAt: new Date().toISOString(),
       }),
     );
-    await waitFor(() => expect(view.result.current.data).toBe(4));
-    view.rerender({ topics: ['app:inbox'] });
-    expect(mocks.subscribe).toHaveBeenCalledTimes(1);
-    expect(mocks.realtime.watch).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(view.result.current.data).toBe(3));
+    expect(mocks.realtime.watch).toHaveBeenCalledTimes(2);
     view.unmount();
-    expect(stopItems).toHaveBeenCalledOnce();
-    expect(stopTopic).toHaveBeenCalledOnce();
+    expect(close).toHaveBeenCalledTimes(2);
     queryClient.clear();
   });
 });

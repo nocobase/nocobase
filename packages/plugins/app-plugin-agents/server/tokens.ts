@@ -33,6 +33,7 @@ export type {
   ConversationLinkTarget,
   ConversationNews,
   ConversationRef,
+  ConversationWorkspaceProvider,
   ConversationRuleLines,
   ConversationRules,
   ConversationRulesContext,

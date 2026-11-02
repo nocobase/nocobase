@@ -284,7 +284,7 @@ const viVN: FoundationResource = {
     applicationCollectionsPreview:
       'Đã nhận diện {{count}} bảng dữ liệu, gồm {{names}}.',
     applicationCollections: 'Đã nhận diện {{count}} bảng dữ liệu: {{names}}.',
-    relations: '{{count}} quan hệ kết nối chúng.',
+    relations: '{{count}} trường quan hệ logic kết nối chúng.',
     fileCollections: '{{count}} bộ sưu tập tệp: {{names}}.',
     accounts: '{{count}} tài khoản dùng xác thực NocoBase.',
     permissionSets:
@@ -331,7 +331,8 @@ const viVN: FoundationResource = {
     businessCollections: 'bảng dữ liệu',
     views: 'khung nhìn',
     fields: 'trường',
-    relations: 'quan hệ',
+    relations: 'trường quan hệ logic',
+    physicalForeignKeys: 'khóa ngoại vật lý',
     systemCollections: 'bộ sưu tập hệ thống NocoBase',
     files: 'tệp',
     storedBytes: 'dung lượng lưu trữ đã ghi',

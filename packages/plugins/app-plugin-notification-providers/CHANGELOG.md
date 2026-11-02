@@ -1,5 +1,32 @@
 # @nocobase/app-plugin-notification-providers
 
+## 1.0.0-beta.17
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-plugin-notification@2.0.0-beta.3
+
+## 1.0.0-beta.16
+
+### Minor Changes
+
+- b6934ad: Expose notification email configuration helpers from `@nocobase/app-plugin-notification-providers/config` and mailer contracts and validation from `@nocobase/mailer/config`, without loading sending runtimes. Preserve notification validation, optional private environment mappings and application overrides. Migrate application templates and configuration examples to the new import. Freeze and deprecate the published `@nocobase/app-server/mailer` API while retaining existing behavior for applications that still depend on it.
+
+### Patch Changes
+
+- Updated dependencies [a0b4568]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/app-plugin-notification@2.0.0-beta.2
+  - @nocobase/mailer@0.1.0-beta.1
+
 ## 1.0.0-beta.15
 
 ### Major Changes

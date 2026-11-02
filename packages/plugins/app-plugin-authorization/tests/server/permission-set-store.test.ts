@@ -32,6 +32,36 @@ describe('authorization plugin database stores', () => {
     await testDatabase.destroy();
   });
 
+  it('reads only requested permission sets in one query, also inside a transaction', async () => {
+    const conn = database.connection();
+    const store = new DatabasePermissionSetStore(() => conn);
+    await store.create({ key: 'batch-one', grants: [] });
+    await store.create({ key: 'batch-two', grants: [] });
+    const client = await conn.client<import('knex').Knex>();
+    const statements: string[] = [];
+    const capture = (query: { sql: string }) => statements.push(query.sql);
+    client.on('query', capture);
+    try {
+      expect(
+        (await store.getMany(['batch-two', 'missing', 'batch-two'])).map(
+          (set) => set.key,
+        ),
+      ).toEqual(['batch-two']);
+      expect(statements).toHaveLength(1);
+      expect(await store.getMany([])).toEqual([]);
+      expect(statements).toHaveLength(1);
+    } finally {
+      client.removeListener('query', capture);
+    }
+    await conn.transaction(async (tx) => {
+      const bound = store.withTransaction(tx) as DatabasePermissionSetStore;
+      await bound.create({ key: 'batch-uncommitted', grants: [] });
+      expect(
+        (await bound.getMany(['batch-uncommitted'])).map((set) => set.key),
+      ).toEqual(['batch-uncommitted']);
+    });
+  });
+
   it('rejects a stale role revision atomically without losing a saved grant', async () => {
     const store = new DatabasePermissionSetStore(() => database.connection());
     const original = await store.create({ key: 'revision-check', grants: [] });

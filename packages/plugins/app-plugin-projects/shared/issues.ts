@@ -26,6 +26,12 @@ export interface Executor {
   readonly id: string;
 }
 
+/** The fields a reference card needs; visibility is checked for every batch. */
+export type IssueSummary = Pick<
+  Issue,
+  'id' | 'identifier' | 'title' | 'statusKey'
+>;
+
 export interface Issue {
   readonly id: string;
   readonly number: number;

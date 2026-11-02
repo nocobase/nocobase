@@ -1,3 +1,4 @@
+import concurrency from '@nocobase/app-plugin-concurrency/server';
 import mail from '@nocobase/app-plugin-mail/server';
 import mailExample from '@nocobase/app-plugin-mail-example/server';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/server';
@@ -37,6 +38,7 @@ import foundation from '@nocobase/app-plugin-foundation/server';
 import knowledge from '@nocobase/app-plugin-knowledge/server';
 
 const serverPlugins: AppServerPlugins = defineServerPlugins([
+  concurrency,
   authentication,
   authorization,
   defaultAccess,

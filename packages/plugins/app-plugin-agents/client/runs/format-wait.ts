@@ -100,6 +100,8 @@ export function formatRunWait(
           }).format(at);
     } else if (value !== '') values[name] = value as string | number;
   }
+  if (wait.reason === 'toolQuota' && !given.until)
+    values.until = t('runWait.quotaResetUnknown', { ns });
   const sentence = t(`runWait.reasons.${wait.reason}`, {
     ns,
     ...values,

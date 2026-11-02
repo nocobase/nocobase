@@ -131,8 +131,6 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
       );
       this.releases.push(
         events.onAny((event) => {
-          // Planned notices are delivered, not shown.
-          if (event.type.startsWith('notice.')) return;
           announcer.add(event);
         }),
         () => announcer.close(),

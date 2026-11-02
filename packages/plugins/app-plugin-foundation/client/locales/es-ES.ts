@@ -301,7 +301,7 @@ const esES: FoundationResource = {
       'Se identificaron {{count}} tablas de datos, incluidas {{names}}.',
     applicationCollections:
       'Se identificaron {{count}} tablas de datos: {{names}}.',
-    relations: '{{count}} relaciones las conectan.',
+    relations: '{{count}} campos de relación lógica las conectan.',
     fileCollections: '{{count}} colecciones de archivos: {{names}}.',
     accounts:
       '{{count}} cuentas acceden mediante la autenticación de NocoBase.',
@@ -353,7 +353,8 @@ const esES: FoundationResource = {
     businessCollections: 'tablas de datos',
     views: 'vistas',
     fields: 'campos',
-    relations: 'relaciones',
+    relations: 'campos de relación lógica',
+    physicalForeignKeys: 'claves foráneas físicas',
     systemCollections: 'colecciones de sistema de NocoBase',
     files: 'archivos',
     storedBytes: 'almacenado según registro',

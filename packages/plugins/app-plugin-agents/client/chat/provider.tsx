@@ -251,8 +251,6 @@ export function ChatProvider({
 }): ReactElement {
   const location = useLocation();
   const navigate = useNavigate();
-  // The one subscription that keeps every chat view's conversations current, whichever views the application renders.
-  useChatRealtime(available);
   const [state, setState] = useState<ChatPanelState>(() => readPanelState());
   const [pinned, setPinned] = useState<readonly ChatContextItem[]>([]);
   const [draft, setDraft] = useState<ChatDraft | null>(null);
@@ -562,11 +560,20 @@ export function ChatProvider({
             )
           }
         >
-          <ChatClientProvider>{children}</ChatClientProvider>
+          <ChatClientProvider>
+            <ChatRealtime enabled={available} />
+            {children}
+          </ChatClientProvider>
         </ChatSourcesProvider>
       </ChatPageContext.Provider>
     </ChatPanelContext.Provider>
   );
+}
+
+/** Share the controller's pending read receipt with the one subscription for all chat surfaces. */
+function ChatRealtime({ enabled }: { enabled: boolean }): null {
+  useChatRealtime(enabled);
+  return null;
 }
 
 let sourceSeed = 0;

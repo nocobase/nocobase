@@ -18,6 +18,7 @@ export default defineConfig({
       createReactVitestConfig({
         test: {
           name: 'client',
+          setupFiles: ['./tests/helpers/match-media.ts'],
           include: ['tests/client/**/*.test.{ts,tsx}'],
         },
       }),

@@ -110,6 +110,7 @@ function overrides(
     source: _source,
     title: _title,
     showInChatList: _showInChatList,
+    projectId: _projectId,
     selectedModel: _selectedModel,
     ...pending
   } = options;
@@ -393,6 +394,7 @@ export class RunnerRealtimeOnlineAgent implements RealtimeOnlineAgent {
         this.sessionId,
         {
           agentId: input?.agentId,
+          effort: input?.effort,
           content: text,
           attachmentIds: input?.attachmentIds?.[0],
           clientId: input?.clientId,
@@ -483,8 +485,10 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
       {
         agentId: initial.config.agentId,
         source: options.source,
+        projectId: options.projectId,
         title: options.title,
         showInChatList: options.showInChatList,
+        effort: options.effort,
       },
       initial.config,
     );
@@ -794,17 +798,28 @@ export class RunnerOnlineAgentAdapter implements OnlineAgentBackend {
     }
     let phase: NonNullable<Execution['phase']> =
       run.status === 'queued' ? 'waiting' : 'starting';
-    if (run.status === 'running' && execution.phase !== 'thinking') {
-      const started = await eventsRepo(this.deps.tx.read()).findOne({
+    if (execution.phase === 'thinking') phase = 'thinking';
+    else if (run.status === 'dispatched' || run.status === 'running') {
+      const latest = await eventsRepo(this.deps.tx.read()).findOne({
         filter: (f) =>
           f.and([
             f.string('runId').eq(run.id),
-            f.string('type').eq('status'),
-            f.text('content').eq('started'),
+            f.or([
+              f.and([
+                f.string('type').eq('status'),
+                f.or([
+                  f.text('content').eq('preparing'),
+                  f.text('content').eq('started'),
+                ]),
+              ]),
+              f.string('type').eq('checkout'),
+            ]),
           ]),
+        sort: (s) => s.field('seq').desc(),
       });
-      if (started) phase = 'thinking';
-    } else if (execution.phase === 'thinking') phase = 'thinking';
+      if (latest?.type === 'status')
+        phase = latest.content === 'started' ? 'thinking' : 'preparing';
+    }
     if (phase === execution.phase) return;
     this.ensureStarted(execution);
     if (!execution.previewParts.has('phase'))

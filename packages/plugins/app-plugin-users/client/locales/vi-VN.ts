@@ -13,6 +13,8 @@ const viVN: LocaleResource<typeof enUS> = {
     loading: 'Đang tải lời mời…',
     email: 'Email',
     name: 'Tên',
+    username: 'Tên người dùng (không bắt buộc)',
+    usernameHint: 'Bạn có thể dùng tên người dùng này để đăng nhập.',
     password: 'Mật khẩu',
     nameRequired: 'Nhập tên của bạn.',
     passwordTooShort: 'Mật khẩu cần ít nhất ký tự {{min}}.',
@@ -25,6 +27,7 @@ const viVN: LocaleResource<typeof enUS> = {
     signOutFailed: 'Không thể đăng xuất.',
     existingAccount:
       'Địa chỉ này đã có tài khoản. Đăng nhập bằng nó để tiếp tục.',
+    alreadyHaveAccount: 'Đã có tài khoản? Đăng nhập',
     goToLogin: 'Vào đăng nhập',
     errors: {
       notFound: 'Liên kết lời mời này không hợp lệ.',
@@ -32,6 +35,8 @@ const viVN: LocaleResource<typeof enUS> = {
       accepted: 'Lời mời này đã được chấp nhận.',
       revoked: 'Lời mời này đã bị thu hồi.',
       password: 'Mật khẩu không đáp ứng yêu cầu.',
+      usernameConflict:
+        'Tên này đã được dùng làm tên người dùng hoặc email. Hãy chọn tên khác.',
       accountConflict: 'Không thể tạo tài khoản có địa chỉ này.',
       failed: 'Đã xảy ra lỗi. Vui lòng thử lại.',
     },

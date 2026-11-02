@@ -1,3 +1,4 @@
+import { watchReadiness } from './realtime-readiness.js';
 import {
   useCallback,
   useEffect,
@@ -67,6 +68,35 @@ export function useRealtimeTopic<Payload = unknown>(
     });
     return () => subscription.close();
   }, [realtime, topic, enabled]);
+}
+
+/** Gate initial HTTP snapshots on acknowledgements, with an HTTP fallback for refused or unavailable topics. */
+export function useRealtimeReadiness(
+  topics: readonly string[],
+  onRecovery?: () => void,
+): boolean {
+  const realtime = useService(realtimeClientToken);
+  const identity = [...new Set(topics)].sort().join('\n');
+  const recoveryRef = useRef(onRecovery);
+  useEffect(() => {
+    recoveryRef.current = onRecovery;
+  });
+  const [prepared, setPrepared] = useState<{
+    realtime: typeof realtime;
+    identity: string;
+  }>();
+  useEffect(() => {
+    if (!identity) return;
+    const barrier = watchReadiness(realtime, identity.split('\n'), {
+      onOpen: () => setPrepared({ realtime, identity }),
+      onRecovery: () => recoveryRef.current?.(),
+    });
+    return barrier.close;
+  }, [realtime, identity]);
+  return (
+    identity.length === 0 ||
+    (prepared?.realtime === realtime && prepared.identity === identity)
+  );
 }
 
 export interface UseRealtimeRefreshOptions extends RealtimeRefreshOptions {

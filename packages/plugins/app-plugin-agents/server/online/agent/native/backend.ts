@@ -204,6 +204,8 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     options: OnlineAgentRealtimeOptions,
   ): Promise<string> {
     this.available();
+    if (options.projectId)
+      throw invalid('Only Runner conversations can select a project.');
     const config = structuredClone(initial.config);
     if (config.agentId && config.agentId !== 'online')
       throw invalid('This configuration belongs to a Runner backend.');

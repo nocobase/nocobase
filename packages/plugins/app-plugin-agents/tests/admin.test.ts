@@ -594,6 +594,47 @@ describe('admin API', () => {
     ]);
   });
 
+  it('pages multiple run statuses together and preserves run visibility', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const id = await h.enqueue(agentId, String(i), { actorUserId: 'bob' });
+      ids.push(id);
+      if (i % 2 === 0) await h.services.runs.cancel(id, 'bob');
+    }
+    await h.enqueue(agentId, 'private', { actorUserId: 'carol' });
+    const path = '/agents/runs?status=queued,cancelled,queued&pageSize=2';
+    expect((await h.request('GET', path)).status).toBe(401);
+    expect(
+      (
+        await h.request('GET', '/agents/runs?status=queued,invalid', {
+          user: 'bob',
+        })
+      ).status,
+    ).toBe(400);
+    const seen: string[] = [];
+    let token: string | undefined;
+    do {
+      const page = await h.request(
+        'GET',
+        path + (token ? `&pageToken=${token}` : ''),
+        { user: 'bob' },
+      );
+      expect(page.status).toBe(200);
+      seen.push(...page.body.data.map((run: { id: string }) => run.id));
+      token = page.body.meta.nextPageToken;
+    } while (token);
+    expect(seen).toEqual([...ids].reverse());
+    const single = await h.request('GET', '/agents/runs?status=cancelled', {
+      user: 'bob',
+    });
+    expect(single.body.data).toHaveLength(3);
+    expect(
+      (await h.request('GET', path, { user: 'stranger' })).body.data,
+    ).toEqual([]);
+  });
+
   it('shows people their own runs, and every run to readers', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();

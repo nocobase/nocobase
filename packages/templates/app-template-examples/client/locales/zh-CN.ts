@@ -1,3 +1,6 @@
+import { zhCN as onboarding } from '../pages/onboarding/locales.js';
+import { zhCN as procurement } from '../pages/procurement/locales.js';
+import { zhCN as customerContacts } from '../pages/customer-contacts/locales.js';
 import { zhCN as skillProjectszhCN } from '../pages/skill-projects/locales.js';
 import { workflowNamesZhCN } from '../../shared/workflow-names.js';
 import type { AppResource } from './en-US.js';
@@ -5,6 +8,9 @@ import agentChatZhCN from '#extensions/nocobase-agent-chat/locales/zh-CN';
 import systemZhCN from './system/zh-CN.js';
 
 const zhCN: AppResource = {
+  procurement,
+  onboarding,
+  customerContacts,
   skillProjects: skillProjectszhCN,
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
@@ -592,6 +598,18 @@ const zhCN: AppResource = {
     },
   },
   examples: {
+    onboarding: {
+      title: onboarding.title,
+      description: onboarding.description,
+    },
+    procurement: {
+      title: procurement.title,
+      description: procurement.description,
+    },
+    customerContacts: {
+      title: '客户关联与批量编辑',
+      description: customerContacts.description,
+    },
     aiFormFill: {
       title: 'AI 辅助填表',
       description:

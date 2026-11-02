@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/jobs",
-  "version": "0.1.0-beta.4",
+  "version": "1.0.0-beta.5",
   "description": "Persistent recurring job scheduling for NocoBase applications, backed by BullMQ or an in-process scheduler.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -32,7 +32,6 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run tests --exclude **/tests/integration/**",
-    "test:integration": "node ./scripts/test-integration.mjs",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
@@ -41,9 +40,7 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "bullmq": "6.3.6",
-    "cron-parser": "^5.10.0",
-    "ioredis": "catalog:"
+    "cron-parser": "^5.10.0"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

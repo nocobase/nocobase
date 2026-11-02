@@ -297,7 +297,7 @@ const ptBR: FoundationResource = {
       '{{count}} tabelas de dados identificadas, incluindo {{names}}.',
     applicationCollections:
       '{{count}} tabelas de dados identificadas: {{names}}.',
-    relations: '{{count}} relações entre elas.',
+    relations: '{{count}} campos de relacionamento lógico entre elas.',
     fileCollections: '{{count}} coleções de arquivos: {{names}}.',
     accounts: '{{count}} contas acessam pela autenticação NocoBase.',
     permissionSets:
@@ -349,7 +349,8 @@ const ptBR: FoundationResource = {
     businessCollections: 'tabelas de dados',
     views: 'visualizações',
     fields: 'campos',
-    relations: 'relações',
+    relations: 'campos de relacionamento lógico',
+    physicalForeignKeys: 'chaves estrangeiras físicas',
     systemCollections: 'coleções de sistema NocoBase',
     files: 'arquivos',
     storedBytes: 'armazenamento registrado',

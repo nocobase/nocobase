@@ -7,6 +7,8 @@ import type {
 export interface PermissionSetStore<TTransaction = unknown> {
   list(): Promise<readonly PermissionSet[]>;
   get(key: string): Promise<PermissionSet | undefined>;
+  /** Optional batched lookup; omitted keys are treated as missing by the service. */
+  getMany?(keys: readonly string[]): Promise<readonly PermissionSet[]>;
   create(permissionSet: PermissionSet): Promise<PermissionSet>;
   update(
     key: string,

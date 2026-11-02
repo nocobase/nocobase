@@ -138,6 +138,7 @@ export { PmQueryClient } from './api/invalidate-queries.js';
 export {
   announcedIssueIds,
   changedIssueSegments,
+  embeddedIssueSegments,
   isIssueRead,
 } from './api/changed-issues.js';
 export { usePmApi } from './hooks/use-pm-api.js';

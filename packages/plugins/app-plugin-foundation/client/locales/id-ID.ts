@@ -289,7 +289,7 @@ const idID: FoundationResource = {
     applicationCollectionsPreview:
       '{{count}} tabel data teridentifikasi, termasuk {{names}}.',
     applicationCollections: '{{count}} tabel data teridentifikasi: {{names}}.',
-    relations: '{{count}} relasi menghubungkannya.',
+    relations: '{{count}} field relasi logis menghubungkannya.',
     fileCollections: '{{count}} koleksi berkas: {{names}}.',
     accounts: '{{count}} akun memakai autentikasi NocoBase.',
     permissionSets:
@@ -338,7 +338,8 @@ const idID: FoundationResource = {
     businessCollections: 'tabel data',
     views: 'tampilan',
     fields: 'kolom',
-    relations: 'relasi',
+    relations: 'field relasi logis',
+    physicalForeignKeys: 'foreign key fisik',
     systemCollections: 'koleksi sistem NocoBase',
     files: 'berkas',
     storedBytes: 'penyimpanan tercatat',

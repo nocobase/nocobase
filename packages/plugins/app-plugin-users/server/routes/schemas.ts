@@ -178,12 +178,18 @@ export const AcceptInvitationInput: z.ZodObject<
   {
     token: z.ZodString;
     name: z.ZodString;
+    username: z.ZodOptional<z.ZodString>;
     password: z.ZodString;
   },
   z.core.$strict
 > = z.strictObject({
   token: nonEmpty.describe('The personal access token.'),
   name: nonEmpty.describe('The name to display.'),
+  username: nonEmpty
+    .optional()
+    .describe(
+      'Optional username used to sign in. Ignored for existing accounts.',
+    ),
   // Existing accounts authenticate through their session; account creation still validates password strength.
   password: z.string().describe('The password to set.'),
 });

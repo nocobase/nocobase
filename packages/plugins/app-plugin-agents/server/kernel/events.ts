@@ -102,6 +102,8 @@ export type AgentsEvent =
       readonly conversationId: string;
       readonly userId: string;
       readonly lastSeq?: number;
+      /** Present only when the change acknowledges the owner's read position. */
+      readonly seenSeq?: number;
       readonly messageId?: string;
       readonly revision?: number;
     }

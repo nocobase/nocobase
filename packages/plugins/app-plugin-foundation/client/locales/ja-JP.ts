@@ -285,7 +285,7 @@ const jaJP: FoundationResource = {
       '{{count}} 個のデータテーブルを識別済み（{{names}} など）。',
     applicationCollections:
       '{{count}} 個のデータテーブルを識別済み：{{names}}。',
-    relations: '関連 {{count}} 件。',
+    relations: '論理リレーションフィールドが {{count}} 件あります。',
     fileCollections: 'ファイル用コレクション {{count}} 件：{{names}}。',
     accounts: 'NocoBase 認証でログインするアカウント {{count}} 件。',
     permissionSets: '無制限以外の権限セット {{count}} 件：{{names}}。',
@@ -334,7 +334,8 @@ const jaJP: FoundationResource = {
     businessCollections: 'データテーブル',
     views: 'ビュー',
     fields: 'フィールド',
-    relations: '関連',
+    relations: '論理リレーションフィールド',
+    physicalForeignKeys: '物理外部キー',
     systemCollections: 'NocoBase システムコレクション',
     files: 'ファイル',
     storedBytes: '記録済み保存容量',

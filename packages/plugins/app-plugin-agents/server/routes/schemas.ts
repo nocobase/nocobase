@@ -112,6 +112,8 @@ import {
   type Runner,
   type RunnerHeldItem,
   type RunnerRecentRun,
+  type RunnerRunsCursor,
+  type RunnerRunsPage,
   type RunnerPatch,
   type RunnerSummary,
   type RunnerListItem,
@@ -300,16 +302,20 @@ export const RunListQuery: z.ZodType<
     readonly subjectKind?: string | undefined;
     readonly subjectId?: string | undefined;
     readonly agentId?: string | undefined;
-    readonly status?: RunStatus | undefined;
+    readonly status?: RunStatus[] | undefined;
   }
 > = z.object({
   subjectKind: id.optional().describe('The kind of subject.'),
   subjectId: id.optional().describe('The subject identifier.'),
   agentId: id.optional().describe('The agent identifier.'),
   status: z
-    .enum(RUN_STATUSES)
+    .string()
+    .transform((value) => [...new Set(value.split(','))])
+    .pipe(z.array(z.enum(RUN_STATUSES)).min(1).max(RUN_STATUSES.length))
     .optional()
-    .describe('The status to set or filter by.'),
+    .describe(
+      `One status or a comma-separated list of statuses to filter by. Allowed values: ${RUN_STATUSES.join(', ')}.`,
+    ),
   pageSize: pageSize(50, 100).describe(
     'The maximum number of records to return.',
   ),
@@ -1647,6 +1653,7 @@ export const ConversationLinkSchema: z.ZodType<ConversationLink> = z
       .object({
         key: z.string().nullable(),
         title: z.string(),
+        targetUpdatedAt: dateTime.optional(),
         status: z.string().nullable(),
         url: z.string().nullable(),
       })
@@ -1681,6 +1688,8 @@ const availability = z.object({
 });
 
 const conversationSummaryObject = z.object({
+  links: z.array(ConversationLinkSchema).optional(),
+  projectId: z.string().nullable().optional(),
   execution: z
     .object({
       status: z.enum(['running', 'idle']),
@@ -1742,6 +1751,7 @@ export const ConversationSummarySchema: z.ZodType<ConversationSummary> =
   conversationSummaryObject.meta({ ref: 'AgentsConversationSummary' });
 
 const conversationDetailObject = conversationSummaryObject.extend({
+  effort: z.string().nullable().optional(),
   availability,
   canFallback: z.boolean(),
   canRestore: z.boolean(),
@@ -1911,6 +1921,8 @@ export const SendMessageResultSchema: z.ZodType<SendMessageResult> = z
   .meta({ ref: 'AgentsSendMessageResult' });
 
 export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
+  efforts: z.array(z.string()).optional(),
+  effort: z.string().nullable().optional(),
   runnerNames: z
     .array(z.string())
     .describe('Eligible runtime display names visible to this caller.'),
@@ -2175,7 +2187,9 @@ const runnerSummaryObject = runnerObject
       .number()
       .int()
       .nonnegative()
-      .describe('Recent run rows shown by the Runs tab, bounded to ten.'),
+      .describe(
+        'Exact number of runs assigned to this runner, shown by the Runs tab.',
+      ),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
       min: z.number().int(),
@@ -2464,3 +2478,49 @@ export const RunRequestOutcomeSchema: z.ZodType<{
     }),
   })
   .meta({ ref: 'AgentsRunRequestOutcome' });
+
+const RunnerRunsCursorSchema = z.object({
+  startedAt: z.iso.datetime({ offset: true }).nullable(),
+  id: z.string().min(1).max(64),
+});
+
+export const RunnerRunsQuery: z.ZodType<
+  { cursor?: RunnerRunsCursor },
+  { cursor?: string }
+> = z.object({
+  cursor: z
+    .string()
+    .max(1024)
+    .describe(
+      'Continuation from meta.nextCursor; omit for the first twenty runs.',
+    )
+    .optional()
+    .transform((value, ctx) => {
+      if (value === undefined) return undefined;
+      try {
+        const parsed = RunnerRunsCursorSchema.safeParse(
+          JSON.parse(Buffer.from(value, 'base64url').toString('utf8')),
+        );
+        if (parsed.success) return parsed.data;
+      } catch {
+        /* Invalid cursors are rejected at the HTTP boundary. */
+      }
+      ctx.addIssue({ code: 'custom', message: 'Invalid run cursor.' });
+      return z.NEVER;
+    }),
+});
+
+export const RunnerRunsPageMetaSchema: z.ZodType<RunnerRunsPage['meta']> =
+  z.object({
+    total: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe('Exact number of runs assigned to this runner.'),
+    nextCursor: z
+      .string()
+      .nullable()
+      .describe(
+        'Opaque continuation for the next twenty runs; null at the end.',
+      ),
+  });
