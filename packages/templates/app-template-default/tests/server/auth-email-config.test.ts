@@ -68,13 +68,11 @@ it('ships a valid shared mailer example with private mapped credentials', async 
     config.mergeDefaults(defaults({} as never));
     config.defineSections(defaults.sections!);
     await config.loadSectionEnvironment({
-      MAILERS_TRANSACTIONAL_PASSWORD: 'synthetic-password',
+      MAILERS_SYSTEM_PASSWORD: 'synthetic-password',
     });
     expect(await config.validate()).toEqual([]);
-    expect(config.get('mailers.default')).toBe('transactional');
-    expect(config.get('mailers.transactional.auth.pass')).toBe(
-      'synthetic-password',
-    );
+    expect(config.get('mailers.default')).toBe('system');
+    expect(config.get('mailers.system.auth.pass')).toBe('synthetic-password');
     expect(JSON.stringify(config.publicValues())).not.toContain(
       'synthetic-password',
     );
@@ -92,14 +90,14 @@ it('accepts an entirely environment-configured shared sender without enabling re
   config.mergeDefaults(defaults({} as never));
   config.defineSections(defaults.sections!);
   await config.loadSectionEnvironment({
-    MAILERS_DEFAULT: 'transactional',
-    MAILERS_TRANSACTIONAL_PROVIDER: 'smtp',
-    MAILERS_TRANSACTIONAL_HOST: 'localhost',
-    MAILERS_TRANSACTIONAL_PORT: '2525',
-    MAILERS_TRANSACTIONAL_SECURE: 'false',
+    MAILERS_DEFAULT: 'system',
+    MAILERS_SYSTEM_PROVIDER: 'smtp',
+    MAILERS_SYSTEM_HOST: 'localhost',
+    MAILERS_SYSTEM_PORT: '2525',
+    MAILERS_SYSTEM_SECURE: 'false',
   });
   expect(await config.validate()).toEqual([]);
-  expect(config.get('mailers.transactional')).toMatchObject({
+  expect(config.get('mailers.system')).toMatchObject({
     provider: 'smtp',
     port: 2525,
     secure: false,
@@ -107,8 +105,8 @@ it('accepts an entirely environment-configured shared sender without enabling re
   expect(config.get('auth.passwordReset.enabled')).toBeUndefined();
   expect(config.environmentVariableMappings()).toMatchObject({
     MAILERS_DEFAULT: { path: 'mailers.default' },
-    MAILERS_TRANSACTIONAL_PASSWORD: {
-      path: 'mailers.transactional.auth.pass',
+    MAILERS_SYSTEM_PASSWORD: {
+      path: 'mailers.system.auth.pass',
       secret: true,
     },
   });

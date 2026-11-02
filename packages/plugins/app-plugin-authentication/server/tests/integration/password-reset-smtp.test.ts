@@ -96,16 +96,26 @@ it.each([
         ...(typeof independent === 'string'
           ? {
               mailers: {
-                default: 'transactional',
-                transactional: {
+                default: 'system',
+                system: {
                   provider: 'smtp',
                   host: '127.0.0.1',
                   port: smtp.port,
                   from: 'sender@example.test',
                 },
+                ...(independent === 'named'
+                  ? {
+                      marketing: {
+                        provider: 'smtp',
+                        host: '127.0.0.1',
+                        port: smtp.port,
+                        from: 'sender@example.test',
+                      },
+                    }
+                  : {}),
               },
               ...(independent === 'named'
-                ? { auth: { email: { mailer: 'transactional' } } }
+                ? { auth: { email: { mailer: 'marketing' } } }
                 : {}),
             }
           : independent

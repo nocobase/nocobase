@@ -7,5 +7,5 @@ import {
 // An empty section leaves email unavailable until an operator configures a named service.
 export default defineMailersConfig({
   defaults: {},
-  env: { ...mailerEnvironment('transactional', 'MAILERS_TRANSACTIONAL') },
+  env: { ...mailerEnvironment('system', 'MAILERS_SYSTEM') },
 });

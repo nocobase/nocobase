@@ -2,7 +2,7 @@
 
 Declare the application's `auth` section with `defineAuthConfig` from `@nocobase/app-plugin-authentication/server`. It owns configuration validation and the `AUTH_EMAIL_*` environment mappings. Keep sender configuration private; do not add `email` or any of its fields to public configuration. The sender is independent of notification channels and the mailbox plugin's `mail` configuration and `MAIL_*` variables.
 
-Prefer a named application `mailers` service and `mailers.default`. Declare it with `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Set `passwordReset.enabled: true` and `app.publicOrigin`; omit `auth.email` for the default or use `email: { mailer: transactional }`. Never mix references with inline fields. The application owns all sending resources; restart to apply mailer/selection changes even after AppConfig.reload.
+Prefer a named application `mailers` service and `mailers.default`. Declare it with `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Set `passwordReset.enabled: true` and `app.publicOrigin`; omit `auth.email` for the default or use `email: { mailer: system }`. `system` is only the template's example name; applications may use any valid service name and environment prefix. Never mix references with inline fields. The application owns all sending resources; restart to apply mailer/selection changes even after AppConfig.reload.
 
 ## Legacy inline configuration
 

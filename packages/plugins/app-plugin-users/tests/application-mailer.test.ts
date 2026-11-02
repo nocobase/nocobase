@@ -39,8 +39,8 @@ it('submits and accepts an invitation with the default mailer and no Notificatio
     createServer: createStandaloneServer,
     config: {
       mailers: {
-        default: 'transactional',
-        transactional: {
+        default: 'system',
+        system: {
           provider: 'resend',
           apiKey: 'synthetic-key',
           from: 'sender@example.test',

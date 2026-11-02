@@ -69,12 +69,13 @@ secrets:
     - version: 1
       key: replace-with-a-unique-secret
 
-# Optional shared sender for Auth, Users invitations and email notification channels.
-# Values are literal: ${NAME} is not expanded. server/config/mailers.ts explicitly maps
-# MAILERS_TRANSACTIONAL_* variables; inject the password through MAILERS_TRANSACTIONAL_PASSWORD.
+# Optional shared sender for Auth, Users invitations and email notification channels. This example is commented out;
+# server/config/mailers.ts defaults to an empty configuration, so example values do not enable mail delivery.
+# `system` is only this template's sample name. Values are literal: ${NAME} is not expanded. The mapping explicitly
+# declares MAILERS_SYSTEM_* variables; inject the password through MAILERS_SYSTEM_PASSWORD.
 # mailers:
-#   default: transactional
-#   transactional:
+#   default: system
+#   system:
 #     provider: smtp
 #     host: smtp.example.com
 #     port: 587
@@ -82,14 +83,41 @@ secrets:
 #     auth:
 #       user: notifications@example.com
 #     from: App <notifications@example.com>
-# Use provider: resend, apiKey and from instead for Resend; do not mix provider fields.
+
+# For Resend, use a separate entry with provider: resend, apiKey and from; do not mix provider fields:
+# mailers:
+#   default: system
+#   system:
+#     provider: resend
+#     apiKey: replace-with-the-api-key
+#     from: "Studio <notifications@example.com>"
+#
+# Equivalent SMTP .env example (use the Resend alternative below instead of its provider-specific SMTP fields):
+# MAILERS_DEFAULT=system
+# MAILERS_SYSTEM_PROVIDER=smtp
+# MAILERS_SYSTEM_HOST=smtp.example.com
+# MAILERS_SYSTEM_PORT=587
+# MAILERS_SYSTEM_SECURE=false
+# MAILERS_SYSTEM_USER=notifications@example.com
+# MAILERS_SYSTEM_PASSWORD=replace-with-the-password
+# MAILERS_SYSTEM_FROM=Studio <notifications@example.com>
+# MAILERS_SYSTEM_REPLY_TO=support@example.com
+# MAILERS_SYSTEM_ENABLED=true
+#
+# Resend .env alternative:
+# MAILERS_DEFAULT=system
+# MAILERS_SYSTEM_PROVIDER=resend
+# MAILERS_SYSTEM_API_KEY=replace-with-the-api-key
+# MAILERS_SYSTEM_FROM=Studio <notifications@example.com>
+# MAILERS_SYSTEM_REPLY_TO=support@example.com
+# MAILERS_SYSTEM_ENABLED=true
 
 auth:
   # Set app.publicOrigin before explicitly enabling automatic password recovery.
   # passwordReset:
   #   enabled: true
   # email:
-  #   mailer: transactional # omit to use mailers.default
+  #   mailer: system # omit to use mailers.default
   # Existing inline auth.email and AUTH_EMAIL_* remain supported for compatibility.
   emailAndPassword:
     enabled: true
@@ -106,7 +134,7 @@ notification:
     # Configuring mailers alone does not create a notification channel.
     # system-email:
     #   type: email
-    #   mailer: transactional # omit to use mailers.default
+    #   mailer: system # omit to use mailers.default
     # Legacy type: smtp/resend inline channels and SMTP_PASSWORD/RESEND_API_KEY remain supported.
 
     # ops-feishu:

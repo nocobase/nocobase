@@ -12,8 +12,8 @@ Use `NotificationConfigInput` for code defaults and standalone manager input, ac
 
 ```yaml
 mailers:
-  default: transactional
-  transactional:
+  default: system
+  system:
     provider: smtp
     host: smtp.example.com
     port: 587
@@ -22,7 +22,7 @@ notification:
   channels:
     system-email:
       type: email
-      # mailer: transactional
+      # mailer: system
     ops-feishu:
       type: feishu-webhook
       webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token

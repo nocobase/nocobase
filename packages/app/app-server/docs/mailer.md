@@ -4,30 +4,42 @@ Configure a named sender once for password reset, invitations and notifications.
 
 ```yaml
 mailers:
-  default: transactional
-  transactional:
+  default: system
+  system:
     provider: smtp
     host: smtp.example.com
     port: 587
     secure: false
     auth:
       user: notifications@example.com
-    from: App <notifications@example.com>
+    from: 'Studio <notifications@example.com>'
 auth:
   passwordReset:
     enabled: true
   # email:
-  #   mailer: transactional
+  #   mailer: system
 users:
   invitations: {}
 notification:
   channels:
     system-email:
       type: email
-      # mailer: transactional
+      # mailer: system
 ```
 
-Set `app.publicOrigin` before enabling recovery. Inject the password through an explicitly declared environment mapping. An unauthenticated relay can omit `auth`. A Resend entry uses `provider: resend`, `apiKey` and `from`, without SMTP fields.
+`system` is the templates' example name, not a reserved name or fallback. Applications can use any valid service name, such as `transactional` or `marketing`, and can choose a matching custom environment prefix. The factory only uses an explicit name or `mailers.default`; it never hard-codes `system`. Set `app.publicOrigin` before enabling recovery. Inject the password through an explicitly declared environment mapping. An unauthenticated relay can omit `auth`.
+
+A Resend configuration uses only its own provider fields:
+
+```yaml
+mailers:
+  default: system
+  system:
+    provider: resend
+    apiKey: replace-with-the-api-key
+    from: 'Studio <notifications@example.com>'
+    # replyTo: support@example.com
+```
 
 ## Declaration and environment
 
@@ -40,11 +52,39 @@ import {
 
 export default defineMailersConfig({
   defaults: {},
-  env: { ...mailerEnvironment('transactional', 'MAILERS_TRANSACTIONAL') },
+  env: { ...mailerEnvironment('system', 'MAILERS_SYSTEM') },
 });
 ```
 
-The helper explicitly declares only the chosen name and prefix. `MAILERS_TRANSACTIONAL_PROVIDER`, `_HOST`, `_PORT`, `_SECURE`, `_USER`, `_PASSWORD`, `_API_KEY`, `_FROM`, `_REPLY_TO` and `_ENABLED` appear in `pnpm nocobase config env`. Port is an integer and secure/enabled are booleans. Password/API key are secret. Use only the selected provider's variables. For entirely environment-based configuration, set `MAILERS_DEFAULT` (declared by the factory) to `transactional`. Arbitrary environment scanning and YAML `${NAME}` expansion are unsupported. Mailers cannot publish public paths; credentials stay out of `config.public`.
+The helper explicitly declares only the chosen name and prefix. The template declaration makes `MAILERS_SYSTEM_PROVIDER`, `_HOST`, `_PORT`, `_SECURE`, `_USER`, `_PASSWORD`, `_API_KEY`, `_FROM`, `_REPLY_TO` and `_ENABLED` discoverable through `pnpm nocobase config env`. Port is an integer and secure/enabled are booleans. Password/API key are secret. Use only the selected provider's variables. For entirely environment-based configuration, set `MAILERS_DEFAULT=system` (the default-name mapping is declared by the factory). Arbitrary environment scanning and YAML `${NAME}` expansion are unsupported. Mailers cannot publish public paths; credentials stay out of `config.public`.
+
+Example `.env` values for SMTP:
+
+```dotenv
+MAILERS_DEFAULT=system
+MAILERS_SYSTEM_PROVIDER=smtp
+MAILERS_SYSTEM_HOST=smtp.example.com
+MAILERS_SYSTEM_PORT=587
+MAILERS_SYSTEM_SECURE=false
+MAILERS_SYSTEM_USER=notifications@example.com
+MAILERS_SYSTEM_PASSWORD=replace-with-the-password
+MAILERS_SYSTEM_FROM=Studio <notifications@example.com>
+# MAILERS_SYSTEM_REPLY_TO=support@example.com
+# MAILERS_SYSTEM_ENABLED=true
+```
+
+For Resend, use a separate set of provider fields:
+
+```dotenv
+MAILERS_DEFAULT=system
+MAILERS_SYSTEM_PROVIDER=resend
+MAILERS_SYSTEM_API_KEY=replace-with-the-api-key
+MAILERS_SYSTEM_FROM=Studio <notifications@example.com>
+# MAILERS_SYSTEM_REPLY_TO=support@example.com
+# MAILERS_SYSTEM_ENABLED=true
+```
+
+The SMTP and Resend sets are alternatives; do not combine their provider-specific keys. A service may instead be named `transactional`, `marketing` or another valid name by changing the name and prefix passed to `mailerEnvironment`.
 
 Validation is pure: startup/config check never connects or sends. Invalid providers, mixed fields, invalid defaults and missing/disabled references report safe configuration paths. No mailers is valid. Declare Auth, Users and Notification sections with their owner factories for cross-reference checks; manually composed hosts validate references when a consumer creates its sender too.
 
@@ -54,9 +94,7 @@ Validation is pure: startup/config check never connects or sends. Invalid provid
 import { mailSenderFactoryToken } from '@nocobase/app-server/mailers';
 
 // At an assembly boundary (a Provider's register, a channel constructor), never inside business services.
-const sender = app.container
-  .resolve(mailSenderFactoryToken)
-  .create('transactional'); // omit the name for mailers.default
+const sender = app.container.resolve(mailSenderFactoryToken).create('system'); // omit the name for mailers.default
 const result = await sender.send(
   { to: 'recipient@example.com', subject: 'Notice', text: 'Hello' },
   { signal, idempotencyKey },
@@ -87,5 +125,7 @@ Users selects explicit `users.invitations.mailer`, explicit legacy `emailChannel
 Notification `type: email` selects its explicit `mailer` or the application default. Existing inline SMTP/Resend channels and `provider` aliases retain selection and create their own senders through the same factory. Message validation, recipient preparation, records, retries, cancellation, redaction and deliveryId idempotency identity remain with Notification.
 
 To migrate, copy an existing provider configuration into a named mailer, declare its environment mappings and default, then replace business selections with references or remove them to use the default. Confirm sender identities before removing explicit old selections: a new default never takes them over. Preserve password-reset opt-in and public origin; retain legacy channels still used elsewhere. `AUTH_EMAIL_*`, `SMTP_PASSWORD` and `RESEND_API_KEY` keep their original paths. Clear inline environment variables when replacing an object with a reference, since mixing is invalid. Safe diagnostics point to mailers; no removal date is set.
+
+The earlier `MAILERS_TRANSACTIONAL_*` mapping appeared only in this unmerged change branch and was absent from published application-template packages. No released alias is needed; the explicit `mailerEnvironment` helper still supports an application's existing custom names and prefixes.
 
 The published `@nocobase/app-server/mailer` subpath has been removed as a breaking API change. Create an exclusive sender from `/mailers` at the assembly boundary; close it from the component that created it. Move notification configuration helpers to `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML and environment-variable mappings remain supported; this removal applies to the old TypeScript module, not those configuration paths.

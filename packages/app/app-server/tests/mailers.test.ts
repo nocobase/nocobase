@@ -41,7 +41,7 @@ function fakeTransports() {
 }
 
 it('does not choose the first entry, validates references and keeps diagnostics private', () => {
-  const factory = new MailSenderFactory({ first: smtp });
+  const factory = new MailSenderFactory({ system: smtp });
   expect(factory.defaultMailer).toBeUndefined();
   expect(() => factory.create()).toThrow(/mailers\.default/u);
   expect(() => factory.create('absent', 'users.invitations.mailer')).toThrow(
@@ -78,27 +78,40 @@ it('declares discoverable typed environment values and never publishes credentia
   await config.loadAll();
   const factory = defineMailersConfig({
     defaults: {},
-    env: mailerEnvironment('transactional', 'MAILERS_TRANSACTIONAL'),
+    env: {
+      ...mailerEnvironment('system', 'MAILERS_SYSTEM'),
+      ...mailerEnvironment('transactional', 'CUSTOM_TRANSACTIONAL'),
+    },
   });
   config.mergeDefaults({ mailers: factory({} as never) });
   config.defineSections(new Map([['mailers', factory.rules!]]));
   await config.loadSectionEnvironment({
-    MAILERS_TRANSACTIONAL_PROVIDER: 'smtp',
-    MAILERS_TRANSACTIONAL_HOST: 'localhost',
-    MAILERS_TRANSACTIONAL_PORT: '2525',
-    MAILERS_TRANSACTIONAL_SECURE: 'false',
-    MAILERS_TRANSACTIONAL_USER: 'synthetic',
-    MAILERS_TRANSACTIONAL_PASSWORD: 'synthetic-secret',
+    MAILERS_DEFAULT: 'system',
+    MAILERS_SYSTEM_PROVIDER: 'smtp',
+    MAILERS_SYSTEM_HOST: 'localhost',
+    MAILERS_SYSTEM_PORT: '2525',
+    MAILERS_SYSTEM_SECURE: 'false',
+    MAILERS_SYSTEM_USER: 'synthetic',
+    MAILERS_SYSTEM_PASSWORD: 'synthetic-secret',
+    CUSTOM_TRANSACTIONAL_PROVIDER: 'resend',
+    CUSTOM_TRANSACTIONAL_API_KEY: 'synthetic-api-key',
+    CUSTOM_TRANSACTIONAL_FROM: 'mailer@example.test',
   });
   expect(await config.validate()).toEqual([]);
-  expect(config.get('mailers.transactional')).toMatchObject({
+  expect(config.get('mailers.default')).toBe('system');
+  expect(config.get('mailers.system')).toMatchObject({
     port: 2525,
     secure: false,
     auth: { pass: 'synthetic-secret' },
   });
+  expect(config.get('mailers.transactional')).toMatchObject({
+    provider: 'resend',
+    apiKey: 'synthetic-api-key',
+  });
   expect(config.publicValues()).toEqual({});
-  expect(factory.rules?.env?.MAILERS_TRANSACTIONAL_PASSWORD.secret).toBe(true);
-  expect(factory.rules?.env?.MAILERS_TRANSACTIONAL_API_KEY.secret).toBe(true);
+  expect(factory.rules?.env?.MAILERS_SYSTEM_PASSWORD.secret).toBe(true);
+  expect(factory.rules?.env?.MAILERS_SYSTEM_API_KEY.secret).toBe(true);
+  expect(factory.rules?.env?.CUSTOM_TRANSACTIONAL_API_KEY.secret).toBe(true);
 });
 
 it('creates exclusive senders: concurrent first sends share one transport, closing one leaves others working', async () => {
