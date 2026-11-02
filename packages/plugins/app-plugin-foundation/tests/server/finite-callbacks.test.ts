@@ -72,6 +72,25 @@ it.each([
 });
 
 it.each([
+  'for (const entry of await entries()) { consume(entry); }',
+  'for await (const entry of [1]) { consume(entry); }',
+])('does not materialize elements from an async iterable: %s', (loop) => {
+  const { evaluator, expression } = fixture(
+    `async () => { ${loop} }`,
+    'async function entries(){return [1];}',
+  );
+  let element: ts.Identifier | undefined;
+  const visit = (node: ts.Node): void => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name))
+      element = node.name;
+    ts.forEachChild(node, visit);
+  };
+  visit(expression);
+  expect(element).toBeDefined();
+  expect(evaluator.values(element!)).toEqual([]);
+});
+
+it.each([
   '[{},{}].map(entry=>entry.missing ?? unknown())',
   "(() => {const paths=[];return ['same','same'].map(path=>{if(paths.some(existing=>existing===path))throw new Error('duplicate');paths.push(path);return path;});})()",
 ])(

@@ -705,7 +705,12 @@ export class StaticValues {
         return [];
       if (node.initializer) return next(node.initializer);
       const loop = node.parent.parent;
-      if (ts.isForOfStatement(loop))
+      if (ts.isForOfStatement(loop)) {
+        if (
+          loop.awaitModifier ||
+          ts.isAwaitExpression(StaticValues.unwrap(loop.expression))
+        )
+          return [];
         return this.values(loop.expression, seen)
           .flatMap((value) =>
             ts.isArrayLiteralExpression(value)
@@ -713,6 +718,7 @@ export class StaticValues {
               : [],
           )
           .slice(0, MAX_VALUES);
+      }
       return [];
     }
     if (ts.isAwaitExpression(node)) {
