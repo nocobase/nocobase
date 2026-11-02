@@ -220,6 +220,87 @@ it('ensures a first snapshot, shows first failure without zeroes and retries exp
   ).toHaveLength(1);
 });
 
+it.each(['succeeded', 'failed'] as const)(
+  'follows the server current scan when a second page starts a new generation (%s)',
+  async (terminalStatus) => {
+    const requests: ApiCall[] = [];
+    const pendingStatuses: Array<{
+      resolve: (value: unknown) => void;
+    }> = [];
+    let generation = 0;
+    let state: FoundationSnapshot = {
+      overview,
+      kernelVersion: 'fixture-1',
+      snapshotKernelVersion: 'fixture-1',
+      generation: 'initial',
+      status: 'succeeded',
+      needsScan: false,
+    };
+    const answer = (call: ApiCall): unknown => {
+      requests.push(call);
+      if (call.path === 'foundation/refresh') {
+        state = {
+          ...state,
+          generation: `g${++generation}`,
+          status: 'queued',
+        };
+        return { data: state };
+      }
+      if (call.path === 'foundation/scanStatus')
+        return new Promise((resolve) => pendingStatuses.push({ resolve }));
+      return { data: state };
+    };
+
+    const pageA = await render(answer, new QueryClient());
+    fireEvent.click(await pageA.findByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(pendingStatuses).toHaveLength(1));
+
+    state = {
+      ...state,
+      status: 'succeeded',
+      overview: { ...overview, checkedAt: '2026-10-21T08:00:00.000Z' },
+    };
+    const pageB = await render(answer, new QueryClient());
+    fireEvent.click(await pageB.findByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(pendingStatuses).toHaveLength(2));
+
+    state = {
+      ...state,
+      generation: 'g2',
+      status: terminalStatus,
+      ...(terminalStatus === 'succeeded'
+        ? {
+            overview: {
+              ...overview,
+              checkedAt: '2026-10-22T08:00:00.000Z',
+            },
+          }
+        : {}),
+    };
+    await act(async () => {
+      for (const pending of pendingStatuses) pending.resolve({ data: state });
+    });
+
+    await waitFor(() => {
+      expect(
+        within(pageA.container).getByRole('button', { name: 'Refresh' }),
+      ).toBeEnabled();
+      if (terminalStatus === 'succeeded') {
+        expect(
+          within(pageA.container).getByText(/^Last check /),
+        ).toHaveTextContent('Oct 22');
+      } else {
+        expect(within(pageA.container).getByRole('alert')).toHaveTextContent(
+          'The latest refresh failed. Showing the last successfully collected result.',
+        );
+      }
+    });
+    expect(
+      requests.filter((call) => call.path === 'foundation/overview').length,
+    ).toBeGreaterThanOrEqual(3);
+  },
+);
+
 it('hides historical internals on a refused submission even when an earlier read already failed', async () => {
   const cache = new QueryClient();
   let failRead = false;

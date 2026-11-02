@@ -89,12 +89,7 @@ export function useFoundationOverview(): FoundationOverviewState {
     refetchOnWindowFocus: false,
   });
   useEffect(() => {
-    if (
-      active(query.data) &&
-      status.data &&
-      status.data.generation === query.data?.generation &&
-      !active(status.data)
-    ) {
+    if (active(query.data) && status.data && !active(status.data)) {
       void queryClient.invalidateQueries({
         queryKey: FOUNDATION_OVERVIEW_QUERY_KEY,
       });
