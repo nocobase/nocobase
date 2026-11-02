@@ -1451,3 +1451,178 @@ it('preserves a query accessor from the service factory container parameter', as
   );
   expect(result.routes[0]?.collections).toContain('entries');
 });
+
+const permissionGuard = `
+async function authorizeAction(authz){
+ const decision=await authz.authorize({resource:{type:'composite',id:'files'},action:'manage'});
+ if(decision.effect==='deny')throw new Error('denied');
+ const policies=decision.conditions?.database;
+ if(!policies)throw new Error('denied');
+ return policies;
+}
+async function tryAuthorizeAction(authz){try{return await authorizeAction(authz);}catch(error){if(error instanceof Error)return undefined;throw error;}}
+async function check(c,next){
+ if(!(await tryAuthorizeAction(c.get('authz'))))return c.json({code:'FORBIDDEN'},403);
+ let stored=false;
+ const response=await bodyLimit({maxSize:1024,onError:c=>c.json({code:'SIZE'},413)})(c,async()=>{await next();stored=true;});
+ if(response)return response;
+ if(!stored||!c.res.ok)return;
+ const envelope=await c.res.clone().json().catch(()=>null);
+ opaqueResponse(envelope);
+}`;
+it.each([
+  ['closed authorization refusal', permissionGuard, true],
+  [
+    'unknown authorization prefix',
+    permissionGuard.replace(
+      'const decision=',
+      'external(authz);const decision=',
+    ),
+    false,
+  ],
+  [
+    'truthy catch fallback',
+    permissionGuard.replace('return undefined;', 'return {};'),
+    false,
+  ],
+  [
+    'unknown catch work',
+    permissionGuard.replace('catch(error){', 'catch(error){external(error);'),
+    false,
+  ],
+  [
+    'unknown body limiter size',
+    permissionGuard.replace('maxSize:1024', 'maxSize:unknown'),
+    false,
+  ],
+] as const)(
+  'retains the body-limit next edge through %s',
+  async (_name, guard, recognized) => {
+    const source = routes
+      .replace(
+        'import {Hono}',
+        "import {bodyLimit} from 'hono/body-limit';import {Hono}",
+      )
+      .replace(
+        'export default defineApiRoutes',
+        guard + '\nexport default defineApiRoutes',
+      )
+      .replace(" child.get('/',", " child.use('*',check);child.get('/',");
+    const route = (await collectModuleSources(await fixture(source))).routes[0];
+    expect(route?.collections?.includes('entries') ?? false).toBe(recognized);
+    if (recognized)
+      expect(
+        route?.apiEvidence?.some((evidence) =>
+          evidence.conditions.some(
+            (condition) => condition.kind === 'bodyWithinLimit',
+          ),
+        ),
+      ).toBe(true);
+  },
+);
+
+it.each([
+  [
+    'private context-key store',
+    'const local=new WeakMap();',
+    'local.set(c,{userId:String(principal.id)});',
+    true,
+  ],
+  [
+    'escaped context-key store',
+    'const local=new WeakMap();external(local);',
+    'local.set(c,{userId:String(principal.id)});',
+    false,
+  ],
+  [
+    'unknown context-key store',
+    'const local=unknown;',
+    'local.set(c,{userId:String(principal.id)});',
+    false,
+  ],
+  [
+    'context stored as payload',
+    'const local=new WeakMap();',
+    'local.set({},c);',
+    false,
+  ],
+  [
+    'rewritten context-key store',
+    'const local=new WeakMap();local.set=unknown;',
+    'local.set(c,{userId:String(principal.id)});',
+    false,
+  ],
+] as const)(
+  'keeps authorization provenance through %s',
+  async (_name, setup, store, recognized) => {
+    const source = routes
+      .replace(
+        'export default defineApiRoutes',
+        setup + '\nexport default defineApiRoutes',
+      )
+      .replace(
+        " child.get('/',",
+        ` child.use('*',async(c,next)=>{const context=c.get('authz');const principal=context.identity.principal;${store}await next();});child.get('/',`,
+      );
+    const route = (await collectModuleSources(await fixture(source))).routes[0];
+    expect(route?.collections?.includes('entries') ?? false).toBe(recognized);
+  },
+);
+
+it.each([
+  ['erased context casts', 'c as unknown as Context', true],
+  ['non-null context cast', '(c as Context)!', true],
+  [
+    'counterfeit typed context',
+    "({get:()=>({identity:{principal:{type:'user',id:'fake'}}})} as Context)",
+    false,
+  ],
+] as const)(
+  'requires native context provenance through %s',
+  async (_name, argument, recognized) => {
+    const helper = `function actor(c){const authz=c.get('authz');const principal=authz.identity.principal;if(principal.type!=='user')throw new Error('denied');return {authz,userId:String(principal.id)};}function userId(c){return actor(${argument}).userId;}`;
+    const source = routes
+      .replace(
+        'export default defineApiRoutes',
+        helper + '\nexport default defineApiRoutes',
+      )
+      .replace(
+        " child.get('/',",
+        " child.use('*',async(c,next)=>{const id=userId(c);await next();});child.get('/',",
+      );
+    const root = await fixture(source);
+    await rm(path.join(root, 'server/routes/index.js'));
+    await writeFile(path.join(root, 'server/routes/index.ts'), source);
+    expect(
+      (await collectModuleSources(root)).routes[0]?.collections?.includes(
+        'entries',
+      ) ?? false,
+    ).toBe(recognized);
+  },
+);
+
+it.each([
+  ['own primitive field', 'actor(c).userId', false, true],
+  ['authorization field', 'actor(c).authz', false, false],
+  ['accessor field', 'actor(c).userId', true, false],
+] as const)(
+  'tracks %s when a principal feeds a branch-assigned policy',
+  async (_name, value, getter, recognized) => {
+    const actor = `function actor(c){const authz=c.get('authz');const principal=authz.identity.principal;return {authz,${getter ? "get userId(){external(c);return 'fake';}" : 'userId:String(principal.id)'}};}`;
+    const setup =
+      actor +
+      `const local=new WeakMap();const exposure={principal:c=>({value:${value}}),policy:principal=>({create:false,read:{scope:{userId:principal.value}},update:false,delete:false})};`;
+    const guard = `child.use('*',async(c,next)=>{let policy;if(typeof exposure.policy==='function'){const principal=exposure.principal(c);policy=exposure.policy(principal);}else{policy=exposure.policy;}if(policy.create===true)return c.json({code:'NO'},403);local.set(c,policy);await next();});`;
+    const source = routes
+      .replace(
+        'export default defineApiRoutes',
+        setup + '\nexport default defineApiRoutes',
+      )
+      .replace(" child.get('/',", guard + "child.get('/',");
+    expect(
+      (
+        await collectModuleSources(await fixture(source))
+      ).routes[0]?.collections?.includes('entries') ?? false,
+    ).toBe(recognized);
+  },
+);

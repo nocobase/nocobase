@@ -63,8 +63,8 @@ export const overlapCases = [
     name: 'explicit next',
     registration: forward + fixed,
     calls: ['db', 'mail'],
-    providers: ['db', 'mail'],
-    complete: true,
+    providers: ['db'],
+    complete: false,
   },
   {
     name: 'conditional next',
@@ -96,8 +96,8 @@ export const overlapCases = [
       "router.use('/items/*', async (c, next) => { read(); await next(); });" +
       fixed,
     calls: ['db', 'mail'],
-    providers: ['db', 'mail'],
-    complete: true,
+    providers: ['db'],
+    complete: false,
   },
   {
     name: 'middleware terminates',
@@ -120,8 +120,8 @@ export const overlapCases = [
     registration:
       "router.get('/items/export', async (c, next) => { read(); return next(); }, c => { send(); return c.text('mail'); });",
     calls: ['db', 'mail'],
-    providers: ['db', 'mail'],
-    complete: true,
+    providers: ['db'],
+    complete: false,
   },
   {
     name: 'fluent order',
@@ -282,8 +282,8 @@ export const overlapCases = [
     name: 'middleware without path',
     registration: 'router.use(async(c,next)=>{read();await next();});' + fixed,
     calls: ['db', 'mail'],
-    providers: ['db', 'mail'],
-    complete: true,
+    providers: ['db'],
+    complete: false,
   },
   {
     name: 'literal handler spread respects termination',
@@ -299,8 +299,8 @@ export const overlapCases = [
       "function register(r,enabled){if(!enabled)return;r.get('/items/:id',c=>{read();return c.text('db');});}register(router,false);" +
       fixed,
     calls: ['mail'],
-    providers: [],
-    complete: false,
+    providers: ['mail'],
+    complete: true,
   },
   {
     name: 'registration loop break',
@@ -355,7 +355,7 @@ export const overlapCases = [
     otherRequest: 'reliable',
     calls: ['mail'],
     providers: ['mail'],
-    complete: false,
+    complete: true,
   },
   {
     name: 'static class field registers on definition',

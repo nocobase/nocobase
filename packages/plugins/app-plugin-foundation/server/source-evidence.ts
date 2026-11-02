@@ -105,6 +105,11 @@ export class SourceEvidence {
     return index.complete ? (index.writes.get(declaration) ?? []) : undefined;
   }
   /** Syntactic binding writes include destructuring and loop targets; an incomplete index is unsafe. */
+  public bindingWrites(
+    declaration: ts.Declaration,
+  ): readonly CandidateWrite[] | undefined {
+    return this.candidateWrites(declaration);
+  }
   public hasBindingWrites(declaration: ts.Declaration): boolean {
     const writes = this.candidateWrites(declaration);
     return writes === undefined || writes.length > 0;
@@ -118,9 +123,19 @@ export class SourceEvidence {
   public evidenceSources(): ts.SourceFile[] {
     return [...this.sources.values()].map((source) => source.ast);
   }
+
+  /** Browser-only modules cannot rewrite the intrinsics of the backend process. */
+  public runtimeSources(): readonly ts.SourceFile[] {
+    return (
+      this.nativeProgram?.sources.map((source) => source.ast) ??
+      this.evidenceSources()
+    );
+  }
   // Route handlers registered after the proven official authorization middleware on the same router and path.
   public readonly authorizedHandlers: WeakSet<ts.Node> = new WeakSet();
-  // PROPOSAL (needs approval): every handler registered on an identified Hono router.
+  public readonly routeApplications: WeakSet<ts.ParameterDeclaration> =
+    new WeakSet();
+  // Handlers registered on an identified Hono router retain native request provenance.
   public readonly routeHandlers: WeakSet<ts.Node> = new WeakSet();
   public readonly nativeInitialization: NativeInitialization;
   private readonly checker: ts.TypeChecker;
@@ -176,7 +191,11 @@ export class SourceEvidence {
     private readonly resolutions: ReadonlyMap<string, string>,
     private readonly isLocal: (specifier: string) => boolean = (specifier) =>
       /^[.#/]/.test(specifier),
-    nativeProgram?: { sources: readonly EvidenceSource[]; complete: boolean },
+    private readonly nativeProgram?: {
+      sources: readonly EvidenceSource[];
+      complete: boolean;
+      roots?: readonly string[];
+    },
     private readonly implementationImports: ReadonlySet<string> = new Set(),
   ) {
     this.sources = new Map(sources.map((source) => [source.file, source]));
@@ -208,7 +227,10 @@ export class SourceEvidence {
   }
 
   /** Only declarations reachable from the provider entry establish service registrations. */
-  public registerServices(entries: readonly string[]): void {
+  public registerServices(
+    entries: readonly string[],
+    selected: readonly ts.ClassDeclaration[] = [],
+  ): void {
     const calls = new Set<ts.Node>();
     const visit = (node: ts.Node): void => {
       if (calls.has(node)) return;
@@ -257,6 +279,13 @@ export class SourceEvidence {
             visit(declaration.body);
       ts.forEachChild(node, visit);
     };
+    for (const provider of selected)
+      for (const member of provider.members)
+        if (
+          ts.isMethodDeclaration(member) &&
+          member.name.getText() === 'register'
+        )
+          visit(member.body!);
     for (const entry of entries)
       for (const nodes of this.collect(entry).nodes.values()) {
         for (const node of nodes) {
@@ -277,6 +306,10 @@ export class SourceEvidence {
     file: string,
     roots?: readonly ts.Node[],
     contextualCalls = false,
+    initialBindings: ReadonlyMap<
+      ts.Declaration,
+      readonly ts.Node[]
+    > = new Map(),
   ): {
     references: Set<string>;
     collections: Set<string>;
@@ -1129,14 +1162,19 @@ export class SourceEvidence {
       }
       if (contextualCalls && (ts.isBlock(node) || ts.isSourceFile(node))) {
         const enclosing = collecting;
+        let context = bindings;
         for (const statement of node.statements) {
-          visit(statement, bindings, active);
-          const barrier = statementBarrier(statement, bindings);
+          visit(statement, context, active);
+          const barrier = statementBarrier(statement, context);
           if (barrier === 'terminates') break;
           if (barrier === 'unknown' && collecting) {
             collecting = false;
             complete = false;
           }
+          if (collecting)
+            context = new StaticValues(this, context, captures).afterStatement(
+              statement,
+            );
         }
         collecting = enclosing;
         return;
@@ -1294,6 +1332,7 @@ export class SourceEvidence {
         const invocations = evaluator.invocations(node);
         const serviceCall =
           invocations.length > 0 ||
+          evaluator.localWeakMapCall(node) ||
           (ts.isPropertyAccessExpression(node.expression) &&
             ['connection', 'query', 'repository', 'transaction'].includes(
               node.expression.name.text,
@@ -1391,7 +1430,7 @@ export class SourceEvidence {
         if (!ts.isFunctionDeclaration(child)) visit(child, bindings, active);
       });
     };
-    if (roots) roots.forEach((root) => visit(root));
+    if (roots) roots.forEach((root) => visit(root, initialBindings));
     else {
       const ast = this.sources.get(file)?.ast;
       const symbol = ast && this.checker.getSymbolAtLocation(ast);
@@ -1614,9 +1653,11 @@ export class SourceEvidence {
 
   /** Index syntax once; whether a use is allowed remains specific to each proof. */
   private immutableReferences(
-    declaration: ts.VariableDeclaration,
+    declaration:
+      ts.VariableDeclaration | ts.FunctionDeclaration | ts.ParameterDeclaration,
+    source = declaration.getSourceFile(),
   ): readonly ts.Identifier[] | undefined {
-    const source = declaration.getSourceFile();
+    if (!declaration.name) return undefined;
     let index = this.immutableReferenceIndexes.get(source);
     if (index === undefined) {
       const references = new Map<ts.Symbol | undefined, ts.Identifier[]>();
@@ -1624,7 +1665,9 @@ export class SourceEvidence {
       const scan = (node: ts.Node): void => {
         if (++visits > 100_000 || ts.isTypeNode(node)) return;
         if (ts.isIdentifier(node)) {
-          const symbol = this.symbol(node);
+          let symbol = this.symbol(node);
+          if (symbol && symbol.flags & ts.SymbolFlags.Alias)
+            symbol = this.checker.getAliasedSymbol(symbol);
           const uses = references.get(symbol) ?? [];
           uses.push(node);
           references.set(symbol, uses);
@@ -1638,6 +1681,98 @@ export class SourceEvidence {
     return (
       index?.get(this.symbol(declaration.name)) ?? (index ? [] : undefined)
     );
+  }
+
+  public valueReferences(
+    declaration: ts.VariableDeclaration | ts.ParameterDeclaration,
+  ): readonly ts.Identifier[] | undefined {
+    return ts.isIdentifier(declaration.name)
+      ? this.immutableReferences(declaration)
+      : undefined;
+  }
+
+  /** A private function binding cannot escape or be rebound when all its references are direct calls. */
+  public directFunctionCalls(declaration: ts.FunctionDeclaration): boolean {
+    return (
+      !this.isExported(declaration) &&
+      !this.hasBindingWrites(declaration) &&
+      Boolean(
+        this.immutableReferences(declaration)?.every(
+          (reference) =>
+            reference === declaration.name ||
+            (ts.isCallExpression(reference.parent) &&
+              reference.parent.expression === reference),
+        ),
+      )
+    );
+  }
+
+  /** An internal data export is closed only inside a complete backend graph, away from its public roots. */
+  public configurationReferences(
+    declaration: ts.VariableDeclaration,
+  ): readonly ts.Identifier[] | undefined {
+    if (this.isExported(declaration)) {
+      const file = declaration.getSourceFile().fileName;
+      if (
+        !this.nativeProgram?.complete ||
+        !this.nativeProgram.roots ||
+        this.nativeProgram.roots.includes(file)
+      )
+        return undefined;
+      let imported = false;
+      for (const source of this.sources.values())
+        for (const statement of source.ast.statements) {
+          if (
+            !(
+              ts.isImportDeclaration(statement) ||
+              ts.isExportDeclaration(statement)
+            ) ||
+            this.importedSource(statement)?.fileName !== file
+          )
+            continue;
+          if (
+            !ts.isImportDeclaration(statement) ||
+            this.isExternalImport(statement) ||
+            statement.importClause?.name ||
+            !statement.importClause?.namedBindings ||
+            !ts.isNamedImports(statement.importClause.namedBindings)
+          )
+            return undefined;
+          imported = true;
+        }
+      if (!imported) return undefined;
+      for (const [key, target] of this.resolutions) {
+        if (target !== file) continue;
+        const importer = this.sources.get(key.slice(0, key.indexOf('\0')))?.ast;
+        if (!importer) return undefined;
+        let exposed = false,
+          visits = 0;
+        const inspect = (node: ts.Node): void => {
+          if (exposed || ++visits > 100_000) return;
+          if (
+            ts.isCallExpression(node) &&
+            node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+            node.arguments.length === 1 &&
+            ts.isStringLiteralLike(node.arguments[0]) &&
+            this.resolutions.get(
+              importer.fileName + '\0' + node.arguments[0].text,
+            ) === file
+          )
+            exposed = true;
+          ts.forEachChild(node, inspect);
+        };
+        inspect(importer);
+        if (exposed || visits > 100_000) return undefined;
+      }
+    }
+    const result: ts.Identifier[] = [];
+    for (const source of this.sources.values()) {
+      const references = this.immutableReferences(declaration, source.ast);
+      if (!references) return undefined;
+      result.push(...references);
+      if (result.length > 1024) return undefined;
+    }
+    return result;
   }
 
   /** A const binding is insufficient when its object or function escapes or is written through. */

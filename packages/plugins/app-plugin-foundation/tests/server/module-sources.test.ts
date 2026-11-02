@@ -601,11 +601,36 @@ describe('static module dependencies', () => {
       path.join(root, 'server/routes/index.ts'),
       "import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {read} from '@nocobase/db';import {send} from '@nocobase/app-plugin-mail/server';import {notify} from '@nocobase/app-plugin-notification/server';const router=new Hono().get('/items/:id',async(c,next)=>{read();await next();});const later=defineApiRoutes(()=>{router.get('/items/export',c=>{send();return c.text('mail');});return router;});export default [router,new Hono().get('/items/export',c=>{notify();return c.text('notification');}),later];",
     );
+    const blocked = (await collectModuleSources(root)).routes[0];
+    expect(blocked?.apiProviders).toEqual(['@nocobase/db']);
+    expect(blocked?.complete).toBe(false);
+    // An opaque external read cannot prove that the later next call is reached.
+    const code = await readFile(
+      path.join(root, 'server/routes/index.ts'),
+      'utf8',
+    );
+    await writeFile(
+      path.join(root, 'server/routes/index.ts'),
+      code.replace('read();await next();', 'const ready=true;await next();'),
+    );
     expect((await collectModuleSources(root)).routes[0]?.apiProviders).toEqual([
       '@nocobase/app-plugin-notification',
-      '@nocobase/db',
     ]);
   });
+  it('refuses to combine distinct runtime routers constructed from the same helper syntax', async () => {
+    const root = await fixture({
+      'client/routes.ts':
+        "export default [{name:'page',componentLoader:()=>import('./page.js')}];",
+      'client/page.ts':
+        "import {useApiClient} from '@nocobase/app-client';export default ()=>useApiClient().request({path:'selected'});",
+      'server/routes/index.ts':
+        "import {Hono} from 'hono';import {defineApiRoutes} from '@nocobase/app-server/router';import {databaseManagerToken} from '@nocobase/db';function make(db,table){const router=new Hono();router.get('/selected',()=>db.repository(table).findMany());return router;}export default defineApiRoutes(app=>{const db=app.container.resolve(databaseManagerToken);const unselected=make(db,'unselected');const selected=make(db,'wanted');return selected;});",
+    });
+    const route = (await collectModuleSources(root)).routes[0];
+    expect(route?.collections ?? []).toEqual([]);
+    expect(route?.complete).toBe(false);
+  });
+
   it('respects side-effect registration modules without attributing unrelated router imports', async () => {
     const root = await fixture({
       'client/routes.ts':

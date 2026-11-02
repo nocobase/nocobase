@@ -18,6 +18,136 @@ function fixture(expression: string, prelude = '') {
   return { evaluator: new StaticValues(analysis), expression: last.expression };
 }
 
+it('reads absent own configuration fields and short circuits a non-nullish path', () => {
+  const { evaluator, expression } = fixture(
+    "[{accessPath:'/uploads/hr-files',actions:{findOne:{}}}].map(entry => { const {uploadOne, uploadMany, ...actions}=entry.actions; return {path:entry.accessPath ?? unknown(), actions}; })",
+  );
+  expect(evaluator.expressionBarrier(expression)).toBe('continues');
+  const result = evaluator.values(expression)[0] as ts.ArrayLiteralExpression;
+  expect(
+    evaluator.strings(
+      ts.factory.createPropertyAccessExpression(result.elements[0], 'path'),
+    ),
+  ).toEqual(['/uploads/hr-files']);
+});
+
+it.each([
+  '[{get actions(){ unknown(); return {}; }}].map(entry => { const {missing,...actions}=entry.actions; return actions; })',
+  '[{actions:{__proto__:unknown}}].map(entry => entry.actions.missing)',
+  '[{actions:{}}].map(entry => entry.actions.missing ?? unknown())',
+])('keeps unknown configuration states blocked: %s', (source) => {
+  const { evaluator, expression } = fixture(source);
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+  expect(evaluator.values(expression)).toEqual([]);
+});
+
+it('does not infer absence after prototype exposure', () => {
+  const { evaluator, expression } = fixture(
+    '[{}].map(entry=>entry.missing)',
+    'external(Object.prototype);',
+  );
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+  expect(evaluator.values(expression)).toEqual([]);
+});
+
+it('completes an ordinary upload configuration in callback order', () => {
+  const { evaluator, expression } = fixture(
+    "(() => { const paths=[]; const entries=[{name:'files',disk:'local',accessMode:'stream',actions:{findOne:{},uploadOne:{maxSize:100}}}].map(entry=>{ const accessPath=entry.accessPath ?? '/uploads/files'; if(paths.some(path=>path===accessPath)) throw new Error('duplicate'); paths.push(accessPath); if(!entry.disk) throw new Error('disk'); if(entry.accessMode !== undefined && !['stream','redirect'].includes(entry.accessMode)) throw new Error('mode'); const {uploadOne,uploadMany,...actions}=entry.actions; for(const upload of [uploadOne,uploadMany]){if(upload===undefined)continue;if(!upload||typeof upload!=='object'||Object.keys(upload).some(key=>key!=='maxSize'))throw new Error('config'); if(upload.maxSize!==undefined&&(!Number.isSafeInteger(upload.maxSize)||upload.maxSize<=0))throw new Error('size');} return {...entry,accessPath,actions,uploadOne,uploadMany}; }); return entries.map(entry=>entry.name); })()",
+  );
+  expect(evaluator.expressionBarrier(expression)).toBe('continues');
+  const array = evaluator.values(expression)[0] as ts.ArrayLiteralExpression;
+  expect(array.elements.map((e) => evaluator.strings(e))).toEqual([['files']]);
+});
+
+it.each([
+  '[{},{}].map(entry=>entry.missing ?? unknown())',
+  "(() => {const paths=[];return ['same','same'].map(path=>{if(paths.some(existing=>existing===path))throw new Error('duplicate');paths.push(path);return path;});})()",
+])(
+  'keeps failure in a later configuration iteration blocking: %s',
+  (source) => {
+    const { evaluator, expression } = fixture(source);
+    expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+    expect(evaluator.values(expression)).toEqual([]);
+  },
+);
+
+it('does not trust rewritten Object.keys', () => {
+  const { evaluator, expression } = fixture(
+    '[{value:1}].map(entry=>Object.keys(entry))',
+    'Object.keys=unknown;',
+  );
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+  expect(evaluator.values(expression)).toEqual([]);
+});
+
+it('projects a finite read-only configuration table to its numeric maximum', () => {
+  const { evaluator, expression } = fixture(
+    'Number.isSafeInteger(Math.max(...Object.values(table).map(rule=>rule.maxSize)))',
+    'const MB=1024*1024;const table={small:{maxSize:20*MB},large:{maxSize:200*MB}};',
+  );
+  expect(evaluator.expressionBarrier(expression)).toBe('continues');
+  expect(evaluator.booleans(expression)).toEqual([true]);
+});
+
+it.each([
+  'const alias=table.large;alias.maxSize=-1;',
+  'external(table.large);',
+  'const values=Object.values(table);external(values);',
+  'Math.max=unknown;',
+  'const M=Math;external(M);',
+])('rejects exposed or rewritten numeric configuration: %s', (suffix) => {
+  const { evaluator, expression } = fixture(
+    'Number.isSafeInteger(Math.max(...Object.values(table).map(rule=>rule.maxSize)))',
+    'const table={large:{maxSize:100}};' + suffix,
+  );
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+});
+
+it.each([
+  ['', true, true],
+  ['', false, false],
+  ['export {table};', true, false],
+  ['const exported=import("./config.js");', true, false],
+  ['const alias=table.large;external(alias);', true, false],
+  ['external(table.large);', true, false],
+] as const)(
+  'keeps internal configuration exports fenced: %s / complete=%s',
+  (extra, complete, accepted) => {
+    const sources = [
+      {
+        file: '/main.ts',
+        ast: ts.createSourceFile(
+          '/main.ts',
+          "import {table} from './config.js';" +
+            extra +
+            'export default Math.max(...Object.values(table).map(rule=>rule.maxSize));',
+          ts.ScriptTarget.Latest,
+          true,
+        ),
+      },
+      {
+        file: '/config.ts',
+        ast: ts.createSourceFile(
+          '/config.ts',
+          'export const table={large:{maxSize:100}};',
+          ts.ScriptTarget.Latest,
+          true,
+        ),
+      },
+    ];
+    const a = new SourceEvidence(
+      sources,
+      new Map([['/main.ts\0./config.js', '/config.ts']]),
+      undefined,
+      { sources, complete, roots: ['/main.ts'] },
+    );
+    const e = new StaticValues(a),
+      expression = (sources[0].ast.statements.at(-1) as ts.ExportAssignment)
+        .expression;
+    expect(e.expressionBarrier(expression) === 'continues').toBe(accepted);
+  },
+);
+
 it('preserves separate values from each finite map iteration', () => {
   const { evaluator, expression } = fixture(
     "['first', 'second'].map(name => ({ name }))",
@@ -34,6 +164,44 @@ it('preserves separate values from each finite map iteration', () => {
       ),
     ),
   ).toEqual([['first'], ['second']]);
+});
+
+it('preserves host contribution scopes without executing deferred router factories', () => {
+  const { evaluator, expression } = fixture(
+    'make().map(contribution=>({scope:contribution.scope,createRouter:async app=>{unknown();return await contribution.createRouter(app);}}))',
+    "import {defineApiRoutes,defineRootRoutes,defineRepositoryApiRoutes} from '@nocobase/app-server/router'; function make(){const entries=[{name:'files',policy:principal=>({read:false}),actions:{findOne:{}}}].map(entry=>({...entry}));const crud=defineRepositoryApiRoutes({principal:c=>c,repositories:entries.map(({name,policy,actions})=>({name,policy,actions}))});return [defineApiRoutes(async app=>unknown()),crud,defineRootRoutes(app=>unknown())];}",
+  );
+  expect(evaluator.expressionBarrier(expression)).toBe('continues');
+  const values = evaluator.values(expression)[0] as ts.ArrayLiteralExpression;
+  expect(
+    values.elements.map((value) =>
+      evaluator.strings(
+        ts.factory.createPropertyAccessExpression(value, 'scope'),
+      ),
+    ),
+  ).toEqual([['api'], ['api'], ['root']]);
+});
+
+it.each([
+  "defineRepositoryApiRoutes({repositories:[{name:'files',policy:p=>p,actions:{findOne:{}}}]})",
+  "defineRepositoryApiRoutes({principal:c=>c,repositories:[{name:'files',policy:p=>p,actions:{unknown:{}}}]})",
+  "defineRepositoryApiRoutes({principal:c=>c,repositories:[{name:'files',policy:p=>p,actions:{findMany:{maxLimit:-1}}}]})",
+  'defineApiRoutes(unknown())',
+])('rejects unproved host contribution configuration: %s', (source) => {
+  const { evaluator, expression } = fixture(
+    source,
+    "import {defineRepositoryApiRoutes,defineApiRoutes} from '@nocobase/app-server/router';",
+  );
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+});
+
+it('keeps copied metadata opaque when a later callback reads its fields', () => {
+  const { evaluator, expression } = fixture(
+    '[1].map(()=>({schema})).map(entry=>entry.schema.type)',
+    "export const schema={get type(){unknown();return 'string';}};",
+  );
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+  expect(evaluator.values(expression)).toEqual([]);
 });
 
 it('keeps callback captures separate in a second map', () => {
@@ -238,5 +406,47 @@ it('rejects escaped nested arrays in object rest', () => {
     `(() => {const child=['first'];const alias=child;alias[0]='second'; const {...rest}={child};return rest;})()`,
   );
   expect(evaluator.expressionBarrier(expression)).toBe('unknown');
+  expect(evaluator.values(expression)).toEqual([]);
+});
+
+it.each([
+  "for(const entry of entries)entry.name='changed';",
+  "for(const entry of entries){const alias=entry;alias.name='changed';}",
+  'for(const entry of entries)external(entry);',
+  'for(const entry of entries)external(entry.options);',
+])(
+  'refuses a preceding loop that mutates or exports a callback input: %s',
+  (prefix) => {
+    const { evaluator, expression } = fixture(
+      'entries.map(entry=>entry.name)',
+      "const entries=[{name:'original',options:{}}];" + prefix,
+    );
+    expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+    expect(evaluator.values(expression)).toEqual([]);
+  },
+);
+
+it.each([
+  "globalThis['Array'].prototype.map=unknown;",
+  "globalThis['Object'].keys=unknown;",
+  'globalThis[key]=unknown;',
+])('refuses indirect global intrinsic replacement: %s', (prelude) => {
+  const { evaluator, expression } = fixture(
+    "['files'].map(name=>name)",
+    prelude,
+  );
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
+  expect(evaluator.values(expression)).toEqual([]);
+});
+
+it.each([
+  'Number=unknown;',
+  'const nativeNumber=Number;nativeNumber.isSafeInteger=unknown;',
+])('refuses rewritten numeric guard identities: %s', (prelude) => {
+  const { evaluator, expression } = fixture(
+    "[{maxSize:100}].map(entry=>{if(!Number.isSafeInteger(entry.maxSize))throw new Error('size');return entry.maxSize;})",
+    prelude,
+  );
+  expect(evaluator.expressionBarrier(expression)).not.toBe('continues');
   expect(evaluator.values(expression)).toEqual([]);
 });

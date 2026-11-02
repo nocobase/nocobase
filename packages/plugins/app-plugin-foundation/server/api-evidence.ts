@@ -37,10 +37,53 @@ export function apiDependencies(
   providers: (
     file: string,
     nodes: readonly ts.Node[],
+    bindings?: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
   ) => { providers: readonly string[]; collections: readonly string[] },
 ): EndpointEvidence[] {
   type Bindings = ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
-  const endpoints: EndpointEvidence[] = [];
+  const values = new StaticValues(analysis);
+  const containsBodyLimiter = (
+    node: ts.Node,
+    resolver: StaticValues,
+  ): boolean => {
+    if (ts.isCallExpression(node) && resolver.bodyLimitInvocation(node))
+      return true;
+    let found = false;
+    ts.forEachChild(node, (child) => {
+      if (!found) found = containsBodyLimiter(child, resolver);
+    });
+    return found;
+  };
+  const factoryBindings = new Map<ts.SignatureDeclaration, Bindings>();
+  let currentFactory: ts.SignatureDeclaration | undefined;
+  const instances = new Map<
+    ts.SignatureDeclaration | undefined,
+    Map<ts.Node, ts.Node>
+  >();
+  const instance = (node: ts.NewExpression): ts.Node => {
+    let parent: ts.Node | undefined = node.parent;
+    while (parent && !ts.isFunctionLike(parent)) parent = parent.parent;
+    const owner = parent ? currentFactory : undefined;
+    let scope = instances.get(owner);
+    if (!scope) instances.set(owner, (scope = new Map<ts.Node, ts.Node>()));
+    let value = scope.get(node);
+    if (!value) {
+      value = ts.factory.createNewExpression(
+        node.expression,
+        node.typeArguments,
+        node.arguments,
+      );
+      ts.setOriginalNode(value, node);
+      (value as ts.Node & { parent: ts.Node }).parent = node.parent;
+      scope.set(node, value);
+    }
+    return value;
+  };
+  const evaluate = Symbol('evaluate handler in mounted order');
+  type PendingEndpoint = EndpointEvidence & {
+    [evaluate]?: (authorized: boolean) => EndpointEvidence;
+  };
+  const endpoints: PendingEndpoint[] = [];
   const contributions: ((
     { router: ts.Node } | { endpoint: EndpointEvidence }
   ) & {
@@ -77,7 +120,7 @@ export function apiDependencies(
     });
   };
   const invokedFactories = new Set<ts.SignatureDeclaration>();
-  const visited = new Set<ts.Node>();
+  const visited = new Map<ts.Node, Set<ts.SignatureDeclaration | undefined>>();
   const imported = (node: ts.Node, module: string, name: string): boolean =>
     importedContract(node, analysis, module, name);
   let writtenDeclarations: Set<ts.Declaration> | undefined;
@@ -173,6 +216,12 @@ export function apiDependencies(
   ): ts.Node | undefined => {
     if (seen.has(node)) return undefined;
     seen.add(node);
+    if (values.fork(bindings).nativeRepositoryRouter(node)) return node;
+    if (
+      ts.isCallExpression(node) &&
+      values.fork(bindings).contributionKind(node)
+    )
+      return undefined;
     // A local helper that registers on a router and returns that same parameter, such as `guard(new Hono())`. Its
     // registrations are visited where the call is evaluated, with the parameter bound to the argument.
     const forwarded = forwardedRouter(node);
@@ -181,12 +230,12 @@ export function apiDependencies(
       const result = identity(forwarded, seen, bindings);
       if (result) return result;
     }
-    for (const value of new StaticValues(analysis, bindings).values(node)) {
+    for (const value of values.fork(bindings).values(node)) {
       if (
         ts.isNewExpression(value) &&
         imported(value.expression, 'hono', 'Hono')
       )
-        return value;
+        return instance(value);
       if (
         ts.isCallExpression(value) &&
         ts.isPropertyAccessExpression(value.expression)
@@ -256,14 +305,61 @@ export function apiDependencies(
       }
     }
   };
-  const root = (node: ts.Node, factory?: ts.SignatureDeclaration): void => {
-    if (visited.has(node)) return;
-    visited.add(node);
-    for (const value of analysis.values(node)) {
+  const root = (
+    node: ts.Node,
+    factory?: ts.SignatureDeclaration,
+    bindings: Bindings = new Map(),
+  ): void => {
+    let contexts = visited.get(node);
+    if (!contexts) visited.set(node, (contexts = new Set()));
+    if (contexts.has(factory)) return;
+    contexts.add(factory);
+    const literals = values.fork(bindings);
+    for (const value of literals.values(node)) {
       if (ts.isArrayLiteralExpression(value))
-        value.elements.forEach((child) => root(child, factory));
+        value.elements.forEach((child) =>
+          root(
+            ts.isSpreadElement(child) ? child.expression : child,
+            factory,
+            bindings,
+          ),
+        );
       else if (ts.isFunctionLike(value)) {
-        returned(value).forEach((child) => root(child, value));
+        const scope = literals.capturedBindings(value);
+        factoryBindings.set(value, scope);
+        const previous = currentFactory;
+        currentFactory = value;
+        try {
+          returned(value).forEach((child) => root(child, value, scope));
+        } finally {
+          currentFactory = previous;
+        }
+      } else if (ts.isObjectLiteralExpression(value)) {
+        const scope = objectProperty(value, 'scope'),
+          factoryValue = objectProperty(value, 'createRouter');
+        const names = scope ? literals.strings(scope) : [];
+        if (names.length === 1 && names[0] === 'root') continue;
+        const functions = factoryValue
+          ? literals.values(factoryValue).filter(ts.isFunctionLike)
+          : [];
+        if (
+          names.length === 1 &&
+          names[0] === 'api' &&
+          functions.length === 1
+        ) {
+          if (functions[0].parameters[0])
+            analysis.routeApplications.add(functions[0].parameters[0]);
+          root(functions[0], factory, literals.capturedBindings(functions[0]));
+        } else
+          contributions.push({
+            factory,
+            endpoint: {
+              path: '/*',
+              method: 'ALL',
+              providers: [],
+              uncertain: true,
+            },
+          });
       } else if (ts.isCallExpression(value)) {
         if (
           imported(
@@ -288,9 +384,11 @@ export function apiDependencies(
             'defineApiRoutes',
           )
         )
-          value.arguments.forEach((child) => root(child, factory));
+          value.arguments.forEach((child) =>
+            root(child, factory, literals.capturedBindings(value)),
+          );
         else {
-          const router = identity(value);
+          const router = identity(value, new Set(), bindings);
           if (router) addRoot(router, factory);
           else
             contributions.push({
@@ -304,7 +402,7 @@ export function apiDependencies(
             });
         }
       } else {
-        const router = identity(value);
+        const router = identity(value, new Set(), bindings);
         if (router) addRoot(router, factory);
         else
           contributions.push({
@@ -334,13 +432,39 @@ export function apiDependencies(
   interface Router {
     base: string;
     uncertain?: boolean;
-    entries: EndpointEvidence[];
+    entries: PendingEndpoint[];
   }
   const routers = new Map<ts.Node, Router>();
+  // Repeated construction inside one factory needs activation identity. Until that identity is available, refuse
+  // the shared syntax node rather than combine two runtime routers and attribute an unselected handler.
+  let invocationSite: ts.CallExpression | undefined;
+  let iteration = 0;
+  let currentIteration = 0;
+  const constructorSites = new Map<ts.Node, Set<string>>();
+  const syntaxIds = new WeakMap<ts.Node, number>();
+  let nextSyntaxId = 0;
+  const syntaxId = (node: ts.Node): number => {
+    let value = syntaxIds.get(node);
+    if (!value) {
+      value = ++nextSyntaxId;
+      syntaxIds.set(node, value);
+    }
+    return value;
+  };
   const state = (node: ts.Node, bindings: Bindings): Router => {
     const known = routers.get(node);
     if (known) return known;
     let router: Router = { base: '', entries: [] };
+    const native = values.fork(bindings).nativeRepositoryRouter(node);
+    if (native) {
+      const start = contributions.length;
+      repository(native);
+      router.entries.push(
+        ...contributions
+          .splice(start)
+          .flatMap((item) => ('endpoint' in item ? [item.endpoint] : [])),
+      );
+    }
     if (
       ts.isCallExpression(node) &&
       ts.isPropertyAccessExpression(node.expression)
@@ -407,7 +531,7 @@ export function apiDependencies(
         if (
           (ts.isExpressionStatement(statement) ||
             ts.isVariableStatement(statement)) &&
-          new StaticValues(analysis, bindings).definitelyTerminates(statement)
+          values.fork(bindings).definitelyTerminates(statement)
         )
           return pendingExit ? 'unknown' : 'throw';
       }
@@ -453,7 +577,19 @@ export function apiDependencies(
     }
     if (ts.isNewExpression(node)) {
       const router = identity(node, new Set(), bindings);
-      if (router) state(router, bindings);
+      if (router) {
+        const value = state(router, bindings),
+          sites = constructorSites.get(router) ?? new Set<string>();
+        sites.add(`${syntaxId(invocationSite ?? node)}:${currentIteration}`);
+        constructorSites.set(router, sites);
+        if (sites.size > 1) {
+          value.uncertain = true;
+          value.entries = value.entries.map((endpoint) => ({
+            ...endpoint,
+            uncertain: true,
+          }));
+        }
+      }
       visit(node.expression, bindings, active, uncertain);
       node.arguments?.forEach((argument) =>
         visit(argument, bindings, active, uncertain),
@@ -494,7 +630,19 @@ export function apiDependencies(
       }
       return;
     }
-    const literals = new StaticValues(analysis, bindings);
+    const literals = values.fork(bindings);
+    if (
+      ts.isIfStatement(node) &&
+      literals.expressionBarrier(node.expression) === 'continues'
+    ) {
+      const truth = literals.booleans(node.expression);
+      if (truth.length === 1)
+        return truth[0]
+          ? visit(node.thenStatement, bindings, active, uncertain)
+          : node.elseStatement
+            ? visit(node.elseStatement, bindings, active, uncertain)
+            : undefined;
+    }
     if (ts.isForOfStatement(node)) {
       const arrays = literals
         .values(node.expression)
@@ -514,12 +662,15 @@ export function apiDependencies(
             declaration,
             literals.values(element),
           );
+          const previousIteration = currentIteration;
+          currentIteration = ++iteration;
           const exit = visit(
             node.statement,
             context,
             active,
             uncertain || pendingExit,
           );
+          currentIteration = previousIteration;
           if (exit === 'break') return pendingExit ? 'unknown' : undefined;
           if (exit === 'return' || exit === 'throw')
             return pendingExit ? 'unknown' : exit;
@@ -599,31 +750,23 @@ export function apiDependencies(
             if (!registeredPaths.length) barrier(router, method.toUpperCase());
             for (const path of registeredPaths)
               for (const handler of expanded) {
-                const contract = middlewareContract(handler, analysis);
-                const functions = [handler, ...literals.values(handler)].filter(
-                  ts.isFunctionLike,
+                const contract = middlewareContract(
+                  handler,
+                  analysis,
+                  literals.fork(literals.capturedBindings(handler)),
                 );
+                const functions = [handler, ...literals.values(handler)]
+                  .flatMap((node) => [node, ts.getOriginalNode(node)])
+                  .filter(ts.isFunctionLike);
                 if (!contract)
                   for (const fn of functions) analysis.routeHandlers.add(fn);
-                const authorized =
-                  !contract &&
-                  router.entries.some(
-                    (entry) =>
-                      entry.method === 'ALL' &&
-                      // Hono path coverage: `*`, the same path, or `/prefix/*` for a path under `/prefix/`.
-                      (entry.path === join(router.base, '*') ||
-                        entry.path === join(router.base, path) ||
-                        (entry.path.endsWith('/*') &&
-                          join(router.base, path).startsWith(
-                            entry.path.slice(0, -1),
-                          ))) &&
-                      entry.conditions?.some(
-                        (condition) =>
-                          condition.kind === 'authorizationIdentityResolved',
-                      ),
-                  );
-                const evidence = (() => {
-                  if (contract) return undefined;
+                const captured = new Map([
+                  ...bindings,
+                  ...literals.capturedBindings(handler),
+                ]);
+                const evaluateHandler = (
+                  authorized: boolean,
+                ): EndpointEvidence => {
                   const previous = functions.map((fn) =>
                     analysis.authorizedHandlers.has(fn),
                   );
@@ -633,7 +776,49 @@ export function apiDependencies(
                   }
                   analysis.authorizationScope++;
                   try {
-                    return providers(node.getSourceFile().fileName, [handler]);
+                    const resolver = literals.fork(captured),
+                      resolved = resolver.values(handler);
+                    const root =
+                      resolved.length === 1 && ts.isFunctionLike(resolved[0])
+                        ? resolved[0]
+                        : handler;
+                    const evidence = providers(
+                      node.getSourceFile().fileName,
+                      [root],
+                      new Map([
+                        ...captured,
+                        ...resolver.capturedBindings(root),
+                      ]),
+                    );
+                    const continuation = handlerContinuation(
+                      handler,
+                      analysis,
+                      resolver,
+                    );
+                    return {
+                      path: '',
+                      method: '',
+                      providers: evidence.providers,
+                      ...(evidence.collections.length
+                        ? { collections: evidence.collections }
+                        : {}),
+                      continuation,
+                      conditions:
+                        continuation === 'next' &&
+                        functions.some(
+                          (fn) =>
+                            'body' in fn &&
+                            fn.body &&
+                            containsBodyLimiter(fn.body, resolver),
+                        )
+                          ? [
+                              {
+                                kind: 'bodyWithinLimit',
+                                source: 'hono/body-limit#bodyLimit',
+                              },
+                            ]
+                          : [],
+                    };
                   } finally {
                     functions.forEach((fn, index) => {
                       if (previous[index]) analysis.authorizedHandlers.add(fn);
@@ -641,22 +826,16 @@ export function apiDependencies(
                     });
                     analysis.authorizationScope++;
                   }
-                })();
+                };
                 router.entries.push({
                   path: join(router.base, path),
                   method:
                     method === 'use' || method === 'all'
                       ? 'ALL'
                       : method.toUpperCase(),
-                  providers: contract
-                    ? (contract.providers ?? [])
-                    : (evidence?.providers ?? []),
-                  ...(evidence?.collections.length
-                    ? { collections: evidence.collections }
-                    : {}),
-                  continuation: contract
-                    ? 'next'
-                    : handlerContinuation(handler, analysis),
+                  providers: contract ? (contract.providers ?? []) : [],
+                  ...(!contract ? { [evaluate]: evaluateHandler } : {}),
+                  continuation: contract ? 'next' : 'unknown',
                   conditions: [...conditions, ...(contract?.conditions ?? [])],
                   uncertain:
                     uncertain ||
@@ -677,25 +856,25 @@ export function apiDependencies(
       ) {
         // The host calls exported router factories later, in contribution order.
       } else {
-        const functions = analysis.functions(node.expression);
+        const invocations = literals.invocations(node);
         const routerArguments = node.arguments.flatMap((argument) => {
           const router = identity(argument, new Set(), bindings);
           return router ? [router] : [];
         });
-        if (!functions.length)
+        if (!invocations.length)
           routerArguments.forEach((router) => barrier(state(router, bindings)));
-        for (const fn of functions) {
+        for (const invocation of invocations) {
+          const fn = invocation.fn;
           if (!('body' in fn) || !fn.body) continue;
           if (active.has(fn)) {
             exhausted = true;
             continue;
           }
-          const context = new Map(bindings);
-          fn.parameters.forEach((parameter, index) => {
-            const argument = node.arguments[index] ?? parameter.initializer;
-            context.set(parameter, argument ? literals.values(argument) : []);
-          });
+          const context = invocation.bindings,
+            previousInvocation = invocationSite;
+          invocationSite = node;
           visit(fn.body, context, new Set(active).add(fn), uncertain);
+          invocationSite = previousInvocation;
         }
       }
       return;
@@ -746,11 +925,13 @@ export function apiDependencies(
     const fn = contribution.factory;
     if (fn && !invokedFactories.has(fn) && 'body' in fn && fn.body) {
       invokedFactories.add(fn);
+      currentFactory = fn;
       successGuard = guardFor(fn);
       conditions = successGuard ? [databaseAvailable] : [];
-      visit(fn.body);
+      visit(fn.body, factoryBindings.get(fn));
       successGuard = undefined;
       conditions = [];
+      currentFactory = undefined;
     }
     if ('router' in contribution)
       endpoints.push(
@@ -763,5 +944,36 @@ export function apiDependencies(
   }
   if (exhausted)
     return [{ path: '/*', method: 'ALL', providers: [], uncertain: true }];
-  return endpoints;
+  const result: EndpointEvidence[] = [];
+  for (const pending of endpoints) {
+    const { [evaluate]: run, ...endpoint } = pending;
+    if (!run) {
+      result.push(endpoint);
+      continue;
+    }
+    const authorized = result.some(
+      (prefix) =>
+        !prefix.uncertain &&
+        prefix.method === 'ALL' &&
+        (prefix.path === '/*' ||
+          prefix.path === endpoint.path ||
+          (prefix.path.endsWith('/*') &&
+            endpoint.path.startsWith(prefix.path.slice(0, -1)))) &&
+        prefix.conditions?.some(
+          (condition) => condition.kind === 'authorizationIdentityResolved',
+        ),
+    );
+    const evaluated = run(authorized);
+    result.push({
+      ...endpoint,
+      providers: evaluated.providers,
+      ...(evaluated.collections ? { collections: evaluated.collections } : {}),
+      continuation: evaluated.continuation,
+      conditions: [
+        ...(endpoint.conditions ?? []),
+        ...(evaluated.conditions ?? []),
+      ],
+    });
+  }
+  return result;
 }

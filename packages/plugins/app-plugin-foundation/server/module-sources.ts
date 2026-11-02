@@ -13,6 +13,8 @@ import { SourceEvidence } from './source-evidence.js';
 import { readModuleManifest } from './module-manifest.js';
 import { apiDependencies as analyzeApiDependencies } from './api-evidence.js';
 import { endpointChain } from './endpoint-chain.js';
+import { importedContract } from './api-contracts.js';
+import { objectProperty } from './request-evidence.js';
 import { pageRequests } from './request-evidence.js';
 import { StaticValues } from './static-values.js';
 import { RouteEvidence } from './route-evidence.js';
@@ -318,6 +320,12 @@ export class SourceGraph {
       : undefined;
     // Only registered package roots and exports actually imported by this backend are candidates.
     // Preserve the external import identity; registration is a source location, never a trust verdict.
+    const registeredExports: {
+      root: string;
+      target: string;
+      name: string;
+      specifier: string;
+    }[] = [];
     for (const source of serverGraph?.sources ?? []) {
       for (const specifier of source.imports) {
         const providers = runtime.filter(
@@ -358,12 +366,21 @@ export class SourceGraph {
                 ? declared.import
                 : undefined;
           if (!target?.startsWith('./')) continue;
-          await this.addImplementationSource(
-            root,
-            path.resolve(root, target),
-            source.file,
-            specifier,
-          );
+          if (
+            await this.addImplementationSource(
+              root,
+              path.resolve(root, target),
+              source.file,
+              specifier,
+            )
+          )
+            if (provider.evidence === 'serverRegistration')
+              registeredExports.push({
+                root: await realpath(root),
+                target: await realpath(path.resolve(root, target)),
+                name: provider.name,
+                specifier,
+              });
         } catch {
           // An unavailable implementation stays external and cannot prove a contribution.
           this.observation?.unreadable();
@@ -445,10 +462,259 @@ export class SourceGraph {
         // Browser-only pages are not executed in the process owning Node's crypto intrinsics.
         sources: [...new Map([...nativeSources, ...identitySources]).values()],
         complete: backendComplete && identityComplete && nativeComplete,
+        roots: [this.serverEntry, ...providerEntries].filter(
+          (file): file is string => Boolean(file),
+        ),
       },
       this.implementationImports,
     );
-    this.analysis.registerServices(providerEntries);
+    // Only a registered runtime export's default plugin descriptor selects its providers. An imported implementation
+    // file alone never registers every class it happens to contain.
+    const defaultValue = (
+      file: string,
+      seen = new Set<string>(),
+    ): readonly ts.Node[] => {
+      if (seen.has(file) || seen.size >= 32) return [];
+      const source = this.files.get(file);
+      if (!source) return [];
+      const next = new Set(seen).add(file);
+      const result: ts.Node[] = [];
+      for (const statement of source.ast.statements) {
+        if (ts.isExportAssignment(statement) && !statement.isExportEquals)
+          result.push(...this.analysis!.values(statement.expression));
+        if (
+          ts.isExportDeclaration(statement) &&
+          !statement.isTypeOnly &&
+          statement.exportClause &&
+          ts.isNamedExports(statement.exportClause)
+        ) {
+          for (const item of statement.exportClause.elements)
+            if (item.name.text === 'default' && !item.isTypeOnly) {
+              if (
+                statement.moduleSpecifier &&
+                ts.isStringLiteralLike(statement.moduleSpecifier) &&
+                (item.propertyName?.text ?? item.name.text) === 'default'
+              ) {
+                const target = resolutions.get(
+                  `${file}\0${statement.moduleSpecifier.text}`,
+                );
+                if (target) result.push(...defaultValue(target, next));
+              } else
+                result.push(
+                  ...this.analysis!.values(item.propertyName ?? item.name),
+                );
+            }
+        }
+      }
+      return result;
+    };
+    const pluginProviders: ts.ClassDeclaration[] = [];
+    const selectedDescriptors = new Set<ts.Node>();
+    const pluginLists = identityEntries.plugins
+      ? defaultValue(identityEntries.plugins)
+          .filter(ts.isCallExpression)
+          .filter(
+            (call) =>
+              call.arguments.length === 1 &&
+              !call.questionDotToken &&
+              importedContract(
+                call.expression,
+                this.analysis!,
+                '@nocobase/app-server/plugins',
+                'defineServerPlugins',
+              ),
+          )
+          .flatMap((call) => this.analysis!.values(call.arguments[0]))
+          .filter(ts.isArrayLiteralExpression)
+      : [];
+    for (const registered of registeredExports) {
+      const defaults = defaultValue(registered.target);
+      if (defaults.length !== 1 || !ts.isCallExpression(defaults[0])) continue;
+      const call = defaults[0];
+      if (
+        selectedDescriptors.has(call) ||
+        pluginLists
+          .flatMap((array) => [...array.elements])
+          .filter(
+            (element) =>
+              ts.isIdentifier(element) &&
+              importedContract(
+                element,
+                this.analysis!,
+                registered.specifier,
+                'default',
+              ),
+          ).length !== 1
+      )
+        continue;
+      selectedDescriptors.add(call);
+      if (
+        call.questionDotToken ||
+        call.arguments.length !== 1 ||
+        !importedContract(
+          call.expression,
+          this.analysis,
+          '@nocobase/app-server/plugins',
+          'defineServerPlugin',
+        )
+      )
+        continue;
+      const options = call.arguments[0];
+      if (
+        !ts.isObjectLiteralExpression(options) ||
+        options.properties.length !== 3 ||
+        options.properties.some(
+          (item) =>
+            !(
+              ts.isPropertyAssignment(item) ||
+              ts.isShorthandPropertyAssignment(item)
+            ) ||
+            !(
+              ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name)
+            ) ||
+            !['packageName', 'baseDir', 'serviceProviders'].includes(
+              item.name.text,
+            ),
+        ) ||
+        new Set(
+          options.properties.map((item) =>
+            item.name &&
+            (ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name))
+              ? item.name.text
+              : '',
+          ),
+        ).size !== 3
+      )
+        continue;
+      const name = objectProperty(options, 'packageName'),
+        base = objectProperty(options, 'baseDir'),
+        selected = objectProperty(options, 'serviceProviders');
+      if (
+        !name ||
+        !ts.isStringLiteralLike(name) ||
+        name.text !== registered.name ||
+        !base ||
+        !ts.isCallExpression(base) ||
+        !ts.isPropertyAccessExpression(base.expression) ||
+        base.expression.name.text !== 'resolve' ||
+        base.arguments.length !== 2 ||
+        !ts.isPropertyAccessExpression(base.arguments[0]) ||
+        base.arguments[0].name.text !== 'dirname' ||
+        !ts.isMetaProperty(base.arguments[0].expression) ||
+        base.arguments[0].expression.keywordToken !==
+          ts.SyntaxKind.ImportKeyword ||
+        base.arguments[0].expression.name.text !== 'meta' ||
+        !ts.isStringLiteralLike(base.arguments[1]) ||
+        path.resolve(
+          path.dirname(call.getSourceFile().fileName),
+          base.arguments[1].text,
+        ) !== registered.root ||
+        !importedContract(
+          base.expression.expression,
+          this.analysis,
+          'node:path',
+          'default',
+        ) ||
+        !selected
+      )
+        continue;
+      const arrays = this.analysis.values(selected);
+      if (
+        arrays.length !== 1 ||
+        !ts.isArrayLiteralExpression(arrays[0]) ||
+        arrays[0].elements.length > 32
+      )
+        continue;
+      const offset = pluginProviders.length,
+        seenClasses = new Set<ts.Node>();
+      let providersComplete = true;
+      for (const element of arrays[0].elements) {
+        const classes = this.analysis.values(element);
+        if (
+          classes.length !== 1 ||
+          !ts.isClassDeclaration(classes[0]) ||
+          !this.implementationSources.has(classes[0].getSourceFile().fileName)
+        ) {
+          providersComplete = false;
+          continue;
+        }
+        const provider = classes[0];
+        if (seenClasses.has(provider)) {
+          providersComplete = false;
+          continue;
+        }
+        seenClasses.add(provider);
+        if (
+          provider.heritageClauses?.length !== 1 ||
+          provider.heritageClauses[0].token !== ts.SyntaxKind.ExtendsKeyword ||
+          provider.heritageClauses[0].types.length !== 1 ||
+          !importedContract(
+            provider.heritageClauses[0].types[0].expression,
+            this.analysis,
+            '@nocobase/service-provider',
+            'ServiceProvider',
+          )
+        ) {
+          providersComplete = false;
+          continue;
+        }
+        if (
+          provider.members.some((member) => {
+            if (ts.isPropertyDeclaration(member))
+              return (
+                !member.initializer ||
+                !ts.isStringLiteralLike(member.initializer) ||
+                !member.modifiers?.some(
+                  (modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword,
+                )
+              );
+            if (
+              !ts.isMethodDeclaration(member) ||
+              !ts.isIdentifier(member.name) ||
+              member.name.text !== 'register' ||
+              !member.body ||
+              member.parameters.length ||
+              member.modifiers?.some((modifier) =>
+                [
+                  ts.SyntaxKind.AsyncKeyword,
+                  ts.SyntaxKind.StaticKeyword,
+                ].includes(modifier.kind),
+              )
+            )
+              return true;
+            return member.body.statements.some((statement) => {
+              if (
+                !ts.isExpressionStatement(statement) ||
+                !ts.isCallExpression(statement.expression)
+              )
+                return true;
+              const call = statement.expression,
+                access = call.expression;
+              return (
+                call.questionDotToken ||
+                call.arguments.length !== 2 ||
+                !ts.isPropertyAccessExpression(access) ||
+                access.questionDotToken ||
+                !['singleton', 'instance'].includes(access.name.text) ||
+                !ts.isPropertyAccessExpression(access.expression) ||
+                access.expression.name.text !== 'container' ||
+                !ts.isPropertyAccessExpression(access.expression.expression) ||
+                access.expression.expression.name.text !== 'app' ||
+                access.expression.expression.expression.kind !==
+                  ts.SyntaxKind.ThisKeyword
+              );
+            });
+          })
+        ) {
+          providersComplete = false;
+          continue;
+        }
+        pluginProviders.push(provider);
+      }
+      if (!providersComplete) pluginProviders.splice(offset);
+    }
+
+    this.analysis.registerServices(providerEntries, pluginProviders);
     this.analysis.authorizationIdentityResolved =
       identityComplete &&
       authorizationProgram(
@@ -463,6 +729,7 @@ export class SourceGraph {
     file: string,
     roots?: readonly ts.Node[],
     contextualCalls = false,
+    bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]> = new Map(),
   ): {
     sources: (Source & { nodes: ReadonlySet<ts.Node> })[];
     providers: Set<string>;
@@ -471,7 +738,12 @@ export class SourceGraph {
     unsafeCapability: boolean;
     unsafeValue: boolean;
   } {
-    const slice = this.analysis?.collect(file, roots, contextualCalls);
+    const slice = this.analysis?.collect(
+      file,
+      roots,
+      contextualCalls,
+      bindings,
+    );
     const providers = new Set<string>();
     for (const reference of slice?.references ?? [])
       addProvider(providers, reference);
@@ -550,10 +822,17 @@ export class SourceGraph {
     if (!source || !this.analysis) return [];
     return analyzeApiDependencies(
       source.ast,
-      (await this.walk(source.file, false)).sources,
+      [
+        ...new Map(
+          [
+            ...(await this.walk(source.file, false)).sources,
+            ...this.implementationSources.values(),
+          ].map((source) => [source.file, source]),
+        ).values(),
+      ],
       this.analysis,
-      (file, nodes) => {
-        const evidence = this.evidence(file, nodes, true);
+      (file, nodes, bindings) => {
+        const evidence = this.evidence(file, nodes, true, bindings);
         return evidence.unsafeCapability || evidence.unsafeValue
           ? { providers: [], collections: [] }
           : {
