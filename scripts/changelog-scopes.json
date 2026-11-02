@@ -9,6 +9,7 @@
   "document-extractor": { "en": "Knowledge base", "zh": "知识库" },
   "projects": { "en": "Projects", "zh": "项目" },
   "releases": { "en": "Release management", "zh": "发布管理" },
+  "account-switcher": { "en": "Account switcher", "zh": "账号切换" },
   "demo-mode": { "en": "Demo mode", "zh": "演示模式" },
   "foundation": { "en": "App foundation", "zh": "应用基础" },
   "i18n": { "en": "Languages", "zh": "多语言" },

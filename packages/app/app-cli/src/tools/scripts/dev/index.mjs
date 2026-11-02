@@ -300,6 +300,9 @@ if (!proxyTarget) {
   const serverEnv = {
     ...nextEnv,
     ...resolveDevShutdownEnv(nextEnv),
+    // The counterpart of `start`, which defaults to production: only the server is told, since this process's hooks
+    // are CLI commands that oclif treats differently under development.
+    NODE_ENV: nextEnv.NODE_ENV || 'development',
     APP_VITE_DEV_HOST: viteDevHost,
     APP_VITE_DEV_PORT: String(vitePort),
     APP_VITE_DEV_URL: `http://${toUrlHost(viteDevHost)}:${vitePort}`,

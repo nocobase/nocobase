@@ -30,6 +30,7 @@ import apiKeys from '@nocobase/app-plugin-api-keys/client';
 import agents from '@nocobase/app-plugin-agents/client';
 import foundation from '@nocobase/app-plugin-foundation/client';
 import knowledge from '@nocobase/app-plugin-knowledge/client';
+import accountSwitcher from '@nocobase/app-plugin-account-switcher/client';
 
 // Array order is contribution order. A plugin is enabled by appearing in this
 // list; removing its entry and its import disables it.
@@ -62,6 +63,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   agents(),
   foundation(),
   knowledge({ routes: false }),
+  accountSwitcher(),
 ]);
 
 export default clientPlugins;

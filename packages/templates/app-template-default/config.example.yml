@@ -22,6 +22,11 @@
 #     max: 600
 #     window: 1m
 
+# Whether a Super Admin can act as another account from the account menu. On while NODE_ENV is development and off
+# otherwise; full refuses to start under any other NODE_ENV. NOCOBASE_ACCOUNT_SWITCHER_MODE sets it too.
+# accountSwitcher:
+#   mode: 'off'
+
 # Realtime events are transient and local to this process. Clients refetch after subscription acknowledgement.
 # realtime:
 #   adapter: inMemory # Use redis for multiple application processes.

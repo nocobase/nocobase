@@ -24,6 +24,7 @@ import database from './database.js';
 import snowflake from './snowflake.js';
 import users from './users.js';
 import knowledge from './knowledge.js';
+import accountSwitcher from './account-switcher.js';
 
 const defaultConfigs: AppConfigFactory<{
   auth: ReturnType<typeof auth>;
@@ -48,6 +49,7 @@ const defaultConfigs: AppConfigFactory<{
   snowflake: ReturnType<typeof snowflake>;
   users: ReturnType<typeof users>;
   knowledge: ReturnType<typeof knowledge>;
+  accountSwitcher: ReturnType<typeof accountSwitcher>;
 }> = defaultAppConfigs({
   auth,
   authorization,
@@ -71,6 +73,7 @@ const defaultConfigs: AppConfigFactory<{
   snowflake,
   users,
   knowledge,
+  accountSwitcher,
 });
 
 export default defaultConfigs;

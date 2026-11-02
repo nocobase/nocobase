@@ -20,7 +20,7 @@ import {
   realtimeServiceToken,
   type RealtimePrincipal,
 } from '@nocobase/app-server/realtime';
-import { apiDocsToken, cliToken } from '@nocobase/app-server/router';
+import { ApiError, apiDocsToken, cliToken } from '@nocobase/app-server/router';
 import { APIError, type BetterAuthPlugin } from 'better-auth';
 import {
   deviceAuthorization,
@@ -107,8 +107,9 @@ export class AuthenticationProvider<
                 ? { userId: session.user.id, sessionId: session.session.id }
                 : undefined;
             } catch (error) {
-              // A refused credential (Better Auth APIError) is not signed in, here.
-              if (error instanceof APIError) return undefined;
+              // A refused credential or session substitution is not signed in, here.
+              if (error instanceof APIError || error instanceof ApiError)
+                return undefined;
               throw error;
             }
           },
