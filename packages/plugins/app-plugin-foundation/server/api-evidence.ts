@@ -600,16 +600,23 @@ export function apiDependencies(
             for (const path of registeredPaths)
               for (const handler of expanded) {
                 const contract = middlewareContract(handler, analysis);
-                const functions = [handler, ...literals.values(handler)].filter(ts.isFunctionLike);
-                if (!contract) for (const fn of functions) analysis.routeHandlers.add(fn);
-                const authorized = !contract && router.entries.some(
+                const functions = [handler, ...literals.values(handler)].filter(
+                  ts.isFunctionLike,
+                );
+                if (!contract)
+                  for (const fn of functions) analysis.routeHandlers.add(fn);
+                const authorized =
+                  !contract &&
+                  router.entries.some(
                     (entry) =>
                       entry.method === 'ALL' &&
                       // Hono path coverage: `*`, the same path, or `/prefix/*` for a path under `/prefix/`.
                       (entry.path === join(router.base, '*') ||
                         entry.path === join(router.base, path) ||
                         (entry.path.endsWith('/*') &&
-                          join(router.base, path).startsWith(entry.path.slice(0, -1)))) &&
+                          join(router.base, path).startsWith(
+                            entry.path.slice(0, -1),
+                          ))) &&
                       entry.conditions?.some(
                         (condition) =>
                           condition.kind === 'authorizationIdentityResolved',
@@ -617,7 +624,9 @@ export function apiDependencies(
                   );
                 const evidence = (() => {
                   if (contract) return undefined;
-                  const previous = functions.map((fn) => analysis.authorizedHandlers.has(fn));
+                  const previous = functions.map((fn) =>
+                    analysis.authorizedHandlers.has(fn),
+                  );
                   for (const fn of functions) {
                     if (authorized) analysis.authorizedHandlers.add(fn);
                     else analysis.authorizedHandlers.delete(fn);

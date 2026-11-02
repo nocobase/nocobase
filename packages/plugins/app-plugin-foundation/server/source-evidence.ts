@@ -165,7 +165,8 @@ export class SourceEvidence {
     this.serviceSummaries.set(factory, { values: [], scopes: new Map() });
     const revision = this.proofRevision;
     const summary = build(this.serviceReceivers.get(factory));
-    if (revision === this.proofRevision) this.serviceSummaries.set(factory, summary);
+    if (revision === this.proofRevision)
+      this.serviceSummaries.set(factory, summary);
     else this.serviceSummaries.delete(factory);
     return summary;
   }
@@ -505,7 +506,12 @@ export class SourceEvidence {
             return;
           }
           checked.add(value);
-          if (ts.isObjectLiteralExpression(value) || ts.isArrayLiteralExpression(value) || ts.isFunctionLike(value)) return;
+          if (
+            ts.isObjectLiteralExpression(value) ||
+            ts.isArrayLiteralExpression(value) ||
+            ts.isFunctionLike(value)
+          )
+            return;
           if (ts.isIdentifier(value)) {
             for (const declaration of this.declarations(value)) {
               if (
@@ -555,7 +561,8 @@ export class SourceEvidence {
           )
             origins.push(declaration.initializer);
           if (
-            ((ts.isVariableDeclaration(declaration) || ts.isBindingElement(declaration)) &&
+            ((ts.isVariableDeclaration(declaration) ||
+              ts.isBindingElement(declaration)) &&
               !(ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const)) ||
             ts.isParameter(declaration)
           ) {
@@ -572,9 +579,30 @@ export class SourceEvidence {
                 !ts.isSourceFile(parent);
                 child = parent, parent = parent.parent
               ) {
-                if (ts.isBinaryExpression(parent) && child === parent.right && parent.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken && choicesFor(parent.left).length) {
+                if (
+                  ts.isBinaryExpression(parent) &&
+                  child === parent.right &&
+                  parent.operatorToken.kind ===
+                    ts.SyntaxKind.QuestionQuestionToken &&
+                  choicesFor(parent.left).length
+                ) {
                   const left = evaluator.values(parent.left);
-                  if (left.length && left.every((value) => ts.isObjectLiteralExpression(value) || ts.isArrayLiteralExpression(value) || ts.isFunctionLike(value) || ts.isStringLiteralLike(value) || ts.isNumericLiteral(value) || value.kind === ts.SyntaxKind.TrueKeyword || value.kind === ts.SyntaxKind.FalseKeyword)) { reachable = false; break; }
+                  if (
+                    left.length &&
+                    left.every(
+                      (value) =>
+                        ts.isObjectLiteralExpression(value) ||
+                        ts.isArrayLiteralExpression(value) ||
+                        ts.isFunctionLike(value) ||
+                        ts.isStringLiteralLike(value) ||
+                        ts.isNumericLiteral(value) ||
+                        value.kind === ts.SyntaxKind.TrueKeyword ||
+                        value.kind === ts.SyntaxKind.FalseKeyword,
+                    )
+                  ) {
+                    reachable = false;
+                    break;
+                  }
                 }
                 let condition: ts.Expression | undefined;
                 let expected: boolean | undefined;
@@ -647,9 +675,26 @@ export class SourceEvidence {
                   ts.SyntaxKind.AmpersandAmpersandEqualsToken;
                 if (choices.length === 1 && choices[0] !== rightWhen) continue;
               }
-              if (write.operatorToken.kind === ts.SyntaxKind.QuestionQuestionEqualsToken && choicesFor(write.left, write).length) {
+              if (
+                write.operatorToken.kind ===
+                  ts.SyntaxKind.QuestionQuestionEqualsToken &&
+                choicesFor(write.left, write).length
+              ) {
                 const left = evaluator.values(write.left);
-                if (left.length && left.every((value) => ts.isObjectLiteralExpression(value) || ts.isArrayLiteralExpression(value) || ts.isFunctionLike(value) || ts.isStringLiteralLike(value) || ts.isNumericLiteral(value) || value.kind === ts.SyntaxKind.TrueKeyword || value.kind === ts.SyntaxKind.FalseKeyword)) continue;
+                if (
+                  left.length &&
+                  left.every(
+                    (value) =>
+                      ts.isObjectLiteralExpression(value) ||
+                      ts.isArrayLiteralExpression(value) ||
+                      ts.isFunctionLike(value) ||
+                      ts.isStringLiteralLike(value) ||
+                      ts.isNumericLiteral(value) ||
+                      value.kind === ts.SyntaxKind.TrueKeyword ||
+                      value.kind === ts.SyntaxKind.FalseKeyword,
+                  )
+                )
+                  continue;
               }
               origins.push(write.right);
             }
@@ -886,16 +931,27 @@ export class SourceEvidence {
       if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) return;
       const evaluate = (expression: ts.Node): boolean => {
         visit(expression, bindings, active);
-        const barrier = new StaticValues(this, bindings, captures).expressionBarrier(expression);
-        if (barrier === 'unknown') { collecting = false; complete = false; }
+        const barrier = new StaticValues(
+          this,
+          bindings,
+          captures,
+        ).expressionBarrier(expression);
+        if (barrier === 'unknown') {
+          collecting = false;
+          complete = false;
+        }
         return barrier !== 'terminates';
       };
       if (contextualCalls && ts.isConditionalExpression(node)) {
         if (!evaluate(node.condition)) return;
-        const branches = new StaticValues(this, bindings, captures).booleans(node.condition);
+        const branches = new StaticValues(this, bindings, captures).booleans(
+          node.condition,
+        );
         const entry = collecting;
         let merged = entry;
-        for (const branch of branches.length === 1 ? [branches[0] ? node.whenTrue : node.whenFalse] : [node.whenTrue, node.whenFalse]) {
+        for (const branch of branches.length === 1
+          ? [branches[0] ? node.whenTrue : node.whenFalse]
+          : [node.whenTrue, node.whenFalse]) {
           collecting = entry;
           evaluate(branch);
           merged = merged && collecting;
@@ -908,7 +964,8 @@ export class SourceEvidence {
         // A write through a capability candidate invalidates evidence wherever it sits, as for any assignment.
         let written: ts.Node = node.left;
         while (
-          (ts.isPropertyAccessExpression(written) || ts.isElementAccessExpression(written)) &&
+          (ts.isPropertyAccessExpression(written) ||
+            ts.isElementAccessExpression(written)) &&
           written.expression
         )
           written = written.expression;
@@ -993,17 +1050,28 @@ export class SourceEvidence {
           visit(node.right, bindings, active);
           collecting = false;
           complete = false;
-          for (const expression of patternEvaluations) visit(expression, bindings, active);
+          for (const expression of patternEvaluations)
+            visit(expression, bindings, active);
           return;
         }
-        const accessor = (body: ts.Node, scope: ReadonlyMap<ts.Declaration, readonly ts.Node[]>): boolean => {
+        const accessor = (
+          body: ts.Node,
+          scope: ReadonlyMap<ts.Declaration, readonly ts.Node[]>,
+        ): boolean => {
           visit(body, scope, active);
-          const flow = new StaticValues(this, scope, captures).statementBarrier(body);
-          if (flow === 'unknown') { collecting = false; complete = false; }
+          const flow = new StaticValues(this, scope, captures).statementBarrier(
+            body,
+          );
+          if (flow === 'unknown') {
+            collecting = false;
+            complete = false;
+          }
           return flow !== 'terminates';
         };
-        for (const part of [steps.receiver, steps.key]) if (part && !evaluate(part)) return;
-        for (const getter of steps.getters) if (!accessor(getter.body, getter.bindings)) return;
+        for (const part of [steps.receiver, steps.key])
+          if (part && !evaluate(part)) return;
+        for (const getter of steps.getters)
+          if (!accessor(getter.body, getter.bindings)) return;
         if (steps.valueReachable && !evaluate(node.right)) return;
         for (const setter of steps.setters) {
           const scope = new Map(setter.bindings);
@@ -1012,13 +1080,31 @@ export class SourceEvidence {
         }
         return;
       }
-      if (contextualCalls && ts.isBinaryExpression(node) && [ts.SyntaxKind.CommaToken, ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(node.operatorToken.kind)) {
+      if (
+        contextualCalls &&
+        ts.isBinaryExpression(node) &&
+        [
+          ts.SyntaxKind.CommaToken,
+          ts.SyntaxKind.AmpersandAmpersandToken,
+          ts.SyntaxKind.BarBarToken,
+          ts.SyntaxKind.QuestionQuestionToken,
+        ].includes(node.operatorToken.kind)
+      ) {
         if (!evaluate(node.left)) return;
         const op = node.operatorToken.kind;
-        const values = new StaticValues(this, bindings, captures).booleans(node.left);
-        if (values.length === 1 && ((op === ts.SyntaxKind.AmpersandAmpersandToken && !values[0]) || (op === ts.SyntaxKind.BarBarToken && values[0]))) return;
+        const values = new StaticValues(this, bindings, captures).booleans(
+          node.left,
+        );
+        if (
+          values.length === 1 &&
+          ((op === ts.SyntaxKind.AmpersandAmpersandToken && !values[0]) ||
+            (op === ts.SyntaxKind.BarBarToken && values[0]))
+        )
+          return;
         if (op === ts.SyntaxKind.QuestionQuestionToken) {
-          const left = new StaticValues(this, bindings, captures).values(node.left);
+          const left = new StaticValues(this, bindings, captures).values(
+            node.left,
+          );
           if (
             left.length &&
             left.every(
@@ -1126,7 +1212,9 @@ export class SourceEvidence {
                 ) &&
                 !this.isLocal(statement.moduleSpecifier.text)
               )
-                (collecting ? references : new Set<string>()).add(statement.moduleSpecifier.text);
+                (collecting ? references : new Set<string>()).add(
+                  statement.moduleSpecifier.text,
+                );
             }
           }
       }
@@ -1210,7 +1298,8 @@ export class SourceEvidence {
               value.arguments.length === 1
                 ? this.externalService(value.arguments[0])
                 : undefined;
-            if (provided) (collecting ? references : new Set<string>()).add(provided);
+            if (provided)
+              (collecting ? references : new Set<string>()).add(provided);
           }
         if (
           ts.isPropertyAccessExpression(node.expression) &&
@@ -1575,7 +1664,9 @@ export class SourceEvidence {
       index = visits > 100_000 ? null : references;
       this.immutableReferenceIndexes.set(source, index);
     }
-    return index?.get(this.symbol(declaration.name)) ?? (index ? [] : undefined);
+    return (
+      index?.get(this.symbol(declaration.name)) ?? (index ? [] : undefined)
+    );
   }
 
   /** A const binding is insufficient when its object or function escapes or is written through. */
@@ -1598,10 +1689,7 @@ export class SourceEvidence {
     let valid = true;
     const visit = (node: ts.Node): void => {
       if (!valid || ts.isTypeNode(node)) return;
-      if (
-        ts.isIdentifier(node) &&
-        node !== declaration.name
-      ) {
+      if (ts.isIdentifier(node) && node !== declaration.name) {
         let owner: ts.Node = node;
         const transparent = (
           node: ts.Node,

@@ -8,7 +8,8 @@ function fixture(text: string) {
   const ast = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
   const analysis = new SourceEvidence([{ file, ast }], new Map());
   const result = ast.statements.at(-1);
-  if (!result || !ts.isExportAssignment(result)) throw new Error('Missing query');
+  if (!result || !ts.isExportAssignment(result))
+    throw new Error('Missing query');
   return { analysis, query: result.expression, ast };
 }
 
@@ -39,7 +40,9 @@ it('keeps cycles unresolved and scopes results to the source analysis', () => {
   expect(cycle.analysis.functions(cycle.query)).toEqual([]);
   expect(cycle.analysis.functions(cycle.query)).toEqual([]);
   const other = fixture('export default () => 2;');
-  expect(other.analysis.functions(other.query).map((node) => node.getText())).toEqual(['() => 2']);
+  expect(
+    other.analysis.functions(other.query).map((node) => node.getText()),
+  ).toEqual(['() => 2']);
 });
 
 it('reevaluates allowed-call contexts when reusing lexical references', () => {
@@ -62,7 +65,9 @@ it('does not confuse shadowed bindings or ignore writes after a permitted call',
     );
     const statement = ast.statements[0];
     if (!ts.isVariableStatement(statement)) throw new Error('Missing binding');
-    expect(analysis.immutable(statement.declarationList.declarations[0], () => true)).toBe(!write);
+    expect(
+      analysis.immutable(statement.declarationList.declarations[0], () => true),
+    ).toBe(!write);
   }
 });
 
@@ -86,17 +91,25 @@ it('restores the caller traversal path after alias resolution and cycles', () =>
     const evaluator = new StaticValues(analysis);
     const marker = ts.factory.createIdentifier('caller');
     const seen = new Set<ts.Node>([marker]);
-    expect(evaluator.values(query, seen).map((node) => node.getText())).toEqual(expected);
+    expect(evaluator.values(query, seen).map((node) => node.getText())).toEqual(
+      expected,
+    );
     expect([...seen]).toEqual([marker]);
-    expect(evaluator.values(query, seen).map((node) => node.getText())).toEqual(expected);
+    expect(evaluator.values(query, seen).map((node) => node.getText())).toEqual(
+      expected,
+    );
     expect([...seen]).toEqual([marker]);
   }
 });
 
 it('restores the traversal path when source resolution throws', () => {
   const { analysis, query } = fixture('export default value;');
-  analysis.declarations = () => { throw new Error('resolution failed'); };
+  analysis.declarations = () => {
+    throw new Error('resolution failed');
+  };
   const seen = new Set<ts.Node>();
-  expect(() => new StaticValues(analysis).values(query, seen)).toThrow('resolution failed');
+  expect(() => new StaticValues(analysis).values(query, seen)).toThrow(
+    'resolution failed',
+  );
   expect(seen.size).toBe(0);
 });
