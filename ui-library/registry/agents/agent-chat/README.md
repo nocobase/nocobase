@@ -14,33 +14,33 @@ An Agents npm upgrade does not replace source already installed into an applicat
 
 File preparation failures use the plugin's `noticeText` formatter for both ordered data notices and historical notices. The existing `params.fileInputReason` carries only an allowlisted reason, never a raw Provider/parser error or document text. Keep the block's English and Chinese failure wording aligned when updating installed source. Historical `Interrupted` notices without a reason remain generic; do not reclassify them using the currently selected model.
 
-| File                      | Exports                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------ |
-| `chat-panel.tsx`          | `ChatPanel`                                                                                      |
-| `panel-header.tsx`        | `PanelHeader`, `PanelHistoryHeader`, `ConversationTitle`                                         |
-| `chat-mode.ts`            | `useChatMode`: the panel's mode (online agent or runner agents), its agents, the switch and "+"  |
-| `conversation-view.tsx`   | `ConversationView`, `PAGE_COLUMN`                                                                |
-| `message-item.tsx`        | `MessageItem`, `PendingItem`                                                                     |
-| `message-actions.tsx`     | `MessageActions`, `MessageEditor`: public-text copy and direct inline edit/resend controls       |
-| `reasoning-part.tsx`      | `ReasoningPart`: accessible, per-part collapsible SDK reasoning with sanitized Markdown          |
-| `message-attachments.tsx` | `MessageAttachments`: a message's files through `attachment-list`                                |
-| `live-steps.tsx`          | `LiveSteps`, `TurnAnnouncer`                                                                     |
-| `composer.tsx`            | `Composer`: its chips open a preview of what they carry                                          |
-| `context-chips.tsx`       | `SentContext`: a sent message's context, each chip opening a preview of what it carried          |
-| `agent-choice.tsx`        | `NewChatChoice`: the agent picker of a conversation not yet started                              |
-| `agent-status.tsx`        | `AvailabilityDot`, `AgentLine`, `AgentNotice`                                                    |
-| `consultation-card.tsx`   | `ConsultationCard`                                                                               |
-| `web-search-card.tsx`     | `WebSearchCard`: safe, expandable native search findings and sources                             |
-| `history-list.tsx`        | `HistoryList`, `ChatHistoryDialog`                                                               |
-| `conversation-page.tsx`   | `ChatConversationPage`                                                                           |
-| `launchers.tsx`           | `ChatHeaderButton`, `ChatFloatingButton`, `AskAgentButton`                                       |
-| `chat-markdown.tsx`       | `ChatMarkdown`: `markdown-view` with `mermaid` code blocks drawn by `@nocobase/markdown-mermaid` |
-| `chat-ui.tsx`             | `ChatTag`, `Pulse`, `LoadError`                                                                  |
-| `chat-i18n.ts`            | `useChatTranslation`, `useTranscriptLabels`, `errorStatus`                                       |
-| `floating-clearance.ts`   | `useFloatingButtonBottom`, `measureFloatingClearance`                                            |
-| `use-media-query.ts`      | `useMediaQuery`                                                                                  |
-| `locales/en-US.ts`        | the English resource (default export) and its `AgentChatLocale` type                             |
-| `locales/zh-CN.ts`        | the Chinese resource                                                                             |
+| File                      | Exports                                                                                               |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `chat-panel.tsx`          | `ChatPanel`                                                                                           |
+| `panel-header.tsx`        | `PanelHeader`, `PanelHistoryHeader`, `NewConversationButton`, `ModeSwitchButton`, `ConversationTitle` |
+| `chat-mode.ts`            | `useChatMode`: the panel's mode (online agent or runner agents), its agents, the switch and "+"       |
+| `conversation-view.tsx`   | `ConversationView`, `PAGE_COLUMN`                                                                     |
+| `message-item.tsx`        | `MessageItem`, `PendingItem`                                                                          |
+| `message-actions.tsx`     | `MessageActions`, `MessageEditor`: public-text copy and direct inline edit/resend controls            |
+| `reasoning-part.tsx`      | `ReasoningPart`: accessible, per-part collapsible SDK reasoning with sanitized Markdown               |
+| `message-attachments.tsx` | `MessageAttachments`: a message's files through `attachment-list`                                     |
+| `live-steps.tsx`          | `LiveSteps`, `TurnAnnouncer`                                                                          |
+| `composer.tsx`            | `Composer`: its chips open a preview of what they carry                                               |
+| `context-chips.tsx`       | `SentContext`: a sent message's context, each chip opening a preview of what it carried               |
+| `agent-choice.tsx`        | `NewChatChoice`: the agent picker of a conversation not yet started                                   |
+| `agent-status.tsx`        | `AvailabilityDot`, `AgentLine`, `AgentNotice`                                                         |
+| `consultation-card.tsx`   | `ConsultationCard`                                                                                    |
+| `web-search-card.tsx`     | `WebSearchCard`: safe, expandable native search findings and sources                                  |
+| `history-list.tsx`        | `HistoryList`, `ChatHistoryDialog`                                                                    |
+| `conversation-page.tsx`   | `ChatConversationPage`                                                                                |
+| `launchers.tsx`           | `ChatHeaderButton`, `ChatFloatingButton`, `AskAgentButton`                                            |
+| `chat-markdown.tsx`       | `ChatMarkdown`: `markdown-view` with `mermaid` code blocks drawn by `@nocobase/markdown-mermaid`      |
+| `chat-ui.tsx`             | `ChatTag`, `Pulse`, `LoadError`                                                                       |
+| `chat-i18n.ts`            | `useChatTranslation`, `useTranscriptLabels`, `errorStatus`                                            |
+| `floating-clearance.ts`   | `useFloatingButtonBottom`, `measureFloatingClearance`                                                 |
+| `use-media-query.ts`      | `useMediaQuery`                                                                                       |
+| `locales/en-US.ts`        | the English resource (default export) and its `AgentChatLocale` type                                  |
+| `locales/zh-CN.ts`        | the Chinese resource                                                                                  |
 
 It installs `markdown-view`, `agent-run-history`, `agent-composer`, `agent-picker` and `attachment-list` beside it, in `client/components/`: `Composer` wires `agent-composer` to the panel (context chips, the draft, focus, and files through the plugin's `useChatAttachments`), `MessageAttachments` shows a message's files with `attachment-list`, and `NewChatChoice` and the availability dot are `agent-picker`'s in the chat's wording.
 

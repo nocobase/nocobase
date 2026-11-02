@@ -106,30 +106,8 @@ export function PanelHistoryHeader(): ReactElement {
       <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
         {t(mode.mode === 'online' ? 'chat.modes.online' : 'chat.modes.runner')}
       </h2>
-      {mode.switchable && mode.other && (
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          data-testid='chat-mode-switch'
-          aria-label={t(
-            mode.other === 'online'
-              ? 'chat.modes.switchToOnline'
-              : 'chat.modes.switchToRunner',
-          )}
-          onClick={() => mode.other && mode.switchTo(mode.other)}
-        >
-          ⇄
-        </Button>
-      )}
-      <Button
-        data-testid='chat-new-conversation'
-        variant='ghost'
-        size='icon-sm'
-        aria-label={t('chat.newConversation')}
-        onClick={() => panel.selectConversation(null)}
-      >
-        <PlusIcon />
-      </Button>
+      <ModeSwitchButton />
+      <NewConversationButton />
       {!(!phone && panel.mode === 'expanded' && panel.view !== 'history') && (
         <Button
           variant='ghost'
@@ -168,4 +146,40 @@ export function ConversationTitle({
       }
     />
   );
+}
+
+/** Public list action retained for applications that compose their own list heading. */
+export function NewConversationButton(): ReactElement {
+  const mode = useChatMode();
+  const { t } = useChatTranslation();
+  return (
+    <Button
+      data-testid='chat-new-conversation'
+      variant='ghost'
+      size='icon-sm'
+      aria-label={t('chat.newConversation')}
+      onClick={mode.startNew}
+    >
+      <PlusIcon />
+    </Button>
+  );
+}
+export function ModeSwitchButton(): ReactElement | null {
+  const mode = useChatMode();
+  const { t } = useChatTranslation();
+  return mode.switchable && mode.other ? (
+    <Button
+      variant='ghost'
+      size='icon-sm'
+      data-testid='chat-mode-switch'
+      aria-label={t(
+        mode.other === 'online'
+          ? 'chat.modes.switchToOnline'
+          : 'chat.modes.switchToRunner',
+      )}
+      onClick={() => mode.other && mode.switchTo(mode.other)}
+    >
+      ⇄
+    </Button>
+  ) : null;
 }
