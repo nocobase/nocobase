@@ -1,7 +1,12 @@
+import {
+  encodeCopyLocator,
+  parseAttachmentLocator,
+} from '../adapters/imap-smtp/locators.js';
+import { mailFailedPrecondition } from '../services/errors.js';
 import { lockWritableAccount } from './account-guard.js';
 import { validateLogPagination } from '../log-pagination.js';
 import { type DatabaseManager, type QueryAdapter } from '@nocobase/db';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
 import {
   MAIL_LOCAL_DRAFT_FOLDER_ID,
   type MailOffsetPage,
@@ -33,6 +38,7 @@ import { MailAccountsStore } from './accounts.js';
 import { closeDrafts } from './draft-states.js';
 import type {
   ImapIdSource,
+  ImapMoveState,
   ImapLocationPersistence,
   ImapStoredLocation,
   ImapSyncEvidence,
@@ -896,6 +902,18 @@ export function createImapLocationPersistence(
   }
   const persistence: ImapLocationPersistence = {
     accountId,
+    async beginMove() {
+      throw new Error('An IMAP move requires business binding.');
+    },
+    async rememberMoveDestination() {
+      throw new Error('An IMAP move requires business binding.');
+    },
+    async commitMoved() {
+      throw new Error('An IMAP move requires business binding.');
+    },
+    async releaseMove() {
+      throw new Error('An IMAP move requires business binding.');
+    },
     async findAttachment(location, providerAttachmentId) {
       validateImapStoredLocation(location);
       const row = await database
@@ -917,7 +935,7 @@ export function createImapLocationPersistence(
           attachment.providerAttachmentId === providerAttachmentId,
       );
     },
-    async bindMessage(messageId, providerMessageId, operation) {
+    async bindMessage(messageId, providerMessageId, operation, move) {
       const query = database.query();
       const row = await query
         .selectFrom<MessageRow>('mailMessages')
@@ -943,12 +961,61 @@ export function createImapLocationPersistence(
         throw new Error(
           'The IMAP operation target has no verified identity source.',
         );
+      let sourceProviderFolderId: string | undefined;
+      let selectedMoveSource: ImapLocationRow | undefined;
+      if (operation !== 'move') {
+        const protectedCopy = await select(query)
+          .where('messageId', '=', messageId)
+          .where('status', '=', 'pending')
+          .where('invalidationReason', 'like', 'move-%')
+          .executeTakeFirst();
+        if (protectedCopy)
+          throw mailFailedPrecondition(
+            'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+            'Verify the pending move before another remote mutation.',
+          );
+      }
+      if (operation === 'move') {
+        if (!move || row.scheduledSubmissionId)
+          throw new Error('Invalid IMAP move target.');
+        const folders = await query
+          .selectFrom('mailFolders')
+          .select('providerFolderId')
+          .where('accountId', '=', accountId)
+          .execute<{ providerFolderId: string }>();
+        const paths = new Set(folders.map((folder) => folder.providerFolderId));
+        if (!paths.has(move.destinationProviderFolderId))
+          throw new Error(
+            'The IMAP destination does not belong to this account.',
+          );
+        const candidates = await select(query)
+          .where('messageId', '=', messageId)
+          .where('status', 'in', ['valid', 'pending'])
+          .execute<ImapLocationRow>();
+        const eligible = candidates.filter(
+          (location) =>
+            paths.has(location.providerFolderId) &&
+            (!move.sourceProviderFolderId ||
+              location.providerFolderId === move.sourceProviderFolderId) &&
+            (location.status === 'valid' ||
+              location.invalidationReason?.startsWith('move-source:')),
+        );
+        if (eligible.length !== 1)
+          throw mailFailedPrecondition(
+            'MAIL_IMAP_MOVE_SOURCE_REQUIRED',
+            'Open the source folder before moving this message.',
+          );
+        selectedMoveSource = eligible[0];
+        sourceProviderFolderId = eligible[0].providerFolderId;
+      }
       const target = Object.freeze({
         accountId,
         messageId,
         providerMessageId,
         source: source as ImapIdSource,
         operation,
+        sourceProviderFolderId,
+        destinationProviderFolderId: move?.destinationProviderFolderId,
       });
       const check = async (q: QueryAdapter): Promise<void> => {
         const owner = await q
@@ -972,8 +1039,327 @@ export function createImapLocationPersistence(
         )
           throw new Error('The IMAP operation target changed.');
       };
+      const moveReason = (
+        kind: 'source' | 'destination',
+        token: string,
+      ): string => {
+        if (!/^[A-Za-z0-9_-]{22}$/.test(token))
+          throw new Error('Invalid IMAP move token.');
+        const reason = `move-${kind}:${token}`;
+        if (reason.length > 40)
+          throw new Error('IMAP move token exceeds its storage bound.');
+        return reason;
+      };
+      const lockMoveAccount = async (q: QueryAdapter): Promise<void> => {
+        const locked = await q
+          .updateTable<AccountRow>('mailAccounts')
+          .set({ id: accountId })
+          .where('id', '=', accountId)
+          .where('status', '=', 'active')
+          .execute();
+        if (locked.updatedCount !== 1)
+          throw mailFailedPrecondition(
+            'MAIL_ACCOUNT_INACTIVE',
+            'The IMAP account is not writable.',
+          );
+      };
+      const protectedRows = async (q: QueryAdapter, state: ImapMoveState) => {
+        await lockMoveAccount(q);
+        await check(q);
+        const rows = await select(q)
+          .where('messageId', '=', messageId)
+          .execute<ImapLocationRow>();
+        const source = rows.find((row) => row.id === state.source.id);
+        if (
+          !source ||
+          source.status !== 'pending' ||
+          source.invalidationReason !== moveReason('source', state.token) ||
+          source.providerFolderId !== target.sourceProviderFolderId ||
+          String(source.uidValidity) !== state.source.uidValidity ||
+          Number(source.uid) !== state.source.uid ||
+          new Date(source.updatedAt).toISOString() !== state.source.updatedAt
+        )
+          throw new Error('The protected IMAP source changed.');
+        const destination = rows.find(
+          (row) =>
+            row.invalidationReason === moveReason('destination', state.token),
+        );
+        if (
+          state.destination &&
+          (!destination ||
+            destination.id !== state.destination.id ||
+            destination.status !== 'pending' ||
+            destination.providerFolderId !==
+              target.destinationProviderFolderId ||
+            String(destination.uidValidity) !== state.destination.uidValidity ||
+            Number(destination.uid) !== state.destination.uid ||
+            new Date(destination.updatedAt).toISOString() !==
+              state.destination.updatedAt)
+        )
+          throw new Error('The protected IMAP destination changed.');
+        return { source, destination };
+      };
       const bound: ImapLocationPersistence = {
         ...persistence,
+        async beginMove() {
+          if (target.operation !== 'move')
+            throw new Error('Invalid IMAP operation target.');
+          return database.transaction(async ({ query: q }) => {
+            await lockMoveAccount(q);
+            await check(q);
+            const rows = await select(q)
+              .where('messageId', '=', messageId)
+              .execute<ImapLocationRow>();
+            const candidates = rows.filter(
+              (row) =>
+                row.providerFolderId === target.sourceProviderFolderId &&
+                (row.status === 'valid' ||
+                  row.invalidationReason?.startsWith('move-source:')),
+            );
+            if (candidates.length !== 1)
+              throw new Error('The IMAP source changed.');
+            const row = candidates[0];
+            if (
+              !selectedMoveSource ||
+              row.id !== selectedMoveSource.id ||
+              row.providerFolderId !== selectedMoveSource.providerFolderId ||
+              String(row.uidValidity) !==
+                String(selectedMoveSource.uidValidity) ||
+              Number(row.uid) !== Number(selectedMoveSource.uid) ||
+              new Date(row.updatedAt).toISOString() !==
+                new Date(selectedMoveSource.updatedAt).toISOString()
+            )
+              throw new Error(
+                'The selected IMAP source changed before protection.',
+              );
+            if (row.status === 'pending') {
+              const token = row.invalidationReason!.slice(
+                'move-source:'.length,
+              );
+              const destinations = rows.filter(
+                (row) =>
+                  row.status === 'pending' &&
+                  row.invalidationReason === moveReason('destination', token),
+              );
+              if (
+                destinations.length !== 1 ||
+                destinations[0].providerFolderId !==
+                  target.destinationProviderFolderId
+              )
+                throw mailFailedPrecondition(
+                  'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+                  'The previous move needs remote verification. Do not retry it.',
+                );
+              const [source, destination] = await resolve(q, [
+                row,
+                destinations[0],
+              ]);
+              return { token, source: source, destination: destination };
+            }
+            const token = randomBytes(16).toString('base64url');
+            const now = new Date(
+              Math.max(Date.now(), Date.parse(row.updatedAt) + 1),
+            ).toISOString();
+            await q
+              .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+              .set({
+                status: 'pending',
+                invalidationReason: moveReason('source', token),
+                updatedAt: now,
+              })
+              .where('id', '=', row.id)
+              .execute();
+            const [source] = await resolve(q, [
+              {
+                ...row,
+                status: 'pending',
+                invalidationReason: moveReason('source', token),
+                updatedAt: now,
+              },
+            ]);
+            return { token, source: source };
+          });
+        },
+        async releaseMove(state) {
+          if (target.operation !== 'move' || state.destination)
+            throw new Error('Invalid IMAP move release.');
+          await database.transaction(async ({ query: q }) => {
+            const { source, destination } = await protectedRows(q, state);
+            if (destination)
+              throw new Error('A confirmed IMAP copy cannot be released.');
+            await q
+              .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+              .set({
+                status: 'valid',
+                invalidationReason: null,
+                updatedAt: new Date().toISOString(),
+              })
+              .where('id', '=', source.id)
+              .execute();
+          });
+        },
+        async rememberMoveDestination(state, copy) {
+          if (
+            target.operation !== 'move' ||
+            copy.folder !== target.destinationProviderFolderId ||
+            state.destination ||
+            copy.source !== target.source ||
+            copy.providerMessageId !== target.providerMessageId ||
+            copy.observed
+          )
+            throw new Error('Invalid IMAP move destination.');
+          validateImapCopyEvidence(copy);
+          return database.transaction(async ({ query: q }) => {
+            await protectedRows(q, state);
+            const existing = await select(q)
+              .where('providerFolderId', '=', copy.folder)
+              .where('uidValidity', '=', copy.uidValidity)
+              .where('uid', '=', copy.uid)
+              .executeTakeFirst<ImapLocationRow>();
+            // Synchronization may have observed this exact, mapped native copy first.
+            // Its confirmed UUID is retained; another UUID or move token is never taken over.
+            if (
+              existing &&
+              (existing.messageId !== messageId ||
+                (existing.status === 'pending' &&
+                  existing.invalidationReason?.startsWith('move-')))
+            )
+              throw new Error('The IMAP move destination is already owned.');
+            const now = new Date().toISOString();
+            const row: ImapLocationRow = {
+              id: existing?.id ?? copy.locationId,
+              accountId,
+              messageId,
+              providerFolderId: copy.folder,
+              uidValidity: copy.uidValidity,
+              uid: copy.uid,
+              status: 'pending',
+              invalidationReason: moveReason('destination', state.token),
+              read: copy.read,
+              starred: copy.starred,
+              receivedAt: copy.receivedAt ?? null,
+              createdAt: now,
+              updatedAt: now,
+            };
+            if (existing)
+              await q
+                .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+                .set({
+                  status: row.status,
+                  invalidationReason: row.invalidationReason,
+                  read: row.read,
+                  starred: row.starred,
+                  receivedAt: row.receivedAt,
+                  updatedAt: row.updatedAt,
+                })
+                .where('id', '=', existing.id)
+                .execute();
+            else
+              await q
+                .insertInto<ImapLocationRow>(IMAP_LOCATIONS)
+                .values(row)
+                .execute();
+            const [destination] = await resolve(q, [row]);
+            return { ...state, destination: destination };
+          });
+        },
+        async commitMoved(state, attachments, flags) {
+          if (
+            typeof flags.read !== 'boolean' ||
+            typeof flags.starred !== 'boolean'
+          )
+            throw new Error('Invalid IMAP move flag evidence.');
+          if (target.operation !== 'move' || !state.destination)
+            throw new Error('Invalid IMAP move commit.');
+          return database.transaction(async ({ query: q }) => {
+            const { source, destination } = await protectedRows(q, state);
+            if (!destination)
+              throw new Error('The IMAP destination is missing.');
+            const owner = await q
+              .selectFrom<MessageRow>('mailMessages')
+              .selectAll()
+              .where('accountId', '=', accountId)
+              .where('id', '=', messageId)
+              .executeTakeFirst<MessageRow>();
+            if (!owner || owner.scheduledSubmissionId)
+              throw new Error('The IMAP move owner changed.');
+            const id =
+              target.source === 'locator'
+                ? encodeCopyLocator(state.destination!, destination.id)
+                : target.providerMessageId;
+            const previous = parseJson<
+              readonly import('../../shared/mail.js').NormalizedMailAttachment[]
+            >(owner.attachments, 'attachments');
+            const updated = previous.map((attachment) => {
+              const locator = parseAttachmentLocator(
+                attachment.providerAttachmentId,
+              );
+              if (
+                !locator ||
+                locator.folder !== state.source.folder ||
+                locator.uidValidity !== state.source.uidValidity ||
+                locator.uid !== state.source.uid
+              )
+                return attachment;
+              const mapped = attachments[locator.attachment];
+              if (
+                !mapped ||
+                mapped.fileName !== attachment.fileName ||
+                mapped.contentType !== attachment.contentType ||
+                mapped.contentId !== attachment.contentId ||
+                Boolean(mapped.inline) !== Boolean(attachment.inline)
+              )
+                throw new Error(
+                  'The destination attachment structure changed.',
+                );
+              return {
+                ...attachment,
+                providerAttachmentId: mapped.providerAttachmentId,
+              };
+            });
+            const now = new Date().toISOString();
+            await q
+              .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+              .set({
+                status: 'invalid',
+                invalidationReason: 'moved',
+                updatedAt: now,
+              })
+              .where('id', '=', source.id)
+              .execute();
+            await q
+              .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+              .set({
+                status: 'valid',
+                invalidationReason: null,
+                read: flags.read,
+                starred: flags.starred,
+                updatedAt: now,
+              })
+              .where('id', '=', destination.id)
+              .execute();
+            await q
+              .updateTable<MessageRow>('mailMessages')
+              .set({
+                ...(owner.providerMessageId.startsWith('local-draft:')
+                  ? { providerDraftMessageId: id }
+                  : { providerMessageId: id }),
+                attachments: jsonOrNull(updated)!,
+                updatedAt: now,
+              })
+              .where('accountId', '=', accountId)
+              .where('id', '=', messageId)
+              .execute();
+            await refreshImapMessages(
+              q,
+              accountId,
+              [messageId],
+              undefined,
+              now,
+            );
+            return id;
+          });
+        },
         async listValidLocations(id) {
           if (id !== target.providerMessageId)
             throw new Error('The IMAP operation identity changed.');
@@ -1114,6 +1500,7 @@ function toStoredLocation(
     uid: Number(row.uid),
     status: row.status,
     updatedAt: new Date(row.updatedAt).toISOString(),
+    invalidationReason: row.invalidationReason ?? undefined,
     providerMessageId: draft || message.providerMessageId,
     source: ((draft
       ? message.providerDraftMessageIdSource

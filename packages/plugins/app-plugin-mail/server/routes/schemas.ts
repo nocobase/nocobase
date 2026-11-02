@@ -348,6 +348,7 @@ export const ConversationMessagesQuery: z.ZodObject<
 
 export const DeleteMessageQuery: z.ZodObject<
   {
+    sourceProviderFolderId: z.ZodOptional<z.ZodString>;
     permanently: z.ZodOptional<
       z.ZodPipe<
         z.ZodEnum<{
@@ -359,7 +360,10 @@ export const DeleteMessageQuery: z.ZodObject<
     >;
   },
   z.core.$strip
-> = z.object({ permanently: queryBoolean });
+> = z.object({
+  permanently: queryBoolean,
+  sourceProviderFolderId: requiredText().optional(),
+});
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Bodies
@@ -780,11 +784,13 @@ export const ModifyMessageLabelsInput: z.ZodObject<
 
 export const MoveMessageInput: z.ZodObject<
   {
+    sourceProviderFolderId: z.ZodOptional<z.ZodString>;
     providerFolderId: z.ZodString;
   },
   z.core.$strict
 > = z.strictObject({
   providerFolderId: requiredText(),
+  sourceProviderFolderId: requiredText().optional(),
 });
 
 export const ManageMessagesInput: z.ZodObject<
