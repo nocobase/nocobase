@@ -1435,3 +1435,19 @@ it('does not construct a query from a forged resolver carrying the database toke
   );
   expect(result.routes[0]?.collections ?? []).not.toContain('entries');
 });
+
+it('preserves a query accessor from the service factory container parameter', async () => {
+  const source = providers
+    .replace(
+      "return this.db.connection().repository('entries').findMany();",
+      "const q=()=>this.db.query();return q().selectFrom('entries').execute();",
+    )
+    .replace(
+      '()=>new Catalog(this.app.container.resolve(databaseManagerToken))',
+      '(container)=>new Catalog(container.resolve(databaseManagerToken))',
+    );
+  const result = await collectModuleSources(
+    await fixture(routes, { 'server/providers/index.js': source }),
+  );
+  expect(result.routes[0]?.collections).toContain('entries');
+});

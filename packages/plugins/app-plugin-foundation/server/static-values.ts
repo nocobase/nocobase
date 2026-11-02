@@ -1555,8 +1555,13 @@ export class StaticValues {
       return undefined;
     const factories = this.analysis.serviceFactories(node.arguments[0]);
     // Another package's service stays this opaque `resolve(token)` value; competing local registrations are unknown.
-    if (!factories)
-      return this.analysis.externalService(node.arguments[0]) ? [node] : [];
+    if (!factories) {
+      if (!this.analysis.externalService(node.arguments[0])) return [];
+      const bindings = this.receiverBindings(node.expression.expression);
+      if (!bindings) return [];
+      this.capture(node, bindings, false);
+      return [node];
+    }
     const factory = factories[0];
     const summary = this.analysis.serviceSummary(factory, (receiver) => {
       const scopes = new Map<ts.Node, Bindings>();
@@ -2354,13 +2359,7 @@ export class StaticValues {
         return (
           this.analysis.externalService(value.arguments[0]) ===
             '@nocobase/db' &&
-          (!strict ||
-            (ts.isPropertyAccessExpression(value.expression.expression) &&
-              !value.expression.expression.questionDotToken &&
-              value.expression.expression.name.text === 'container' &&
-              evaluator.applicationIdentity(
-                value.expression.expression.expression,
-              )))
+          (!strict || evaluator.containerIdentity(value.expression.expression))
         );
       if (
         ['connection', 'query', 'repository'].includes(
@@ -2387,6 +2386,80 @@ export class StaticValues {
           candidate !== value &&
           evaluator.databaseIdentity(candidate, next, strict),
       )
+    );
+  }
+
+  private receiverBindings(
+    receiver: ts.Node,
+  ): Map<ts.Declaration, readonly ts.Node[]> | undefined {
+    const bindings = new Map<ts.Declaration, readonly ts.Node[]>();
+    const seen = new Set<ts.Node>();
+    const pending = [receiver];
+    while (pending.length) {
+      const node = pending.pop()!;
+      if (seen.has(node)) continue;
+      if (seen.size >= 1024) return undefined;
+      seen.add(node);
+      const declarations = [...this.analysis.declarations(node)];
+      if (node.kind === ts.SyntaxKind.ThisKeyword) {
+        let owner: ts.Node | undefined = node.parent;
+        while (owner && !ts.isClassLike(owner)) owner = owner.parent;
+        if (owner && ts.isClassLike(owner)) declarations.push(owner);
+      }
+      for (const declaration of declarations) {
+        const values = this.bindings.get(declaration);
+        if (values) {
+          bindings.set(declaration, values);
+          pending.push(...values);
+        } else if (
+          ts.isVariableDeclaration(declaration) &&
+          declaration.initializer
+        )
+          pending.push(declaration.initializer);
+      }
+      ts.forEachChild(node, (child) => {
+        pending.push(child);
+      });
+    }
+    return bindings;
+  }
+
+  private containerIdentity(
+    value: ts.Node,
+    seen = new Set<ts.Node>(),
+  ): boolean {
+    if (seen.has(value) || seen.size >= MAX_VALUES) return false;
+    const next = new Set(seen).add(value);
+    if (
+      ts.isPropertyAccessExpression(value) &&
+      !value.questionDotToken &&
+      value.name.text === 'container'
+    )
+      return this.applicationIdentity(value.expression);
+    if (ts.isIdentifier(value)) {
+      const declarations = this.analysis.declarations(value);
+      if (declarations.length !== 1) return false;
+      const declaration = declarations[0];
+      if (
+        this.mutated(declaration) ||
+        this.analysis.hasBindingWrites(declaration)
+      )
+        return false;
+      const bound = this.bindings.get(declaration);
+      if (bound)
+        return bound.length === 1 && this.containerIdentity(bound[0], next);
+      if (
+        ts.isVariableDeclaration(declaration) &&
+        declaration.initializer &&
+        ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const
+      )
+        return this.containerIdentity(declaration.initializer, next);
+    }
+    const values = this.values(value);
+    return (
+      values.length === 1 &&
+      values[0] !== value &&
+      this.containerIdentity(values[0], next)
     );
   }
 
@@ -3409,8 +3482,13 @@ export class StaticValues {
     return snapshot;
   }
 
-  private capture(node: ts.Node, bindings: Bindings): void {
-    if (this.localArrays.size) bindings = this.snapshotBindings(bindings);
+  private capture(
+    node: ts.Node,
+    bindings: Bindings,
+    snapshotLocals = true,
+  ): void {
+    if (snapshotLocals && this.localArrays.size)
+      bindings = this.snapshotBindings(bindings);
     if (
       ts.isFunctionLike(node) ||
       ts.isObjectLiteralExpression(node) ||
