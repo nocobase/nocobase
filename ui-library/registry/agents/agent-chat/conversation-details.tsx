@@ -1,5 +1,6 @@
 import {
   CHAT_MOBILE_QUERY,
+  CHAT_PANEL_ATTRIBUTE,
   useAgentText,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type {
@@ -7,7 +8,14 @@ import type {
   ConversationLink,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { XIcon } from 'lucide-react';
 import { Button } from '#components/ui/button';
 import {
@@ -106,24 +114,56 @@ export function ConversationDetails({
     ) : null;
   // A phone's conversation fills the screen, so the full-screen sheet is the conversation area.
   return (
-    <Sheet
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onClose();
-      }}
-    >
-      <SheetContent
-        className='gap-0 data-[side=right]:w-[min(100%,22rem)]'
-        aria-describedby={undefined}
-        data-testid={testId}
-        data-placement='over'
+    <>
+      <NestedDialogOverlay open={open} />
+      <Sheet
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) onClose();
+        }}
       >
-        <SheetHeader className='shrink-0 border-b px-5 py-3 pr-14'>
-          <SheetTitle>{t('chat.detailsTitle')}</SheetTitle>
-        </SheetHeader>
-        {content}
-      </SheetContent>
-    </Sheet>
+        <SheetContent
+          className='gap-0 data-[side=right]:w-[min(100%,22rem)]'
+          aria-describedby={undefined}
+          data-testid={testId}
+          data-placement='over'
+        >
+          <SheetHeader className='shrink-0 border-b px-5 py-3 pr-14'>
+            <SheetTitle>{t('chat.detailsTitle')}</SheetTitle>
+          </SheetHeader>
+          {content}
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
+
+/**
+ * Base UI renders no backdrop for a dialog opened inside another dialog (it marks the sheet `data-nested`), and the
+ * phone Agent panel is itself a dialog, so its details sheet had no overlay or blur. Inside that panel this draws the
+ * sheet's overlay itself, at the sheet's layer, so the panel and the page look alike.
+ */
+function NestedDialogOverlay({
+  open,
+}: {
+  readonly open: boolean;
+}): ReactElement {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [nested, setNested] = useState(false);
+  useLayoutEffect(() => {
+    setNested(Boolean(ref.current?.closest(`[${CHAT_PANEL_ATTRIBUTE}]`)));
+  }, []);
+  return (
+    <>
+      <span ref={ref} hidden />
+      {nested && open ? (
+        <div
+          aria-hidden='true'
+          data-slot='nested-sheet-overlay'
+          className='fixed inset-0 z-50 animate-in bg-black/10 duration-150 fade-in supports-backdrop-filter:backdrop-blur-xs'
+        />
+      ) : null}
+    </>
   );
 }
 
