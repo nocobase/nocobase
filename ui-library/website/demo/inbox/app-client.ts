@@ -15,8 +15,8 @@ export const useApiClient: typeof AppClient.useApiClient = () =>
       const unlink = /conversations\/([^/]+)\/links\/([^/]+)$/u.exec(path);
       if (method === 'DELETE' && unlink)
         removeDemoLink(
-          decodeURIComponent(unlink[1]!),
-          decodeURIComponent(unlink[2]!),
+          decodeURIComponent(unlink[1]),
+          decodeURIComponent(unlink[2]),
         );
       return { data: null };
     },
