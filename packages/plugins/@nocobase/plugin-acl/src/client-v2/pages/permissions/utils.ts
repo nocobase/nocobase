@@ -55,6 +55,31 @@ export type RoutePermissionPredicate<T> = (node: T) => boolean;
 
 const alwaysTraversable = () => true;
 
+export interface PermissionChangeSet {
+  add: number[];
+  remove: number[];
+}
+
+// Compare the role's grants with the next selection inside one scope, so grants outside that scope (hidden routes,
+// other layouts) are preserved instead of being replaced by a full `set`.
+export function getPermissionChanges(
+  selectedIds: number[],
+  nextSelectedIds: number[],
+  scopeIds: number[],
+): PermissionChangeSet {
+  const scope = new Set(scopeIds);
+  const selected = new Set(selectedIds.filter((id) => scope.has(id)));
+  const nextSelected = new Set(nextSelectedIds.filter((id) => scope.has(id)));
+  return {
+    add: scopeIds.filter((id) => nextSelected.has(id) && !selected.has(id)),
+    remove: scopeIds.filter((id) => selected.has(id) && !nextSelected.has(id)),
+  };
+}
+
+function hasSelectedDescendant(items: RoutePermissionNode[] | undefined, ids: number[]): boolean {
+  return (items ?? []).some((item) => ids.includes(item.id) || hasSelectedDescendant(item.children, ids));
+}
+
 export function withAncestorIds<T extends RoutePermissionNode>(
   ids: number[],
   node: T,
@@ -90,8 +115,8 @@ export function withoutEmptyAncestorIds<T extends RoutePermissionNode>(
     if (!parent || !canTraverse(parent)) {
       break;
     }
-    const children = parent.children ?? [];
-    if (children.some((child) => nextIds.includes(child.id))) {
+    // A filtered-out intermediate node is not part of the role's visible grants, so look at every descendant
+    if (hasSelectedDescendant(parent.children, nextIds)) {
       break;
     }
     nextIds = nextIds.filter((id) => id !== parentId);

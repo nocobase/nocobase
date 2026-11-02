@@ -53,6 +53,19 @@ describe('route permission ancestor helpers', () => {
     expect(withoutEmptyAncestorIds([21, 20], tab, nodeById)).toEqual([21, 20]);
   });
 
+  it('treats a route without any layout as outside the current layout', () => {
+    const child: LayoutRoutePermissionNode = { id: 12, parentId: 11 };
+    const unassigned: LayoutRoutePermissionNode = { id: 11, parentId: 10, layoutUids: [] };
+    const nodeById = new Map<number, LayoutRoutePermissionNode>([
+      [10, { id: 10, children: [unassigned] }],
+      [11, unassigned],
+      [12, child],
+    ]);
+    const isRouteInLayout = (node: LayoutRoutePermissionNode) => (node.layoutUids ?? []).includes('admin-layout-model');
+
+    expect(withAncestorIds([12], child, nodeById, isRouteInLayout)).toEqual([12]);
+  });
+
   it('stops at an ancestor restored by the tree query that belongs to another layout', () => {
     const link: LayoutRoutePermissionNode = { id: 12, parentId: 11, layoutUids: ['admin-layout-model'] };
     const foreignGroup: LayoutRoutePermissionNode = {
@@ -66,9 +79,46 @@ describe('route permission ancestor helpers', () => {
       [11, foreignGroup],
       [12, link],
     ]);
-    const isRouteInLayout = (node: LayoutRoutePermissionNode) => node.layoutUids?.includes('admin-layout-model') ?? true;
+    const isRouteInLayout = (node: LayoutRoutePermissionNode) =>
+      node.layoutUids?.includes('admin-layout-model') ?? true;
 
     expect(withAncestorIds([12], link, nodeById, isRouteInLayout)).toEqual([12]);
+  });
+
+  it('keeps an ancestor while a filtered-out branch still has a selected descendant', () => {
+    const leaf: LayoutRoutePermissionNode = { id: 14, parentId: 12, layoutUids: ['admin-layout-model'] };
+    const branch: LayoutRoutePermissionNode = {
+      id: 12,
+      parentId: 10,
+      layoutUids: ['admin-layout-model'],
+      children: [leaf],
+    };
+    const foreignGroup: LayoutRoutePermissionNode = {
+      id: 11,
+      parentId: 10,
+      layoutUids: ['mobile-layout-model'],
+    };
+    const grantedRoute: LayoutRoutePermissionNode = {
+      id: 13,
+      parentId: 11,
+      layoutUids: ['mobile-layout-model'],
+    };
+    foreignGroup.children = [grantedRoute];
+    const root: LayoutRoutePermissionNode = {
+      id: 10,
+      layoutUids: ['admin-layout-model'],
+      children: [foreignGroup, branch],
+    };
+    const nodeById = new Map<number, LayoutRoutePermissionNode>([
+      [10, root],
+      [11, foreignGroup],
+      [12, branch],
+      [13, grantedRoute],
+      [14, leaf],
+    ]);
+
+    // The foreign branch is not selectable here, but its granted route must keep the shared ancestor alive
+    expect(withoutEmptyAncestorIds([10, 13], leaf, nodeById)).toEqual([10, 13]);
   });
 
   it('keeps a shared ancestor that another layout may still need', () => {

@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { type RoutePermissionNode, withAncestorIds, withoutEmptyAncestorIds } from '../utils';
+import { getPermissionChanges, type RoutePermissionNode, withAncestorIds, withoutEmptyAncestorIds } from '../utils';
 
 function createRouteTree() {
   const tab: RoutePermissionNode = { id: 13, parentId: 12 };
@@ -75,6 +75,26 @@ describe('withoutEmptyAncestorIds', () => {
     expect(withoutEmptyAncestorIds([12, 11, 10, 14], tab, nodeById)).toEqual([11, 10, 14]);
   });
 
+  it('keeps an ancestor while a filtered-out branch still has a selected descendant', () => {
+    const leaf: RoutePermissionNode = { id: 14, parentId: 12 };
+    const branch: RoutePermissionNode = { id: 12, parentId: 10, children: [leaf] };
+    const hiddenGroup: RoutePermissionNode = { id: 11, parentId: 10, hidden: true };
+    const grantedRoute: RoutePermissionNode = { id: 13, parentId: 11 };
+    hiddenGroup.children = [grantedRoute];
+    const root: RoutePermissionNode = { id: 10, children: [hiddenGroup, branch] };
+    const nodeById = new Map<number, RoutePermissionNode>([
+      [10, root],
+      [11, hiddenGroup],
+      [12, branch],
+      [13, grantedRoute],
+      [14, leaf],
+    ]);
+    const isRouteVisible = (node: RoutePermissionNode) => node.hidden !== true;
+
+    // Leaf is unchecked, branch becomes empty, but route 13 is still granted behind the hidden group
+    expect(withoutEmptyAncestorIds([10, 13], leaf, nodeById, isRouteVisible)).toEqual([10, 13]);
+  });
+
   it('stops before a hidden ancestor instead of revoking it', () => {
     const tab: RoutePermissionNode = { id: 13, parentId: 12 };
     const page: RoutePermissionNode = { id: 12, parentId: 11, children: [tab] };
@@ -89,5 +109,16 @@ describe('withoutEmptyAncestorIds', () => {
     const isRouteVisible = (node: RoutePermissionNode) => node.hidden !== true;
 
     expect(withoutEmptyAncestorIds([12, 11], tab, nodeById, isRouteVisible)).toEqual([]);
+  });
+});
+
+describe('getPermissionChanges', () => {
+  it('adds and removes only ids inside the scope', () => {
+    expect(getPermissionChanges([1, 9], [2], [1, 2])).toEqual({ add: [2], remove: [1] });
+  });
+
+  it('never removes a grant that is outside the scope', () => {
+    // 9 is a hidden ancestor that the role already has; selecting all visible routes must keep it
+    expect(getPermissionChanges([1, 9], [1, 2], [1, 2])).toEqual({ add: [2], remove: [] });
   });
 });

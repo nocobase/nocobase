@@ -131,6 +131,10 @@ export type LayoutRoutePermissionPredicate<T> = (node: T) => boolean;
 
 const alwaysTraversable = () => true;
 
+function hasSelectedDescendant(items: LayoutRoutePermissionNode[] | undefined, ids: number[]): boolean {
+  return (items ?? []).some((item) => ids.includes(item.id) || hasSelectedDescendant(item.children, ids));
+}
+
 export function normalizeLayoutUids(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -176,8 +180,8 @@ export function withoutEmptyAncestorIds<T extends LayoutRoutePermissionNode>(
     if (!parent || parent.readOnly || !canTraverse(parent)) {
       break;
     }
-    const children = parent.children ?? [];
-    if (children.some((child) => nextIds.includes(child.id))) {
+    // A filtered-out intermediate node is not part of the role's visible grants, so look at every descendant
+    if (hasSelectedDescendant(parent.children, nextIds)) {
       break;
     }
     nextIds = nextIds.filter((id) => id !== parentId);

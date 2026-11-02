@@ -584,6 +584,7 @@ describe('plugin-ui-layout route permissions', () => {
     });
     const desktopPage = await screen.findByRole('checkbox', { name: 'Allow access to Desktop page' });
     await waitFor(() => expect(desktopPage).not.toBeDisabled());
+    expect(screen.getByRole('checkbox', { name: 'Allow access to Mobile-only group' })).toBeDisabled();
 
     await act(async () => {
       await userEvent.click(desktopPage);
@@ -691,8 +692,17 @@ function createRoutePermissionResources(options: RoutePermissionResourceOptions)
       type: 'page',
     },
   ];
+  // Real routes always carry their layout association; fixtures only spell it out when the case needs another layout
+  const withLayoutDefaults = (routes: TestRoute[], layoutUid: string): TestRoute[] =>
+    routes.map((route) => ({
+      ...route,
+      uiLayouts: route.uiLayouts ?? [layoutUid],
+      children: route.children ? withLayoutDefaults(route.children, layoutUid) : undefined,
+    }));
   const getRouteRecords = (filter?: Record<string, unknown>) => {
-    const records = filter?.['uiLayouts.uid'] === MOBILE_LAYOUT_UID ? mobileRoutes : desktopRoutes;
+    const layoutUid =
+      typeof filter?.['uiLayouts.uid'] === 'string' ? (filter['uiLayouts.uid'] as string) : DEFAULT_ADMIN_UI_LAYOUT.uid;
+    const records = withLayoutDefaults(layoutUid === MOBILE_LAYOUT_UID ? mobileRoutes : desktopRoutes, layoutUid);
     const typeFilter = filter?.type;
 
     if (

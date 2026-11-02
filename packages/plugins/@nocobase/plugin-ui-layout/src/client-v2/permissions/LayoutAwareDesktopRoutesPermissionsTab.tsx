@@ -233,12 +233,8 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
   const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
   // Routes restored as path ancestors can belong to another layout or be hidden; keep automatic grants inside this view
-  const isRouteInLayout = useMemoizedFn((item: RoutePermissionRecord) =>
-    item.layoutUids.length === 0 || item.layoutUids.includes(props.layoutUid),
-  );
-  const canCascadeTo = useMemoizedFn(
-    (item: RoutePermissionRecord) => item.hidden !== true && isRouteInLayout(item),
-  );
+  const isRouteInLayout = useMemoizedFn((item: RoutePermissionRecord) => item.layoutUids.includes(props.layoutUid));
+  const canCascadeTo = useMemoizedFn((item: RoutePermissionRecord) => item.hidden !== true && isRouteInLayout(item));
   const canRevokeFrom = useMemoizedFn(
     (item: RoutePermissionRecord) => canCascadeTo(item) && item.layoutUids.length <= 1,
   );
@@ -255,10 +251,18 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
     () => filterRouteItems(displayRouteItems, routeKeyword, t),
     [displayRouteItems, routeKeyword, t],
   );
-  const visibleIds = useMemo(() => getEditableRouteIds(visibleRouteItems), [visibleRouteItems]);
+  // Restored structural ancestors are rendered to keep the tree readable, but they are not selectable rows
+  const isSelectableRouteId = useMemoizedFn((id: number) => {
+    const item = itemById.get(id);
+    return !item || canCascadeTo(item);
+  });
+  const visibleIds = useMemo(
+    () => getEditableRouteIds(visibleRouteItems).filter(isSelectableRouteId),
+    [isSelectableRouteId, visibleRouteItems],
+  );
   const visibleIdsWithDescendants = useMemo(
-    () => getRouteIdsWithAllDescendants(visibleRouteItems, itemById),
-    [itemById, visibleRouteItems],
+    () => getRouteIdsWithAllDescendants(visibleRouteItems, itemById).filter(isSelectableRouteId),
+    [isSelectableRouteId, itemById, visibleRouteItems],
   );
   const visibleSelectedCount = useMemo(() => {
     const selectedIdSet = new Set(selectedIds);
@@ -414,6 +418,7 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
               aria-label={t('Allow access to {{route}}', { route: routeTitle })}
               disabled={
                 item.readOnly ||
+                !canCascadeTo(item) ||
                 routeService.loading ||
                 roleScopedRouteService.loading ||
                 !!routeService.error ||
@@ -427,6 +432,7 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
       },
     ],
     [
+      canCascadeTo,
       selectedIds,
       setAll,
       t,

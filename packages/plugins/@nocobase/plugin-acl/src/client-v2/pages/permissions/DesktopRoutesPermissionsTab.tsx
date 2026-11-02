@@ -16,7 +16,7 @@ import { uniq } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import type { PermissionTabProps, Role } from '../../registries';
-import { withAncestorIds, withoutEmptyAncestorIds } from './utils';
+import { getPermissionChanges, withAncestorIds, withoutEmptyAncestorIds } from './utils';
 
 interface DesktopRoutePayload {
   data?: DesktopRouteRecord[];
@@ -117,7 +117,10 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
   const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
   const allIds = useMemo(
-    () => flattenItems(routeItems).filter((item) => item.hidden !== true).map((item) => item.id),
+    () =>
+      flattenItems(routeItems)
+        .filter((item) => item.hidden !== true)
+        .map((item) => item.id),
     [routeItems],
   );
   const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
@@ -151,9 +154,17 @@ export default function DesktopRoutesPermissionsTab(props: PermissionTabProps) {
     if (!roleRoutesResource) {
       return;
     }
-    const nextIds = selectedIds.length === allIds.length ? [] : allIds;
+    const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.includes(id));
+    const nextIds = allSelected ? [] : allIds;
+    // Replace only the ids in this view; a full `set` would drop grants of hidden or out-of-view ancestors
+    const { add, remove } = getPermissionChanges(selectedIds, nextIds, allIds);
     setSelectedIds(nextIds);
-    await roleRoutesResource.set({ values: nextIds });
+    if (add.length) {
+      await roleRoutesResource.add({ values: add });
+    }
+    if (remove.length) {
+      await roleRoutesResource.remove({ values: remove });
+    }
     await roleRoutesService.refreshAsync();
     ctx.message.success(t('Saved successfully'));
   });
