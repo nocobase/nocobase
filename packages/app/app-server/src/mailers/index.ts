@@ -127,7 +127,7 @@ export class MailSenderFactory {
    * own, so configurations that worked before keep working; it runs now rather than at the first send.
    */
   public createFromConfig(config: EmailChannelConfig): MailSender {
-    const snapshot = { ...config };
+    const snapshot = structuredClone(config);
     if (snapshot.provider === 'smtp') validateSmtpProviderConfig(snapshot);
     else validateResendProviderConfig(snapshot);
     return createMailSender(snapshot);

@@ -171,6 +171,46 @@ it('creates exclusive senders: concurrent first sends share one transport, closi
   expect(create).toHaveBeenCalledTimes(4);
 });
 
+it('snapshots nested legacy SMTP credentials before the first send', async () => {
+  const { create, created } = fakeTransports();
+  const inline = {
+    ...smtp,
+    auth: { user: 'synthetic', pass: 'original' },
+  };
+  const sender = new MailSenderFactory().createFromConfig(inline);
+  inline.auth.pass = 'changed';
+
+  const pending = sender.send(message);
+  created[0].finish({ status: 'accepted' });
+  try {
+    expect(create).toHaveBeenCalledOnce();
+    expect(create.mock.calls[0][0]).toMatchObject({
+      auth: { user: 'synthetic', pass: 'original' },
+    });
+    await expect(pending).resolves.toMatchObject({ status: 'accepted' });
+  } finally {
+    await sender.close();
+  }
+});
+
+it('can close a sender after its first transport initialization fails', async () => {
+  const failure = new Error('Synthetic transport initialization failure.');
+  const create = vi
+    .spyOn(transports, 'createMailTransport')
+    .mockImplementationOnce(() => {
+      throw failure;
+    });
+  const sender = new MailSenderFactory().createFromConfig(smtp);
+
+  expect(() => sender.send(message)).toThrow(failure);
+  await expect(sender.close()).resolves.toBeUndefined();
+  await expect(sender.send(message)).resolves.toMatchObject({
+    status: 'failed',
+    disposition: 'never',
+  });
+  expect(create).toHaveBeenCalledOnce();
+});
+
 it('passes cancellation and idempotency keys through unchanged', async () => {
   const { created } = fakeTransports();
   const sender = new MailSenderFactory({

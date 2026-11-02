@@ -1,8 +1,101 @@
 import { createServer } from 'node:http';
+import { createServer as createSmtpServer, type Socket } from 'node:net';
 import { afterEach, expect, it, vi } from 'vitest';
 import { MailSenderFactory } from '../src/mailers/index.js';
 
 afterEach(() => vi.unstubAllGlobals());
+
+async function smtpFixture() {
+  const sockets = new Set<Socket>();
+  let credentials: { user: string; pass: string } | undefined;
+  const server = createSmtpServer((socket) => {
+    sockets.add(socket);
+    socket.on('close', () => sockets.delete(socket));
+    socket.write('220 local.test ESMTP\r\n');
+    let input = '';
+    let inData = false;
+    socket.on('data', (chunk) => {
+      input += chunk.toString();
+      while (input.includes('\r\n')) {
+        const end = input.indexOf('\r\n');
+        const line = input.slice(0, end);
+        input = input.slice(end + 2);
+        if (inData) {
+          if (line === '.') {
+            inData = false;
+            socket.write('250 queued\r\n');
+          }
+        } else if (line.startsWith('EHLO')) {
+          socket.write(
+            '250-local.test\r\n250-AUTH PLAIN\r\n250 PIPELINING\r\n',
+          );
+        } else if (line.startsWith('AUTH PLAIN ')) {
+          const [user = '', pass = ''] = Buffer.from(
+            line.slice('AUTH PLAIN '.length),
+            'base64',
+          )
+            .toString('utf8')
+            .split('\0')
+            .slice(-2);
+          credentials = { user, pass };
+          socket.write('235 authenticated\r\n');
+        } else if (line === 'AUTH PLAIN') {
+          socket.write('334 continue\r\n');
+        } else if (line === 'DATA') {
+          inData = true;
+          socket.write('354 send data\r\n');
+        } else if (line === 'QUIT') {
+          socket.end('221 bye\r\n');
+        } else {
+          socket.write('250 ok\r\n');
+        }
+      }
+    });
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  if (!address || typeof address === 'string')
+    throw new Error('No SMTP fixture port.');
+  return {
+    port: address.port,
+    get credentials() {
+      return credentials;
+    },
+    async close() {
+      for (const socket of sockets) socket.destroy();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    },
+  };
+}
+
+it('uses snapshotted legacy SMTP credentials for the first real send', async () => {
+  const smtp = await smtpFixture();
+  const config = {
+    provider: 'smtp' as const,
+    host: '127.0.0.1',
+    port: smtp.port,
+    auth: { user: 'synthetic-user', pass: 'original-pass' },
+    from: 'sender@example.test',
+  };
+  const sender = new MailSenderFactory().createFromConfig(config);
+  config.auth.pass = 'changed-pass';
+  try {
+    await expect(
+      sender.send({
+        to: 'recipient@example.test',
+        subject: 'Snapshot test',
+        text: 'Synthetic message',
+      }),
+    ).resolves.toMatchObject({ status: 'accepted' });
+    expect(smtp.credentials).toEqual({
+      user: 'synthetic-user',
+      pass: 'original-pass',
+    });
+  } finally {
+    await sender.close();
+    await smtp.close();
+  }
+});
 
 it.each([
   'accepted',
