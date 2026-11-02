@@ -1099,7 +1099,11 @@ export class StaticValues {
     return changed;
   }
 
-  private nativeContext(node: ts.Node, seen = new Set<ts.Node>()): boolean {
+  private nativeContext(
+    node: ts.Node,
+    seen = new Set<ts.Node>(),
+    requireAuthorization = false,
+  ): boolean {
     node = StaticValues.unwrap(node);
     if (seen.has(node) || seen.size >= MAX_VALUES || !ts.isIdentifier(node))
       return false;
@@ -1109,17 +1113,26 @@ export class StaticValues {
       return false;
     const declaration = declarations[0],
       bound = this.bindings.get(declaration);
-    if (bound) return bound.length === 1 && this.nativeContext(bound[0], next);
+    if (bound)
+      return (
+        bound.length === 1 &&
+        this.nativeContext(bound[0], next, requireAuthorization)
+      );
     if (
       ts.isVariableDeclaration(declaration) &&
       declaration.initializer &&
       ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const
     )
-      return this.nativeContext(declaration.initializer, next);
+      return this.nativeContext(
+        declaration.initializer,
+        next,
+        requireAuthorization,
+      );
     return (
       ts.isParameter(declaration) &&
       declaration.parent.parameters[0] === declaration &&
-      (this.analysis.routeHandlers.has(declaration.parent) ||
+      ((!requireAuthorization &&
+        this.analysis.routeHandlers.has(declaration.parent)) ||
         this.analysis.authorizedHandlers.has(declaration.parent))
     );
   }
@@ -2097,6 +2110,28 @@ export class StaticValues {
       if (!ts.isCallExpression(call) || call.expression !== access)
         return false;
       const key = call.arguments[0];
+      // The native authorization context returns decisions, booleans or void from these own methods,
+      // not the handler context read by `get('authz')`. Keep unknown methods and the stored context opaque.
+      if (
+        access.name.text === 'get' &&
+        !access.questionDotToken &&
+        !call.questionDotToken &&
+        call.arguments.length === 1 &&
+        key &&
+        ts.isStringLiteralLike(key) &&
+        key.text === 'authz' &&
+        this.analysis.authorizationIdentityResolved &&
+        accessorIndex(this.analysis).contextMethodsIntact &&
+        accessorIndex(this.analysis).objectPrototypeIntact &&
+        this.nativeContext(identifier, new Set(), true) &&
+        ts.isPropertyAccessExpression(call.parent) &&
+        !call.parent.questionDotToken &&
+        ['authorize', 'can', 'require'].includes(call.parent.name.text) &&
+        ts.isCallExpression(call.parent.parent) &&
+        call.parent.parent.expression === call.parent &&
+        !call.parent.parent.questionDotToken
+      )
+        return true;
       return !(
         access.name.text === 'get' &&
         key &&
@@ -2411,6 +2446,36 @@ export class StaticValues {
     );
   }
 
+  /** Hono's named header read is string or undefined; optional slicing with literal bounds cannot coerce input. */
+  private headerSlice(
+    node: ts.CallExpression,
+  ): node is ts.CallExpression & { expression: ts.PropertyAccessExpression } {
+    if (
+      !accessorIndex(this.analysis).objectPrototypeIntact ||
+      node.questionDotToken ||
+      !ts.isPropertyAccessExpression(node.expression) ||
+      !node.expression.questionDotToken ||
+      node.expression.name.text !== 'slice' ||
+      node.arguments.length !== 2 ||
+      !node.arguments.every(
+        (argument) =>
+          ts.isNumericLiteral(argument) &&
+          Number.isSafeInteger(Number(argument.text)),
+      )
+    )
+      return false;
+    const receiver = StaticValues.unwrap(node.expression.expression);
+    return (
+      ts.isCallExpression(receiver) &&
+      ts.isPropertyAccessExpression(receiver.expression) &&
+      receiver.expression.name.text === 'header' &&
+      receiver.arguments.length === 1 &&
+      this.requestRead(receiver) &&
+      this.strings(receiver.arguments[0]).length === 1 &&
+      this.strings(receiver.arguments[0])[0] !== ''
+    );
+  }
+
   private requestRead(node: ts.CallExpression): boolean {
     if (
       node.questionDotToken ||
@@ -2482,7 +2547,7 @@ export class StaticValues {
     return handlerParameter(node.expression.expression.expression, new Set());
   }
 
-  /** The proven context's own `get('authz')` read, or its `authorize(request)` decision. */
+  /** The proven context's own read or decision. Native `require` throws on denial; it never substitutes an identity. */
   private authorizationCall(node: ts.CallExpression): boolean {
     if (!this.analysis.authorizationIdentityResolved) return false;
     if (this.authorizationContext(node)) return true;
@@ -2492,7 +2557,7 @@ export class StaticValues {
       !ts.isSpreadElement(node.arguments[0]) &&
       ts.isPropertyAccessExpression(node.expression) &&
       !node.expression.questionDotToken &&
-      node.expression.name.text === 'authorize' &&
+      ['authorize', 'can', 'require'].includes(node.expression.name.text) &&
       this.authorizationContext(node.expression.expression)
     );
   }
@@ -3332,7 +3397,7 @@ export class StaticValues {
       return { ...CONTINUES, values: [node] };
     const string = this.stringOperation(node);
     if (string) return { ...CONTINUES, values: [string] };
-    if (this.queryTrim(node)) {
+    if (this.queryTrim(node) || this.headerSlice(node)) {
       const receiver = this.initialization(
         node.expression.expression,
         seen,
@@ -5521,6 +5586,8 @@ export class StaticValues {
             pending.push(declaration.initializer);
           else if (ts.isBindingElement(declaration))
             pending.push(declaration.parent.parent);
+          else if (ts.isFunctionDeclaration(declaration) && declaration.body)
+            pending.push(declaration.body);
         }
       if (part.kind === ts.SyntaxKind.ThisKeyword) {
         let owner: ts.Node | undefined = part.parent;
@@ -5834,24 +5901,32 @@ export class StaticValues {
 
   private snapshotReturnedLiteral(node: ts.Node, depth = 0): ts.Node {
     if (depth >= MAX_VALUES) return node;
+    // The caller receiving a returned record does not own the callee's local aliases.
+    // Read and snapshot its fields in the environment already proven for that value.
+    const captured = this.captures.get(node);
+    const evaluator = captured
+      ? this.fork(new Map([...this.bindings, ...captured]))
+      : this;
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node))
-      return this.materialize(node, new Set()) ?? node;
+      return evaluator.materialize(node, new Set()) ?? node;
     if (
       ts.isObjectLiteralExpression(node) &&
       node.properties.length <= MAX_VALUES &&
-      this.ordinaryRecord(node) &&
+      evaluator.ordinaryRecord(node) &&
       node.properties.every(
         (property) =>
           !ts.isShorthandPropertyAssignment(property) ||
-          (this.values(property.name).length === 1 &&
-            this.values(property.name).every(
-              (value) =>
-                ts.isStringLiteralLike(value) ||
-                ts.isNumericLiteral(value) ||
-                value.kind === ts.SyntaxKind.TrueKeyword ||
-                value.kind === ts.SyntaxKind.FalseKeyword ||
-                value.kind === ts.SyntaxKind.NullKeyword,
-            )),
+          (evaluator.values(property.name).length === 1 &&
+            evaluator
+              .values(property.name)
+              .every(
+                (value) =>
+                  ts.isStringLiteralLike(value) ||
+                  ts.isNumericLiteral(value) ||
+                  value.kind === ts.SyntaxKind.TrueKeyword ||
+                  value.kind === ts.SyntaxKind.FalseKeyword ||
+                  value.kind === ts.SyntaxKind.NullKeyword,
+              )),
       )
     ) {
       const properties = node.properties.map((property) =>
@@ -5859,7 +5934,7 @@ export class StaticValues {
           ? this.origin(
               ts.factory.createPropertyAssignment(
                 property.name,
-                this.snapshotReturnedLiteral(
+                evaluator.snapshotReturnedLiteral(
                   property.initializer,
                   depth + 1,
                 ) as ts.Expression,
@@ -5872,7 +5947,7 @@ export class StaticValues {
         ts.factory.createObjectLiteralExpression(properties),
         node,
       );
-      this.capture(value, this.bindings);
+      evaluator.capture(value, evaluator.bindings);
       return value;
     }
     return node;
@@ -6356,7 +6431,7 @@ export class StaticValues {
       return values.length === 1 ? evaluator.values(values[0], seen) : [];
     }
     if (ts.isObjectLiteralExpression(node)) {
-      const properties: ts.ObjectLiteralElementLike[] = [];
+      const properties: [ts.ObjectLiteralElementLike, StaticValues][] = [];
       const expand = (
         object: ts.ObjectLiteralExpression,
         visited = new Set<ts.Node>(),
@@ -6382,19 +6457,20 @@ export class StaticValues {
               !expand(values[0], new Set(visited).add(object))
             )
               return false;
-          } else properties.push(property);
+          } else properties.push([property, evaluator]);
         }
         return true;
       };
       if (!expand(node)) return [];
-      const entry = [...properties]
+      const selected = [...properties]
         .reverse()
         .find(
-          (item) =>
+          ([item]) =>
             item.name &&
             (ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name)) &&
             item.name.text === name,
         );
+      const entry = selected?.[0];
       const value =
         entry && ts.isPropertyAssignment(entry)
           ? entry.initializer
@@ -6403,36 +6479,30 @@ export class StaticValues {
             : entry && ts.isMethodDeclaration(entry)
               ? entry
               : undefined;
-      const scope = this.captures.get(node);
-      const evaluator = scope
-        ? new StaticValues(
-            this.analysis,
-            new Map([...this.bindings, ...scope]),
-            this.captures,
-            this.activeCalls,
-            this.expandServices,
-            this.awaitReturns,
-          )
-        : this;
-      return value
-        ? evaluator.values(value, seen)
-        : this.ordinaryRecord(node) &&
-            ![
-              '__proto__',
-              'constructor',
-              'toString',
-              'valueOf',
-              'hasOwnProperty',
-              'isPrototypeOf',
-              'propertyIsEnumerable',
-              'toLocaleString',
-              '__defineGetter__',
-              '__defineSetter__',
-              '__lookupGetter__',
-              '__lookupSetter__',
-            ].includes(name)
-          ? [this.origin(ts.factory.createIdentifier('undefined'), node)]
-          : [];
+      if (value) {
+        const evaluator = selected![1];
+        const values = evaluator.values(value, seen);
+        for (const value of values)
+          evaluator.capture(value, evaluator.bindings);
+        return values;
+      }
+      return this.ordinaryRecord(node) &&
+        ![
+          '__proto__',
+          'constructor',
+          'toString',
+          'valueOf',
+          'hasOwnProperty',
+          'isPrototypeOf',
+          'propertyIsEnumerable',
+          'toLocaleString',
+          '__defineGetter__',
+          '__defineSetter__',
+          '__lookupGetter__',
+          '__lookupSetter__',
+        ].includes(name)
+        ? [this.origin(ts.factory.createIdentifier('undefined'), node)]
+        : [];
     }
     if (ts.isJsxAttributes(node)) {
       const entry = node.properties.find(

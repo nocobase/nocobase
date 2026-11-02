@@ -1701,3 +1701,128 @@ it.each([
     );
   },
 );
+
+it.each([
+  ['named query loader', '', 'return load(connection);', true],
+  [
+    'two named query loaders',
+    'function outer(connection){return load(connection);}',
+    'return outer(connection);',
+    true,
+  ],
+  [
+    'escaping database in named loader',
+    '',
+    'external(database);return load(connection);',
+    false,
+  ],
+  ['throwing named loader caller', '', "throw new Error('blocked');", false],
+  [
+    'reassigned named loader',
+    'load=external;',
+    'return load(connection);',
+    false,
+  ],
+])(
+  'preserves transitive factory captures through %s',
+  async (_name, setup, body, expected) => {
+    const source = `import {ServiceProvider,createServiceToken} from '@nocobase/service-provider';
+import {databaseManagerToken} from '@nocobase/db';
+export const catalogToken=createServiceToken('catalog');
+function createCatalog(database){
+ const query=connection=>connection?connection.query:database.query();
+ function load(connection){return query(connection).selectFrom('entries').execute();}
+ ${setup}
+ const service={async list(connection){${body}}};
+ return service;
+}
+class Provider extends ServiceProvider{register(){this.app.container.singleton(catalogToken,()=>createCatalog(this.app.container.resolve(databaseManagerToken)));}}
+export default [Provider];`;
+    const result = await collectModuleSources(
+      await fixture(routes, { 'server/providers/index.js': source }),
+    );
+    expect(result.routes[0]?.collections?.includes('entries') ?? false).toBe(
+      expected,
+    );
+  },
+);
+
+it.each([
+  ['can result', "c.get('authz').can(request)", true],
+  ['authorize result', "c.get('authz').authorize(request)", true],
+  ['require result', "c.get('authz').require(request)", true],
+  ['stored authorization context', "c.get('authz')", false],
+  ['unknown authorization method', "c.get('authz').custom(request)", false],
+  ['handler context', 'c', false],
+])(
+  'separates a native %s from the handler context in a returned helper',
+  async (_name, value, expected) => {
+    const setup = `const request={resource:{type:'settings',id:'catalog'},action:'read'};
+function decision(c){return ${value};}
+function project(c){external(decision(c));}`;
+    const server = routes
+      .replace(
+        'export default defineApiRoutes',
+        setup + 'export default defineApiRoutes',
+      )
+      .replace(
+        'c=>service.list()',
+        "async c=>{await c.get('authz').require(request);const rows=await service.list();project(c);return rows;}",
+      );
+    const result = await collectModuleSources(await fixture(server));
+    expect(result.routes[0]?.collections?.includes('entries') ?? false).toBe(
+      expected,
+    );
+  },
+);
+
+it('retains a destructured database through a nested service aggregate and named loader', async () => {
+  const source = `import {ServiceProvider,createServiceToken} from '@nocobase/service-provider';
+import {databaseManagerToken} from '@nocobase/db';
+export const catalogToken=createServiceToken('catalog');
+function context(deps){const {platform}=deps;return {...deps,settings:()=>platform.database};}
+function nested(ctx){const {platform}=ctx;const {database}=platform;async function load(){return database.query().selectFrom('entries').execute();}return {async list(){return load();}};}
+function aggregate(database){const ctx=context({platform:{database}});const selected=nested(ctx);return {selected};}
+class Provider extends ServiceProvider{register(){this.app.container.singleton(catalogToken,()=>aggregate(this.app.container.resolve(databaseManagerToken)));}}
+export default [Provider];`;
+  const result = await collectModuleSources(
+    await fixture(routes.replace('service.list()', 'service.selected.list()'), {
+      'server/providers/index.js': source,
+    }),
+  );
+  expect(result.routes[0]?.collections).toContain('entries');
+});
+
+it.each([
+  ["c.req.header('x-device')", '0,64', '', true],
+  ["c.req.header('')", '0,64', '', false],
+  ["c.req.header('x-device\\n')", '0,64', '', false],
+  ["c.req.header('x-device\\r')", '0,64', '', false],
+  ["c.req.query('device')", '0,64', '', false],
+  ['unknown', '0,64', '', false],
+  ["c.req.header('x-device')", '0,unknown', '', false],
+  ["c.req.header('x-device')", '0,external()', '', false],
+  [
+    "c.req.header('x-device')",
+    '0,64',
+    'String.prototype.slice=external;',
+    false,
+  ],
+])(
+  'completes only native optional header slicing: %s / %s / %s',
+  async (value, bounds, prefix, expected) => {
+    const server = routes
+      .replace(
+        'export default defineApiRoutes',
+        prefix + 'export default defineApiRoutes',
+      )
+      .replace(
+        'c=>service.list()',
+        `async c=>{const device=(${value})?.slice(${bounds});return service.list();}`,
+      );
+    const result = await collectModuleSources(await fixture(server));
+    expect(result.routes[0]?.collections?.includes('entries') ?? false).toBe(
+      expected,
+    );
+  },
+);
