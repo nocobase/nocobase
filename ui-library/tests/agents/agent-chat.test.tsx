@@ -21,6 +21,7 @@ import { useEffect, type ReactElement, type ReactNode } from 'react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { LinkedChatPanel } from '../../registry/agents/agent-chat/linked-chat-panel';
 import { ChatPanel } from '../../registry/agents/agent-chat/chat-panel';
 import { ChatConversationPage } from '../../registry/agents/agent-chat/conversation-page';
 import { ChatHistoryDialog } from '../../registry/agents/agent-chat/history-list';
@@ -40,6 +41,13 @@ vi.mock(
   () => import('../../website/demo/agents/agents-chat-client'),
 );
 
+vi.mock('@nocobase/app-client', async (original) => ({
+  ...(await original<typeof import('@nocobase/app-client')>()),
+  resolveAppUrl: (x: string) => x,
+}));
+vi.mock('../../registry/agents/agent-chat/use-conversation-usage.js', () => ({
+  useConversationUsage: () => ({ data: undefined }),
+}));
 afterEach(() => resetChatDemo());
 
 const runtime = await createTestI18nRuntime({
@@ -378,13 +386,10 @@ describe('ChatPanel modes and layout', () => {
   it('switches between runner and online agents, each with its own conversations', async () => {
     renderPanel(null);
     const panel = await screen.findByTestId('chat-panel');
-    // The person's default is a runner agent, so the panel starts there.
-    expect(await within(panel).findByTestId('chat-title')).toHaveTextContent(
-      'Runner agents',
-    );
-    const toggle = within(panel).getByTestId('chat-mode-switch');
-    expect(toggle).toHaveAccessibleName('Switch to the online agent');
+    // Mode switching belongs to the list, never the conversation header.
     fireEvent.click(within(panel).getByTestId('chat-history-button'));
+    const toggle = await within(panel).findByTestId('chat-mode-switch');
+    expect(toggle).toHaveAccessibleName('Switch to the online agent');
     const runner = await within(panel).findByTestId('chat-history');
     expect(runner).toHaveAttribute('data-mode', 'runner');
     expect(
@@ -400,7 +405,7 @@ describe('ChatPanel modes and layout', () => {
     fireEvent.click(toggle);
     const online = await within(panel).findByTestId('chat-history');
     await waitFor(() => expect(online).toHaveAttribute('data-mode', 'online'));
-    expect(within(panel).getByTestId('chat-title')).toHaveTextContent(
+    expect(within(panel).getByTestId('chat-history-header')).toHaveTextContent(
       'Online agent',
     );
     expect(
@@ -461,43 +466,31 @@ describe('ChatPanel modes and layout', () => {
     }
     renderPanel('welcome-tour', <Elsewhere />);
     const panel = await screen.findByTestId('chat-panel');
-    // Docked: "+" first among the header's buttons, and the history behind its own button.
     const newButton = await within(panel).findByTestId('chat-new-conversation');
-    expect(newButton.className).not.toMatch(/bg-primary/u);
     const headerButtons = within(newButton.closest('header')!).getAllByRole(
       'button',
     );
-    // After the title (which renames the conversation).
-    expect(headerButtons.indexOf(newButton)).toBe(1);
-    // Title, "+", history, switch, full width, close: no menu.
     expect(
       headerButtons.map((button) => button.getAttribute('aria-label')),
     ).toEqual([
+      'Back to list',
       null,
       'New conversation',
-      'Conversations',
-      'Switch to the online agent',
       'Full width',
+      'More',
       'Close',
     ]);
-    expect(
-      within(newButton.closest('header')!).queryByRole('button', {
-        name: 'More',
-      }),
-    ).toBeNull();
     fireEvent.click(within(panel).getByTestId('chat-expand'));
     await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'expanded'));
-    const split = within(panel).getByTestId('chat-split');
-    const header = within(split).getByTestId('chat-history-header');
-    expect(header).toHaveTextContent('Runner agents');
-    expect(within(header).getByTestId('chat-new-conversation')).toBeVisible();
-    expect(within(split).getByText('Fix the flaky sign-in test')).toBeVisible();
+    expect(within(panel).getByTestId('chat-history-header')).toHaveTextContent(
+      'Runner agents',
+    );
+    expect(within(panel).getByText('Fix the flaky sign-in test')).toBeVisible();
     expect(
-      within(split).getByRole('heading', {
+      within(panel).getByRole('heading', {
         name: 'Summarize PM-12 Welcome tour',
       }),
     ).toBeVisible();
-    expect(within(panel).queryByTestId('chat-history-button')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Go elsewhere' }));
     await waitFor(() => expect(panel).toHaveAttribute('data-mode', 'docked'));
   });
@@ -527,7 +520,11 @@ describe('ChatPanel modes and layout', () => {
     );
     // Ask agent started a new conversation; the sent message's context is in the one before it.
     fireEvent.click(screen.getByTestId('chat-history-button'));
-    fireEvent.click(await screen.findByText('Plan the onboarding release'));
+    fireEvent.click(
+      await within(screen.getByTestId('chat-history')).findByText(
+        'Plan the onboarding release',
+      ),
+    );
     fireEvent.click(
       await screen.findByRole('button', { name: 'Show context: Onboarding' }),
     );
@@ -735,3 +732,32 @@ it.each(['en-US', 'zh-CN'])(
     ).not.toBeInTheDocument();
   },
 );
+
+it('uses the linked panel independently with default generic details and a return to its list', async () => {
+  render(
+    <Shell>
+      <Open conversationId='welcome-tour' />
+      <LinkedChatPanel />
+    </Shell>,
+  );
+  const panel = await screen.findByTestId('chat-panel');
+  fireEvent.click(
+    await within(panel).findByRole('button', { name: 'Show details' }),
+  );
+  expect(await screen.findByTestId('chat-conversation-details')).toBeVisible();
+  fireEvent.click(
+    within(screen.getByTestId('chat-conversation-details')).getByRole(
+      'button',
+      { name: 'Close' },
+    ),
+  );
+  fireEvent.click(within(panel).getByRole('button', { name: 'Back to list' }));
+  expect(await within(panel).findByTestId('chat-history')).toBeVisible();
+  fireEvent.click(
+    within(panel).getAllByRole('button', { name: 'New conversation' })[0]!,
+  );
+  expect(
+    within(panel).queryByRole('button', { name: 'New conversation' }),
+  ).toBeNull();
+  expect(within(panel).getByRole('button', { name: 'Close' })).toBeVisible();
+});

@@ -51,11 +51,11 @@ function IssuePage(): ReactElement {
         The next new conversation starts with the agent used last.
       </p>
       <p className='text-sm text-muted-foreground'>
-        The switch in the panel&apos;s header moves between the online agent and
-        runner agents, each with its own conversations. Click a context chip to
-        see what it carries. Open the demo with <code>?agents=online</code> or{' '}
-        <code>?agents=runner</code> to see the panel with one kind of agent and
-        no switch.
+        The switch in the panel&apos;s list header moves between the online
+        agent and runner agents, each with its own conversations. Click a
+        context chip to see what it carries. Open the demo with{' '}
+        <code>?agents=online</code> or <code>?agents=runner</code> to see the
+        panel with one kind of agent and no switch.
       </p>
     </div>
   );

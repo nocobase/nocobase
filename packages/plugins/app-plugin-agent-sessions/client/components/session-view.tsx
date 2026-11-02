@@ -25,6 +25,7 @@ import {
   XIcon,
 } from 'lucide-react';
 import {
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -63,7 +64,11 @@ import {
   useTranscript,
   useUpdateSession,
 } from '../api.js';
-import { LinkOpenContext, useSessionSurface } from '../config.js';
+import {
+  AgentSessionsConfigContext,
+  LinkOpenContext,
+  useSessionSurface,
+} from '../config.js';
 import { NARROW_PX } from '../lib/size.js';
 import { valueName } from '../lib/choices.js';
 import { errorText, suggestionAction } from '../lib/errors.js';
@@ -537,6 +542,8 @@ function Header({
 }): ReactElement {
   const { t } = useTranslation();
   const surface = useSessionSurface();
+  const renderHeader = useContext(AgentSessionsConfigContext)?.renderHeader;
+  const navigate = useNavigate();
   const update = useUpdateSession(session.id);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(session.title);
@@ -578,6 +585,27 @@ function Header({
       </DropdownMenuItem>
     </>
   );
+
+  if (renderHeader)
+    return (
+      <>
+        {renderHeader({
+          panel: surface.panel,
+          title: session.title,
+          session,
+          agentName: agentName(session, computer),
+          computerName: computer?.name ?? t('session.removedComputer'),
+          computerOnline: computer?.online ?? false,
+          onRename: (title) => update.mutate({ title: title.trim() || null }),
+          onBack: surface.onBack ?? (() => navigate('/agent-sessions')),
+          onNew: surface.onNew ?? (() => navigate('/agent-sessions?new')),
+          onToggleDetails,
+          details,
+          onArchive: () =>
+            update.mutate({ archived: session.archivedAt === null }),
+        })}
+      </>
+    );
 
   return (
     <header

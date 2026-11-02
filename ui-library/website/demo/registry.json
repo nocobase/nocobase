@@ -892,6 +892,25 @@
           "target": "client/extensions/nocobase-list-feedback-demo/list-feedback.tsx"
         }
       ]
+    },
+    {
+      "name": "agent-chat-linked-demo",
+      "type": "registry:example",
+      "title": "Linked Agent Chat Demo",
+      "description": "Standalone linked conversation panel with list-first opening and native conversation details.",
+      "categories": ["agents"],
+      "dependencies": [
+        "@nocobase/app-plugin-agents@^1.0.0-beta.21",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": ["@nocobase/agent-chat-linked"],
+      "files": [
+        {
+          "path": "agents/agent-chat-linked.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-agent-chat-linked-demo/agent-chat-linked.tsx"
+        }
+      ]
     }
   ]
 }

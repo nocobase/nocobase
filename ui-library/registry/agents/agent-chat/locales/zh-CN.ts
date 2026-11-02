@@ -1,5 +1,4 @@
 import type { AgentChatLocale } from './en-US.js';
-
 const agentChatZhCN: AgentChatLocale = {
   chat: {
     webSearch: {
@@ -55,7 +54,6 @@ const agentChatZhCN: AgentChatLocale = {
       unknown: '结果或历史保存尚未确认。请刷新历史后再决定是否重新发送。',
       effectReview: '部分操作可能已完成，再次执行前请核对结果。',
     },
-
     executionFailed:
       '执行失败。再次执行前请查看已保存历史，核对可能已完成的操作。',
     historicalReadOnly: '历史会话仅供查看，请新建聊天以继续。',
@@ -314,7 +312,43 @@ const agentChatZhCN: AgentChatLocale = {
         usage: '用量',
       },
     },
+    backToList: '返回列表',
+    showDetails: '显示详情',
+    hideDetails: '隐藏详情',
+    detailsTitle: '会话详情',
+    sessionDetails: '会话',
+    runtime: '运行环境',
+    unboundRuntime: '尚未绑定',
+    agent: 'Agent',
+    started: '开始',
+    usageTitle: '用量',
+    record: '记录',
+    recordBody: '完整记录保存在这里，只有你能看到。',
+    relatedWork: '关联工作',
+    unlink: '取消关联',
+    unlinkFailed: '取消关联失败。',
+    expandPanel: '展开为宽面板',
+    restorePanel: '还原面板',
+    delete: '删除',
+    deleteDialog: {
+      menu: '删除',
+      title: '删除“{{title}}”？',
+      description:
+        '它的消息、文件和任务关联会被永久删除，仍在进行的运行会被停止。任务本身会保留。此操作无法撤销。',
+      cancel: '取消',
+      confirm: '删除',
+      done: '已删除“{{title}}”',
+      body: '对话中的消息、文件和关联会永久删除，正在执行的运行将停止。关联记录会保留。此操作无法撤销。',
+    },
+    usage: {
+      title: '用量',
+      context: '上下文 {{used}} / {{size}} tokens（{{percent}}%）',
+      window: '上下文窗口',
+      input: '输入',
+      cached: '缓存',
+      output: '输出',
+      cost: '费用',
+    },
   },
 };
-
 export default agentChatZhCN;

@@ -1685,3 +1685,22 @@ export {
   chatIsRunning,
 } from '../../../../packages/plugins/app-plugin-agents/client/chat/feedback.js';
 export { useChatScroll } from '../../../../packages/plugins/app-plugin-agents/client/chat/use-chat-scroll.js';
+
+// The linked-panel recipe reuses the public query cache for a passive usage snapshot.
+import { QueryClient } from '@tanstack/react-query';
+export { chatKeys } from '../../../../packages/plugins/app-plugin-agents/client/chat/keys.js';
+const linkedPanelQueries = new QueryClient();
+export const agentsQueryClient: typeof Chat.agentsQueryClient = () =>
+  linkedPanelQueries;
+export const useChatApi: typeof Chat.useChatApi = () =>
+  ({
+    usage: async () => ({
+      inputTokens: 1200,
+      cacheReadTokens: 8000,
+      outputTokens: 300,
+      runs: 1,
+      context: { used: 50000, size: 200000 },
+      costUsd: null,
+    }),
+  }) as unknown as ReturnType<typeof Chat.useChatApi>;
+export { isChatShortcut } from '../../../../packages/plugins/app-plugin-agents/client/chat/panel-state.js';

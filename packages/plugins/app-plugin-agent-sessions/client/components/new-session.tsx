@@ -22,6 +22,7 @@ import {
   LaptopIcon,
 } from 'lucide-react';
 import {
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -59,7 +60,7 @@ import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
 import { sessionMemoryKey, useSessionMemory } from '../use-session-memory.js';
-import { useSessionSurface } from '../config.js';
+import { AgentSessionsConfigContext, useSessionSurface } from '../config.js';
 import { useSubmission } from '../use-submission.js';
 import { SubmissionNotice } from './submission-notice.js';
 import {
@@ -82,7 +83,30 @@ interface Choice {
   readonly projectId?: string | undefined;
 }
 
-export function NewSession({
+interface NewSessionProps {
+  readonly onStart?: () => void;
+  readonly deferDiscovery?: boolean;
+}
+export function NewSession(props: NewSessionProps): ReactElement {
+  const surface = useSessionSurface();
+  const renderHeader = useContext(AgentSessionsConfigContext)?.renderHeader;
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  return (
+    <div className='flex h-full min-h-0 flex-col'>
+      {renderHeader?.({
+        panel: surface.panel,
+        title: t('list.new'),
+        onBack: surface.onBack ?? (() => navigate('/agent-sessions')),
+      })}
+      <div className='min-h-0 flex-1'>
+        <NewSessionContent {...props} />
+      </div>
+    </div>
+  );
+}
+
+function NewSessionContent({
   onStart,
   deferDiscovery = false,
 }: {
@@ -92,6 +116,9 @@ export function NewSession({
 }): ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const useCustomHeader = Boolean(
+    useContext(AgentSessionsConfigContext)?.renderHeader,
+  );
   const surface = useSessionSurface();
   const toaster = useToaster();
   const computers = useComputers();
@@ -309,7 +336,7 @@ export function NewSession({
             !surface.panel && '@md/agent-session:px-6 @md/agent-session:pt-24',
           )}
         >
-          {!surface.panel && <BackLink />}
+          {!surface.panel && !useCustomHeader && <BackLink />}
           {computer?.outdatedBridge && (
             <OutdatedBridgeNotice computer={computer} />
           )}
