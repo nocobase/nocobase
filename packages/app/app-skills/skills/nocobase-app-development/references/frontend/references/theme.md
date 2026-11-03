@@ -200,7 +200,7 @@ Each adapter has this form:
 ### Scope of the rules
 
 - Each preset's light rule defines every color and every non-color token. Its dark rule defines every color and may override non-color values; anything it leaves out comes from the preset's light rule.
-- The same declarations go on the preview selectors `.theme-preview[data-theme='<id>']` and `:root.dark .theme-preview[data-theme='<id>']`, aliases included. A custom property inherits its resolved value, so an alias such as `--font-heading: var(--font-sans)` or `--sidebar: var(--card)` declared only for the page would carry the page's preset into another preset's thumbnail. Listing the preview selector in the same rule, as the template files do, keeps the two identical.
+- The same declarations go on the preview selectors `.theme-preview[data-theme='<id>']` and `:root.dark .theme-preview[data-theme='<id>']`, aliases included. A custom property inherits its resolved value, so an alias such as `--font-heading: var(--font-sans)` or `--sidebar: var(--card)` declared only for the page would carry the page's preset into an isolated preview of another preset. Listing the preview selector in the same rule, as the template files do, keeps the two identical.
 - Do not reset whole Tailwind namespaces, and do not add per-page overrides to create a theme.
 - Extend the shared token contract only after design approval. An approved token needs a Tailwind mapping in `client/styles.css`, a value in every preset rule, and an entry in the token lists of `tests/client/theme-tokens.test.ts`. Do not change `components.json`, routes, component props or plugin APIs as a side effect of theme work.
 
@@ -210,11 +210,10 @@ Some values stay fixed on purpose. Know which ones, and keep your own explicit.
 
 - Arbitrary values (`text-[14px]`, `mt-[7px]`, `rounded-[…]`), container widths (`max-w-2xl`, `w-xs`), percentages and viewport units do not follow the theme, and neither do `rounded-xs`, `rounded-full` or `shadow-none`. Explicit line heights (`leading-*`, `text-sm/6`) replace the preset's line heights.
 - The template's own exceptions:
-  - The Appearance popover panel is `w-xs max-w-[calc(100vw-2rem)]`, with a comment saying its width stays independent of density while its content uses tokens.
   - The small sizes of buttons, toggles and native selects cap their radius (see "Radius").
   - `index.html` sets `<meta name="theme-color" content="#171717">`, which colors the browser UI on some mobile browsers and does not follow the theme; change it by hand when a preset's page color changes noticeably.
   - `index.html` draws a loading indicator with literal colors that follow only `prefers-color-scheme`. It renders before the client restores the preferences, so it cannot use the tokens.
-- When a size must stay fixed, make it visible: a comment next to the value saying why, as `client/theme/theme-settings.tsx` does, and an entry in the design file, as guideline F7 in [`../ui-guidelines.md`](../ui-guidelines.md) requires. Colors, font sizes and spacing do not qualify.
+- When a size must stay fixed, make it visible: a comment next to the value saying why, and an entry in the design file, as guideline F7 in [`../ui-guidelines.md`](../ui-guidelines.md) requires. Colors, font sizes and spacing do not qualify.
 
 ### Constraints from the token test
 
@@ -346,7 +345,7 @@ The steps below add a preset with the id `forest`.
 
    `ThemePresetId` is derived from the array, so the new id is accepted wherever a preset id is typed. `defaultThemePreset` does not decide the fallback, and no template code reads it; keep it equal to the first entry.
 
-5. **Add the label** to `appearance.themes` in every application locale file, spreading the system group as [`i18n.md`](i18n.md) describes; removing or renaming a template preset rewords its key after the spread rather than editing `client/locales/system/`. `zh-CN.ts` is typed from `en-US.ts`, so the two must have the same keys or the type check fails; a label missing from both fails `tests/client/app-locale-coverage.test.ts`, which reads the registry's `labelKey` (without the label the popover would show the capitalized id). Give each preset a distinct label: it is the accessible name of the preset's radio option. Translation rules are in [`i18n.md`](i18n.md).
+5. **Add the label** to `appearance.themes` in every application locale file, spreading the system group as [`i18n.md`](i18n.md) describes; removing or renaming a template preset rewords its key after the spread rather than editing `client/locales/system/`. `zh-CN.ts` is typed from `en-US.ts`, so the two must have the same keys or the type check fails; a label missing from both fails `tests/client/app-locale-coverage.test.ts`, which reads the registry's `labelKey` (without the label the submenu would show the capitalized id). Give each preset a distinct label: it is the accessible name of the preset's radio option. Translation rules are in [`i18n.md`](i18n.md).
 
    ```ts
    // client/locales/en-US.ts
@@ -372,8 +371,8 @@ The steps below add a preset with the id `forest`.
    };
    ```
 
-6. **Leave the popover alone.** The Appearance popover lists every registered preset in registry order, takes each label from the locale, and draws each thumbnail from the same CSS variables through `.theme-preview` and `data-theme`. Do not write a second palette in JavaScript. The presets sit in a two-column grid without search, so the popover suits a handful of presets.
-7. **Check it.** Add the resources and the Chinese and system fallbacks for any new font. In light and dark, check body text, headings, code, long text, controls, navigation, charts where present, spacing, corners and shadows: text meets WCAG AA contrast (guideline A5; 4.5:1 for normal text), nothing is clipped, and keyboard focus is visible. The thumbnail shows colors, not typography or layout. Then run the checks in [section 7](#7-verify).
+6. **Reuse the Appearance submenu.** The account menu lists every registered preset as a menu radio item in registry order and takes each label from the locale. Keep it inside the account menu; guest and optional pages inherit the saved theme without a separate appearance entry. Do not add a second theme selector or palette in JavaScript.
+7. **Check it.** Add the resources and the Chinese and system fallbacks for any new font. In light and dark, check body text, headings, code, long text, controls, navigation, charts where present, spacing, corners and shadows: text meets WCAG AA contrast (guideline A5; 4.5:1 for normal text), nothing is clipped, and keyboard focus is visible. Then run the checks in [section 7](#7-verify).
 
 ## 4. Change or remove a preset
 
@@ -390,7 +389,7 @@ The steps below add a preset with the id `forest`.
 A user makes two independent choices, each saved in the browser: the color mode (Light, Dark or System) and the preset.
 
 - `next-themes` owns the color mode: the `light` or `dark` class on `<html>` and its `color-scheme`. A preset only sets `data-theme`. Do not make a preset force a mode. Keep DOM changes in `client/theme/`.
-- The Appearance popover (`client/theme/theme-settings.tsx`) sits in the header of the App layout (`client/layouts/components/header-actions.tsx`) and in the top-right corner of guest and optional pages (`client/routing/standalone-page-layout.tsx`). It opens on hover, click or keyboard. A choice applies and is saved at once, the panel stays open for further changes, and Escape closes it and returns focus to the trigger. Its copy comes from `appearance.title`, `appearance.mode`, `appearance.preset`, `appearance.light`, `appearance.dark`, `appearance.system` and `appearance.themes.<id>`. The hover and dismissal rules for header entries are in [section 2 of `shell.md`](shell.md#2-header-icon-buttons).
+- The Appearance submenu (`client/theme/theme-settings.tsx`) lives inside the account menu (`client/layouts/components/user-menu.tsx`), whose avatar opens on hover, click or keyboard. A choice applies and is saved at once, and the submenu stays open for further changes. Escape first closes the submenu and returns focus to Appearance, then closes the account menu and returns focus to the avatar. Guest and optional pages (`client/routing/standalone-page-layout.tsx`) inherit saved preferences without a theme entry. The submenu's copy comes from `appearance.title`, `appearance.mode`, `appearance.preset`, `appearance.light`, `appearance.dark`, `appearance.system` and `appearance.themes.<id>`.
 - Code that needs a choice reads it from the provider. `useTheme()` from `next-themes`, also re-exported by `client/theme/index.ts`, gives `theme` (`light`, `dark` or `system`), `resolvedTheme` (the mode actually applied) and `setTheme`. `useThemePreset()` from `client/theme/theme-context.ts` gives `preset` and `setPreset`. Both need `AppThemeProvider`, and `useThemePreset()` throws outside it. Do not read or write the storage keys or the `<html>` attributes yourself, and do not keep a copy of a choice in component state.
 - The storage keys come from `resolveAppBase()`, the deployment base path, not from the current route or the first path segment: `/crm/` becomes `crm`, `/team/crm/` becomes `team%2Fcrm`, and the root becomes `%2F`. The keys are `nocobase:<scope>:theme:color-scheme` and `nocobase:<scope>:theme:preset`. They are browser-local and per application, not synchronized with the account: two applications on the same origin keep separate choices, and tabs of the same application follow each other through `storage` events.
 - `client/index.tsx` calls `initializeTheme()` before the application starts. It applies the saved or default choices to `<html>` (class, `data-theme` and `color-scheme`) and removes an invalid saved mode before `next-themes` can read it. No script runs before the first paint; the loading indicator in `index.html` follows only `prefers-color-scheme`.
