@@ -249,6 +249,8 @@ export interface AgentChatLocale {
     };
     readonly history: {
       readonly title: string;
+      readonly fold: string;
+      readonly unfold: string;
       readonly search: string;
       readonly show: string;
       readonly active: string;
@@ -620,6 +622,8 @@ const agentChatEnUS: AgentChatLocale = {
     },
     history: {
       title: 'Conversations',
+      fold: 'Fold the conversation list',
+      unfold: 'Expand the conversation list',
       search: 'Search conversations',
       show: 'Show',
       active: 'Open',

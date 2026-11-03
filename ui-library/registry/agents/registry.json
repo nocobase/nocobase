@@ -345,7 +345,7 @@
         "@base-ui/react@^1.7.0",
         "@tanstack/react-query@^5.90.21"
       ],
-      "registryDependencies": ["@nocobase/agent-chat", "button"],
+      "registryDependencies": ["@nocobase/agent-chat", "button", "tabs"],
       "docs": "Render LinkedChatPanel under the same ChatProvider as the simple ChatPanel. Use linked launchers for list-first opening; explicit conversation/new entry keeps its intent. slots[kind] renders a related-work section and renderSummary provides application-owned status/progress. renderConversation and renderList preserve application controllers. Passive details reuse cached conversation and usage snapshots; no polling is added.",
       "files": [
         {

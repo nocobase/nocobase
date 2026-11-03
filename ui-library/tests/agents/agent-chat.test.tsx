@@ -881,7 +881,7 @@ it.each([
   },
 );
 
-it('ends the expanded linked panel with restore and close in the conversation header only, as Studio does', async () => {
+it('gives the expanded linked panel the list column Studio has: tabs, new, fold to a rail and back', async () => {
   render(
     <Shell>
       <Open conversationId='welcome-tour' />
@@ -891,14 +891,50 @@ it('ends the expanded linked panel with restore and close in the conversation he
   const panel = await screen.findByTestId('chat-panel');
   fireEvent.click(await within(panel).findByTestId('chat-expand'));
   const history = await within(panel).findByTestId('chat-history');
-  const column = history.closest('[data-panel-history]')!;
-  expect(
-    within(column as HTMLElement).queryByRole('button', { name: 'Close' }),
-  ).toBeNull();
-  const header = within(panel).getByTestId('conversation-header');
-  const labels = within(header)
+  const column = history.closest<HTMLElement>('[data-panel-history]')!;
+  const list = within(column);
+  // Tabs for the two kinds of agent, then New, then Fold; no Close beside the conversation.
+  expect(list.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+    'Online agent',
+    'Runner agents',
+  ]);
+  const buttons = list
     .getAllByRole('button')
-    .map((button) => button.getAttribute('aria-label'))
-    .filter(Boolean);
-  expect(labels.slice(-3)).toEqual(['Restore panel', 'More', 'Close']);
+    .filter((button) => button.getAttribute('role') !== 'tab')
+    .map((button) => button.getAttribute('aria-label'));
+  expect(buttons.slice(0, 2)).toEqual([
+    'New conversation',
+    'Fold the conversation list',
+  ]);
+  expect(list.queryByRole('button', { name: 'Close' })).toBeNull();
+  const header = within(panel).getByTestId('conversation-header');
+  expect(
+    within(header)
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label'))
+      .filter(Boolean)
+      .slice(-3),
+  ).toEqual(['Restore panel', 'More', 'Close']);
+
+  fireEvent.click(list.getByTestId('chat-history-fold'));
+  expect(within(panel).queryByTestId('chat-history')).toBeNull();
+  const rail = within(panel).getByTestId('chat-history-rail');
+  expect(
+    within(rail)
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label')),
+  ).toEqual(['Expand the conversation list', 'New conversation']);
+  fireEvent.click(within(rail).getByTestId('chat-history-unfold'));
+  expect(await within(panel).findByTestId('chat-history')).toBeVisible();
+
+  // Restored to the docked panel, the list is the whole panel again and ends with Close.
+  fireEvent.click(within(panel).getByTestId('chat-expand'));
+  fireEvent.click(within(panel).getByRole('button', { name: 'Back to list' }));
+  expect(
+    within(await within(panel).findByTestId('chat-history')).getAllByRole(
+      'button',
+    ).length,
+  ).toBeGreaterThan(0);
+  expect(within(panel).getByRole('button', { name: 'Close' })).toBeVisible();
+  expect(within(panel).queryByTestId('chat-history-fold')).toBeNull();
 });
