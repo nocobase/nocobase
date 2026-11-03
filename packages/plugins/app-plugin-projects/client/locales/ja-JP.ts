@@ -367,6 +367,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       added: 'アカウントを持っています — プロジェクトに追加されました',
       alreadyMember: 'すでに会員です',
       notSent: 'メールが送信されませんでした',
+      noEmailChannel: 'メール未送信：メールチャネルが設定されていません',
+      deliveryFailed: 'メール未送信：メールの送信に失敗しました',
       sent: 'メールを送信しました',
     },
     pending: '待っています',

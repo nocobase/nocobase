@@ -343,6 +343,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       added: '有帳戶 — 新增至專案',
       alreadyMember: '已經是會員',
       notSent: '電子郵件未傳送',
+      noEmailChannel: '郵件未傳送：尚未設定郵件管道',
+      deliveryFailed: '郵件未傳送：郵件傳送失敗',
       sent: '電子郵件已傳送',
     },
     pending: '等待',

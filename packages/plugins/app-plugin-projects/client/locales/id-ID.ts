@@ -368,6 +368,8 @@ const idID: LocaleResource<typeof enUS> = {
       added: 'Memiliki akun — ditambahkan ke proyek',
       alreadyMember: 'Sudah menjadi anggota',
       notSent: 'Email tidak terkirim',
+      noEmailChannel: 'Email tidak terkirim: kanal email belum dikonfigurasi',
+      deliveryFailed: 'Email tidak terkirim: pengiriman email gagal',
       sent: 'Email terkirim',
     },
     pending: 'Menunggu',
