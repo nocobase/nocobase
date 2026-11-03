@@ -16,9 +16,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   AppThemeProvider,
-  ThemeSettings,
+  ThemeSettings as ThemeMenu,
   useTheme,
 } from '../../client/theme/index.ts';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '../../client/components/ui/dropdown-menu';
+
+function ThemeSettings(): ReactElement {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>Account</DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <ThemeMenu />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 /**
  * Renders the client configuration the server would, mounted at `/crm` so the theme's storage keys are
@@ -38,16 +55,62 @@ function renderClientConfig(
   document.head.append(element);
 }
 
-/**
- * Opens the appearance popover from the keyboard. Its trigger opens on hover, and a pointer press landing more than
- * Base UI's 500 ms patient-click threshold after that, as on a loaded runner, closes it again.
- */
+/** Opens the account menu and its Appearance submenu using the keyboard. */
 async function openAppearance(name = 'Appearance'): Promise<void> {
-  act(() => screen.getByRole('button', { name }).focus());
+  act(() => screen.getByRole('button', { name: 'Account' }).focus());
   await userEvent.keyboard('{Enter}');
+  act(() => screen.getByRole('menuitem', { name }).focus());
+  await userEvent.keyboard('{ArrowRight}');
 }
 
 describe('app client theme', () => {
+  it.each([
+    ['Light', 'light', 'Compact', 'compact'],
+    ['Dark', 'dark', 'Compact', 'compact'],
+    ['System', 'system', 'Compact', 'compact'],
+    ['Light', 'light', 'Default', 'default'],
+    ['Dark', 'dark', 'Default', 'default'],
+    ['System', 'system', 'Default', 'default'],
+  ])(
+    'saves and restores %s mode with %s / %s density',
+    async (modeLabel, mode, presetLabel, preset) => {
+      const settings = (
+        <AppThemeProvider>
+          <ThemeSettings />
+        </AppThemeProvider>
+      );
+      const view = render(settings);
+      await openAppearance();
+      await userEvent.click(
+        screen.getByRole('menuitemradio', { name: modeLabel }),
+      );
+      await userEvent.click(
+        screen.getByRole('menuitemradio', { name: presetLabel }),
+      );
+      expect(localStorage.getItem('nocobase:crm:theme:color-scheme')).toBe(
+        mode,
+      );
+      expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe(preset);
+      view.unmount();
+      initializeTheme(
+        '/crm/',
+        themePresets.map(({ id }) => id),
+      );
+      render(settings);
+      await openAppearance();
+      expect(document.documentElement).toHaveClass(
+        mode === 'light' ? 'light' : 'dark',
+      );
+      expect(document.documentElement).toHaveAttribute('data-theme', preset);
+      expect(
+        screen.getByRole('menuitemradio', { name: modeLabel }),
+      ).toHaveAttribute('aria-checked', 'true');
+      expect(
+        screen.getByRole('menuitemradio', { name: presetLabel }),
+      ).toHaveAttribute('aria-checked', 'true');
+    },
+  );
+
   it.each([
     ['en-US', 'Appearance', 'Spacious'],
     ['zh-CN', '外观', '宽松'],
@@ -69,27 +132,31 @@ describe('app client theme', () => {
         </I18nProvider>,
       );
       await openAppearance(appearance);
-      const option = await screen.findByRole('radio', { name: label });
+      const option = await screen.findByRole('menuitemradio', { name: label });
       await userEvent.click(option);
-      expect(option).toBeChecked();
+      expect(option).toHaveAttribute('aria-checked', 'true');
       expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('default');
     },
   );
 
-  it('changes presets with arrow keys and returns focus on Escape', async () => {
+  it('selects a preset by keyboard and returns focus on Escape', async () => {
     render(
       <AppThemeProvider>
         <ThemeSettings />
       </AppThemeProvider>,
     );
     await openAppearance();
-    const compact = await screen.findByRole('radio', { name: 'Compact' });
+    const compact = await screen.findByRole('menuitemradio', {
+      name: 'Compact',
+    });
     act(() => compact.focus());
-    await userEvent.keyboard('{ArrowRight}');
-    expect(screen.getByRole('radio', { name: 'Default' })).toBeChecked();
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Default' }),
+    ).toHaveAttribute('aria-checked', 'true');
     expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('default');
     await userEvent.keyboard('{Escape}');
-    expect(screen.getByRole('button', { name: 'Appearance' })).toHaveFocus();
+    expect(screen.getByRole('menuitem', { name: 'Appearance' })).toHaveFocus();
   });
 
   it('falls back from the removed Ant Design preset without changing mode', async () => {
@@ -102,9 +169,11 @@ describe('app client theme', () => {
     );
     await openAppearance();
     expect(
-      screen.queryByRole('radio', { name: 'Ant-design' }),
+      screen.queryByRole('menuitemradio', { name: 'Ant-design' }),
     ).not.toBeInTheDocument();
-    expect(await screen.findByRole('radio', { name: 'Compact' })).toBeChecked();
+    expect(
+      await screen.findByRole('menuitemradio', { name: 'Compact' }),
+    ).toHaveAttribute('aria-checked', 'true');
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     expect(document.documentElement).toHaveClass('light');
   });
@@ -117,11 +186,13 @@ describe('app client theme', () => {
     );
     await openAppearance();
     expect(
-      screen.queryByRole('radio', { name: 'Ocean' }),
+      screen.queryByRole('menuitemradio', { name: 'Ocean' }),
     ).not.toBeInTheDocument();
-    expect(await screen.findByRole('radio', { name: 'Compact' })).toBeChecked();
     expect(
-      await screen.findByRole('radio', { name: 'Default' }),
+      await screen.findByRole('menuitemradio', { name: 'Compact' }),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      await screen.findByRole('menuitemradio', { name: 'Default' }),
     ).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
   });
@@ -220,10 +291,10 @@ describe('app client theme', () => {
       );
       await openAppearance();
       expect(
-        await screen.findByRole('radio', {
+        await screen.findByRole('menuitemradio', {
           name: expected === 'compact' ? 'Compact' : 'Default',
         }),
-      ).toBeChecked();
+      ).toHaveAttribute('aria-checked', 'true');
       expect(document.documentElement).toHaveAttribute('data-theme', expected);
       expect(localStorage.getItem(key)).toBe(saved ?? null);
     },
@@ -336,12 +407,14 @@ describe('app client theme', () => {
 
     await openAppearance();
     await userEvent.click(
-      await screen.findByRole('radio', { name: 'Compact' }),
+      await screen.findByRole('menuitemradio', { name: 'Compact' }),
     );
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     expect(document.documentElement).toHaveClass('dark');
     expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('compact');
-    await userEvent.click(await screen.findByRole('radio', { name: 'Light' }));
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Light' }),
+    );
     expect(document.documentElement).toHaveClass('light');
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     fireEvent(
@@ -359,10 +432,14 @@ describe('app client theme', () => {
         newValue: 'default',
       }),
     );
-    expect(await screen.findByRole('radio', { name: 'Default' })).toBeChecked();
+    expect(
+      await screen.findByRole('menuitemradio', { name: 'Default' }),
+    ).toHaveAttribute('aria-checked', 'true');
     await userEvent.keyboard('{Escape}');
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Appearance' })).toHaveFocus(),
+      expect(
+        screen.getByRole('menuitem', { name: 'Appearance' }),
+      ).toHaveFocus(),
     );
   });
 
@@ -397,9 +474,11 @@ describe('app client theme', () => {
     );
     await openAppearance();
     await userEvent.click(
-      await screen.findByRole('radio', { name: 'Default' }),
+      await screen.findByRole('menuitemradio', { name: 'Default' }),
     );
-    await userEvent.click(await screen.findByRole('radio', { name: 'Light' }));
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Light' }),
+    );
     expect(document.documentElement).toHaveAttribute('data-theme', 'default');
     expect(document.documentElement).toHaveClass('light');
   });
@@ -412,7 +491,7 @@ describe('app client theme', () => {
     );
     await openAppearance();
     await userEvent.click(
-      await screen.findByRole('radio', { name: 'Default' }),
+      await screen.findByRole('menuitemradio', { name: 'Default' }),
     );
     fireEvent(
       window,
@@ -438,7 +517,9 @@ describe('app client theme', () => {
       }),
     );
     await waitFor(() => expect(document.documentElement).toHaveClass('dark'));
-    expect(await screen.findByRole('radio', { name: 'System' })).toBeChecked();
+    expect(
+      await screen.findByRole('menuitemradio', { name: 'System' }),
+    ).toHaveAttribute('aria-checked', 'true');
   });
 });
 

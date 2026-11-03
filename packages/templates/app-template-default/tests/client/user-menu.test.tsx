@@ -1,12 +1,26 @@
+import { AppThemeProvider } from '../../client/theme/index.js';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, it } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 
 import { UserMenu } from '../../client/layouts/components/user-menu.js';
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
 
+// jsdom has no media queries; the real account menu includes the theme provider.
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addListener() {},
+    removeListener() {},
+  }));
+});
+
 it('uses CJK name endings in the avatar while retaining the full account name and picture', async () => {
-  const view = await renderAuthenticatedClient(<UserMenu />);
+  const view = await renderAuthenticatedClient(
+    <AppThemeProvider>
+      <UserMenu />
+    </AppThemeProvider>,
+  );
   const user = userEvent.setup();
   const trigger = screen.getByRole('button', { name: 'Open account menu' });
   await user.tab();

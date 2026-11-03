@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
 
+import { ThemeSettings } from '../../theme/index.js';
 import { LanguageSwitcher } from './language-switcher.js';
 
 export function UserMenu(): ReactElement {
@@ -76,6 +77,7 @@ export function UserMenu(): ReactElement {
         </div>
         <DropdownMenuSeparator />
         <LanguageSwitcher />
+        <ThemeSettings />
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={isLoggingOut}
