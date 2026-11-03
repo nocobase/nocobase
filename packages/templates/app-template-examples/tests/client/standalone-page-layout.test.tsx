@@ -39,7 +39,7 @@ it.each(['/login', '/device'])(
       screen.getByRole('heading', { name: 'Standalone page' }),
     ).toBeVisible();
     expect(
-      screen.queryByRole('button', { name: 'Appearance' }),
+      screen.queryByRole('button', { name: 'Theme' }),
     ).not.toBeInTheDocument();
   },
 );

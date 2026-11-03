@@ -30,7 +30,7 @@ export function ThemeSettings(): ReactElement {
     <DropdownMenuSub>
       <DropdownMenuSubTrigger className='gap-2'>
         <Palette aria-hidden='true' className='size-4' />
-        {t('appearance.title', { defaultValue: 'Appearance' })}
+        {t('appearance.title', { defaultValue: 'Theme' })}
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent className='min-w-44'>
         <DropdownMenuRadioGroup

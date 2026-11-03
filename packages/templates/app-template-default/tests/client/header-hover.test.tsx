@@ -81,11 +81,11 @@ it('offers appearance only inside the account menu with keyboard selection', asy
     </AppThemeProvider>,
   );
   expect(
-    screen.queryByRole('button', { name: 'Appearance' }),
+    screen.queryByRole('button', { name: 'Theme' }),
   ).not.toBeInTheDocument();
   await user.tab();
   await user.keyboard('{Enter}');
-  const appearance = screen.getByRole('menuitem', { name: 'Appearance' });
+  const appearance = screen.getByRole('menuitem', { name: 'Theme' });
   appearance.focus();
   await user.keyboard('{ArrowRight}');
   expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);

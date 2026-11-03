@@ -4,4 +4,4 @@
 "@nocobase/app-skills": patch
 ---
 
-Move appearance settings into the account menu in both application templates, preserving color modes, theme presets, and saved preferences.
+Move theme settings into the account menu in both application templates, preserving color modes, theme presets, and saved preferences.

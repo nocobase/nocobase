@@ -20,7 +20,7 @@ Navigation groups retain their expanded or collapsed state while the navigation 
 
 ## Account menu and session
 
-Appearance lives in the account menu as a submenu beside Language, rather than a separate header action. `client/theme/theme-settings.tsx` renders menu radio groups for color mode and theme preset; the existing theme providers own selection, persistence and restoration. Keep it inside `DropdownMenuContent` for pointer, touch and keyboard navigation.
+Theme lives in the account menu as a submenu beside Language, rather than a separate header action. `client/theme/theme-settings.tsx` renders menu radio groups for color mode and theme preset; the existing theme providers own selection, persistence and restoration. Keep it inside `DropdownMenuContent` for pointer, touch and keyboard navigation.
 
 The account menu checks Better Auth sign-out results before refreshing the session and shows a localized error toast for API or network failures. Preserve this behavior when upgrading the shell; navigation alone does not revoke a session.
 

@@ -157,7 +157,7 @@ const systemEnUS = {
     reliability: '<brand>NocoBase</brand> keeps it reliable.',
   },
   appearance: {
-    title: 'Appearance',
+    title: 'Theme',
     mode: 'Color mode',
     preset: 'Theme',
     light: 'Light',

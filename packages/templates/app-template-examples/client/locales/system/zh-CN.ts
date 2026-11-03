@@ -146,7 +146,7 @@ const systemZhCN: SystemResource = {
     reliability: '<brand>NocoBase</brand> 保障可靠',
   },
   appearance: {
-    title: '外观',
+    title: '主题',
     mode: '颜色模式',
     preset: '主题',
     light: '浅色',

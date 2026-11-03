@@ -55,8 +55,8 @@ function renderClientConfig(
   document.head.append(element);
 }
 
-/** Opens the account menu and its Appearance submenu using the keyboard. */
-async function openAppearance(name = 'Appearance'): Promise<void> {
+/** Opens the account menu and its Theme submenu using the keyboard. */
+async function openTheme(name = 'Theme'): Promise<void> {
   act(() => screen.getByRole('button', { name: 'Account' }).focus());
   await userEvent.keyboard('{Enter}');
   act(() => screen.getByRole('menuitem', { name }).focus());
@@ -80,7 +80,7 @@ describe('app client theme', () => {
         </AppThemeProvider>
       );
       const view = render(settings);
-      await openAppearance();
+      await openTheme();
       await userEvent.click(
         screen.getByRole('menuitemradio', { name: modeLabel }),
       );
@@ -97,7 +97,7 @@ describe('app client theme', () => {
         themePresets.map(({ id }) => id),
       );
       render(settings);
-      await openAppearance();
+      await openTheme();
       expect(document.documentElement).toHaveClass(
         mode === 'light' ? 'light' : 'dark',
       );
@@ -112,8 +112,8 @@ describe('app client theme', () => {
   );
 
   it.each([
-    ['en-US', 'Appearance', 'Spacious'],
-    ['zh-CN', '外观', '宽松'],
+    ['en-US', 'Theme', 'Spacious'],
+    ['zh-CN', '主题', '宽松'],
   ])(
     'labels the default preset without implying default selection (%s)',
     async (locale, appearance, label) => {
@@ -131,7 +131,7 @@ describe('app client theme', () => {
           </AppThemeProvider>
         </I18nProvider>,
       );
-      await openAppearance(appearance);
+      await openTheme(appearance);
       const option = await screen.findByRole('menuitemradio', { name: label });
       await userEvent.click(option);
       expect(option).toHaveAttribute('aria-checked', 'true');
@@ -145,7 +145,7 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await openAppearance();
+    await openTheme();
     const compact = await screen.findByRole('menuitemradio', {
       name: 'Compact',
     });
@@ -156,7 +156,7 @@ describe('app client theme', () => {
     ).toHaveAttribute('aria-checked', 'true');
     expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('default');
     await userEvent.keyboard('{Escape}');
-    expect(screen.getByRole('menuitem', { name: 'Appearance' })).toHaveFocus();
+    expect(screen.getByRole('menuitem', { name: 'Theme' })).toHaveFocus();
   });
 
   it('falls back from the removed Ant Design preset without changing mode', async () => {
@@ -167,7 +167,7 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await openAppearance();
+    await openTheme();
     expect(
       screen.queryByRole('menuitemradio', { name: 'Ant-design' }),
     ).not.toBeInTheDocument();
@@ -184,7 +184,7 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await openAppearance();
+    await openTheme();
     expect(
       screen.queryByRole('menuitemradio', { name: 'Ocean' }),
     ).not.toBeInTheDocument();
@@ -289,7 +289,7 @@ describe('app client theme', () => {
           <ThemeSettings />
         </AppThemeProvider>,
       );
-      await openAppearance();
+      await openTheme();
       expect(
         await screen.findByRole('menuitemradio', {
           name: expected === 'compact' ? 'Compact' : 'Default',
@@ -405,7 +405,7 @@ describe('app client theme', () => {
       </AppThemeProvider>,
     );
 
-    await openAppearance();
+    await openTheme();
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'Compact' }),
     );
@@ -437,9 +437,7 @@ describe('app client theme', () => {
     ).toHaveAttribute('aria-checked', 'true');
     await userEvent.keyboard('{Escape}');
     await waitFor(() =>
-      expect(
-        screen.getByRole('menuitem', { name: 'Appearance' }),
-      ).toHaveFocus(),
+      expect(screen.getByRole('menuitem', { name: 'Theme' })).toHaveFocus(),
     );
   });
 
@@ -472,7 +470,7 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await openAppearance();
+    await openTheme();
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'Default' }),
     );
@@ -489,7 +487,7 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await openAppearance();
+    await openTheme();
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'Default' }),
     );
