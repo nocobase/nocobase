@@ -267,6 +267,28 @@ export interface AgentChatLocale {
       readonly unread: string;
       readonly actions: string;
     };
+    readonly list: {
+      readonly label: string;
+      readonly archivedTitle: string;
+      readonly back: string;
+      readonly all: string;
+      readonly filters: string;
+      readonly waiting_one: string;
+      readonly waiting_other: string;
+      readonly active_one: string;
+      readonly active_other: string;
+      readonly today: string;
+      readonly yesterday: string;
+      readonly week: string;
+      readonly earlier: string;
+      readonly restore: string;
+      readonly offline: string;
+      readonly needsMe: string;
+      readonly working: string;
+      readonly reply: string;
+      readonly failed: string;
+      readonly confirm: string;
+    };
     readonly loading: string;
     readonly retry: string;
     readonly errors: {
@@ -306,8 +328,6 @@ export interface AgentChatLocale {
     readonly agent: string;
     readonly started: string;
     readonly usageTitle: string;
-    readonly record: string;
-    readonly recordBody: string;
     readonly relatedWork: string;
     readonly unlink: string;
     readonly unlinkFailed: string;
@@ -640,6 +660,28 @@ const agentChatEnUS: AgentChatLocale = {
       unread: 'New reply',
       actions: 'Actions for {{title}}',
     },
+    list: {
+      label: 'Conversations',
+      archivedTitle: 'Archived',
+      back: 'Back to conversations',
+      all: 'All',
+      filters: 'Show',
+      waiting_one: 'Needs me {{count}}',
+      waiting_other: 'Needs me {{count}}',
+      active_one: 'In progress {{count}}',
+      active_other: 'In progress {{count}}',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      week: 'This week',
+      earlier: 'Earlier',
+      restore: 'Restore',
+      offline: 'Runtime offline',
+      needsMe: 'Needs me',
+      working: 'In progress',
+      reply: 'New reply',
+      failed: 'Failed',
+      confirm: 'Question for you',
+    },
     loading: 'Loading',
     retry: 'Retry',
     errors: {
@@ -679,8 +721,6 @@ const agentChatEnUS: AgentChatLocale = {
     agent: 'Agent',
     started: 'Started',
     usageTitle: 'Usage',
-    record: 'Record',
-    recordBody: 'The full record is kept here, and only you can see it.',
     relatedWork: 'Related work',
     unlink: 'Remove association',
     unlinkFailed: 'The association could not be removed.',

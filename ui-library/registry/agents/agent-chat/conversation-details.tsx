@@ -75,10 +75,6 @@ export function ConversationDetails({
           <UsageSection usage={usage.data} />
         </section>
       )}
-      <section className='flex flex-col gap-2.5 border-b px-5 py-4'>
-        <h3 className='text-sm font-semibold'>{t('chat.record')}</h3>
-        <p className='text-xs text-muted-foreground'>{t('chat.recordBody')}</p>
-      </section>
     </div>
   );
   if (beside)
