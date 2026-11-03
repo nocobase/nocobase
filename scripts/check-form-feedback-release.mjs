@@ -124,11 +124,10 @@ export function checkFormFeedbackPeer(registry, manifest) {
     );
 }
 
-function run(command, args, options = {}) {
+function run(command, args) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
-    ...options,
   });
   if (result.status !== 0 || result.error)
     throw new Error(`${command} failed while checking the published runtime.`);
@@ -147,16 +146,7 @@ export function checkRelease(
   const work = fs.mkdtempSync(
     path.join(os.tmpdir(), 'registry-runtime-release-'),
   );
-  const npmConfig = path.join(work, 'npmrc');
-  const npmGlobalConfig = path.join(work, 'global-npmrc');
-  const npmEnv = { ...process.env };
-  for (const key of Object.keys(npmEnv)) {
-    if (/^(?:npm_config_|npm_token$|node_auth_token$)/i.test(key))
-      delete npmEnv[key];
-  }
   try {
-    fs.writeFileSync(npmConfig, `@nocobase:registry=${registryUrl}\n`);
-    fs.writeFileSync(npmGlobalConfig, '');
     for (const [itemName, checkPackage] of [
       ['feedback-form', checkFormFeedbackPackage],
       ['property-fields', checkAvatarInitialsPackage],
@@ -166,26 +156,17 @@ export function checkRelease(
       fs.mkdirSync(itemWork);
       try {
         const [packed] = JSON.parse(
-          run(
-            'npm',
-            [
-              'pack',
-              `@nocobase/app-client@${floor}`,
-              `--registry=${registryUrl}`,
-              `--userconfig=${npmConfig}`,
-              `--globalconfig=${npmGlobalConfig}`,
-              '--ignore-scripts',
-              '--json',
-              '--pack-destination',
-              itemWork,
-              '--cache',
-              path.join(work, 'npm-cache'),
-            ],
-            {
-              cwd: work,
-              env: npmEnv,
-            },
-          ),
+          run('npm', [
+            'pack',
+            `@nocobase/app-client@${floor}`,
+            `--registry=${registryUrl}`,
+            '--ignore-scripts',
+            '--json',
+            '--pack-destination',
+            itemWork,
+            '--cache',
+            path.join(work, 'npm-cache'),
+          ]),
         );
         run('tar', [
           '-xzf',
