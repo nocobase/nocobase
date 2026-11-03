@@ -792,7 +792,7 @@ export function createChatRoutes(
         },
       }),
       description:
-        'Takes back a message queued while the agent worked, as long as its runner has not taken it: it stays in the history, marked withdrawn, and the agent never sees it. Once the runner has it: `400` `CONVERSATION_CONFLICT` with `metadata.reason` `messageTaken`.',
+        'Takes back a queued message or an initial queued turn, as long as its runner has not claimed it: it stays in the history, marked withdrawn, and the agent never sees it. Once the runner has it: `400` `CONVERSATION_CONFLICT` with `metadata.reason` `messageTaken`.',
       responses: {
         204: emptyResponse(),
         400: apiErrorResponse(

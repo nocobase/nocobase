@@ -8,6 +8,7 @@
  * Internal SDK envelopes, tool payloads and provider metadata never enter this public DTO.
  */
 import type { QuotaLocation } from './quota.js';
+import type { RunWait } from './runs.js';
 
 import type {
   OutputBlock,
@@ -369,6 +370,8 @@ export const CONVERSATION_LINK_KIND_PATTERN: RegExp =
 
 /** One conversation as the panel opens it. */
 export interface ConversationDetail extends ConversationSummary {
+  /** Diagnosed only for the latest queued, unclaimed Runner turn, on the existing detail read. */
+  readonly wait?: RunWait | null;
   /** Saved per-conversation preference; null uses the current Agent default. */
   readonly effort?: string | null;
   readonly availability: ChatAvailability;

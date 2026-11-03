@@ -305,7 +305,11 @@ export interface RunService {
    * candidate runners; null when the run does not exist or is not queued. Whoever calls decides what of it a person may
    * see.
    */
-  queueWait(runId: string): Promise<RunWait | null>;
+  /** A conversation supplies its binding (null when unbound), restricting the existing queue facts to that runner. */
+  queueWait(
+    runId: string,
+    conversationRunnerId?: string | null,
+  ): Promise<RunWait | null>;
   events(
     runId: string,
     afterSeq: number,
@@ -1982,13 +1986,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
       return readWorkload(tx.read(), clock, deps.runners, query);
     },
 
-    queueWait(runId) {
+    queueWait(runId, conversationRunnerId) {
       return readQueueWait(
         tx.read(),
         clock,
         deps.runners,
         runId,
-        deps.diagnose,
+        conversationRunnerId === undefined ? deps.diagnose : undefined,
+        conversationRunnerId,
       );
     },
 

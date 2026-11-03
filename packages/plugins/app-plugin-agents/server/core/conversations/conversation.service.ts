@@ -170,7 +170,7 @@ export interface ConversationServiceDeps {
   >;
   readonly runs: Pick<
     RunService,
-    'enqueue' | 'cancel' | 'withdrawQueued' | 'get' | 'detail'
+    'enqueue' | 'cancel' | 'withdrawQueued' | 'get' | 'detail' | 'queueWait'
   >;
   readonly people: People;
   readonly settings: ChatSettingsService;
@@ -686,6 +686,10 @@ export function createConversationService(
       effort:
         typeof jsonObject(record.metadata).effort === 'string'
           ? (jsonObject(record.metadata).effort as string)
+          : null,
+      wait:
+        summary.mode === 'runner' && summary.run?.status === 'queued'
+          ? await deps.runs.queueWait(summary.run.id, record.runnerId)
           : null,
       availability: await availabilityFor(conn, agent, record.userId),
       canFallback: Boolean(target),
@@ -2233,39 +2237,66 @@ export function createConversationService(
 
     async withdraw(userId, id, messageId) {
       await tx.run(async (unit) => {
-        const record = await lockOwned(unit, userId, id, true);
+        let record = await owned(unit.conn, userId, id);
         const message = await messagesRepo(unit.conn).findOne({
           filter: { id: messageId, conversationId: id },
         });
         if (!message || message.role !== 'user') throw notFound('Message');
         const metadata = jsonObject(message.metadata);
         if (metadata.withdrawn) return;
-        // Taken back only while no runner has it: one conditional update, which a delivery racing it cannot both
-        // pass (`markDelivered` updates only an input not handled).
-        const taken =
-          !metadata.queued ||
-          metadata.pickedUp ||
-          typeof metadata.inputId !== 'string' ||
-          (
-            await inputsRepo(unit.conn).updateMany({
-              filter: (f) =>
-                f.and([
-                  f.string('id').eq(metadata.inputId as string),
-                  f.date('deliveredAt').empty(),
-                  f.date('handledAt').empty(),
-                ]),
-              values: { handledAt: now() },
-            })
-          ).updatedCount !== 1;
-        if (taken)
-          throw conversationConflict(
-            'messageTaken',
-            'The agent already has this message.',
+        if (!metadata.queued && message.runId) {
+          // Match claim's run-before-conversation order. An initial turn has no queued-follow-up marker.
+          // End only a still-unclaimed run, using the existing guarded queued withdrawal. If claim wins, the transaction rolls back and the running turn is kept.
+          const run = await findRunRecord(unit.conn, message.runId);
+          if (!run || run.status !== 'queued' || run.runnerId !== null)
+            throw conversationConflict(
+              'messageTaken',
+              'The agent already has this message.',
+            );
+          const ended = await deps.runs.withdrawQueued(
+            {
+              subject: subjectOf(id),
+              agentId: record.agentId,
+              actorUserId: userId,
+              byUserId: userId,
+            },
+            unit,
           );
+          if (!ended.some((run) => run.id === message.runId))
+            throw conversationConflict(
+              'messageTaken',
+              'The agent already has this message.',
+            );
+          record = await lockOwned(unit, userId, id, true);
+        } else {
+          record = await lockOwned(unit, userId, id, true);
+          // Taken back only while no runner has it: one conditional update, which a delivery racing it cannot both
+          // pass (`markDelivered` updates only an input not handled).
+          const taken =
+            !metadata.queued ||
+            metadata.pickedUp ||
+            typeof metadata.inputId !== 'string' ||
+            (
+              await inputsRepo(unit.conn).updateMany({
+                filter: (f) =>
+                  f.and([
+                    f.string('id').eq(metadata.inputId as string),
+                    f.date('deliveredAt').empty(),
+                    f.date('handledAt').empty(),
+                  ]),
+                values: { handledAt: now() },
+              })
+            ).updatedCount !== 1;
+          if (taken)
+            throw conversationConflict(
+              'messageTaken',
+              'The agent already has this message.',
+            );
+        }
         await messagesRepo(unit.conn).updateMany({
           filter: { id: message.id },
           values: {
-            metadata: asJson({ ...metadata, withdrawn: true }),
+            metadata: asJson({ ...metadata, queued: true, withdrawn: true }),
             updatedAt: now(),
           },
         });
