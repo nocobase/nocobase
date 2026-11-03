@@ -127,7 +127,7 @@ test('form installation cannot downgrade the runtime translation peer', () => {
   );
 });
 
-test('publication checks both downloaded dependency floors before permitting upload', async (t) => {
+test('publication gate isolates npm from inherited scope config while checking both dependency floors', async (t) => {
   const work = mkdtempSync(path.join(os.tmpdir(), 'registry-release-test-'));
   const formVersion = '2.0.0-test.1';
   const avatarVersion = '2.0.0-test.2';
@@ -231,9 +231,14 @@ test('publication checks both downloaded dependency floors before permitting upl
     await once(server, 'listening');
     const registryUrl = `http://127.0.0.1:${server.address().port}`;
     const registryFile = path.join(work, 'registry.json');
+    const inheritedConfig = path.join(work, 'inherited-npmrc');
     const marker = path.join(work, 'upload-allowed');
     const runner = path.join(work, 'check.mjs');
     writeFileSync(registryFile, JSON.stringify(registry));
+    writeFileSync(
+      inheritedConfig,
+      '@nocobase:registry=https://registry.npmjs.org\n',
+    );
     writeFileSync(
       runner,
       `import { checkRelease } from ${JSON.stringify(new URL('../../scripts/check-form-feedback-release.mjs', import.meta.url).href)};
@@ -265,12 +270,16 @@ writeFileSync(process.argv[4], 'allowed');
             : tarball(avatarVersion, runtime, declarations);
         requested.clear();
         rmSync(marker, { force: true });
-        const child = spawn(process.execPath, [
-          runner,
-          registryUrl,
-          registryFile,
-          marker,
-        ]);
+        const child = spawn(
+          process.execPath,
+          [runner, registryUrl, registryFile, marker],
+          {
+            env: {
+              ...process.env,
+              NPM_CONFIG_USERCONFIG: inheritedConfig,
+            },
+          },
+        );
         let output = '';
         child.stdout.on('data', (data) => {
           output += data;
