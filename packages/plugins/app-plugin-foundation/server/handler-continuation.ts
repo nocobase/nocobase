@@ -1,16 +1,14 @@
 import ts from 'typescript';
 import type { SourceEvidence } from './source-evidence.js';
-import { StaticValues } from './static-values.js';
 
 export type Continuation = 'next' | 'stop' | 'unknown';
 
-/** Recognize next through a completed prefix or one owned native body limiter; opaque continuations stay unknown. */
+/** Recognize a direct, unconditional next call only. Never interpret arbitrary handler control flow. */
 export function handlerContinuation(
   handler: ts.Node,
   analysis: SourceEvidence,
-  resolver: StaticValues = new StaticValues(analysis),
 ): Continuation {
-  const values = resolver.values(handler);
+  const values = analysis.values(handler);
   if (values.length !== 1) return 'unknown';
   const fn = values[0];
   if (!ts.isFunctionLike(fn) || !('body' in fn) || !fn.body) return 'unknown';
@@ -46,22 +44,7 @@ export function handlerContinuation(
     );
   };
   if (!ts.isBlock(fn.body)) return direct(fn.body) ? 'next' : 'unknown';
-  let context = resolver;
   for (const statement of fn.body.statements) {
-    if (
-      ts.isVariableStatement(statement) &&
-      statement.declarationList.declarations.length === 1
-    ) {
-      let call: ts.Node | undefined =
-        statement.declarationList.declarations[0].initializer;
-      if (call && ts.isAwaitExpression(call)) call = call.expression;
-      if (
-        call &&
-        ts.isCallExpression(call) &&
-        context.bodyLimitInvocation(call)
-      )
-        return 'next';
-    }
     if (
       (ts.isExpressionStatement(statement) ||
         ts.isReturnStatement(statement)) &&
@@ -69,9 +52,22 @@ export function handlerContinuation(
       direct(statement.expression)
     )
       return references === 1 ? 'next' : 'unknown';
-    // An early refusal continues only on the proven successful guard edge. Unknown calls and writes still block.
-    if (context.statementBarrier(statement) !== 'continues') return 'unknown';
-    context = context.fork(context.afterStatement(statement));
+    // Only a straight-line prefix can establish that the direct call is reached.
+    if (
+      !ts.isVariableStatement(statement) &&
+      !ts.isExpressionStatement(statement) &&
+      !ts.isFunctionDeclaration(statement) &&
+      !ts.isEmptyStatement(statement)
+    )
+      return 'unknown';
+    let usesNext = false;
+    const inspect = (node: ts.Node): void => {
+      if (ts.isIdentifier(node) && analysis.symbol(node) === symbol)
+        usesNext = true;
+      ts.forEachChild(node, inspect);
+    };
+    inspect(statement);
+    if (usesNext) return 'unknown';
   }
   return 'unknown';
 }

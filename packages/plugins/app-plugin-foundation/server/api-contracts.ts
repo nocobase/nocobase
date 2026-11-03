@@ -3,7 +3,6 @@ import type { FoundationApiCondition } from '../shared/foundation.js';
 import type { SourceEvidence } from './source-evidence.js';
 import { documentationContract } from './documentation-contract.js';
 import { returned } from './request-evidence.js';
-import type { StaticValues } from './static-values.js';
 
 /** Match a value import's identity, not the spelling of a local function or variable. */
 export function importedContract(
@@ -13,20 +12,6 @@ export function importedContract(
   name: string,
 ): boolean {
   return (analysis.symbol(node)?.declarations ?? []).some((declaration) => {
-    if (
-      name === 'default' &&
-      ts.isImportClause(declaration) &&
-      declaration.name &&
-      !declaration.isTypeOnly
-    ) {
-      const statement = declaration.parent;
-      return (
-        ts.isImportDeclaration(statement) &&
-        ts.isStringLiteralLike(statement.moduleSpecifier) &&
-        statement.moduleSpecifier.text === module &&
-        analysis.isExternalImport(statement)
-      );
-    }
     if (
       !ts.isImportSpecifier(declaration) ||
       declaration.isTypeOnly ||
@@ -70,7 +55,6 @@ function containerCall(
   module: string,
   token: string,
   analysis: SourceEvidence,
-  resolver?: StaticValues,
 ): boolean {
   if (
     !ts.isCallExpression(node) ||
@@ -86,9 +70,7 @@ function containerCall(
     ts.isPropertyAccessExpression(container) &&
     !container.questionDotToken &&
     container.name.text === 'container' &&
-    (resolver
-      ? resolver.applicationIdentity(container.expression)
-      : application(container.expression, analysis)) &&
+    application(container.expression, analysis) &&
     importedContract(node.arguments[0], analysis, module, token)
   );
 }
@@ -215,16 +197,13 @@ export function databaseSuccessGuard(
 export function middlewareContract(
   handler: ts.Node,
   analysis: SourceEvidence,
-  resolver?: StaticValues,
 ):
   | {
       conditions: readonly FoundationApiCondition[];
       providers?: readonly string[];
     }
   | undefined {
-  const values = ts.isCallExpression(handler)
-    ? [handler]
-    : (resolver ?? analysis).values(handler);
+  const values = analysis.values(handler);
   if (values.length !== 1 || !ts.isCallExpression(values[0])) return undefined;
   const call = values[0];
   if (call.questionDotToken || call.arguments.some(ts.isSpreadElement))
@@ -239,8 +218,7 @@ export function middlewareContract(
     call.arguments.length === 1
   )
     return { conditions: [] };
-  if (documentationContract(call, analysis, resolver))
-    return { conditions: [] };
+  if (documentationContract(call, analysis)) return { conditions: [] };
   if (
     importedContract(
       call.expression,
@@ -283,8 +261,7 @@ export function middlewareContract(
     call.expression.name.text === 'middleware' &&
     call.arguments.length === 0
   ) {
-    const scope = resolver?.fork(resolver.capturedBindings(call));
-    const receivers = (scope ?? analysis).values(call.expression.expression);
+    const receivers = analysis.values(call.expression.expression);
     if (
       receivers.length === 1 &&
       [
@@ -297,7 +274,6 @@ export function middlewareContract(
           module,
           'authorizationToken',
           analysis,
-          scope?.fork(scope.capturedBindings(receivers[0])),
         ),
       )
     )
@@ -318,8 +294,7 @@ export function middlewareContract(
     call.expression.name.text === 'required' &&
     call.arguments.length === 0
   ) {
-    const scope = resolver?.fork(resolver.capturedBindings(call));
-    const receivers = (scope ?? analysis).values(call.expression.expression);
+    const receivers = analysis.values(call.expression.expression);
     if (
       receivers.length === 1 &&
       containerCall(
@@ -328,7 +303,6 @@ export function middlewareContract(
         '@nocobase/app-plugin-authentication',
         'authenticationToken',
         analysis,
-        scope?.fork(scope.capturedBindings(receivers[0])),
       )
     )
       return {
