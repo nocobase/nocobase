@@ -10,6 +10,7 @@ import {
   buildVariablesManifest,
 } from '@nocobase/app-server/config';
 import auth from '../../server/config/auth.js';
+import mailers from '../../server/config/mailers.js';
 
 it('inherits private authentication sender mappings without changing other mail consumers', async () => {
   const defaults = defaultAppConfigs({ auth });
@@ -50,30 +51,63 @@ it('inherits private authentication sender mappings without changing other mail 
   ).toBe(true);
 });
 
-it('ships separate, valid SMTP and Resend authentication examples', async () => {
+it('ships a valid shared mailer example with private mapped credentials', async () => {
   const example = await readFile(
     new URL('../../config.example.yml', import.meta.url),
     'utf8',
   );
-  const blocks = [...example.matchAll(/^ {2}# email:\n(?: {2}# {3}.*\n)+/gm)];
-  expect(blocks).toHaveLength(2);
-  const directory = await mkdtemp(
-    path.join(os.tmpdir(), 'auth-email-example-'),
-  );
+  const block = example.match(/^# mailers:\n(?:#.*\n)+/m)?.[0];
+  expect(block).toBeTruthy();
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'mailers-example-'));
   try {
-    for (const block of blocks) {
-      const text = 'auth:\n' + block[0].replace(/^ {2}# /gm, '  ');
-      const file = path.join(directory, 'config.yml');
-      await writeFile(file, text);
-      const config = new AppConfig().loadFile(file);
-      await config.loadAll();
-      const defaults = defaultAppConfigs({ auth });
-      config.mergeDefaults(defaults({} as never));
-      config.defineSections(defaults.sections!);
-      expect(await config.validate()).toEqual([]);
-    }
+    const file = path.join(directory, 'config.yml');
+    await writeFile(file, block!.replace(/^# ?/gm, ''));
+    const config = new AppConfig().loadFile(file);
+    await config.loadAll();
+    const defaults = defaultAppConfigs({ auth, mailers });
+    config.mergeDefaults(defaults({} as never));
+    config.defineSections(defaults.sections!);
+    await config.loadSectionEnvironment({
+      MAILERS_SYSTEM_PASSWORD: 'synthetic-password',
+    });
+    expect(await config.validate()).toEqual([]);
+    expect(config.get('mailers.default')).toBe('system');
+    expect(config.get('mailers.system.auth.pass')).toBe('synthetic-password');
+    expect(JSON.stringify(config.publicValues())).not.toContain(
+      'synthetic-password',
+    );
+    expect(config.get('auth.passwordReset.enabled')).toBeUndefined();
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
   expect(example).not.toContain('emailChannel:');
+});
+
+it('accepts an entirely environment-configured shared sender without enabling recovery', async () => {
+  const config = new AppConfig();
+  await config.loadAll();
+  const defaults = defaultAppConfigs({ auth, mailers });
+  config.mergeDefaults(defaults({} as never));
+  config.defineSections(defaults.sections!);
+  await config.loadSectionEnvironment({
+    MAILERS_DEFAULT: 'system',
+    MAILERS_SYSTEM_PROVIDER: 'smtp',
+    MAILERS_SYSTEM_HOST: 'localhost',
+    MAILERS_SYSTEM_PORT: '2525',
+    MAILERS_SYSTEM_SECURE: 'false',
+  });
+  expect(await config.validate()).toEqual([]);
+  expect(config.get('mailers.system')).toMatchObject({
+    provider: 'smtp',
+    port: 2525,
+    secure: false,
+  });
+  expect(config.get('auth.passwordReset.enabled')).toBeUndefined();
+  expect(config.environmentVariableMappings()).toMatchObject({
+    MAILERS_DEFAULT: { path: 'mailers.default' },
+    MAILERS_SYSTEM_PASSWORD: {
+      path: 'mailers.system.auth.pass',
+      secret: true,
+    },
+  });
 });

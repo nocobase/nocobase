@@ -7,7 +7,13 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { ListIcon, Maximize2Icon, PlusIcon } from 'lucide-react';
-import { useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
+import {
+  useContext,
+  useEffect,
+  useMemo,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -90,10 +96,11 @@ function Panel({
   AgentSessionsPanelProps,
   keyof AgentSessionsRouteOptions
 >): ReactElement {
-  const view =
-    showHistory && requestedView.kind === 'list'
-      ? { kind: 'new' as const }
-      : requestedView;
+  const hasCustomHeader = Boolean(
+    useContext(AgentSessionsConfigContext)?.renderHeader,
+  );
+  const view = requestedView;
+  showHistory = showHistory && view.kind !== 'list';
   const { t } = useTranslation();
   const navigate = useNavigate();
   const client = useQueryClient();
@@ -208,6 +215,8 @@ function Panel({
     renderHeaderActions,
     panelTitle: title,
     panel: true,
+    onBack: () => onViewChange({ kind: 'list' }),
+    onNew: () => onViewChange({ kind: 'new' }),
     onInspectAttachment,
     actions: buttons,
     onCreated: (sessionId) => onViewChange({ kind: 'session', sessionId }),
@@ -242,18 +251,20 @@ function Panel({
           )}
           {view.kind === 'new' && (
             <>
-              <header className='flex items-center gap-2 border-b px-3.5 py-2'>
-                {renderHeaderActions && showHistory ? (
-                  <div className='flex-1' />
-                ) : (
-                  <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
-                    {renderHeaderActions
-                      ? (title ?? t('list.title'))
-                      : t('list.new')}
-                  </h2>
-                )}
-                {buttons}
-              </header>
+              {!hasCustomHeader && (
+                <header className='flex items-center gap-2 border-b px-3.5 py-2'>
+                  {renderHeaderActions && showHistory ? (
+                    <div className='flex-1' />
+                  ) : (
+                    <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
+                      {renderHeaderActions
+                        ? (title ?? t('list.title'))
+                        : t('list.new')}
+                    </h2>
+                  )}
+                  {buttons}
+                </header>
+              )}
               <div className='min-h-0 flex-1'>
                 <NewSession />
               </div>
@@ -276,16 +287,20 @@ export function AgentSessionsPanel({
   connectPrompt,
   linkPanels,
   sessionMarks,
+  listHeading,
+  renderHeader,
   ...props
 }: AgentSessionsPanelProps): ReactElement {
   const settings = useMemo(
     () => ({
       cli,
+      ...(renderHeader ? { renderHeader } : {}),
+      ...(listHeading ? { listHeading } : {}),
       connectPrompt: connectPrompt ?? null,
       linkPanels: linkPanels ?? {},
       ...(sessionMarks ? { sessionMarks } : {}),
     }),
-    [cli, connectPrompt, linkPanels, sessionMarks],
+    [cli, connectPrompt, linkPanels, sessionMarks, listHeading, renderHeader],
   );
   return (
     <AgentSessionsConfigContext.Provider value={settings}>

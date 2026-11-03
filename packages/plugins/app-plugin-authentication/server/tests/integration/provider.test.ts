@@ -32,6 +32,49 @@ import {
 import { authenticationToken } from '../../tokens.js';
 
 describe('authentication provider', () => {
+  it('closes its sender while Auth is still completing and observes both failures', async () => {
+    const authClose = Promise.withResolvers<void>();
+    const authFailure = new Error('Auth close failed.');
+    const senderFailure = new Error('Sender close failed.');
+    const auth = { close: vi.fn(() => authClose.promise) };
+    const sender = {
+      close: vi.fn(() => {
+        throw senderFailure;
+      }),
+    };
+    const provider = Object.assign(
+      Object.create(AuthenticationProvider.prototype),
+      {
+        app: {
+          container: {
+            resolveIfCreated: vi.fn(() => auth),
+          },
+        },
+        resetSender: { sender },
+      },
+    ) as AuthenticationProvider;
+
+    const shutdown = provider.shutdown();
+    expect(provider.shutdown()).toBe(shutdown);
+    expect(auth.close).toHaveBeenCalledOnce();
+    expect(sender.close).toHaveBeenCalledOnce();
+    let settled = false;
+    const observed = shutdown.catch((error: unknown) => {
+      settled = true;
+      return error;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    authClose.reject(authFailure);
+    const error = await observed;
+    expect(error).toBeInstanceOf(AggregateError);
+    expect((error as AggregateError).errors).toEqual([
+      authFailure,
+      senderFailure,
+    ]);
+  });
+
   it('registers authentication with the application runtime and dependencies', async () => {
     const connection = { kind: 'connection' };
     const database = {
@@ -115,6 +158,46 @@ describe('authentication provider', () => {
     await expect(response.text()).resolves.toBe(
       'http://localhost/main/api/auth/get-session',
     );
+  });
+
+  it('freezes only sender settings at registration and reads later auth defaults lazily', async () => {
+    const container = new ServiceContainer();
+    const config = await createConfig();
+    container.instance(databaseManagerToken, {
+      connection: vi.fn(() => ({})),
+    } as unknown as DatabaseManager);
+    container.instance(cachingToken, {
+      getCache: vi.fn(),
+      getCounter: vi.fn(() => ({ increment: vi.fn() })),
+    } as unknown as Caching);
+    container.instance(idGeneratorToken, {
+      generate: vi.fn(() => 1),
+      generateString: vi.fn(() => 'generated-id'),
+    });
+    const provider = new AuthenticationProvider({
+      appName: 'main app',
+      publicBasePath: '/main',
+      config,
+      container,
+      paths: createAppPaths({ rootDir: '/test/app' }),
+      router: new Hono(),
+    });
+
+    provider.register();
+    // A later provider, such as Demo Mode, contributes auth defaults after Authentication registered.
+    config.mergeDefaults({
+      auth: {
+        advanced: { defaultCookieAttributes: { sameSite: 'none' } },
+        passwordReset: { enabled: true },
+      },
+    });
+    container.resolve(authenticationToken);
+
+    const options = createAuthentication.mock.lastCall?.[0];
+    expect(options?.advanced?.defaultCookieAttributes).toMatchObject({
+      sameSite: 'none',
+    });
+    expect(options?.passwordReset).toBeUndefined();
   });
 
   it('normalizes public paths, requests, and cookie prefixes', async () => {

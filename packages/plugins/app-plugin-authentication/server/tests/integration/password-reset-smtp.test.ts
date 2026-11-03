@@ -8,7 +8,6 @@ afterEach(() => vi.restoreAllMocks());
 import { createTestApp } from '@nocobase/app-testing/server';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { authenticationToken } from '../../tokens.js';
-import { mailerToken } from '@nocobase/app-server/mailer';
 
 async function receiver(stall = false) {
   const sockets = new Set<Socket>();
@@ -67,6 +66,8 @@ it.each([
   ['http://localhost', false],
   ['https://public.example.test', false],
   ['https://public.example.test', true],
+  ['https://public.example.test', 'named'],
+  ['https://public.example.test', 'default'],
 ] as const)(
   'resets through real SMTP without notification or authorization using public origin %s (independent %s)',
   async (publicOrigin, independent) => {
@@ -92,33 +93,57 @@ it.each([
       createServer: createStandaloneServer,
       config: {
         app: { publicOrigin },
-        ...(independent
+        ...(typeof independent === 'string'
           ? {
-              auth: {
-                email: {
+              mailers: {
+                default: 'system',
+                system: {
                   provider: 'smtp',
                   host: '127.0.0.1',
                   port: smtp.port,
                   from: 'sender@example.test',
                 },
+                ...(independent === 'named'
+                  ? {
+                      marketing: {
+                        provider: 'smtp',
+                        host: '127.0.0.1',
+                        port: smtp.port,
+                        from: 'sender@example.test',
+                      },
+                    }
+                  : {}),
               },
+              ...(independent === 'named'
+                ? { auth: { email: { mailer: 'marketing' } } }
+                : {}),
             }
-          : {
-              notification: {
-                channels: {
-                  'system-email': {
+          : independent
+            ? {
+                auth: {
+                  email: {
                     provider: 'smtp',
                     host: '127.0.0.1',
                     port: smtp.port,
                     from: 'sender@example.test',
                   },
                 },
-              },
-            }),
+              }
+            : {
+                notification: {
+                  channels: {
+                    'system-email': {
+                      provider: 'smtp',
+                      host: '127.0.0.1',
+                      port: smtp.port,
+                      from: 'sender@example.test',
+                    },
+                  },
+                },
+              }),
       },
     });
     try {
-      expect(app.application.container.has(mailerToken)).toBe(false);
       const capabilities = await app.request('/authentication/capabilities');
       expect(await capabilities.json()).toEqual({
         data: { passwordResetAvailable: true },

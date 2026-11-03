@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { objectProvider } from '@nocobase/config/providers/object';
-import {
-  AppConfig,
-  AppConfigInvalidError,
-  envString,
-} from '../src/config/index.js';
-import { defineMailChannelsConfig } from '../src/mailer/index.js';
+import { AppConfig, defineAppConfig, envString } from '../src/config/index.js';
 
 describe('notification configuration aliases', () => {
   it.each([
@@ -61,7 +56,7 @@ describe('notification configuration aliases', () => {
     config.mergeDefaults({
       notification: { channels: { inbox: { type: 'in-app' } } },
     });
-    const declaration = defineMailChannelsConfig({
+    const declaration = defineAppConfig({
       defaults: { channels: {} },
       env: { TEST_CHANNEL_TYPE: envString('channels.inbox.type') },
     });
@@ -86,42 +81,6 @@ describe('notification configuration aliases', () => {
     });
     expect(await config.reload()).toEqual({ changedNamespaces: [] });
     expect(listener).toHaveBeenCalledOnce();
-  });
-
-  it('keeps conflicts visible to validation and preserves the running snapshot on a rejected reload', async () => {
-    const source = {
-      notification: {
-        channels: { inbox: { type: 'in-app', provider: 'in-app' } },
-      },
-    };
-    const config = new AppConfig().load({
-      name: 'notification-test',
-      read: async () => ({ kind: 'map', value: source }),
-    });
-    await config.loadAll();
-    const declaration = defineMailChannelsConfig({
-      defaults: { channels: {} },
-    });
-    config.defineSections(new Map([['notification', declaration.rules!]]));
-    source.notification.channels.inbox.provider = 'smtp';
-    await expect(config.reload()).rejects.toBeInstanceOf(AppConfigInvalidError);
-    expect(config.get('notification.channels.inbox')).toEqual({
-      type: 'in-app',
-      provider: 'in-app',
-    });
-
-    const invalid = new AppConfig().load(objectProvider(source));
-    await invalid.loadAll();
-    invalid.defineSections(new Map([['notification', declaration.rules!]]));
-    expect(invalid.raw()).toEqual(source);
-    expect(await invalid.validate()).toEqual([
-      {
-        level: 'error',
-        path: 'notification.channels.inbox',
-        message:
-          'Channel type and provider must match when both are configured.',
-      },
-    ]);
   });
 
   it.each([

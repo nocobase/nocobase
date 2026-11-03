@@ -76,7 +76,7 @@ export async function collectModuleSources(
         continue;
       }
       const declarationFiles = await graph.walk(entry, false);
-      const backendComplete = await graph.prepare(entry);
+      const backendComplete = await graph.prepare(entry, runtime);
       const endpoints = await graph.apiDependencies();
       for (const source of declarationFiles.sources) {
         const declarations = graph.routeDeclarations(source.ast);
@@ -305,15 +305,74 @@ export class SourceGraph {
     return true;
   }
 
-  public async prepare(entry: string): Promise<boolean> {
+  public async prepare(
+    entry: string,
+    runtime: readonly RuntimeProviderEvidence[] = [],
+  ): Promise<boolean> {
     this.serverEntry = await this.conventionalEntry(
       'server/routes/index.js',
       'server/routes.js',
     );
-    const nativeSources = new Map<string, Source>(this.implementationSources);
     const serverGraph = this.serverEntry
       ? await this.walk(this.serverEntry, false)
       : undefined;
+    // Only registered package roots and exports actually imported by this backend are candidates.
+    // Preserve the external import identity; registration is a source location, never a trust verdict.
+    for (const source of serverGraph?.sources ?? []) {
+      const declarations = configurationImports(source.ast);
+      for (const specifier of source.imports) {
+        if (!declarations.has(specifier)) continue;
+        const providers = runtime.filter(
+          (provider) =>
+            provider.rootDir &&
+            (specifier === provider.name ||
+              specifier.startsWith(`${provider.name}/`)),
+        );
+        if (providers.length !== 1) continue;
+        const provider = providers[0];
+        const root = provider.rootDir!;
+        await this.observation?.watch(path.join(root, 'package.json'));
+        try {
+          const manifest: unknown = JSON.parse(
+            await readFile(path.join(root, 'package.json'), 'utf8'),
+          );
+          if (
+            !isRecord(manifest) ||
+            manifest.name !== provider.name ||
+            (provider.version !== undefined &&
+              manifest.version !== provider.version)
+          )
+            continue;
+          const key =
+            specifier === provider.name
+              ? '.'
+              : `.${specifier.slice(provider.name.length)}`;
+          const declared =
+            typeof manifest.exports === 'string' && key === '.'
+              ? manifest.exports
+              : isRecord(manifest.exports)
+                ? manifest.exports[key]
+                : undefined;
+          const target =
+            typeof declared === 'string'
+              ? declared
+              : isRecord(declared) && typeof declared.import === 'string'
+                ? declared.import
+                : undefined;
+          if (!target?.startsWith('./')) continue;
+          await this.addImplementationSource(
+            root,
+            path.resolve(root, target),
+            source.file,
+            specifier,
+          );
+        } catch {
+          // An unavailable implementation stays external and cannot prove a contribution.
+          this.observation?.unreadable();
+        }
+      }
+    }
+    const nativeSources = new Map<string, Source>(this.implementationSources);
     serverGraph?.sources.forEach((source) =>
       nativeSources.set(source.file, source),
     );
@@ -693,6 +752,144 @@ function staticImports(node: ts.SourceFile): string[] {
     }
     return [];
   });
+}
+
+function configurationImports(source: ts.SourceFile): ReadonlySet<string> {
+  const imports = new Map<string, string>();
+  const factories = new Set<string>();
+  const locals = new Map<string, ts.Node>();
+  const selected = new Set<string>();
+  const functions = new Set<ts.Node>();
+  const values = new Set<ts.Node>();
+  for (const statement of source.statements) {
+    if (
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteralLike(statement.moduleSpecifier) &&
+      statement.importClause &&
+      !statement.importClause.isTypeOnly
+    ) {
+      const clause = statement.importClause,
+        specifier = statement.moduleSpecifier.text;
+      if (clause.name) imports.set(clause.name.text, specifier);
+      if (clause.namedBindings && ts.isNamedImports(clause.namedBindings))
+        for (const binding of clause.namedBindings.elements) {
+          if (binding.isTypeOnly) continue;
+          imports.set(binding.name.text, specifier);
+          if (
+            specifier === '@nocobase/app-server/router' &&
+            ['defineApiRoutes', 'defineRootRoutes'].includes(
+              (binding.propertyName ?? binding.name).text,
+            )
+          )
+            factories.add(binding.name.text);
+        }
+    }
+    if (ts.isFunctionDeclaration(statement) && statement.name)
+      locals.set(statement.name.text, statement);
+    if (ts.isVariableStatement(statement))
+      for (const declaration of statement.declarationList.declarations)
+        if (ts.isIdentifier(declaration.name) && declaration.initializer)
+          locals.set(declaration.name.text, declaration.initializer);
+    if (
+      ts.isExportDeclaration(statement) &&
+      !statement.isTypeOnly &&
+      statement.moduleSpecifier &&
+      ts.isStringLiteralLike(statement.moduleSpecifier) &&
+      (!statement.exportClause ||
+        (ts.isNamedExports(statement.exportClause) &&
+          statement.exportClause.elements.some(
+            (element) => !element.isTypeOnly,
+          )))
+    )
+      selected.add(statement.moduleSpecifier.text);
+  }
+  const body = (node: ts.Node): void => {
+    if (!ts.isFunctionLike(node) || !('body' in node) || !node.body) return;
+    if (functions.has(node) || functions.size >= 32) return;
+    functions.add(node);
+    visit(node.body);
+  };
+  const value = (node: ts.Node, seen = new Set<string>()): void => {
+    if (values.has(node) || values.size >= 2048) return;
+    values.add(node);
+    if (ts.isIdentifier(node)) {
+      const imported = imports.get(node.text);
+      if (imported) selected.add(imported);
+      else if (!seen.has(node.text) && seen.size < 32) {
+        const local = locals.get(node.text);
+        if (local) value(local, new Set(seen).add(node.text));
+      }
+    } else if (ts.isArrayLiteralExpression(node))
+      node.elements.forEach((element) => value(element, seen));
+    else if (
+      ts.isSpreadElement(node) ||
+      ts.isParenthesizedExpression(node) ||
+      ts.isAsExpression(node) ||
+      ts.isSatisfiesExpression(node) ||
+      ts.isNonNullExpression(node)
+    )
+      value(node.expression, seen);
+    else visit(node);
+  };
+  const visit = (node: ts.Node): void => {
+    if (ts.isTypeNode(node) || ts.isFunctionLike(node) || ts.isClassLike(node))
+      return;
+    if (ts.isExportAssignment(node)) {
+      value(node.expression);
+      return;
+    }
+    if (
+      ts.isVariableStatement(node) &&
+      ts
+        .getModifiers(node)
+        ?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      node.declarationList.declarations.forEach((declaration) => {
+        if (declaration.initializer) value(declaration.initializer);
+      });
+      return;
+    }
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const name = node.expression.text,
+        imported = imports.get(name),
+        local = locals.get(name);
+      if (imported) selected.add(imported);
+      else if (local) body(local);
+      if (factories.has(name)) node.arguments.forEach(body);
+    }
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ts.isIdentifier(node.expression.expression)
+    ) {
+      const name = node.expression.expression.text,
+        local = locals.get(name);
+      if (local) value(local);
+      else if (node.expression.name.text === 'map') {
+        const imported = imports.get(name);
+        if (imported) selected.add(imported);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  for (const statement of source.statements) {
+    if (
+      ts.isExportAssignment(statement) ||
+      (ts.isVariableStatement(statement) &&
+        ts
+          .getModifiers(statement)
+          ?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword))
+    )
+      visit(statement);
+    else if (
+      ts.isFunctionDeclaration(statement) &&
+      ts
+        .getModifiers(statement)
+        ?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    )
+      body(statement);
+  }
+  return selected;
 }
 
 function dynamicImports(node: ts.Node): string[] {

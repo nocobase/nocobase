@@ -7,7 +7,7 @@ import {
 import { useHref } from 'react-router';
 
 import type { Attachment } from './lib/attachments.js';
-import type { SessionLink } from '../shared/api.js';
+import type { Session, SessionLink } from '../shared/api.js';
 
 /**
  * What the application draws for one record tied to a session, beside the conversation (or in a sheet over it on a
@@ -27,7 +27,24 @@ export interface LinkPanelProps {
   readonly variant: 'side' | 'sheet';
 }
 
+/** A host can share its visual header while native session actions remain owned by this plugin. */
+export interface AgentSessionHeaderProps {
+  readonly panel: boolean;
+  readonly title: string;
+  readonly session?: Session;
+  readonly agentName?: string;
+  readonly computerName?: string;
+  readonly computerOnline?: boolean;
+  readonly onRename?: (title: string) => void;
+  readonly onBack: () => void;
+  readonly onNew?: () => void;
+  readonly onToggleDetails?: () => void;
+  readonly details?: boolean;
+  readonly onArchive?: () => void;
+}
+
 export interface AgentSessionsRouteOptions {
+  readonly renderHeader?: (props: AgentSessionHeaderProps) => ReactNode;
   /** The application's command line, whose `acp start` connects a computer, such as `nb-studio`. */
   readonly cli: string;
   /** Application waiting projection, shared by page and panel lists. */
@@ -49,6 +66,7 @@ export interface AgentSessionsRouteOptions {
 }
 
 export interface AgentSessionsSettings {
+  readonly renderHeader?: (props: AgentSessionHeaderProps) => ReactNode;
   readonly cli: string;
   /** Application waiting projection, shared by page and panel lists. */
   readonly sessionMarks?: ComponentType<{ sessionId: string }>;
@@ -84,6 +102,8 @@ export function useLinkOpen():
  * their header, opening records at their own address and telling the application which session to show.
  */
 export interface SessionSurface {
+  readonly onBack?: () => void;
+  readonly onNew?: () => void;
   readonly panelTitle?: string | undefined;
   /** Inspect the exact attached text or reference without removing it. */
   readonly onInspectAttachment?: ((attachment: Attachment) => void) | undefined;
