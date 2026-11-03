@@ -13,6 +13,10 @@ import {
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
 
+import {
+  AccountSwitchMenu,
+  useAccountSwitched,
+} from '@nocobase/app-plugin-account-switcher/client/menu';
 import { LanguageSwitcher } from './language-switcher.js';
 
 export function UserMenu(): ReactElement {
@@ -34,6 +38,8 @@ export function UserMenu(): ReactElement {
   const { t } = useTranslation();
   const toaster = useToaster();
   const resolveError = useAuthenticationErrorResolver();
+  // Signing out ends the signed-in person's own session, so while acting as another account the menu offers a return.
+  const switched = useAccountSwitched();
 
   const name =
     identity?.fullName ||
@@ -76,48 +82,54 @@ export function UserMenu(): ReactElement {
         </div>
         <DropdownMenuSeparator />
         <LanguageSwitcher />
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={isLoggingOut}
-          onClick={() => {
-            void (async () => {
-              setIsLoggingOut(true);
-              try {
-                // Better Auth returns API failures as data rather than throwing.
-                const result = await client.signOut();
-                if (result.error) {
-                  toaster.show({
-                    type: 'error',
-                    title:
-                      resolveError(result.error)?.message ??
-                      t('account.signOutFailed', {
-                        defaultValue: 'Unable to sign out. Please try again.',
-                      }),
-                  });
-                  return;
-                }
-                await refresh();
-              } catch (error) {
-                toaster.show({
-                  type: 'error',
-                  title:
-                    resolveError(error)?.message ??
-                    t('account.signOutFailed', {
-                      defaultValue: 'Unable to sign out. Please try again.',
-                    }),
-                });
-              } finally {
-                setIsLoggingOut(false);
-              }
-            })();
-          }}
-          className='gap-2'
-        >
-          <LogOut className='size-4' />
-          {isLoggingOut
-            ? t('account.signingOut', { defaultValue: 'Signing out…' })
-            : t('account.signOut', { defaultValue: 'Sign out' })}
-        </DropdownMenuItem>
+        <AccountSwitchMenu />
+        {switched ? null : (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              disabled={isLoggingOut}
+              onClick={() => {
+                void (async () => {
+                  setIsLoggingOut(true);
+                  try {
+                    // Better Auth returns API failures as data rather than throwing.
+                    const result = await client.signOut();
+                    if (result.error) {
+                      toaster.show({
+                        type: 'error',
+                        title:
+                          resolveError(result.error)?.message ??
+                          t('account.signOutFailed', {
+                            defaultValue:
+                              'Unable to sign out. Please try again.',
+                          }),
+                      });
+                      return;
+                    }
+                    await refresh();
+                  } catch (error) {
+                    toaster.show({
+                      type: 'error',
+                      title:
+                        resolveError(error)?.message ??
+                        t('account.signOutFailed', {
+                          defaultValue: 'Unable to sign out. Please try again.',
+                        }),
+                    });
+                  } finally {
+                    setIsLoggingOut(false);
+                  }
+                })();
+              }}
+              className='gap-2'
+            >
+              <LogOut className='size-4' />
+              {isLoggingOut
+                ? t('account.signingOut', { defaultValue: 'Signing out…' })
+                : t('account.signOut', { defaultValue: 'Sign out' })}
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

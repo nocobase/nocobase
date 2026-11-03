@@ -30,6 +30,8 @@ The account menu checks Better Auth sign-out results before refreshing the sessi
 
 The authorization provider clears the permission snapshot before rendering a new session. Route navigation and page guards subscribe to the authorization revision; preserve these checks when customizing the shell so account changes and permission updates take effect without a reload. Pending checks hide protected content, and failed checks deny access.
 
+The account menu mounts `AccountSwitchMenu` from `@nocobase/app-plugin-account-switcher/client/menu` and hides signing out while `useAccountSwitched()` is true, because signing out would end the signed-in person's own session rather than the switch. The plugin mounts its own notice during a switch.
+
 The account menu language control in `client/layouts/components/language-switcher.tsx` uses a shadcn submenu with radio items. Render it inside `DropdownMenuContent` to preserve menu keyboard navigation and selection semantics.
 
 ## Branded loading

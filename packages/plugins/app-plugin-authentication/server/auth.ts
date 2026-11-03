@@ -150,6 +150,24 @@ export type AuthSession = {
   credential?: IssuedCredential;
 } | null;
 
+/** Who a signed-in session acts as, for as long as the plugin that registered the substitution says so. */
+export interface SessionSubstitute {
+  /** The substituted session's stable id, and its token: what a realtime connection is later disconnected by. */
+  readonly id: string;
+  /** The user the session acts as. Nobody is signed in when this user is gone, disabled or deleted. */
+  readonly userId: string;
+  readonly expiresAt: Date;
+}
+
+/**
+ * Decides whether a session acts as another user. It sees a stored or cached session, never an issued credential. A
+ * substitution that throws an `ApiError` refuses the request, except on Better Auth's own `/get-session`, which then
+ * answers with the session as it is.
+ */
+export type SessionSubstitution = (
+  session: NonNullable<AuthSession>,
+) => Promise<SessionSubstitute | undefined>;
+
 export interface AuthEnv {
   Variables: { auth: AuthSession };
 }
@@ -235,6 +253,7 @@ export class Auth {
   private readonly ownedSender?: MailSender;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
+  private sessionSubstitutions = new Set<SessionSubstitution>();
   private userInitializers = new Set<
     (
       user: Record<string, unknown>,
@@ -498,13 +517,79 @@ export class Auth {
     });
   }
 
-  handler(
+  async handler(
     request: Request,
     options: AuthRequestOptions = {},
   ): Promise<Response> {
-    return this.resetPolicy.runRequest(options.clientAddress, () =>
-      this.auth.handler(request),
+    const response = await this.resetPolicy.runRequest(
+      options.clientAddress,
+      () => this.auth.handler(request),
     );
+    return this.withSubstitutedSession(request, response);
+  }
+
+  /** Better Auth answers `/get-session` itself; the browser must learn the same identity every other route acts as. */
+  private async withSubstitutedSession(
+    request: Request,
+    response: Response,
+  ): Promise<Response> {
+    if (
+      !this.sessionSubstitutions.size ||
+      !response.ok ||
+      !new URL(request.url).pathname.endsWith('/get-session')
+    )
+      return response;
+    const session = (await response
+      .clone()
+      .json()) as NonNullable<AuthSession> | null;
+    if (!session) return response;
+    let substituted: AuthSession;
+    try {
+      substituted = await this.substituted(session);
+    } catch (error) {
+      // Only reads who is signed in, so a refusal can settle on the session as it is.
+      if (error instanceof ApiError) return response;
+      throw error;
+    }
+    if (substituted === session) return response;
+    const headers = new Headers(response.headers);
+    headers.delete('content-length');
+    return new Response(JSON.stringify(substituted), {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
+
+  /** The session itself, unless a registered substitution makes it act as another user. */
+  private async substituted(
+    session: NonNullable<AuthSession>,
+  ): Promise<AuthSession> {
+    for (const substitution of [...this.sessionSubstitutions]) {
+      const substitute = await substitution(session);
+      if (!substitute) continue;
+      const context = await this.auth.$context;
+      const user = await context.internalAdapter.findUserById(
+        substitute.userId,
+      );
+      if (
+        !user ||
+        Reflect.get(user, 'disabledAt') != null ||
+        Reflect.get(user, 'deletedAt') != null
+      )
+        return null;
+      return {
+        user,
+        session: {
+          ...session.session,
+          id: substitute.id,
+          token: substitute.id,
+          userId: user.id,
+          expiresAt: substitute.expiresAt,
+        },
+      };
+    }
+    return session;
   }
 
   /**
@@ -560,7 +645,7 @@ export class Auth {
       .where('id', '=', session.user.id)
       .executeTakeFirst();
     if (!user || user.disabledAt != null) return null;
-    return session;
+    return this.substituted(session);
   }
 
   /** The session of an issued credential: its user, unless gone or disabled. */
@@ -752,6 +837,7 @@ export class Auth {
     });
     bound.scopedCredentialChecks = this.scopedCredentialChecks;
     bound.credentialResolvers = this.credentialResolvers;
+    bound.sessionSubstitutions = this.sessionSubstitutions;
     bound.userInitializers = this.userInitializers;
     return bound;
   }
@@ -776,6 +862,19 @@ export class Auth {
     this.credentialResolvers.add(resolver);
     return () => {
       this.credentialResolvers.delete(resolver);
+    };
+  }
+
+  /**
+   * Registers a substitution that makes a signed-in session act as another user everywhere: `getSession()`, every route
+   * behind `required()` or `optional()`, realtime connections and Better Auth's `/get-session`. Other Better Auth
+   * endpoints keep acting on the session's own user. The substituted session is an ordinary one, carrying no
+   * `credential`. Returns what removes the substitution.
+   */
+  addSessionSubstitution(substitution: SessionSubstitution): () => void {
+    this.sessionSubstitutions.add(substitution);
+    return () => {
+      this.sessionSubstitutions.delete(substitution);
     };
   }
 

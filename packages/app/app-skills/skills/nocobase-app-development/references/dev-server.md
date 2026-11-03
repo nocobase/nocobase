@@ -44,4 +44,4 @@ Use `APP_SERVER_PORT` for the local entry port in both development modes. With `
 
 ## Development logging
 
-`pnpm dev` owns the ready banner and public URL; `APP_SERVER_START_LOG=false` suppresses the underlying listener announcement through the `env` of `server/config/server.ts`. Keep that mapping when editing deployment environment settings. Request starts, request headers and config diagnostics use DEBUG; the normal INFO output contains completion summaries. See the Logging section of [the Skill](../SKILL.md#logging) for hosted logging and upgrade limits.
+`pnpm dev` runs the server with `NODE_ENV=development` unless the environment sets it, while `pnpm start` defaults to `production`. `pnpm dev` owns the ready banner and public URL; `APP_SERVER_START_LOG=false` suppresses the underlying listener announcement through the `env` of `server/config/server.ts`. Keep that mapping when editing deployment environment settings. Request starts, request headers and config diagnostics use DEBUG; the normal INFO output contains completion summaries. See the Logging section of [the Skill](../SKILL.md#logging) for hosted logging and upgrade limits.

@@ -32,7 +32,9 @@ Server, from `@nocobase/app-plugin-authentication` (the root entry is the
 server entry) or `@nocobase/app-plugin-authentication/server`:
 
 - `authenticationToken` resolves the `Auth` instance: `required()`,
-  `optional()`, `getSession(headers)`, `handler(request)`, `signInUser(userId, request)`.
+  `optional()`, `getSession(headers)`, `handler(request)`, `signInUser(userId, request)`,
+  `addSessionSubstitution(substitution)`, through which a plugin makes a session act as another user everywhere but on
+  Better Auth's own endpoints other than `/get-session`.
 - `AuthEnv` types a Hono router whose routes read `context.get('auth')`.
 - `userAdministrationServiceToken` resolves `UserAdministrationService`:
   `list`, `get`, `create`, `update`, `disable`, `enable`, `resetPassword`,

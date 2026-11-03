@@ -36,6 +36,7 @@ import apiKeys from '@nocobase/app-plugin-api-keys/server';
 import agents from '@nocobase/app-plugin-agents/server';
 import foundation from '@nocobase/app-plugin-foundation/server';
 import knowledge from '@nocobase/app-plugin-knowledge/server';
+import accountSwitcher from '@nocobase/app-plugin-account-switcher/server';
 
 const serverPlugins: AppServerPlugins = defineServerPlugins([
   concurrency,
@@ -72,6 +73,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   agents,
   foundation,
   knowledge,
+  accountSwitcher,
 ]);
 
 export default serverPlugins;

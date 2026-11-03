@@ -17,6 +17,7 @@ import notification from '@nocobase/app-plugin-notification/client';
 import scheduler from '@nocobase/app-plugin-scheduler/client';
 import file from '@nocobase/app-plugin-file/client';
 import mail from '@nocobase/app-plugin-mail/client';
+import accountSwitcher from '@nocobase/app-plugin-account-switcher/client';
 
 // Array order is contribution order. A plugin is enabled by appearing in this
 // list; removing its entry and its import disables it.
@@ -36,6 +37,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   scheduler(),
   mail(),
   foundation({ settingsGroup: true }),
+  accountSwitcher(),
 ]);
 
 export default clientPlugins;
