@@ -8,7 +8,15 @@ import {
 } from '@nocobase/app-plugin-agents/client/chat';
 import { ArchiveIcon, Trash2Icon } from 'lucide-react';
 import { Button } from '#components/ui/button';
-import { PlusIcon, XIcon } from 'lucide-react';
+import {
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  PlusIcon,
+  XIcon,
+} from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
+import type { ConversationMode } from '@nocobase/app-plugin-agents/shared/conversations';
+import { useChatMode } from './chat-mode.js';
 import { DropdownMenuItem } from '#components/ui/dropdown-menu';
 import { ConversationPanelBody } from './panel-body.js';
 import { ConversationPanelFrame } from './panel-frame.js';
@@ -52,6 +60,7 @@ export function LinkedChatPanel({
 }: LinkedChatPanelProps): ReactElement | null {
   const panel = useChatPanel();
   const { t } = useChatTranslation();
+  const [listFolded, setListFolded] = useState(false);
   useEffect(() => {
     if (!listFirstShortcut || !panel.available) return;
     const open = (event: KeyboardEvent) => {
@@ -64,6 +73,9 @@ export function LinkedChatPanel({
     return () => window.removeEventListener('keydown', open, true);
   }, [listFirstShortcut, panel]);
   if (!panel.available) return null;
+  // Expanded beside a conversation, the list folds to a rail, as on My sessions; elsewhere it is the whole panel.
+  const folded =
+    listFolded && panel.mode === 'expanded' && panel.view !== 'history';
   return (
     <ConversationAssociationsProvider {...associations}>
       <ConversationPanelFrame
@@ -72,17 +84,18 @@ export function LinkedChatPanel({
       >
         {content ?? (
           <ConversationPanelBody
-            historyHeader={listHeader ?? <LinkedListHeader />}
-            history={
-              renderList ? (
-                renderList()
+            historyClassName={folded ? 'w-12' : undefined}
+            historyHeader={
+              folded ? (
+                <LinkedListRail onUnfold={() => setListFolded(false)} />
               ) : (
-                <HistoryList
-                  activeId={panel.conversationId}
-                  onOpen={panel.selectConversation}
-                  header={null}
-                />
+                (listHeader ?? (
+                  <LinkedListHeader onFold={() => setListFolded(true)} />
+                ))
               )
+            }
+            history={
+              folded ? null : renderList ? renderList() : <LinkedHistory />
             }
             conversation={
               renderConversation ? renderConversation() : <LinkedConversation />
@@ -94,14 +107,63 @@ export function LinkedChatPanel({
     </ConversationAssociationsProvider>
   );
 }
-function LinkedListHeader(): ReactElement {
+/** The default list, of the mode its tabs show. */
+function LinkedHistory(): ReactElement {
   const panel = useChatPanel();
+  const mode = useChatMode();
+  return (
+    <HistoryList
+      mode={mode.mode}
+      activeId={panel.conversationId}
+      onOpen={panel.selectConversation}
+      header={null}
+    />
+  );
+}
+/** Tabs, New, then Close in the docked panel or, expanded beside a conversation, Fold the list (Studio's order). */
+function LinkedListHeader({
+  onFold,
+}: {
+  readonly onFold: () => void;
+}): ReactElement {
+  const panel = useChatPanel();
+  const mode = useChatMode();
+  const phone = useMediaQuery(CHAT_MOBILE_QUERY);
   const { t } = useChatTranslation();
+  const beside =
+    !phone && panel.mode === 'expanded' && panel.view !== 'history';
   return (
     <div className='flex items-center gap-2 border-b px-4 py-2'>
-      <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
-        {t('chat.history.title')}
-      </h2>
+      {mode.switchable ? (
+        <Tabs
+          value={mode.mode ?? mode.modes[0]}
+          className='min-w-0 flex-1'
+          onValueChange={(next: ConversationMode) => mode.switchTo(next)}
+        >
+          <h2 className='sr-only'>{t('chat.history.title')}</h2>
+          <TabsList className='w-full min-w-0'>
+            {mode.modes.map((item) => (
+              <TabsTrigger
+                key={item}
+                value={item}
+                className='min-w-0 flex-auto px-1 text-xs'
+              >
+                <span className='truncate'>
+                  {t(
+                    item === 'online'
+                      ? 'chat.modes.online'
+                      : 'chat.modes.runner',
+                  )}
+                </span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      ) : (
+        <h2 className='min-w-0 flex-1 truncate text-sm font-semibold'>
+          {t('chat.history.title')}
+        </h2>
+      )}
       <Button
         variant='ghost'
         size='icon-sm'
@@ -110,13 +172,60 @@ function LinkedListHeader(): ReactElement {
       >
         <PlusIcon />
       </Button>
+      {beside ? (
+        <Button
+          variant='ghost'
+          size='icon-sm'
+          aria-label={t('chat.history.fold')}
+          title={t('chat.history.fold')}
+          onClick={onFold}
+          data-testid='chat-history-fold'
+        >
+          <PanelLeftCloseIcon />
+        </Button>
+      ) : (
+        <Button
+          variant='ghost'
+          size='icon-sm'
+          aria-label={t('chat.close')}
+          onClick={panel.closeChat}
+        >
+          <XIcon />
+        </Button>
+      )}
+    </div>
+  );
+}
+/** The folded list beside the conversation: Unfold and New, as My sessions' rail. */
+function LinkedListRail({
+  onUnfold,
+}: {
+  readonly onUnfold: () => void;
+}): ReactElement {
+  const panel = useChatPanel();
+  const { t } = useChatTranslation();
+  return (
+    <div
+      className='flex flex-col items-center gap-2 py-3'
+      data-testid='chat-history-rail'
+    >
       <Button
         variant='ghost'
         size='icon-sm'
-        aria-label={t('chat.close')}
-        onClick={panel.closeChat}
+        aria-label={t('chat.history.unfold')}
+        title={t('chat.history.unfold')}
+        onClick={onUnfold}
+        data-testid='chat-history-unfold'
       >
-        <XIcon />
+        <PanelLeftOpenIcon />
+      </Button>
+      <Button
+        variant='ghost'
+        size='icon-sm'
+        aria-label={t('chat.newConversation')}
+        onClick={() => panel.selectConversation(null)}
+      >
+        <PlusIcon />
       </Button>
     </div>
   );

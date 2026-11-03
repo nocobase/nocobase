@@ -266,6 +266,8 @@ const agentChatZhCN: AgentChatLocale = {
     },
     history: {
       title: '对话历史',
+      fold: '收起会话列表',
+      unfold: '展开会话列表',
       search: '搜索对话',
       show: '显示',
       active: '进行中',
