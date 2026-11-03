@@ -1,5 +1,5 @@
 import { useAuthenticationErrorResolver } from '@nocobase/app-plugin-authentication/client/actions';
-import { useToaster } from '@nocobase/app-client';
+import { getAvatarInitials, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { LogOut, UserRound } from 'lucide-react';
@@ -39,7 +39,9 @@ export function UserMenu(): ReactElement {
     identity?.fullName ||
     identity?.email ||
     t('account.fallback', { defaultValue: 'Account' });
-  const initials = getInitials(name);
+  const initials = getAvatarInitials(name, {
+    cjk: Boolean(identity?.fullName),
+  });
 
   return (
     <DropdownMenu>
@@ -119,15 +121,4 @@ export function UserMenu(): ReactElement {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) {
-    return '?';
-  }
-  return words
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? '')
-    .join('');
 }

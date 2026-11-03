@@ -173,7 +173,27 @@ export async function removeStaleMessageFolders(
   let deleteQuery = query
     .deleteFrom<MessageFolderRow>('mailMessageFolders')
     .where('accountId', '=', accountId)
-    .where('providerFolderId', '!=', MAIL_LOCAL_DRAFT_FOLDER_ID);
+    .where('providerFolderId', '!=', MAIL_LOCAL_DRAFT_FOLDER_ID)
+    .where((builder) =>
+      builder.not(
+        builder.exists(
+          builder
+            .selectFrom('mailMessageImapLocations')
+            .select('id')
+            .whereRef(
+              'mailMessageImapLocations.messageId',
+              '=',
+              'mailMessageFolders.messageId',
+            )
+            .where('mailMessageImapLocations.status', '=', 'pending')
+            .where(
+              'mailMessageImapLocations.invalidationReason',
+              'like',
+              'move-%',
+            ),
+        ),
+      ),
+    );
   if (completeProviderFolderIds.length > 0) {
     deleteQuery = deleteQuery.where(
       'providerFolderId',
@@ -366,6 +386,15 @@ export async function upsertImapMessages(
   runId: string,
   preserveUpdatedAfter?: string,
 ): Promise<void> {
+  const protections = await query
+    .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
+    .select(['id', 'messageId'])
+    .where('accountId', '=', accountId)
+    .where('status', '=', 'pending')
+    .where('invalidationReason', 'like', 'move-%')
+    .execute<Pick<ImapLocationRow, 'id' | 'messageId'>>();
+  const protectedIds = new Set(protections.map((row) => row.messageId));
+  const protectedLocations = new Set(protections.map((row) => row.id));
   const safe: ImapCopyEvidence[] = [];
   const mirrors = new Map<string, string>();
   for (const copy of copies) {
@@ -378,6 +407,7 @@ export async function upsertImapMessages(
       .where('uidValidity', '=', copy.uidValidity)
       .where('uid', '=', copy.uid)
       .executeTakeFirst<ImapLocationRow>();
+    if (row && protectedLocations.has(row.id)) continue;
     if (!unchanged(row, copy.observed))
       throw Object.assign(
         new Error('The IMAP copy changed during synchronization.'),
@@ -397,6 +427,7 @@ export async function upsertImapMessages(
     if (candidates.length > 1)
       throw new Error('The IMAP identity has conflicting owners.');
     const owner = candidates[0];
+    if (owner && protectedIds.has(owner.id)) continue;
     const mirror =
       owner?.providerMessageId.startsWith('local-draft:') &&
       owner.providerDraftMessageId === copy.providerMessageId;
@@ -549,6 +580,11 @@ export async function applyImapLocationChanges(
       .where('accountId', '=', accountId)
       .where('id', '=', change.id)
       .executeTakeFirst<ImapLocationRow>();
+    if (
+      row?.status === 'pending' &&
+      row.invalidationReason?.startsWith('move-')
+    )
+      continue;
     if (!unchanged(row, change.observed))
       throw new Error('The IMAP copy changed during verification.');
     if (!row) continue;
@@ -613,7 +649,7 @@ export async function refreshImapMessages(
     const locations = await query
       .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
       .select(['messageId', 'providerFolderId', 'status', 'read', 'starred'])
-      .select('receivedAt')
+      .select(['receivedAt', 'invalidationReason'])
       .where('accountId', '=', accountId)
       .where('messageId', 'in', ids)
       .execute<ImapLocationRow>();
@@ -667,7 +703,8 @@ export async function refreshImapMessages(
             (location) =>
               location.status === 'valid' ||
               (location.status === 'pending' &&
-                folders.has(location.providerFolderId)),
+                (folders.has(location.providerFolderId) ||
+                  location.invalidationReason?.startsWith('move-'))),
           )
           .map((location) => location.providerFolderId),
       );

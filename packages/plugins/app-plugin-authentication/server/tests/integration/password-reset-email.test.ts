@@ -7,7 +7,6 @@ import * as mailer from '@nocobase/mailer';
 import { Auth } from '../../auth.js';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { createAuthFixture } from './support.js';
-import { mailerToken } from '@nocobase/app-server/mailer';
 
 const email = {
   provider: 'resend',
@@ -151,7 +150,7 @@ it.each(
     await vi.waitFor(() => expect(executions.inFlight).toBe(0));
     expect(warning).toHaveBeenCalledWith(
       legacy
-        ? expect.stringContaining('deprecated. Migrate to auth.email')
+        ? expect.stringContaining('deprecated. Migrate to mailers')
         : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
     );
     expect(
@@ -226,7 +225,7 @@ it('announces the legacy sender at startup without exposing channel names', asyn
   });
   expect(fixture.auth.passwordResetAvailable()).toBe(true);
   expect(warning).toHaveBeenCalledWith(
-    expect.stringContaining('deprecated. Migrate to auth.email'),
+    expect.stringContaining('deprecated. Migrate to mailers'),
   );
   expect(JSON.stringify(warning.mock.calls)).not.toContain(
     'synthetic-private-channel',
@@ -251,7 +250,6 @@ it.each([false, true])(
         : { auth: { email } },
     });
     try {
-      expect(app.application.container.has(mailerToken)).toBe(false);
       expect((await app.request('/authentication/capabilities')).status).toBe(
         200,
       );
@@ -500,7 +498,8 @@ it.each([false, true])(
       expect(send).toHaveBeenCalledOnce();
       expect(report).toHaveBeenCalledWith('capacity');
       const shutdown = fixture.auth.close();
-      expect(close).not.toHaveBeenCalled();
+      expect(fixture.auth.close()).toBe(shutdown);
+      expect(close).toHaveBeenCalledOnce();
       expect(executions.inFlight).toBe(1);
       completion.resolve({ status: 'accepted' });
       await shutdown;
@@ -554,3 +553,55 @@ it.each(['legacy', 'email', 'custom'] as const)(
     expect(create).not.toHaveBeenCalled();
   },
 );
+
+it('keeps the old standalone Auth call working: it owns its sender and connection bindings only borrow it', async () => {
+  const fetch = vi.fn(async () => Response.json({ id: 'synthetic-id' }));
+  vi.stubGlobal('fetch', fetch);
+  const create = vi.spyOn(mailer, 'createMailTransport');
+  // The fixture passes no mailer/source/container fields to Auth.
+  const fixture = await setup({ email, passwordReset: { enabled: true } });
+  await fixture.signUp();
+  expect(fixture.auth.passwordResetAvailable()).toBe(true);
+  await fixture.router.request(
+    '/api/auth/request-password-reset',
+    json({ email: 'alice@example.com' }),
+  );
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+  const close = vi.spyOn(create.mock.results[0]!.value, 'close');
+  const binding = fixture.auth.forConnection(fixture.connection);
+  await binding.close();
+  expect(close).not.toHaveBeenCalled();
+  await fixture.auth.close();
+  expect(close).toHaveBeenCalledOnce();
+});
+
+it('preserves the bounded shutdown wait for custom callbacks that ignore cancellation', async () => {
+  const completion = Promise.withResolvers<void>();
+  const executions = new MailExecutions(1);
+  const sender = vi.fn(() => completion.promise);
+  const report = vi.fn();
+  const fixture = await setup({
+    emailAndPassword: { enabled: true, sendResetPassword: sender },
+    passwordResetServices: { executions, report },
+  });
+  await fixture.signUp();
+  await fixture.router.request(
+    '/api/auth/request-password-reset',
+    json({ email: 'alice@example.com' }),
+  );
+  await vi.waitFor(() => expect(sender).toHaveBeenCalledOnce());
+  vi.useFakeTimers();
+  try {
+    const closed = fixture.auth.close();
+    expect(fixture.auth.close()).toBe(closed);
+    await vi.advanceTimersByTimeAsync(5001);
+    await closed;
+    expect(executions.inFlight).toBe(1);
+    expect(report).toHaveBeenCalledWith('shutdown_timeout');
+    completion.reject(new Error('Synthetic late callback failure.'));
+    await vi.waitFor(() => expect(report).toHaveBeenCalledWith('sender'));
+  } finally {
+    completion.resolve();
+    vi.useRealTimers();
+  }
+});

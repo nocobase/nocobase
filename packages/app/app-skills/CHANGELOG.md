@@ -1,5 +1,11 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.57
+
+### Patch Changes
+
+- 726ecfc: Document bounded realtime reads, demand-driven API work, request-log measurement and deterministic browser testing practices.
+
 ## 0.1.0-beta.56
 
 ### Minor Changes

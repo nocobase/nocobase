@@ -1,5 +1,5 @@
 /**
- * The invitation email and the port it goes through. The provider backs the port with the notification plugin; tests
+ * The invitation email and the port it goes through. The provider uses the application mailer, or a legacy notification adapter; tests
  * pass a recording double.
  *
  * The invitee has no account yet, so there is no language to choose: the email carries every language the server

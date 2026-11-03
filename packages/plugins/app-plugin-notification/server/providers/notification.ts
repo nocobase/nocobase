@@ -44,6 +44,8 @@ export class NotificationProvider<
     if (!this.app.container.has(loggingToken))
       throw new Error('Notification core requires the logging dependency.');
     const jobsConfiguration = this.jobsConfiguration();
+    // Keep the startup snapshot; third-party channel configuration may contain functions.
+    const config = this.app.config.get<NotificationConfig>('notification')!;
     const registry = createNotificationRegistry();
     this.app.container.instance(notificationExtensionRegistryToken, registry);
     this.app.container.singleton(notificationRuntimeToken, (container) =>
@@ -58,7 +60,7 @@ export class NotificationProvider<
           .child({
             module: 'notification',
           }),
-        config: this.app.config.get<NotificationConfig>('notification')!,
+        config,
         registry,
         container: this.app.container,
       }),

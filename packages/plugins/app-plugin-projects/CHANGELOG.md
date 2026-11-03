@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- a71b814: Include recorded work skip reasons in comment creation responses so callers can distinguish saved comments from work held by a run limit.
+- Updated dependencies [5a4ebe0]
+  - @nocobase/app-plugin-users@2.0.0-beta.13
+
 ## 0.1.0-beta.23
 
 ### Patch Changes

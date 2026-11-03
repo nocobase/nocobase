@@ -1,3 +1,4 @@
+/** Recognize driver unique-key errors, including wrapped causes, without matching messages. */
 export function isUniqueConstraintViolation(error: unknown): boolean {
   const visited = new Set<unknown>();
   let current: unknown = error;
@@ -10,7 +11,6 @@ export function isUniqueConstraintViolation(error: unknown): boolean {
       record.errCode === -6602 ||
       code === '23505' ||
       code === 'ER_DUP_ENTRY' ||
-      code === 'SQLITE_CONSTRAINT' ||
       code === 'SQLITE_CONSTRAINT_UNIQUE' ||
       code === 'SQLITE_CONSTRAINT_PRIMARYKEY' ||
       number === 1 ||

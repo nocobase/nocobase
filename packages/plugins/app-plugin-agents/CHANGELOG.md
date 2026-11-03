@@ -1,5 +1,16 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- a54cf2c: Expose the optional target update time in conversation links so applications can order linked work without fetching each record.
+- 09646a9: Continue queued Runner conversation messages in the next turn after a user stops the current turn, keeping the original messages and excluding received or withdrawn inputs.
+
+  Preserve saved input revisions across stream recovery without allowing older assistant snapshots to overwrite replayed output.
+
+- f206179: Explain quota-blocked queued runs and model diagnostics with `toolQuota` and the earliest known reset time, reusing existing quota marks without changing scheduling or retries.
+
 ## 2.0.0-beta.1
 
 ### Patch Changes

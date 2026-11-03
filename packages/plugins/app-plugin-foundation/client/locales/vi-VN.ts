@@ -6,6 +6,10 @@ const viVN: FoundationResource = {
     foundation: 'Nền tảng ứng dụng',
   },
   page: {
+    notCounted: 'Chưa thống kê',
+    updatingHistory: 'Đang cập nhật… Hiển thị kết quả trước đó.',
+    previousKernel:
+      'Hiển thị lịch sử từ nhân {{version}}; nhân đang chạy: {{current}}.',
     identified: 'Đã nhận diện {{value}}',
     counted: 'Đã thống kê {{value}}',
     partial: 'Một số dữ liệu đang chờ cập nhật',

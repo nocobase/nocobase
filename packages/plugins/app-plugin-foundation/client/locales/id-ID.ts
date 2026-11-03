@@ -6,6 +6,10 @@ const idID: FoundationResource = {
     foundation: 'Fondasi aplikasi',
   },
   page: {
+    notCounted: 'Belum dihitung',
+    updatingHistory: 'Memperbarui… Menampilkan hasil sebelumnya.',
+    previousKernel:
+      'Menampilkan riwayat kernel {{version}}; kernel berjalan: {{current}}.',
     identified: 'Teridentifikasi {{value}}',
     counted: 'Terhitung: {{value}}',
     partial: 'Sebagian data menunggu pembaruan',
