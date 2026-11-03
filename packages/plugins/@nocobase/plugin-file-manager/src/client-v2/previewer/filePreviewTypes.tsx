@@ -793,13 +793,14 @@ const getPdfjsBaseUrl = () => {
 
 export const getPdfPreviewResourceOptions = (): Pick<
   DocumentInitParameters,
-  'cMapPacked' | 'cMapUrl' | 'standardFontDataUrl'
+  'cMapPacked' | 'cMapUrl' | 'standardFontDataUrl' | 'wasmUrl'
 > => {
   const pdfjsBaseUrl = getPdfjsBaseUrl();
   return {
     cMapPacked: true,
     cMapUrl: `${pdfjsBaseUrl}cmaps/`,
     standardFontDataUrl: `${pdfjsBaseUrl}standard_fonts/`,
+    wasmUrl: `${pdfjsBaseUrl}wasm/`,
   };
 };
 
