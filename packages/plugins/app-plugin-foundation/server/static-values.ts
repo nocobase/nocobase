@@ -2,7 +2,7 @@ import ts from 'typescript';
 import type { SourceEvidence } from './source-evidence.js';
 import { importedContract } from './api-contracts.js';
 
-type Atom = string | number | boolean | null;
+type Atom = string | number | boolean | null | undefined;
 type Bindings = ReadonlyMap<ts.Declaration, readonly ts.Node[]>;
 interface Invocation {
   readonly fn: ts.SignatureDeclaration;
@@ -59,18 +59,72 @@ const CLOSED_RECORDS = new WeakMap<SourceEvidence, WeakMap<ts.Node, boolean>>();
 // Accessor names declared in object literals of an analysis's sources; the source graph never changes during a scan.
 const ACCESSORS = new WeakMap<
   object,
-  { names: Set<string>; computed: boolean }
+  {
+    names: Set<string>;
+    computed: boolean;
+    arrayMethodsIntact: boolean;
+    regexpMethodsIntact: boolean;
+  }
 >();
 function accessorIndex(analysis: SourceEvidence): {
   names: Set<string>;
   computed: boolean;
+  arrayMethodsIntact: boolean;
+  regexpMethodsIntact: boolean;
 } {
   let index = ACCESSORS.get(analysis);
   if (index) return index;
-  index = { names: new Set(), computed: false };
+  index = {
+    names: new Set(),
+    computed: false,
+    arrayMethodsIntact: true,
+    regexpMethodsIntact: true,
+  };
   const found = index;
   for (const source of analysis.evidenceSources())
     walk(source, (node) => {
+      if (
+        ts.isTypeNode(node) ||
+        (ts.isIdentifier(node) && ts.isTypeNode(node.parent))
+      )
+        return true;
+      if (
+        (ts.isPropertyAccessExpression(node) &&
+          (['__proto__', 'constructor'].includes(node.name.text) ||
+            (node.name.text === 'prototype' &&
+              ts.isIdentifier(node.expression) &&
+              node.expression.text === 'Array' &&
+              !analysis.symbol(node.expression)))) ||
+        (ts.isIdentifier(node) &&
+          ['Array', 'eval', 'Function'].includes(node.text) &&
+          !analysis.symbol(node) &&
+          !(
+            ts.isPropertyAccessExpression(node.parent) &&
+            node.parent.expression === node &&
+            ['isArray', 'from', 'of'].includes(node.parent.name.text) &&
+            ts.isCallExpression(node.parent.parent) &&
+            node.parent.parent.expression === node.parent
+          )) ||
+        (ts.isCallExpression(node) &&
+          ts.isPropertyAccessExpression(node.expression) &&
+          ['defineProperty', 'defineProperties', 'setPrototypeOf'].includes(
+            node.expression.name.text,
+          ))
+      )
+        found.arrayMethodsIntact = false;
+      if (
+        (ts.isIdentifier(node) &&
+          node.text === 'RegExp' &&
+          !analysis.symbol(node)) ||
+        (ts.isPropertyAccessExpression(node) &&
+          ['__proto__', 'constructor'].includes(node.name.text)) ||
+        (ts.isCallExpression(node) &&
+          ts.isPropertyAccessExpression(node.expression) &&
+          ['defineProperty', 'defineProperties', 'setPrototypeOf'].includes(
+            node.expression.name.text,
+          ))
+      )
+        found.regexpMethodsIntact = false;
       if (
         (ts.isGetAccessorDeclaration(node) ||
           ts.isSetAccessorDeclaration(node)) &&
@@ -106,6 +160,10 @@ export class StaticValues {
     activeCalls?: Set<ts.CallExpression>,
     private readonly expandServices = true,
     private readonly awaitReturns = false,
+    private readonly localArrays: Map<
+      ts.VariableDeclaration,
+      ts.Expression[]
+    > = new Map(),
   ) {
     this.captures = captures ?? new Map<ts.Node, Bindings>();
     this.activeCalls = activeCalls ?? new Set();
@@ -180,6 +238,72 @@ export class StaticValues {
       )
         return [];
       if (containers.some((value) => this.hasSpread(value))) return [];
+      if (node.dotDotDotToken && ts.isObjectBindingPattern(node.parent)) {
+        if (!ts.isVariableDeclaration(owner) || !owner.initializer) return [];
+        const source = StaticValues.unwrap(owner.initializer);
+        if (!ts.isObjectLiteralExpression(source)) {
+          if (!ts.isIdentifier(source)) return [];
+          const declarations = this.analysis.declarations(source);
+          if (
+            declarations.length !== 1 ||
+            !ts.isVariableDeclaration(declarations[0]) ||
+            !declarations[0].initializer ||
+            !ts.isObjectLiteralExpression(
+              StaticValues.unwrap(declarations[0].initializer),
+            )
+          )
+            return [];
+        }
+        const excluded = new Set<string>();
+        for (const sibling of node.parent.elements) {
+          if (sibling === node) continue;
+          const key = sibling.propertyName ?? sibling.name;
+          if (
+            sibling.dotDotDotToken ||
+            !(ts.isIdentifier(key) || ts.isStringLiteralLike(key))
+          )
+            return [];
+          excluded.add(key.text);
+        }
+        if (
+          containers.length !== 1 ||
+          !ts.isObjectLiteralExpression(containers[0]) ||
+          !this.finiteOwner(containers[0])
+        )
+          return [];
+        const properties: ts.ObjectLiteralElementLike[] = [];
+        for (const property of containers[0].properties) {
+          if (
+            !(
+              ts.isPropertyAssignment(property) ||
+              ts.isShorthandPropertyAssignment(property)
+            ) ||
+            !(
+              ts.isIdentifier(property.name) ||
+              ts.isStringLiteralLike(property.name)
+            )
+          )
+            return [];
+          if (property.name.text === '__proto__') return [];
+          if (excluded.has(property.name.text)) continue;
+          const child = this.materialize(
+            ts.isPropertyAssignment(property)
+              ? property.initializer
+              : property.name,
+            new Set(),
+          );
+          if (!child) return [];
+          properties.push(
+            ts.factory.createPropertyAssignment(property.name, child),
+          );
+        }
+        return [
+          this.origin(
+            ts.factory.createObjectLiteralExpression(properties),
+            node,
+          ),
+        ];
+      }
       if (ts.isArrayBindingPattern(node.parent)) {
         const index = node.parent.elements.indexOf(node);
         return containers.flatMap((value) =>
@@ -221,6 +345,14 @@ export class StaticValues {
           : [];
     }
     if (ts.isVariableDeclaration(node)) {
+      const local = this.localArrays.get(node);
+      if (local)
+        return [
+          this.origin(
+            ts.factory.createArrayLiteralExpression(local),
+            node.initializer ?? node,
+          ),
+        ];
       const bound = this.bindings.get(node);
       if (bound) return bound.flatMap(next).slice(0, MAX_VALUES);
       if (node.initializer) return next(node.initializer);
@@ -244,6 +376,9 @@ export class StaticValues {
     if (ts.isCallExpression(node)) {
       const inputs = this.initializers(node.arguments, new Set(seen), 0);
       if (inputs.unknown || !inputs.continues) return [];
+      const finite = this.finiteArrayCall(node, seen, 0);
+      if (finite !== undefined)
+        return finite.unknown || !finite.continues ? [] : finite.values;
       if (this.activeCalls.has(node) || this.activeCalls.size >= MAX_CALL_DEPTH)
         return [];
       const nested = new Set(this.activeCalls).add(node);
@@ -332,7 +467,12 @@ export class StaticValues {
         bindings.set(declaration, values);
       fn.parameters.forEach((parameter, index) => {
         const argument = node.arguments[index] ?? parameter.initializer;
-        bindings.set(parameter, argument ? [argument] : []);
+        bindings.set(
+          parameter,
+          argument
+            ? [argument]
+            : [this.origin(ts.factory.createIdentifier('undefined'), node)],
+        );
       });
       if (
         node.arguments.some(ts.isSpreadElement) ||
@@ -975,7 +1115,8 @@ export class StaticValues {
         if (ts.isVariableDeclaration(declaration)) {
           if (
             !(ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const) ||
-            this.mutated(declaration)
+            this.mutated(declaration) ||
+            this.analysis.hasBindingWrites(declaration)
           )
             return false;
           if (
@@ -1044,7 +1185,7 @@ export class StaticValues {
       if (
         node.expression.name.text === 'header' &&
         keys[0] !== '' &&
-        !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(keys[0])
+        /[^!#$%&'*+\-.^_`|~0-9A-Za-z]/.test(keys[0])
       )
         return false;
     }
@@ -1414,8 +1555,13 @@ export class StaticValues {
       return undefined;
     const factories = this.analysis.serviceFactories(node.arguments[0]);
     // Another package's service stays this opaque `resolve(token)` value; competing local registrations are unknown.
-    if (!factories)
-      return this.analysis.externalService(node.arguments[0]) ? [node] : [];
+    if (!factories) {
+      if (!this.analysis.externalService(node.arguments[0])) return [];
+      const bindings = this.receiverBindings(node.expression.expression);
+      if (!bindings) return [];
+      this.capture(node, bindings, false);
+      return [node];
+    }
     const factory = factories[0];
     const summary = this.analysis.serviceSummary(factory, (receiver) => {
       const scopes = new Map<ts.Node, Bindings>();
@@ -1472,6 +1618,7 @@ export class StaticValues {
       this.activeCalls,
       this.expandServices,
       this.awaitReturns,
+      new Map(this.localArrays),
     );
     const flow = evaluator.flow(body, seen, depth + 1);
     if (flow.unknown) return [];
@@ -1830,7 +1977,13 @@ export class StaticValues {
       };
     const inputs = this.initializers(node.arguments, seen, depth + 1);
     if (inputs.unknown || !inputs.continues) return inputs;
-    if (this.authorizationCall(node) || this.requestRead(node))
+    const finite = this.finiteArrayCall(node, seen, depth + 1);
+    if (finite !== undefined) return finite;
+    if (
+      this.authorizationCall(node) ||
+      this.requestRead(node) ||
+      this.databaseAccessor(node)
+    )
       return {
         values: [node],
         continues: true,
@@ -2154,6 +2307,162 @@ export class StaticValues {
     return this.initializers(children, new Set(seen).add(node), depth - 1);
   }
 
+  /** Constructing a query on the identified host database does not execute it. Its value stays opaque. */
+  private databaseAccessor(node: ts.CallExpression): boolean {
+    if (
+      node.questionDotToken ||
+      node.arguments.length !== 0 ||
+      !ts.isPropertyAccessExpression(node.expression) ||
+      node.expression.questionDotToken ||
+      node.expression.name.text !== 'query'
+    )
+      return false;
+    return this.databaseIdentity(node.expression.expression, new Set(), true);
+  }
+
+  /** Database provenance follows invocation captures as well as the value returned by a local helper. */
+  public databaseIdentity(
+    value: ts.Node,
+    seen: Set<ts.Node> = new Set(),
+    strict: boolean = false,
+  ): boolean {
+    if (seen.has(value) || seen.size >= MAX_VALUES) return false;
+    const next = new Set(seen).add(value);
+    if (
+      ts.isIdentifier(value) &&
+      this.analysis
+        .declarations(value)
+        .some((declaration) => this.mutated(declaration))
+    )
+      return false;
+    const scope = this.captures.get(value);
+    const evaluator = scope
+      ? new StaticValues(
+          this.analysis,
+          new Map([...this.bindings, ...scope]),
+          this.captures,
+          this.activeCalls,
+          this.expandServices,
+          this.awaitReturns,
+        )
+      : this;
+    if (
+      ts.isCallExpression(value) &&
+      !value.questionDotToken &&
+      ts.isPropertyAccessExpression(value.expression) &&
+      !value.expression.questionDotToken
+    ) {
+      if (
+        value.expression.name.text === 'resolve' &&
+        value.arguments.length === 1
+      )
+        return (
+          this.analysis.externalService(value.arguments[0]) ===
+            '@nocobase/db' &&
+          (!strict || evaluator.containerIdentity(value.expression.expression))
+        );
+      if (
+        ['connection', 'query', 'repository'].includes(
+          value.expression.name.text,
+        )
+      )
+        return evaluator.databaseIdentity(
+          value.expression.expression,
+          next,
+          strict,
+        );
+    }
+    if (
+      ts.isPropertyAccessExpression(value) &&
+      !value.questionDotToken &&
+      value.name.text === 'query'
+    )
+      return evaluator.databaseIdentity(value.expression, next, strict);
+    const values = evaluator.values(value);
+    return (
+      values.length > 0 &&
+      values.every(
+        (candidate) =>
+          candidate !== value &&
+          evaluator.databaseIdentity(candidate, next, strict),
+      )
+    );
+  }
+
+  private receiverBindings(
+    receiver: ts.Node,
+  ): Map<ts.Declaration, readonly ts.Node[]> | undefined {
+    const bindings = new Map<ts.Declaration, readonly ts.Node[]>();
+    const seen = new Set<ts.Node>();
+    const pending = [receiver];
+    while (pending.length) {
+      const node = pending.pop()!;
+      if (seen.has(node)) continue;
+      if (seen.size >= 1024) return undefined;
+      seen.add(node);
+      const declarations = [...this.analysis.declarations(node)];
+      if (node.kind === ts.SyntaxKind.ThisKeyword) {
+        let owner: ts.Node | undefined = node.parent;
+        while (owner && !ts.isClassLike(owner)) owner = owner.parent;
+        if (owner && ts.isClassLike(owner)) declarations.push(owner);
+      }
+      for (const declaration of declarations) {
+        const values = this.bindings.get(declaration);
+        if (values) {
+          bindings.set(declaration, values);
+          pending.push(...values);
+        } else if (
+          ts.isVariableDeclaration(declaration) &&
+          declaration.initializer
+        )
+          pending.push(declaration.initializer);
+      }
+      ts.forEachChild(node, (child) => {
+        pending.push(child);
+      });
+    }
+    return bindings;
+  }
+
+  private containerIdentity(
+    value: ts.Node,
+    seen = new Set<ts.Node>(),
+  ): boolean {
+    if (seen.has(value) || seen.size >= MAX_VALUES) return false;
+    const next = new Set(seen).add(value);
+    if (
+      ts.isPropertyAccessExpression(value) &&
+      !value.questionDotToken &&
+      value.name.text === 'container'
+    )
+      return this.applicationIdentity(value.expression);
+    if (ts.isIdentifier(value)) {
+      const declarations = this.analysis.declarations(value);
+      if (declarations.length !== 1) return false;
+      const declaration = declarations[0];
+      if (
+        this.mutated(declaration) ||
+        this.analysis.hasBindingWrites(declaration)
+      )
+        return false;
+      const bound = this.bindings.get(declaration);
+      if (bound)
+        return bound.length === 1 && this.containerIdentity(bound[0], next);
+      if (
+        ts.isVariableDeclaration(declaration) &&
+        declaration.initializer &&
+        ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const
+      )
+        return this.containerIdentity(declaration.initializer, next);
+    }
+    const values = this.values(value);
+    return (
+      values.length === 1 &&
+      values[0] !== value &&
+      this.containerIdentity(values[0], next)
+    );
+  }
+
   private configurationRead(node: ts.CallExpression): boolean {
     if (
       node.questionDotToken ||
@@ -2171,77 +2480,79 @@ export class StaticValues {
       config.name.text !== 'config'
     )
       return false;
-    const application = (
-      value: ts.Node,
-      seen = new Set<ts.Node>(),
-    ): boolean => {
-      if (seen.has(value) || seen.size >= MAX_VALUES) return false;
-      const next = new Set(seen).add(value);
-      if (
-        ts.isPropertyAccessExpression(value) &&
-        !value.questionDotToken &&
-        value.name.text === 'app' &&
-        value.expression.kind === ts.SyntaxKind.ThisKeyword
-      ) {
-        let owner: ts.Node | undefined = value.parent;
-        while (owner && !ts.isClassLike(owner)) {
-          if (
-            ts.isFunctionDeclaration(owner) ||
-            ts.isFunctionExpression(owner) ||
-            (ts.canHaveModifiers(owner) &&
-              ts
-                .getModifiers(owner)
-                ?.some(
-                  (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword,
-                ))
-          )
-            return false;
-          owner = owner.parent;
-        }
-        return (
-          !!owner &&
-          ts.isClassLike(owner) &&
-          !!owner.heritageClauses?.some(
-            (clause) =>
-              clause.token === ts.SyntaxKind.ExtendsKeyword &&
-              clause.types.some((type) =>
-                importedContract(
-                  type.expression,
-                  this.analysis,
-                  '@nocobase/service-provider',
-                  'ServiceProvider',
-                ),
-              ),
-          )
-        );
-      }
-      return this.analysis.declarations(value).some((declaration) => {
+    return this.applicationIdentity(config.expression);
+  }
+
+  private applicationIdentity(
+    value: ts.Node,
+    seen = new Set<ts.Node>(),
+  ): boolean {
+    if (seen.has(value) || seen.size >= MAX_VALUES) return false;
+    const next = new Set(seen).add(value);
+    if (
+      ts.isPropertyAccessExpression(value) &&
+      !value.questionDotToken &&
+      value.name.text === 'app' &&
+      value.expression.kind === ts.SyntaxKind.ThisKeyword
+    ) {
+      let owner: ts.Node | undefined = value.parent;
+      while (owner && !ts.isClassLike(owner)) {
         if (
-          ts.isVariableDeclaration(declaration) &&
-          declaration.initializer &&
-          ts.isVariableDeclarationList(declaration.parent) &&
-          declaration.parent.flags & ts.NodeFlags.Const
+          ts.isFunctionDeclaration(owner) ||
+          ts.isFunctionExpression(owner) ||
+          (ts.canHaveModifiers(owner) &&
+            ts
+              .getModifiers(owner)
+              ?.some(
+                (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword,
+              ))
         )
-          return application(declaration.initializer, next);
-        if (!ts.isParameter(declaration)) return false;
-        const bound = this.bindings.get(declaration);
-        if (bound) return bound.length === 1 && application(bound[0], next);
-        const fn = declaration.parent;
-        return (
-          ts.isArrowFunction(fn) &&
-          fn.parameters[0] === declaration &&
-          ts.isCallExpression(fn.parent) &&
-          fn.parent.arguments[0] === fn &&
-          importedContract(
-            fn.parent.expression,
-            this.analysis,
-            '@nocobase/app-server/router',
-            'defineApiRoutes',
-          )
-        );
-      });
-    };
-    return application(config.expression);
+          return false;
+        owner = owner.parent;
+      }
+      return (
+        !!owner &&
+        ts.isClassLike(owner) &&
+        !!owner.heritageClauses?.some(
+          (clause) =>
+            clause.token === ts.SyntaxKind.ExtendsKeyword &&
+            clause.types.some((type) =>
+              importedContract(
+                type.expression,
+                this.analysis,
+                '@nocobase/service-provider',
+                'ServiceProvider',
+              ),
+            ),
+        )
+      );
+    }
+    return this.analysis.declarations(value).some((declaration) => {
+      if (
+        ts.isVariableDeclaration(declaration) &&
+        declaration.initializer &&
+        ts.isVariableDeclarationList(declaration.parent) &&
+        declaration.parent.flags & ts.NodeFlags.Const
+      )
+        return this.applicationIdentity(declaration.initializer, next);
+      if (!ts.isParameter(declaration)) return false;
+      const bound = this.bindings.get(declaration);
+      if (bound)
+        return bound.length === 1 && this.applicationIdentity(bound[0], next);
+      const fn = declaration.parent;
+      return (
+        ts.isArrowFunction(fn) &&
+        fn.parameters[0] === declaration &&
+        ts.isCallExpression(fn.parent) &&
+        fn.parent.arguments[0] === fn &&
+        importedContract(
+          fn.parent.expression,
+          this.analysis,
+          '@nocobase/app-server/router',
+          'defineApiRoutes',
+        )
+      );
+    });
   }
 
   private flow(node: ts.Node, seen: ReadonlySet<ts.Node>, depth: number): Flow {
@@ -2385,6 +2696,26 @@ export class StaticValues {
         throws ||= flow.throws;
         unknown ||= flow.unknown;
         if (!flow.continues) return { ...flow, returns: false };
+        if (
+          ts.isObjectBindingPattern(declaration.name) &&
+          declaration.name.elements.some(
+            (element) =>
+              element.dotDotDotToken && this.values(element).length !== 1,
+          )
+        )
+          return { ...CONTINUES, unknown: true };
+        if (
+          !flow.unknown &&
+          ts.isArrayLiteralExpression(declaration.initializer) &&
+          this.finiteOwner(declaration.initializer) &&
+          declaration.initializer.elements.every(
+            (element) =>
+              !ts.isSpreadElement(element) && !ts.isOmittedExpression(element),
+          )
+        )
+          this.localArrays.set(declaration, [
+            ...declaration.initializer.elements,
+          ]);
       }
       return {
         values: [],
@@ -2456,6 +2787,19 @@ export class StaticValues {
                 throws: false,
                 unknown: false,
               };
+      if (this.localArrays.size) {
+        let writes = false;
+        walk(node, (child) => {
+          if (
+            ts.isCallExpression(child) &&
+            ts.isPropertyAccessExpression(child.expression) &&
+            child.expression.name.text === 'push'
+          )
+            writes = true;
+          return !writes;
+        });
+        if (writes) return { ...CONTINUES, unknown: true };
+      }
       const then = this.flow(node.thenStatement, nextSeen, depth + 1);
       const otherwise = node.elseStatement
         ? this.flow(node.elseStatement, nextSeen, depth + 1)
@@ -2491,6 +2835,7 @@ export class StaticValues {
         !declaration ||
         !arrays.length ||
         arrays.length > MAX_VALUES ||
+        (this.localArrays.size > 0 && arrays.length !== 1) ||
         arrays.some(
           (array) =>
             array.elements.length > MAX_VALUES ||
@@ -2576,6 +2921,361 @@ export class StaticValues {
     )
       return this.expressionCall(node.expression, awaited);
     return undefined;
+  }
+
+  /** A finite callback runs with its own bindings; a failed iteration cannot contribute a partial result. */
+  private finiteArrayCall(
+    node: ts.CallExpression,
+    seen: ReadonlySet<ts.Node>,
+    depth: number,
+  ): Flow | undefined {
+    if (
+      !ts.isPropertyAccessExpression(node.expression) ||
+      !['map', 'some', 'push'].includes(node.expression.name.text)
+    )
+      return undefined;
+    const unknown = { ...CONTINUES, unknown: true };
+    if (!accessorIndex(this.analysis).arrayMethodsIntact) return unknown;
+    if (node.expression.name.text === 'push') {
+      const declarations = this.analysis.declarations(
+        node.expression.expression,
+      );
+      const declaration = declarations[0];
+      if (
+        node.questionDotToken ||
+        node.expression.questionDotToken ||
+        declarations.length !== 1 ||
+        !declaration ||
+        !ts.isVariableDeclaration(declaration)
+      )
+        return unknown;
+      const elements = this.localArrays.get(declaration);
+      if (!elements || elements.length + node.arguments.length > MAX_VALUES)
+        return unknown;
+      const appended = node.arguments.map((argument) =>
+        ts.isSpreadElement(argument)
+          ? undefined
+          : this.materialize(argument, new Set()),
+      );
+      if (appended.some((value) => value === undefined)) return unknown;
+      elements.push(...(appended as ts.Expression[]));
+      return {
+        ...CONTINUES,
+        values: [
+          this.origin(ts.factory.createNumericLiteral(elements.length), node),
+        ],
+      };
+    }
+    if (
+      depth >= MAX_CALL_DEPTH ||
+      node.questionDotToken ||
+      node.expression.questionDotToken ||
+      this.activeCalls.has(node) ||
+      node.arguments.length !== 1 ||
+      ts.isSpreadElement(node.arguments[0])
+    )
+      return unknown;
+    const arrays = this.values(node.expression.expression, new Set(seen));
+    const callbacks = this.values(node.arguments[0]);
+    if (
+      arrays.length !== 1 ||
+      !ts.isArrayLiteralExpression(arrays[0]) ||
+      arrays[0].elements.length > MAX_VALUES ||
+      !this.finiteOwner(arrays[0]) ||
+      arrays[0].elements.some(
+        (element) =>
+          ts.isSpreadElement(element) ||
+          ts.isOmittedExpression(element) ||
+          !this.ownedCandidate(element) ||
+          !this.completeCandidate(element),
+      ) ||
+      callbacks.length !== 1 ||
+      !ts.isFunctionLike(callbacks[0]) ||
+      !ts.isFunctionLike(StaticValues.unwrap(node.arguments[0]))
+    )
+      return unknown;
+    const fn = callbacks[0];
+    if (
+      !('body' in fn) ||
+      !fn.body ||
+      ('asteriskToken' in fn && fn.asteriskToken) ||
+      ts
+        .getModifiers(fn)
+        ?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword) ||
+      fn.parameters.length > 3 ||
+      fn.parameters.some(
+        (parameter) => parameter.dotDotDotToken || this.mutated(parameter),
+      )
+    )
+      return unknown;
+    let writes = false;
+    walk(fn.body, (child) => {
+      if (
+        StaticValues.isAssignment(child) ||
+        ts.isDeleteExpression(child) ||
+        ((ts.isPrefixUnaryExpression(child) ||
+          ts.isPostfixUnaryExpression(child)) &&
+          [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(
+            child.operator,
+          ))
+      )
+        writes = true;
+      return !writes;
+    });
+    if (writes || !this.finiteCaptures(fn)) return unknown;
+    const elements: ts.Expression[] = [];
+    const active = new Set(this.activeCalls).add(node);
+    for (const [index, element] of arrays[0].elements.entries()) {
+      const bindings = new Map([
+        ...this.bindings,
+        ...(this.captures.get(fn) ?? []),
+      ]);
+      const args = [element, ts.factory.createNumericLiteral(index), arrays[0]];
+      fn.parameters.forEach((parameter, position) =>
+        bindings.set(parameter, [args[position]]),
+      );
+      const evaluator = new StaticValues(
+        this.analysis,
+        bindings,
+        this.captures,
+        active,
+        this.expandServices,
+        this.awaitReturns,
+        new Map(this.localArrays),
+      );
+      const flow = evaluator.flow(fn.body, seen, depth + 1);
+      if (flow.unknown || !flow.returns || flow.continues || flow.throws)
+        return { ...flow, values: [], unknown: true };
+      if (flow.values.length !== 1) return unknown;
+      if (node.expression.name.text === 'some') {
+        const truth = evaluator.booleans(flow.values[0]);
+        if (truth.length !== 1) return unknown;
+        if (truth[0])
+          return { ...CONTINUES, values: [ts.factory.createTrue()] };
+      } else {
+        const value = evaluator.materialize(flow.values[0], new Set());
+        if (!value) return unknown;
+        elements.push(value);
+      }
+    }
+    return {
+      ...CONTINUES,
+      values: [
+        node.expression.name.text === 'some'
+          ? ts.factory.createFalse()
+          : this.origin(
+              ts.factory.createArrayLiteralExpression(elements),
+              node,
+            ),
+      ],
+    };
+  }
+
+  /** A finite collection cannot be aliased, returned, passed out, or have its methods rewritten. */
+  private finiteOwner(
+    array: ts.ArrayLiteralExpression | ts.ObjectLiteralExpression,
+  ): boolean {
+    let declaration = array.parent;
+    while (
+      declaration &&
+      (ts.isParenthesizedExpression(declaration) ||
+        ts.isAsExpression(declaration) ||
+        ts.isSatisfiesExpression(declaration) ||
+        ts.isNonNullExpression(declaration))
+    )
+      declaration = declaration.parent;
+    if (!declaration || !ts.isVariableDeclaration(declaration)) return true;
+    if (
+      ts.isObjectLiteralExpression(array) &&
+      ts.isObjectBindingPattern(declaration.name)
+    )
+      return true;
+    if (
+      !ts.isIdentifier(declaration.name) ||
+      !(ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const) ||
+      this.analysis.isExported(declaration) ||
+      this.mutated(declaration)
+    )
+      return false;
+    let safe = true;
+    walk(declaration.getSourceFile(), (node) => {
+      if (
+        ts.isIdentifier(node) &&
+        node !== declaration.name &&
+        this.analysis.declarations(node).includes(declaration)
+      ) {
+        const parent = node.parent;
+        if (ts.isObjectLiteralExpression(array)) {
+          safe =
+            ts.isVariableDeclaration(parent) &&
+            ts.isObjectBindingPattern(parent.name) &&
+            parent.initializer === node;
+        } else {
+          safe =
+            ts.isPropertyAccessExpression(parent) &&
+            parent.expression === node &&
+            ((parent.name.text === 'length' &&
+              !ts.isCallExpression(parent.parent)) ||
+              (['map', 'some', 'push'].includes(parent.name.text) &&
+                ts.isCallExpression(parent.parent) &&
+                parent.parent.expression === parent));
+        }
+      }
+      return safe;
+    });
+    return safe;
+  }
+
+  private finiteCaptures(
+    fn: ts.SignatureDeclaration,
+    seen = new Set<ts.Node>(),
+  ): boolean {
+    if (seen.has(fn) || seen.size >= MAX_VALUES) return false;
+    const next = new Set(seen).add(fn);
+    let safe = true;
+    let visits = 0;
+    walk(fn, (node) => {
+      if (++visits > 4096) safe = false;
+      if (!safe || !ts.isIdentifier(node)) return safe;
+      for (const declaration of this.analysis.declarations(node)) {
+        let owner: ts.Node | undefined = declaration;
+        while (owner && owner !== fn) owner = owner.parent;
+        if (owner === fn) continue;
+        if (
+          ts.isVariableDeclaration(declaration) ||
+          ts.isParameter(declaration)
+        ) {
+          if (
+            this.mutated(declaration) ||
+            this.analysis.hasBindingWrites(declaration) ||
+            (ts.isVariableDeclaration(declaration) &&
+              !(ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const)) ||
+            (ts.isParameter(declaration) && !this.bindings.has(declaration)) ||
+            !this.ownedCandidate(declaration) ||
+            !this.completeCandidate(declaration)
+          )
+            safe = false;
+        } else if (
+          ts.isFunctionDeclaration(declaration) &&
+          !this.finiteCaptures(declaration, next)
+        )
+          safe = false;
+      }
+      return safe;
+    });
+    return safe;
+  }
+
+  private ownedCandidate(
+    node: ts.Node,
+    seen = new Set<ts.Node>(),
+    budget = { remaining: 1024 },
+  ): boolean {
+    if (--budget.remaining < 0 || seen.has(node) || seen.size >= MAX_VALUES)
+      return false;
+    const next = new Set(seen).add(node);
+    return this.values(node).every((value) => {
+      if (ts.isObjectLiteralExpression(value))
+        return (
+          this.finiteOwner(value) &&
+          value.properties.every((property) =>
+            ts.isPropertyAssignment(property)
+              ? this.ownedCandidate(property.initializer, next, budget)
+              : ts.isShorthandPropertyAssignment(property)
+                ? this.ownedCandidate(property.name, next, budget)
+                : ts.isMethodDeclaration(property),
+          )
+        );
+      if (ts.isArrayLiteralExpression(value))
+        return (
+          this.finiteOwner(value) &&
+          value.elements.every((element) =>
+            this.ownedCandidate(element, next, budget),
+          )
+        );
+      return true;
+    });
+  }
+
+  private origin<T extends ts.Node>(value: T, source: ts.Node): T {
+    ts.setOriginalNode(value, source);
+    (value as ts.Node & { parent: ts.Node }).parent = source.parent;
+    return value;
+  }
+
+  /** Snapshot plain returned data before another iteration can bind the same callback parameters. */
+  private materialize(
+    node: ts.Node,
+    seen: Set<ts.Node>,
+    budget = { remaining: 1024 },
+  ): ts.Expression | undefined {
+    if (--budget.remaining < 0 || seen.has(node) || seen.size >= MAX_VALUES)
+      return undefined;
+    const values = this.values(node);
+    if (values.length !== 1) return undefined;
+    const value = values[0];
+    const next = new Set(seen).add(node);
+    if (ts.isObjectLiteralExpression(value)) {
+      if (!this.finiteOwner(value)) return undefined;
+      const properties: ts.ObjectLiteralElementLike[] = [];
+      for (const property of value.properties) {
+        if (
+          !property.name ||
+          !(
+            ts.isIdentifier(property.name) ||
+            ts.isStringLiteralLike(property.name)
+          ) ||
+          property.name.text === '__proto__' ||
+          !(
+            ts.isPropertyAssignment(property) ||
+            ts.isShorthandPropertyAssignment(property)
+          )
+        )
+          return undefined;
+        const child = this.materialize(
+          ts.isPropertyAssignment(property)
+            ? property.initializer
+            : property.name,
+          next,
+          budget,
+        );
+        if (!child) return undefined;
+        properties.push(
+          ts.factory.createPropertyAssignment(property.name, child),
+        );
+      }
+      return this.origin(
+        ts.factory.createObjectLiteralExpression(properties),
+        value,
+      );
+    }
+    if (ts.isArrayLiteralExpression(value)) {
+      if (!this.finiteOwner(value)) return undefined;
+      const elements = value.elements.map((element) =>
+        this.materialize(element, next, budget),
+      );
+      return elements.every((element) => element !== undefined)
+        ? this.origin(ts.factory.createArrayLiteralExpression(elements), value)
+        : undefined;
+    }
+    // Functions retain the invocation that produced them, with a distinct node per iteration.
+    if (ts.isArrowFunction(value)) {
+      const fn = ts.factory.createArrowFunction(
+        value.modifiers,
+        value.typeParameters,
+        value.parameters,
+        value.type,
+        value.equalsGreaterThanToken,
+        value.body,
+      );
+      ts.setOriginalNode(fn, value);
+      (fn as ts.Node & { parent: ts.Node }).parent = value.parent;
+      this.captures.set(fn, this.snapshotBindings(this.bindings));
+      return fn;
+    }
+    return ts.isExpression(value) && !ts.isFunctionLike(value)
+      ? value
+      : undefined;
   }
 
   private stableCollection(
@@ -2727,6 +3427,30 @@ export class StaticValues {
     });
   }
 
+  private sameValues(
+    left: readonly ts.Node[],
+    right: readonly ts.Node[],
+  ): boolean {
+    return (
+      left.length === right.length &&
+      left.every((value, index) => {
+        const other = right[index];
+        return (
+          value === other ||
+          (value.pos < 0 &&
+            other.pos < 0 &&
+            ts.isArrayLiteralExpression(value) &&
+            ts.isArrayLiteralExpression(other) &&
+            ts.getOriginalNode(value) === ts.getOriginalNode(other) &&
+            value.elements.length === other.elements.length &&
+            value.elements.every(
+              (element, position) => element === other.elements[position],
+            ))
+        );
+      })
+    );
+  }
+
   private sameCapture(
     previous: Bindings | undefined,
     incoming: Bindings,
@@ -2737,17 +3461,39 @@ export class StaticValues {
       const entry = entries.next().value!;
       if (
         entry[0] !== declaration ||
-        (entry[1].length !== 0 &&
-          (entry[1].length !== values.length ||
-            entry[1].some((value, index) => value !== values[index])))
+        (entry[1].length !== 0 && !this.sameValues(entry[1], values))
       )
         return false;
     }
     return true;
   }
 
-  private capture(node: ts.Node, bindings: Bindings): void {
-    if (ts.isFunctionLike(node) || ts.isObjectLiteralExpression(node)) {
+  private snapshotBindings(
+    bindings: Bindings,
+  ): Map<ts.Declaration, readonly ts.Node[]> {
+    const snapshot = new Map(bindings);
+    for (const [declaration, elements] of this.localArrays)
+      snapshot.set(declaration, [
+        this.origin(
+          ts.factory.createArrayLiteralExpression(elements),
+          declaration.initializer ?? declaration,
+        ),
+      ]);
+    return snapshot;
+  }
+
+  private capture(
+    node: ts.Node,
+    bindings: Bindings,
+    snapshotLocals = true,
+  ): void {
+    if (snapshotLocals && this.localArrays.size)
+      bindings = this.snapshotBindings(bindings);
+    if (
+      ts.isFunctionLike(node) ||
+      ts.isObjectLiteralExpression(node) ||
+      ts.isCallExpression(node)
+    ) {
       // Inner invocations own their parameters. An outer return must retain that scope; competing
       // values for the same parameter are ambiguous and cannot establish selected evidence.
       // An unchanged ordered merge retains the immutable scope; children still capture below.
@@ -2757,16 +3503,12 @@ export class StaticValues {
           const current = captured.get(declaration);
           captured.set(
             declaration,
-            current &&
-              (current.length !== values.length ||
-                current.some((value, index) => value !== values[index]))
-              ? []
-              : values,
+            current && !this.sameValues(current, values) ? [] : values,
           );
         }
         this.captures.set(node, captured);
       }
-      if (ts.isFunctionLike(node)) return;
+      if (ts.isFunctionLike(node) || ts.isCallExpression(node)) return;
     }
     if (ts.isObjectLiteralExpression(node)) {
       for (const property of node.properties) {
@@ -3047,6 +3789,31 @@ export class StaticValues {
     )
       return undefined;
     const { expression: receiver, name } = node.expression;
+    // This literal grammar is the file repository's path check. Evaluate only this fixed,
+    // linear pattern on one proven primitive string; never compile an application's regexp.
+    if (
+      name.text === 'test' &&
+      ts.isRegularExpressionLiteral(receiver) &&
+      receiver.text === String.raw`/^\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+$/`
+    ) {
+      const argument = node.arguments[0];
+      if (
+        !accessorIndex(this.analysis).regexpMethodsIntact ||
+        !this.stableKeySource(argument) ||
+        this.analysis
+          .declarations(argument)
+          .some((declaration) => this.mutated(declaration))
+      )
+        return undefined;
+      const values = this.values(argument);
+      if (
+        values.length !== 1 ||
+        !ts.isStringLiteralLike(values[0]) ||
+        values[0].text.length > 4096
+      )
+        return undefined;
+      return /^\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+$/.test(values[0].text);
+    }
     if (this.global(receiver) === 'Number') {
       const value = this.numericConstant(node.arguments[0], new Set());
       if (typeof value !== 'number') return undefined;
@@ -3086,6 +3853,12 @@ export class StaticValues {
   }
 
   private atoms(node: ts.Node, seen: Set<ts.Node> = new Set()): Atom[] {
+    if (
+      ts.isIdentifier(node) &&
+      node.text === 'undefined' &&
+      !this.analysis.declarations(node).length
+    )
+      return [undefined];
     const guard = this.closedGuard(node);
     if (guard !== undefined) return [guard];
     const numeric = this.numericConstant(node, seen);
@@ -3097,6 +3870,12 @@ export class StaticValues {
         if (value.kind === ts.SyntaxKind.TrueKeyword) return [true];
         if (value.kind === ts.SyntaxKind.FalseKeyword) return [false];
         if (value.kind === ts.SyntaxKind.NullKeyword) return [null];
+        if (
+          ts.isIdentifier(value) &&
+          value.text === 'undefined' &&
+          !this.analysis.declarations(value).length
+        )
+          return [undefined];
         if (ts.isTypeOfExpression(value))
           return this.atoms(value.expression, new Set(seen).add(value)).map(
             (item) => typeof item,

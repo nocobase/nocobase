@@ -1354,3 +1354,100 @@ it.each([
     ).toBe(expected);
   },
 );
+
+it('preserves the database identity through a conditional query accessor', async () => {
+  const source = providers.replace(
+    "return this.db.connection().repository('entries').findMany();",
+    "const database = this.db; const q = (connection) => connection ? connection.query : database.query(); return q().selectFrom('entries').selectAll().execute();",
+  );
+  const result = await collectModuleSources(
+    await fixture(routes, { 'server/providers/index.js': source }),
+  );
+  expect(result.routes[0]?.collections).toContain('entries');
+});
+
+it.each([
+  "const q = () => fake.query(); return q().selectFrom('entries').execute();",
+  "const q = () => { opaque(); return this.db.query(); }; return q().selectFrom('entries').execute();",
+  "const q = () => { throw new Error(); }; return q().selectFrom('entries').execute();",
+  "const db = this.db; db.query = opaque; const q = () => db.query(); return q().selectFrom('entries').execute();",
+  "const q = (connection) => connection.query(); return q(unknown).selectFrom('entries').execute();",
+])('blocks an unproven query accessor: %s', async (replacement) => {
+  const source = providers.replace(
+    "return this.db.connection().repository('entries').findMany();",
+    replacement,
+  );
+  const result = await collectModuleSources(
+    await fixture(routes, { 'server/providers/index.js': source }),
+  );
+  expect(result.routes[0]?.collections ?? []).not.toContain('entries');
+});
+
+it.each([
+  [undefined, true],
+  ['', true],
+  ['x-tenant-id', true],
+  ['bad name', false],
+  ['x\n', false],
+  ['x\r', false],
+  ['x\r\n', false],
+  ['a:b', false],
+  ['名称', false],
+] as const)(
+  'matches the native header boundary for %j',
+  async (name, accepted) => {
+    const source = routes.replace(
+      'c=>service.list()',
+      `c=>service.list(c.req.header(${name === undefined ? '' : JSON.stringify(name)}))`,
+    );
+    const result = await collectModuleSources(await fixture(source));
+    expect((result.routes[0]?.collections ?? []).includes('entries')).toBe(
+      accepted,
+    );
+  },
+);
+
+it('continues to database evidence after a proven finite callback', async () => {
+  const source = providers.replace(
+    "return this.db.connection().repository('entries').findMany();",
+    "const names = ['one', 'two'].map(name => ({name})); return this.db.connection().repository('entries').findMany();",
+  );
+  const result = await collectModuleSources(
+    await fixture(routes, { 'server/providers/index.js': source }),
+  );
+  expect(result.routes[0]?.collections).toContain('entries');
+});
+
+it('does not construct a query from a forged resolver carrying the database token', async () => {
+  const source = providers
+    .replace(
+      "return this.db.connection().repository('entries').findMany();",
+      "const q=()=>this.db.query(); return q().selectFrom('entries').execute();",
+    )
+    .replace(
+      '()=>new Catalog(this.app.container.resolve(databaseManagerToken))',
+      '()=>new Catalog(fake.resolve(databaseManagerToken))',
+    );
+  const result = await collectModuleSources(
+    await fixture(routes, {
+      'server/providers/index.js': `const fake={resolve(){return {query(){throw new Error();}}}}; ${source}`,
+    }),
+  );
+  expect(result.routes[0]?.collections ?? []).not.toContain('entries');
+});
+
+it('preserves a query accessor from the service factory container parameter', async () => {
+  const source = providers
+    .replace(
+      "return this.db.connection().repository('entries').findMany();",
+      "const q=()=>this.db.query();return q().selectFrom('entries').execute();",
+    )
+    .replace(
+      '()=>new Catalog(this.app.container.resolve(databaseManagerToken))',
+      '(container)=>new Catalog(container.resolve(databaseManagerToken))',
+    );
+  const result = await collectModuleSources(
+    await fixture(routes, { 'server/providers/index.js': source }),
+  );
+  expect(result.routes[0]?.collections).toContain('entries');
+});
