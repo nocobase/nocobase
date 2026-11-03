@@ -9,6 +9,7 @@
 
 import { AxiosResponse } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import qs from 'qs';
 import { getAuthCookieName } from '@nocobase/utils/client';
 import { APIClient } from '../APIClient';
 import { Auth } from '../Auth';
@@ -155,8 +156,65 @@ describe('api-client', () => {
 
     const url = new URL(requestUrl);
     expect(url.searchParams.getAll('appends[]')).toEqual(['storage', 'users']);
-    expect(url.searchParams.get('filter[storageId]')).toBe('11');
+    expect(url.searchParams.get('filter')).toBe(JSON.stringify({ storageId: 11 }));
     expect(url.search).toMatch(/&empty$/);
+  });
+
+  test.each([
+    {
+      hidden: { $isFalsy: true },
+      $or: [{ title: { $includes: 't1' } }, { title: { $includes: 't1' } }],
+    },
+    {
+      $or: [{ title: { $includes: 't1' } }, { title: { $includes: 't2' } }],
+    },
+    {
+      $and: [{ title: { $includes: 't1' } }, { name: { $includes: 'orders' } }],
+    },
+    {
+      $and: [
+        { hidden: { $isFalsy: true } },
+        { $or: [{ title: { $includes: 't1' } }, { name: { $includes: 'orders' } }] },
+        { sort: { $in: [1, 2] }, category: null },
+      ],
+    },
+  ])('preserves collection filter conditions in the request URL (case %#)', async (filter) => {
+    const api = new APIClient({ baseURL: 'https://localhost:8000/api' });
+    const mock = new MockAdapter(api.axios);
+    let requestUrl = '';
+    mock.onGet('dataSources/postgres/collections:list').reply((config) => {
+      const paramsSerializer =
+        typeof config.paramsSerializer === 'function'
+          ? { serialize: config.paramsSerializer }
+          : config.paramsSerializer;
+      requestUrl = api.axios.getUri({ ...config, paramsSerializer });
+      return [200, { data: [] }];
+    });
+
+    await api.request({ url: 'dataSources/postgres/collections:list', params: { filter } });
+
+    const query = qs.parse(new URL(requestUrl).search.slice(1));
+    expect(typeof query.filter).toBe('string');
+    expect(JSON.parse(String(query.filter))).toEqual(filter);
+  });
+
+  test('preserves filters that are already JSON strings', async () => {
+    const api = new APIClient({ baseURL: 'https://localhost:8000/api' });
+    const mock = new MockAdapter(api.axios);
+    const filter = JSON.stringify({ $or: [{ title: { $includes: 't1' } }, { title: { $includes: 't2' } }] });
+    let requestUrl = '';
+    mock.onGet('dataSources/postgres/collections:list').reply((config) => {
+      const paramsSerializer =
+        typeof config.paramsSerializer === 'function'
+          ? { serialize: config.paramsSerializer }
+          : config.paramsSerializer;
+      requestUrl = api.axios.getUri({ ...config, paramsSerializer });
+      return [200, { data: [] }];
+    });
+
+    await api.request({ url: 'dataSources/postgres/collections:list', params: { filter } });
+
+    expect(new URL(requestUrl).searchParams.get('filter')).toBe(filter);
   });
 
   test('signIn', async () => {
