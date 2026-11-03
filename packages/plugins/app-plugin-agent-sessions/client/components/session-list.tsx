@@ -235,7 +235,7 @@ function FullSessionList({
               <ArrowLeftIcon />
             </Button>
           )}
-          {ListHeading && !surface.panel && !archived ? (
+          {ListHeading && !archived ? (
             <div className='min-w-0 flex-1'>
               <ListHeading />
             </div>

@@ -1,4 +1,3 @@
-/** Every key the agent chat looks up, so each locale is checked against the same list. */
 export interface AgentChatLocale {
   readonly chat: {
     readonly webSearch: {
@@ -52,9 +51,9 @@ export interface AgentChatLocale {
       readonly unknown: string;
       readonly effectReview: string;
     };
-    readonly connectionUnknown: string;
-    readonly historicalReadOnly: string;
     readonly executionFailed: string;
+    readonly historicalReadOnly: string;
+    readonly connectionUnknown: string;
     readonly allowAnother: string;
     readonly refreshHistory: string;
     readonly title: string;
@@ -296,9 +295,43 @@ export interface AgentChatLocale {
         readonly usage: string;
       };
     };
+    readonly backToList: string;
+    readonly showDetails: string;
+    readonly hideDetails: string;
+    readonly detailsTitle: string;
+    readonly sessionDetails: string;
+    readonly runtime: string;
+    readonly agent: string;
+    readonly started: string;
+    readonly usageTitle: string;
+    readonly record: string;
+    readonly recordBody: string;
+    readonly relatedWork: string;
+    readonly unlink: string;
+    readonly unlinkFailed: string;
+    readonly expandPanel: string;
+    readonly restorePanel: string;
+    readonly delete: string;
+    readonly deleteDialog: {
+      readonly menu: string;
+      readonly title: string;
+      readonly description: string;
+      readonly cancel: string;
+      readonly confirm: string;
+      readonly done: string;
+      readonly body: string;
+    };
+    readonly usage: {
+      readonly title: string;
+      readonly context: string;
+      readonly window: string;
+      readonly input: string;
+      readonly cached: string;
+      readonly output: string;
+      readonly cost: string;
+    };
   };
 }
-
 const agentChatEnUS: AgentChatLocale = {
   chat: {
     webSearch: {
@@ -361,7 +394,6 @@ const agentChatEnUS: AgentChatLocale = {
       effectReview:
         'Some actions may have completed. Check their results before repeating them.',
     },
-
     executionFailed:
       'Execution failed. Check saved history and possibly completed actions before repeating them.',
     historicalReadOnly:
@@ -411,7 +443,6 @@ const agentChatEnUS: AgentChatLocale = {
       noModel: 'Configure a chat model first',
       noRunner: 'No runner online, cannot be chosen',
       othersPersonal: "Only others' personal runners have it",
-      // The reason earlier versions wrote on a notice that their online fallback could not answer.
       modelUnavailable: 'Model unavailable',
     },
     reasoning: {
@@ -635,7 +666,42 @@ const agentChatEnUS: AgentChatLocale = {
         usage: 'Usage',
       },
     },
+    backToList: 'Back to list',
+    showDetails: 'Show details',
+    hideDetails: 'Hide details',
+    detailsTitle: 'Session details',
+    sessionDetails: 'Session',
+    runtime: 'Runtime',
+    agent: 'Agent',
+    started: 'Started',
+    usageTitle: 'Usage',
+    record: 'Record',
+    recordBody: 'The full record is kept here, and only you can see it.',
+    relatedWork: 'Related work',
+    unlink: 'Remove association',
+    unlinkFailed: 'The association could not be removed.',
+    expandPanel: 'Full width',
+    restorePanel: 'Restore panel',
+    delete: 'Delete',
+    deleteDialog: {
+      menu: 'Delete',
+      title: 'Delete “{{title}}”?',
+      description:
+        'Its messages, files and associations are deleted for good, and an active run is stopped. Related records stay. This cannot be undone.',
+      cancel: 'Cancel',
+      confirm: 'Delete',
+      done: 'Deleted “{{title}}”',
+      body: 'Its messages, files and associations are deleted for good, and an active run is stopped. Related records stay. This cannot be undone.',
+    },
+    usage: {
+      title: 'Usage',
+      context: 'Context {{used}} / {{size}} tokens ({{percent}}%)',
+      window: 'Context window',
+      input: 'Input',
+      cached: 'Cached',
+      output: 'Output',
+      cost: 'Cost',
+    },
   },
 };
-
 export default agentChatEnUS;
