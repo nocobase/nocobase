@@ -469,6 +469,7 @@ export function createIssueRoutes(deps: {
       tags,
       summary: 'List an issue’s activities',
       operationId: 'projectsListIssueActivities',
+      security: personOrRunSecurity,
       ...cliRoute({
         command: 'issue activity list',
         flags: { issueId: { name: 'issue' }, pageSize: { name: 'limit' } },

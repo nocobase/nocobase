@@ -64,6 +64,7 @@ export function viewerMiddleware(
     if (delegated) context.set(DELEGATED, delegated);
     context.set(VIEWER, {
       userId,
+      ...(auth.credential?.type === 'run' ? { runId: auth.credential.id } : {}),
       actor: acting ?? { type: 'user', id: userId, ...(via ? { via } : {}) },
       permissions: await access.permissionsOf(identity),
       ...(projects === 'all' ? {} : { projectIds: projects }),

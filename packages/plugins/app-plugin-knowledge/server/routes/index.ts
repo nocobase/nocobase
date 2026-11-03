@@ -13,7 +13,7 @@ import {
   type AppApiRouteContribution,
   type AppRouteContribution,
 } from '@nocobase/app-server/router';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { knowledgeIndexingToken } from '../tokens.js';
@@ -45,6 +45,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           !(
             auth.credential?.type === integration.credentialType &&
             auth.credential.scheme === 'runToken'
+          ) &&
+          !(
+            auth.credential &&
+            (await authentication.credentialRouteDecision(
+              context as Context,
+              auth.credential,
+            )) === true
           ) &&
           (await authentication.isScopedSession(auth, context.req.raw))
         ) {
