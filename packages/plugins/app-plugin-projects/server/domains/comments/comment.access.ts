@@ -11,6 +11,7 @@
  * Nobody edits someone else's words.
  */
 import { PLAIN_COMMENT } from '../../../shared/comments.js';
+import { SYSTEM_KIND } from '../../../shared/kinds.js';
 import type { Issue } from '../../../shared/issues.js';
 import { requireAction, scopeOf, type Viewer } from '../../access/viewer.js';
 import type { DatabaseConnection } from '@nocobase/db';
@@ -41,6 +42,8 @@ export function isOwnComment(viewer: Viewer, comment: CommentRecord): boolean {
       origin && typeof origin === 'object' ? origin.trace : undefined;
     return (
       comment.kind === PLAIN_COMMENT &&
+      comment.authorType !== SYSTEM_KIND &&
+      comment.authorId !== null &&
       comment.authorType === viewer.actor.type &&
       comment.authorId === viewer.actor.id &&
       viewer.actor.via === 'agent' &&

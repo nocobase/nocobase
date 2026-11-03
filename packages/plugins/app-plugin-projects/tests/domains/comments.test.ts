@@ -68,7 +68,7 @@ describe('writing comments', () => {
       content: '/note Human',
     });
     const system = await h.services.comments.post(
-      { type: 'system', id: null },
+      { type: 'system', id: null, via: 'agent', trace: { runId: 'first' } },
       issue.id,
       { content: 'System' },
     );
@@ -116,6 +116,18 @@ describe('writing comments', () => {
         },
       },
     };
+    const systemActor = {
+      ...run('first'),
+      actor: { type: 'system', id: null, via: 'agent' as const },
+    };
+    await expect(
+      h.services.comments.update(systemActor, system.comment.id, {
+        content: 'Hijacked',
+      }),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await expect(
+      h.services.comments.remove(systemActor, system.comment.id),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
     await expect(
       h.services.comments.update(denied, own.comment.id, { content: 'Denied' }),
     ).rejects.toMatchObject({ kind: 'forbidden' });
