@@ -56,10 +56,12 @@ interface Call {
 
 async function render({
   mode = 'full',
+  demoMode = false,
   state,
   extra,
 }: {
   mode?: 'off' | 'full';
+  demoMode?: boolean;
   state: { canSwitch: boolean; switched: typeof switched | null };
   extra?: (call: Call) => unknown;
 }): Promise<{ calls: Call[]; rendered: RenderedApp }> {
@@ -82,7 +84,10 @@ async function render({
       Object.defineProperty(app.config, 'public', {
         value: createAppClientConfig({
           rawConfig: {},
-          rawPublicConfig: { accountSwitcher: { mode } },
+          rawPublicConfig: {
+            accountSwitcher: { mode },
+            demoMode: { enabled: demoMode },
+          },
         }).public,
       });
     },
@@ -115,6 +120,18 @@ it('offers nothing to someone who cannot switch', async () => {
 it('asks the server nothing while switching is off', async () => {
   const { calls } = await render({
     mode: 'off',
+    state: { canSwitch: true, switched: null },
+  });
+
+  fireEvent.click(screen.getByText('Account'));
+  await screen.findByRole('menu');
+  expect(screen.queryByText('Switch account')).toBeNull();
+  expect(calls).not.toContainEqual(STATE_CALL);
+});
+
+it('asks the server nothing in a demo, whose own menu moves between accounts', async () => {
+  const { calls } = await render({
+    demoMode: true,
     state: { canSwitch: true, switched: null },
   });
 

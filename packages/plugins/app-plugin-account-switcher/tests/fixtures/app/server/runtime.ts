@@ -39,6 +39,8 @@ const runtime: AppRuntimeDefinition = defineAppRuntime({
       },
     }),
     accountSwitcher: defineAccountSwitcherConfig(),
+    // Stands in for Demo Mode's section, which is all account switching reads of it.
+    demoMode: defineAppConfig({ defaults: { enabled: false } }),
     auth: defineAuthConfig({
       defaults: {
         secret: 'account-switcher-test-secret-at-least-32-characters',

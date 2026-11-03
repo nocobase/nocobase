@@ -24,10 +24,20 @@ export function AccountSwitcherProvider({
   children,
 }: PropsWithChildren): ReactElement {
   const app = useClientApplication();
+  // The server turns switching off in a demo, which its published mode does not reflect. Demo Mode declares the type of
+  // its own section only where it is installed, so it is read untyped.
+  const publicConfig = app.config.public as {
+    has(path: string): boolean;
+    get(path: string): unknown;
+  };
   const [enabled] = useState(
     () =>
-      app.config.public.has('accountSwitcher.mode') &&
-      app.config.public.get('accountSwitcher.mode') !== 'off',
+      publicConfig.has('accountSwitcher.mode') &&
+      publicConfig.get('accountSwitcher.mode') !== 'off' &&
+      !(
+        publicConfig.has('demoMode.enabled') &&
+        publicConfig.get('demoMode.enabled') === true
+      ),
   );
   return enabled ? (
     <EnabledProvider>{children}</EnabledProvider>
