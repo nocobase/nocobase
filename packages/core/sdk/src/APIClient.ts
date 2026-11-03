@@ -159,9 +159,6 @@ export class APIClient {
         return qs.stringify(params, {
           strictNullHandling: true,
           arrayFormat: 'brackets',
-          // Preserve logical groups and value types when the server parses the filter.
-          filter: (prefix, value: unknown) =>
-            prefix === 'filter' && value !== null && typeof value === 'object' ? JSON.stringify(value) : value,
         });
       };
       return config;
