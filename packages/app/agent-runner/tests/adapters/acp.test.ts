@@ -1,5 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it } from 'vitest';
@@ -58,6 +65,7 @@ async function fixture(
   };
   return {
     root,
+    env,
     adapter,
     session,
     trace,
@@ -73,6 +81,48 @@ async function fixture(
             },
         ),
   };
+}
+
+async function dshFixture(
+  envOverrides: Record<string, string> = {},
+): Promise<Awaited<ReturnType<typeof fixture>>> {
+  const f = await fixture(
+    '',
+    {
+      id: 'dsh',
+      name: 'DeepSeek Harness',
+      launchers: [{ command: 'dsh', args: ['--profile', 'acp'] }],
+      signIn: 'export DEEPSEEK_API_KEY=...',
+      allowAll: true,
+      permissionEnv: { DSH_PERMISSION_MODE: 'danger-full-access' },
+    },
+    envOverrides,
+  );
+  const bin = path.join(f.root, 'bin');
+  await mkdir(bin);
+  const executable = path.join(bin, 'dsh');
+  const acpFixture = path.resolve(
+    import.meta.dirname,
+    '../fixtures/acp-agent.mjs',
+  );
+  await writeFile(
+    executable,
+    `#!/usr/bin/env node
+import { appendFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+if (process.argv.includes('--version')) {
+  if (process.env.ACP_FIXTURE_VERSION_TRACE) appendFileSync(process.env.ACP_FIXTURE_VERSION_TRACE, '--version\\n');
+  if (process.env.ACP_FIXTURE_VERSION_FAIL) process.exit(1);
+  console.log(process.env.ACP_FIXTURE_VERSION ?? 'dsh 0.2.1-rc.5');
+} else {
+  const child = spawn(process.execPath, [${JSON.stringify(acpFixture)}, ...process.argv.slice(2)], { stdio: 'inherit' });
+  child.on('exit', (code) => process.exit(code ?? 1));
+}
+`,
+  );
+  await chmod(executable, 0o755);
+  f.env.PATH = `${bin}${path.delimiter}${f.env.PATH}`;
+  return f;
 }
 
 it('resolves native adapters first, deduplicates catalog identities and refuses unknown tools', () => {
@@ -245,6 +295,84 @@ it('reports a selected missing program without starting anything', async () => {
     authenticated: false,
     status: 'notInstalled',
   });
+});
+
+it.each(['', '   '])(
+  'reports dsh as needing its runner API key when the key is %s',
+  async (key) => {
+    const f = await dshFixture({
+      ...(key === '' ? {} : { DEEPSEEK_API_KEY: key }),
+    });
+    const versionTrace = path.join(f.root, 'version-trace');
+    f.env.ACP_FIXTURE_VERSION_TRACE = versionTrace;
+    const detected = await f.adapter.detect();
+    expect(detected).toMatchObject({
+      installed: true,
+      authenticated: false,
+      status: 'needsLogin',
+      statusReason: 'notLoggedIn',
+    });
+    expect(detected.statusDetail).toContain('--pass-env DEEPSEEK_API_KEY');
+    expect(existsSync(f.trace)).toBe(false);
+    await expect(readFile(versionTrace, 'utf8')).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  },
+);
+
+it('detects dsh only with the passed key and prefers the CLI prerelease version to ACP metadata', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'runner-dsh-version-'));
+  roots.push(root);
+  const versionTrace = path.join(root, 'version-trace');
+  const f = await dshFixture({
+    DEEPSEEK_API_KEY: 'test-key',
+    ACP_FIXTURE_VERSION: 'dsh 0.2.1-rc.5',
+    ACP_FIXTURE_VERSION_TRACE: versionTrace,
+    ACP_FIXTURE_AGENT_VERSION: '0.0.1',
+  });
+  expect(await f.adapter.detect()).toMatchObject({
+    installed: true,
+    authenticated: true,
+    status: 'ready',
+    version: '0.2.1-rc.5',
+    models: [
+      { id: 'one', name: 'Model One' },
+      { id: 'two', name: 'Model Two' },
+    ],
+  });
+  expect(await readFile(versionTrace, 'utf8')).toBe('--version\n');
+  const messages = await f.messages();
+  expect(messages.some(({ method }) => method === 'session/prompt')).toBe(
+    false,
+  );
+  expect(messages[0]?.method).toBe('initialize');
+  expect(
+    messages.find(({ method }) => method === 'permissionEnv')?.params.value,
+  ).toBe('off');
+});
+
+it('omits dsh version when the CLI version command fails', async () => {
+  const f = await dshFixture({
+    DEEPSEEK_API_KEY: 'test-key',
+    ACP_FIXTURE_VERSION_FAIL: '1',
+    ACP_FIXTURE_AGENT_VERSION: '0.0.1',
+  });
+  const detected = await f.adapter.detect();
+  expect(detected.status).toBe('ready');
+  expect(detected.version).toBeUndefined();
+});
+
+it('starts dsh with the full-access permission environment', async () => {
+  const f = await dshFixture({ DEEPSEEK_API_KEY: 'test-key' });
+  const handle = f.adapter.start(f.session);
+  for await (const _event of handle.events) {
+    // Drain the fixture session.
+  }
+  expect(await handle.result).toMatchObject({ exit: 'completed' });
+  expect(
+    (await f.messages()).find(({ method }) => method === 'permissionEnv')
+      ?.params.value,
+  ).toBe('danger-full-access');
 });
 
 it.each(['', 'legacy', 'resume', 'unsupported', 'usage'])(
