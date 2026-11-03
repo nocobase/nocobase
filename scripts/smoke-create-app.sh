@@ -18,6 +18,7 @@
 #     --create-app-version 0.1.0-beta.12 \
 #     --template @nocobase/app-template-default@0.1.0-beta.12 \
 #     [--workdir DIR] [--timeout SECONDS] [--dialect DIALECT] [--config FILE] [--json] [--internal-packages]
+#     [--test-project all|node|client]
 
 set -euo pipefail
 
@@ -31,6 +32,7 @@ DIALECT=''
 CONFIG=''
 JSON_OUTPUT=0
 INTERNAL_PACKAGES=0
+TEST_PROJECT=all
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 while [ $# -gt 0 ]; do
@@ -44,6 +46,7 @@ while [ $# -gt 0 ]; do
     --config) CONFIG="$2"; shift 2 ;;
     --json) JSON_OUTPUT=1; shift ;;
     --internal-packages) INTERNAL_PACKAGES=1; shift ;;
+    --test-project) TEST_PROJECT="$2"; shift 2 ;;
     --app-name) APP_NAME="$2"; shift 2 ;;
     -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
@@ -54,6 +57,11 @@ if [ -z "$REGISTRY" ] || [ -z "$CREATE_APP_VERSION" ] || [ -z "$TEMPLATE" ]; the
   echo "::error::--registry, --create-app-version and --template are all required" >&2
   exit 2
 fi
+
+case "$TEST_PROJECT" in
+  all|node|client) ;;
+  *) echo "::error::--test-project must be all, node, or client" >&2; exit 2 ;;
+esac
 
 if [ -z "$WORKDIR" ]; then
   WORKDIR="$(mktemp -d)"
@@ -178,7 +186,12 @@ if [ "$INTERNAL_PACKAGES" = 1 ]; then
 fi
 
 echo "::group::Test the application with pnpm test"
-if ! pnpm test 2>&1 | tee "$TEST_LOG"; then
+TEST_ARGS=()
+if [ "$TEST_PROJECT" != all ]; then
+  # Each CI shard runs a complete project. An empty selection must never count as a passing shard.
+  TEST_ARGS=(--project "$TEST_PROJECT" --passWithNoTests=false)
+fi
+if ! pnpm test "${TEST_ARGS[@]}" 2>&1 | tee "$TEST_LOG"; then
   echo "::endgroup::"
   echo "::error::pnpm test failed"
   exit 1
