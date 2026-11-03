@@ -27,7 +27,10 @@ export type LinkedChatWorkspaceSlots = Omit<
   | 'onClose'
   | 'onExpand'
   | 'expanded'
->;
+> & {
+  /** Starts a new conversation the host's way, such as with a fresh draft; the panel store's otherwise. */
+  readonly onNew?: (() => void) | undefined;
+};
 
 export interface LinkedChatPanelProps extends ConversationAssociationOptions {
   readonly title?: string;
@@ -125,7 +128,7 @@ function BoundWorkspace({
         // Opened from the list, the conversation is ready to be answered.
         window.setTimeout(panel.focusComposer, 0);
       }}
-      onNew={() => panel.selectConversation(null)}
+      onNew={slots?.onNew ?? (() => panel.selectConversation(null))}
       onBack={() => panel.setView('history')}
       onClose={panel.closeChat}
       onExpand={

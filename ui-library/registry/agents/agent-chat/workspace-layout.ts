@@ -20,6 +20,8 @@ export interface ChatWorkspaceState {
   readonly conversationId: string | null;
   /** Shows the details, closing an opened record. */
   readonly openDetails: () => void;
+  /** Hides the details where they cover the conversation; beside it they stay. */
+  readonly closeCoveringDetails: () => void;
   /** An opened record takes the details' place; its closer runs when the details are asked for. */
   readonly reportAside: (aside: { readonly close: () => void } | null) => void;
 }

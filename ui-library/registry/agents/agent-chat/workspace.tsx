@@ -74,6 +74,9 @@ export interface ChatWorkspaceProps {
   readonly expanded?: boolean;
   /** Keeps the folded list and the details choice per layout across visits. */
   readonly storageKey?: string;
+  /** The list's fold, when the host keeps it (such as shared with another surface); the workspace's own otherwise. */
+  readonly listFolded?: boolean | undefined;
+  readonly onListFoldedChange?: ((folded: boolean) => void) | undefined;
   readonly list?: Pick<
     ConversationListProps,
     'heading' | 'row' | 'filters' | 'filter' | 'mode'
@@ -126,6 +129,8 @@ export function ChatWorkspace({
   onExpand,
   expanded = false,
   storageKey,
+  listFolded,
+  onListFoldedChange,
   list,
   renderBody,
   metadata,
@@ -165,7 +170,9 @@ export function ChatWorkspace({
       }),
     [layout, storageKey],
   );
-  const folded = !narrow && Boolean(choice.folded);
+  const folded = !narrow && (listFolded ?? Boolean(choice.folded));
+  const setFolded = (next: boolean): void =>
+    onListFoldedChange ? onListFoldedChange(next) : choose({ folded: next });
   // Beside the conversation the details follow the remembered choice, open by default; as a sheet they open on demand.
   const [sheetOpen, setSheetOpen] = useState(false);
   const detailsOpen = layout === 'wide' ? choice.details !== false : sheetOpen;
@@ -187,9 +194,16 @@ export function ChatWorkspace({
     asideRef.current?.close();
     setDetailsOpen(true);
   }, [setDetailsOpen]);
+  const closeCoveringDetails = useCallback(() => setSheetOpen(false), []);
   const state = useMemo<ChatWorkspaceState>(
-    () => ({ layout, conversationId, openDetails, reportAside }),
-    [layout, conversationId, openDetails, reportAside],
+    () => ({
+      layout,
+      conversationId,
+      openDetails,
+      closeCoveringDetails,
+      reportAside,
+    }),
+    [layout, conversationId, openDetails, closeCoveringDetails, reportAside],
   );
   // Nothing mounts before the first measurement (taken before paint), so a narrow workspace never mounts both.
   const measured = width !== null;
@@ -243,16 +257,13 @@ export function ChatWorkspace({
             className='flex w-12 shrink-0 flex-col items-center gap-2 border-r py-3'
             data-testid='session-list-rail'
           >
-            <ListRailButtons
-              onUnfold={() => choose({ folded: false })}
-              onNew={onNew}
-            />
+            <ListRailButtons onUnfold={() => setFolded(false)} onNew={onNew} />
           </div>
         ) : mounted.list ? (
           <div
             className={cn(
               'flex min-h-0 min-w-0 flex-col',
-              narrow ? 'flex-1' : 'w-[264px] shrink-0 border-r',
+              narrow ? 'flex-1' : 'w-[264px] shrink-0',
             )}
             hidden={!showList}
           >
@@ -265,11 +276,12 @@ export function ChatWorkspace({
                 // Beside a conversation the list folds instead; Close is in the conversation's header.
                 onClose && narrow ? <CloseButton onClose={onClose} /> : null
               }
-              onFold={narrow ? undefined : () => choose({ folded: true })}
+              onFold={narrow ? undefined : () => setFolded(true)}
               row={list?.row}
               filters={list?.filters}
               filter={list?.filter}
               mode={list?.mode}
+              className={narrow ? undefined : 'border-r'}
             />
           </div>
         ) : null}
