@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { parse } from 'yaml';
 
 const script = new URL('../../scripts/smoke-create-app.sh', import.meta.url);
 
@@ -57,6 +58,7 @@ const basePath = process.env.SMOKE_BASE_PATH;
 if (command === 'config') {
   console.log(process.env.PNPM_CONFIG_REGISTRY);
 } else if (command === 'create') {
+  fs.writeFileSync(path.join(state, 'create-called'), 'yes');
   fs.mkdirSync(path.join(process.argv[4], 'node_modules'), { recursive: true });
   // create-app leaves the application unconfigured and keeps the template's example for config init to build from.
   fs.writeFileSync(path.join(process.argv[4], 'config.example.yml'), 'auth:\\n  secret: replace-me\\n');
@@ -86,6 +88,7 @@ if (command === 'config') {
   } else if (command === 'skills sync') {
     if (scenario === 'skills-fails') process.exit(8);
   } else if (command === 'test') {
+    fs.writeFileSync(path.join(state, 'test-args.json'), JSON.stringify(process.argv.slice(3)));
     if (scenario === 'test-fails') process.exit(10);
   } else if (command === 'build') {
     const devPid = Number(fs.readFileSync(path.join(state, 'dev.pid'), 'utf8'));
@@ -285,6 +288,12 @@ async function runSmoke(t, scenario, basePath = '/main', extraArgs = []) {
       ? fs.readFileSync(path.join(workdir, 'retarget-target'), 'utf8')
       : undefined,
     deployed: fs.existsSync(path.join(workdir, 'deploy', 'config.yml')),
+    created: fs.existsSync(path.join(workdir, 'create-called')),
+    testArgs: fs.existsSync(path.join(workdir, 'test-args.json'))
+      ? JSON.parse(
+          fs.readFileSync(path.join(workdir, 'test-args.json'), 'utf8'),
+        )
+      : undefined,
   };
 }
 
@@ -293,6 +302,7 @@ for (const basePath of ['', '/main', '/nested/app']) {
     const result = await runSmoke(t, 'success', basePath);
     assert.equal(result.code, 0, result.output);
     assert.deepEqual(result.commands, fullRun);
+    assert.deepEqual(result.testArgs, []);
     assert.match(
       result.output,
       /passed test, dev, build, start, archive deployment, and retarget/u,
@@ -419,16 +429,142 @@ test('stops before dev when NocoBase package Skills cannot be synchronized', asy
   ]);
 });
 
-test('stops before dev, build, and start when the generated application tests fail', async (t) => {
-  const result = await runSmoke(t, 'test-fails');
-  assert.equal(result.code, 1, result.output);
-  assert.deepEqual(result.commands, [
-    'config init',
-    'config check',
-    'skills sync',
-    'test',
-  ]);
-  assert.match(result.output, /pnpm test failed/u);
+for (const project of ['all', 'node', 'client']) {
+  test(`stops before dev, build, and start when ${project} tests fail`, async (t) => {
+    const result = await runSmoke(t, 'test-fails', '/main', [
+      '--test-project',
+      project,
+    ]);
+    assert.equal(result.code, 1, result.output);
+    assert.deepEqual(result.commands, [
+      'config init',
+      'config check',
+      'skills sync',
+      'test',
+    ]);
+    assert.deepEqual(
+      result.testArgs,
+      project === 'all'
+        ? []
+        : ['--project', project, '--passWithNoTests=false'],
+    );
+    assert.match(result.output, /pnpm test failed/u);
+  });
+}
+
+for (const project of ['node', 'client']) {
+  test(`runs the complete ${project} project and every deployment check`, async (t) => {
+    const result = await runSmoke(t, 'success', '/main', [
+      '--test-project',
+      project,
+    ]);
+    assert.equal(result.code, 0, result.output);
+    assert.deepEqual(result.testArgs, [
+      '--project',
+      project,
+      '--passWithNoTests=false',
+    ]);
+    assert.deepEqual(result.commands, fullRun);
+    assert.equal(result.deployed, true, result.output);
+    assert.equal(result.retargetTarget, otherTarget);
+  });
+}
+
+test('rejects an unknown or wildcard project before creating an application', async (t) => {
+  for (const project of ['unknown', 'node*', '']) {
+    const result = await runSmoke(t, 'success', '/main', [
+      '--test-project',
+      project,
+    ]);
+    assert.equal(result.code, 2, result.output);
+    assert.equal(result.created, false);
+    assert.deepEqual(result.commands, []);
+    assert.match(result.output, /--test-project must be all, node, or client/u);
+  }
+});
+
+test('the action validates and forwards the complete test project before registry operations', (t) => {
+  const action = parse(
+    fs.readFileSync(
+      new URL(
+        '../../.github/actions/verify-create-app/action.yml',
+        import.meta.url,
+      ),
+      'utf8',
+    ),
+  );
+  assert.equal(action.inputs['test-project'].default, 'all');
+  const validate = action.runs.steps[0];
+  assert.equal(validate.env.TEST_PROJECT, '${{ inputs.test-project }}');
+  for (const [project, code] of [
+    ['all', 0],
+    ['node', 0],
+    ['client', 0],
+    ['node*', 2],
+    ['', 2],
+  ]) {
+    const result = spawnSync('bash', ['-c', validate.run], {
+      env: {
+        ...process.env,
+        TEMPLATE_KIND: 'examples',
+        TEST_PROJECT: project,
+        ARTIFACTS: '',
+      },
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, code, result.stderr);
+  }
+  const generate = action.runs.steps.find(
+    (step) =>
+      step.name ===
+      'Generate selected applications and verify test, dev, build, and start',
+  );
+  assert.equal(generate.env.TEST_PROJECT, '${{ inputs.test-project }}');
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-action-test-'));
+  t.after(() => fs.rmSync(fixture, { recursive: true, force: true }));
+  for (const directory of [
+    'packages/tools/create-app',
+    'packages/templates/app-template-examples',
+  ]) {
+    fs.mkdirSync(path.join(fixture, directory), { recursive: true });
+    fs.writeFileSync(
+      path.join(fixture, directory, 'package.json'),
+      JSON.stringify({ version: '0.0.0-test' }),
+    );
+  }
+  fs.mkdirSync(path.join(fixture, 'scripts'));
+  fs.writeFileSync(
+    path.join(fixture, 'scripts/smoke-create-app.sh'),
+    '#!/usr/bin/env node\nconsole.log(JSON.stringify(process.argv.slice(2)));\n',
+    { mode: 0o755 },
+  );
+  for (const project of ['all', 'node', 'client']) {
+    const result = spawnSync('bash', ['-c', generate.run], {
+      cwd: fixture,
+      env: {
+        ...process.env,
+        TEST_PROJECT: project,
+        TEMPLATE_KIND: 'examples',
+        PORT: '4873',
+        TIMEOUT: '420',
+        GITHUB_WORKSPACE: fixture,
+        RUNNER_TEMP: fixture,
+        smoke_npmrc: path.join(fixture, 'unused-npmrc'),
+      },
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const args = JSON.parse(result.stdout);
+    assert.equal(args[args.indexOf('--test-project') + 1], project);
+    assert.equal(
+      args[args.indexOf('--template') + 1],
+      '@nocobase/app-template-examples@0.0.0-test',
+    );
+  }
+  const logs = action.runs.steps.find(
+    (step) => step.name === 'Upload smoke logs',
+  );
+  assert.match(logs.with.name, /inputs.test-project/u);
 });
 
 test('verifies JSON creation with a selected dialect', async (t) => {
