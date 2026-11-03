@@ -1536,6 +1536,7 @@ export function createReleasesApi(
       tags,
       summary: 'Get a release',
       operationId: 'releasesGetRelease',
+      security: personOrRunSecurity,
       ...cliRoute({
         command: 'release get',
         flags: { appId: { name: 'app' }, releaseId: { name: 'release' } },

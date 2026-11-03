@@ -19,6 +19,8 @@ import { forbidden } from '../kernel/errors.js';
 
 export interface Viewer {
   readonly userId: string;
+  /** The authenticated run credential's id, set only by request middleware; never taken from client input. */
+  readonly runId?: string;
   /** The host's runner machine permission check. Absent: only the snapshotted owner sees machine facts. */
   readonly seesExecutionMachine?: (execution: ActivityExecution) => boolean;
   /** The same user as an actor, for the activity log and events. */
