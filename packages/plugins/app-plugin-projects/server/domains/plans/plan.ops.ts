@@ -36,6 +36,7 @@ import { invalid, notFound } from '../../kernel/errors.js';
 import type { Tx } from '../../kernel/tx.js';
 import { findComment, type CommentService } from '../comments/index.js';
 import {
+  canSee as canSeeIssue,
   findIssue,
   findIssueRow,
   isTerminal,
@@ -458,6 +459,8 @@ const issueUpdate: OpDefinition = {
     if (typeof params.issue !== 'string') return null;
     const issue = await findIssue(ctx.tx.conn, params.issue);
     if (!issue || issue.deletedAt) return null;
+    if (!(await canSeeIssue(ctx.tx.conn, ctx.viewer, issue)))
+      throw notFound('Issue');
     return {
       target: issueRef(issue),
       fields: await issueFields(ctx, issue, changedIssueFields(params)),
@@ -555,6 +558,11 @@ const dependency: OpDefinition = {
     const issue = await findIssue(ctx.tx.conn, params.issue);
     const other = await findIssue(ctx.tx.conn, params.dependsOn);
     if (!issue || !other) return null;
+    if (
+      !(await canSeeIssue(ctx.tx.conn, ctx.viewer, issue)) ||
+      !(await canSeeIssue(ctx.tx.conn, ctx.viewer, other))
+    )
+      throw notFound('Issue');
     const link = await findDependencyBetween(
       ctx.tx.conn,
       issue.id,

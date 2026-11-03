@@ -799,10 +799,11 @@ export class Auth {
     };
   }
 
-  private async credentialRouteDecision(
+  /** Reuse application admission in an additional plugin guard; undefined preserves its native credential rules. */
+  async credentialRouteDecision(
     context: Context,
     credential: IssuedCredential,
-  ) {
+  ): Promise<boolean | undefined> {
     let decision: boolean | undefined;
     for (const policy of this.credentialRoutePolicies) {
       const value = await policy(context, credential);

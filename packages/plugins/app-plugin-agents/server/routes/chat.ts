@@ -337,7 +337,7 @@ export function createChatRoutes(
         columns: ['id', 'title', 'agent.name', 'lastMessageAt', 'read'],
       }),
       description:
-        "The conversations the caller started, newest message first, a page at a time; a conversation is its owner's alone. The runToken scheme accepts only OnlineAgent execution credentials here; Run tokens and other scoped credentials are refused.",
+        "The conversations the caller started, newest message first, a page at a time; a conversation is its owner's alone. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.",
       responses: {
         200: listResponse(ConversationSummarySchema, PageTokenMetaSchema),
         ...apiErrorResponses,
@@ -440,7 +440,7 @@ export function createChatRoutes(
       tags,
       security: personOrRunSecurity,
       description:
-        'Owner-only read. The runToken scheme accepts OnlineAgent execution credentials here, not Run tokens or other scoped credentials.',
+        'Owner-only read. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.',
       summary: 'Get a conversation',
       operationId: 'agentsGetConversation',
       ...cliRoute({
@@ -471,7 +471,7 @@ export function createChatRoutes(
       tags,
       security: personOrRunSecurity,
       description:
-        'Owner-only update. The runToken scheme accepts OnlineAgent execution credentials, not Run tokens or other scoped credentials.',
+        'Owner-only update. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.',
       summary: 'Rename or archive a conversation',
       operationId: 'agentsUpdateConversation',
       ...cliRoute({
